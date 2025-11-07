@@ -11,13 +11,14 @@ import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
-interface CreateArchitectDialogProps {
+interface EditArchitectDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
+  architect: any | null;
 }
 
-export function CreateArchitectDialog({ open, onOpenChange, onSuccess }: CreateArchitectDialogProps) {
+export function EditArchitectDialog({ open, onOpenChange, onSuccess, architect }: EditArchitectDialogProps) {
   const [loading, setLoading] = useState(false);
   const [projects, setProjects] = useState<any[]>([]);
   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
@@ -36,20 +37,40 @@ export function CreateArchitectDialog({ open, onOpenChange, onSuccess }: CreateA
   });
 
   useEffect(() => {
-    if (open) {
+    if (open && architect) {
+      setFormData({
+        name: architect.name || "",
+        company: architect.company || "",
+        phone: architect.phone || "",
+        email: architect.email || "",
+        instagram: architect.instagram || "",
+        city: architect.city || "",
+        tier: architect.tier || "B",
+        commission_percent: architect.commission_percent?.toString() || "10.00",
+        birthday: architect.birthday || "",
+        active: architect.active ?? true,
+        notes: architect.notes || ""
+      });
       fetchProjects();
     }
-  }, [open]);
+  }, [open, architect]);
 
   const fetchProjects = async () => {
+    if (!architect) return;
+
+    // Buscar projetos sem arquiteto OU do arquiteto atual
     const { data, error } = await supabase
       .from('projects')
-      .select('id, name, stage, created_at')
-      .is('architect_id', null)
+      .select('id, name, stage, created_at, architect_id')
+      .or(`architect_id.is.null,architect_id.eq.${architect.id}`)
       .order('created_at', { ascending: false });
     
     if (!error && data) {
       setProjects(data);
+      // Marcar projetos já vinculados
+      setSelectedProjects(
+        data.filter(p => p.architect_id === architect.id).map(p => p.id)
+      );
     }
   };
 
@@ -64,7 +85,7 @@ export function CreateArchitectDialog({ open, onOpenChange, onSuccess }: CreateA
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name) {
+    if (!formData.name || !architect) {
       toast.error("Nome é obrigatório");
       return;
     }
@@ -72,9 +93,9 @@ export function CreateArchitectDialog({ open, onOpenChange, onSuccess }: CreateA
     setLoading(true);
 
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from("architects")
-        .insert({
+        .update({
           name: formData.name,
           company: formData.company || null,
           phone: formData.phone || null,
@@ -87,56 +108,51 @@ export function CreateArchitectDialog({ open, onOpenChange, onSuccess }: CreateA
           active: formData.active,
           notes: formData.notes || null
         })
-        .select()
-        .single();
+        .eq('id', architect.id);
 
       if (error) throw error;
 
-      // Vincular projetos selecionados
-      if (data && selectedProjects.length > 0) {
-        const { error: projectError } = await supabase
+      // Atualizar vínculos de projetos
+      // Remover vínculos antigos
+      await supabase
+        .from('projects')
+        .update({ architect_id: null })
+        .eq('architect_id', architect.id);
+
+      // Adicionar novos vínculos
+      if (selectedProjects.length > 0) {
+        await supabase
           .from('projects')
-          .update({ architect_id: data.id })
+          .update({ architect_id: architect.id })
           .in('id', selectedProjects);
-        
-        if (projectError) {
-          console.error('Erro ao vincular projetos:', projectError);
-        }
       }
 
-      toast.success("Arquiteto criado com sucesso!");
+      // Registrar no histórico
+      await supabase.from('architect_history').insert({
+        architect_id: architect.id,
+        event_type: 'sistema',
+        description: 'Dados do arquiteto atualizados'
+      });
+
+      toast.success("Arquiteto atualizado com sucesso!");
       
       onSuccess();
       onOpenChange(false);
       
-      // Reset form
-      setFormData({
-        name: "",
-        company: "",
-        phone: "",
-        email: "",
-        instagram: "",
-        city: "",
-        tier: "B",
-        commission_percent: "10.00",
-        birthday: "",
-        active: true,
-        notes: ""
-      });
-      setSelectedProjects([]);
-      
     } catch (error: any) {
-      toast.error(error.message || "Erro ao criar arquiteto");
+      toast.error(error.message || "Erro ao atualizar arquiteto");
     } finally {
       setLoading(false);
     }
   };
 
+  if (!architect) return null;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl">Novo Arquiteto</DialogTitle>
+          <DialogTitle className="text-2xl">Editar Arquiteto</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
@@ -261,11 +277,11 @@ export function CreateArchitectDialog({ open, onOpenChange, onSuccess }: CreateA
             </div>
 
             <div className="space-y-2 col-span-2">
-              <Label>Vincular Projetos Existentes</Label>
+              <Label>Gerenciar Projetos Vinculados</Label>
               <div className="max-h-48 overflow-y-auto space-y-2 border rounded-lg p-3">
                 {projects.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-4">
-                    Nenhum projeto disponível para vincular
+                    Nenhum projeto disponível
                   </p>
                 ) : (
                   projects.map((project) => (
@@ -293,7 +309,7 @@ export function CreateArchitectDialog({ open, onOpenChange, onSuccess }: CreateA
               </div>
               {selectedProjects.length > 0 && (
                 <p className="text-sm text-muted-foreground">
-                  {selectedProjects.length} projeto(s) selecionado(s)
+                  {selectedProjects.length} projeto(s) vinculado(s)
                 </p>
               )}
             </div>
@@ -301,7 +317,7 @@ export function CreateArchitectDialog({ open, onOpenChange, onSuccess }: CreateA
 
           <div className="flex gap-3 pt-4">
             <Button type="submit" className="flex-1" disabled={loading}>
-              {loading ? "Salvando..." : "Salvar"}
+              {loading ? "Salvando..." : "Salvar Alterações"}
             </Button>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
               Cancelar

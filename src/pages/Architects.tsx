@@ -8,9 +8,15 @@ import { BirthdayAlerts } from "@/components/architects/BirthdayAlerts";
 import { InactiveArchitects } from "@/components/architects/InactiveArchitects";
 import { ArchitectsTable } from "@/components/architects/ArchitectsTable";
 import { CreateArchitectDialog } from "@/components/architects/CreateArchitectDialog";
+import { EditArchitectDialog } from "@/components/architects/EditArchitectDialog";
+import { ArchitectDetailSheet } from "@/components/architects/ArchitectDetailSheet";
 
 const Architects = () => {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [selectedArchitect, setSelectedArchitect] = useState<any>(null);
+  const [selectedArchitectId, setSelectedArchitectId] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const handleRefresh = () => {
@@ -21,14 +27,18 @@ const Architects = () => {
     setRefreshKey(prev => prev + 1);
   };
 
+  const handleEditSuccess = () => {
+    setRefreshKey(prev => prev + 1);
+  };
+
   const handleEdit = (architect: any) => {
-    // TODO: Implement edit functionality
-    console.log("Edit architect:", architect);
+    setSelectedArchitect(architect);
+    setIsEditOpen(true);
   };
 
   const handleView = (architectId: string) => {
-    // TODO: Implement view details functionality
-    console.log("View architect:", architectId);
+    setSelectedArchitectId(architectId);
+    setIsDetailOpen(true);
   };
 
   return (
@@ -87,11 +97,24 @@ const Architects = () => {
           </TabsContent>
         </Tabs>
 
-        {/* Create Dialog */}
+        {/* Dialogs and Sheets */}
         <CreateArchitectDialog 
           open={isCreateOpen} 
           onOpenChange={setIsCreateOpen}
           onSuccess={handleCreateSuccess}
+        />
+
+        <EditArchitectDialog
+          open={isEditOpen}
+          onOpenChange={setIsEditOpen}
+          onSuccess={handleEditSuccess}
+          architect={selectedArchitect}
+        />
+
+        <ArchitectDetailSheet
+          open={isDetailOpen}
+          onOpenChange={setIsDetailOpen}
+          architectId={selectedArchitectId}
         />
       </div>
     </DashboardLayout>
