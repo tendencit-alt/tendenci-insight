@@ -2,9 +2,11 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Eye, Pencil, Trash2 } from "lucide-react";
+import { Eye, Pencil, Trash2, MessageCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,11 +22,9 @@ interface Architect {
   id: string;
   name: string;
   company: string;
-  city: string;
   phone: string;
-  email: string;
-  tier: string;
-  active: boolean;
+  projects_count: number;
+  last_project_date: string | null;
 }
 
 interface ArchitectsTableProps {
@@ -44,14 +44,36 @@ export function ArchitectsTable({ refreshKey, onEdit, onView }: ArchitectsTableP
 
   const fetchArchitects = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    
+    // Buscar arquitetos com contagem de projetos e data do último projeto
+    const { data: architectsData, error } = await supabase
       .from('architects')
-      .select('*')
+      .select('id, name, company, phone')
       .order('name');
     
-    if (!error && data) {
-      setArchitects(data as Architect[]);
+    if (error || !architectsData) {
+      setLoading(false);
+      return;
     }
+
+    // Para cada arquiteto, buscar contagem e última data de projeto
+    const architectsWithStats = await Promise.all(
+      architectsData.map(async (arch) => {
+        const { data: projects, error: projError } = await supabase
+          .from('projects')
+          .select('created_at')
+          .eq('architect_id', arch.id)
+          .order('created_at', { ascending: false });
+
+        return {
+          ...arch,
+          projects_count: projects?.length || 0,
+          last_project_date: projects?.[0]?.created_at || null
+        };
+      })
+    );
+
+    setArchitects(architectsWithStats as Architect[]);
     setLoading(false);
   };
 
@@ -72,6 +94,17 @@ export function ArchitectsTable({ refreshKey, onEdit, onView }: ArchitectsTableP
     setDeleteId(null);
   };
 
+  const handleWhatsAppClick = (phone: string) => {
+    if (!phone) {
+      toast.error('WhatsApp não cadastrado');
+      return;
+    }
+    // Remove caracteres não numéricos
+    const cleanPhone = phone.replace(/\D/g, '');
+    // Abre WhatsApp em nova aba
+    window.open(`https://wa.me/55${cleanPhone}`, '_blank');
+  };
+
   if (loading) {
     return <div className="animate-pulse space-y-4">
       {[...Array(5)].map((_, i) => (
@@ -85,13 +118,11 @@ export function ArchitectsTable({ refreshKey, onEdit, onView }: ArchitectsTableP
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Nome</TableHead>
+            <TableHead>Nome do Arquiteto</TableHead>
             <TableHead>Empresa</TableHead>
-            <TableHead>Cidade</TableHead>
-            <TableHead>Telefone</TableHead>
-            <TableHead>E-mail</TableHead>
-            <TableHead>Tier</TableHead>
-            <TableHead>Status</TableHead>
+            <TableHead>WhatsApp</TableHead>
+            <TableHead className="text-center">Projetos Enviados</TableHead>
+            <TableHead>Data do Último Projeto</TableHead>
             <TableHead className="text-right">Ações</TableHead>
           </TableRow>
         </TableHeader>
@@ -100,18 +131,34 @@ export function ArchitectsTable({ refreshKey, onEdit, onView }: ArchitectsTableP
             <TableRow key={arch.id}>
               <TableCell className="font-medium">{arch.name}</TableCell>
               <TableCell>{arch.company || '-'}</TableCell>
-              <TableCell>{arch.city || '-'}</TableCell>
-              <TableCell>{arch.phone || '-'}</TableCell>
-              <TableCell>{arch.email || '-'}</TableCell>
               <TableCell>
-                <Badge variant={arch.tier === 'A' ? 'default' : 'outline'}>
-                  {arch.tier}
+                {arch.phone ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleWhatsAppClick(arch.phone)}
+                    className="gap-2 hover:text-green-600"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    {arch.phone}
+                  </Button>
+                ) : (
+                  <span className="text-muted-foreground">-</span>
+                )}
+              </TableCell>
+              <TableCell className="text-center">
+                <Badge variant="outline" className="font-semibold">
+                  {arch.projects_count}
                 </Badge>
               </TableCell>
               <TableCell>
-                <Badge variant={arch.active ? 'default' : 'secondary'}>
-                  {arch.active ? 'Ativo' : 'Inativo'}
-                </Badge>
+                {arch.last_project_date ? (
+                  <span className="text-sm">
+                    {format(new Date(arch.last_project_date), "dd/MM/yyyy", { locale: ptBR })}
+                  </span>
+                ) : (
+                  <span className="text-muted-foreground text-sm">Nenhum projeto</span>
+                )}
               </TableCell>
               <TableCell className="text-right">
                 <div className="flex gap-2 justify-end">
