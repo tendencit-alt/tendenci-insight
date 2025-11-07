@@ -65,53 +65,65 @@ export function CreateLeadDialog({ open, onOpenChange, onSuccess }: CreateLeadDi
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validação básica
+    if (!formData.name || !formData.phone) {
+      toast.error("Nome e telefone são obrigatórios");
+      return;
+    }
+
     setLoading(true);
+    console.log('=== INICIANDO CRIAÇÃO DE LEAD ===');
+    console.log('Dados do formulário:', formData);
+    console.log('Arquivos anexados:', files.length);
 
     try {
-      console.log('Iniciando criação de lead...');
-      
       // First create client
+      console.log('1. Criando cliente...');
       const { data: clientData, error: clientError } = await supabase
         .from("clients")
         .insert({
-          name: formData.name,
-          phone: formData.phone,
-          email: formData.email
+          name: formData.name.trim(),
+          phone: formData.phone.trim(),
+          email: formData.email ? formData.email.trim() : null
         })
         .select()
         .single();
 
       if (clientError) {
-        console.error('Erro ao criar cliente:', clientError);
-        throw clientError;
+        console.error('❌ Erro ao criar cliente:', clientError);
+        throw new Error(`Erro ao criar cliente: ${clientError.message}`);
       }
 
-      console.log('Cliente criado:', clientData);
+      console.log('✅ Cliente criado com sucesso:', clientData.id);
 
       // Then create lead
+      console.log('2. Criando lead...');
       const { data: leadData, error: leadError } = await supabase
         .from("leads")
         .insert({
           client_id: clientData.id,
           status: "novo",
-          utm_source: formData.source
+          utm_source: formData.source || null
         })
         .select()
         .single();
 
       if (leadError) {
-        console.error('Erro ao criar lead:', leadError);
-        throw leadError;
+        console.error('❌ Erro ao criar lead:', leadError);
+        throw new Error(`Erro ao criar lead: ${leadError.message}`);
       }
 
-      console.log('Lead criado:', leadData);
+      console.log('✅ Lead criado com sucesso:', leadData.id);
 
       // Upload files if any
       if (files.length > 0) {
-        console.log(`Fazendo upload de ${files.length} arquivo(s)...`);
+        console.log(`3. Fazendo upload de ${files.length} arquivo(s)...`);
         setUploadProgress(`Fazendo upload de ${files.length} arquivo(s)...`);
         
         let uploadedCount = 0;
+        let successCount = 0;
+        
         for (const file of files) {
           uploadedCount++;
           setUploadProgress(`Fazendo upload ${uploadedCount}/${files.length}: ${file.name}`);
@@ -119,7 +131,7 @@ export function CreateLeadDialog({ open, onOpenChange, onSuccess }: CreateLeadDi
           const fileExt = file.name.split('.').pop();
           const fileName = `${leadData.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
           
-          console.log('Fazendo upload do arquivo:', fileName);
+          console.log(`  → Fazendo upload: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`);
           
           const { data: uploadData, error: uploadError } = await supabase.storage
             .from('lead-attachments')
@@ -129,12 +141,12 @@ export function CreateLeadDialog({ open, onOpenChange, onSuccess }: CreateLeadDi
             });
 
           if (uploadError) {
-            console.error('Erro ao fazer upload:', uploadError);
-            toast.error(`Erro ao fazer upload de ${file.name}: ${uploadError.message}`);
+            console.error('  ❌ Erro ao fazer upload:', uploadError);
+            toast.error(`Erro ao fazer upload de ${file.name}`);
             continue;
           }
 
-          console.log('Upload realizado com sucesso:', uploadData);
+          console.log('  ✅ Upload realizado:', uploadData.path);
 
           // Save attachment record
           const { error: attachmentError } = await supabase
@@ -148,19 +160,25 @@ export function CreateLeadDialog({ open, onOpenChange, onSuccess }: CreateLeadDi
             });
 
           if (attachmentError) {
-            console.error('Erro ao salvar registro de anexo:', attachmentError);
+            console.error('  ❌ Erro ao registrar anexo:', attachmentError);
             toast.error(`Erro ao registrar anexo ${file.name}`);
           } else {
-            console.log('Anexo registrado com sucesso');
+            console.log('  ✅ Anexo registrado no banco');
+            successCount++;
           }
         }
         
+        console.log(`✅ Upload concluído: ${successCount}/${files.length} arquivo(s)`);
         setUploadProgress('');
       }
 
+      console.log('=== LEAD CRIADO COM SUCESSO ===');
       toast.success("Lead criado com sucesso!");
+      
       onSuccess?.();
       onOpenChange(false);
+      
+      // Reset form
       setFormData({
         name: "",
         phone: "",
@@ -171,8 +189,9 @@ export function CreateLeadDialog({ open, onOpenChange, onSuccess }: CreateLeadDi
       });
       setFiles([]);
       setUploadProgress("");
+      
     } catch (error: any) {
-      console.error('Erro geral:', error);
+      console.error('=== ERRO GERAL ===', error);
       toast.error(error.message || "Erro ao criar lead");
     } finally {
       setLoading(false);
