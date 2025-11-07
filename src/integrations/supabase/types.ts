@@ -101,9 +101,89 @@ export type Database = {
         }
         Relationships: []
       }
+      architect_files: {
+        Row: {
+          architect_id: string
+          file_name: string
+          file_path: string
+          file_size: number
+          file_type: string
+          id: string
+          uploaded_at: string | null
+          uploaded_by: string | null
+        }
+        Insert: {
+          architect_id: string
+          file_name: string
+          file_path: string
+          file_size: number
+          file_type: string
+          id?: string
+          uploaded_at?: string | null
+          uploaded_by?: string | null
+        }
+        Update: {
+          architect_id?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          file_type?: string
+          id?: string
+          uploaded_at?: string | null
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "architect_files_architect_id_fkey"
+            columns: ["architect_id"]
+            isOneToOne: false
+            referencedRelation: "architects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      architect_history: {
+        Row: {
+          architect_id: string
+          created_at: string | null
+          created_by: string | null
+          description: string
+          event_type: string
+          id: string
+        }
+        Insert: {
+          architect_id: string
+          created_at?: string | null
+          created_by?: string | null
+          description: string
+          event_type: string
+          id?: string
+        }
+        Update: {
+          architect_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string
+          event_type?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "architect_history_architect_id_fkey"
+            columns: ["architect_id"]
+            isOneToOne: false
+            referencedRelation: "architects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       architects: {
         Row: {
+          active: boolean | null
           birthday: string | null
+          city: string | null
+          commission_percent: number | null
+          company: string | null
           created_at: string | null
           created_by: string | null
           email: string | null
@@ -112,9 +192,15 @@ export type Database = {
           name: string
           notes: string | null
           phone: string | null
+          tier: string | null
+          updated_at: string | null
         }
         Insert: {
+          active?: boolean | null
           birthday?: string | null
+          city?: string | null
+          commission_percent?: number | null
+          company?: string | null
           created_at?: string | null
           created_by?: string | null
           email?: string | null
@@ -123,9 +209,15 @@ export type Database = {
           name: string
           notes?: string | null
           phone?: string | null
+          tier?: string | null
+          updated_at?: string | null
         }
         Update: {
+          active?: boolean | null
           birthday?: string | null
+          city?: string | null
+          commission_percent?: number | null
+          company?: string | null
           created_at?: string | null
           created_by?: string | null
           email?: string | null
@@ -134,6 +226,8 @@ export type Database = {
           name?: string
           notes?: string | null
           phone?: string | null
+          tier?: string | null
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -808,6 +902,46 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      architect_approved_value: {
+        Args: never
+        Returns: {
+          name: string
+          sum_value: number
+        }[]
+      }
+      architect_birthdays_upcoming: {
+        Args: never
+        Returns: {
+          birthday: string
+          city: string
+          days_remaining: number
+          email: string
+          id: string
+          name: string
+          phone: string
+          tier: string
+        }[]
+      }
+      architect_inactivity: {
+        Args: { days_threshold?: number }
+        Returns: {
+          contact_count: number
+          days_since_last: number
+          email: string
+          id: string
+          last_project_at: string
+          name: string
+          phone: string
+        }[]
+      }
+      architect_projects_count: {
+        Args: never
+        Returns: {
+          count: number
+          name: string
+        }[]
+      }
+      architects_aggregates: { Args: never; Returns: Json }
       get_user_role: {
         Args: { user_id: string }
         Returns: Database["public"]["Enums"]["user_role"]
