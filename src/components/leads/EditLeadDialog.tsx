@@ -167,10 +167,9 @@ export function EditLeadDialog({ lead, open, onOpenChange, onSuccess }: EditLead
               <Label htmlFor="edit-responsible">Responsável</Label>
               <Select value={formData.responsible} onValueChange={(v) => setFormData({ ...formData, responsible: v })}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione o responsável" />
+                  <SelectValue placeholder="Não atribuído" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Não atribuído</SelectItem>
                   {responsaveis.map((resp) => (
                     <SelectItem key={resp.id} value={resp.id}>
                       {resp.name}
@@ -178,6 +177,17 @@ export function EditLeadDialog({ lead, open, onOpenChange, onSuccess }: EditLead
                   ))}
                 </SelectContent>
               </Select>
+              {formData.responsible && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setFormData({ ...formData, responsible: "" })}
+                  className="text-xs text-muted-foreground hover:text-foreground"
+                >
+                  Remover responsável
+                </Button>
+              )}
             </div>
           </div>
 
