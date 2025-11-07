@@ -112,26 +112,26 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess }: CreatePro
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.client_id) {
-      toast.error("Nome do projeto e cliente são obrigatórios");
+    if (!formData.name) {
+      toast.error("Nome do projeto é obrigatório");
       return;
     }
 
     setLoading(true);
 
     try {
-      const { data, error } = await supabase
-        .from("projects")
-        .insert({
-          name: formData.name,
-          client_id: formData.client_id,
-          architect_id: formData.architect_id || null,
-          stage: formData.stage,
-          value: formData.value ? parseFloat(formData.value) : 0,
-          deadline: formData.deadline || null
-        })
-        .select()
-        .single();
+        const { data, error } = await supabase
+          .from("projects")
+          .insert({
+            name: formData.name,
+            client_id: formData.client_id && formData.client_id !== 'none' ? formData.client_id : null,
+            architect_id: formData.architect_id || null,
+            stage: formData.stage,
+            value: formData.value ? parseFloat(formData.value) : 0,
+            deadline: formData.deadline || null
+          })
+          .select()
+          .single();
 
       if (error) throw error;
 
@@ -190,12 +190,13 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess }: CreatePro
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="client">Cliente *</Label>
+              <Label htmlFor="client">Cliente</Label>
               <Select value={formData.client_id} onValueChange={(v) => setFormData({ ...formData, client_id: v })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o cliente" />
+                <SelectTrigger className="bg-background">
+                  <SelectValue placeholder="Selecione o cliente (opcional)" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-popover z-50">
+                  <SelectItem value="none">Sem cliente vinculado</SelectItem>
                   {leads.map((lead) => (
                     <SelectItem key={lead.id} value={lead.id}>
                       {lead.name}
@@ -208,10 +209,10 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess }: CreatePro
             <div className="space-y-2">
               <Label htmlFor="architect">Arquiteto</Label>
               <Select value={formData.architect_id} onValueChange={(v) => setFormData({ ...formData, architect_id: v })}>
-                <SelectTrigger>
+                <SelectTrigger className="bg-background">
                   <SelectValue placeholder="Selecione o arquiteto" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-popover z-50">
                   {architects.map((arch) => (
                     <SelectItem key={arch.id} value={arch.id}>
                       {arch.name}
@@ -224,10 +225,10 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess }: CreatePro
             <div className="space-y-2">
               <Label htmlFor="stage">Estágio *</Label>
               <Select value={formData.stage} onValueChange={(v) => setFormData({ ...formData, stage: v })}>
-                <SelectTrigger>
+                <SelectTrigger className="bg-background">
                   <SelectValue placeholder="Selecione o estágio" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-popover z-50">
                   <SelectItem value="captado">Captado</SelectItem>
                   <SelectItem value="orçamento">Em Orçamento</SelectItem>
                   <SelectItem value="aprovado">Aprovado</SelectItem>
