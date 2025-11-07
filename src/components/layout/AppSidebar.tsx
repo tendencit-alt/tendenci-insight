@@ -1,7 +1,6 @@
 import { 
   LayoutDashboard, 
   Users, 
-  Briefcase, 
   TrendingUp, 
   MessageSquare,
   Settings,
@@ -24,7 +23,6 @@ import tendenciLogo from "@/assets/tendenci-logo.png";
 const menuItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Leads", url: "/leads", icon: TrendingUp },
-  { title: "Negócios", url: "/deals", icon: Briefcase },
   { title: "Projetos", url: "/projects", icon: Package },
   { title: "Arquitetos", url: "/architects", icon: Users },
   { title: "CRM KANBAN", url: "/kanban", icon: MessageSquare },
