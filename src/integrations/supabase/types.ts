@@ -537,6 +537,120 @@ export type Database = {
         }
         Relationships: []
       }
+      project_files: {
+        Row: {
+          file_name: string
+          file_path: string
+          file_size: number
+          file_type: string
+          id: string
+          project_id: string
+          uploaded_at: string | null
+          uploaded_by: string | null
+        }
+        Insert: {
+          file_name: string
+          file_path: string
+          file_size: number
+          file_type: string
+          id?: string
+          project_id: string
+          uploaded_at?: string | null
+          uploaded_by?: string | null
+        }
+        Update: {
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          file_type?: string
+          id?: string
+          project_id?: string
+          uploaded_at?: string | null
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_files_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_history: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description: string
+          event_type: string
+          id: string
+          project_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          description: string
+          event_type: string
+          id?: string
+          project_id: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string
+          event_type?: string
+          id?: string
+          project_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_history_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_quotes: {
+        Row: {
+          created_at: string | null
+          id: string
+          item: string
+          project_id: string
+          quantity: number
+          total: number | null
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          item: string
+          project_id: string
+          quantity?: number
+          total?: number | null
+          unit_price?: number
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          item?: string
+          project_id?: string
+          quantity?: number
+          total?: number | null
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_quotes_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           architect_id: string | null
@@ -697,6 +811,8 @@ export type Database = {
       }
       is_admin: { Args: never; Returns: boolean }
       leads_aggregates: { Args: never; Returns: Json }
+      project_deadline_alerts: { Args: never; Returns: Json }
+      projects_aggregates: { Args: never; Returns: Json }
       user_has_role: { Args: { required_role: string }; Returns: boolean }
       user_has_role_check: {
         Args: { required_role: Database["public"]["Enums"]["user_role"] }

@@ -1,0 +1,250 @@
+import { useEffect, useState } from "react";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { ProjectDetailSheet } from "./ProjectDetailSheet";
+
+interface ProjectsBoardProps {
+  filters: any;
+}
+
+export function ProjectsBoard({ filters }: ProjectsBoardProps) {
+  const [projects, setProjects] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedProject, setSelectedProject] = useState<any>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
+
+  useEffect(() => {
+    fetchProjects();
+  }, [filters]);
+
+  const fetchProjects = async () => {
+    setLoading(true);
+    let query = supabase
+      .from("projects")
+      .select(`
+        *,
+        client:clients(name, phone),
+        architect:architects(name),
+        deal:deals(title)
+      `)
+      .order("created_at", { ascending: false });
+
+    if (filters.stage !== "Todos") {
+      query = query.eq("stage", filters.stage);
+    }
+
+    if (filters.search) {
+      query = query.or(`name.ilike.%${filters.search}%`);
+    }
+
+    const { data, error } = await query;
+    
+    if (!error && data) {
+      setProjects(data);
+    }
+    setLoading(false);
+  };
+
+  const getStageColor = (stage: string) => {
+    const colors: Record<string, string> = {
+      captado: "bg-blue-500",
+      orçamento: "bg-yellow-500",
+      aprovado: "bg-green-500",
+      perdido: "bg-red-500"
+    };
+    return colors[stage] || "bg-gray-500";
+  };
+
+  const groupedProjects = {
+    captado: projects.filter(p => p.stage === "captado"),
+    orçamento: projects.filter(p => p.stage === "orçamento"),
+    aprovado: projects.filter(p => p.stage === "aprovado"),
+    perdido: projects.filter(p => p.stage === "perdido")
+  };
+
+  const handleCardClick = (project: any) => {
+    setSelectedProject(project);
+    setDetailOpen(true);
+  };
+
+  if (loading) {
+    return <div className="text-center py-8">Carregando projetos...</div>;
+  }
+
+  return (
+    <>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Captado */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 rounded-lg">
+            <span className="text-2xl">🟦</span>
+            <h3 className="font-semibold text-blue-700 dark:text-blue-400">
+              Captado ({groupedProjects.captado.length})
+            </h3>
+          </div>
+          <div className="space-y-3">
+            {groupedProjects.captado.map((project) => (
+              <Card
+                key={project.id}
+                className="p-4 cursor-pointer hover:shadow-lg transition-all duration-200 border-l-4 border-l-blue-500"
+                onClick={() => handleCardClick(project)}
+              >
+                <h4 className="font-semibold mb-2">{project.name || "Sem título"}</h4>
+                <p className="text-sm text-muted-foreground mb-2">
+                  {project.client?.name || "Cliente não definido"}
+                </p>
+                <div className="flex items-center justify-between">
+                  <Badge className={getStageColor(project.stage)}>
+                    R$ {project.value?.toLocaleString('pt-BR') || "0"}
+                  </Badge>
+                  <span className="text-xs text-muted-foreground">
+                    {project.sent_at ? formatDistanceToNow(new Date(project.sent_at), { addSuffix: true, locale: ptBR }) : "Sem prazo"}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  {project.architect?.name || "Sem responsável"}
+                </p>
+              </Card>
+            ))}
+            {groupedProjects.captado.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                Nenhum projeto captado
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Em Orçamento */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 px-4 py-2 bg-yellow-500/10 rounded-lg">
+            <span className="text-2xl">🟨</span>
+            <h3 className="font-semibold text-yellow-700 dark:text-yellow-400">
+              Em Orçamento ({groupedProjects.orçamento.length})
+            </h3>
+          </div>
+          <div className="space-y-3">
+            {groupedProjects.orçamento.map((project) => (
+              <Card
+                key={project.id}
+                className="p-4 cursor-pointer hover:shadow-lg transition-all duration-200 border-l-4 border-l-yellow-500"
+                onClick={() => handleCardClick(project)}
+              >
+                <h4 className="font-semibold mb-2">{project.name || "Sem título"}</h4>
+                <p className="text-sm text-muted-foreground mb-2">
+                  {project.client?.name || "Cliente não definido"}
+                </p>
+                <div className="flex items-center justify-between">
+                  <Badge className={getStageColor(project.stage)}>
+                    R$ {project.value?.toLocaleString('pt-BR') || "0"}
+                  </Badge>
+                  <span className="text-xs text-muted-foreground">
+                    {project.sent_at ? formatDistanceToNow(new Date(project.sent_at), { addSuffix: true, locale: ptBR }) : "Sem prazo"}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  {project.architect?.name || "Sem responsável"}
+                </p>
+              </Card>
+            ))}
+            {groupedProjects.orçamento.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                Nenhum projeto em orçamento
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Aprovado */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 px-4 py-2 bg-green-500/10 rounded-lg">
+            <span className="text-2xl">🟩</span>
+            <h3 className="font-semibold text-green-700 dark:text-green-400">
+              Aprovado ({groupedProjects.aprovado.length})
+            </h3>
+          </div>
+          <div className="space-y-3">
+            {groupedProjects.aprovado.map((project) => (
+              <Card
+                key={project.id}
+                className="p-4 cursor-pointer hover:shadow-lg transition-all duration-200 border-l-4 border-l-green-500"
+                onClick={() => handleCardClick(project)}
+              >
+                <h4 className="font-semibold mb-2">{project.name || "Sem título"}</h4>
+                <p className="text-sm text-muted-foreground mb-2">
+                  {project.client?.name || "Cliente não definido"}
+                </p>
+                <div className="flex items-center justify-between">
+                  <Badge className={getStageColor(project.stage)}>
+                    R$ {project.value?.toLocaleString('pt-BR') || "0"}
+                  </Badge>
+                  <span className="text-xs text-muted-foreground">
+                    {project.sent_at ? formatDistanceToNow(new Date(project.sent_at), { addSuffix: true, locale: ptBR }) : "Sem prazo"}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  {project.architect?.name || "Sem responsável"}
+                </p>
+              </Card>
+            ))}
+            {groupedProjects.aprovado.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                Nenhum projeto aprovado
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Perdido */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 px-4 py-2 bg-red-500/10 rounded-lg">
+            <span className="text-2xl">🟥</span>
+            <h3 className="font-semibold text-red-700 dark:text-red-400">
+              Perdido ({groupedProjects.perdido.length})
+            </h3>
+          </div>
+          <div className="space-y-3">
+            {groupedProjects.perdido.map((project) => (
+              <Card
+                key={project.id}
+                className="p-4 cursor-pointer hover:shadow-lg transition-all duration-200 border-l-4 border-l-red-500"
+                onClick={() => handleCardClick(project)}
+              >
+                <h4 className="font-semibold mb-2">{project.name || "Sem título"}</h4>
+                <p className="text-sm text-muted-foreground mb-2">
+                  {project.client?.name || "Cliente não definido"}
+                </p>
+                <div className="flex items-center justify-between">
+                  <Badge className={getStageColor(project.stage)}>
+                    R$ {project.value?.toLocaleString('pt-BR') || "0"}
+                  </Badge>
+                  <span className="text-xs text-muted-foreground">
+                    {project.sent_at ? formatDistanceToNow(new Date(project.sent_at), { addSuffix: true, locale: ptBR }) : "Sem prazo"}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  {project.architect?.name || "Sem responsável"}
+                </p>
+              </Card>
+            ))}
+            {groupedProjects.perdido.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                Nenhum projeto perdido
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {selectedProject && (
+        <ProjectDetailSheet
+          project={selectedProject}
+          open={detailOpen}
+          onOpenChange={setDetailOpen}
+        />
+      )}
+    </>
+  );
+}
