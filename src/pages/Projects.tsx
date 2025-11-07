@@ -9,6 +9,7 @@ import { ProjectsBoard } from "@/components/projects/ProjectsBoard";
 import { ProjectsTable } from "@/components/projects/ProjectsTable";
 import { CreateProjectDialog } from "@/components/projects/CreateProjectDialog";
 import { ProjectsFilters } from "@/components/projects/ProjectsFilters";
+import { DeadlineAlerts } from "@/components/projects/DeadlineAlerts";
 
 const Projects = () => {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -147,6 +148,9 @@ const Projects = () => {
             <p className="text-3xl font-bold text-purple-600">{alerts.overdue_count}</p>
           </Card>
         </div>
+
+        {/* Deadline Alerts */}
+        <DeadlineAlerts refreshKey={refreshKey} />
 
         {/* Tabs */}
         <Tabs defaultValue="board" className="w-full">

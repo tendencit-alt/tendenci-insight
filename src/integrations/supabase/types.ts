@@ -815,6 +815,19 @@ export type Database = {
       is_admin: { Args: never; Returns: boolean }
       leads_aggregates: { Args: never; Returns: Json }
       project_deadline_alerts: { Args: never; Returns: Json }
+      project_deadline_alerts_detailed: {
+        Args: never
+        Returns: {
+          architect_name: string
+          client_name: string
+          days_remaining: number
+          deadline: string
+          id: string
+          name: string
+          stage: string
+          status: string
+        }[]
+      }
       projects_aggregates: { Args: never; Returns: Json }
       user_has_role: { Args: { required_role: string }; Returns: boolean }
       user_has_role_check: {

@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useWebhookSync } from "@/hooks/useWebhookSync";
+import { Upload, X, FileText } from "lucide-react";
+import { Card } from "@/components/ui/card";
 
 interface CreateProjectDialogProps {
   open: boolean;
@@ -17,8 +19,10 @@ interface CreateProjectDialogProps {
 
 export function CreateProjectDialog({ open, onOpenChange, onSuccess }: CreateProjectDialogProps) {
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [leads, setLeads] = useState<any[]>([]);
   const [architects, setArchitects] = useState<any[]>([]);
+  const [files, setFiles] = useState<File[]>([]);
   const { notifyProjectCreated } = useWebhookSync();
   const [formData, setFormData] = useState({
     name: "",
@@ -55,8 +59,54 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess }: CreatePro
       .order('name');
     
     if (!error && data) {
+      // Filtrar apenas arquitetos (não vendedores)
       setArchitects(data);
     }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const newFiles = Array.from(e.target.files);
+      setFiles(prev => [...prev, ...newFiles]);
+    }
+  };
+
+  const handleFileRemove = (index: number) => {
+    setFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const uploadFiles = async (projectId: string) => {
+    if (files.length === 0) return;
+
+    setUploading(true);
+    const { data: { user } } = await supabase.auth.getUser();
+
+    for (const file of files) {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${projectId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      
+      try {
+        const { error: uploadError } = await supabase.storage
+          .from('project-files')
+          .upload(fileName, file);
+
+        if (uploadError) throw uploadError;
+
+        await supabase.from('project_files').insert({
+          project_id: projectId,
+          file_name: file.name,
+          file_path: fileName,
+          file_type: file.type,
+          file_size: file.size,
+          uploaded_by: user?.id
+        });
+      } catch (error: any) {
+        console.error('Erro ao fazer upload:', error);
+        toast.error(`Erro ao enviar ${file.name}`);
+      }
+    }
+
+    setUploading(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -85,6 +135,11 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess }: CreatePro
 
       if (error) throw error;
 
+      // Upload de arquivos
+      if (data && files.length > 0) {
+        await uploadFiles(data.id);
+      }
+
       // Notificar webhook n8n (se configurado)
       if (data) {
         notifyProjectCreated(data);
@@ -105,6 +160,7 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess }: CreatePro
         deadline: "",
         notes: ""
       });
+      setFiles([]);
       
     } catch (error: any) {
       toast.error(error.message || "Erro ao criar projeto");
@@ -212,13 +268,67 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess }: CreatePro
                 rows={3}
               />
             </div>
+
+            <div className="space-y-2 col-span-2">
+              <Label>Anexar Arquivos</Label>
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => document.getElementById('file-upload')?.click()}
+                    className="gap-2"
+                  >
+                    <Upload className="w-4 h-4" />
+                    Escolher Arquivos
+                  </Button>
+                  <input
+                    id="file-upload"
+                    type="file"
+                    multiple
+                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
+                  <span className="text-sm text-muted-foreground">
+                    PDF, JPG, PNG, DOC
+                  </span>
+                </div>
+
+                {files.length > 0 && (
+                  <div className="space-y-2">
+                    {files.map((file, index) => (
+                      <Card key={index} className="p-3 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <FileText className="w-5 h-5 text-primary" />
+                          <div>
+                            <p className="text-sm font-medium">{file.name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {(file.size / 1024).toFixed(1)} KB
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleFileRemove(index)}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
           <div className="flex gap-3 pt-4">
-            <Button type="submit" className="flex-1" disabled={loading}>
-              {loading ? "Salvando..." : "Salvar"}
+            <Button type="submit" className="flex-1" disabled={loading || uploading}>
+              {uploading ? "Enviando arquivos..." : loading ? "Salvando..." : "Salvar"}
             </Button>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={loading || uploading}>
               Cancelar
             </Button>
           </div>
