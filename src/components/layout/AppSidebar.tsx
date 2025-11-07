@@ -27,7 +27,7 @@ const menuItems = [
   { title: "Negócios", url: "/deals", icon: Briefcase },
   { title: "Projetos", url: "/projects", icon: Package },
   { title: "Arquitetos", url: "/architects", icon: Users },
-  { title: "Cadências", url: "/cadences", icon: MessageSquare },
+  { title: "CRM KANBAN", url: "/cadences", icon: MessageSquare },
   { title: "Configurações", url: "/settings", icon: Settings },
 ];
 
