@@ -18,6 +18,7 @@ interface CreateLeadDialogProps {
 
 export function CreateLeadDialog({ open, onOpenChange, onSuccess }: CreateLeadDialogProps) {
   const [loading, setLoading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<string>("");
   const [files, setFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
@@ -33,17 +34,28 @@ export function CreateLeadDialog({ open, onOpenChange, onSuccess }: CreateLeadDi
     if (e.target.files) {
       const newFiles = Array.from(e.target.files).filter(file => {
         const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'application/pdf'];
+        
         if (!validTypes.includes(file.type)) {
-          toast.error(`Arquivo ${file.name} não é suportado. Use PNG, JPG ou PDF.`);
+          toast.error(`Arquivo "${file.name}" não é suportado. Use PNG, JPG ou PDF.`);
           return false;
         }
+        
         if (file.size > 20 * 1024 * 1024) {
-          toast.error(`Arquivo ${file.name} é muito grande. Máximo 20MB.`);
+          toast.error(`Arquivo "${file.name}" é muito grande. Máximo 20MB.`);
           return false;
         }
+        
+        console.log('Arquivo validado:', file.name, file.type, (file.size / 1024).toFixed(2) + ' KB');
         return true;
       });
-      setFiles(prev => [...prev, ...newFiles]);
+      
+      if (newFiles.length > 0) {
+        setFiles(prev => [...prev, ...newFiles]);
+        toast.success(`${newFiles.length} arquivo(s) selecionado(s)`);
+      }
+      
+      // Reset input para permitir selecionar o mesmo arquivo novamente
+      e.target.value = '';
     }
   };
 
@@ -97,8 +109,13 @@ export function CreateLeadDialog({ open, onOpenChange, onSuccess }: CreateLeadDi
       // Upload files if any
       if (files.length > 0) {
         console.log(`Fazendo upload de ${files.length} arquivo(s)...`);
+        setUploadProgress(`Fazendo upload de ${files.length} arquivo(s)...`);
         
+        let uploadedCount = 0;
         for (const file of files) {
+          uploadedCount++;
+          setUploadProgress(`Fazendo upload ${uploadedCount}/${files.length}: ${file.name}`);
+          
           const fileExt = file.name.split('.').pop();
           const fileName = `${leadData.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
           
@@ -137,6 +154,8 @@ export function CreateLeadDialog({ open, onOpenChange, onSuccess }: CreateLeadDi
             console.log('Anexo registrado com sucesso');
           }
         }
+        
+        setUploadProgress('');
       }
 
       toast.success("Lead criado com sucesso!");
@@ -151,11 +170,13 @@ export function CreateLeadDialog({ open, onOpenChange, onSuccess }: CreateLeadDi
         interest: ""
       });
       setFiles([]);
+      setUploadProgress("");
     } catch (error: any) {
       console.error('Erro geral:', error);
       toast.error(error.message || "Erro ao criar lead");
     } finally {
       setLoading(false);
+      setUploadProgress("");
     }
   };
 
@@ -272,11 +293,15 @@ export function CreateLeadDialog({ open, onOpenChange, onSuccess }: CreateLeadDi
               <div className="flex flex-wrap gap-2">
                 {files.map((file, index) => (
                   <Badge key={index} variant="secondary" className="gap-2 py-1.5 px-3">
-                    {file.name}
+                    <span className="max-w-[200px] truncate">{file.name}</span>
+                    <span className="text-xs text-muted-foreground">
+                      ({(file.size / 1024).toFixed(1)} KB)
+                    </span>
                     <button
                       type="button"
                       onClick={() => removeFile(index)}
                       className="ml-1 hover:text-destructive"
+                      disabled={loading}
                     >
                       <X className="w-3 h-3" />
                     </button>
@@ -284,11 +309,14 @@ export function CreateLeadDialog({ open, onOpenChange, onSuccess }: CreateLeadDi
                 ))}
               </div>
             )}
+            <p className="text-xs text-muted-foreground">
+              📎 Formatos aceitos: PNG, JPG, PDF • Tamanho máximo: 20MB por arquivo
+            </p>
           </div>
 
           <div className="flex gap-3 pt-4">
             <Button type="submit" className="flex-1" disabled={loading}>
-              {loading ? "Salvando..." : "Salvar"}
+              {loading ? (uploadProgress || "Salvando...") : "Salvar"}
             </Button>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
               Cancelar
