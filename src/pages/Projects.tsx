@@ -79,6 +79,9 @@ const Projects = () => {
         <div className="flex flex-wrap gap-4 items-center justify-between">
           <ProjectsFilters filters={filters} onFiltersChange={setFilters} />
           <div className="flex gap-3">
+            <Button onClick={() => window.location.href = '/projects/settings'} variant="outline" className="gap-2">
+              ⚙️ Configurações
+            </Button>
             <Button onClick={handleRefresh} variant="outline" className="gap-2">
               <RefreshCw className="w-4 h-4" />
               Atualizar

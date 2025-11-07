@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useWebhookSync } from "@/hooks/useWebhookSync";
 
 interface ProjectDetailSheetProps {
   project: any;
@@ -24,6 +25,7 @@ export function ProjectDetailSheet({ project, open, onOpenChange }: ProjectDetai
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { notifyFileUploaded } = useWebhookSync();
 
   useEffect(() => {
     if (open && project) {
@@ -116,6 +118,9 @@ export function ProjectDetailSheet({ project, open, onOpenChange }: ProjectDetai
 
       if (dbError) throw dbError;
 
+      // Notificar webhook n8n (se configurado)
+      notifyFileUploaded(project, file.name);
+
       toast.success("Arquivo enviado com sucesso!");
       fetchFiles();
     } catch (error: any) {
@@ -200,7 +205,7 @@ export function ProjectDetailSheet({ project, open, onOpenChange }: ProjectDetai
               <div>
                 <span className="text-sm text-muted-foreground">Prazo</span>
                 <p className="font-medium">
-                  {project.sent_at ? new Date(project.sent_at).toLocaleDateString('pt-BR') : "Sem prazo"}
+                  {project.deadline ? new Date(project.deadline).toLocaleDateString('pt-BR') : "Sem prazo"}
                 </p>
               </div>
             </div>

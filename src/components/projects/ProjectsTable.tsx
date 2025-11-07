@@ -159,7 +159,7 @@ export function ProjectsTable({ filters }: ProjectsTableProps) {
                     <TableCell>{project.architect?.name || "Não atribuído"}</TableCell>
                     <TableCell>{getStageBadge(project.stage)}</TableCell>
                     <TableCell>R$ {project.value?.toLocaleString('pt-BR') || "0"}</TableCell>
-                    <TableCell>{project.sent_at ? format(new Date(project.sent_at), "dd/MM/yyyy", { locale: ptBR }) : "Sem prazo"}</TableCell>
+                    <TableCell>{project.deadline ? format(new Date(project.deadline), "dd/MM/yyyy", { locale: ptBR }) : "Sem prazo"}</TableCell>
                     <TableCell>{format(new Date(project.created_at), "dd/MM/yyyy", { locale: ptBR })}</TableCell>
                     <TableCell className="text-muted-foreground text-sm">
                       {formatDistanceToNow(new Date(project.created_at), { addSuffix: true, locale: ptBR })}

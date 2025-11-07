@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useWebhookSync } from "@/hooks/useWebhookSync";
 
 interface CreateProjectDialogProps {
   open: boolean;
@@ -18,13 +19,14 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess }: CreatePro
   const [loading, setLoading] = useState(false);
   const [leads, setLeads] = useState<any[]>([]);
   const [architects, setArchitects] = useState<any[]>([]);
+  const { notifyProjectCreated } = useWebhookSync();
   const [formData, setFormData] = useState({
     name: "",
     client_id: "",
     architect_id: "",
     stage: "captado",
     value: "",
-    sent_at: "",
+    deadline: "",
     notes: ""
   });
 
@@ -68,7 +70,7 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess }: CreatePro
     setLoading(true);
 
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("projects")
         .insert({
           name: formData.name,
@@ -76,10 +78,17 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess }: CreatePro
           architect_id: formData.architect_id || null,
           stage: formData.stage,
           value: formData.value ? parseFloat(formData.value) : 0,
-          sent_at: formData.sent_at || null
-        });
+          deadline: formData.deadline || null
+        })
+        .select()
+        .single();
 
       if (error) throw error;
+
+      // Notificar webhook n8n (se configurado)
+      if (data) {
+        notifyProjectCreated(data);
+      }
 
       toast.success("Projeto criado com sucesso!");
       
@@ -93,7 +102,7 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess }: CreatePro
         architect_id: "",
         stage: "captado",
         value: "",
-        sent_at: "",
+        deadline: "",
         notes: ""
       });
       
@@ -184,12 +193,12 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess }: CreatePro
             </div>
 
             <div className="space-y-2 col-span-2">
-              <Label htmlFor="sent_at">Prazo de Entrega</Label>
+              <Label htmlFor="deadline">Prazo de Entrega</Label>
               <Input
-                id="sent_at"
+                id="deadline"
                 type="date"
-                value={formData.sent_at}
-                onChange={(e) => setFormData({ ...formData, sent_at: e.target.value })}
+                value={formData.deadline}
+                onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
               />
             </div>
 

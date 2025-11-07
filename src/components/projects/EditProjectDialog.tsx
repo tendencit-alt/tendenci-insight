@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useWebhookSync } from "@/hooks/useWebhookSync";
 
 interface EditProjectDialogProps {
   project: any;
@@ -18,12 +19,13 @@ interface EditProjectDialogProps {
 export function EditProjectDialog({ project, open, onOpenChange, onSuccess }: EditProjectDialogProps) {
   const [loading, setLoading] = useState(false);
   const [architects, setArchitects] = useState<any[]>([]);
+  const { notifyStageChanged, notifyDeadlineChanged } = useWebhookSync();
   const [formData, setFormData] = useState({
     name: "",
     architect_id: "",
     stage: "",
     value: "",
-    sent_at: ""
+    deadline: ""
   });
 
   useEffect(() => {
@@ -39,7 +41,7 @@ export function EditProjectDialog({ project, open, onOpenChange, onSuccess }: Ed
         architect_id: project.architect_id || "",
         stage: project.stage || "captado",
         value: project.value?.toString() || "",
-        sent_at: project.sent_at ? project.sent_at.split('T')[0] : ""
+        deadline: project.deadline ? project.deadline.split('T')[0] : ""
       });
     }
   }, [project]);
@@ -60,6 +62,10 @@ export function EditProjectDialog({ project, open, onOpenChange, onSuccess }: Ed
     setLoading(true);
 
     try {
+      // Capturar valores antigos para webhook
+      const oldStage = project.stage;
+      const oldDeadline = project.deadline;
+
       const { error } = await supabase
         .from("projects")
         .update({
@@ -67,11 +73,19 @@ export function EditProjectDialog({ project, open, onOpenChange, onSuccess }: Ed
           architect_id: formData.architect_id || null,
           stage: formData.stage,
           value: formData.value ? parseFloat(formData.value) : 0,
-          sent_at: formData.sent_at || null
+          deadline: formData.deadline || null
         })
         .eq("id", project.id);
 
       if (error) throw error;
+
+      // Notificar webhooks n8n (se configurado)
+      if (oldStage !== formData.stage) {
+        notifyStageChanged(project, oldStage, formData.stage);
+      }
+      if (oldDeadline !== formData.deadline) {
+        notifyDeadlineChanged(project, oldDeadline, formData.deadline || null);
+      }
 
       toast.success("Projeto atualizado com sucesso!");
       onSuccess();
@@ -144,12 +158,12 @@ export function EditProjectDialog({ project, open, onOpenChange, onSuccess }: Ed
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="edit-sent_at">Prazo de Entrega</Label>
+              <Label htmlFor="edit-deadline">Prazo de Entrega</Label>
               <Input
-                id="edit-sent_at"
+                id="edit-deadline"
                 type="date"
-                value={formData.sent_at}
-                onChange={(e) => setFormData({ ...formData, sent_at: e.target.value })}
+                value={formData.deadline}
+                onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
               />
             </div>
           </div>

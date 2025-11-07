@@ -576,13 +576,6 @@ export type Database = {
             referencedRelation: "projects"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "project_files_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects_overview"
-            referencedColumns: ["id"]
-          },
         ]
       }
       project_history: {
@@ -616,13 +609,6 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "project_history_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects_overview"
             referencedColumns: ["id"]
           },
         ]
@@ -661,13 +647,6 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "project_quotes_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects_overview"
             referencedColumns: ["id"]
           },
         ]
@@ -826,23 +805,7 @@ export type Database = {
       }
     }
     Views: {
-      projects_overview: {
-        Row: {
-          architect_name: string | null
-          client_name: string | null
-          client_phone: string | null
-          created_at: string | null
-          deadline: string | null
-          files_count: number | null
-          id: string | null
-          name: string | null
-          quotes_count: number | null
-          quotes_total: number | null
-          stage: string | null
-          value: number | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       get_user_role: {

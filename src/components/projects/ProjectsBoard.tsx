@@ -101,7 +101,7 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
                     R$ {project.value?.toLocaleString('pt-BR') || "0"}
                   </Badge>
                   <span className="text-xs text-muted-foreground">
-                    {project.sent_at ? formatDistanceToNow(new Date(project.sent_at), { addSuffix: true, locale: ptBR }) : "Sem prazo"}
+                    {project.deadline ? formatDistanceToNow(new Date(project.deadline), { addSuffix: true, locale: ptBR }) : "Sem prazo"}
                   </span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
