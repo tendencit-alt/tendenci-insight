@@ -25,6 +25,8 @@ interface Architect {
   phone: string;
   projects_count: number;
   last_project_date: string | null;
+  created_at: string;
+  days_without_project: number;
 }
 
 interface ArchitectsTableProps {
@@ -45,10 +47,10 @@ export function ArchitectsTable({ refreshKey, onEdit, onView }: ArchitectsTableP
   const fetchArchitects = async () => {
     setLoading(true);
     
-    // Buscar arquitetos com contagem de projetos e data do último projeto
+    // Buscar arquitetos com data de criação
     const { data: architectsData, error } = await supabase
       .from('architects')
-      .select('id, name, company, phone')
+      .select('id, name, company, phone, created_at')
       .order('name');
     
     if (error || !architectsData) {
@@ -65,10 +67,17 @@ export function ArchitectsTable({ refreshKey, onEdit, onView }: ArchitectsTableP
           .eq('architect_id', arch.id)
           .order('created_at', { ascending: false });
 
+        const lastProjectDate = projects?.[0]?.created_at || null;
+        const referenceDate = lastProjectDate || arch.created_at;
+        const daysSince = Math.floor(
+          (new Date().getTime() - new Date(referenceDate).getTime()) / (1000 * 60 * 60 * 24)
+        );
+
         return {
           ...arch,
           projects_count: projects?.length || 0,
-          last_project_date: projects?.[0]?.created_at || null
+          last_project_date: lastProjectDate,
+          days_without_project: daysSince
         };
       })
     );
@@ -123,6 +132,7 @@ export function ArchitectsTable({ refreshKey, onEdit, onView }: ArchitectsTableP
             <TableHead>WhatsApp</TableHead>
             <TableHead className="text-center">Projetos Enviados</TableHead>
             <TableHead>Data do Último Projeto</TableHead>
+            <TableHead className="text-center">Dias Sem Projeto</TableHead>
             <TableHead className="text-right">Ações</TableHead>
           </TableRow>
         </TableHeader>
@@ -159,6 +169,18 @@ export function ArchitectsTable({ refreshKey, onEdit, onView }: ArchitectsTableP
                 ) : (
                   <span className="text-muted-foreground text-sm">Nenhum projeto</span>
                 )}
+              </TableCell>
+              <TableCell className="text-center">
+                <Badge 
+                  variant={
+                    arch.days_without_project > 60 ? 'destructive' : 
+                    arch.days_without_project > 30 ? 'default' : 
+                    'outline'
+                  }
+                  className="font-semibold"
+                >
+                  {arch.days_without_project} {arch.days_without_project === 1 ? 'dia' : 'dias'}
+                </Badge>
               </TableCell>
               <TableCell className="text-right">
                 <div className="flex gap-2 justify-end">
