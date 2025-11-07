@@ -322,6 +322,346 @@ export type Database = {
         }
         Relationships: []
       }
+      crm_activities: {
+        Row: {
+          by_user_id: string | null
+          deal_id: string
+          id: string
+          note: string | null
+          timestamp: string | null
+          type: string
+        }
+        Insert: {
+          by_user_id?: string | null
+          deal_id: string
+          id?: string
+          note?: string | null
+          timestamp?: string | null
+          type: string
+        }
+        Update: {
+          by_user_id?: string | null
+          deal_id?: string
+          id?: string
+          note?: string | null
+          timestamp?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_activities_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "crm_deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_cadence_steps: {
+        Row: {
+          cadence_id: string
+          channel: string
+          created_at: string | null
+          id: string
+          position: number
+          template: string | null
+          wait_hours: number | null
+        }
+        Insert: {
+          cadence_id: string
+          channel: string
+          created_at?: string | null
+          id?: string
+          position?: number
+          template?: string | null
+          wait_hours?: number | null
+        }
+        Update: {
+          cadence_id?: string
+          channel?: string
+          created_at?: string | null
+          id?: string
+          position?: number
+          template?: string | null
+          wait_hours?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_cadence_steps_cadence_id_fkey"
+            columns: ["cadence_id"]
+            isOneToOne: false
+            referencedRelation: "crm_cadences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_cadences: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      crm_deal_files: {
+        Row: {
+          deal_id: string
+          file_name: string
+          file_path: string
+          file_size: number
+          file_type: string
+          id: string
+          uploaded_at: string | null
+          uploaded_by: string | null
+        }
+        Insert: {
+          deal_id: string
+          file_name: string
+          file_path: string
+          file_size: number
+          file_type: string
+          id?: string
+          uploaded_at?: string | null
+          uploaded_by?: string | null
+        }
+        Update: {
+          deal_id?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          file_type?: string
+          id?: string
+          uploaded_at?: string | null
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_deal_files_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "crm_deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_deals: {
+        Row: {
+          architect_id: string | null
+          created_at: string | null
+          id: string
+          lead_id: string | null
+          lost_note: string | null
+          lost_reason: string | null
+          note: string | null
+          owner_id: string | null
+          pipeline_id: string
+          stage_entered_at: string | null
+          stage_id: string
+          stage_position: number | null
+          status: string | null
+          title: string
+          updated_at: string | null
+          value: number | null
+        }
+        Insert: {
+          architect_id?: string | null
+          created_at?: string | null
+          id?: string
+          lead_id?: string | null
+          lost_note?: string | null
+          lost_reason?: string | null
+          note?: string | null
+          owner_id?: string | null
+          pipeline_id: string
+          stage_entered_at?: string | null
+          stage_id: string
+          stage_position?: number | null
+          status?: string | null
+          title: string
+          updated_at?: string | null
+          value?: number | null
+        }
+        Update: {
+          architect_id?: string | null
+          created_at?: string | null
+          id?: string
+          lead_id?: string | null
+          lost_note?: string | null
+          lost_reason?: string | null
+          note?: string | null
+          owner_id?: string | null
+          pipeline_id?: string
+          stage_entered_at?: string | null
+          stage_id?: string
+          stage_position?: number | null
+          status?: string | null
+          title?: string
+          updated_at?: string | null
+          value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_deals_architect_id_fkey"
+            columns: ["architect_id"]
+            isOneToOne: false
+            referencedRelation: "architects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_deals_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_deals_pipeline_id_fkey"
+            columns: ["pipeline_id"]
+            isOneToOne: false
+            referencedRelation: "crm_pipelines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_deals_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: false
+            referencedRelation: "crm_stages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_pipelines: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      crm_stages: {
+        Row: {
+          cadence_id: string | null
+          created_at: string | null
+          id: string
+          name: string
+          pipeline_id: string
+          position: number
+          sla_hours: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          cadence_id?: string | null
+          created_at?: string | null
+          id?: string
+          name: string
+          pipeline_id: string
+          position?: number
+          sla_hours?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          cadence_id?: string | null
+          created_at?: string | null
+          id?: string
+          name?: string
+          pipeline_id?: string
+          position?: number
+          sla_hours?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_stages_cadence_id_fkey"
+            columns: ["cadence_id"]
+            isOneToOne: false
+            referencedRelation: "crm_cadences"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_stages_pipeline_id_fkey"
+            columns: ["pipeline_id"]
+            isOneToOne: false
+            referencedRelation: "crm_pipelines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_tasks: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          deal_id: string
+          due_at: string
+          id: string
+          note: string | null
+          status: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          deal_id: string
+          due_at: string
+          id?: string
+          note?: string | null
+          status?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          deal_id?: string
+          due_at?: string
+          id?: string
+          note?: string | null
+          status?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_tasks_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "crm_deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       deals: {
         Row: {
           amount: number | null
@@ -942,6 +1282,43 @@ export type Database = {
         }[]
       }
       architects_aggregates: { Args: never; Returns: Json }
+      crm_agg: {
+        Args: { p_end?: string; p_pipeline_id: string; p_start?: string }
+        Returns: Json
+      }
+      crm_sla_alerts: {
+        Args: { p_pipeline_id: string }
+        Returns: {
+          deal_id: string
+          delay_h: number
+          lead_name: string
+          owner_name: string
+          stage_name: string
+          title: string
+        }[]
+      }
+      crm_stage_funnel: {
+        Args: { p_end?: string; p_pipeline_id: string; p_start?: string }
+        Returns: {
+          count: number
+          stage: string
+          value: number
+        }[]
+      }
+      crm_time_in_stage: {
+        Args: { p_pipeline_id: string }
+        Returns: {
+          avg_h: number
+          stage: string
+        }[]
+      }
+      crm_timeseries: {
+        Args: { p_metric?: string; p_pipeline_id: string }
+        Returns: {
+          period: string
+          value: number
+        }[]
+      }
       get_user_role: {
         Args: { user_id: string }
         Returns: Database["public"]["Enums"]["user_role"]
