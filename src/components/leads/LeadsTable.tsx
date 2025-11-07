@@ -108,14 +108,15 @@ export function LeadsTable({ filters }: LeadsTableProps) {
         .select('file_path')
         .eq('lead_id', leadToDelete.id);
 
-      if (attachments && attachments.length > 0) {
-        const filePaths = attachments.map(a => a.file_path);
-        await supabase.storage
-          .from('lead-attachments')
-          .remove(filePaths);
+      if (attachments) {
+        for (const attachment of attachments) {
+          await supabase.storage
+            .from('lead-attachments')
+            .remove([attachment.file_path]);
+        }
       }
 
-      // Delete lead (cascade will handle related records)
+      // Delete lead (cascade will handle lead_attachments and related records)
       const { error } = await supabase
         .from('leads')
         .delete()
@@ -123,12 +124,12 @@ export function LeadsTable({ filters }: LeadsTableProps) {
 
       if (error) throw error;
 
-      toast.success('Lead removido com sucesso!');
+      toast.success('Lead excluído com sucesso! Todo o histórico foi removido.');
       fetchLeads();
       setDeleteOpen(false);
       setLeadToDelete(null);
     } catch (error: any) {
-      toast.error(error.message || 'Erro ao remover lead');
+      toast.error(error.message || 'Erro ao excluir lead');
     }
   };
 
@@ -173,7 +174,7 @@ export function LeadsTable({ filters }: LeadsTableProps) {
                     <TableCell>
                       <Badge variant="outline">{lead.source?.name || lead.utm_source || "N/A"}</Badge>
                     </TableCell>
-                    <TableCell>{getTemperatureBadge(lead.status === "quente" ? "quente" : lead.status === "qualificando" ? "morno" : "frio")}</TableCell>
+                    <TableCell>{getTemperatureBadge("quente")}</TableCell>
                     <TableCell>{getStatusBadge(lead.status)}</TableCell>
                     <TableCell>{lead.architect?.name || "Não atribuído"}</TableCell>
                     <TableCell className="text-muted-foreground text-sm">
@@ -222,13 +223,13 @@ export function LeadsTable({ filters }: LeadsTableProps) {
             <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
             <AlertDialogDescription>
               Deseja realmente excluir o lead <strong>{leadToDelete?.client?.name}</strong> e todo o histórico? 
-              Esta ação não pode ser desfeita.
+              Esta ação não pode ser desfeita e todos os dados relacionados serão removidos permanentemente.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDelete} className="bg-destructive hover:bg-destructive/90">
-              Remover
+              Excluir Definitivamente
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

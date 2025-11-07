@@ -27,7 +27,7 @@ const Leads = () => {
 
   useEffect(() => {
     fetchMetrics();
-  }, []);
+  }, [refreshKey]);
 
   const fetchMetrics = async () => {
     const { data, error } = await supabase.rpc('leads_aggregates');
@@ -39,12 +39,10 @@ const Leads = () => {
   const handleSync = () => {
     console.log("Sincronizando com IA...");
     setRefreshKey(prev => prev + 1);
-    fetchMetrics();
   };
 
   const handleCreateSuccess = () => {
     setRefreshKey(prev => prev + 1);
-    fetchMetrics();
   };
 
   const handleExport = () => {
@@ -60,7 +58,7 @@ const Leads = () => {
             📇 Leads Inteligentes
           </h1>
           <p className="text-muted-foreground text-lg">
-            Gestão unificada de leads vindos da IA WhatsApp, Meta Ads e CRM. Histórico completo, scoring e sincronização total.
+            Gestão unificada de leads vindos da IA WhatsApp, Meta Ads e CRM. Histórico completo e sincronização total.
           </p>
         </div>
 
