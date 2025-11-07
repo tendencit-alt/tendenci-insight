@@ -3,13 +3,15 @@ import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Eye, Edit, ArrowRight } from "lucide-react";
+import { Eye, Edit, ArrowRight, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { LeadDetailSheet } from "./LeadDetailSheet";
 import { EditLeadDialog } from "./EditLeadDialog";
 import { ConvertToDealDialog } from "./ConvertToDealDialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 interface LeadsTableProps {
   filters: any;
@@ -22,6 +24,8 @@ export function LeadsTable({ filters }: LeadsTableProps) {
   const [detailOpen, setDetailOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [convertOpen, setConvertOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [leadToDelete, setLeadToDelete] = useState<any>(null);
 
   useEffect(() => {
     fetchLeads();
@@ -89,6 +93,46 @@ export function LeadsTable({ filters }: LeadsTableProps) {
     setConvertOpen(true);
   };
 
+  const handleDelete = (lead: any) => {
+    setLeadToDelete(lead);
+    setDeleteOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!leadToDelete) return;
+
+    try {
+      // Delete attachments from storage first
+      const { data: attachments } = await supabase
+        .from('lead_attachments')
+        .select('file_path')
+        .eq('lead_id', leadToDelete.id);
+
+      if (attachments) {
+        for (const attachment of attachments) {
+          await supabase.storage
+            .from('lead-attachments')
+            .remove([attachment.file_path]);
+        }
+      }
+
+      // Delete lead (cascade will handle lead_attachments)
+      const { error } = await supabase
+        .from('leads')
+        .delete()
+        .eq('id', leadToDelete.id);
+
+      if (error) throw error;
+
+      toast.success('Lead removido com sucesso!');
+      fetchLeads();
+      setDeleteOpen(false);
+      setLeadToDelete(null);
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao remover lead');
+    }
+  };
+
   return (
     <>
       <Card className="overflow-hidden">
@@ -151,6 +195,14 @@ export function LeadsTable({ filters }: LeadsTableProps) {
                         <Button size="sm" variant="ghost" onClick={() => handleConvert(lead)}>
                           <ArrowRight className="w-4 h-4" />
                         </Button>
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          onClick={() => handleDelete(lead)}
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -168,6 +220,24 @@ export function LeadsTable({ filters }: LeadsTableProps) {
           <ConvertToDealDialog lead={selectedLead} open={convertOpen} onOpenChange={setConvertOpen} onSuccess={fetchLeads} />
         </>
       )}
+
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja remover o lead <strong>{leadToDelete?.client?.name}</strong>? 
+              Esta ação não pode ser desfeita e todos os anexos serão removidos.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive hover:bg-destructive/90">
+              Remover
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

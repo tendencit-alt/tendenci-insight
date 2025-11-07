@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 
 const Leads = () => {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [filters, setFilters] = useState({
     period: "last_30_days",
     source: "Todos",
@@ -19,6 +20,11 @@ const Leads = () => {
 
   const handleSync = () => {
     console.log("Sincronizando com IA...");
+    setRefreshKey(prev => prev + 1);
+  };
+
+  const handleCreateSuccess = () => {
+    setRefreshKey(prev => prev + 1);
   };
 
   const handleExport = () => {
@@ -93,10 +99,14 @@ const Leads = () => {
         </div>
 
         {/* Leads Table */}
-        <LeadsTable filters={filters} />
+        <LeadsTable filters={filters} key={refreshKey} />
 
         {/* Create Lead Dialog */}
-        <CreateLeadDialog open={isCreateOpen} onOpenChange={setIsCreateOpen} />
+        <CreateLeadDialog 
+          open={isCreateOpen} 
+          onOpenChange={setIsCreateOpen}
+          onSuccess={handleCreateSuccess}
+        />
       </div>
     </DashboardLayout>
   );
