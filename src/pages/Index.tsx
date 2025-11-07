@@ -2,6 +2,7 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { 
   DollarSign, 
   MessageSquare, 
@@ -10,7 +11,8 @@ import {
   Target,
   Users,
   Package,
-  Clock
+  Clock,
+  AlertTriangle
 } from "lucide-react";
 import { 
   BarChart, 
@@ -29,10 +31,10 @@ import {
 } from "recharts";
 
 const mockLeadSourceData = [
-  { name: "Meta Ads", value: 45, color: "hsl(217 91% 60%)" },
+  { name: "Meta Ads", value: 45, color: "hsl(357 75% 48%)" },
   { name: "Orgânico", value: 30, color: "hsl(142 71% 45%)" },
   { name: "Indicação", value: 15, color: "hsl(38 92% 50%)" },
-  { name: "Instagram", value: 10, color: "hsl(280 80% 55%)" },
+  { name: "Instagram", value: 10, color: "hsl(240 8% 20%)" },
 ];
 
 const mockProjectStageData = [
@@ -53,11 +55,11 @@ const mockSpendData = [
 const Index = () => {
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="space-y-8">
         <DashboardHeader />
 
-        {/* KPI Cards */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {/* KPI Cards - Primeira linha */}
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           <StatCard
             title="Custo de Mensagem"
             value="R$ 1.247"
@@ -91,8 +93,8 @@ const Index = () => {
           />
         </div>
 
-        {/* Segunda linha de KPIs */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {/* KPI Cards - Segunda linha */}
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           <StatCard
             title="Perdido"
             value="R$ 45.800"
@@ -125,14 +127,17 @@ const Index = () => {
         </div>
 
         {/* Charts */}
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-6 md:grid-cols-2">
           {/* Origem dos Leads */}
-          <Card className="shadow-card">
+          <Card className="shadow-card border-t-4 border-t-primary">
             <CardHeader>
-              <CardTitle>Origem dos Leads</CardTitle>
+              <CardTitle className="text-xl font-bold flex items-center gap-2">
+                <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                Origem dos Leads
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer width="100%" height={320}>
                 <PieChart>
                   <Pie
                     data={mockLeadSourceData}
@@ -140,9 +145,10 @@ const Index = () => {
                     cy="50%"
                     labelLine={false}
                     label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                    outerRadius={100}
+                    outerRadius={110}
                     fill="#8884d8"
                     dataKey="value"
+                    strokeWidth={2}
                   >
                     {mockLeadSourceData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
@@ -156,14 +162,17 @@ const Index = () => {
           </Card>
 
           {/* Projetos por Estágio */}
-          <Card className="shadow-card">
+          <Card className="shadow-card border-t-4 border-t-primary">
             <CardHeader>
-              <CardTitle>Projetos por Estágio</CardTitle>
+              <CardTitle className="text-xl font-bold flex items-center gap-2">
+                <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                Projetos por Estágio
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer width="100%" height={320}>
                 <BarChart data={mockProjectStageData}>
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
                   <XAxis dataKey="stage" />
                   <YAxis />
                   <Tooltip 
@@ -171,10 +180,15 @@ const Index = () => {
                       if (name === "valor") return `R$ ${value.toLocaleString()}`;
                       return value;
                     }}
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px'
+                    }}
                   />
                   <Legend />
-                  <Bar dataKey="quantidade" fill="hsl(217 91% 60%)" name="Quantidade" />
-                  <Bar dataKey="valor" fill="hsl(142 71% 45%)" name="Valor (R$)" />
+                  <Bar dataKey="quantidade" fill="hsl(357 75% 48%)" name="Quantidade" radius={[8, 8, 0, 0]} />
+                  <Bar dataKey="valor" fill="hsl(142 71% 45%)" name="Valor (R$)" radius={[8, 8, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -182,34 +196,45 @@ const Index = () => {
         </div>
 
         {/* Gasto vs Leads */}
-        <Card className="shadow-card">
+        <Card className="shadow-card border-t-4 border-t-primary">
           <CardHeader>
-            <CardTitle>Gasto Meta Ads vs Leads Gerados</CardTitle>
+            <CardTitle className="text-xl font-bold flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+              Gasto Meta Ads vs Leads Gerados
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={350}>
+            <ResponsiveContainer width="100%" height={380}>
               <LineChart data={mockSpendData}>
-                <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
                 <XAxis dataKey="day" />
                 <YAxis yAxisId="left" />
                 <YAxis yAxisId="right" orientation="right" />
-                <Tooltip />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px'
+                  }}
+                />
                 <Legend />
                 <Line 
                   yAxisId="left"
                   type="monotone" 
                   dataKey="gasto" 
                   stroke="hsl(38 92% 50%)" 
-                  strokeWidth={2}
+                  strokeWidth={3}
                   name="Gasto (R$)"
+                  dot={{ fill: 'hsl(38 92% 50%)', r: 5 }}
                 />
                 <Line 
                   yAxisId="right"
                   type="monotone" 
                   dataKey="leads" 
                   stroke="hsl(142 71% 45%)" 
-                  strokeWidth={2}
+                  strokeWidth={3}
                   name="Leads"
+                  dot={{ fill: 'hsl(142 71% 45%)', r: 5 }}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -217,28 +242,34 @@ const Index = () => {
         </Card>
 
         {/* Alertas de Arquitetos */}
-        <Card className="shadow-card border-l-4 border-l-warning">
+        <Card className="shadow-hover border-l-4 border-l-warning bg-gradient-to-r from-warning/5 to-transparent">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="h-5 w-5 text-warning" />
+            <CardTitle className="text-xl font-bold flex items-center gap-3">
+              <div className="bg-warning/10 p-2 rounded-lg">
+                <AlertTriangle className="h-5 w-5 text-warning" />
+              </div>
               Arquitetos sem Envio de Projeto
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between p-3 bg-warning-light rounded-lg">
-                <div>
-                  <p className="font-medium">João Silva</p>
-                  <p className="text-sm text-muted-foreground">Último projeto: há 12 dias</p>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-4 bg-card rounded-xl border border-warning/20 hover:border-warning/40 transition-colors">
+                <div className="flex-1">
+                  <p className="font-semibold text-lg">João Silva</p>
+                  <p className="text-sm text-muted-foreground mt-1">Último projeto: há 12 dias</p>
                 </div>
-                <span className="text-sm font-medium text-warning">12 dias</span>
+                <Badge variant="outline" className="bg-warning/10 text-warning border-warning/30 px-4 py-2 text-sm font-bold">
+                  12 dias
+                </Badge>
               </div>
-              <div className="flex items-center justify-between p-3 bg-warning-light rounded-lg">
-                <div>
-                  <p className="font-medium">Maria Santos</p>
-                  <p className="text-sm text-muted-foreground">Último projeto: há 8 dias</p>
+              <div className="flex items-center justify-between p-4 bg-card rounded-xl border border-warning/20 hover:border-warning/40 transition-colors">
+                <div className="flex-1">
+                  <p className="font-semibold text-lg">Maria Santos</p>
+                  <p className="text-sm text-muted-foreground mt-1">Último projeto: há 8 dias</p>
                 </div>
-                <span className="text-sm font-medium text-warning">8 dias</span>
+                <Badge variant="outline" className="bg-warning/10 text-warning border-warning/30 px-4 py-2 text-sm font-bold">
+                  8 dias
+                </Badge>
               </div>
             </div>
           </CardContent>

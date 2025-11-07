@@ -12,12 +12,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         <AppSidebar />
         
         <div className="flex-1 flex flex-col">
-          <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-6">
-            <SidebarTrigger />
+          <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60 px-6 shadow-sm">
+            <SidebarTrigger className="hover:bg-muted transition-colors" />
             <div className="flex-1" />
           </header>
 
-          <main className="flex-1 p-6 bg-background">
+          <main className="flex-1 p-8 bg-gradient-to-br from-background via-background to-muted/20">
             {children}
           </main>
         </div>

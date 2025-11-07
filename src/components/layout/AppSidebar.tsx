@@ -19,6 +19,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import tendenciLogo from "@/assets/tendenci-logo.png";
 
 const menuItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
@@ -35,16 +36,22 @@ export function AppSidebar() {
   const isCollapsed = state === "collapsed";
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar collapsible="icon" className="border-r border-sidebar-border">
       <SidebarContent>
-        <div className="px-4 py-6">
-          <h2 className={`font-bold text-xl ${isCollapsed ? "text-center" : ""}`}>
-            {isCollapsed ? "T" : "Tendenci"}
-          </h2>
+        <div className="px-4 py-6 border-b border-sidebar-border">
+          {isCollapsed ? (
+            <div className="flex items-center justify-center">
+              <img src={tendenciLogo} alt="Tendenci" className="h-8 w-8 object-contain" />
+            </div>
+          ) : (
+            <img src={tendenciLogo} alt="Tendenci" className="h-10 w-auto object-contain" />
+          )}
         </div>
 
-        <SidebarGroup>
-          <SidebarGroupLabel>Menu Principal</SidebarGroupLabel>
+        <SidebarGroup className="mt-4">
+          <SidebarGroupLabel className="text-sidebar-foreground/60 uppercase text-xs font-semibold tracking-wider">
+            Menu Principal
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {menuItems.map((item) => (
@@ -53,11 +60,11 @@ export function AppSidebar() {
                     <NavLink 
                       to={item.url} 
                       end={item.url === "/"}
-                      className="flex items-center gap-3"
-                      activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                      className="flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 hover:bg-sidebar-accent"
+                      activeClassName="bg-primary text-primary-foreground font-medium shadow-sm"
                     >
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
+                      <item.icon className="h-5 w-5 flex-shrink-0" />
+                      <span className="truncate">{item.title}</span>
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

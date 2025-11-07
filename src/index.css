@@ -8,32 +8,32 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Core palette - Professional dashboard theme */
-    --background: 210 17% 98%;
-    --foreground: 215 25% 15%;
+    /* Core palette - Tendenci Brand */
+    --background: 0 0% 98%;
+    --foreground: 240 8% 12%;
 
     --card: 0 0% 100%;
-    --card-foreground: 215 25% 15%;
+    --card-foreground: 240 8% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 215 25% 15%;
+    --popover-foreground: 240 8% 12%;
 
-    /* Primary - Corporate blue */
-    --primary: 217 91% 60%;
+    /* Primary - Tendenci Red */
+    --primary: 357 75% 48%;
     --primary-foreground: 0 0% 100%;
-    --primary-light: 217 91% 70%;
-    --primary-dark: 217 91% 50%;
+    --primary-light: 357 75% 58%;
+    --primary-dark: 357 75% 38%;
 
-    /* Secondary - Slate grey */
-    --secondary: 215 20% 65%;
+    /* Secondary - Neutral grey */
+    --secondary: 240 5% 34%;
     --secondary-foreground: 0 0% 100%;
 
     /* Muted areas */
-    --muted: 210 20% 94%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 240 5% 96%;
+    --muted-foreground: 240 4% 46%;
 
-    /* Accent - Vibrant highlight */
-    --accent: 199 89% 48%;
+    /* Accent - Charcoal */
+    --accent: 240 8% 20%;
     --accent-foreground: 0 0% 100%;
 
     /* Success - Green */
@@ -52,11 +52,11 @@ All colors MUST be HSL.
     --destructive-light: 0 84% 90%;
 
     /* Chart colors */
-    --chart-1: 217 91% 60%;
+    --chart-1: 357 75% 48%;
     --chart-2: 142 71% 45%;
     --chart-3: 38 92% 50%;
-    --chart-4: 280 80% 55%;
-    --chart-5: 340 75% 55%;
+    --chart-4: 240 8% 20%;
+    --chart-5: 199 89% 48%;
 
     /* Borders and inputs */
     --border: 215 20% 88%;
@@ -66,25 +66,27 @@ All colors MUST be HSL.
     --radius: 0.75rem;
 
     /* Sidebar */
-    --sidebar-background: 215 25% 15%;
-    --sidebar-foreground: 210 17% 98%;
-    --sidebar-primary: 217 91% 60%;
+    --sidebar-background: 240 8% 12%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 357 75% 48%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 215 25% 20%;
-    --sidebar-accent-foreground: 210 17% 98%;
-    --sidebar-border: 215 25% 25%;
-    --sidebar-ring: 217 91% 60%;
+    --sidebar-accent: 240 8% 18%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 240 8% 20%;
+    --sidebar-ring: 357 75% 48%;
 
     /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(217 91% 60%), hsl(199 89% 48%));
+    --gradient-primary: linear-gradient(135deg, hsl(357 75% 48%), hsl(357 75% 38%));
     --gradient-success: linear-gradient(135deg, hsl(142 71% 45%), hsl(142 71% 55%));
     --gradient-warning: linear-gradient(135deg, hsl(38 92% 50%), hsl(38 92% 60%));
+    --gradient-dark: linear-gradient(135deg, hsl(240 8% 12%), hsl(240 8% 20%));
 
     /* Shadows */
-    --shadow-sm: 0 1px 2px 0 hsl(215 25% 15% / 0.05);
-    --shadow-md: 0 4px 6px -1px hsl(215 25% 15% / 0.1), 0 2px 4px -2px hsl(215 25% 15% / 0.1);
-    --shadow-lg: 0 10px 15px -3px hsl(215 25% 15% / 0.1), 0 4px 6px -4px hsl(215 25% 15% / 0.1);
-    --shadow-card: 0 1px 3px 0 hsl(215 25% 15% / 0.05), 0 1px 2px -1px hsl(215 25% 15% / 0.05);
+    --shadow-sm: 0 1px 2px 0 hsl(240 8% 12% / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(240 8% 12% / 0.1), 0 2px 4px -2px hsl(240 8% 12% / 0.1);
+    --shadow-lg: 0 10px 15px -3px hsl(240 8% 12% / 0.1), 0 4px 6px -4px hsl(240 8% 12% / 0.1);
+    --shadow-card: 0 1px 3px 0 hsl(240 8% 12% / 0.05), 0 1px 2px -1px hsl(240 8% 12% / 0.05);
+    --shadow-hover: 0 10px 25px -5px hsl(357 75% 48% / 0.15), 0 8px 10px -6px hsl(357 75% 48% / 0.1);
 
     /* Transitions */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
