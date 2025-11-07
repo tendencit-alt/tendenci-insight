@@ -30,29 +30,29 @@ export function StatCard({
   };
 
   return (
-    <Card className="group overflow-hidden shadow-card hover:shadow-hover transition-all duration-300 border-l-4 border-l-primary">
+    <Card className="group overflow-hidden shadow-card hover:shadow-hover transition-all duration-300 border-l-4 border-l-primary hover:-translate-y-1">
       <CardContent className="p-6">
         <div className="flex items-start justify-between">
           <div className="space-y-2 flex-1">
-            <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">{title}</p>
-            <p className="text-4xl font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text">{value}</p>
+            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{title}</p>
+            <p className="text-4xl font-bold tracking-tight">{value}</p>
             {subtitle && (
-              <p className="text-sm text-muted-foreground">{subtitle}</p>
+              <p className="text-sm text-muted-foreground font-medium">{subtitle}</p>
             )}
             {trend && (
-              <div className="flex items-center gap-1.5 text-sm pt-1">
+              <div className="flex items-center gap-1.5 text-sm pt-2">
                 <span className={cn(
-                  "font-semibold flex items-center gap-0.5",
-                  trend.isPositive ? "text-success" : "text-destructive"
+                  "font-bold flex items-center gap-0.5 px-2 py-1 rounded-md",
+                  trend.isPositive ? "text-success bg-success/10" : "text-destructive bg-destructive/10"
                 )}>
                   {trend.isPositive ? "↑" : "↓"} {trend.value}
                 </span>
-                <span className="text-muted-foreground">vs. período anterior</span>
+                <span className="text-muted-foreground text-xs">vs. anterior</span>
               </div>
             )}
           </div>
           <div className={cn(
-            "rounded-2xl p-4 bg-gradient-to-br backdrop-blur-sm transition-transform duration-300 group-hover:scale-110",
+            "rounded-2xl p-4 bg-gradient-to-br backdrop-blur-sm transition-all duration-300 group-hover:scale-110 group-hover:rotate-3",
             variantStyles[variant]
           )}>
             <Icon className="h-7 w-7" strokeWidth={2.5} />

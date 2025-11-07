@@ -36,15 +36,26 @@ export function AppSidebar() {
   const isCollapsed = state === "collapsed";
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-sidebar-border">
+    <Sidebar 
+      collapsible="icon" 
+      className="border-r border-sidebar-border bg-gradient-to-b from-sidebar-background to-[hsl(0,0%,6%)]"
+      style={{
+        backgroundImage: 'linear-gradient(180deg, hsl(0, 0%, 9%) 0%, hsl(0, 0%, 6%) 100%)'
+      }}
+    >
       <SidebarContent>
-        <div className="px-4 py-6 border-b border-sidebar-border">
+        <div className="px-4 py-6 border-b border-sidebar-border/50">
           {isCollapsed ? (
             <div className="flex items-center justify-center">
               <img src={tendenciLogo} alt="Tendenci" className="h-8 w-8 object-contain" />
             </div>
           ) : (
-            <img src={tendenciLogo} alt="Tendenci" className="h-10 w-auto object-contain" />
+            <div className="space-y-2">
+              <img src={tendenciLogo} alt="Tendenci" className="h-10 w-auto object-contain" />
+              <p className="text-xs text-sidebar-foreground/60 font-semibold tracking-wider uppercase">
+                System
+              </p>
+            </div>
           )}
         </div>
 
@@ -60,10 +71,10 @@ export function AppSidebar() {
                     <NavLink 
                       to={item.url} 
                       end={item.url === "/"}
-                      className="flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 hover:bg-sidebar-accent"
-                      activeClassName="bg-primary text-primary-foreground font-medium shadow-sm"
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-300 hover:bg-sidebar-accent group"
+                      activeClassName="bg-primary text-primary-foreground font-semibold shadow-[0_0_12px_rgba(212,30,30,0.6)]"
                     >
-                      <item.icon className="h-5 w-5 flex-shrink-0" />
+                      <item.icon className="h-5 w-5 flex-shrink-0 group-hover:scale-110 transition-transform" />
                       <span className="truncate">{item.title}</span>
                     </NavLink>
                   </SidebarMenuButton>

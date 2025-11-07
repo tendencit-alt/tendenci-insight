@@ -1,5 +1,5 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
+import { DashboardFilters } from "@/components/dashboard/DashboardFilters";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -55,10 +55,22 @@ const mockSpendData = [
 const Index = () => {
   return (
     <DashboardLayout>
-      <div className="space-y-8">
-        <DashboardHeader />
+      <div className="space-y-8 animate-fade-in">
+        {/* Header com Título e Filtros */}
+        <div className="space-y-6">
+          <div className="space-y-2">
+            <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
+              Dashboard Executivo Premium
+            </h1>
+            <p className="text-lg text-muted-foreground">
+              Monitoramento em tempo real de KPIs estratégicos de performance comercial e marketing
+            </p>
+          </div>
+          <DashboardFilters />
 
-        {/* KPI Cards - Primeira linha */}
+        </div>
+
+        {/* KPI Cards - Grid Responsivo */}
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           <StatCard
             title="Custo de Mensagem"
@@ -126,10 +138,15 @@ const Index = () => {
           />
         </div>
 
-        {/* Charts */}
-        <div className="grid gap-6 md:grid-cols-2">
-          {/* Origem dos Leads */}
-          <Card className="shadow-card border-t-4 border-t-primary">
+        {/* Charts - Análises e Tendências */}
+        <div>
+          <h2 className="text-2xl font-bold mb-6 flex items-center gap-3">
+            <div className="h-1 w-12 bg-gradient-to-r from-primary to-primary-light rounded-full" />
+            Análises e Tendências
+          </h2>
+          <div className="grid gap-6 md:grid-cols-2">
+            {/* Origem dos Leads */}
+            <Card className="shadow-card border-t-4 border-t-primary hover:shadow-hover transition-all duration-300">
             <CardHeader>
               <CardTitle className="text-xl font-bold flex items-center gap-2">
                 <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
@@ -161,8 +178,8 @@ const Index = () => {
             </CardContent>
           </Card>
 
-          {/* Projetos por Estágio */}
-          <Card className="shadow-card border-t-4 border-t-primary">
+            {/* Projetos por Estágio */}
+            <Card className="shadow-card border-t-4 border-t-primary hover:shadow-hover transition-all duration-300">
             <CardHeader>
               <CardTitle className="text-xl font-bold flex items-center gap-2">
                 <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
@@ -193,10 +210,11 @@ const Index = () => {
               </ResponsiveContainer>
             </CardContent>
           </Card>
+          </div>
         </div>
 
-        {/* Gasto vs Leads */}
-        <Card className="shadow-card border-t-4 border-t-primary">
+        {/* Gasto vs Leads - Full Width */}
+        <Card className="shadow-card border-t-4 border-t-primary hover:shadow-hover transition-all duration-300">
           <CardHeader>
             <CardTitle className="text-xl font-bold flex items-center gap-2">
               <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
@@ -241,33 +259,33 @@ const Index = () => {
           </CardContent>
         </Card>
 
-        {/* Alertas de Arquitetos */}
-        <Card className="shadow-hover border-l-4 border-l-warning bg-gradient-to-r from-warning/5 to-transparent">
+        {/* Alertas de Arquitetos - Widget Premium */}
+        <Card className="glass-card shadow-hover border-l-4 border-l-warning hover:shadow-lg transition-all duration-300">
           <CardHeader>
             <CardTitle className="text-xl font-bold flex items-center gap-3">
-              <div className="bg-warning/10 p-2 rounded-lg">
-                <AlertTriangle className="h-5 w-5 text-warning" />
+              <div className="bg-warning/10 p-3 rounded-xl">
+                <AlertTriangle className="h-6 w-6 text-warning" />
               </div>
-              Arquitetos sem Envio de Projeto
+              🚨 Arquitetos sem Envio de Projeto
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-card rounded-xl border border-warning/20 hover:border-warning/40 transition-colors">
+              <div className="flex items-center justify-between p-5 bg-card/50 rounded-2xl border border-warning/30 hover:border-warning/50 transition-all duration-300 hover:shadow-md group">
                 <div className="flex-1">
-                  <p className="font-semibold text-lg">João Silva</p>
-                  <p className="text-sm text-muted-foreground mt-1">Último projeto: há 12 dias</p>
+                  <p className="font-bold text-lg group-hover:text-primary transition-colors">João Silva</p>
+                  <p className="text-sm text-muted-foreground mt-1 font-medium">Último projeto: há 12 dias</p>
                 </div>
-                <Badge variant="outline" className="bg-warning/10 text-warning border-warning/30 px-4 py-2 text-sm font-bold">
+                <Badge variant="outline" className="bg-warning/15 text-warning border-warning/40 px-5 py-2.5 text-base font-bold rounded-xl shadow-sm">
                   12 dias
                 </Badge>
               </div>
-              <div className="flex items-center justify-between p-4 bg-card rounded-xl border border-warning/20 hover:border-warning/40 transition-colors">
+              <div className="flex items-center justify-between p-5 bg-card/50 rounded-2xl border border-warning/30 hover:border-warning/50 transition-all duration-300 hover:shadow-md group">
                 <div className="flex-1">
-                  <p className="font-semibold text-lg">Maria Santos</p>
-                  <p className="text-sm text-muted-foreground mt-1">Último projeto: há 8 dias</p>
+                  <p className="font-bold text-lg group-hover:text-primary transition-colors">Maria Santos</p>
+                  <p className="text-sm text-muted-foreground mt-1 font-medium">Último projeto: há 8 dias</p>
                 </div>
-                <Badge variant="outline" className="bg-warning/10 text-warning border-warning/30 px-4 py-2 text-sm font-bold">
+                <Badge variant="outline" className="bg-warning/15 text-warning border-warning/40 px-5 py-2.5 text-base font-bold rounded-xl shadow-sm">
                   8 dias
                 </Badge>
               </div>
