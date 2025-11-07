@@ -1319,6 +1319,36 @@ export type Database = {
           value: number
         }[]
       }
+      dashboard_architect_response_time: { Args: never; Returns: Json }
+      dashboard_architects_without_projects: {
+        Args: { days_threshold?: number }
+        Returns: {
+          days_since_last: number
+          email: string
+          id: string
+          last_project_at: string
+          name: string
+          phone: string
+        }[]
+      }
+      dashboard_crm_metrics: { Args: never; Returns: Json }
+      dashboard_lead_origins: {
+        Args: never
+        Returns: {
+          count: number
+          origin: string
+        }[]
+      }
+      dashboard_meta_ad_spend: { Args: never; Returns: Json }
+      dashboard_meta_message_cost: { Args: never; Returns: Json }
+      dashboard_projects_by_stage: {
+        Args: never
+        Returns: {
+          count: number
+          stage: string
+          value: number
+        }[]
+      }
       get_user_role: {
         Args: { user_id: string }
         Returns: Database["public"]["Enums"]["user_role"]
