@@ -56,6 +56,8 @@ export function CreateLeadDialog({ open, onOpenChange, onSuccess }: CreateLeadDi
     setLoading(true);
 
     try {
+      console.log('Iniciando criação de lead...');
+      
       // First create client
       const { data: clientData, error: clientError } = await supabase
         .from("clients")
@@ -67,7 +69,12 @@ export function CreateLeadDialog({ open, onOpenChange, onSuccess }: CreateLeadDi
         .select()
         .single();
 
-      if (clientError) throw clientError;
+      if (clientError) {
+        console.error('Erro ao criar cliente:', clientError);
+        throw clientError;
+      }
+
+      console.log('Cliente criado:', clientData);
 
       // Then create lead
       const { data: leadData, error: leadError } = await supabase
@@ -80,31 +87,55 @@ export function CreateLeadDialog({ open, onOpenChange, onSuccess }: CreateLeadDi
         .select()
         .single();
 
-      if (leadError) throw leadError;
+      if (leadError) {
+        console.error('Erro ao criar lead:', leadError);
+        throw leadError;
+      }
+
+      console.log('Lead criado:', leadData);
 
       // Upload files if any
       if (files.length > 0) {
+        console.log(`Fazendo upload de ${files.length} arquivo(s)...`);
+        
         for (const file of files) {
           const fileExt = file.name.split('.').pop();
-          const fileName = `${leadData.id}/${Date.now()}.${fileExt}`;
+          const fileName = `${leadData.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
           
-          const { error: uploadError } = await supabase.storage
+          console.log('Fazendo upload do arquivo:', fileName);
+          
+          const { data: uploadData, error: uploadError } = await supabase.storage
             .from('lead-attachments')
-            .upload(fileName, file);
+            .upload(fileName, file, {
+              cacheControl: '3600',
+              upsert: false
+            });
 
           if (uploadError) {
-            console.error('Error uploading file:', uploadError);
+            console.error('Erro ao fazer upload:', uploadError);
+            toast.error(`Erro ao fazer upload de ${file.name}: ${uploadError.message}`);
             continue;
           }
 
+          console.log('Upload realizado com sucesso:', uploadData);
+
           // Save attachment record
-          await supabase.from('lead_attachments').insert({
-            lead_id: leadData.id,
-            file_name: file.name,
-            file_path: fileName,
-            file_type: file.type,
-            file_size: file.size
-          });
+          const { error: attachmentError } = await supabase
+            .from('lead_attachments')
+            .insert({
+              lead_id: leadData.id,
+              file_name: file.name,
+              file_path: fileName,
+              file_type: file.type,
+              file_size: file.size
+            });
+
+          if (attachmentError) {
+            console.error('Erro ao salvar registro de anexo:', attachmentError);
+            toast.error(`Erro ao registrar anexo ${file.name}`);
+          } else {
+            console.log('Anexo registrado com sucesso');
+          }
         }
       }
 
@@ -121,6 +152,7 @@ export function CreateLeadDialog({ open, onOpenChange, onSuccess }: CreateLeadDi
       });
       setFiles([]);
     } catch (error: any) {
+      console.error('Erro geral:', error);
       toast.error(error.message || "Erro ao criar lead");
     } finally {
       setLoading(false);
