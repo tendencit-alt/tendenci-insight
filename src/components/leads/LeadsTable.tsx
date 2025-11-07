@@ -108,15 +108,14 @@ export function LeadsTable({ filters }: LeadsTableProps) {
         .select('file_path')
         .eq('lead_id', leadToDelete.id);
 
-      if (attachments) {
-        for (const attachment of attachments) {
-          await supabase.storage
-            .from('lead-attachments')
-            .remove([attachment.file_path]);
-        }
+      if (attachments && attachments.length > 0) {
+        const filePaths = attachments.map(a => a.file_path);
+        await supabase.storage
+          .from('lead-attachments')
+          .remove(filePaths);
       }
 
-      // Delete lead (cascade will handle lead_attachments)
+      // Delete lead (cascade will handle related records)
       const { error } = await supabase
         .from('leads')
         .delete()
@@ -147,7 +146,6 @@ export function LeadsTable({ filters }: LeadsTableProps) {
                 <TableHead>Telefone</TableHead>
                 <TableHead>Origem</TableHead>
                 <TableHead>Temperatura</TableHead>
-                <TableHead>Score</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Responsável</TableHead>
                 <TableHead>Última Atualização</TableHead>
@@ -157,13 +155,13 @@ export function LeadsTable({ filters }: LeadsTableProps) {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                     Carregando leads...
                   </TableCell>
                 </TableRow>
               ) : leads.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                     Nenhum lead encontrado
                   </TableCell>
                 </TableRow>
@@ -175,10 +173,7 @@ export function LeadsTable({ filters }: LeadsTableProps) {
                     <TableCell>
                       <Badge variant="outline">{lead.source?.name || lead.utm_source || "N/A"}</Badge>
                     </TableCell>
-                    <TableCell>{getTemperatureBadge("quente")}</TableCell>
-                    <TableCell>
-                      <Badge className="bg-gradient-to-r from-primary to-accent text-white">85</Badge>
-                    </TableCell>
+                    <TableCell>{getTemperatureBadge(lead.status === "quente" ? "quente" : lead.status === "qualificando" ? "morno" : "frio")}</TableCell>
                     <TableCell>{getStatusBadge(lead.status)}</TableCell>
                     <TableCell>{lead.architect?.name || "Não atribuído"}</TableCell>
                     <TableCell className="text-muted-foreground text-sm">
@@ -226,8 +221,8 @@ export function LeadsTable({ filters }: LeadsTableProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja remover o lead <strong>{leadToDelete?.client?.name}</strong>? 
-              Esta ação não pode ser desfeita e todos os anexos serão removidos.
+              Deseja realmente excluir o lead <strong>{leadToDelete?.client?.name}</strong> e todo o histórico? 
+              Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

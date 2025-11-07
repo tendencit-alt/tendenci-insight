@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Plus, RefreshCw, Download } from "lucide-react";
@@ -6,6 +6,7 @@ import { LeadsFilters } from "@/components/leads/LeadsFilters";
 import { LeadsTable } from "@/components/leads/LeadsTable";
 import { CreateLeadDialog } from "@/components/leads/CreateLeadDialog";
 import { Card } from "@/components/ui/card";
+import { supabase } from "@/integrations/supabase/client";
 
 const Leads = () => {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -17,14 +18,33 @@ const Leads = () => {
     owner: "Todos",
     search: ""
   });
+  const [metrics, setMetrics] = useState({
+    hot_count: 0,
+    avg_response: 0,
+    new_count: 0,
+    crm_rate: 0
+  });
+
+  useEffect(() => {
+    fetchMetrics();
+  }, []);
+
+  const fetchMetrics = async () => {
+    const { data, error } = await supabase.rpc('leads_aggregates');
+    if (!error && data) {
+      setMetrics(data as { hot_count: number; avg_response: number; new_count: number; crm_rate: number });
+    }
+  };
 
   const handleSync = () => {
     console.log("Sincronizando com IA...");
     setRefreshKey(prev => prev + 1);
+    fetchMetrics();
   };
 
   const handleCreateSuccess = () => {
     setRefreshKey(prev => prev + 1);
+    fetchMetrics();
   };
 
   const handleExport = () => {
@@ -70,7 +90,7 @@ const Leads = () => {
               <span className="text-sm font-medium text-muted-foreground">Leads Quentes</span>
               <span className="text-2xl">🔥</span>
             </div>
-            <p className="text-3xl font-bold text-primary">24</p>
+            <p className="text-3xl font-bold text-primary">{metrics.hot_count}</p>
           </Card>
 
           <Card className="p-6 space-y-2 hover:shadow-xl transition-all duration-300 border-l-4 border-l-blue-500">
@@ -78,7 +98,7 @@ const Leads = () => {
               <span className="text-sm font-medium text-muted-foreground">Tempo Médio Resposta</span>
               <span className="text-2xl">⏱️</span>
             </div>
-            <p className="text-3xl font-bold">2.4h</p>
+            <p className="text-3xl font-bold">{metrics.avg_response}h</p>
           </Card>
 
           <Card className="p-6 space-y-2 hover:shadow-xl transition-all duration-300 border-l-4 border-l-green-500">
@@ -86,7 +106,7 @@ const Leads = () => {
               <span className="text-sm font-medium text-muted-foreground">Novos Leads</span>
               <span className="text-2xl">✨</span>
             </div>
-            <p className="text-3xl font-bold text-green-600">38</p>
+            <p className="text-3xl font-bold text-green-600">{metrics.new_count}</p>
           </Card>
 
           <Card className="p-6 space-y-2 hover:shadow-xl transition-all duration-300 border-l-4 border-l-purple-500">
@@ -94,7 +114,7 @@ const Leads = () => {
               <span className="text-sm font-medium text-muted-foreground">Conversão CRM</span>
               <span className="text-2xl">⚡</span>
             </div>
-            <p className="text-3xl font-bold text-purple-600">64%</p>
+            <p className="text-3xl font-bold text-purple-600">{metrics.crm_rate}%</p>
           </Card>
         </div>
 

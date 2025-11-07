@@ -696,6 +696,7 @@ export type Database = {
         Returns: Database["public"]["Enums"]["user_role"]
       }
       is_admin: { Args: never; Returns: boolean }
+      leads_aggregates: { Args: never; Returns: Json }
       user_has_role: { Args: { required_role: string }; Returns: boolean }
       user_has_role_check: {
         Args: { required_role: Database["public"]["Enums"]["user_role"] }
