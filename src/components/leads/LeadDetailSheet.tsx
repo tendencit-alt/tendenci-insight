@@ -4,17 +4,20 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Edit, ArrowRight, FileText, Image as ImageIcon, Download, MessageCircle } from "lucide-react";
+import { Edit, FileText, Image as ImageIcon, Download, MessageCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 interface LeadDetailSheetProps {
   lead: any;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onEdit?: () => void;
 }
 
-export function LeadDetailSheet({ lead, open, onOpenChange }: LeadDetailSheetProps) {
+export function LeadDetailSheet({ lead, open, onOpenChange, onEdit }: LeadDetailSheetProps) {
   const [attachments, setAttachments] = useState<any[]>([]);
   const [loadingAttachments, setLoadingAttachments] = useState(false);
 
@@ -83,7 +86,7 @@ export function LeadDetailSheet({ lead, open, onOpenChange }: LeadDetailSheetPro
               </div>
               <div>
                 <span className="text-sm text-muted-foreground">Origem</span>
-                <Badge variant="outline">{lead.source?.name || "N/A"}</Badge>
+                <Badge variant="outline">{lead.source?.name || lead.utm_source || "N/A"}</Badge>
               </div>
               <div>
                 <span className="text-sm text-muted-foreground">Temperatura</span>
@@ -93,26 +96,18 @@ export function LeadDetailSheet({ lead, open, onOpenChange }: LeadDetailSheetPro
                 <span className="text-sm text-muted-foreground">Status</span>
                 <Badge>{lead.status}</Badge>
               </div>
-              <div>
+              <div className="col-span-2">
                 <span className="text-sm text-muted-foreground">Responsável</span>
                 <p className="font-medium">{lead.architect?.name || "Não atribuído"}</p>
-              </div>
-              <div>
-                <span className="text-sm text-muted-foreground">Score</span>
-                <Badge className="bg-gradient-to-r from-primary to-accent text-white">85</Badge>
               </div>
             </div>
 
             <Separator />
 
             <div className="flex gap-3">
-              <Button className="flex-1 gap-2">
+              <Button className="flex-1 gap-2" onClick={onEdit}>
                 <Edit className="w-4 h-4" />
                 Editar
-              </Button>
-              <Button className="flex-1 gap-2" variant="secondary">
-                <ArrowRight className="w-4 h-4" />
-                Converter em Negócio
               </Button>
             </div>
           </Card>
@@ -157,32 +152,10 @@ export function LeadDetailSheet({ lead, open, onOpenChange }: LeadDetailSheetPro
               <MessageCircle className="w-5 h-5" />
               Conversas WhatsApp
             </h3>
-            <div className="space-y-3 p-4 bg-muted/30 rounded-lg">
-              <div className="flex gap-3">
-                <div className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium">Cliente</p>
-                  <p className="text-sm mt-1 p-2 bg-white dark:bg-card rounded">
-                    Olá, gostaria de orçamento para mesa maciça
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">Há 2 horas</p>
-                </div>
-              </div>
-              <div className="flex gap-3">
-                <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium">Atendente IA</p>
-                  <p className="text-sm mt-1 p-2 bg-primary/10 rounded">
-                    Olá! Claro, posso te ajudar com isso. Qual o tamanho que você procura?
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">Há 2 horas</p>
-                </div>
-              </div>
-              <div className="p-3 border-l-4 border-blue-500 bg-blue-500/5 rounded">
-                <p className="text-xs text-muted-foreground">
-                  💬 <strong>Integração WhatsApp:</strong> Este campo exibirá o histórico completo de conversas quando integrado com a API do WhatsApp
-                </p>
-              </div>
+            <div className="p-3 border-l-4 border-blue-500 bg-blue-500/5 rounded">
+              <p className="text-xs text-muted-foreground">
+                💬 <strong>Integração WhatsApp:</strong> Este campo exibirá o histórico completo de conversas quando integrado com a API do WhatsApp
+              </p>
             </div>
           </Card>
 
@@ -193,22 +166,28 @@ export function LeadDetailSheet({ lead, open, onOpenChange }: LeadDetailSheetPro
               <div className="flex gap-3">
                 <div className="w-2 h-2 bg-primary rounded-full mt-2" />
                 <div className="flex-1">
-                  <p className="font-medium text-sm">Lead criado via WhatsApp IA</p>
-                  <p className="text-xs text-muted-foreground">Há 2 horas</p>
+                  <p className="font-medium text-sm">Lead criado manualmente no CRM</p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatDistanceToNow(new Date(lead.created_at), { addSuffix: true, locale: ptBR })}
+                  </p>
                 </div>
               </div>
-              <div className="flex gap-3">
-                <div className="w-2 h-2 bg-blue-500 rounded-full mt-2" />
-                <div className="flex-1">
-                  <p className="font-medium text-sm">Primeira mensagem recebida</p>
-                  <p className="text-xs text-muted-foreground">Há 2 horas</p>
+              {lead.architect?.name && (
+                <div className="flex gap-3">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full mt-2" />
+                  <div className="flex-1">
+                    <p className="font-medium text-sm">Responsável atribuído: {lead.architect.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatDistanceToNow(new Date(lead.created_at), { addSuffix: true, locale: ptBR })}
+                    </p>
+                  </div>
                 </div>
-              </div>
+              )}
               <div className="flex gap-3">
                 <div className="w-2 h-2 bg-green-500 rounded-full mt-2" />
                 <div className="flex-1">
-                  <p className="font-medium text-sm">Lead qualificado pela IA</p>
-                  <p className="text-xs text-muted-foreground">Há 1 hora</p>
+                  <p className="font-medium text-sm">Status: {lead.status}</p>
+                  <p className="text-xs text-muted-foreground">Atual</p>
                 </div>
               </div>
             </div>

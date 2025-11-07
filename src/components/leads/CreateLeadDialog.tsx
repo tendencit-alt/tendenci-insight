@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,7 @@ export function CreateLeadDialog({ open, onOpenChange, onSuccess }: CreateLeadDi
   const [loading, setLoading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<string>("");
   const [files, setFiles] = useState<File[]>([]);
+  const [responsaveis, setResponsaveis] = useState<any[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
     name: "",
@@ -27,8 +28,24 @@ export function CreateLeadDialog({ open, onOpenChange, onSuccess }: CreateLeadDi
     email: "",
     source: "",
     message: "",
-    interest: ""
+    interest: "",
+    responsible: ""
   });
+
+  useEffect(() => {
+    fetchResponsaveis();
+  }, []);
+
+  const fetchResponsaveis = async () => {
+    const { data, error } = await supabase
+      .from('architects')
+      .select('id, name')
+      .order('name');
+    
+    if (!error && data) {
+      setResponsaveis(data);
+    }
+  };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -104,7 +121,8 @@ export function CreateLeadDialog({ open, onOpenChange, onSuccess }: CreateLeadDi
         .insert({
           client_id: clientData.id,
           status: "novo",
-          utm_source: formData.source || null
+          utm_source: formData.source || null,
+          architect_id: formData.responsible || null
         })
         .select()
         .single();
@@ -185,7 +203,8 @@ export function CreateLeadDialog({ open, onOpenChange, onSuccess }: CreateLeadDi
         email: "",
         source: "",
         message: "",
-        interest: ""
+        interest: "",
+        responsible: ""
       });
       setFiles([]);
       setUploadProgress("");
@@ -251,6 +270,22 @@ export function CreateLeadDialog({ open, onOpenChange, onSuccess }: CreateLeadDi
                   <SelectItem value="Indicação">Indicação</SelectItem>
                   <SelectItem value="Orgânico">Orgânico</SelectItem>
                   <SelectItem value="Instagram">Instagram</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="responsible">Responsável</Label>
+              <Select value={formData.responsible} onValueChange={(v) => setFormData({ ...formData, responsible: v })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o responsável" />
+                </SelectTrigger>
+                <SelectContent>
+                  {responsaveis.map((resp) => (
+                    <SelectItem key={resp.id} value={resp.id}>
+                      {resp.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

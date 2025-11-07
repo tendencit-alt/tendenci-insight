@@ -16,13 +16,19 @@ interface EditLeadDialogProps {
 
 export function EditLeadDialog({ lead, open, onOpenChange, onSuccess }: EditLeadDialogProps) {
   const [loading, setLoading] = useState(false);
+  const [responsaveis, setResponsaveis] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
     email: "",
     source: "",
-    status: ""
+    status: "",
+    responsible: ""
   });
+
+  useEffect(() => {
+    fetchResponsaveis();
+  }, []);
 
   useEffect(() => {
     if (lead) {
@@ -31,10 +37,22 @@ export function EditLeadDialog({ lead, open, onOpenChange, onSuccess }: EditLead
         phone: lead.client?.phone || "",
         email: lead.client?.email || "",
         source: lead.utm_source || "",
-        status: lead.status || "novo"
+        status: lead.status || "novo",
+        responsible: lead.architect_id || ""
       });
     }
   }, [lead]);
+
+  const fetchResponsaveis = async () => {
+    const { data, error } = await supabase
+      .from('architects')
+      .select('id, name')
+      .order('name');
+    
+    if (!error && data) {
+      setResponsaveis(data);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,7 +78,8 @@ export function EditLeadDialog({ lead, open, onOpenChange, onSuccess }: EditLead
         .from("leads")
         .update({
           status: formData.status,
-          utm_source: formData.source
+          utm_source: formData.source,
+          architect_id: formData.responsible || null
         })
         .eq("id", lead.id);
 
@@ -140,6 +159,23 @@ export function EditLeadDialog({ lead, open, onOpenChange, onSuccess }: EditLead
                   <SelectItem value="qualificando">Qualificando</SelectItem>
                   <SelectItem value="fechado">Fechado</SelectItem>
                   <SelectItem value="perdido">Perdido</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-responsible">Responsável</Label>
+              <Select value={formData.responsible} onValueChange={(v) => setFormData({ ...formData, responsible: v })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o responsável" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Não atribuído</SelectItem>
+                  {responsaveis.map((resp) => (
+                    <SelectItem key={resp.id} value={resp.id}>
+                      {resp.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

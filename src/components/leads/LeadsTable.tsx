@@ -85,6 +85,7 @@ export function LeadsTable({ filters }: LeadsTableProps) {
 
   const handleEdit = (lead: any) => {
     setSelectedLead(lead);
+    setDetailOpen(false);
     setEditOpen(true);
   };
 
@@ -211,7 +212,12 @@ export function LeadsTable({ filters }: LeadsTableProps) {
 
       {selectedLead && (
         <>
-          <LeadDetailSheet lead={selectedLead} open={detailOpen} onOpenChange={setDetailOpen} />
+          <LeadDetailSheet 
+            lead={selectedLead} 
+            open={detailOpen} 
+            onOpenChange={setDetailOpen}
+            onEdit={() => handleEdit(selectedLead)}
+          />
           <EditLeadDialog lead={selectedLead} open={editOpen} onOpenChange={setEditOpen} onSuccess={fetchLeads} />
           <ConvertToDealDialog lead={selectedLead} open={convertOpen} onOpenChange={setConvertOpen} onSuccess={fetchLeads} />
         </>
