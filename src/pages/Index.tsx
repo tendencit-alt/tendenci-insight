@@ -55,6 +55,7 @@ const Index = () => {
   const [crmMetrics, setCrmMetrics] = useState<any>(null);
   const [metaMessageCost, setMetaMessageCost] = useState<any>(null);
   const [metaAdSpend, setMetaAdSpend] = useState<any>(null);
+  const [metaInitiatedMessages, setMetaInitiatedMessages] = useState<any>(null);
   const [leadOrigins, setLeadOrigins] = useState<any[]>([]);
   const [projectsByStage, setProjectsByStage] = useState<any[]>([]);
   const [architectsWithoutProjects, setArchitectsWithoutProjects] = useState<any[]>([]);
@@ -84,6 +85,12 @@ const Index = () => {
       const { data: adSpendData, error: adError } = await supabase.rpc('dashboard_meta_ad_spend');
       if (!adError && adSpendData) {
         setMetaAdSpend(adSpendData);
+      }
+
+      // 3.5. Mensagens Iniciadas Meta
+      const { data: initiatedMsgData, error: initiatedError } = await supabase.rpc('dashboard_meta_initiated_messages');
+      if (!initiatedError && initiatedMsgData) {
+        setMetaInitiatedMessages(initiatedMsgData);
       }
 
       // 4. Origem dos leads
@@ -184,7 +191,7 @@ const Index = () => {
         </div>
 
         {/* KPI Cards - Primeira linha */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-5">
           <StatCard
             title="Custo de Mensagem"
             value={
@@ -214,6 +221,21 @@ const Index = () => {
             }
             icon={metaAdSpend?.api_connected ? DollarSign : WifiOff}
             variant={metaAdSpend?.api_connected ? "warning" : "destructive"}
+          />
+          <StatCard
+            title="Mensagens Iniciadas Meta"
+            value={
+              metaInitiatedMessages?.api_connected 
+                ? `${metaInitiatedMessages.total_initiated}`
+                : "API não conectada"
+            }
+            subtitle={
+              metaInitiatedMessages?.api_connected 
+                ? `Últimos 30 dias`
+                : "Configure a API Meta"
+            }
+            icon={metaInitiatedMessages?.api_connected ? MessageSquare : WifiOff}
+            variant={metaInitiatedMessages?.api_connected ? "default" : "destructive"}
           />
           <StatCard
             title="Em Orçamento"

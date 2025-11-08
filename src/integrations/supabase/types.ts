@@ -1340,6 +1340,7 @@ export type Database = {
         }[]
       }
       dashboard_meta_ad_spend: { Args: never; Returns: Json }
+      dashboard_meta_initiated_messages: { Args: never; Returns: Json }
       dashboard_meta_message_cost: { Args: never; Returns: Json }
       dashboard_projects_by_stage: {
         Args: never
