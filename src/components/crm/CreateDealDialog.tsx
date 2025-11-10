@@ -18,6 +18,8 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Plus } from "lucide-react";
+import { CreateClientDialog } from "./CreateClientDialog";
 
 interface CreateDealDialogProps {
   open: boolean;
@@ -37,6 +39,7 @@ export function CreateDealDialog({
   const [stages, setStages] = useState<any[]>([]);
   const [leads, setLeads] = useState<any[]>([]);
   const [architects, setArchitects] = useState<any[]>([]);
+  const [isClientDialogOpen, setIsClientDialogOpen] = useState(false);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -81,6 +84,24 @@ export function CreateDealDialog({
 
     if (stagesData && stagesData.length > 0) {
       setFormData((prev) => ({ ...prev, stage_id: stagesData[0].id }));
+    }
+  };
+
+  const handleClientCreated = async (clientId: string) => {
+    // Create a lead for the new client
+    const { data: leadData, error } = await supabase
+      .from("leads")
+      .insert({ client_id: clientId, status: "novo" })
+      .select()
+      .single();
+
+    if (!error && leadData) {
+      await fetchOptions();
+      setFormData((prev) => ({ ...prev, lead_id: leadData.id }));
+      toast({
+        title: "Sucesso",
+        description: "Cliente e lead criados!",
+      });
     }
   };
 
@@ -171,7 +192,19 @@ export function CreateDealDialog({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="lead">Lead</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="lead">Lead</Label>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsClientDialogOpen(true)}
+                  className="h-7 text-xs"
+                >
+                  <Plus className="mr-1 h-3 w-3" />
+                  Novo Cliente
+                </Button>
+              </div>
               <Select
                 value={formData.lead_id}
                 onValueChange={(value) =>
@@ -254,6 +287,12 @@ export function CreateDealDialog({
           </div>
         </form>
       </DialogContent>
+
+      <CreateClientDialog
+        open={isClientDialogOpen}
+        onOpenChange={setIsClientDialogOpen}
+        onSuccess={handleClientCreated}
+      />
     </Dialog>
   );
 }
