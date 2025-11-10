@@ -64,8 +64,11 @@ export function ManagePipelineDialog({
   const [editingPipeline, setEditingPipeline] = useState<string | null>(null);
   const [editingStage, setEditingStage] = useState<string | null>(null);
   const [pipelineName, setPipelineName] = useState("");
+  const [editPipelineName, setEditPipelineName] = useState("");
   const [stageName, setStageName] = useState("");
   const [stageSla, setStageSla] = useState("24");
+  const [editStageName, setEditStageName] = useState("");
+  const [editStageSla, setEditStageSla] = useState("24");
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
     type: "pipeline" | "stage";
@@ -132,10 +135,15 @@ export function ManagePipelineDialog({
     onSuccess();
   };
 
-  const handleUpdatePipeline = async (id: string, name: string) => {
+  const handleUpdatePipeline = async (id: string) => {
+    if (!editPipelineName.trim()) {
+      setEditingPipeline(null);
+      return;
+    }
+
     const { error } = await supabase
       .from("crm_pipelines")
-      .update({ name })
+      .update({ name: editPipelineName })
       .eq("id", id);
 
     if (error) {
@@ -149,6 +157,7 @@ export function ManagePipelineDialog({
 
     toast({ title: "Sucesso", description: "Funil atualizado!" });
     setEditingPipeline(null);
+    setEditPipelineName("");
     fetchPipelines();
     onSuccess();
   };
@@ -198,14 +207,18 @@ export function ManagePipelineDialog({
     fetchStages(activePipeline);
   };
 
-  const handleUpdateStage = async (
-    id: string,
-    name: string,
-    sla: number
-  ) => {
+  const handleUpdateStage = async (id: string) => {
+    if (!editStageName.trim()) {
+      setEditingStage(null);
+      return;
+    }
+
     const { error } = await supabase
       .from("crm_stages")
-      .update({ name, sla_hours: sla })
+      .update({ 
+        name: editStageName,
+        sla_hours: Number(editStageSla) || 24
+      })
       .eq("id", id);
 
     if (error) {
@@ -219,6 +232,8 @@ export function ManagePipelineDialog({
 
     toast({ title: "Sucesso", description: "Etapa atualizada!" });
     setEditingStage(null);
+    setEditStageName("");
+    setEditStageSla("24");
     fetchStages(activePipeline);
   };
 
@@ -317,13 +332,15 @@ export function ManagePipelineDialog({
                       {editingPipeline === pipeline.id ? (
                         <>
                           <Input
-                            defaultValue={pipeline.name}
+                            value={editPipelineName}
+                            onChange={(e) => setEditPipelineName(e.target.value)}
                             onKeyDown={(e) => {
                               if (e.key === "Enter") {
-                                handleUpdatePipeline(
-                                  pipeline.id,
-                                  e.currentTarget.value
-                                );
+                                handleUpdatePipeline(pipeline.id);
+                              }
+                              if (e.key === "Escape") {
+                                setEditingPipeline(null);
+                                setEditPipelineName("");
                               }
                             }}
                             onClick={(e) => e.stopPropagation()}
@@ -334,7 +351,18 @@ export function ManagePipelineDialog({
                             variant="ghost"
                             onClick={(e) => {
                               e.stopPropagation();
+                              handleUpdatePipeline(pipeline.id);
+                            }}
+                          >
+                            <Save className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={(e) => {
+                              e.stopPropagation();
                               setEditingPipeline(null);
+                              setEditPipelineName("");
                             }}
                           >
                             <X className="h-4 w-4" />
@@ -351,6 +379,7 @@ export function ManagePipelineDialog({
                             onClick={(e) => {
                               e.stopPropagation();
                               setEditingPipeline(pipeline.id);
+                              setEditPipelineName(pipeline.name);
                             }}
                           >
                             <Edit2 className="h-4 w-4" />
@@ -443,39 +472,46 @@ export function ManagePipelineDialog({
                           {editingStage === stage.id ? (
                             <>
                               <Input
-                                defaultValue={stage.name}
+                                value={editStageName}
+                                onChange={(e) => setEditStageName(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    handleUpdateStage(stage.id);
+                                  }
+                                  if (e.key === "Escape") {
+                                    setEditingStage(null);
+                                    setEditStageName("");
+                                    setEditStageSla("24");
+                                  }
+                                }}
                                 className="flex-1"
-                                id={`stage-name-${stage.id}`}
                               />
                               <Input
                                 type="number"
-                                defaultValue={stage.sla_hours}
+                                value={editStageSla}
+                                onChange={(e) => setEditStageSla(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    handleUpdateStage(stage.id);
+                                  }
+                                }}
                                 className="w-20"
-                                id={`stage-sla-${stage.id}`}
                               />
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={() => {
-                                  const nameInput = document.getElementById(
-                                    `stage-name-${stage.id}`
-                                  ) as HTMLInputElement;
-                                  const slaInput = document.getElementById(
-                                    `stage-sla-${stage.id}`
-                                  ) as HTMLInputElement;
-                                  handleUpdateStage(
-                                    stage.id,
-                                    nameInput.value,
-                                    Number(slaInput.value)
-                                  );
-                                }}
+                                onClick={() => handleUpdateStage(stage.id)}
                               >
                                 <Save className="h-4 w-4" />
                               </Button>
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={() => setEditingStage(null)}
+                                onClick={() => {
+                                  setEditingStage(null);
+                                  setEditStageName("");
+                                  setEditStageSla("24");
+                                }}
                               >
                                 <X className="h-4 w-4" />
                               </Button>
@@ -491,7 +527,11 @@ export function ManagePipelineDialog({
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={() => setEditingStage(stage.id)}
+                                onClick={() => {
+                                  setEditingStage(stage.id);
+                                  setEditStageName(stage.name);
+                                  setEditStageSla(stage.sla_hours.toString());
+                                }}
                               >
                                 <Edit2 className="h-4 w-4" />
                               </Button>
