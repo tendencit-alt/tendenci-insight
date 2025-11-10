@@ -184,16 +184,16 @@ export function EditDealDialog({
             <div className="space-y-2">
               <Label htmlFor="architect">Arquiteto</Label>
               <Select
-                value={formData.architect_id}
+                value={formData.architect_id || "none"}
                 onValueChange={(value) =>
-                  setFormData({ ...formData, architect_id: value })
+                  setFormData({ ...formData, architect_id: value === "none" ? "" : value })
                 }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione o arquiteto" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Nenhum</SelectItem>
+                  <SelectItem value="none">Nenhum</SelectItem>
                   {architects.map((arch) => (
                     <SelectItem key={arch.id} value={arch.id}>
                       {arch.name}
