@@ -18,6 +18,7 @@ export function CRMBoard({ pipelineId, onRefresh }: CRMBoardProps) {
   const [loading, setLoading] = useState(true);
   const [selectedDeal, setSelectedDeal] = useState<any>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [draggedDeal, setDraggedDeal] = useState<any>(null);
 
   useEffect(() => {
     if (!pipelineId) return;
@@ -86,6 +87,51 @@ export function CRMBoard({ pipelineId, onRefresh }: CRMBoardProps) {
     return hours;
   };
 
+  const handleDragStart = (deal: any) => (e: React.DragEvent) => {
+    setDraggedDeal(deal);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDrop = (stageId: string) => async (e: React.DragEvent) => {
+    e.preventDefault();
+    if (!draggedDeal || draggedDeal.stage_id === stageId) {
+      setDraggedDeal(null);
+      return;
+    }
+
+    // Update deal stage
+    const { error } = await supabase
+      .from("crm_deals")
+      .update({
+        stage_id: stageId,
+        stage_entered_at: new Date().toISOString(),
+      })
+      .eq("id", draggedDeal.id);
+
+    if (error) {
+      toast({
+        title: "Erro ao mover negócio",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "Sucesso",
+      description: "Negócio movido com sucesso!",
+    });
+
+    setDraggedDeal(null);
+    fetchData();
+    onRefresh();
+  };
+
   if (loading) {
     return <div className="text-center py-12">Carregando...</div>;
   }
@@ -96,16 +142,25 @@ export function CRMBoard({ pipelineId, onRefresh }: CRMBoardProps) {
         {stages.map((stage) => {
           const stageDeals = getDealsByStage(stage.id);
           return (
-            <Card key={stage.id} className="min-w-[320px] flex-shrink-0">
+            <Card 
+              key={stage.id} 
+              className="min-w-[320px] flex-shrink-0"
+              onDragOver={handleDragOver}
+              onDrop={handleDrop(stage.id)}
+            >
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center justify-between text-base">
                   <span>{stage.name}</span>
                   <Badge variant="secondary">{stageDeals.length}</Badge>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3 max-h-[600px] overflow-y-auto">
+              <CardContent 
+                className="space-y-3 max-h-[600px] overflow-y-auto"
+                onDragOver={handleDragOver}
+                onDrop={handleDrop(stage.id)}
+              >
                 {stageDeals.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-4">
+                  <p className="text-sm text-muted-foreground text-center py-8">
                     Nenhum negócio nesta etapa
                   </p>
                 ) : (
@@ -115,6 +170,7 @@ export function CRMBoard({ pipelineId, onRefresh }: CRMBoardProps) {
                       deal={deal}
                       timeInStage={getTimeInStage(deal)}
                       onClick={() => handleDealClick(deal)}
+                      onDragStart={handleDragStart(deal)}
                     />
                   ))
                 )}

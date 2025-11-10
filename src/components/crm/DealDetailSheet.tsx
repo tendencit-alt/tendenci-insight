@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   Sheet,
   SheetContent,
@@ -8,6 +9,19 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Edit, CheckCircle, XCircle } from "lucide-react";
+import { EditDealDialog } from "./EditDealDialog";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface DealDetailSheetProps {
   deal: any;
@@ -22,6 +36,10 @@ export function DealDetailSheet({
   onOpenChange,
   onSuccess,
 }: DealDetailSheetProps) {
+  const { toast } = useToast();
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [lostDialog, setLostDialog] = useState(false);
+
   if (!deal) return null;
 
   const clientName = deal.lead?.client?.name || "Sem cliente";
@@ -32,6 +50,56 @@ export function DealDetailSheet({
     (new Date().getTime() - new Date(deal.stage_entered_at).getTime()) /
       (1000 * 60 * 60)
   );
+
+  const handleMarkAsWon = async () => {
+    const { error } = await supabase
+      .from("crm_deals")
+      .update({ status: "won" })
+      .eq("id", deal.id);
+
+    if (error) {
+      toast({
+        title: "Erro",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "Sucesso",
+      description: "Negócio marcado como ganho!",
+    });
+    onOpenChange(false);
+    onSuccess();
+  };
+
+  const handleMarkAsLost = async () => {
+    const { error } = await supabase
+      .from("crm_deals")
+      .update({ 
+        status: "lost",
+        lost_reason: "Perdido manualmente",
+      })
+      .eq("id", deal.id);
+
+    if (error) {
+      toast({
+        title: "Erro",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "Negócio perdido",
+      description: "Negócio marcado como perdido.",
+    });
+    setLostDialog(false);
+    onOpenChange(false);
+    onSuccess();
+  };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -89,16 +157,16 @@ export function DealDetailSheet({
                 </div>
               )}
 
-              <div className="flex gap-2 pt-4">
-                <Button size="sm">
+              <div className="flex gap-2 pt-4 flex-wrap">
+                <Button size="sm" onClick={() => setIsEditDialogOpen(true)}>
                   <Edit className="mr-2 h-4 w-4" />
                   Editar
                 </Button>
-                <Button size="sm" variant="default">
+                <Button size="sm" variant="default" onClick={handleMarkAsWon}>
                   <CheckCircle className="mr-2 h-4 w-4" />
-                  Converter em Projeto
+                  Marcar como Ganho
                 </Button>
-                <Button size="sm" variant="destructive">
+                <Button size="sm" variant="destructive" onClick={() => setLostDialog(true)}>
                   <XCircle className="mr-2 h-4 w-4" />
                   Marcar como Perdido
                 </Button>
@@ -131,6 +199,33 @@ export function DealDetailSheet({
           </Card>
         </div>
       </SheetContent>
+
+      <EditDealDialog
+        deal={deal}
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        onSuccess={onSuccess}
+      />
+
+      <AlertDialog open={lostDialog} onOpenChange={setLostDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Marcar como Perdido</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja marcar este negócio como perdido?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleMarkAsLost}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Confirmar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Sheet>
   );
 }

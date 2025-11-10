@@ -6,9 +6,10 @@ interface DealCardProps {
   deal: any;
   timeInStage: number;
   onClick: () => void;
+  onDragStart?: (e: React.DragEvent) => void;
 }
 
-export function DealCard({ deal, timeInStage, onClick }: DealCardProps) {
+export function DealCard({ deal, timeInStage, onClick, onDragStart }: DealCardProps) {
   const clientName = deal.lead?.client?.name || "Sem cliente";
   const phone = deal.lead?.client?.phone || "";
 
@@ -16,6 +17,8 @@ export function DealCard({ deal, timeInStage, onClick }: DealCardProps) {
     <Card
       className="cursor-pointer hover:shadow-md transition-shadow"
       onClick={onClick}
+      draggable
+      onDragStart={onDragStart}
     >
       <CardContent className="p-4">
         <div className="space-y-2">
