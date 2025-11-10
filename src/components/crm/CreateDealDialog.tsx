@@ -48,6 +48,7 @@ export function CreateDealDialog({
     architect_id: "",
     value: "",
     note: "",
+    temperature: "frio",
   });
 
   useEffect(() => {
@@ -143,6 +144,7 @@ export function CreateDealDialog({
       architect_id: "",
       value: "",
       note: "",
+      temperature: "frio",
     });
     onOpenChange(false);
     onSuccess();

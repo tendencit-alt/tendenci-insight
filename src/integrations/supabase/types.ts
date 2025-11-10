@@ -463,6 +463,58 @@ export type Database = {
           },
         ]
       }
+      crm_deal_history: {
+        Row: {
+          created_at: string | null
+          deal_id: string
+          from_stage_id: string | null
+          id: string
+          moved_at: string | null
+          moved_by: string | null
+          to_stage_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          deal_id: string
+          from_stage_id?: string | null
+          id?: string
+          moved_at?: string | null
+          moved_by?: string | null
+          to_stage_id: string
+        }
+        Update: {
+          created_at?: string | null
+          deal_id?: string
+          from_stage_id?: string | null
+          id?: string
+          moved_at?: string | null
+          moved_by?: string | null
+          to_stage_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_deal_history_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "crm_deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_deal_history_from_stage_id_fkey"
+            columns: ["from_stage_id"]
+            isOneToOne: false
+            referencedRelation: "crm_stages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_deal_history_to_stage_id_fkey"
+            columns: ["to_stage_id"]
+            isOneToOne: false
+            referencedRelation: "crm_stages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_deals: {
         Row: {
           architect_id: string | null
@@ -791,6 +843,7 @@ export type Database = {
           id: string
           source_id: number | null
           status: string | null
+          temperature: string | null
           utm_campaign: string | null
           utm_source: string | null
         }
@@ -802,6 +855,7 @@ export type Database = {
           id?: string
           source_id?: number | null
           status?: string | null
+          temperature?: string | null
           utm_campaign?: string | null
           utm_source?: string | null
         }
@@ -813,6 +867,7 @@ export type Database = {
           id?: string
           source_id?: number | null
           status?: string | null
+          temperature?: string | null
           utm_campaign?: string | null
           utm_source?: string | null
         }

@@ -43,6 +43,7 @@ export function EditDealDialog({
     architect_id: "",
     value: "",
     note: "",
+    temperature: "frio",
   });
 
   useEffect(() => {
@@ -53,6 +54,7 @@ export function EditDealDialog({
         architect_id: deal.architect_id || "",
         value: deal.value?.toString() || "",
         note: deal.note || "",
+        temperature: deal.lead?.temperature || "frio",
       });
       fetchOptions();
     }
@@ -96,21 +98,34 @@ export function EditDealDialog({
       updateData.stage_entered_at = new Date().toISOString();
     }
 
-    const { error } = await supabase
+    const { error: dealError } = await supabase
       .from("crm_deals")
       .update(updateData)
       .eq("id", deal.id);
 
-    setLoading(false);
-
-    if (error) {
+    if (dealError) {
+      setLoading(false);
       toast({
         title: "Erro ao atualizar negócio",
-        description: error.message,
+        description: dealError.message,
         variant: "destructive",
       });
       return;
     }
+
+    // Atualizar temperatura do lead se houver lead vinculado
+    if (deal.lead_id) {
+      const { error: leadError } = await supabase
+        .from("leads")
+        .update({ temperature: formData.temperature })
+        .eq("id", deal.lead_id);
+
+      if (leadError) {
+        console.error("Erro ao atualizar temperatura:", leadError);
+      }
+    }
+
+    setLoading(false);
 
     toast({
       title: "Sucesso",
@@ -201,6 +216,24 @@ export function EditDealDialog({
                 placeholder="0.00"
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="temperature">Temperatura do Lead</Label>
+            <Select
+              value={formData.temperature}
+              onValueChange={(value) =>
+                setFormData({ ...formData, temperature: value })
+              }
+            >
+              <SelectTrigger id="temperature">
+                <SelectValue placeholder="Selecione a temperatura" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="frio">❄️ Frio</SelectItem>
+                <SelectItem value="quente">🔥 Quente</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">

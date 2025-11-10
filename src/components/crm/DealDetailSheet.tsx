@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Sheet,
   SheetContent,
@@ -39,6 +39,52 @@ export function DealDetailSheet({
   const { toast } = useToast();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [lostDialog, setLostDialog] = useState(false);
+  const [history, setHistory] = useState<any[]>([]);
+
+  // Fetch histórico de movimentações
+  useEffect(() => {
+    if (!deal?.id) return;
+
+    const fetchHistory = async () => {
+      const { data, error } = await supabase
+        .from("crm_deal_history")
+        .select(`
+          *,
+          from_stage:crm_stages!crm_deal_history_from_stage_id_fkey(name),
+          to_stage:crm_stages!crm_deal_history_to_stage_id_fkey(name),
+          moved_by_user:profiles(full_name, email)
+        `)
+        .eq("deal_id", deal.id)
+        .order("moved_at", { ascending: false });
+
+      if (!error && data) {
+        setHistory(data);
+      }
+    };
+
+    fetchHistory();
+
+    // Configurar realtime
+    const channel = supabase
+      .channel("deal-history-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "crm_deal_history",
+          filter: `deal_id=eq.${deal.id}`,
+        },
+        () => {
+          fetchHistory();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [deal?.id]);
 
   if (!deal) return null;
 
@@ -46,6 +92,7 @@ export function DealDetailSheet({
   const phone = deal.lead?.client?.phone || "N/A";
   const architectName = deal.architect?.name || "Não atribuído";
   const stageName = deal.stage?.name || "N/A";
+  const temperature = deal.lead?.temperature || "frio";
   const timeInStage = Math.floor(
     (new Date().getTime() - new Date(deal.stage_entered_at).getTime()) /
       (1000 * 60 * 60)
@@ -133,6 +180,12 @@ export function DealDetailSheet({
                   <p className="font-medium">{architectName}</p>
                 </div>
                 <div>
+                  <p className="text-sm text-muted-foreground">Temperatura</p>
+                  <Badge variant={temperature === "quente" ? "default" : "secondary"}>
+                    {temperature === "quente" ? "🔥 Quente" : "❄️ Frio"}
+                  </Badge>
+                </div>
+                <div>
                   <p className="text-sm text-muted-foreground">Estágio</p>
                   <Badge>{stageName}</Badge>
                 </div>
@@ -171,6 +224,45 @@ export function DealDetailSheet({
                   Marcar como Perdido
                 </Button>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Histórico de Movimentação */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Histórico de Movimentação</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {history.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Nenhuma movimentação registrada
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {history.map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-start gap-3 p-3 rounded-lg border bg-muted/30"
+                    >
+                      <div className="flex-1 space-y-1">
+                        <div className="flex items-center gap-2">
+                          {item.from_stage && (
+                            <>
+                              <Badge variant="outline">{item.from_stage.name}</Badge>
+                              <span className="text-muted-foreground">→</span>
+                            </>
+                          )}
+                          <Badge>{item.to_stage.name}</Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(item.moved_at).toLocaleString("pt-BR")} •{" "}
+                          {item.moved_by_user?.full_name || item.moved_by_user?.email || "Sistema"}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 
