@@ -25,8 +25,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         console.log('Auth state changed:', event, session?.user?.email);
+        
+        // Handle token refresh or sign out events
+        if (event === 'TOKEN_REFRESHED') {
+          console.log('Token refreshed successfully');
+        }
+        
+        if (event === 'SIGNED_OUT' || !session) {
+          setSession(null);
+          setUser(null);
+          setProfile(null);
+          navigate('/auth');
+          return;
+        }
+
         setSession(session);
         setUser(session?.user ?? null);
 
@@ -42,7 +56,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
 
     // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        console.error('Session error:', error);
+        setSession(null);
+        setUser(null);
+        setProfile(null);
+        navigate('/auth');
+        setLoading(false);
+        return;
+      }
+
       console.log('Initial session:', session?.user?.email);
       setSession(session);
       setUser(session?.user ?? null);
@@ -57,7 +81,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [navigate]);
 
   const fetchProfile = async (userId: string) => {
     try {
@@ -69,6 +93,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (error) {
         console.error('Error fetching profile:', error);
+        
+        // If JWT expired, sign out and redirect
+        if (error.code === 'PGRST301' || error.code === 'PGRST302' || error.code === 'PGRST303' || error.message?.includes('JWT')) {
+          console.log('JWT expired, signing out...');
+          await supabase.auth.signOut();
+          navigate('/auth');
+        }
         return;
       }
 
