@@ -75,15 +75,18 @@ export function DealTasks({ dealId }: DealTasksProps) {
       return;
     }
 
-    const { error } = await supabase.from("crm_tasks").insert({
+    console.log("Criando tarefa:", { dealId, newTask });
+
+    const { data, error } = await supabase.from("crm_tasks").insert({
       deal_id: dealId,
       title: newTask.title,
       note: newTask.note || null,
       due_at: newTask.due_at,
       status: "open",
-    });
+    }).select();
 
     if (error) {
+      console.error("Erro ao criar tarefa:", error);
       toast({
         title: "Erro ao criar tarefa",
         description: error.message,
@@ -92,6 +95,8 @@ export function DealTasks({ dealId }: DealTasksProps) {
       return;
     }
 
+    console.log("Tarefa criada com sucesso:", data);
+
     toast({
       title: "Tarefa criada",
       description: "A tarefa foi adicionada com sucesso.",
@@ -99,23 +104,31 @@ export function DealTasks({ dealId }: DealTasksProps) {
 
     setNewTask({ title: "", note: "", due_at: "" });
     setIsAdding(false);
+    fetchTasks();
   };
 
   const handleToggleStatus = async (taskId: string, currentStatus: string) => {
     const newStatus = currentStatus === "open" ? "done" : "open";
 
+    console.log("Alterando status da tarefa:", taskId, "de", currentStatus, "para", newStatus);
+
     const { error } = await supabase
       .from("crm_tasks")
-      .update({ status: newStatus })
+      .update({ status: newStatus, updated_at: new Date().toISOString() })
       .eq("id", taskId);
 
     if (error) {
+      console.error("Erro ao atualizar tarefa:", error);
       toast({
         title: "Erro ao atualizar tarefa",
         description: error.message,
         variant: "destructive",
       });
+      return;
     }
+
+    console.log("Status da tarefa atualizado com sucesso!");
+    fetchTasks();
   };
 
   const handleDeleteTask = async (taskId: string) => {

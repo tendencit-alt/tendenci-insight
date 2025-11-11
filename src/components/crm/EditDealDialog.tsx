@@ -124,6 +124,16 @@ export function EditDealDialog({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!formData.title) {
+      toast({
+        title: "Campo obrigatório",
+        description: "O título do negócio é obrigatório.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -136,13 +146,16 @@ export function EditDealDialog({
         product_type: formData.product_type || null,
         conversation_history: formData.conversation_history || null,
         scheduled_call: scheduledCall?.toISOString() || null,
+        updated_at: new Date().toISOString(),
       };
 
       // If stage changed, update stage_id and stage_entered_at
-      if (formData.stage_id !== deal.stage_id) {
+      if (formData.stage_id && formData.stage_id !== deal.stage_id) {
         updateData.stage_id = formData.stage_id;
         updateData.stage_entered_at = new Date().toISOString();
       }
+
+      console.log("Atualizando negócio:", deal.id, updateData);
 
       const { error: dealError } = await supabase
         .from("crm_deals")
@@ -150,6 +163,7 @@ export function EditDealDialog({
         .eq("id", deal.id);
 
       if (dealError) {
+        console.error("Erro ao atualizar negócio:", dealError);
         setLoading(false);
         toast({
           title: "Erro ao atualizar negócio",
@@ -174,16 +188,18 @@ export function EditDealDialog({
         }
       }
 
-      setLoading(false);
+      console.log("Negócio atualizado com sucesso!");
 
       toast({
         title: "Sucesso",
         description: "Negócio atualizado com sucesso!",
       });
 
+      setLoading(false);
       onOpenChange(false);
       onSuccess();
     } catch (error: any) {
+      console.error("Erro no submit:", error);
       setLoading(false);
       toast({
         title: "Erro",

@@ -99,21 +99,31 @@ export default function CRM() {
           onPipelineChange={setSelectedPipeline}
         />
 
-        {/* KPIs */}
-        <CRMKPIs pipelineId={selectedPipeline} key={`kpi-${refreshKey}`} />
+        {selectedPipeline && (
+          <>
+            {/* KPIs */}
+            <CRMKPIs pipelineId={selectedPipeline} key={`kpi-${refreshKey}`} />
 
-        {/* SLA Alerts */}
-        <CRMSLAAlerts pipelineId={selectedPipeline} key={`sla-${refreshKey}`} />
+            {/* SLA Alerts */}
+            <CRMSLAAlerts pipelineId={selectedPipeline} key={`sla-${refreshKey}`} />
 
-        {/* Tarefas Pendentes */}
-        <CRMTasksPanel pipelineId={selectedPipeline} key={`tasks-${refreshKey}`} />
+            {/* Tarefas Pendentes */}
+            <CRMTasksPanel pipelineId={selectedPipeline} key={`tasks-${refreshKey}`} />
 
-        {/* Kanban Board */}
-        <CRMBoard 
-          pipelineId={selectedPipeline} 
-          key={`board-${refreshKey}`}
-          onRefresh={handleRefresh}
-        />
+            {/* Kanban Board */}
+            <CRMBoard 
+              pipelineId={selectedPipeline} 
+              key={`board-${refreshKey}`}
+              onRefresh={handleRefresh}
+            />
+          </>
+        )}
+        
+        {!selectedPipeline && pipelines.length === 0 && (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">Nenhum funil cadastrado. Crie seu primeiro funil de vendas!</p>
+          </div>
+        )}
 
         {/* Dialogs */}
         <CreateDealDialog
