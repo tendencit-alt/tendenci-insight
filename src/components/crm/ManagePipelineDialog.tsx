@@ -163,6 +163,32 @@ export function ManagePipelineDialog({
   };
 
   const handleDeletePipeline = async (id: string) => {
+    // Verificar se há negócios vinculados ao funil
+    const { data: deals, error: checkError } = await supabase
+      .from("crm_deals")
+      .select("id")
+      .eq("pipeline_id", id)
+      .limit(1);
+
+    if (checkError) {
+      toast({
+        title: "Erro",
+        description: checkError.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (deals && deals.length > 0) {
+      toast({
+        title: "Não é possível excluir",
+        description: "Este funil possui negócios vinculados. Mova ou exclua os negócios antes de deletar o funil.",
+        variant: "destructive",
+      });
+      setDeleteDialog(null);
+      return;
+    }
+
     const { error } = await supabase.from("crm_pipelines").delete().eq("id", id);
 
     if (error) {
