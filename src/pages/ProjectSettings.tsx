@@ -4,6 +4,8 @@ import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { WebhookSettings } from "@/components/projects/WebhookSettings";
 import { N8nIntegrationGuide } from "@/components/settings/N8nIntegrationGuide";
+import { ImportDataGuide } from "@/components/settings/ImportDataGuide";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const ProjectSettings = () => {
   const navigate = useNavigate();
@@ -28,10 +30,25 @@ const ProjectSettings = () => {
         </div>
 
         {/* Settings Sections */}
-      <div className="space-y-6">
-        <WebhookSettings />
-        <N8nIntegrationGuide />
-      </div>
+        <Tabs defaultValue="import" className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="import">📥 Importar Dados</TabsTrigger>
+            <TabsTrigger value="n8n">🤖 Integração n8n</TabsTrigger>
+            <TabsTrigger value="webhooks">🔗 Webhooks</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="import" className="space-y-6 pt-6">
+            <ImportDataGuide />
+          </TabsContent>
+
+          <TabsContent value="n8n" className="space-y-6 pt-6">
+            <N8nIntegrationGuide />
+          </TabsContent>
+
+          <TabsContent value="webhooks" className="space-y-6 pt-6">
+            <WebhookSettings />
+          </TabsContent>
+        </Tabs>
       </div>
     </DashboardLayout>
   );
