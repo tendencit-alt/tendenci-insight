@@ -3,7 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { DealCard } from "./DealCard";
 import { DealDetailSheet } from "./DealDetailSheet";
 
@@ -152,8 +151,8 @@ export function CRMBoard({ pipelineId, onRefresh }: CRMBoardProps) {
 
   return (
     <>
-      <ScrollArea className="w-full whitespace-nowrap rounded-md border">
-        <div className="flex gap-4 p-4">
+      <div className="w-full overflow-x-auto">
+        <div className="flex gap-4 pb-4 min-w-min">
           {/* Regular pipeline stages */}
           {stages.map((stage) => {
           const stageDeals = getDealsByStage(stage.id);
@@ -249,8 +248,7 @@ export function CRMBoard({ pipelineId, onRefresh }: CRMBoardProps) {
           </CardContent>
         </Card>
         </div>
-        <ScrollBar orientation="horizontal" />
-      </ScrollArea>
+      </div>
 
       <DealDetailSheet
         deal={selectedDeal}
