@@ -64,9 +64,14 @@ export function DealDetailSheet({
           moved_by_user:profiles(full_name, email)
         `)
         .eq("deal_id", deal.id)
-        .order("moved_at", { ascending: false });
+        .order("created_at", { ascending: false });
 
-      if (!error && data) {
+      if (error) {
+        console.error("Erro ao buscar histórico:", error);
+      }
+      
+      if (data) {
+        console.log("Histórico carregado:", data.length, "registros");
         setHistory(data);
       }
     };
@@ -585,7 +590,7 @@ export function DealDetailSheet({
                     const userName = item.moved_by_user?.full_name || 
                                    item.moved_by_user?.email || 
                                    "Sistema";
-                    const date = new Date(item.moved_at).toLocaleString("pt-BR", {
+                    const date = new Date(item.created_at || item.moved_at).toLocaleString("pt-BR", {
                       dateStyle: "short",
                       timeStyle: "short",
                     });
