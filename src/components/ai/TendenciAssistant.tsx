@@ -29,24 +29,20 @@ export function TendenciAssistant() {
     setInput("");
     setIsLoading(true);
 
-    let assistantContent = "";
-    const upsertAssistant = (chunk: string) => {
-      assistantContent += chunk;
-      setMessages((prev) => {
-        const last = prev[prev.length - 1];
-        if (last?.role === "assistant") {
-          return prev.map((m, i) =>
-            i === prev.length - 1 ? { ...m, content: assistantContent } : m
-          );
-        }
-        return [...prev, { role: "assistant", content: assistantContent }];
-      });
-    };
-
     try {
       await streamChat({
         messages: [...messages, userMessage],
-        onDelta: (chunk) => upsertAssistant(chunk),
+        onChunk: (chunk) => {
+          setMessages((prev) => {
+            const last = prev[prev.length - 1];
+            if (last?.role === "assistant") {
+              return prev.map((m, i) =>
+                i === prev.length - 1 ? { ...m, content: last.content + chunk } : m
+              );
+            }
+            return [...prev, { role: "assistant", content: chunk }];
+          });
+        },
         onDone: () => setIsLoading(false),
         onError: (error) => {
           toast({
