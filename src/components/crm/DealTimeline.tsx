@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,9 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Paperclip, Send, MessageSquare, Phone, Users, Eye, Bot, FileText, Download } from "lucide-react";
+import { Paperclip, Send, MessageSquare, Phone, Users, Bot, Download } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -41,7 +40,6 @@ interface DealTimelineProps {
 
 const updateTypeConfig = {
   "Comentário Interno": { icon: MessageSquare, color: "bg-blue-500", label: "Comentário Interno" },
-  "Conversa WhatsApp": { icon: MessageSquare, color: "bg-green-500", label: "WhatsApp" },
   "Reunião / Ligação": { icon: Phone, color: "bg-purple-500", label: "Reunião" },
   "Visita / Projeto": { icon: Users, color: "bg-orange-500", label: "Visita" },
   "Observação IA": { icon: Bot, color: "bg-cyan-500", label: "IA" },
@@ -49,15 +47,21 @@ const updateTypeConfig = {
 
 export function DealTimeline({ dealId }: DealTimelineProps) {
   const { toast } = useToast();
+  const navigate = useToast();
   const [timeline, setTimeline] = useState<TimelineUpdate[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [updateType, setUpdateType] = useState("Comentário Interno");
   const [files, setFiles] = useState<FileList | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [allUsers, setAllUsers] = useState<any[]>([]);
+  const [showMentionSuggestions, setShowMentionSuggestions] = useState(false);
+  const [mentionSearch, setMentionSearch] = useState("");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     fetchTimeline();
+    fetchUsers();
     
     // Realtime subscription
     const channel = supabase
@@ -80,6 +84,15 @@ export function DealTimeline({ dealId }: DealTimelineProps) {
       supabase.removeChannel(channel);
     };
   }, [dealId]);
+
+  const fetchUsers = async () => {
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, username, full_name, email')
+      .not('username', 'is', null);
+    
+    setAllUsers(data || []);
+  };
 
   const fetchTimeline = async () => {
     setLoading(true);
@@ -118,6 +131,46 @@ export function DealTimeline({ dealId }: DealTimelineProps) {
     setLoading(false);
   };
 
+  const handleMessageChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    setMessage(value);
+
+    // Detect @ mentions
+    const cursorPosition = e.target.selectionStart;
+    const textBeforeCursor = value.slice(0, cursorPosition);
+    const lastAtIndex = textBeforeCursor.lastIndexOf('@');
+    
+    if (lastAtIndex !== -1 && lastAtIndex === textBeforeCursor.length - 1) {
+      setShowMentionSuggestions(true);
+      setMentionSearch('');
+    } else if (lastAtIndex !== -1) {
+      const searchTerm = textBeforeCursor.slice(lastAtIndex + 1);
+      if (!searchTerm.includes(' ')) {
+        setShowMentionSuggestions(true);
+        setMentionSearch(searchTerm);
+      } else {
+        setShowMentionSuggestions(false);
+      }
+    } else {
+      setShowMentionSuggestions(false);
+    }
+  };
+
+  const insertMention = (username: string) => {
+    const cursorPosition = textareaRef.current?.selectionStart || 0;
+    const textBeforeCursor = message.slice(0, cursorPosition);
+    const lastAtIndex = textBeforeCursor.lastIndexOf('@');
+    
+    const newMessage = 
+      message.slice(0, lastAtIndex) + 
+      `@${username} ` + 
+      message.slice(cursorPosition);
+    
+    setMessage(newMessage);
+    setShowMentionSuggestions(false);
+    textareaRef.current?.focus();
+  };
+
   const handleSubmit = async () => {
     if (!message.trim()) {
       toast({
@@ -134,9 +187,18 @@ export function DealTimeline({ dealId }: DealTimelineProps) {
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) throw new Error("Usuário não autenticado");
 
-      // Extract mentioned users (simplified - looks for @[uuid])
-      const mentionRegex = /@([a-f0-9-]{36})/gi;
-      const mentions = [...message.matchAll(mentionRegex)].map(m => m[1]);
+      // Extract mentioned users by username
+      const mentionRegex = /@(\w+)/g;
+      const mentionedUsernames = [...message.matchAll(mentionRegex)].map(m => m[1]);
+      
+      // Get user IDs from usernames
+      const mentionedUserIds: string[] = [];
+      for (const username of mentionedUsernames) {
+        const user = allUsers.find(u => u.username === username);
+        if (user && user.id !== userData.user.id) {
+          mentionedUserIds.push(user.id);
+        }
+      }
 
       // Insert timeline entry
       const { data: timelineEntry, error: timelineError } = await supabase
@@ -146,12 +208,33 @@ export function DealTimeline({ dealId }: DealTimelineProps) {
           author_id: userData.user.id,
           message,
           update_type: updateType,
-          mentioned_users: mentions,
+          mentioned_users: mentionedUserIds,
         })
         .select()
         .single();
 
       if (timelineError) throw timelineError;
+
+      // Create notifications for mentioned users
+      if (mentionedUserIds.length > 0) {
+        const { data: currentProfile } = await supabase
+          .from('profiles')
+          .select('username, full_name')
+          .eq('id', userData.user.id)
+          .single();
+
+        const authorName = currentProfile?.full_name || currentProfile?.username || 'Alguém';
+
+        const notifications = mentionedUserIds.map(userId => ({
+          user_id: userId,
+          type: 'mention',
+          title: `${authorName} mencionou você`,
+          message: message.slice(0, 100) + (message.length > 100 ? '...' : ''),
+          link: `/kanban`,
+        }));
+
+        await supabase.from('notifications').insert(notifications);
+      }
 
       // Upload files if any
       if (files && files.length > 0) {
@@ -235,7 +318,6 @@ export function DealTimeline({ dealId }: DealTimelineProps) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="Comentário Interno">💬 Comentário Interno</SelectItem>
-                <SelectItem value="Conversa WhatsApp">📱 Conversa WhatsApp</SelectItem>
                 <SelectItem value="Reunião / Ligação">📞 Reunião / Ligação</SelectItem>
                 <SelectItem value="Visita / Projeto">🏢 Visita / Projeto</SelectItem>
                 <SelectItem value="Observação IA">🤖 Observação IA</SelectItem>
@@ -243,14 +325,37 @@ export function DealTimeline({ dealId }: DealTimelineProps) {
             </Select>
           </div>
 
-          <div>
+          <div className="relative">
             <Label>Mensagem</Label>
             <Textarea
-              placeholder="Digite sua atualização... Use @nome para mencionar alguém"
+              ref={textareaRef}
+              placeholder="Digite sua atualização... Use @username para mencionar alguém"
               value={message}
-              onChange={(e) => setMessage(e.target.value)}
+              onChange={handleMessageChange}
               rows={3}
             />
+            {showMentionSuggestions && (
+              <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-48 overflow-y-auto">
+                {allUsers
+                  .filter(u => 
+                    u.username.toLowerCase().includes(mentionSearch.toLowerCase()) ||
+                    (u.full_name && u.full_name.toLowerCase().includes(mentionSearch.toLowerCase()))
+                  )
+                  .slice(0, 5)
+                  .map(user => (
+                    <div
+                      key={user.id}
+                      className="px-4 py-2 hover:bg-muted cursor-pointer flex items-center gap-2"
+                      onClick={() => insertMention(user.username)}
+                    >
+                      <Badge variant="outline">@{user.username}</Badge>
+                      <span className="text-sm text-muted-foreground">
+                        {user.full_name || user.email}
+                      </span>
+                    </div>
+                  ))}
+              </div>
+            )}
           </div>
 
           <div>

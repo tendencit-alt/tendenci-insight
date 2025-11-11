@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { LogOut, User } from "lucide-react";
 import { TendenciAssistant } from "@/components/ai/TendenciAssistant";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -49,6 +50,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b border-border/40 bg-card/65 backdrop-blur-[12px] supports-[backdrop-filter]:bg-card/65 px-6 shadow-sm">
             <SidebarTrigger className="hover:bg-muted/50 transition-colors rounded-lg" />
             <div className="flex-1" />
+            
+            <NotificationBell />
             
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
