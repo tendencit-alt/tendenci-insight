@@ -32,6 +32,7 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    console.log('✅ Usando SERVICE_ROLE_KEY para bypass RLS')
     const supabase = createClient(supabaseUrl, supabaseKey)
 
     const rawData: any = await req.json()
@@ -48,7 +49,10 @@ Deno.serve(async (req) => {
       city: rawData.city || rawData.cidade,
       state: rawData.state || rawData.estado,
       source: rawData.source || rawData.origem,
-      temperature: (rawData.temperature || rawData.temperatura || 'frio').toLowerCase(),
+      temperature: (rawData.temperature || rawData.temperatura || 'frio')
+        .replace(/^=/, '') // Remove "=" do início (sintaxe do n8n)
+        .toLowerCase()
+        .trim(),
       deal_title: rawData.deal_title || rawData.titulo_negocio,
       deal_value: rawData.deal_value || rawData.valor_negocio,
       product_type: rawData.product_type || rawData.tipo_produto,
