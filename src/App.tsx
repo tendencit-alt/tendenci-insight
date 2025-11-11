@@ -30,6 +30,7 @@ const App = () => (
             <Route path="/kanban" element={<ProtectedRoute><CRM /></ProtectedRoute>} />
             <Route path="/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
             <Route path="/projects/settings" element={<ProtectedRoute><ProjectSettings /></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute><ProjectSettings /></ProtectedRoute>} />
             <Route path="/architects" element={<ProtectedRoute><Architects /></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
