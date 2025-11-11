@@ -1,4 +1,7 @@
 project_id = "emnwuzrysqoiwapzmnbv"
 
+[functions.create-lead-from-ai]
+verify_jwt = false
+
 [functions.tendenci-assistant]
 verify_jwt = true
