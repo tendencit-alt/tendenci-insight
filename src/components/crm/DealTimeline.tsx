@@ -42,6 +42,7 @@ const updateTypeConfig = {
   "Comentário Interno": { icon: MessageSquare, color: "bg-blue-500", label: "Comentário Interno" },
   "Reunião / Ligação": { icon: Phone, color: "bg-purple-500", label: "Reunião" },
   "Visita / Projeto": { icon: Users, color: "bg-orange-500", label: "Visita" },
+  "Conversa WhatsApp": { icon: MessageSquare, color: "bg-green-500", label: "WhatsApp" },
   "Observação IA": { icon: Bot, color: "bg-cyan-500", label: "IA" },
 };
 
@@ -320,6 +321,7 @@ export function DealTimeline({ dealId }: DealTimelineProps) {
                 <SelectItem value="Comentário Interno">💬 Comentário Interno</SelectItem>
                 <SelectItem value="Reunião / Ligação">📞 Reunião / Ligação</SelectItem>
                 <SelectItem value="Visita / Projeto">🏢 Visita / Projeto</SelectItem>
+                <SelectItem value="Conversa WhatsApp">💚 Conversa WhatsApp</SelectItem>
                 <SelectItem value="Observação IA">🤖 Observação IA</SelectItem>
               </SelectContent>
             </Select>
