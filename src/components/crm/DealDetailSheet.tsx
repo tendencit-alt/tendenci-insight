@@ -411,7 +411,7 @@ export function DealDetailSheet({
           <SheetTitle>Detalhes do Negócio</SheetTitle>
         </SheetHeader>
 
-        <div className="mt-6 space-y-3">
+        <div className="mt-6 grid grid-cols-2 gap-3">
           {/* Informações do Negócio */}
           <Collapsible open={openSections.deal} onOpenChange={() => toggleSection('deal')}>
             <div className="border rounded-lg overflow-hidden bg-card shadow-sm">
@@ -852,7 +852,7 @@ export function DealDetailSheet({
                 <div className="flex items-center justify-between p-4 hover:bg-accent/50 transition-colors cursor-pointer">
                   <div className="flex items-center gap-2 font-semibold">
                     <History className="h-5 w-5" />
-                    <span>Timeline Colaborativa</span>
+                    <span>Atualizações de Equipe</span>
                   </div>
                   <ChevronDown className={`h-5 w-5 transition-transform ${openSections.timeline ? 'rotate-180' : ''}`} />
                 </div>
