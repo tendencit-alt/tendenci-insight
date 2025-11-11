@@ -1,1 +1,4 @@
 project_id = "emnwuzrysqoiwapzmnbv"
+
+[functions.tendenci-assistant]
+verify_jwt = true
