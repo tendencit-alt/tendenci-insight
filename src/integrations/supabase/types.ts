@@ -543,6 +543,7 @@ export type Database = {
           architect_id: string | null
           conversation_history: string | null
           created_at: string | null
+          from_ai: boolean | null
           id: string
           last_interaction: string | null
           lead_id: string | null
@@ -566,6 +567,7 @@ export type Database = {
           architect_id?: string | null
           conversation_history?: string | null
           created_at?: string | null
+          from_ai?: boolean | null
           id?: string
           last_interaction?: string | null
           lead_id?: string | null
@@ -589,6 +591,7 @@ export type Database = {
           architect_id?: string | null
           conversation_history?: string | null
           created_at?: string | null
+          from_ai?: boolean | null
           id?: string
           last_interaction?: string | null
           lead_id?: string | null

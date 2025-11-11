@@ -213,7 +213,8 @@ Deno.serve(async (req) => {
           product_type: data.product_type,
           conversation_history: data.conversation_history,
           ai_status: data.ai_status,
-          status: 'aberto'
+          status: 'aberto',
+          from_ai: true
         })
         .select()
         .single()

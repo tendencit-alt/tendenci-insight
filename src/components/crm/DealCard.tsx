@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Clock, Flame, Snowflake, User } from "lucide-react";
+import { Clock, Flame, Snowflake, User, Bot } from "lucide-react";
 
 interface DealCardProps {
   deal: any;
@@ -15,6 +15,7 @@ export function DealCard({ deal, timeInStage, onClick, onDragStart }: DealCardPr
   const temperature = deal.lead?.temperature || "frio";
   const productType = deal.product_type;
   const ownerName = deal.owner?.full_name || deal.owner?.email?.split("@")[0] || "";
+  const fromAI = deal.from_ai === true;
 
   const getTemperatureIcon = () => {
     switch (temperature.toLowerCase()) {
@@ -38,8 +39,16 @@ export function DealCard({ deal, timeInStage, onClick, onDragStart }: DealCardPr
     >
       <CardContent className="p-4">
         <div className="space-y-2">
-          {/* Nome do cliente em destaque */}
-          <p className="font-bold text-base">{clientName}</p>
+          {/* Nome do cliente em destaque com tag IA */}
+          <div className="flex items-center gap-2">
+            {fromAI && (
+              <Badge variant="secondary" className="text-xs bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300">
+                <Bot className="h-3 w-3 mr-1" />
+                IA
+              </Badge>
+            )}
+            <p className="font-bold text-base">{clientName}</p>
+          </div>
           
           {/* Título do negócio */}
           <p className="text-sm text-muted-foreground">{deal.title}</p>
