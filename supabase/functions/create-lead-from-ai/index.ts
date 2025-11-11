@@ -185,58 +185,73 @@ Deno.serve(async (req) => {
 
     console.log('Lead criado:', newLead.id)
 
-    // 5. Criar deal no CRM Kanban
-    let dealData = null
+    // 5. Criar deal em TODOS os funis que têm "Lead" como primeira etapa
+    const dealIds: string[] = []
     
-    // ID do funil padrão (Funil de Vendas Padrão)
-    const defaultPipelineId = '34747cb5-063a-4369-b619-d4afa6095d0d'
-    const pipelineId = data.pipeline_id || defaultPipelineId
+    // Buscar todos os pipelines
+    const { data: allPipelines } = await supabase
+      .from('crm_pipelines')
+      .select('id, name')
     
-    // Buscar primeira etapa do pipeline
-    const { data: firstStage } = await supabase
-      .from('crm_stages')
-      .select('id')
-      .eq('pipeline_id', pipelineId)
-      .order('position', { ascending: true })
-      .limit(1)
-      .single()
-    
-    if (firstStage) {
-      const { data: newDeal, error: dealError } = await supabase
-        .from('crm_deals')
-        .insert({
-          pipeline_id: pipelineId,
-          stage_id: data.stage_id || firstStage.id,
-          lead_id: newLead.id,
-          title: data.deal_title || `Lead ${data.name}`,
-          value: data.deal_value || 0,
-          product_type: data.product_type,
-          conversation_history: data.conversation_history,
-          ai_status: data.ai_status,
-          status: 'aberto',
-          from_ai: true
-        })
-        .select()
-        .single()
+    if (allPipelines && allPipelines.length > 0) {
+      console.log(`📋 Encontrados ${allPipelines.length} funis no sistema`)
+      
+      // Para cada pipeline, verificar se primeira etapa é "Lead"
+      for (const pipeline of allPipelines) {
+        const { data: firstStage } = await supabase
+          .from('crm_stages')
+          .select('id, name')
+          .eq('pipeline_id', pipeline.id)
+          .order('position', { ascending: true })
+          .limit(1)
+          .single()
+        
+        // Se a primeira etapa se chama "Lead", criar deal neste funil
+        if (firstStage && firstStage.name.toLowerCase() === 'lead') {
+          console.log(`✅ Funil "${pipeline.name}" tem primeira etapa "Lead" - criando deal...`)
+          
+          const { data: newDeal, error: dealError } = await supabase
+            .from('crm_deals')
+            .insert({
+              pipeline_id: pipeline.id,
+              stage_id: firstStage.id,
+              lead_id: newLead.id,
+              title: data.deal_title || `Lead ${data.name}`,
+              value: data.deal_value || 0,
+              product_type: data.product_type,
+              conversation_history: data.conversation_history,
+              ai_status: data.ai_status,
+              status: 'aberto',
+              from_ai: true
+            })
+            .select()
+            .single()
 
-      if (dealError) {
-        console.error('Erro ao criar deal:', dealError)
-      } else {
-        console.log('✅ Deal criado no CRM Kanban:', newDeal.id)
-        dealData = newDeal
+          if (dealError) {
+            console.error(`❌ Erro ao criar deal no funil "${pipeline.name}":`, dealError)
+          } else {
+            console.log(`✅ Deal criado no funil "${pipeline.name}":`, newDeal.id)
+            dealIds.push(newDeal.id)
+          }
+        } else {
+          console.log(`⏭️ Funil "${pipeline.name}" não tem "Lead" como primeira etapa - ignorando`)
+        }
       }
-    } else {
-      console.error('❌ Primeira etapa do funil não encontrada')
+    }
+    
+    if (dealIds.length === 0) {
+      console.warn('⚠️ Nenhum deal foi criado - nenhum funil tem "Lead" como primeira etapa')
     }
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: 'Lead criado com sucesso',
+        message: `Lead criado com sucesso em ${dealIds.length} funil(is)`,
         data: {
           client_id: clientId,
           lead_id: newLead.id,
-          deal_id: dealData?.id || null
+          deal_ids: dealIds,
+          pipelines_count: dealIds.length
         }
       }),
       { 

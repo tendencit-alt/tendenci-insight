@@ -50,8 +50,10 @@ export function DealCard({ deal, timeInStage, onClick, onDragStart }: DealCardPr
             <p className="font-bold text-base">{clientName}</p>
           </div>
           
-          {/* Título do negócio */}
-          <p className="text-sm text-muted-foreground">{deal.title}</p>
+          {/* Título do negócio com indicador de etapa Lead */}
+          <div className="flex items-center gap-2">
+            <p className="text-sm text-muted-foreground flex-1">{deal.title}</p>
+          </div>
           
           {/* Telefone */}
           {phone && (
