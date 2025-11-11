@@ -406,45 +406,45 @@ export function DealDetailSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
+      <SheetContent className="w-full sm:max-w-7xl overflow-y-auto">
         <SheetHeader>
           <SheetTitle>Detalhes do Negócio</SheetTitle>
         </SheetHeader>
 
-        <div className="mt-6 grid grid-cols-2 gap-3">
+        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Informações do Negócio */}
           <Collapsible open={openSections.deal} onOpenChange={() => toggleSection('deal')}>
-            <div className="border rounded-lg overflow-hidden bg-card shadow-sm">
+            <div className="border rounded-lg overflow-hidden bg-card shadow-sm h-fit">
               <CollapsibleTrigger className="w-full">
-                <div className="flex items-center justify-between p-4 hover:bg-accent/50 transition-colors cursor-pointer">
-                  <div className="flex items-center gap-2 font-semibold">
-                    <FileText className="h-5 w-5" />
+                <div className="flex items-center justify-between p-3 hover:bg-accent/50 transition-colors cursor-pointer bg-background">
+                  <div className="flex items-center gap-2 font-semibold text-sm">
+                    <FileText className="h-4 w-4" />
                     <span>Informações do Negócio</span>
                   </div>
-                  <ChevronDown className={`h-5 w-5 transition-transform ${openSections.deal ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`h-4 w-4 transition-transform ${openSections.deal ? 'rotate-180' : ''}`} />
                 </div>
               </CollapsibleTrigger>
               <CollapsibleContent>
-                <div className="border-t p-4 space-y-4 animate-in slide-in-from-top-2">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="col-span-2">
-                      <p className="text-sm text-muted-foreground">Título</p>
-                      <p className="font-medium text-base">{deal.title}</p>
+                <div className="border-t p-3 space-y-3 animate-in slide-in-from-top-2 bg-background">
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Título</p>
+                      <p className="font-medium text-sm">{deal.title}</p>
                     </div>
                     
                     <div>
-                      <p className="text-sm text-muted-foreground">Tipo de Produto</p>
-                      <p className="font-medium">{productType}</p>
+                      <p className="text-xs text-muted-foreground">Tipo de Produto</p>
+                      <p className="font-medium text-sm">{productType}</p>
                     </div>
 
                     <div>
-                      <p className="text-sm text-muted-foreground">Estágio</p>
-                      <Badge>{stageName}</Badge>
+                      <p className="text-xs text-muted-foreground">Estágio</p>
+                      <Badge className="text-xs">{stageName}</Badge>
                     </div>
                     
                     <div>
-                      <p className="text-sm text-muted-foreground">Valor (R$)</p>
-                      <p className="font-medium text-lg">
+                      <p className="text-xs text-muted-foreground">Valor (R$)</p>
+                      <p className="font-medium text-sm">
                         {Number(deal.value || 0).toLocaleString("pt-BR", {
                           minimumFractionDigits: 2,
                           maximumFractionDigits: 2,
@@ -453,17 +453,17 @@ export function DealDetailSheet({
                     </div>
                     
                     <div>
-                      <p className="text-sm text-muted-foreground">Tempo no estágio</p>
-                      <p className="font-medium">{timeInStage}h</p>
+                      <p className="text-xs text-muted-foreground">Tempo no estágio</p>
+                      <p className="font-medium text-sm">{timeInStage}h</p>
                     </div>
-                  </div>
 
-                  {deal.note && (
-                    <div className="pt-4 border-t">
-                      <p className="text-sm text-muted-foreground">Observações</p>
-                      <p className="text-sm mt-1">{deal.note}</p>
-                    </div>
-                  )}
+                    {deal.note && (
+                      <div className="pt-2 border-t">
+                        <p className="text-xs text-muted-foreground">Observações</p>
+                        <p className="text-xs mt-1">{deal.note}</p>
+                      </div>
+                    )}
+                  </div>
                   
                   <Button 
                     size="sm" 
@@ -471,8 +471,8 @@ export function DealDetailSheet({
                     onClick={() => setIsEditDialogOpen(true)}
                     className="w-full"
                   >
-                    <Edit className="h-4 w-4 mr-1" />
-                    Editar Negócio
+                    <Edit className="h-3 w-3 mr-1" />
+                    Editar
                   </Button>
                 </div>
               </CollapsibleContent>
@@ -481,49 +481,49 @@ export function DealDetailSheet({
 
           {/* Informações do Cliente */}
           <Collapsible open={openSections.client} onOpenChange={() => toggleSection('client')}>
-            <div className="border rounded-lg overflow-hidden bg-card shadow-sm">
+            <div className="border rounded-lg overflow-hidden bg-card shadow-sm h-fit">
               <CollapsibleTrigger className="w-full">
-                <div className="flex items-center justify-between p-4 hover:bg-accent/50 transition-colors cursor-pointer">
-                  <div className="flex items-center gap-2 font-semibold">
-                    <User className="h-5 w-5" />
+                <div className="flex items-center justify-between p-3 hover:bg-accent/50 transition-colors cursor-pointer bg-background">
+                  <div className="flex items-center gap-2 font-semibold text-sm">
+                    <User className="h-4 w-4" />
                     <span>Informações do Cliente</span>
                   </div>
-                  <ChevronDown className={`h-5 w-5 transition-transform ${openSections.client ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`h-4 w-4 transition-transform ${openSections.client ? 'rotate-180' : ''}`} />
                 </div>
               </CollapsibleTrigger>
               <CollapsibleContent>
-                <div className="border-t p-4 space-y-4 animate-in slide-in-from-top-2">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="col-span-2">
-                      <p className="text-sm text-muted-foreground">Nome do Lead</p>
-                      <p className="font-medium text-base">{clientName}</p>
+                <div className="border-t p-3 space-y-3 animate-in slide-in-from-top-2 bg-background">
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Nome do Lead</p>
+                      <p className="font-medium text-sm">{clientName}</p>
                     </div>
                     
                     <div>
-                      <p className="text-sm text-muted-foreground">Telefone / WhatsApp</p>
-                      <p className="font-medium">{phone}</p>
+                      <p className="text-xs text-muted-foreground">Telefone / WhatsApp</p>
+                      <p className="font-medium text-sm">{phone}</p>
                     </div>
                     
                     <div>
-                      <p className="text-sm text-muted-foreground">E-mail</p>
-                      <p className="font-medium">{email}</p>
+                      <p className="text-xs text-muted-foreground">E-mail</p>
+                      <p className="font-medium text-sm">{email}</p>
                     </div>
                     
                     <div>
-                      <p className="text-sm text-muted-foreground">Localização</p>
-                      <p className="font-medium">{location}</p>
+                      <p className="text-xs text-muted-foreground">Localização</p>
+                      <p className="font-medium text-sm">{location}</p>
                     </div>
                     
                     <div>
-                      <p className="text-sm text-muted-foreground">Temperatura do Lead</p>
-                      <Badge variant={getTemperatureBadge().variant}>
+                      <p className="text-xs text-muted-foreground">Temperatura do Lead</p>
+                      <Badge variant={getTemperatureBadge().variant} className="text-xs">
                         {getTemperatureBadge().text}
                       </Badge>
                     </div>
                     
                     <div>
-                      <p className="text-sm text-muted-foreground">Origem do Lead</p>
-                      <p className="font-medium">{sourceName}</p>
+                      <p className="text-xs text-muted-foreground">Origem do Lead</p>
+                      <p className="font-medium text-sm">{sourceName}</p>
                     </div>
                   </div>
                 </div>
@@ -533,27 +533,27 @@ export function DealDetailSheet({
 
           {/* Responsáveis */}
           <Collapsible open={openSections.owners} onOpenChange={() => toggleSection('owners')}>
-            <div className="border rounded-lg overflow-hidden bg-card shadow-sm">
+            <div className="border rounded-lg overflow-hidden bg-card shadow-sm h-fit">
               <CollapsibleTrigger className="w-full">
-                <div className="flex items-center justify-between p-4 hover:bg-accent/50 transition-colors cursor-pointer">
-                  <div className="flex items-center gap-2 font-semibold">
-                    <Users className="h-5 w-5" />
+                <div className="flex items-center justify-between p-3 hover:bg-accent/50 transition-colors cursor-pointer bg-background">
+                  <div className="flex items-center gap-2 font-semibold text-sm">
+                    <Users className="h-4 w-4" />
                     <span>Responsáveis</span>
                   </div>
-                  <ChevronDown className={`h-5 w-5 transition-transform ${openSections.owners ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`h-4 w-4 transition-transform ${openSections.owners ? 'rotate-180' : ''}`} />
                 </div>
               </CollapsibleTrigger>
               <CollapsibleContent>
-                <div className="border-t p-4 space-y-4 animate-in slide-in-from-top-2">
-                  <div className="grid grid-cols-2 gap-4">
+                <div className="border-t p-3 space-y-3 animate-in slide-in-from-top-2 bg-background">
+                  <div className="space-y-3">
                     <div>
-                      <p className="text-sm text-muted-foreground">Arquiteto</p>
-                      <p className="font-medium">{architectName}</p>
+                      <p className="text-xs text-muted-foreground">Arquiteto</p>
+                      <p className="font-medium text-sm">{architectName}</p>
                     </div>
                     
                     <div>
-                      <p className="text-sm text-muted-foreground">Responsável Principal</p>
-                      <p className="font-medium">{ownerName}</p>
+                      <p className="text-xs text-muted-foreground">Responsável Principal</p>
+                      <p className="font-medium text-sm">{ownerName}</p>
                     </div>
                   </div>
                 </div>
@@ -563,48 +563,45 @@ export function DealDetailSheet({
 
           {/* Histórico WhatsApp */}
           <Collapsible open={openSections.whatsapp} onOpenChange={() => toggleSection('whatsapp')}>
-            <div className="border rounded-lg overflow-hidden bg-card shadow-sm">
+            <div className="border rounded-lg overflow-hidden bg-card shadow-sm h-fit">
               <CollapsibleTrigger className="w-full">
-                <div className="flex items-center justify-between p-4 hover:bg-accent/50 transition-colors cursor-pointer">
-                  <div className="flex items-center gap-2 font-semibold">
-                    <MessageCircle className="h-5 w-5" />
-                    <span>Histórico de Mensagens WhatsApp</span>
+                <div className="flex items-center justify-between p-3 hover:bg-accent/50 transition-colors cursor-pointer bg-background">
+                  <div className="flex items-center gap-2 font-semibold text-sm">
+                    <MessageCircle className="h-4 w-4" />
+                    <span>Histórico WhatsApp</span>
                   </div>
-                  <ChevronDown className={`h-5 w-5 transition-transform ${openSections.whatsapp ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`h-4 w-4 transition-transform ${openSections.whatsapp ? 'rotate-180' : ''}`} />
                 </div>
               </CollapsibleTrigger>
               <CollapsibleContent>
-                <div className="border-t p-4 space-y-3 animate-in slide-in-from-top-2">
+                <div className="border-t p-3 space-y-2 animate-in slide-in-from-top-2 bg-background max-h-80 overflow-y-auto">
                   {deal.conversation_history ? (
-                    <div className="bg-muted/30 p-4 rounded-md border border-border/50">
-                      <p className="text-sm whitespace-pre-wrap leading-relaxed">
+                    <div className="bg-muted/30 p-2 rounded-md border border-border/50">
+                      <p className="text-xs whitespace-pre-wrap leading-relaxed">
                         {deal.conversation_history}
                       </p>
                     </div>
                   ) : (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <p className="text-sm">
+                    <div className="text-center py-4 text-muted-foreground">
+                      <p className="text-xs">
                         Nenhuma mensagem registrada ainda.
-                      </p>
-                      <p className="text-xs mt-2">
-                        As mensagens do agente IA/n8n aparecerão aqui automaticamente
                       </p>
                     </div>
                   )}
 
                   {deal.last_interaction && (
-                    <div className="pt-4 border-t">
-                      <p className="text-sm text-muted-foreground">Última Interação</p>
-                      <p className="font-medium">
+                    <div className="pt-2 border-t">
+                      <p className="text-xs text-muted-foreground">Última Interação</p>
+                      <p className="font-medium text-xs">
                         {new Date(deal.last_interaction).toLocaleString("pt-BR")}
                       </p>
                     </div>
                   )}
 
                   {deal.ai_status && (
-                    <div className="pt-4 border-t">
-                      <p className="text-sm text-muted-foreground">Status IA</p>
-                      <Badge variant="secondary">{deal.ai_status}</Badge>
+                    <div className="pt-2 border-t">
+                      <p className="text-xs text-muted-foreground">Status IA</p>
+                      <Badge variant="secondary" className="text-xs">{deal.ai_status}</Badge>
                     </div>
                   )}
                 </div>
@@ -615,19 +612,19 @@ export function DealDetailSheet({
           {/* Ligação Agendada */}
           {deal.scheduled_call && (
             <Collapsible open={openSections.call} onOpenChange={() => toggleSection('call')}>
-              <div className="border rounded-lg overflow-hidden bg-card shadow-sm">
+              <div className="border rounded-lg overflow-hidden bg-card shadow-sm h-fit">
                 <CollapsibleTrigger className="w-full">
-                  <div className="flex items-center justify-between p-4 hover:bg-accent/50 transition-colors cursor-pointer">
-                    <div className="flex items-center gap-2 font-semibold">
-                      <Phone className="h-5 w-5" />
+                  <div className="flex items-center justify-between p-3 hover:bg-accent/50 transition-colors cursor-pointer bg-background">
+                    <div className="flex items-center gap-2 font-semibold text-sm">
+                      <Phone className="h-4 w-4" />
                       <span>Ligação Agendada</span>
                     </div>
-                    <ChevronDown className={`h-5 w-5 transition-transform ${openSections.call ? 'rotate-180' : ''}`} />
+                    <ChevronDown className={`h-4 w-4 transition-transform ${openSections.call ? 'rotate-180' : ''}`} />
                   </div>
                 </CollapsibleTrigger>
                 <CollapsibleContent>
-                  <div className="border-t p-4 animate-in slide-in-from-top-2">
-                    <p className="font-medium text-lg">
+                  <div className="border-t p-3 animate-in slide-in-from-top-2 bg-background">
+                    <p className="font-medium text-sm">
                       {new Date(deal.scheduled_call).toLocaleString("pt-BR", {
                         dateStyle: "short",
                         timeStyle: "short",
@@ -641,18 +638,18 @@ export function DealDetailSheet({
 
           {/* Ações */}
           <Collapsible open={openSections.actions} onOpenChange={() => toggleSection('actions')}>
-            <div className="border rounded-lg overflow-hidden bg-card shadow-sm">
+            <div className="border rounded-lg overflow-hidden bg-card shadow-sm h-fit col-span-1 md:col-span-2 lg:col-span-3">
               <CollapsibleTrigger className="w-full">
-                <div className="flex items-center justify-between p-4 hover:bg-accent/50 transition-colors cursor-pointer">
-                  <div className="flex items-center gap-2 font-semibold">
-                    <Settings className="h-5 w-5" />
+                <div className="flex items-center justify-between p-3 hover:bg-accent/50 transition-colors cursor-pointer bg-background">
+                  <div className="flex items-center gap-2 font-semibold text-sm">
+                    <Settings className="h-4 w-4" />
                     <span>Ações</span>
                   </div>
-                  <ChevronDown className={`h-5 w-5 transition-transform ${openSections.actions ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`h-4 w-4 transition-transform ${openSections.actions ? 'rotate-180' : ''}`} />
                 </div>
               </CollapsibleTrigger>
               <CollapsibleContent>
-                <div className="border-t p-4 space-y-4 animate-in slide-in-from-top-2">
+                <div className="border-t p-3 space-y-3 animate-in slide-in-from-top-2 bg-background">
                   {/* Mover para Outro Funil */}
                   <div className="space-y-2">
                     <Label>Mover para Outro Funil</Label>
@@ -720,24 +717,24 @@ export function DealDetailSheet({
 
           {/* Histórico de Ações */}
           <Collapsible open={openSections.history} onOpenChange={() => toggleSection('history')}>
-            <div className="border rounded-lg overflow-hidden bg-card shadow-sm">
+            <div className="border rounded-lg overflow-hidden bg-card shadow-sm h-fit">
               <CollapsibleTrigger className="w-full">
-                <div className="flex items-center justify-between p-4 hover:bg-accent/50 transition-colors cursor-pointer">
-                  <div className="flex items-center gap-2 font-semibold">
-                    <Clock className="h-5 w-5" />
+                <div className="flex items-center justify-between p-3 hover:bg-accent/50 transition-colors cursor-pointer bg-background">
+                  <div className="flex items-center gap-2 font-semibold text-sm">
+                    <Clock className="h-4 w-4" />
                     <span>Histórico de Ações</span>
                   </div>
-                  <ChevronDown className={`h-5 w-5 transition-transform ${openSections.history ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`h-4 w-4 transition-transform ${openSections.history ? 'rotate-180' : ''}`} />
                 </div>
               </CollapsibleTrigger>
               <CollapsibleContent>
-                <div className="border-t p-4 animate-in slide-in-from-top-2">
+                <div className="border-t p-3 animate-in slide-in-from-top-2 bg-background max-h-80 overflow-y-auto">
                   {history.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-xs text-muted-foreground">
                       Nenhuma ação registrada
                     </p>
                   ) : (
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       {history.map((item) => {
                         const userName = item.user?.full_name || 
                                        item.user?.email || 
@@ -806,12 +803,12 @@ export function DealDetailSheet({
                         return (
                           <div
                             key={item.id}
-                            className="flex items-start gap-3 p-3 bg-muted/30 rounded-md"
+                            className="flex items-start gap-2 p-2 bg-muted/30 rounded-md"
                           >
-                            <span className="text-lg">{actionIcon}</span>
-                            <div className="flex-1 space-y-1">
-                              <p className="text-sm font-medium">{actionText}</p>
-                              <p className="text-xs text-muted-foreground">
+                            <span className="text-sm">{actionIcon}</span>
+                            <div className="flex-1 space-y-0.5">
+                              <p className="text-xs font-medium">{actionText}</p>
+                              <p className="text-[10px] text-muted-foreground">
                                 {userName} • {date}
                               </p>
                             </div>
@@ -827,38 +824,38 @@ export function DealDetailSheet({
 
           {/* Tarefas */}
           <Collapsible open={openSections.tasks} onOpenChange={() => toggleSection('tasks')}>
-            <div className="border rounded-lg overflow-hidden bg-card shadow-sm">
+            <div className="border rounded-lg overflow-hidden bg-card shadow-sm h-fit">
               <CollapsibleTrigger className="w-full">
-                <div className="flex items-center justify-between p-4 hover:bg-accent/50 transition-colors cursor-pointer">
-                  <div className="flex items-center gap-2 font-semibold">
-                    <CheckSquare className="h-5 w-5" />
+                <div className="flex items-center justify-between p-3 hover:bg-accent/50 transition-colors cursor-pointer bg-background">
+                  <div className="flex items-center gap-2 font-semibold text-sm">
+                    <CheckSquare className="h-4 w-4" />
                     <span>Tarefas</span>
                   </div>
-                  <ChevronDown className={`h-5 w-5 transition-transform ${openSections.tasks ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`h-4 w-4 transition-transform ${openSections.tasks ? 'rotate-180' : ''}`} />
                 </div>
               </CollapsibleTrigger>
               <CollapsibleContent>
-                <div className="border-t p-4 animate-in slide-in-from-top-2">
+                <div className="border-t p-3 animate-in slide-in-from-top-2 bg-background max-h-80 overflow-y-auto">
                   <DealTasks dealId={deal.id} />
                 </div>
               </CollapsibleContent>
             </div>
           </Collapsible>
 
-          {/* Timeline Colaborativa */}
+          {/* Atualizações de Equipe */}
           <Collapsible open={openSections.timeline} onOpenChange={() => toggleSection('timeline')}>
-            <div className="border rounded-lg overflow-hidden bg-card shadow-sm">
+            <div className="border rounded-lg overflow-hidden bg-card shadow-sm h-fit">
               <CollapsibleTrigger className="w-full">
-                <div className="flex items-center justify-between p-4 hover:bg-accent/50 transition-colors cursor-pointer">
-                  <div className="flex items-center gap-2 font-semibold">
-                    <History className="h-5 w-5" />
+                <div className="flex items-center justify-between p-3 hover:bg-accent/50 transition-colors cursor-pointer bg-background">
+                  <div className="flex items-center gap-2 font-semibold text-sm">
+                    <History className="h-4 w-4" />
                     <span>Atualizações de Equipe</span>
                   </div>
-                  <ChevronDown className={`h-5 w-5 transition-transform ${openSections.timeline ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`h-4 w-4 transition-transform ${openSections.timeline ? 'rotate-180' : ''}`} />
                 </div>
               </CollapsibleTrigger>
               <CollapsibleContent>
-                <div className="border-t p-4 animate-in slide-in-from-top-2">
+                <div className="border-t p-3 animate-in slide-in-from-top-2 bg-background max-h-80 overflow-y-auto">
                   <DealTimeline dealId={deal.id} />
                 </div>
               </CollapsibleContent>
