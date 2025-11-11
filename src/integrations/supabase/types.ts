@@ -517,15 +517,20 @@ export type Database = {
       }
       crm_deals: {
         Row: {
+          ai_status: string | null
           architect_id: string | null
+          conversation_history: string | null
           created_at: string | null
           id: string
+          last_interaction: string | null
           lead_id: string | null
           lost_note: string | null
           lost_reason: string | null
           note: string | null
           owner_id: string | null
           pipeline_id: string
+          product_type: string | null
+          scheduled_call: string | null
           stage_entered_at: string | null
           stage_id: string
           stage_position: number | null
@@ -535,15 +540,20 @@ export type Database = {
           value: number | null
         }
         Insert: {
+          ai_status?: string | null
           architect_id?: string | null
+          conversation_history?: string | null
           created_at?: string | null
           id?: string
+          last_interaction?: string | null
           lead_id?: string | null
           lost_note?: string | null
           lost_reason?: string | null
           note?: string | null
           owner_id?: string | null
           pipeline_id: string
+          product_type?: string | null
+          scheduled_call?: string | null
           stage_entered_at?: string | null
           stage_id: string
           stage_position?: number | null
@@ -553,15 +563,20 @@ export type Database = {
           value?: number | null
         }
         Update: {
+          ai_status?: string | null
           architect_id?: string | null
+          conversation_history?: string | null
           created_at?: string | null
           id?: string
+          last_interaction?: string | null
           lead_id?: string | null
           lost_note?: string | null
           lost_reason?: string | null
           note?: string | null
           owner_id?: string | null
           pipeline_id?: string
+          product_type?: string | null
+          scheduled_call?: string | null
           stage_entered_at?: string | null
           stage_id?: string
           stage_position?: number | null
