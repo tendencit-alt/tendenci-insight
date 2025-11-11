@@ -48,6 +48,8 @@ export function DealDetailSheet({
   const [history, setHistory] = useState<any[]>([]);
   const [allStages, setAllStages] = useState<any[]>([]);
   const [selectedStage, setSelectedStage] = useState("");
+  const [wonStageId, setWonStageId] = useState<string | null>(null);
+  const [lostStageId, setLostStageId] = useState<string | null>(null);
 
   // Fetch histórico de movimentações e etapas
   useEffect(() => {
@@ -81,6 +83,13 @@ export function DealDetailSheet({
       
       if (data) {
         setAllStages(data);
+        
+        // Identificar etapas de Ganho e Perdido
+        const wonStage = data.find(s => s.name.toLowerCase().includes('ganho') || s.name.toLowerCase().includes('won'));
+        const lostStage = data.find(s => s.name.toLowerCase().includes('perdido') || s.name.toLowerCase().includes('lost'));
+        
+        if (wonStage) setWonStageId(wonStage.id);
+        if (lostStage) setLostStageId(lostStage.id);
       }
     };
 
@@ -142,10 +151,20 @@ export function DealDetailSheet({
   const handleMarkAsWon = async () => {
     const { data: userData } = await supabase.auth.getUser();
     
+    if (!wonStageId) {
+      toast({
+        title: "Erro",
+        description: "Etapa de ganho não encontrada no funil",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     const { error } = await supabase
       .from("crm_deals")
       .update({ 
         status: "won",
+        stage_id: wonStageId,
         stage_entered_at: new Date().toISOString()
       })
       .eq("id", deal.id);
@@ -163,7 +182,7 @@ export function DealDetailSheet({
     await supabase.from("crm_deal_history").insert({
       deal_id: deal.id,
       from_stage_id: deal.stage_id,
-      to_stage_id: deal.stage_id,
+      to_stage_id: wonStageId,
       moved_by: userData.user?.id,
     });
 
@@ -185,12 +204,22 @@ export function DealDetailSheet({
       return;
     }
 
+    if (!lostStageId) {
+      toast({
+        title: "Erro",
+        description: "Etapa de perdido não encontrada no funil",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const { data: userData } = await supabase.auth.getUser();
 
     const { error } = await supabase
       .from("crm_deals")
       .update({ 
         status: "lost",
+        stage_id: lostStageId,
         lost_reason: lostReason,
         lost_note: lostNote || null,
         stage_entered_at: new Date().toISOString()
@@ -210,7 +239,7 @@ export function DealDetailSheet({
     await supabase.from("crm_deal_history").insert({
       deal_id: deal.id,
       from_stage_id: deal.stage_id,
-      to_stage_id: deal.stage_id,
+      to_stage_id: lostStageId,
       moved_by: userData.user?.id,
     });
 
