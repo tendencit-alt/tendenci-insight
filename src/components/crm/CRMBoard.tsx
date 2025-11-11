@@ -144,13 +144,13 @@ export function CRMBoard({ pipelineId, onRefresh }: CRMBoardProps) {
 
   return (
     <>
-      <div className="flex gap-4 overflow-x-auto pb-4">
+      <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
         {stages.map((stage) => {
           const stageDeals = getDealsByStage(stage.id);
           return (
             <Card 
               key={stage.id} 
-              className="min-w-[320px] flex-shrink-0"
+              className="min-w-[350px] max-w-[400px] flex-shrink-0 hover:shadow-lg transition-shadow"
               onDragOver={handleDragOver}
               onDrop={handleDrop(stage.id)}
             >

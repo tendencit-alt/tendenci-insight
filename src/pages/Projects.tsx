@@ -77,9 +77,9 @@ const Projects = () => {
         </div>
 
         {/* Actions Bar */}
-        <div className="flex flex-wrap gap-4 items-center justify-between">
+        <div className="flex flex-col lg:flex-row gap-4 lg:items-center lg:justify-between">
           <ProjectsFilters filters={filters} onFiltersChange={setFilters} />
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             <Button onClick={() => window.location.href = '/projects/settings'} variant="outline" className="gap-2">
               ⚙️ Configurações
             </Button>
@@ -99,7 +99,7 @@ const Projects = () => {
         </div>
 
         {/* KPIs */}
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-6">
           <Card className="p-6 space-y-2 hover:shadow-xl transition-all duration-300 border-l-4 border-l-blue-500">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium text-muted-foreground">Captados</span>

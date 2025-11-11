@@ -64,14 +64,14 @@ export default function CRM() {
     <DashboardLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col lg:flex-row gap-4 lg:items-center lg:justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">🗂️ CRM Kanban</h1>
             <p className="text-muted-foreground">
               Funis e cadências personalizadas, com métricas, SLA e integrações
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button onClick={() => setIsCreateDialogOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
               Novo Negócio

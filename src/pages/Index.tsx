@@ -191,7 +191,7 @@ const Index = () => {
         </div>
 
         {/* KPI Cards - Primeira linha */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           <StatCard
             title="Custo de Mensagem"
             value={
@@ -254,7 +254,7 @@ const Index = () => {
         </div>
 
         {/* KPI Cards - Segunda linha */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-4">
           <StatCard
             title="Perdido"
             value={`R$ ${Number(crmMetrics?.valor_perdido || 0).toLocaleString('pt-BR')}`}
@@ -291,7 +291,7 @@ const Index = () => {
             <div className="h-1 w-12 bg-gradient-to-r from-primary to-primary-light rounded-full" />
             Análises e Tendências
           </h2>
-          <div className="grid gap-6 md:grid-cols-2">
+          <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
             {/* Origem dos Leads */}
             <Card className="shadow-card border-t-4 border-t-primary hover:shadow-hover transition-all duration-300">
               <CardHeader>

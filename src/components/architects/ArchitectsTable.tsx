@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Eye, Pencil, Trash2, MessageCircle } from "lucide-react";
@@ -124,94 +125,101 @@ export function ArchitectsTable({ refreshKey, onEdit, onView }: ArchitectsTableP
 
   return (
     <>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Nome do Arquiteto</TableHead>
-            <TableHead>Empresa</TableHead>
-            <TableHead>WhatsApp</TableHead>
-            <TableHead className="text-center">Projetos Enviados</TableHead>
-            <TableHead>Data do Último Projeto</TableHead>
-            <TableHead className="text-center">Dias Sem Projeto</TableHead>
-            <TableHead className="text-right">Ações</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {architects.map((arch) => (
-            <TableRow key={arch.id}>
-              <TableCell className="font-medium">{arch.name}</TableCell>
-              <TableCell>{arch.company || '-'}</TableCell>
-              <TableCell>
-                {arch.phone ? (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleWhatsAppClick(arch.phone)}
-                    className="gap-2 hover:text-green-600"
-                  >
-                    <MessageCircle className="w-4 h-4" />
-                    {arch.phone}
-                  </Button>
-                ) : (
-                  <span className="text-muted-foreground">-</span>
-                )}
-              </TableCell>
-              <TableCell className="text-center">
-                <Badge variant="outline" className="font-semibold">
-                  {arch.projects_count}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                {arch.last_project_date ? (
-                  <span className="text-sm">
-                    {format(new Date(arch.last_project_date), "dd/MM/yyyy", { locale: ptBR })}
-                  </span>
-                ) : (
-                  <span className="text-muted-foreground text-sm">Nenhum projeto</span>
-                )}
-              </TableCell>
-              <TableCell className="text-center">
-                <Badge 
-                  variant={
-                    arch.days_without_project > 60 ? 'destructive' : 
-                    arch.days_without_project > 30 ? 'default' : 
-                    'outline'
-                  }
-                  className="font-semibold"
-                >
-                  {arch.days_without_project} {arch.days_without_project === 1 ? 'dia' : 'dias'}
-                </Badge>
-              </TableCell>
-              <TableCell className="text-right">
-                <div className="flex gap-2 justify-end">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onView(arch.id)}
-                  >
-                    <Eye className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onEdit(arch)}
-                  >
-                    <Pencil className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setDeleteId(arch.id)}
-                    className="text-destructive hover:text-destructive"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+      <Card className="overflow-hidden">
+        <div className="p-6 border-b bg-gradient-to-r from-background to-muted/20">
+          <h2 className="text-xl font-semibold">Todos os Arquitetos</h2>
+        </div>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Nome do Arquiteto</TableHead>
+                <TableHead>Empresa</TableHead>
+                <TableHead>WhatsApp</TableHead>
+                <TableHead className="text-center">Projetos Enviados</TableHead>
+                <TableHead>Data do Último Projeto</TableHead>
+                <TableHead className="text-center">Dias Sem Projeto</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {architects.map((arch) => (
+                <TableRow key={arch.id}>
+                  <TableCell className="font-medium">{arch.name}</TableCell>
+                  <TableCell>{arch.company || '-'}</TableCell>
+                  <TableCell>
+                    {arch.phone ? (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleWhatsAppClick(arch.phone)}
+                        className="gap-2 hover:text-green-600"
+                      >
+                        <MessageCircle className="w-4 h-4" />
+                        {arch.phone}
+                      </Button>
+                    ) : (
+                      <span className="text-muted-foreground">-</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <Badge variant="outline" className="font-semibold">
+                      {arch.projects_count}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {arch.last_project_date ? (
+                      <span className="text-sm">
+                        {format(new Date(arch.last_project_date), "dd/MM/yyyy", { locale: ptBR })}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground text-sm">Nenhum projeto</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <Badge 
+                      variant={
+                        arch.days_without_project > 60 ? 'destructive' : 
+                        arch.days_without_project > 30 ? 'default' : 
+                        'outline'
+                      }
+                      className="font-semibold"
+                    >
+                      {arch.days_without_project} {arch.days_without_project === 1 ? 'dia' : 'dias'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex gap-2 justify-end">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onView(arch.id)}
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onEdit(arch)}
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setDeleteId(arch.id)}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </Card>
 
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent>

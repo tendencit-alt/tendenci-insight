@@ -55,7 +55,7 @@ const Architects = () => {
         </div>
 
         {/* Actions Bar */}
-        <div className="flex gap-3 justify-end">
+        <div className="flex flex-wrap gap-3 justify-end">
           <Button onClick={handleRefresh} variant="outline" className="gap-2">
             <RefreshCw className="w-4 h-4" />
             Atualizar
@@ -70,7 +70,7 @@ const Architects = () => {
         <ArchitectKPIs refreshKey={refreshKey} />
 
         {/* Alerts Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <BirthdayAlerts refreshKey={refreshKey} />
           <InactiveArchitects refreshKey={refreshKey} />
         </div>
