@@ -6,9 +6,13 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Edit, CheckCircle, XCircle } from "lucide-react";
+import { Edit, CheckCircle, XCircle, ChevronDown, FileText, User, Users, MessageCircle, Phone, Settings, Clock, CheckSquare, History } from "lucide-react";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -52,6 +56,23 @@ export function DealDetailSheet({
   const [selectedStage, setSelectedStage] = useState("");
   const [allPipelines, setAllPipelines] = useState<any[]>([]);
   const [selectedPipeline, setSelectedPipeline] = useState("");
+  
+  // Estados para controlar seções abertas/fechadas
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
+    deal: false,
+    client: false,
+    owners: false,
+    whatsapp: false,
+    call: false,
+    actions: false,
+    history: false,
+    tasks: false,
+    timeline: false,
+  });
+
+  const toggleSection = (section: string) => {
+    setOpenSections(prev => ({ ...prev, [section]: !prev[section] }));
+  };
 
   // Fetch histórico de movimentações e etapas
   useEffect(() => {
@@ -390,377 +411,459 @@ export function DealDetailSheet({
           <SheetTitle>Detalhes do Negócio</SheetTitle>
         </SheetHeader>
 
-        <div className="mt-6 space-y-6">
-          {/* Informações principais */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-lg">Informações do Negócio</CardTitle>
-              <Button 
-                size="sm" 
-                variant="ghost"
-                onClick={() => setIsEditDialogOpen(true)}
-              >
-                <Edit className="h-4 w-4 mr-1" />
-                Editar
-              </Button>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2">
-                  <p className="text-sm text-muted-foreground">Título</p>
-                  <p className="font-medium text-base">{deal.title}</p>
+        <div className="mt-6 space-y-3">
+          {/* Informações do Negócio */}
+          <Collapsible open={openSections.deal} onOpenChange={() => toggleSection('deal')}>
+            <div className="border rounded-lg overflow-hidden bg-card shadow-sm">
+              <CollapsibleTrigger className="w-full">
+                <div className="flex items-center justify-between p-4 hover:bg-accent/50 transition-colors cursor-pointer">
+                  <div className="flex items-center gap-2 font-semibold">
+                    <FileText className="h-5 w-5" />
+                    <span>Informações do Negócio</span>
+                  </div>
+                  <ChevronDown className={`h-5 w-5 transition-transform ${openSections.deal ? 'rotate-180' : ''}`} />
                 </div>
-                
-                <div>
-                  <p className="text-sm text-muted-foreground">Tipo de Produto</p>
-                  <p className="font-medium">{productType}</p>
-                </div>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="border-t p-4 space-y-4 animate-in slide-in-from-top-2">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="col-span-2">
+                      <p className="text-sm text-muted-foreground">Título</p>
+                      <p className="font-medium text-base">{deal.title}</p>
+                    </div>
+                    
+                    <div>
+                      <p className="text-sm text-muted-foreground">Tipo de Produto</p>
+                      <p className="font-medium">{productType}</p>
+                    </div>
 
-                <div>
-                  <p className="text-sm text-muted-foreground">Estágio</p>
-                  <Badge>{stageName}</Badge>
-                </div>
-                
-                <div>
-                  <p className="text-sm text-muted-foreground">Valor (R$)</p>
-                  <p className="font-medium text-lg">
-                    {Number(deal.value || 0).toLocaleString("pt-BR", {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
-                  </p>
-                </div>
-                
-                <div>
-                  <p className="text-sm text-muted-foreground">
-                    Tempo no estágio
-                  </p>
-                  <p className="font-medium">{timeInStage}h</p>
-                </div>
-              </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Estágio</p>
+                      <Badge>{stageName}</Badge>
+                    </div>
+                    
+                    <div>
+                      <p className="text-sm text-muted-foreground">Valor (R$)</p>
+                      <p className="font-medium text-lg">
+                        {Number(deal.value || 0).toLocaleString("pt-BR", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                      </p>
+                    </div>
+                    
+                    <div>
+                      <p className="text-sm text-muted-foreground">Tempo no estágio</p>
+                      <p className="font-medium">{timeInStage}h</p>
+                    </div>
+                  </div>
 
-              {deal.note && (
-                <div className="pt-4 border-t">
-                  <p className="text-sm text-muted-foreground">Observações</p>
-                  <p className="text-sm mt-1">{deal.note}</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Informações do Cliente */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-lg">Informações do Cliente</CardTitle>
-              <Button 
-                size="sm" 
-                variant="ghost"
-                onClick={() => setIsEditDialogOpen(true)}
-              >
-                <Edit className="h-4 w-4 mr-1" />
-                Editar
-              </Button>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2">
-                  <p className="text-sm text-muted-foreground">Nome do Lead</p>
-                  <p className="font-medium text-base">{clientName}</p>
-                </div>
-                
-                <div>
-                  <p className="text-sm text-muted-foreground">Telefone / WhatsApp</p>
-                  <p className="font-medium">{phone}</p>
-                </div>
-                
-                <div>
-                  <p className="text-sm text-muted-foreground">E-mail</p>
-                  <p className="font-medium">{email}</p>
-                </div>
-                
-                <div>
-                  <p className="text-sm text-muted-foreground">Localização</p>
-                  <p className="font-medium">{location}</p>
-                </div>
-                
-                <div>
-                  <p className="text-sm text-muted-foreground">Temperatura do Lead</p>
-                  <Badge variant={getTemperatureBadge().variant}>
-                    {getTemperatureBadge().text}
-                  </Badge>
-                </div>
-                
-                <div>
-                  <p className="text-sm text-muted-foreground">Origem do Lead</p>
-                  <p className="font-medium">{sourceName}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Responsáveis */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-lg">Responsáveis</CardTitle>
-              <Button 
-                size="sm" 
-                variant="ghost"
-                onClick={() => setIsEditDialogOpen(true)}
-              >
-                <Edit className="h-4 w-4 mr-1" />
-                Editar
-              </Button>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">Arquiteto</p>
-                  <p className="font-medium">{architectName}</p>
-                </div>
-                
-                <div>
-                  <p className="text-sm text-muted-foreground">Responsável Principal</p>
-                  <p className="font-medium">{ownerName}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Histórico WhatsApp - sempre visível */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <span className="text-xl">💬</span>
-                Histórico de Mensagens WhatsApp
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {deal.conversation_history ? (
-                <div className="bg-muted/30 p-4 rounded-md border border-border/50">
-                  <p className="text-sm whitespace-pre-wrap leading-relaxed">
-                    {deal.conversation_history}
-                  </p>
-                </div>
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  <p className="text-sm">
-                    Nenhuma mensagem registrada ainda.
-                  </p>
-                  <p className="text-xs mt-2">
-                    As mensagens do agente IA/n8n aparecerão aqui automaticamente
-                  </p>
-                </div>
-              )}
-
-              {deal.last_interaction && (
-                <div className="pt-4 border-t">
-                  <p className="text-sm text-muted-foreground">Última Interação</p>
-                  <p className="font-medium">
-                    {new Date(deal.last_interaction).toLocaleString("pt-BR")}
-                  </p>
-                </div>
-              )}
-
-              {deal.ai_status && (
-                <div className="pt-4 border-t">
-                  <p className="text-sm text-muted-foreground">Status IA</p>
-                  <Badge variant="secondary">{deal.ai_status}</Badge>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Ligação Agendada */}
-          {deal.scheduled_call && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <span className="text-xl">📞</span>
-                  Ligação Agendada
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="font-medium text-lg">
-                  {new Date(deal.scheduled_call).toLocaleString("pt-BR", {
-                    dateStyle: "short",
-                    timeStyle: "short",
-                  })}
-                </p>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Ações */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Ações</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Mover para Outro Funil */}
-              <div className="space-y-2">
-                <Label>Mover para Outro Funil</Label>
-                <div className="space-y-2">
-                  <Select value={selectedPipeline} onValueChange={handlePipelineChange}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o funil..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {allPipelines.map((pipeline) => (
-                        <SelectItem key={pipeline.id} value={pipeline.id}>
-                          {pipeline.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  
-                  {selectedPipeline && (
-                    <Select value={selectedStage} onValueChange={setSelectedStage}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione a etapa..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {allStages.map((stage) => (
-                          <SelectItem key={stage.id} value={stage.id}>
-                            {stage.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  {deal.note && (
+                    <div className="pt-4 border-t">
+                      <p className="text-sm text-muted-foreground">Observações</p>
+                      <p className="text-sm mt-1">{deal.note}</p>
+                    </div>
                   )}
                   
                   <Button 
-                    onClick={handleMoveToPipeline} 
-                    disabled={!selectedPipeline || !selectedStage}
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => setIsEditDialogOpen(true)}
                     className="w-full"
                   >
-                    Mover para Funil Selecionado
+                    <Edit className="h-4 w-4 mr-1" />
+                    Editar Negócio
                   </Button>
                 </div>
-              </div>
+              </CollapsibleContent>
+            </div>
+          </Collapsible>
 
-              {/* Botões de Ação */}
-              <div className="flex gap-2 flex-wrap pt-2 border-t">
-                <Button size="sm" onClick={() => setIsEditDialogOpen(true)}>
-                  <Edit className="mr-2 h-4 w-4" />
-                  Editar
-                </Button>
-                <Button size="sm" variant="default" onClick={handleMarkAsWon}>
-                  <CheckCircle className="mr-2 h-4 w-4" />
-                  Marcar como Ganho
-                </Button>
-                <Button size="sm" variant="destructive" onClick={() => setLostDialog(true)}>
-                  <XCircle className="mr-2 h-4 w-4" />
-                  Marcar como Perdido
-                </Button>
-                <Button size="sm" variant="outline" onClick={() => setDeleteDialog(true)}>
-                  Excluir Negócio
-                </Button>
+          {/* Informações do Cliente */}
+          <Collapsible open={openSections.client} onOpenChange={() => toggleSection('client')}>
+            <div className="border rounded-lg overflow-hidden bg-card shadow-sm">
+              <CollapsibleTrigger className="w-full">
+                <div className="flex items-center justify-between p-4 hover:bg-accent/50 transition-colors cursor-pointer">
+                  <div className="flex items-center gap-2 font-semibold">
+                    <User className="h-5 w-5" />
+                    <span>Informações do Cliente</span>
+                  </div>
+                  <ChevronDown className={`h-5 w-5 transition-transform ${openSections.client ? 'rotate-180' : ''}`} />
+                </div>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="border-t p-4 space-y-4 animate-in slide-in-from-top-2">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="col-span-2">
+                      <p className="text-sm text-muted-foreground">Nome do Lead</p>
+                      <p className="font-medium text-base">{clientName}</p>
+                    </div>
+                    
+                    <div>
+                      <p className="text-sm text-muted-foreground">Telefone / WhatsApp</p>
+                      <p className="font-medium">{phone}</p>
+                    </div>
+                    
+                    <div>
+                      <p className="text-sm text-muted-foreground">E-mail</p>
+                      <p className="font-medium">{email}</p>
+                    </div>
+                    
+                    <div>
+                      <p className="text-sm text-muted-foreground">Localização</p>
+                      <p className="font-medium">{location}</p>
+                    </div>
+                    
+                    <div>
+                      <p className="text-sm text-muted-foreground">Temperatura do Lead</p>
+                      <Badge variant={getTemperatureBadge().variant}>
+                        {getTemperatureBadge().text}
+                      </Badge>
+                    </div>
+                    
+                    <div>
+                      <p className="text-sm text-muted-foreground">Origem do Lead</p>
+                      <p className="font-medium">{sourceName}</p>
+                    </div>
+                  </div>
+                </div>
+              </CollapsibleContent>
+            </div>
+          </Collapsible>
+
+          {/* Responsáveis */}
+          <Collapsible open={openSections.owners} onOpenChange={() => toggleSection('owners')}>
+            <div className="border rounded-lg overflow-hidden bg-card shadow-sm">
+              <CollapsibleTrigger className="w-full">
+                <div className="flex items-center justify-between p-4 hover:bg-accent/50 transition-colors cursor-pointer">
+                  <div className="flex items-center gap-2 font-semibold">
+                    <Users className="h-5 w-5" />
+                    <span>Responsáveis</span>
+                  </div>
+                  <ChevronDown className={`h-5 w-5 transition-transform ${openSections.owners ? 'rotate-180' : ''}`} />
+                </div>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="border-t p-4 space-y-4 animate-in slide-in-from-top-2">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Arquiteto</p>
+                      <p className="font-medium">{architectName}</p>
+                    </div>
+                    
+                    <div>
+                      <p className="text-sm text-muted-foreground">Responsável Principal</p>
+                      <p className="font-medium">{ownerName}</p>
+                    </div>
+                  </div>
+                </div>
+              </CollapsibleContent>
+            </div>
+          </Collapsible>
+
+          {/* Histórico WhatsApp */}
+          <Collapsible open={openSections.whatsapp} onOpenChange={() => toggleSection('whatsapp')}>
+            <div className="border rounded-lg overflow-hidden bg-card shadow-sm">
+              <CollapsibleTrigger className="w-full">
+                <div className="flex items-center justify-between p-4 hover:bg-accent/50 transition-colors cursor-pointer">
+                  <div className="flex items-center gap-2 font-semibold">
+                    <MessageCircle className="h-5 w-5" />
+                    <span>Histórico de Mensagens WhatsApp</span>
+                  </div>
+                  <ChevronDown className={`h-5 w-5 transition-transform ${openSections.whatsapp ? 'rotate-180' : ''}`} />
+                </div>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="border-t p-4 space-y-3 animate-in slide-in-from-top-2">
+                  {deal.conversation_history ? (
+                    <div className="bg-muted/30 p-4 rounded-md border border-border/50">
+                      <p className="text-sm whitespace-pre-wrap leading-relaxed">
+                        {deal.conversation_history}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <p className="text-sm">
+                        Nenhuma mensagem registrada ainda.
+                      </p>
+                      <p className="text-xs mt-2">
+                        As mensagens do agente IA/n8n aparecerão aqui automaticamente
+                      </p>
+                    </div>
+                  )}
+
+                  {deal.last_interaction && (
+                    <div className="pt-4 border-t">
+                      <p className="text-sm text-muted-foreground">Última Interação</p>
+                      <p className="font-medium">
+                        {new Date(deal.last_interaction).toLocaleString("pt-BR")}
+                      </p>
+                    </div>
+                  )}
+
+                  {deal.ai_status && (
+                    <div className="pt-4 border-t">
+                      <p className="text-sm text-muted-foreground">Status IA</p>
+                      <Badge variant="secondary">{deal.ai_status}</Badge>
+                    </div>
+                  )}
+                </div>
+              </CollapsibleContent>
+            </div>
+          </Collapsible>
+
+          {/* Ligação Agendada */}
+          {deal.scheduled_call && (
+            <Collapsible open={openSections.call} onOpenChange={() => toggleSection('call')}>
+              <div className="border rounded-lg overflow-hidden bg-card shadow-sm">
+                <CollapsibleTrigger className="w-full">
+                  <div className="flex items-center justify-between p-4 hover:bg-accent/50 transition-colors cursor-pointer">
+                    <div className="flex items-center gap-2 font-semibold">
+                      <Phone className="h-5 w-5" />
+                      <span>Ligação Agendada</span>
+                    </div>
+                    <ChevronDown className={`h-5 w-5 transition-transform ${openSections.call ? 'rotate-180' : ''}`} />
+                  </div>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="border-t p-4 animate-in slide-in-from-top-2">
+                    <p className="font-medium text-lg">
+                      {new Date(deal.scheduled_call).toLocaleString("pt-BR", {
+                        dateStyle: "short",
+                        timeStyle: "short",
+                      })}
+                    </p>
+                  </div>
+                </CollapsibleContent>
               </div>
-            </CardContent>
-          </Card>
+            </Collapsible>
+          )}
+
+          {/* Ações */}
+          <Collapsible open={openSections.actions} onOpenChange={() => toggleSection('actions')}>
+            <div className="border rounded-lg overflow-hidden bg-card shadow-sm">
+              <CollapsibleTrigger className="w-full">
+                <div className="flex items-center justify-between p-4 hover:bg-accent/50 transition-colors cursor-pointer">
+                  <div className="flex items-center gap-2 font-semibold">
+                    <Settings className="h-5 w-5" />
+                    <span>Ações</span>
+                  </div>
+                  <ChevronDown className={`h-5 w-5 transition-transform ${openSections.actions ? 'rotate-180' : ''}`} />
+                </div>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="border-t p-4 space-y-4 animate-in slide-in-from-top-2">
+                  {/* Mover para Outro Funil */}
+                  <div className="space-y-2">
+                    <Label>Mover para Outro Funil</Label>
+                    <div className="space-y-2">
+                      <Select value={selectedPipeline} onValueChange={handlePipelineChange}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o funil..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {allPipelines.map((pipeline) => (
+                            <SelectItem key={pipeline.id} value={pipeline.id}>
+                              {pipeline.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      
+                      {selectedPipeline && (
+                        <Select value={selectedStage} onValueChange={setSelectedStage}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione a etapa..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {allStages.map((stage) => (
+                              <SelectItem key={stage.id} value={stage.id}>
+                                {stage.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                      
+                      <Button 
+                        onClick={handleMoveToPipeline} 
+                        disabled={!selectedPipeline || !selectedStage}
+                        className="w-full"
+                      >
+                        Mover para Funil Selecionado
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Botões de Ação */}
+                  <div className="flex gap-2 flex-wrap pt-2 border-t">
+                    <Button size="sm" onClick={() => setIsEditDialogOpen(true)}>
+                      <Edit className="mr-2 h-4 w-4" />
+                      Editar
+                    </Button>
+                    <Button size="sm" variant="default" onClick={handleMarkAsWon}>
+                      <CheckCircle className="mr-2 h-4 w-4" />
+                      Marcar como Ganho
+                    </Button>
+                    <Button size="sm" variant="destructive" onClick={() => setLostDialog(true)}>
+                      <XCircle className="mr-2 h-4 w-4" />
+                      Marcar como Perdido
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => setDeleteDialog(true)}>
+                      Excluir Negócio
+                    </Button>
+                  </div>
+                </div>
+              </CollapsibleContent>
+            </div>
+          </Collapsible>
 
           {/* Histórico de Ações */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Histórico de Ações</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {history.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  Nenhuma ação registrada
-                </p>
-              ) : (
-                <div className="space-y-3">
-                  {history.map((item) => {
-                    const userName = item.user?.full_name || 
-                                   item.user?.email || 
-                                   "Sistema";
-                    const date = new Date(item.created_at || item.moved_at).toLocaleString("pt-BR", {
-                      dateStyle: "short",
-                      timeStyle: "short",
-                    });
-
-                    let actionText = "";
-                    let actionIcon = "📝";
-
-                    switch (item.action_type) {
-                      case "created":
-                        actionText = "Negócio criado";
-                        actionIcon = "✨";
-                        break;
-                      case "stage_change":
-                        const fromStage = item.from_stage?.name || "Início";
-                        const toStage = item.to_stage?.name || "Desconhecido";
-                        actionText = `Movido de "${fromStage}" para "${toStage}"`;
-                        actionIcon = "➡️";
-                        break;
-                      case "won":
-                        actionText = "Negócio marcado como ganho";
-                        actionIcon = "✅";
-                        break;
-                      case "lost":
-                        actionText = item.description || "Negócio marcado como perdido";
-                        actionIcon = "❌";
-                        break;
-                      case "field_change":
-                        const fieldLabels: Record<string, string> = {
-                          title: "Título",
-                          value: "Valor",
-                          product_type: "Tipo de produto",
-                          owner_id: "Responsável",
-                          architect_id: "Arquiteto",
-                        };
-                        const fieldLabel = fieldLabels[item.field_name || ""] || item.field_name;
-                        
-                        if (item.field_name === "value") {
-                          const oldVal = item.old_value ? `R$ ${Number(item.old_value).toLocaleString("pt-BR")}` : "N/A";
-                          const newVal = item.new_value ? `R$ ${Number(item.new_value).toLocaleString("pt-BR")}` : "N/A";
-                          actionText = `${fieldLabel} alterado de ${oldVal} para ${newVal}`;
-                        } else if (item.old_value && item.new_value) {
-                          actionText = `${fieldLabel} alterado de "${item.old_value}" para "${item.new_value}"`;
-                        } else {
-                          actionText = `${fieldLabel} alterado`;
-                        }
-                        actionIcon = "✏️";
-                        break;
-                      case "note_change":
-                        actionText = "Observações atualizadas";
-                        actionIcon = "📄";
-                        break;
-                      case "schedule_change":
-                        actionText = item.description || "Agendamento alterado";
-                        actionIcon = "📅";
-                        break;
-                      default:
-                        actionText = item.description || "Ação realizada";
-                        actionIcon = "🔔";
-                    }
-
-                    return (
-                      <div
-                        key={item.id}
-                        className="flex items-start gap-3 p-3 bg-muted/30 rounded-md"
-                      >
-                        <span className="text-lg">{actionIcon}</span>
-                        <div className="flex-1 space-y-1">
-                          <p className="text-sm font-medium">{actionText}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {userName} • {date}
-                          </p>
-                        </div>
-                      </div>
-                    );
-                  })}
+          <Collapsible open={openSections.history} onOpenChange={() => toggleSection('history')}>
+            <div className="border rounded-lg overflow-hidden bg-card shadow-sm">
+              <CollapsibleTrigger className="w-full">
+                <div className="flex items-center justify-between p-4 hover:bg-accent/50 transition-colors cursor-pointer">
+                  <div className="flex items-center gap-2 font-semibold">
+                    <Clock className="h-5 w-5" />
+                    <span>Histórico de Ações</span>
+                  </div>
+                  <ChevronDown className={`h-5 w-5 transition-transform ${openSections.history ? 'rotate-180' : ''}`} />
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="border-t p-4 animate-in slide-in-from-top-2">
+                  {history.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      Nenhuma ação registrada
+                    </p>
+                  ) : (
+                    <div className="space-y-3">
+                      {history.map((item) => {
+                        const userName = item.user?.full_name || 
+                                       item.user?.email || 
+                                       "Sistema";
+                        const date = new Date(item.created_at || item.moved_at).toLocaleString("pt-BR", {
+                          dateStyle: "short",
+                          timeStyle: "short",
+                        });
+
+                        let actionText = "";
+                        let actionIcon = "📝";
+
+                        switch (item.action_type) {
+                          case "created":
+                            actionText = "Negócio criado";
+                            actionIcon = "✨";
+                            break;
+                          case "stage_change":
+                            const fromStage = item.from_stage?.name || "Início";
+                            const toStage = item.to_stage?.name || "Desconhecido";
+                            actionText = `Movido de "${fromStage}" para "${toStage}"`;
+                            actionIcon = "➡️";
+                            break;
+                          case "won":
+                            actionText = "Negócio marcado como ganho";
+                            actionIcon = "✅";
+                            break;
+                          case "lost":
+                            actionText = item.description || "Negócio marcado como perdido";
+                            actionIcon = "❌";
+                            break;
+                          case "field_change":
+                            const fieldLabels: Record<string, string> = {
+                              title: "Título",
+                              value: "Valor",
+                              product_type: "Tipo de produto",
+                              owner_id: "Responsável",
+                              architect_id: "Arquiteto",
+                            };
+                            const fieldLabel = fieldLabels[item.field_name || ""] || item.field_name;
+                            
+                            if (item.field_name === "value") {
+                              const oldVal = item.old_value ? `R$ ${Number(item.old_value).toLocaleString("pt-BR")}` : "N/A";
+                              const newVal = item.new_value ? `R$ ${Number(item.new_value).toLocaleString("pt-BR")}` : "N/A";
+                              actionText = `${fieldLabel} alterado de ${oldVal} para ${newVal}`;
+                            } else if (item.old_value && item.new_value) {
+                              actionText = `${fieldLabel} alterado de "${item.old_value}" para "${item.new_value}"`;
+                            } else {
+                              actionText = `${fieldLabel} alterado`;
+                            }
+                            actionIcon = "✏️";
+                            break;
+                          case "note_change":
+                            actionText = "Observações atualizadas";
+                            actionIcon = "📄";
+                            break;
+                          case "schedule_change":
+                            actionText = item.description || "Agendamento alterado";
+                            actionIcon = "📅";
+                            break;
+                          default:
+                            actionText = item.description || "Ação realizada";
+                            actionIcon = "🔔";
+                        }
+
+                        return (
+                          <div
+                            key={item.id}
+                            className="flex items-start gap-3 p-3 bg-muted/30 rounded-md"
+                          >
+                            <span className="text-lg">{actionIcon}</span>
+                            <div className="flex-1 space-y-1">
+                              <p className="text-sm font-medium">{actionText}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {userName} • {date}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </CollapsibleContent>
+            </div>
+          </Collapsible>
 
           {/* Tarefas */}
-          <DealTasks dealId={deal.id} />
+          <Collapsible open={openSections.tasks} onOpenChange={() => toggleSection('tasks')}>
+            <div className="border rounded-lg overflow-hidden bg-card shadow-sm">
+              <CollapsibleTrigger className="w-full">
+                <div className="flex items-center justify-between p-4 hover:bg-accent/50 transition-colors cursor-pointer">
+                  <div className="flex items-center gap-2 font-semibold">
+                    <CheckSquare className="h-5 w-5" />
+                    <span>Tarefas</span>
+                  </div>
+                  <ChevronDown className={`h-5 w-5 transition-transform ${openSections.tasks ? 'rotate-180' : ''}`} />
+                </div>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="border-t p-4 animate-in slide-in-from-top-2">
+                  <DealTasks dealId={deal.id} />
+                </div>
+              </CollapsibleContent>
+            </div>
+          </Collapsible>
 
           {/* Timeline Colaborativa */}
-          <DealTimeline dealId={deal.id} />
+          <Collapsible open={openSections.timeline} onOpenChange={() => toggleSection('timeline')}>
+            <div className="border rounded-lg overflow-hidden bg-card shadow-sm">
+              <CollapsibleTrigger className="w-full">
+                <div className="flex items-center justify-between p-4 hover:bg-accent/50 transition-colors cursor-pointer">
+                  <div className="flex items-center gap-2 font-semibold">
+                    <History className="h-5 w-5" />
+                    <span>Timeline Colaborativa</span>
+                  </div>
+                  <ChevronDown className={`h-5 w-5 transition-transform ${openSections.timeline ? 'rotate-180' : ''}`} />
+                </div>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="border-t p-4 animate-in slide-in-from-top-2">
+                  <DealTimeline dealId={deal.id} />
+                </div>
+              </CollapsibleContent>
+            </div>
+          </Collapsible>
         </div>
       </SheetContent>
 
