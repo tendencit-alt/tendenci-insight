@@ -46,8 +46,10 @@ export function DealDetailSheet({
   const [lostReason, setLostReason] = useState("");
   const [lostNote, setLostNote] = useState("");
   const [history, setHistory] = useState<any[]>([]);
+  const [allStages, setAllStages] = useState<any[]>([]);
+  const [selectedStage, setSelectedStage] = useState("");
 
-  // Fetch histórico de movimentações
+  // Fetch histórico de movimentações e etapas
   useEffect(() => {
     if (!deal?.id) return;
 
@@ -68,7 +70,22 @@ export function DealDetailSheet({
       }
     };
 
+    const fetchStages = async () => {
+      if (!deal.pipeline_id) return;
+      
+      const { data } = await supabase
+        .from("crm_stages")
+        .select("*")
+        .eq("pipeline_id", deal.pipeline_id)
+        .order("position", { ascending: true });
+      
+      if (data) {
+        setAllStages(data);
+      }
+    };
+
     fetchHistory();
+    fetchStages();
 
     // Configurar realtime
     const channel = supabase
@@ -90,7 +107,7 @@ export function DealDetailSheet({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [deal?.id]);
+  }, [deal?.id, deal?.pipeline_id]);
 
   if (!deal) return null;
 
@@ -123,9 +140,14 @@ export function DealDetailSheet({
   };
 
   const handleMarkAsWon = async () => {
+    const { data: userData } = await supabase.auth.getUser();
+    
     const { error } = await supabase
       .from("crm_deals")
-      .update({ status: "won" })
+      .update({ 
+        status: "won",
+        stage_entered_at: new Date().toISOString()
+      })
       .eq("id", deal.id);
 
     if (error) {
@@ -136,6 +158,14 @@ export function DealDetailSheet({
       });
       return;
     }
+
+    // Registrar no histórico
+    await supabase.from("crm_deal_history").insert({
+      deal_id: deal.id,
+      from_stage_id: deal.stage_id,
+      to_stage_id: deal.stage_id,
+      moved_by: userData.user?.id,
+    });
 
     toast({
       title: "Sucesso",
@@ -155,12 +185,15 @@ export function DealDetailSheet({
       return;
     }
 
+    const { data: userData } = await supabase.auth.getUser();
+
     const { error } = await supabase
       .from("crm_deals")
       .update({ 
         status: "lost",
         lost_reason: lostReason,
         lost_note: lostNote || null,
+        stage_entered_at: new Date().toISOString()
       })
       .eq("id", deal.id);
 
@@ -173,6 +206,14 @@ export function DealDetailSheet({
       return;
     }
 
+    // Registrar no histórico
+    await supabase.from("crm_deal_history").insert({
+      deal_id: deal.id,
+      from_stage_id: deal.stage_id,
+      to_stage_id: deal.stage_id,
+      moved_by: userData.user?.id,
+    });
+
     toast({
       title: "Negócio perdido",
       description: "Negócio marcado como perdido.",
@@ -181,6 +222,51 @@ export function DealDetailSheet({
     setLostReason("");
     setLostNote("");
     onOpenChange(false);
+    onSuccess();
+  };
+
+  const handleMoveToStage = async () => {
+    if (!selectedStage) {
+      toast({
+        title: "Selecione uma etapa",
+        description: "Por favor, selecione a etapa de destino.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const { data: userData } = await supabase.auth.getUser();
+
+    const { error } = await supabase
+      .from("crm_deals")
+      .update({
+        stage_id: selectedStage,
+        stage_entered_at: new Date().toISOString(),
+      })
+      .eq("id", deal.id);
+
+    if (error) {
+      toast({
+        title: "Erro ao mover negócio",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Registrar no histórico
+    await supabase.from("crm_deal_history").insert({
+      deal_id: deal.id,
+      from_stage_id: deal.stage_id,
+      to_stage_id: selectedStage,
+      moved_by: userData.user?.id,
+    });
+
+    toast({
+      title: "Sucesso",
+      description: "Negócio movido com sucesso!",
+    });
+    setSelectedStage("");
     onSuccess();
   };
 
@@ -354,8 +440,34 @@ export function DealDetailSheet({
 
           {/* Ações */}
           <Card>
-            <CardContent className="pt-6">
-              <div className="flex gap-2 flex-wrap">
+            <CardHeader>
+              <CardTitle className="text-lg">Ações</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Mover para Etapa */}
+              <div className="space-y-2">
+                <Label>Mover para Etapa</Label>
+                <div className="flex gap-2">
+                  <Select value={selectedStage} onValueChange={setSelectedStage}>
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder="Selecione a etapa..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {allStages.map((stage) => (
+                        <SelectItem key={stage.id} value={stage.id}>
+                          {stage.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button onClick={handleMoveToStage} disabled={!selectedStage}>
+                    Mover
+                  </Button>
+                </div>
+              </div>
+
+              {/* Botões de Ação */}
+              <div className="flex gap-2 flex-wrap pt-2 border-t">
                 <Button size="sm" onClick={() => setIsEditDialogOpen(true)}>
                   <Edit className="mr-2 h-4 w-4" />
                   Editar
