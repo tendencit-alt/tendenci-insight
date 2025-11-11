@@ -158,47 +158,47 @@ Deno.serve(async (req) => {
 
     console.log('Lead criado:', newLead.id)
 
-    // 5. Criar deal (se informações fornecidas)
+    // 5. Criar deal no CRM Kanban
     let dealData = null
-    if (data.deal_title && data.pipeline_id) {
-      // Se stage_id não fornecido, busca primeira etapa do pipeline
-      let stageId = data.stage_id
-      if (!stageId) {
-        const { data: firstStage } = await supabase
-          .from('crm_stages')
-          .select('id')
-          .eq('pipeline_id', data.pipeline_id)
-          .order('position', { ascending: true })
-          .limit(1)
-          .single()
-        
-        stageId = firstStage?.id
-      }
+    
+    // ID do funil padrão (Funil de Vendas Padrão)
+    const defaultPipelineId = '34747cb5-063a-4369-b619-d4afa6095d0d'
+    const pipelineId = data.pipeline_id || defaultPipelineId
+    
+    // Buscar primeira etapa do pipeline
+    const { data: firstStage } = await supabase
+      .from('crm_stages')
+      .select('id')
+      .eq('pipeline_id', pipelineId)
+      .order('position', { ascending: true })
+      .limit(1)
+      .single()
+    
+    if (firstStage) {
+      const { data: newDeal, error: dealError } = await supabase
+        .from('crm_deals')
+        .insert({
+          pipeline_id: pipelineId,
+          stage_id: data.stage_id || firstStage.id,
+          lead_id: newLead.id,
+          title: data.deal_title || `Lead ${data.name}`,
+          value: data.deal_value || 0,
+          product_type: data.product_type,
+          conversation_history: data.conversation_history,
+          ai_status: data.ai_status,
+          status: 'aberto'
+        })
+        .select()
+        .single()
 
-      if (stageId) {
-        const { data: newDeal, error: dealError } = await supabase
-          .from('crm_deals')
-          .insert({
-            pipeline_id: data.pipeline_id,
-            stage_id: stageId,
-            lead_id: newLead.id,
-            title: data.deal_title,
-            value: data.deal_value || 0,
-            product_type: data.product_type,
-            conversation_history: data.conversation_history,
-            ai_status: data.ai_status,
-            status: 'aberto'
-          })
-          .select()
-          .single()
-
-        if (dealError) {
-          console.error('Erro ao criar deal:', dealError)
-        } else {
-          console.log('Deal criado:', newDeal.id)
-          dealData = newDeal
-        }
+      if (dealError) {
+        console.error('Erro ao criar deal:', dealError)
+      } else {
+        console.log('✅ Deal criado no CRM Kanban:', newDeal.id)
+        dealData = newDeal
       }
+    } else {
+      console.error('❌ Primeira etapa do funil não encontrada')
     }
 
     return new Response(
