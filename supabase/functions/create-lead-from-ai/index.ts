@@ -24,8 +24,13 @@ interface LeadData {
 }
 
 Deno.serve(async (req) => {
+  console.log('🚀 Edge Function create-lead-from-ai iniciada')
+  console.log('📥 Método HTTP:', req.method)
+  console.log('📍 URL:', req.url)
+  
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
+    console.log('✅ Respondendo a OPTIONS (CORS preflight)')
     return new Response('ok', { headers: corsHeaders })
   }
 
@@ -33,11 +38,29 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     console.log('✅ Usando SERVICE_ROLE_KEY para bypass RLS')
+    console.log('🔗 Supabase URL:', supabaseUrl)
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    const rawData: any = await req.json()
-
-    console.log('Recebendo dados da IA:', rawData)
+    // Log do body raw
+    const bodyText = await req.text()
+    console.log('📦 Body recebido (raw):', bodyText)
+    
+    let rawData: any
+    try {
+      rawData = JSON.parse(bodyText)
+      console.log('✅ JSON parseado com sucesso')
+      console.log('📋 Dados parseados:', JSON.stringify(rawData, null, 2))
+    } catch (parseError) {
+      console.error('❌ Erro ao parsear JSON:', parseError)
+      return new Response(
+        JSON.stringify({ 
+          error: 'JSON inválido',
+          details: parseError instanceof Error ? parseError.message : 'Erro desconhecido',
+          received: bodyText
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
 
     // Normalizar campos para aceitar português e inglês
     const data: LeadData = {
@@ -63,16 +86,20 @@ Deno.serve(async (req) => {
     }
 
     // Validações básicas
+    console.log('🔍 Validando dados:', { name: data.name, phone: data.phone })
     if (!data.name || !data.phone) {
+      console.error('❌ Validação falhou - Nome ou telefone ausente')
       return new Response(
         JSON.stringify({ 
           error: 'Nome e telefone são obrigatórios',
           received: { name: data.name, phone: data.phone },
+          rawData: rawData,
           tip: 'Envie os campos como "name" ou "nome" e "phone" ou "contato_whatsapp"'
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
+    console.log('✅ Validação passou')
 
     // 1. Verificar se cliente já existe pelo telefone
     const { data: existingClient } = await supabase
@@ -218,10 +245,15 @@ Deno.serve(async (req) => {
     )
 
   } catch (error) {
-    console.error('Erro geral:', error)
+    console.error('❌ ERRO GERAL CAPTURADO:', error)
+    console.error('Stack trace:', error instanceof Error ? error.stack : 'N/A')
     const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido'
     return new Response(
-      JSON.stringify({ error: 'Erro interno do servidor', details: errorMessage }),
+      JSON.stringify({ 
+        error: 'Erro interno do servidor', 
+        details: errorMessage,
+        stack: error instanceof Error ? error.stack : 'N/A'
+      }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }

@@ -14,6 +14,48 @@ export function N8nIntegrationGuide() {
     toast.success(`${label} copiado!`);
   };
 
+  const testIntegration = async () => {
+    const testData = {
+      name: "Teste n8n",
+      phone: "34999887766",
+      email: "teste@n8n.com",
+      source: "WhatsApp",
+      temperature: "quente",
+      deal_title: "Teste de Integração"
+    };
+
+    console.log("🧪 Testando integração n8n...");
+    console.log("📤 Enviando dados:", testData);
+    console.log("🔗 URL:", apiUrl);
+
+    try {
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': apiKey,
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify(testData)
+      });
+
+      console.log("📥 Status da resposta:", response.status);
+      const responseData = await response.json();
+      console.log("📋 Dados da resposta:", responseData);
+
+      if (response.ok) {
+        toast.success("✅ Integração funcionando! Lead de teste criado.");
+        console.log("✅ Sucesso:", responseData);
+      } else {
+        toast.error(`❌ Erro ${response.status}: ${responseData.error || 'Erro desconhecido'}`);
+        console.error("❌ Erro:", responseData);
+      }
+    } catch (error) {
+      console.error("❌ Erro na requisição:", error);
+      toast.error("❌ Erro ao testar integração. Veja o console.");
+    }
+  };
+
   const exampleMinimal = JSON.stringify({
     name: "João Silva",
     phone: "34991234567"
@@ -256,19 +298,28 @@ export function N8nIntegrationGuide() {
 
       <div className="flex gap-3">
         <Button
+          variant="default"
+          className="flex-1 bg-green-600 hover:bg-green-700"
+          onClick={testIntegration}
+        >
+          <Zap className="w-4 h-4 mr-2" />
+          Testar Integração
+        </Button>
+        <Button
           variant="outline"
           className="flex-1"
           onClick={() => window.open("/API_INTEGRATION_GUIDE.md", "_blank")}
         >
           <ExternalLink className="w-4 h-4 mr-2" />
-          Ver Documentação Completa
+          Ver Documentação
         </Button>
         <Button
+          variant="outline"
           className="flex-1"
           onClick={() => copyToClipboard(apiUrl + "\n\nAPI Key: " + apiKey, "Credenciais")}
         >
           <Copy className="w-4 h-4 mr-2" />
-          Copiar Todas as Credenciais
+          Copiar Credenciais
         </Button>
       </div>
     </div>
