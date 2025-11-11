@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { CRMKPIs } from "@/components/crm/CRMKPIs";
 import { CRMSLAAlerts } from "@/components/crm/CRMSLAAlerts";
+import { CRMTasksPanel } from "@/components/crm/CRMTasksPanel";
 import { CRMBoard } from "@/components/crm/CRMBoard";
 import { CRMFilters } from "@/components/crm/CRMFilters";
 import { CreateDealDialog } from "@/components/crm/CreateDealDialog";
@@ -103,6 +104,9 @@ export default function CRM() {
 
         {/* SLA Alerts */}
         <CRMSLAAlerts pipelineId={selectedPipeline} key={`sla-${refreshKey}`} />
+
+        {/* Tarefas Pendentes */}
+        <CRMTasksPanel pipelineId={selectedPipeline} key={`tasks-${refreshKey}`} />
 
         {/* Kanban Board */}
         <CRMBoard 

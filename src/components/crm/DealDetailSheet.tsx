@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { EditDealDialog } from "./EditDealDialog";
 import { DealTimeline } from "./DealTimeline";
+import { DealTasks } from "./DealTasks";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -685,6 +686,9 @@ export function DealDetailSheet({
               )}
             </CardContent>
           </Card>
+
+          {/* Tarefas */}
+          <DealTasks dealId={deal.id} />
 
           {/* Timeline Colaborativa */}
           <DealTimeline dealId={deal.id} />
