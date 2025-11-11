@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { Loader2, Lock } from 'lucide-react';
 import tendenciLogo from '@/assets/tendenci-logo.png';
+
+const motivationalMessages = [
+  "Bom dia! Vamos conquistar mais um dia de sucesso!",
+  "Sua dedicação faz a diferença. Vamos em frente!",
+  "Hoje é um ótimo dia para fechar novos negócios!",
+  "Acredite no seu potencial. Você é capaz de grandes coisas!",
+  "Cada cliente é uma nova oportunidade. Vamos nessa!",
+  "Seu trabalho transforma sonhos em realidade!",
+  "Foco, energia e determinação. Esse é o seu dia!",
+  "Sucesso é a soma de pequenos esforços repetidos dia após dia!"
+];
 const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [loginData, setLoginData] = useState({
@@ -26,6 +37,24 @@ const Auth = () => {
     signUp
   } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Reproduz mensagem motivacional aleatória ao carregar a página
+    const randomMessage = motivationalMessages[Math.floor(Math.random() * motivationalMessages.length)];
+    
+    if ('speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance(randomMessage);
+      utterance.lang = 'pt-BR';
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+      
+      // Aguarda um pequeno delay para garantir que a página carregou
+      setTimeout(() => {
+        window.speechSynthesis.speak(utterance);
+      }, 500);
+    }
+  }, []);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!loginData.email || !loginData.password) {
@@ -86,7 +115,7 @@ const Auth = () => {
     setLoading(false);
   };
   return <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/20 to-muted/30 p-4">
-      <Card className="w-full max-w-md shadow-2xl">
+      <Card className="w-full max-w-md shadow-2xl animate-fade-in animate-scale-in">
         <CardHeader className="space-y-4 bg-red-800">
           <div className="flex justify-center">
             <img src={tendenciLogo} alt="Tendenci" className="h-16 w-auto" />
