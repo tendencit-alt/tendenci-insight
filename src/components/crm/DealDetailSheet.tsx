@@ -50,6 +50,8 @@ export function DealDetailSheet({
   const [history, setHistory] = useState<any[]>([]);
   const [allStages, setAllStages] = useState<any[]>([]);
   const [selectedStage, setSelectedStage] = useState("");
+  const [allPipelines, setAllPipelines] = useState<any[]>([]);
+  const [selectedPipeline, setSelectedPipeline] = useState("");
 
   // Fetch histórico de movimentações e etapas
   useEffect(() => {
@@ -77,13 +79,14 @@ export function DealDetailSheet({
       }
     };
 
-    const fetchStages = async () => {
-      if (!deal.pipeline_id) return;
+    const fetchStages = async (pipelineId?: string) => {
+      const targetPipeline = pipelineId || deal.pipeline_id;
+      if (!targetPipeline) return;
       
       const { data } = await supabase
         .from("crm_stages")
         .select("*")
-        .eq("pipeline_id", deal.pipeline_id)
+        .eq("pipeline_id", targetPipeline)
         .order("position", { ascending: true });
       
       if (data) {
@@ -97,8 +100,20 @@ export function DealDetailSheet({
       }
     };
 
+    const fetchPipelines = async () => {
+      const { data } = await supabase
+        .from("crm_pipelines")
+        .select("*")
+        .order("created_at", { ascending: true });
+      
+      if (data) {
+        setAllPipelines(data);
+      }
+    };
+
     fetchHistory();
     fetchStages();
+    fetchPipelines();
 
     // Configurar realtime
     const channel = supabase
@@ -256,11 +271,20 @@ export function DealDetailSheet({
     onSuccess();
   };
 
-  const handleMoveToStage = async () => {
+  const handleMoveToPipeline = async () => {
+    if (!selectedPipeline) {
+      toast({
+        title: "Selecione um funil",
+        description: "Por favor, selecione o funil de destino.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!selectedStage) {
       toast({
         title: "Selecione uma etapa",
-        description: "Por favor, selecione a etapa de destino.",
+        description: "Por favor, selecione a etapa de destino no novo funil.",
         variant: "destructive",
       });
       return;
@@ -269,6 +293,7 @@ export function DealDetailSheet({
     const { error } = await supabase
       .from("crm_deals")
       .update({
+        pipeline_id: selectedPipeline,
         stage_id: selectedStage,
         stage_entered_at: new Date().toISOString(),
       })
@@ -285,10 +310,9 @@ export function DealDetailSheet({
 
     toast({
       title: "Sucesso",
-      description: "Negócio movido com sucesso!",
+      description: "Negócio movido para outro funil com sucesso!",
     });
     
-    // Aguardar um pouco para o trigger processar e então refetch
     setTimeout(() => {
       const refetchHistory = async () => {
         const { data } = await supabase
@@ -306,8 +330,33 @@ export function DealDetailSheet({
       refetchHistory();
     }, 500);
     
+    setSelectedPipeline("");
     setSelectedStage("");
+    onOpenChange(false);
     onSuccess();
+  };
+
+  const handlePipelineChange = (pipelineId: string) => {
+    setSelectedPipeline(pipelineId);
+    setSelectedStage("");
+    fetchStages(pipelineId);
+  };
+
+  const fetchStages = async (pipelineId: string) => {
+    const { data } = await supabase
+      .from("crm_stages")
+      .select("*")
+      .eq("pipeline_id", pipelineId)
+      .order("position", { ascending: true });
+    
+    if (data) {
+      const normalStages = data.filter(s => {
+        const name = s.name.toLowerCase();
+        return !(name.includes('ganho') || name.includes('won') || name.startsWith('✅') ||
+                 name.includes('perdido') || name.includes('lost') || name.startsWith('❌'));
+      });
+      setAllStages(normalStages);
+    }
   };
 
   const handleDelete = async () => {
@@ -547,24 +596,44 @@ export function DealDetailSheet({
               <CardTitle className="text-lg">Ações</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Mover para Etapa */}
+              {/* Mover para Outro Funil */}
               <div className="space-y-2">
-                <Label>Mover para Etapa</Label>
-                <div className="flex gap-2">
-                  <Select value={selectedStage} onValueChange={setSelectedStage}>
-                    <SelectTrigger className="flex-1">
-                      <SelectValue placeholder="Selecione a etapa..." />
+                <Label>Mover para Outro Funil</Label>
+                <div className="space-y-2">
+                  <Select value={selectedPipeline} onValueChange={handlePipelineChange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o funil..." />
                     </SelectTrigger>
                     <SelectContent>
-                      {allStages.map((stage) => (
-                        <SelectItem key={stage.id} value={stage.id}>
-                          {stage.name}
+                      {allPipelines.map((pipeline) => (
+                        <SelectItem key={pipeline.id} value={pipeline.id}>
+                          {pipeline.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  <Button onClick={handleMoveToStage} disabled={!selectedStage}>
-                    Mover
+                  
+                  {selectedPipeline && (
+                    <Select value={selectedStage} onValueChange={setSelectedStage}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione a etapa..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {allStages.map((stage) => (
+                          <SelectItem key={stage.id} value={stage.id}>
+                            {stage.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                  
+                  <Button 
+                    onClick={handleMoveToPipeline} 
+                    disabled={!selectedPipeline || !selectedStage}
+                    className="w-full"
+                  >
+                    Mover para Funil Selecionado
                   </Button>
                 </div>
               </div>
