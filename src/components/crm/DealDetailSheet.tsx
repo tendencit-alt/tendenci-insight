@@ -49,8 +49,6 @@ export function DealDetailSheet({
   const [history, setHistory] = useState<any[]>([]);
   const [allStages, setAllStages] = useState<any[]>([]);
   const [selectedStage, setSelectedStage] = useState("");
-  const [wonStageId, setWonStageId] = useState<string | null>(null);
-  const [lostStageId, setLostStageId] = useState<string | null>(null);
 
   // Fetch histórico de movimentações e etapas
   useEffect(() => {
@@ -83,21 +81,13 @@ export function DealDetailSheet({
         .order("position", { ascending: true });
       
       if (data) {
-        setAllStages(data);
-        
-        // Buscar etapas de ganho e perdido
-        const wonStage = data.find(s => {
+        // Filtrar apenas etapas normais (sem ganho/perdido)
+        const normalStages = data.filter(s => {
           const name = s.name.toLowerCase();
-          return name.includes('ganho') || name.includes('won') || name.startsWith('✅');
+          return !(name.includes('ganho') || name.includes('won') || name.startsWith('✅') ||
+                   name.includes('perdido') || name.includes('lost') || name.startsWith('❌'));
         });
-        
-        const lostStage = data.find(s => {
-          const name = s.name.toLowerCase();
-          return name.includes('perdido') || name.includes('lost') || name.startsWith('❌');
-        });
-        
-        if (wonStage) setWonStageId(wonStage.id);
-        if (lostStage) setLostStageId(lostStage.id);
+        setAllStages(normalStages);
       }
     };
 
@@ -157,20 +147,10 @@ export function DealDetailSheet({
   };
 
   const handleMarkAsWon = async () => {
-    if (!wonStageId) {
-      toast({
-        title: "Erro",
-        description: "Etapa de ganho não encontrada no funil",
-        variant: "destructive",
-      });
-      return;
-    }
-    
     const { error } = await supabase
       .from("crm_deals")
       .update({ 
         status: "won",
-        stage_id: wonStageId,
         stage_entered_at: new Date().toISOString()
       })
       .eq("id", deal.id);
@@ -221,20 +201,10 @@ export function DealDetailSheet({
       return;
     }
 
-    if (!lostStageId) {
-      toast({
-        title: "Erro",
-        description: "Etapa de perdido não encontrada no funil",
-        variant: "destructive",
-      });
-      return;
-    }
-
     const { error } = await supabase
       .from("crm_deals")
       .update({ 
         status: "lost",
-        stage_id: lostStageId,
         lost_reason: lostReason,
         lost_note: lostNote || null,
         stage_entered_at: new Date().toISOString()
