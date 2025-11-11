@@ -465,30 +465,45 @@ export type Database = {
       }
       crm_deal_history: {
         Row: {
+          action_type: string | null
           created_at: string | null
           deal_id: string
+          description: string | null
+          field_name: string | null
           from_stage_id: string | null
           id: string
           moved_at: string | null
           moved_by: string | null
+          new_value: string | null
+          old_value: string | null
           to_stage_id: string
         }
         Insert: {
+          action_type?: string | null
           created_at?: string | null
           deal_id: string
+          description?: string | null
+          field_name?: string | null
           from_stage_id?: string | null
           id?: string
           moved_at?: string | null
           moved_by?: string | null
+          new_value?: string | null
+          old_value?: string | null
           to_stage_id: string
         }
         Update: {
+          action_type?: string | null
           created_at?: string | null
           deal_id?: string
+          description?: string | null
+          field_name?: string | null
           from_stage_id?: string | null
           id?: string
           moved_at?: string | null
           moved_by?: string | null
+          new_value?: string | null
+          old_value?: string | null
           to_stage_id?: string
         }
         Relationships: [

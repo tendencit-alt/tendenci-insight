@@ -179,14 +179,6 @@ export function DealDetailSheet({
       return;
     }
 
-    // Registrar no histórico
-    await supabase.from("crm_deal_history").insert({
-      deal_id: deal.id,
-      from_stage_id: deal.stage_id,
-      to_stage_id: wonStageId,
-      moved_by: userData.user?.id,
-    });
-
     toast({
       title: "Sucesso",
       description: "Negócio marcado como ganho!",
@@ -236,14 +228,6 @@ export function DealDetailSheet({
       return;
     }
 
-    // Registrar no histórico
-    await supabase.from("crm_deal_history").insert({
-      deal_id: deal.id,
-      from_stage_id: deal.stage_id,
-      to_stage_id: lostStageId,
-      moved_by: userData.user?.id,
-    });
-
     toast({
       title: "Negócio perdido",
       description: "Negócio marcado como perdido.",
@@ -283,14 +267,6 @@ export function DealDetailSheet({
       });
       return;
     }
-
-    // Registrar no histórico
-    await supabase.from("crm_deal_history").insert({
-      deal_id: deal.id,
-      from_stage_id: deal.stage_id,
-      to_stage_id: selectedStage,
-      moved_by: userData.user?.id,
-    });
 
     toast({
       title: "Sucesso",
@@ -565,40 +541,98 @@ export function DealDetailSheet({
             </CardContent>
           </Card>
 
-          {/* Histórico de Movimentação */}
+          {/* Histórico de Ações */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Histórico de Movimentação</CardTitle>
+              <CardTitle className="text-lg">Histórico de Ações</CardTitle>
             </CardHeader>
             <CardContent>
               {history.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  Nenhuma movimentação registrada
+                  Nenhuma ação registrada
                 </p>
               ) : (
                 <div className="space-y-3">
-                  {history.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex items-start gap-3 p-3 rounded-lg border bg-muted/30"
-                    >
-                      <div className="flex-1 space-y-1">
-                        <div className="flex items-center gap-2">
-                          {item.from_stage && (
-                            <>
-                              <Badge variant="outline">{item.from_stage.name}</Badge>
-                              <span className="text-muted-foreground">→</span>
-                            </>
-                          )}
-                          <Badge>{item.to_stage.name}</Badge>
+                  {history.map((item) => {
+                    const userName = item.moved_by_user?.full_name || 
+                                   item.moved_by_user?.email || 
+                                   "Sistema";
+                    const date = new Date(item.moved_at).toLocaleString("pt-BR", {
+                      dateStyle: "short",
+                      timeStyle: "short",
+                    });
+
+                    let actionText = "";
+                    let actionIcon = "📝";
+
+                    switch (item.action_type) {
+                      case "created":
+                        actionText = "Negócio criado";
+                        actionIcon = "✨";
+                        break;
+                      case "stage_change":
+                        const fromStage = item.from_stage?.name || "Início";
+                        const toStage = item.to_stage?.name || "Desconhecido";
+                        actionText = `Movido de "${fromStage}" para "${toStage}"`;
+                        actionIcon = "➡️";
+                        break;
+                      case "won":
+                        actionText = "Negócio marcado como ganho";
+                        actionIcon = "✅";
+                        break;
+                      case "lost":
+                        actionText = item.description || "Negócio marcado como perdido";
+                        actionIcon = "❌";
+                        break;
+                      case "field_change":
+                        const fieldLabels: Record<string, string> = {
+                          title: "Título",
+                          value: "Valor",
+                          product_type: "Tipo de produto",
+                          owner_id: "Responsável",
+                          architect_id: "Arquiteto",
+                        };
+                        const fieldLabel = fieldLabels[item.field_name || ""] || item.field_name;
+                        
+                        if (item.field_name === "value") {
+                          const oldVal = item.old_value ? `R$ ${Number(item.old_value).toLocaleString("pt-BR")}` : "N/A";
+                          const newVal = item.new_value ? `R$ ${Number(item.new_value).toLocaleString("pt-BR")}` : "N/A";
+                          actionText = `${fieldLabel} alterado de ${oldVal} para ${newVal}`;
+                        } else if (item.old_value && item.new_value) {
+                          actionText = `${fieldLabel} alterado de "${item.old_value}" para "${item.new_value}"`;
+                        } else {
+                          actionText = `${fieldLabel} alterado`;
+                        }
+                        actionIcon = "✏️";
+                        break;
+                      case "note_change":
+                        actionText = "Observações atualizadas";
+                        actionIcon = "📄";
+                        break;
+                      case "schedule_change":
+                        actionText = item.description || "Agendamento alterado";
+                        actionIcon = "📅";
+                        break;
+                      default:
+                        actionText = item.description || "Ação realizada";
+                        actionIcon = "🔔";
+                    }
+
+                    return (
+                      <div
+                        key={item.id}
+                        className="flex items-start gap-3 p-3 bg-muted/30 rounded-md"
+                      >
+                        <span className="text-lg">{actionIcon}</span>
+                        <div className="flex-1 space-y-1">
+                          <p className="text-sm font-medium">{actionText}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {userName} • {date}
+                          </p>
                         </div>
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(item.moved_at).toLocaleString("pt-BR")} •{" "}
-                          {item.moved_by_user?.full_name || item.moved_by_user?.email || "Sistema"}
-                        </p>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </CardContent>

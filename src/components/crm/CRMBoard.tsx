@@ -144,15 +144,6 @@ export function CRMBoard({ pipelineId, onRefresh }: CRMBoardProps) {
       return;
     }
 
-    // Registrar no histórico
-    const { data: userData } = await supabase.auth.getUser();
-    await supabase.from("crm_deal_history").insert({
-      deal_id: draggedDeal.id,
-      from_stage_id: draggedDeal.stage_id,
-      to_stage_id: stageId,
-      moved_by: userData.user?.id,
-    });
-
     toast({
       title: "Sucesso",
       description: draggedDeal.status !== "aberto" 
