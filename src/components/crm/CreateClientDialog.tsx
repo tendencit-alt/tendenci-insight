@@ -36,48 +36,80 @@ export function CreateClientDialog({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-
-    const { data, error } = await supabase
-      .from("clients")
-      .insert({
-        name: formData.name,
-        phone: formData.phone || null,
-        email: formData.email || null,
-        city: formData.city || null,
-        state: formData.state || null,
-        notes: formData.notes || null,
-      })
-      .select()
-      .single();
-
-    setLoading(false);
-
-    if (error) {
+    
+    // Validação básica
+    if (!formData.name.trim()) {
       toast({
-        title: "Erro ao criar cliente",
-        description: error.message,
+        title: "Campo obrigatório",
+        description: "Nome é obrigatório",
         variant: "destructive",
       });
       return;
     }
 
-    toast({
-      title: "Sucesso",
-      description: "Cliente criado com sucesso!",
-    });
+    if (!formData.phone.trim()) {
+      toast({
+        title: "Campo obrigatório",
+        description: "Telefone/WhatsApp é obrigatório",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    setFormData({
-      name: "",
-      phone: "",
-      email: "",
-      city: "",
-      state: "",
-      notes: "",
-    });
-    onOpenChange(false);
-    if (onSuccess && data) {
-      onSuccess(data.id);
+    setLoading(true);
+
+    try {
+      const { data, error } = await supabase
+        .from("clients")
+        .insert({
+          name: formData.name.trim(),
+          phone: formData.phone.trim(),
+          email: formData.email.trim() || null,
+          city: formData.city.trim() || null,
+          state: formData.state.trim().toUpperCase() || null,
+          notes: formData.notes.trim() || null,
+        })
+        .select()
+        .single();
+
+      setLoading(false);
+
+      if (error) {
+        console.error("Erro ao criar cliente:", error);
+        toast({
+          title: "Erro ao criar cliente",
+          description: error.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log("Cliente criado com sucesso:", data);
+      toast({
+        title: "Sucesso",
+        description: "Cliente criado com sucesso!",
+      });
+
+      setFormData({
+        name: "",
+        phone: "",
+        email: "",
+        city: "",
+        state: "",
+        notes: "",
+      });
+      onOpenChange(false);
+      if (onSuccess && data) {
+        onSuccess(data.id);
+      }
+    } catch (error: any) {
+      setLoading(false);
+      console.error("Erro geral:", error);
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao criar cliente",
+        variant: "destructive",
+      });
     }
   };
 
@@ -91,31 +123,33 @@ export function CreateClientDialog({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2 col-span-2">
-              <Label htmlFor="name">Nome *</Label>
+              <Label htmlFor="name">Nome do Lead *</Label>
               <Input
                 id="name"
                 value={formData.name}
                 onChange={(e) =>
                   setFormData({ ...formData, name: e.target.value })
                 }
-                placeholder="Nome completo do cliente"
+                placeholder="Digite o nome do lead"
                 required
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="phone">Telefone</Label>
+            <div className="space-y-2 col-span-2">
+              <Label htmlFor="phone">Telefone / WhatsApp *</Label>
               <Input
                 id="phone"
+                type="tel"
                 value={formData.phone}
                 onChange={(e) =>
                   setFormData({ ...formData, phone: e.target.value })
                 }
-                placeholder="(00) 00000-0000"
+                placeholder="(DDD) 9XXXX-XXXX"
+                required
               />
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-2 col-span-2">
               <Label htmlFor="email">E-mail</Label>
               <Input
                 id="email"
@@ -124,7 +158,7 @@ export function CreateClientDialog({
                 onChange={(e) =>
                   setFormData({ ...formData, email: e.target.value })
                 }
-                placeholder="email@exemplo.com"
+                placeholder="exemplo@dominio.com"
               />
             </div>
 
@@ -146,7 +180,7 @@ export function CreateClientDialog({
                 id="state"
                 value={formData.state}
                 onChange={(e) =>
-                  setFormData({ ...formData, state: e.target.value })
+                  setFormData({ ...formData, state: e.target.value.toUpperCase() })
                 }
                 placeholder="UF"
                 maxLength={2}
@@ -172,6 +206,7 @@ export function CreateClientDialog({
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
+              disabled={loading}
             >
               Cancelar
             </Button>

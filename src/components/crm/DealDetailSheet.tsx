@@ -90,13 +90,31 @@ export function DealDetailSheet({
 
   const clientName = deal.lead?.client?.name || "Sem cliente";
   const phone = deal.lead?.client?.phone || "N/A";
+  const email = deal.lead?.client?.email || "N/A";
+  const city = deal.lead?.client?.city || "";
+  const state = deal.lead?.client?.state || "";
+  const location = city && state ? `${city} - ${state}` : city || state || "N/A";
   const architectName = deal.architect?.name || "Não atribuído";
+  const ownerName = deal.owner?.full_name || deal.owner?.email || "Não atribuído";
   const stageName = deal.stage?.name || "N/A";
   const temperature = deal.lead?.temperature || "frio";
+  const sourceName = deal.lead?.source?.name || "N/A";
+  const productType = deal.product_type || "N/A";
   const timeInStage = Math.floor(
     (new Date().getTime() - new Date(deal.stage_entered_at).getTime()) /
       (1000 * 60 * 60)
   );
+
+  const getTemperatureBadge = () => {
+    switch (temperature) {
+      case "quente":
+        return { variant: "default" as const, text: "🔥 Quente" };
+      case "morno":
+        return { variant: "secondary" as const, text: "☀️ Morno" };
+      default:
+        return { variant: "outline" as const, text: "❄️ Frio" };
+    }
+  };
 
   const handleMarkAsWon = async () => {
     const { error } = await supabase
@@ -159,43 +177,36 @@ export function DealDetailSheet({
           {/* Informações principais */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Informações</CardTitle>
+              <CardTitle className="text-lg">Informações do Negócio</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="grid grid-cols-2 gap-4">
-                <div>
+                <div className="col-span-2">
                   <p className="text-sm text-muted-foreground">Título</p>
-                  <p className="font-medium">{deal.title}</p>
+                  <p className="font-medium text-base">{deal.title}</p>
                 </div>
+                
                 <div>
-                  <p className="text-sm text-muted-foreground">Cliente</p>
-                  <p className="font-medium">{clientName}</p>
+                  <p className="text-sm text-muted-foreground">Tipo de Produto</p>
+                  <p className="font-medium">{productType}</p>
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Telefone</p>
-                  <p className="font-medium">{phone}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Arquiteto</p>
-                  <p className="font-medium">{architectName}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Temperatura</p>
-                  <Badge variant={temperature === "quente" ? "default" : "secondary"}>
-                    {temperature === "quente" ? "🔥 Quente" : "❄️ Frio"}
-                  </Badge>
-                </div>
+
                 <div>
                   <p className="text-sm text-muted-foreground">Estágio</p>
                   <Badge>{stageName}</Badge>
                 </div>
+                
                 <div>
                   <p className="text-sm text-muted-foreground">Valor (R$)</p>
-                  <p className="font-medium">
-                    {Number(deal.value || 0).toLocaleString("pt-BR")}
+                  <p className="font-medium text-lg">
+                    {Number(deal.value || 0).toLocaleString("pt-BR", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
                   </p>
                 </div>
-                <div className="col-span-2">
+                
+                <div>
                   <p className="text-sm text-muted-foreground">
                     Tempo no estágio
                   </p>
@@ -209,8 +220,124 @@ export function DealDetailSheet({
                   <p className="text-sm mt-1">{deal.note}</p>
                 </div>
               )}
+            </CardContent>
+          </Card>
 
-              <div className="flex gap-2 pt-4 flex-wrap">
+          {/* Informações do Cliente */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Informações do Cliente</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2">
+                  <p className="text-sm text-muted-foreground">Nome do Lead</p>
+                  <p className="font-medium text-base">{clientName}</p>
+                </div>
+                
+                <div>
+                  <p className="text-sm text-muted-foreground">Telefone / WhatsApp</p>
+                  <p className="font-medium">{phone}</p>
+                </div>
+                
+                <div>
+                  <p className="text-sm text-muted-foreground">E-mail</p>
+                  <p className="font-medium">{email}</p>
+                </div>
+                
+                <div>
+                  <p className="text-sm text-muted-foreground">Localização</p>
+                  <p className="font-medium">{location}</p>
+                </div>
+                
+                <div>
+                  <p className="text-sm text-muted-foreground">Temperatura do Lead</p>
+                  <Badge variant={getTemperatureBadge().variant}>
+                    {getTemperatureBadge().text}
+                  </Badge>
+                </div>
+                
+                <div>
+                  <p className="text-sm text-muted-foreground">Origem do Lead</p>
+                  <p className="font-medium">{sourceName}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Responsáveis */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Responsáveis</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">Arquiteto</p>
+                  <p className="font-medium">{architectName}</p>
+                </div>
+                
+                <div>
+                  <p className="text-sm text-muted-foreground">Responsável Principal</p>
+                  <p className="font-medium">{ownerName}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Comunicação */}
+          {(deal.conversation_history || deal.scheduled_call) && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Comunicação</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {deal.scheduled_call && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Ligação Agendada</p>
+                    <p className="font-medium">
+                      {new Date(deal.scheduled_call).toLocaleString("pt-BR", {
+                        dateStyle: "short",
+                        timeStyle: "short",
+                      })}
+                    </p>
+                  </div>
+                )}
+                
+                {deal.conversation_history && (
+                  <div className="pt-4 border-t">
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Histórico de Mensagens (IA / WhatsApp)
+                    </p>
+                    <div className="bg-muted/30 p-3 rounded-md">
+                      <p className="text-sm whitespace-pre-wrap">{deal.conversation_history}</p>
+                    </div>
+                  </div>
+                )}
+
+                {deal.last_interaction && (
+                  <div className="pt-4 border-t">
+                    <p className="text-sm text-muted-foreground">Última Interação</p>
+                    <p className="font-medium">
+                      {new Date(deal.last_interaction).toLocaleString("pt-BR")}
+                    </p>
+                  </div>
+                )}
+
+                {deal.ai_status && (
+                  <div className="pt-4 border-t">
+                    <p className="text-sm text-muted-foreground">Status IA</p>
+                    <Badge variant="secondary">{deal.ai_status}</Badge>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Ações */}
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex gap-2 flex-wrap">
                 <Button size="sm" onClick={() => setIsEditDialogOpen(true)}>
                   <Edit className="mr-2 h-4 w-4" />
                   Editar

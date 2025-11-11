@@ -49,8 +49,14 @@ export function CRMBoard({ pipelineId, onRefresh }: CRMBoardProps) {
       .from("crm_deals")
       .select(`
         *,
-        lead:leads(id, client:clients(name, phone)),
+        lead:leads(
+          id, 
+          temperature,
+          source:lead_sources(id, name),
+          client:clients(name, phone, email, city, state)
+        ),
         architect:architects(name),
+        owner:profiles(id, full_name, email),
         stage:crm_stages(name)
       `)
       .eq("pipeline_id", pipelineId)
