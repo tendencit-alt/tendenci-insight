@@ -172,10 +172,11 @@ export function ManagePipelineDialog({
 
     if (checkError) {
       toast({
-        title: "Erro",
+        title: "Erro ao verificar negócios",
         description: checkError.message,
         variant: "destructive",
       });
+      setDeleteDialog(null);
       return;
     }
 
@@ -192,16 +193,33 @@ export function ManagePipelineDialog({
     const { error } = await supabase.from("crm_pipelines").delete().eq("id", id);
 
     if (error) {
-      toast({
-        title: "Erro",
-        description: error.message,
-        variant: "destructive",
-      });
+      // Tratamento específico para erro de foreign key constraint
+      if (error.message.includes("foreign key constraint")) {
+        toast({
+          title: "Não é possível excluir",
+          description: "Este funil possui registros vinculados. Remova todos os vínculos antes de excluir.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Erro ao excluir funil",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
+      setDeleteDialog(null);
       return;
     }
 
     toast({ title: "Sucesso", description: "Funil excluído!" });
     setDeleteDialog(null);
+    
+    // Atualizar a lista e selecionar outro funil se o atual foi deletado
+    if (activePipeline === id) {
+      setActivePipeline("");
+      setStages([]);
+    }
+    
     fetchPipelines();
     onSuccess();
   };
