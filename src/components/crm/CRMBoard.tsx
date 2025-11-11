@@ -29,7 +29,7 @@ export function CRMBoard({ pipelineId, onRefresh }: CRMBoardProps) {
     setLoading(true);
     
     // Fetch stages
-    const { data: stagesData, error: stagesError } = await supabase
+    let { data: stagesData, error: stagesError } = await supabase
       .from("crm_stages")
       .select("*")
       .eq("pipeline_id", pipelineId)
@@ -42,6 +42,52 @@ export function CRMBoard({ pipelineId, onRefresh }: CRMBoardProps) {
         variant: "destructive",
       });
       return;
+    }
+
+    // Verificar e criar etapas de ganho e perdido se não existirem
+    if (stagesData) {
+      const wonStage = stagesData.find(s => {
+        const name = s.name.toLowerCase();
+        return name.includes('ganho') || name.includes('won') || name.startsWith('✅');
+      });
+      
+      const lostStage = stagesData.find(s => {
+        const name = s.name.toLowerCase();
+        return name.includes('perdido') || name.includes('lost') || name.startsWith('❌');
+      });
+      
+      const stagesToCreate = [];
+      
+      if (!wonStage) {
+        const maxPosition = Math.max(...stagesData.map(s => s.position), -1);
+        stagesToCreate.push({
+          pipeline_id: pipelineId,
+          name: "✅ Ganho",
+          position: maxPosition + 1,
+          sla_hours: null,
+        });
+      }
+      
+      if (!lostStage) {
+        const maxPosition = Math.max(...stagesData.map(s => s.position), -1);
+        stagesToCreate.push({
+          pipeline_id: pipelineId,
+          name: "❌ Perdido",
+          position: maxPosition + 2,
+          sla_hours: null,
+        });
+      }
+      
+      if (stagesToCreate.length > 0) {
+        const { data: newStages, error } = await supabase
+          .from("crm_stages")
+          .insert(stagesToCreate)
+          .select();
+        
+        if (!error && newStages) {
+          stagesData = [...stagesData, ...newStages];
+        }
+      }
     }
 
     // Fetch deals with related data (including won and lost)

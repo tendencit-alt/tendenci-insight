@@ -76,21 +76,73 @@ export function DealDetailSheet({
     const fetchStages = async () => {
       if (!deal.pipeline_id) return;
       
-      const { data } = await supabase
+      let { data } = await supabase
         .from("crm_stages")
         .select("*")
         .eq("pipeline_id", deal.pipeline_id)
         .order("position", { ascending: true });
       
       if (data) {
+        // Verificar se existem etapas de ganho e perdido
+        const wonStage = data.find(s => {
+          const name = s.name.toLowerCase();
+          return name.includes('ganho') || name.includes('won') || name.startsWith('✅');
+        });
+        
+        const lostStage = data.find(s => {
+          const name = s.name.toLowerCase();
+          return name.includes('perdido') || name.includes('lost') || name.startsWith('❌');
+        });
+        
+        // Se não existirem, criar automaticamente
+        const stagesToCreate = [];
+        
+        if (!wonStage) {
+          const maxPosition = Math.max(...data.map(s => s.position), -1);
+          stagesToCreate.push({
+            pipeline_id: deal.pipeline_id,
+            name: "✅ Ganho",
+            position: maxPosition + 1,
+            sla_hours: null,
+          });
+        }
+        
+        if (!lostStage) {
+          const maxPosition = Math.max(...data.map(s => s.position), -1);
+          stagesToCreate.push({
+            pipeline_id: deal.pipeline_id,
+            name: "❌ Perdido",
+            position: maxPosition + 2,
+            sla_hours: null,
+          });
+        }
+        
+        if (stagesToCreate.length > 0) {
+          const { data: newStages, error } = await supabase
+            .from("crm_stages")
+            .insert(stagesToCreate)
+            .select();
+          
+          if (!error && newStages) {
+            data = [...data, ...newStages];
+          }
+        }
+        
         setAllStages(data);
         
-        // Identificar etapas de Ganho e Perdido
-        const wonStage = data.find(s => s.name.toLowerCase().includes('ganho') || s.name.toLowerCase().includes('won'));
-        const lostStage = data.find(s => s.name.toLowerCase().includes('perdido') || s.name.toLowerCase().includes('lost'));
+        // Buscar novamente as etapas de ganho e perdido
+        const finalWonStage = data.find(s => {
+          const name = s.name.toLowerCase();
+          return name.includes('ganho') || name.includes('won') || name.startsWith('✅');
+        });
         
-        if (wonStage) setWonStageId(wonStage.id);
-        if (lostStage) setLostStageId(lostStage.id);
+        const finalLostStage = data.find(s => {
+          const name = s.name.toLowerCase();
+          return name.includes('perdido') || name.includes('lost') || name.startsWith('❌');
+        });
+        
+        if (finalWonStage) setWonStageId(finalWonStage.id);
+        if (finalLostStage) setLostStageId(finalLostStage.id);
       }
     };
 
