@@ -34,14 +34,38 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    const data: LeadData = await req.json()
+    const rawData: any = await req.json()
 
-    console.log('Recebendo dados da IA:', data)
+    console.log('Recebendo dados da IA:', rawData)
+
+    // Normalizar campos para aceitar português e inglês
+    const data: LeadData = {
+      name: rawData.name || rawData.nome,
+      phone: (rawData.phone || rawData.contato_whatsapp || rawData.telefone || '')
+        .replace('@s.whatsapp.net', '')
+        .replace(/\D/g, ''), // Remove tudo que não é número
+      email: rawData.email,
+      city: rawData.city || rawData.cidade,
+      state: rawData.state || rawData.estado,
+      source: rawData.source || rawData.origem,
+      temperature: (rawData.temperature || rawData.temperatura || 'frio').toLowerCase(),
+      deal_title: rawData.deal_title || rawData.titulo_negocio,
+      deal_value: rawData.deal_value || rawData.valor_negocio,
+      product_type: rawData.product_type || rawData.tipo_produto,
+      pipeline_id: rawData.pipeline_id || rawData.funil_id,
+      stage_id: rawData.stage_id || rawData.etapa_id,
+      conversation_history: rawData.conversation_history || rawData.conversa_whatsapp || rawData.historico_conversa,
+      ai_status: rawData.ai_status || rawData.status_ia
+    }
 
     // Validações básicas
     if (!data.name || !data.phone) {
       return new Response(
-        JSON.stringify({ error: 'Nome e telefone são obrigatórios' }),
+        JSON.stringify({ 
+          error: 'Nome e telefone são obrigatórios',
+          received: { name: data.name, phone: data.phone },
+          tip: 'Envie os campos como "name" ou "nome" e "phone" ou "contato_whatsapp"'
+        }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }

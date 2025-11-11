@@ -33,62 +33,85 @@ https://emnwuzrysqoiwapzmnbv.supabase.co/functions/v1/create-lead-from-ai
 
 ## 📤 Estrutura do JSON (Body)
 
-### Campos Obrigatórios
+### ✨ Campos Aceitos (Português OU Inglês)
+
+**Campos Obrigatórios:**
+- `name` ou `nome`: Nome completo do cliente
+- `phone` ou `contato_whatsapp` ou `telefone`: Telefone/WhatsApp
+  - Aceita com ou sem `@s.whatsapp.net`
+  - Apenas números serão salvos (formatação automática)
+
+**Dados do Cliente (opcionais):**
+- `email`: E-mail do cliente
+- `city` ou `cidade`: Cidade
+- `state` ou `estado`: Estado (UF)
+
+**Dados do Lead (opcionais):**
+- `source` ou `origem`: Origem do lead
+  - Valores: `"Instagram"`, `"WhatsApp"`, `"Meta Ads"`, `"Indicação"`, `"Outros"`
+- `temperature` ou `temperatura`: Temperatura do lead
+  - Valores: `"frio"`, `"morno"`, `"quente"` (padrão: `"frio"`)
+
+**Dados do Negócio (opcionais - para criar deal automaticamente):**
+- `deal_title` ou `titulo_negocio`: Título do negócio/projeto
+- `deal_value` ou `valor_negocio`: Valor estimado (número)
+- `product_type` ou `tipo_produto`: `"Planejado"` ou `"Móvel"`
+- `pipeline_id` ou `funil_id`: UUID do funil (ver IDs disponíveis abaixo)
+- `stage_id` ou `etapa_id`: UUID da etapa inicial (opcional)
+- `conversation_history` ou `conversa_whatsapp` ou `historico_conversa`: Histórico completo da conversa
+- `ai_status` ou `status_ia`: Status identificado pela IA
+
+### Exemplo Mínimo (Português)
 ```json
 {
-  "name": "Nome do Cliente",
-  "phone": "34999999999"
+  "nome": "Felipe",
+  "contato_whatsapp": "553484297404@s.whatsapp.net"
 }
 ```
 
-### Exemplo Completo (todos os campos)
+### Exemplo Mínimo (Inglês)
 ```json
 {
-  "name": "João Silva",
-  "phone": "34991234567",
-  "email": "joao@email.com",
-  "city": "Uberlândia",
-  "state": "MG",
-  "source": "WhatsApp",
-  "temperature": "quente",
-  "deal_title": "Projeto Cozinha Planejada",
-  "deal_value": 15000,
-  "product_type": "Planejado",
-  "pipeline_id": "34747cb5-063a-4369-b619-d4afa6095d0d",
-  "conversation_history": "Cliente perguntou sobre armários de cozinha. Interessado em orçamento.",
-  "ai_status": "Aguardando orçamento"
+  "name": "Felipe",
+  "phone": "34984297404"
+}
+```
+
+### Exemplo Completo com IA (Português)
+```json
+{
+  "nome": "Felipe",
+  "contato_whatsapp": "553484297404",
+  "temperatura": "quente",
+  "conversa_whatsapp": "Vamos avançar com a visita técnica pra medir e iniciar o 3D. Tenho hoje às 16h ou amanhã às 10h, qual você prefere?",
+  "status_ia": "Aguardando agendamento",
+  "titulo_negocio": "Cozinha Planejada",
+  "valor_negocio": 15000,
+  "tipo_produto": "Planejado",
+  "funil_id": "34747cb5-063a-4369-b619-d4afa6095d0d"
 }
 ```
 
 ---
 
-## 📋 Descrição dos Campos
+## 📋 Descrição Detalhada dos Campos
 
-### Dados do Cliente (obrigatórios)
-- **name** (string): Nome completo do cliente
-- **phone** (string): Telefone com DDD (apenas números)
-
-### Dados do Cliente (opcionais)
-- **email** (string): E-mail do cliente
-- **city** (string): Cidade
-- **state** (string): Estado (UF)
-
-### Dados do Lead
-- **source** (string): Origem do lead
-  - Valores aceitos: `"Instagram"`, `"WhatsApp"`, `"Meta Ads"`, `"Indicação"`, `"Outros"`
-- **temperature** (string): Temperatura do lead
-  - Valores aceitos: `"frio"`, `"morno"`, `"quente"`
-  - Padrão: `"frio"`
-
-### Dados do Negócio (opcionais - para criar deal automaticamente)
-- **deal_title** (string): Título do negócio/projeto
-- **deal_value** (number): Valor estimado do negócio
-- **product_type** (string): Tipo de produto
-  - Valores aceitos: `"Planejado"`, `"Móvel"`
-- **pipeline_id** (string): UUID do funil (ver IDs disponíveis abaixo)
-- **stage_id** (string): UUID da etapa inicial (opcional - usa primeira etapa se não informado)
-- **conversation_history** (string): Histórico da conversa com a IA
-- **ai_status** (string): Status identificado pela IA (ex: "Pediu orçamento", "Aguardando resposta")
+| Campo Português | Campo Inglês | Tipo | Obrigatório | Descrição |
+|-----------------|--------------|------|-------------|-----------|
+| `nome` | `name` | string | ✅ Sim | Nome completo do cliente |
+| `contato_whatsapp` / `telefone` | `phone` | string | ✅ Sim | Telefone com DDD (aceita `@s.whatsapp.net`, será removido automaticamente) |
+| - | `email` | string | ❌ Não | E-mail do cliente |
+| `cidade` | `city` | string | ❌ Não | Cidade do cliente |
+| `estado` | `state` | string | ❌ Não | Estado (UF) |
+| `origem` | `source` | string | ❌ Não | Origem do lead: `"Instagram"`, `"WhatsApp"`, `"Meta Ads"`, `"Indicação"`, `"Outros"` |
+| `temperatura` | `temperature` | string | ❌ Não | `"frio"`, `"morno"`, `"quente"` (padrão: `"frio"`) |
+| `titulo_negocio` | `deal_title` | string | ❌ Não | Título do negócio/projeto |
+| `valor_negocio` | `deal_value` | number | ❌ Não | Valor estimado do negócio |
+| `tipo_produto` | `product_type` | string | ❌ Não | `"Planejado"` ou `"Móvel"` |
+| `funil_id` | `pipeline_id` | string | ❌ Não | UUID do funil (ver seção abaixo) |
+| `etapa_id` | `stage_id` | string | ❌ Não | UUID da etapa inicial (usa primeira etapa se não informado) |
+| `conversa_whatsapp` / `historico_conversa` | `conversation_history` | string | ❌ Não | Histórico completo da conversa |
+| `status_ia` | `ai_status` | string | ❌ Não | Status identificado pela IA (ex: "Pediu orçamento", "Aguardando resposta") |
 
 ---
 
