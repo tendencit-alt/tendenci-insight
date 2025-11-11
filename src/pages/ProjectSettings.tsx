@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { WebhookSettings } from "@/components/projects/WebhookSettings";
+import { N8nIntegrationGuide } from "@/components/settings/N8nIntegrationGuide";
 
 const ProjectSettings = () => {
   const navigate = useNavigate();
@@ -27,9 +28,10 @@ const ProjectSettings = () => {
         </div>
 
         {/* Settings Sections */}
-        <div className="space-y-6">
-          <WebhookSettings />
-        </div>
+      <div className="space-y-6">
+        <WebhookSettings />
+        <N8nIntegrationGuide />
+      </div>
       </div>
     </DashboardLayout>
   );
