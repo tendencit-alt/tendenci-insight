@@ -736,6 +736,92 @@ export type Database = {
           },
         ]
       }
+      crm_timeline: {
+        Row: {
+          ai_summary: string | null
+          author_id: string | null
+          created_at: string
+          deal_id: string
+          id: string
+          mentioned_users: string[] | null
+          message: string
+          update_type: string
+        }
+        Insert: {
+          ai_summary?: string | null
+          author_id?: string | null
+          created_at?: string
+          deal_id: string
+          id?: string
+          mentioned_users?: string[] | null
+          message: string
+          update_type?: string
+        }
+        Update: {
+          ai_summary?: string | null
+          author_id?: string | null
+          created_at?: string
+          deal_id?: string
+          id?: string
+          mentioned_users?: string[] | null
+          message?: string
+          update_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_timeline_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_timeline_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "crm_deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_timeline_attachments: {
+        Row: {
+          file_name: string
+          file_path: string
+          file_size: number
+          file_type: string
+          id: string
+          timeline_id: string
+          uploaded_at: string | null
+        }
+        Insert: {
+          file_name: string
+          file_path: string
+          file_size: number
+          file_type: string
+          id?: string
+          timeline_id: string
+          uploaded_at?: string | null
+        }
+        Update: {
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          file_type?: string
+          id?: string
+          timeline_id?: string
+          uploaded_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_timeline_attachments_timeline_id_fkey"
+            columns: ["timeline_id"]
+            isOneToOne: false
+            referencedRelation: "crm_timeline"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       deals: {
         Row: {
           amount: number | null

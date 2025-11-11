@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Edit, CheckCircle, XCircle } from "lucide-react";
 import { EditDealDialog } from "./EditDealDialog";
+import { DealTimeline } from "./DealTimeline";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -393,29 +394,8 @@ export function DealDetailSheet({
             </CardContent>
           </Card>
 
-          {/* Atividades */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Atividades</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Nenhuma atividade registrada
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* Tarefas */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Tarefas</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Nenhuma tarefa cadastrada
-              </p>
-            </CardContent>
-          </Card>
+          {/* Timeline Colaborativa */}
+          <DealTimeline dealId={deal.id} />
         </div>
       </SheetContent>
 
