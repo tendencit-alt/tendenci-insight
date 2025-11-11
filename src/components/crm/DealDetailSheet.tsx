@@ -61,7 +61,7 @@ export function DealDetailSheet({
           *,
           from_stage:crm_stages!crm_deal_history_from_stage_id_fkey(name),
           to_stage:crm_stages!crm_deal_history_to_stage_id_fkey(name),
-          moved_by_user:profiles(full_name, email)
+          user:profiles!crm_deal_history_moved_by_fkey(full_name, email)
         `)
         .eq("deal_id", deal.id)
         .order("created_at", { ascending: false });
@@ -587,8 +587,8 @@ export function DealDetailSheet({
               ) : (
                 <div className="space-y-3">
                   {history.map((item) => {
-                    const userName = item.moved_by_user?.full_name || 
-                                   item.moved_by_user?.email || 
+                    const userName = item.user?.full_name || 
+                                   item.user?.email || 
                                    "Sistema";
                     const date = new Date(item.created_at || item.moved_at).toLocaleString("pt-BR", {
                       dateStyle: "short",
