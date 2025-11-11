@@ -44,7 +44,7 @@ export function CRMBoard({ pipelineId, onRefresh }: CRMBoardProps) {
       return;
     }
 
-    // Fetch deals with related data
+    // Fetch deals with related data (including won and lost)
     const { data: dealsData, error: dealsError } = await supabase
       .from("crm_deals")
       .select(`
@@ -60,7 +60,6 @@ export function CRMBoard({ pipelineId, onRefresh }: CRMBoardProps) {
         stage:crm_stages(name)
       `)
       .eq("pipeline_id", pipelineId)
-      .eq("status", "aberto")
       .order("stage_position", { ascending: true });
 
     if (dealsError) {
@@ -83,7 +82,15 @@ export function CRMBoard({ pipelineId, onRefresh }: CRMBoardProps) {
   };
 
   const getDealsByStage = (stageId: string) => {
-    return deals.filter((deal) => deal.stage_id === stageId);
+    return deals.filter((deal) => deal.stage_id === stageId && deal.status === "aberto");
+  };
+
+  const getWonDeals = () => {
+    return deals.filter((deal) => deal.status === "won");
+  };
+
+  const getLostDeals = () => {
+    return deals.filter((deal) => deal.status === "lost");
   };
 
   const getTimeInStage = (deal: any) => {
@@ -145,6 +152,7 @@ export function CRMBoard({ pipelineId, onRefresh }: CRMBoardProps) {
   return (
     <>
       <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
+        {/* Regular pipeline stages */}
         {stages.map((stage) => {
           const stageDeals = getDealsByStage(stage.id);
           return (
@@ -184,6 +192,60 @@ export function CRMBoard({ pipelineId, onRefresh }: CRMBoardProps) {
             </Card>
           );
         })}
+
+        {/* Fixed Won column */}
+        <Card className="min-w-[350px] max-w-[400px] flex-shrink-0 bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center justify-between text-base text-green-700 dark:text-green-300">
+              <span>✅ Ganho</span>
+              <Badge variant="default" className="bg-green-600">{getWonDeals().length}</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 max-h-[600px] overflow-y-auto">
+            {getWonDeals().length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                Nenhum negócio ganho ainda
+              </p>
+            ) : (
+              getWonDeals().map((deal) => (
+                <DealCard
+                  key={deal.id}
+                  deal={deal}
+                  timeInStage={getTimeInStage(deal)}
+                  onClick={() => handleDealClick(deal)}
+                  onDragStart={handleDragStart(deal)}
+                />
+              ))
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Fixed Lost column */}
+        <Card className="min-w-[350px] max-w-[400px] flex-shrink-0 bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center justify-between text-base text-red-700 dark:text-red-300">
+              <span>❌ Perdido</span>
+              <Badge variant="destructive">{getLostDeals().length}</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 max-h-[600px] overflow-y-auto">
+            {getLostDeals().length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                Nenhum negócio perdido
+              </p>
+            ) : (
+              getLostDeals().map((deal) => (
+                <DealCard
+                  key={deal.id}
+                  deal={deal}
+                  timeInStage={getTimeInStage(deal)}
+                  onClick={() => handleDealClick(deal)}
+                  onDragStart={handleDragStart(deal)}
+                />
+              ))
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       <DealDetailSheet

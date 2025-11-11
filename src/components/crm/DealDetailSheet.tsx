@@ -9,6 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Edit, CheckCircle, XCircle } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { EditDealDialog } from "./EditDealDialog";
 import { DealTimeline } from "./DealTimeline";
 import { supabase } from "@/integrations/supabase/client";
@@ -40,6 +43,8 @@ export function DealDetailSheet({
   const { toast } = useToast();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [lostDialog, setLostDialog] = useState(false);
+  const [lostReason, setLostReason] = useState("");
+  const [lostNote, setLostNote] = useState("");
   const [history, setHistory] = useState<any[]>([]);
 
   // Fetch histórico de movimentações
@@ -141,11 +146,21 @@ export function DealDetailSheet({
   };
 
   const handleMarkAsLost = async () => {
+    if (!lostReason) {
+      toast({
+        title: "Motivo obrigatório",
+        description: "Por favor, selecione o motivo da perda.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const { error } = await supabase
       .from("crm_deals")
       .update({ 
         status: "lost",
-        lost_reason: "Perdido manualmente",
+        lost_reason: lostReason,
+        lost_note: lostNote || null,
       })
       .eq("id", deal.id);
 
@@ -163,6 +178,8 @@ export function DealDetailSheet({
       description: "Negócio marcado como perdido.",
     });
     setLostDialog(false);
+    setLostReason("");
+    setLostNote("");
     onOpenChange(false);
     onSuccess();
   };
@@ -411,16 +428,54 @@ export function DealDetailSheet({
           <AlertDialogHeader>
             <AlertDialogTitle>Marcar como Perdido</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja marcar este negócio como perdido?
+              Selecione o motivo da perda deste negócio
             </AlertDialogDescription>
           </AlertDialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div>
+              <Label htmlFor="lost-reason">Motivo da Perda *</Label>
+              <Select value={lostReason} onValueChange={setLostReason}>
+                <SelectTrigger id="lost-reason">
+                  <SelectValue placeholder="Selecione o motivo..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Preço alto">💰 Preço alto</SelectItem>
+                  <SelectItem value="Comprou com concorrente">🏢 Comprou com concorrente</SelectItem>
+                  <SelectItem value="Não respondeu">📵 Não respondeu / Sem contato</SelectItem>
+                  <SelectItem value="Desistiu do projeto">🚫 Desistiu do projeto</SelectItem>
+                  <SelectItem value="Prazo inadequado">⏰ Prazo inadequado</SelectItem>
+                  <SelectItem value="Falta de orçamento">💸 Falta de orçamento</SelectItem>
+                  <SelectItem value="Produto não atende">📦 Produto não atende necessidade</SelectItem>
+                  <SelectItem value="Outro">❓ Outro motivo</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="lost-note">Observações Adicionais</Label>
+              <Textarea
+                id="lost-note"
+                placeholder="Detalhe o motivo da perda ou adicione observações relevantes..."
+                value={lostNote}
+                onChange={(e) => setLostNote(e.target.value)}
+                rows={3}
+              />
+            </div>
+          </div>
+
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => {
+              setLostReason("");
+              setLostNote("");
+            }}>
+              Cancelar
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleMarkAsLost}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Confirmar
+              Confirmar Perda
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
