@@ -117,13 +117,22 @@ export function CRMBoard({ pipelineId, onRefresh }: CRMBoardProps) {
       return;
     }
 
+    const updateData: any = {
+      stage_id: stageId,
+      stage_entered_at: new Date().toISOString(),
+    };
+
+    // Se estava em Won ou Lost e está voltando para o funil, resetar para "aberto"
+    if (draggedDeal.status !== "aberto") {
+      updateData.status = "aberto";
+      updateData.lost_reason = null;
+      updateData.lost_note = null;
+    }
+
     // Update deal stage
     const { error } = await supabase
       .from("crm_deals")
-      .update({
-        stage_id: stageId,
-        stage_entered_at: new Date().toISOString(),
-      })
+      .update(updateData)
       .eq("id", draggedDeal.id);
 
     if (error) {
@@ -135,9 +144,20 @@ export function CRMBoard({ pipelineId, onRefresh }: CRMBoardProps) {
       return;
     }
 
+    // Registrar no histórico
+    const { data: userData } = await supabase.auth.getUser();
+    await supabase.from("crm_deal_history").insert({
+      deal_id: draggedDeal.id,
+      from_stage_id: draggedDeal.stage_id,
+      to_stage_id: stageId,
+      moved_by: userData.user?.id,
+    });
+
     toast({
       title: "Sucesso",
-      description: "Negócio movido com sucesso!",
+      description: draggedDeal.status !== "aberto" 
+        ? "Negócio reativado e movido com sucesso!" 
+        : "Negócio movido com sucesso!",
     });
 
     setDraggedDeal(null);

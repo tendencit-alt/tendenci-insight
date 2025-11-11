@@ -43,6 +43,7 @@ export function DealDetailSheet({
   const { toast } = useToast();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [lostDialog, setLostDialog] = useState(false);
+  const [deleteDialog, setDeleteDialog] = useState(false);
   const [lostReason, setLostReason] = useState("");
   const [lostNote, setLostNote] = useState("");
   const [history, setHistory] = useState<any[]>([]);
@@ -299,6 +300,30 @@ export function DealDetailSheet({
     onSuccess();
   };
 
+  const handleDelete = async () => {
+    const { error } = await supabase
+      .from("crm_deals")
+      .delete()
+      .eq("id", deal.id);
+
+    if (error) {
+      toast({
+        title: "Erro ao excluir negócio",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "Negócio excluído",
+      description: "O negócio foi excluído com sucesso.",
+    });
+    setDeleteDialog(false);
+    onOpenChange(false);
+    onSuccess();
+  };
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
@@ -533,6 +558,9 @@ export function DealDetailSheet({
                   <XCircle className="mr-2 h-4 w-4" />
                   Marcar como Perdido
                 </Button>
+                <Button size="sm" variant="outline" onClick={() => setDeleteDialog(true)}>
+                  Excluir Negócio
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -621,26 +649,38 @@ export function DealDetailSheet({
               <Label htmlFor="lost-note">Observações Adicionais</Label>
               <Textarea
                 id="lost-note"
-                placeholder="Detalhe o motivo da perda ou adicione observações relevantes..."
                 value={lostNote}
                 onChange={(e) => setLostNote(e.target.value)}
+                placeholder="Adicione detalhes sobre o motivo da perda..."
                 rows={3}
               />
             </div>
           </div>
 
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => {
-              setLostReason("");
-              setLostNote("");
-            }}>
-              Cancelar
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleMarkAsLost}
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleMarkAsLost}>
+              Confirmar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={deleteDialog} onOpenChange={setDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir Negócio</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir este negócio? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Confirmar Perda
+              Excluir
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
