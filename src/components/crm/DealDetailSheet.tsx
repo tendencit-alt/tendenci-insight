@@ -76,14 +76,16 @@ export function DealDetailSheet({
     const fetchStages = async () => {
       if (!deal.pipeline_id) return;
       
-      let { data } = await supabase
+      const { data } = await supabase
         .from("crm_stages")
         .select("*")
         .eq("pipeline_id", deal.pipeline_id)
         .order("position", { ascending: true });
       
       if (data) {
-        // Verificar se existem etapas de ganho e perdido
+        setAllStages(data);
+        
+        // Buscar etapas de ganho e perdido
         const wonStage = data.find(s => {
           const name = s.name.toLowerCase();
           return name.includes('ganho') || name.includes('won') || name.startsWith('✅');
@@ -94,55 +96,8 @@ export function DealDetailSheet({
           return name.includes('perdido') || name.includes('lost') || name.startsWith('❌');
         });
         
-        // Se não existirem, criar automaticamente
-        const stagesToCreate = [];
-        
-        if (!wonStage) {
-          const maxPosition = Math.max(...data.map(s => s.position), -1);
-          stagesToCreate.push({
-            pipeline_id: deal.pipeline_id,
-            name: "✅ Ganho",
-            position: maxPosition + 1,
-            sla_hours: null,
-          });
-        }
-        
-        if (!lostStage) {
-          const maxPosition = Math.max(...data.map(s => s.position), -1);
-          stagesToCreate.push({
-            pipeline_id: deal.pipeline_id,
-            name: "❌ Perdido",
-            position: maxPosition + 2,
-            sla_hours: null,
-          });
-        }
-        
-        if (stagesToCreate.length > 0) {
-          const { data: newStages, error } = await supabase
-            .from("crm_stages")
-            .insert(stagesToCreate)
-            .select();
-          
-          if (!error && newStages) {
-            data = [...data, ...newStages];
-          }
-        }
-        
-        setAllStages(data);
-        
-        // Buscar novamente as etapas de ganho e perdido
-        const finalWonStage = data.find(s => {
-          const name = s.name.toLowerCase();
-          return name.includes('ganho') || name.includes('won') || name.startsWith('✅');
-        });
-        
-        const finalLostStage = data.find(s => {
-          const name = s.name.toLowerCase();
-          return name.includes('perdido') || name.includes('lost') || name.startsWith('❌');
-        });
-        
-        if (finalWonStage) setWonStageId(finalWonStage.id);
-        if (finalLostStage) setLostStageId(finalLostStage.id);
+        if (wonStage) setWonStageId(wonStage.id);
+        if (lostStage) setLostStageId(lostStage.id);
       }
     };
 
@@ -202,8 +157,6 @@ export function DealDetailSheet({
   };
 
   const handleMarkAsWon = async () => {
-    const { data: userData } = await supabase.auth.getUser();
-    
     if (!wonStageId) {
       toast({
         title: "Erro",
@@ -235,6 +188,25 @@ export function DealDetailSheet({
       title: "Sucesso",
       description: "Negócio marcado como ganho!",
     });
+    
+    // Aguardar um pouco para o trigger processar e então refetch
+    setTimeout(() => {
+      const refetchHistory = async () => {
+        const { data } = await supabase
+          .from("crm_deal_history")
+          .select(`
+            *,
+            from_stage:crm_stages!crm_deal_history_from_stage_id_fkey(name),
+            to_stage:crm_stages!crm_deal_history_to_stage_id_fkey(name),
+            moved_by_user:profiles(full_name, email)
+          `)
+          .eq("deal_id", deal.id)
+          .order("moved_at", { ascending: false });
+        if (data) setHistory(data);
+      };
+      refetchHistory();
+    }, 500);
+    
     onOpenChange(false);
     onSuccess();
   };
@@ -257,8 +229,6 @@ export function DealDetailSheet({
       });
       return;
     }
-
-    const { data: userData } = await supabase.auth.getUser();
 
     const { error } = await supabase
       .from("crm_deals")
@@ -284,6 +254,25 @@ export function DealDetailSheet({
       title: "Negócio perdido",
       description: "Negócio marcado como perdido.",
     });
+    
+    // Aguardar um pouco para o trigger processar e então refetch
+    setTimeout(() => {
+      const refetchHistory = async () => {
+        const { data } = await supabase
+          .from("crm_deal_history")
+          .select(`
+            *,
+            from_stage:crm_stages!crm_deal_history_from_stage_id_fkey(name),
+            to_stage:crm_stages!crm_deal_history_to_stage_id_fkey(name),
+            moved_by_user:profiles(full_name, email)
+          `)
+          .eq("deal_id", deal.id)
+          .order("moved_at", { ascending: false });
+        if (data) setHistory(data);
+      };
+      refetchHistory();
+    }, 500);
+    
     setLostDialog(false);
     setLostReason("");
     setLostNote("");
@@ -300,8 +289,6 @@ export function DealDetailSheet({
       });
       return;
     }
-
-    const { data: userData } = await supabase.auth.getUser();
 
     const { error } = await supabase
       .from("crm_deals")
@@ -324,6 +311,25 @@ export function DealDetailSheet({
       title: "Sucesso",
       description: "Negócio movido com sucesso!",
     });
+    
+    // Aguardar um pouco para o trigger processar e então refetch
+    setTimeout(() => {
+      const refetchHistory = async () => {
+        const { data } = await supabase
+          .from("crm_deal_history")
+          .select(`
+            *,
+            from_stage:crm_stages!crm_deal_history_from_stage_id_fkey(name),
+            to_stage:crm_stages!crm_deal_history_to_stage_id_fkey(name),
+            moved_by_user:profiles(full_name, email)
+          `)
+          .eq("deal_id", deal.id)
+          .order("moved_at", { ascending: false });
+        if (data) setHistory(data);
+      };
+      refetchHistory();
+    }, 500);
+    
     setSelectedStage("");
     onSuccess();
   };
