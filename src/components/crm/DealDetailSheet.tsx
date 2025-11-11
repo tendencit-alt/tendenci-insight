@@ -476,51 +476,66 @@ export function DealDetailSheet({
             </CardContent>
           </Card>
 
-          {/* Comunicação */}
-          {(deal.conversation_history || deal.scheduled_call) && (
+          {/* Histórico WhatsApp - sempre visível */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <span className="text-xl">💬</span>
+                Histórico de Mensagens WhatsApp
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {deal.conversation_history ? (
+                <div className="bg-muted/30 p-4 rounded-md border border-border/50">
+                  <p className="text-sm whitespace-pre-wrap leading-relaxed">
+                    {deal.conversation_history}
+                  </p>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p className="text-sm">
+                    Nenhuma mensagem registrada ainda.
+                  </p>
+                  <p className="text-xs mt-2">
+                    As mensagens do agente IA/n8n aparecerão aqui automaticamente
+                  </p>
+                </div>
+              )}
+
+              {deal.last_interaction && (
+                <div className="pt-4 border-t">
+                  <p className="text-sm text-muted-foreground">Última Interação</p>
+                  <p className="font-medium">
+                    {new Date(deal.last_interaction).toLocaleString("pt-BR")}
+                  </p>
+                </div>
+              )}
+
+              {deal.ai_status && (
+                <div className="pt-4 border-t">
+                  <p className="text-sm text-muted-foreground">Status IA</p>
+                  <Badge variant="secondary">{deal.ai_status}</Badge>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Ligação Agendada */}
+          {deal.scheduled_call && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Comunicação</CardTitle>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <span className="text-xl">📞</span>
+                  Ligação Agendada
+                </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                {deal.scheduled_call && (
-                  <div>
-                    <p className="text-sm text-muted-foreground">Ligação Agendada</p>
-                    <p className="font-medium">
-                      {new Date(deal.scheduled_call).toLocaleString("pt-BR", {
-                        dateStyle: "short",
-                        timeStyle: "short",
-                      })}
-                    </p>
-                  </div>
-                )}
-                
-                {deal.conversation_history && (
-                  <div className="pt-4 border-t">
-                    <p className="text-sm text-muted-foreground mb-2">
-                      Histórico de Mensagens (IA / WhatsApp)
-                    </p>
-                    <div className="bg-muted/30 p-3 rounded-md">
-                      <p className="text-sm whitespace-pre-wrap">{deal.conversation_history}</p>
-                    </div>
-                  </div>
-                )}
-
-                {deal.last_interaction && (
-                  <div className="pt-4 border-t">
-                    <p className="text-sm text-muted-foreground">Última Interação</p>
-                    <p className="font-medium">
-                      {new Date(deal.last_interaction).toLocaleString("pt-BR")}
-                    </p>
-                  </div>
-                )}
-
-                {deal.ai_status && (
-                  <div className="pt-4 border-t">
-                    <p className="text-sm text-muted-foreground">Status IA</p>
-                    <Badge variant="secondary">{deal.ai_status}</Badge>
-                  </div>
-                )}
+              <CardContent>
+                <p className="font-medium text-lg">
+                  {new Date(deal.scheduled_call).toLocaleString("pt-BR", {
+                    dateStyle: "short",
+                    timeStyle: "short",
+                  })}
+                </p>
               </CardContent>
             </Card>
           )}
