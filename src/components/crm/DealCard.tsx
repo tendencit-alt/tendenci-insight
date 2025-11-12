@@ -60,6 +60,13 @@ export function DealCard({ deal, timeInStage, onClick, onDragStart }: DealCardPr
             <p className="text-xs text-muted-foreground">{phone}</p>
           )}
           
+          {/* Observações */}
+          {deal.note && (
+            <p className="text-xs text-muted-foreground italic line-clamp-2">
+              📝 {deal.note}
+            </p>
+          )}
+          
           {/* Badges: Temperatura e Tipo de Produto */}
           <div className="flex flex-wrap gap-1">
             {temperature && (

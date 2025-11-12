@@ -541,6 +541,8 @@ export type Database = {
         Row: {
           ai_status: string | null
           architect_id: string | null
+          categoria: string | null
+          centro_custo: string | null
           conversation_history: string | null
           created_at: string | null
           from_ai: boolean | null
@@ -558,6 +560,7 @@ export type Database = {
           stage_id: string
           stage_position: number | null
           status: string | null
+          tipo_produto: string | null
           title: string
           updated_at: string | null
           value: number | null
@@ -565,6 +568,8 @@ export type Database = {
         Insert: {
           ai_status?: string | null
           architect_id?: string | null
+          categoria?: string | null
+          centro_custo?: string | null
           conversation_history?: string | null
           created_at?: string | null
           from_ai?: boolean | null
@@ -582,6 +587,7 @@ export type Database = {
           stage_id: string
           stage_position?: number | null
           status?: string | null
+          tipo_produto?: string | null
           title: string
           updated_at?: string | null
           value?: number | null
@@ -589,6 +595,8 @@ export type Database = {
         Update: {
           ai_status?: string | null
           architect_id?: string | null
+          categoria?: string | null
+          centro_custo?: string | null
           conversation_history?: string | null
           created_at?: string | null
           from_ai?: boolean | null
@@ -606,6 +614,7 @@ export type Database = {
           stage_id?: string
           stage_position?: number | null
           status?: string | null
+          tipo_produto?: string | null
           title?: string
           updated_at?: string | null
           value?: number | null

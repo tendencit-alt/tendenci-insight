@@ -26,6 +26,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Calendar as CalendarIcon } from "lucide-react";
 import { CreateClientDialog } from "./CreateClientDialog";
+import { CreateArchitectDialog } from "../architects/CreateArchitectDialog";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
@@ -50,17 +51,19 @@ export function CreateDealDialog({
   const [sources, setSources] = useState<any[]>([]);
   const [owners, setOwners] = useState<any[]>([]);
   const [isClientDialogOpen, setIsClientDialogOpen] = useState(false);
+  const [isArchitectDialogOpen, setIsArchitectDialogOpen] = useState(false);
   const [scheduledCall, setScheduledCall] = useState<Date>();
 
   const [formData, setFormData] = useState({
-    title: "",
     stage_id: "",
     lead_id: "",
     architect_id: "",
     value: "",
     note: "",
     temperature: "frio",
-    product_type: "",
+    categoria: "",
+    centro_custo: "",
+    tipo_produto: "",
     conversation_history: "",
     owner_id: "",
     source_id: "",
@@ -140,6 +143,14 @@ export function CreateDealDialog({
     }
   };
 
+  const handleArchitectCreated = async () => {
+    await fetchOptions();
+    toast({
+      title: "Sucesso",
+      description: "Arquiteto criado!",
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -156,17 +167,22 @@ export function CreateDealDialog({
           .eq("id", formData.lead_id);
       }
 
+      // Gerar título automaticamente baseado em categoria e tipo de produto
+      const autoTitle = `${formData.categoria} - ${formData.tipo_produto}`;
+
       // Insert deal
       const { error } = await supabase.from("crm_deals").insert({
         pipeline_id: pipelineId,
-        title: formData.title,
+        title: autoTitle,
         stage_id: formData.stage_id,
         lead_id: formData.lead_id || null,
         architect_id: formData.architect_id || null,
         owner_id: formData.owner_id || null,
         value: formData.value ? Number(formData.value) : 0,
         note: formData.note || null,
-        product_type: formData.product_type || null,
+        categoria: formData.categoria,
+        centro_custo: formData.centro_custo,
+        tipo_produto: formData.tipo_produto,
         conversation_history: formData.conversation_history || null,
         scheduled_call: scheduledCall?.toISOString() || null,
         status: "aberto",
@@ -189,14 +205,15 @@ export function CreateDealDialog({
       });
 
       setFormData({
-        title: "",
         stage_id: "",
         lead_id: "",
         architect_id: "",
         value: "",
         note: "",
         temperature: "frio",
-        product_type: "",
+        categoria: "",
+        centro_custo: "",
+        tipo_produto: "",
         conversation_history: "",
         owner_id: "",
         source_id: "",
@@ -222,81 +239,9 @@ export function CreateDealDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Seção: Informações Básicas */}
+          {/* Seção: Lead e Arquiteto */}
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase">Informações Básicas</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="title">Título *</Label>
-                <Input
-                  id="title"
-                  value={formData.title}
-                  onChange={(e) =>
-                    setFormData({ ...formData, title: e.target.value })
-                  }
-                  placeholder="Ex: Mesa maciça 6 lugares"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="stage">Etapa *</Label>
-                <Select
-                  value={formData.stage_id}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, stage_id: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione a etapa" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {stages.map((stage) => (
-                      <SelectItem key={stage.id} value={stage.id}>
-                        {stage.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="product_type">Tipo de Produto *</Label>
-                <Select
-                  value={formData.product_type}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, product_type: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o tipo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Planejado">Planejado</SelectItem>
-                    <SelectItem value="Móvel">Móvel</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="value">Valor (R$)</Label>
-                <Input
-                  id="value"
-                  type="number"
-                  step="0.01"
-                  value={formData.value}
-                  onChange={(e) =>
-                    setFormData({ ...formData, value: e.target.value })
-                  }
-                  placeholder="0.00"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Seção: Lead e Cliente */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase">Lead e Cliente</h3>
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase">Lead e Arquiteto</h3>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -339,6 +284,7 @@ export function CreateDealDialog({
                   onValueChange={(value) =>
                     setFormData({ ...formData, temperature: value })
                   }
+                  required
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione a temperatura" />
@@ -349,13 +295,10 @@ export function CreateDealDialog({
                     <SelectItem value="quente">🔥 Quente</SelectItem>
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground">
-                  Será atualizado automaticamente pela IA
-                </p>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="source">Origem do Lead</Label>
+                <Label htmlFor="source">Origem do Lead *</Label>
                 <Select
                   value={formData.source_id}
                   onValueChange={(value) =>
@@ -376,18 +319,30 @@ export function CreateDealDialog({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="architect">Arquiteto</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="architect">Arquiteto *</Label>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsArchitectDialogOpen(true)}
+                    className="h-7 text-xs"
+                  >
+                    <Plus className="mr-1 h-3 w-3" />
+                    Novo Arquiteto
+                  </Button>
+                </div>
                 <Select
-                  value={formData.architect_id || "none"}
+                  value={formData.architect_id}
                   onValueChange={(value) =>
-                    setFormData({ ...formData, architect_id: value === "none" ? "" : value })
+                    setFormData({ ...formData, architect_id: value })
                   }
+                  required
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione o arquiteto" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">Nenhum</SelectItem>
                     {architects.map((arch) => (
                       <SelectItem key={arch.id} value={arch.id}>
                         {arch.name}
@@ -396,14 +351,177 @@ export function CreateDealDialog({
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+          </div>
+
+          {/* Seção: Detalhes do Negócio */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase">Detalhes do Negócio</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="categoria">Categoria *</Label>
+                <Select
+                  value={formData.categoria}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, categoria: value })
+                  }
+                  required
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a categoria" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Planejados">Planejados</SelectItem>
+                    <SelectItem value="Móveis Soltos">Móveis Soltos</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="centro_custo">Centro de Custo *</Label>
+                <Select
+                  value={formData.centro_custo}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, centro_custo: value })
+                  }
+                  required
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o centro de custo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Rústico">Rústico</SelectItem>
+                    <SelectItem value="Industrial">Industrial</SelectItem>
+                    <SelectItem value="Revenda">Revenda</SelectItem>
+                    <SelectItem value="Planejado">Planejado</SelectItem>
+                    <SelectItem value="Náutico">Náutico</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
               <div className="space-y-2 col-span-2">
-                <Label htmlFor="owner">Responsável Principal</Label>
+                <Label htmlFor="tipo_produto">Tipo de Produto *</Label>
+                <Select
+                  value={formData.tipo_produto}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, tipo_produto: value })
+                  }
+                  required
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o tipo de produto" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Sofá">Sofá</SelectItem>
+                    <SelectItem value="Poltrona">Poltrona</SelectItem>
+                    <SelectItem value="Mesa">Mesa</SelectItem>
+                    <SelectItem value="Cadeira">Cadeira</SelectItem>
+                    <SelectItem value="Aparador">Aparador</SelectItem>
+                    <SelectItem value="Banqueta">Banqueta</SelectItem>
+                    <SelectItem value="Rack">Rack</SelectItem>
+                    <SelectItem value="Cristaleira">Cristaleira</SelectItem>
+                    <SelectItem value="Estante">Estante</SelectItem>
+                    <SelectItem value="Vaso">Vaso</SelectItem>
+                    <SelectItem value="Quadro">Quadro</SelectItem>
+                    <SelectItem value="Chaise">Chaise</SelectItem>
+                    <SelectItem value="Personalizado">Personalizado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="value">Valor (R$) *</Label>
+                <Input
+                  id="value"
+                  type="number"
+                  step="0.01"
+                  value={formData.value}
+                  onChange={(e) =>
+                    setFormData({ ...formData, value: e.target.value })
+                  }
+                  placeholder="0.00"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="stage">Etapa *</Label>
+                <Select
+                  value={formData.stage_id}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, stage_id: value })
+                  }
+                  required
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a etapa" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {stages.map((stage) => (
+                      <SelectItem key={stage.id} value={stage.id}>
+                        {stage.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+
+          {/* Seção: Informações Adicionais */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase">Informações Adicionais</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="temperature">Temperatura do Lead *</Label>
+                <Select
+                  value={formData.temperature}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, temperature: value })
+                  }
+                  required
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a temperatura" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="frio">❄️ Frio</SelectItem>
+                    <SelectItem value="morno">☀️ Morno</SelectItem>
+                    <SelectItem value="quente">🔥 Quente</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="source">Origem do Lead *</Label>
+                <Select
+                  value={formData.source_id}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, source_id: value })
+                  }
+                  required
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a origem" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sources.map((source) => (
+                      <SelectItem key={source.id} value={source.id.toString()}>
+                        {source.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2 col-span-2">
+                <Label htmlFor="owner">Responsável Principal *</Label>
                 <Select
                   value={formData.owner_id}
                   onValueChange={(value) =>
                     setFormData({ ...formData, owner_id: value })
                   }
+                  required
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione o responsável" />
@@ -417,15 +535,9 @@ export function CreateDealDialog({
                   </SelectContent>
                 </Select>
               </div>
-            </div>
-          </div>
 
-          {/* Seção: Comunicação */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase">Comunicação</h3>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="note">Observações</Label>
+              <div className="space-y-2 col-span-2">
+                <Label htmlFor="note">Observações *</Label>
                 <Textarea
                   id="note"
                   value={formData.note}
@@ -434,9 +546,16 @@ export function CreateDealDialog({
                   }
                   placeholder="Anotações gerais ou informações relevantes sobre o lead..."
                   rows={3}
+                  required
                 />
               </div>
+            </div>
+          </div>
 
+          {/* Seção: Comunicação */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase">Comunicação (Opcional)</h3>
+            <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="conversation_history">Histórico de Mensagens (IA / WhatsApp)</Label>
                 <Textarea
