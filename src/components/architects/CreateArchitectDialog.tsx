@@ -1,65 +1,26 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 
 interface CreateArchitectDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSuccess: () => void;
+  onSuccess: (architectId?: string) => void;
 }
 
 export function CreateArchitectDialog({ open, onOpenChange, onSuccess }: CreateArchitectDialogProps) {
   const [loading, setLoading] = useState(false);
-  const [projects, setProjects] = useState<any[]>([]);
-  const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     name: "",
     company: "",
     phone: "",
-    email: "",
-    instagram: "",
-    city: "",
-    tier: "B",
-    commission_percent: "10.00",
-    birthday: "",
-    active: true,
-    notes: ""
+    birthday: ""
   });
 
-  useEffect(() => {
-    if (open) {
-      fetchProjects();
-    }
-  }, [open]);
-
-  const fetchProjects = async () => {
-    const { data, error } = await supabase
-      .from('projects')
-      .select('id, name, stage, created_at')
-      .is('architect_id', null)
-      .order('created_at', { ascending: false });
-    
-    if (!error && data) {
-      setProjects(data);
-    }
-  };
-
-  const toggleProject = (projectId: string) => {
-    setSelectedProjects(prev => 
-      prev.includes(projectId) 
-        ? prev.filter(id => id !== projectId)
-        : [...prev, projectId]
-    );
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,35 +39,17 @@ export function CreateArchitectDialog({ open, onOpenChange, onSuccess }: CreateA
           name: formData.name,
           company: formData.company || null,
           phone: formData.phone || null,
-          email: formData.email || null,
-          instagram: formData.instagram || null,
-          city: formData.city || null,
-          tier: formData.tier,
-          commission_percent: parseFloat(formData.commission_percent),
           birthday: formData.birthday || null,
-          active: formData.active,
-          notes: formData.notes || null
+          active: true
         })
         .select()
         .single();
 
       if (error) throw error;
 
-      // Vincular projetos selecionados
-      if (data && selectedProjects.length > 0) {
-        const { error: projectError } = await supabase
-          .from('projects')
-          .update({ architect_id: data.id })
-          .in('id', selectedProjects);
-        
-        if (projectError) {
-          console.error('Erro ao vincular projetos:', projectError);
-        }
-      }
-
       toast.success("Arquiteto criado com sucesso!");
       
-      onSuccess();
+      onSuccess(data?.id);
       onOpenChange(false);
       
       // Reset form
@@ -114,16 +57,8 @@ export function CreateArchitectDialog({ open, onOpenChange, onSuccess }: CreateA
         name: "",
         company: "",
         phone: "",
-        email: "",
-        instagram: "",
-        city: "",
-        tier: "B",
-        commission_percent: "10.00",
-        birthday: "",
-        active: true,
-        notes: ""
+        birthday: ""
       });
-      setSelectedProjects([]);
       
     } catch (error: any) {
       toast.error(error.message || "Erro ao criar arquiteto");
@@ -142,7 +77,7 @@ export function CreateArchitectDialog({ open, onOpenChange, onSuccess }: CreateA
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2 col-span-2">
-              <Label htmlFor="name">Nome *</Label>
+              <Label htmlFor="name">Nome do Arquiteto *</Label>
               <Input
                 id="name"
                 value={formData.name}
@@ -163,17 +98,7 @@ export function CreateArchitectDialog({ open, onOpenChange, onSuccess }: CreateA
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="city">Cidade/UF</Label>
-              <Input
-                id="city"
-                value={formData.city}
-                onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                placeholder="Ex: São Paulo - SP"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="phone">Telefone</Label>
+              <Label htmlFor="phone">WhatsApp</Label>
               <Input
                 id="phone"
                 value={formData.phone}
@@ -182,120 +107,14 @@ export function CreateArchitectDialog({ open, onOpenChange, onSuccess }: CreateA
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="email">E-mail</Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                placeholder="email@exemplo.com"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="instagram">Instagram</Label>
-              <Input
-                id="instagram"
-                value={formData.instagram}
-                onChange={(e) => setFormData({ ...formData, instagram: e.target.value })}
-                placeholder="@usuario"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="tier">Tier</Label>
-              <Select value={formData.tier} onValueChange={(v) => setFormData({ ...formData, tier: v })}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="A">A - Premium</SelectItem>
-                  <SelectItem value="B">B - Intermediário</SelectItem>
-                  <SelectItem value="C">C - Básico</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="commission">Comissão (%)</Label>
-              <Input
-                id="commission"
-                type="number"
-                step="0.5"
-                min="0"
-                max="100"
-                value={formData.commission_percent}
-                onChange={(e) => setFormData({ ...formData, commission_percent: e.target.value })}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="birthday">Aniversário</Label>
+            <div className="space-y-2 col-span-2">
+              <Label htmlFor="birthday">Data de Nascimento</Label>
               <Input
                 id="birthday"
                 type="date"
                 value={formData.birthday}
                 onChange={(e) => setFormData({ ...formData, birthday: e.target.value })}
               />
-            </div>
-
-            <div className="space-y-2 flex items-center gap-2">
-              <Switch
-                id="active"
-                checked={formData.active}
-                onCheckedChange={(checked) => setFormData({ ...formData, active: checked })}
-              />
-              <Label htmlFor="active">Ativo</Label>
-            </div>
-
-            <div className="space-y-2 col-span-2">
-              <Label htmlFor="notes">Observações</Label>
-              <Textarea
-                id="notes"
-                value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                placeholder="Anotações sobre o arquiteto..."
-                rows={3}
-              />
-            </div>
-
-            <div className="space-y-2 col-span-2">
-              <Label>Vincular Projetos Existentes</Label>
-              <div className="max-h-48 overflow-y-auto space-y-2 border rounded-lg p-3">
-                {projects.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-4">
-                    Nenhum projeto disponível para vincular
-                  </p>
-                ) : (
-                  projects.map((project) => (
-                    <Card
-                      key={project.id}
-                      className={`p-3 cursor-pointer transition-all ${
-                        selectedProjects.includes(project.id)
-                          ? 'border-primary bg-primary/5'
-                          : 'hover:border-primary/50'
-                      }`}
-                      onClick={() => toggleProject(project.id)}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">{project.name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {new Date(project.created_at).toLocaleDateString('pt-BR')}
-                          </p>
-                        </div>
-                        <Badge variant="outline">{project.stage}</Badge>
-                      </div>
-                    </Card>
-                  ))
-                )}
-              </div>
-              {selectedProjects.length > 0 && (
-                <p className="text-sm text-muted-foreground">
-                  {selectedProjects.length} projeto(s) selecionado(s)
-                </p>
-              )}
             </div>
           </div>
 

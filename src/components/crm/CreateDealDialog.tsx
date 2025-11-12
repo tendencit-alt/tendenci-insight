@@ -143,11 +143,14 @@ export function CreateDealDialog({
     }
   };
 
-  const handleArchitectCreated = async () => {
+  const handleArchitectCreated = async (architectId?: string) => {
     await fetchOptions();
+    if (architectId) {
+      setFormData((prev) => ({ ...prev, architect_id: architectId }));
+    }
     toast({
       title: "Sucesso",
-      description: "Arquiteto criado!",
+      description: "Arquiteto criado e selecionado!",
     });
   };
 
@@ -468,89 +471,6 @@ export function CreateDealDialog({
             </div>
           </div>
 
-          {/* Seção: Informações Adicionais */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase">Informações Adicionais</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="temperature">Temperatura do Lead *</Label>
-                <Select
-                  value={formData.temperature}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, temperature: value })
-                  }
-                  required
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione a temperatura" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="frio">❄️ Frio</SelectItem>
-                    <SelectItem value="morno">☀️ Morno</SelectItem>
-                    <SelectItem value="quente">🔥 Quente</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="source">Origem do Lead *</Label>
-                <Select
-                  value={formData.source_id}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, source_id: value })
-                  }
-                  required
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione a origem" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {sources.map((source) => (
-                      <SelectItem key={source.id} value={source.id.toString()}>
-                        {source.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2 col-span-2">
-                <Label htmlFor="owner">Responsável Principal *</Label>
-                <Select
-                  value={formData.owner_id}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, owner_id: value })
-                  }
-                  required
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o responsável" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {owners.map((owner) => (
-                      <SelectItem key={owner.id} value={owner.id}>
-                        {owner.full_name || owner.email}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2 col-span-2">
-                <Label htmlFor="note">Observações *</Label>
-                <Textarea
-                  id="note"
-                  value={formData.note}
-                  onChange={(e) =>
-                    setFormData({ ...formData, note: e.target.value })
-                  }
-                  placeholder="Anotações gerais ou informações relevantes sobre o lead..."
-                  rows={3}
-                  required
-                />
-              </div>
-            </div>
-          </div>
 
           {/* Seção: Comunicação */}
           <div className="space-y-4">
@@ -624,6 +544,12 @@ export function CreateDealDialog({
         open={isClientDialogOpen}
         onOpenChange={setIsClientDialogOpen}
         onSuccess={handleClientCreated}
+      />
+
+      <CreateArchitectDialog
+        open={isArchitectDialogOpen}
+        onOpenChange={setIsArchitectDialogOpen}
+        onSuccess={handleArchitectCreated}
       />
     </Dialog>
   );
