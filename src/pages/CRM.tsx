@@ -63,31 +63,31 @@ export default function CRM() {
 
   return (
     <DashboardLayout>
-      <div className="flex flex-col gap-6 pb-6">
+      <div className="flex flex-col gap-4">
         {/* Header */}
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-col gap-1">
-            <h1 className="text-3xl font-bold tracking-tight">🗂️ CRM Kanban</h1>
-            <p className="text-sm text-muted-foreground">
+            <h1 className="text-2xl lg:text-3xl font-bold tracking-tight">🗂️ CRM Kanban</h1>
+            <p className="text-xs lg:text-sm text-muted-foreground">
               Funis e cadências personalizadas, com métricas, SLA e integrações
             </p>
           </div>
             
           {/* Botões Desktop */}
-          <div className="hidden lg:flex items-center gap-2">
-            <Button onClick={() => setIsCreateDialogOpen(true)}>
+          <div className="hidden lg:flex items-center gap-2 flex-shrink-0">
+            <Button onClick={() => setIsCreateDialogOpen(true)} size="sm">
               <Plus className="mr-2 h-4 w-4" />
               Novo Negócio
             </Button>
-            <Button variant="outline" onClick={() => setIsManageDialogOpen(true)}>
+            <Button variant="outline" onClick={() => setIsManageDialogOpen(true)} size="sm">
               <Settings className="mr-2 h-4 w-4" />
               Funis/Etapas
             </Button>
-            <Button variant="outline" onClick={handleRefresh}>
+            <Button variant="outline" onClick={handleRefresh} size="sm">
               <RefreshCcw className="mr-2 h-4 w-4" />
               Atualizar
             </Button>
-            <Button variant="outline" onClick={handleExport}>
+            <Button variant="outline" onClick={handleExport} size="sm">
               <Download className="mr-2 h-4 w-4" />
               Exportar
             </Button>

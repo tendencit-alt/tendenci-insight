@@ -85,7 +85,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             </DropdownMenu>
           </header>
 
-          <main className="flex-1 p-8 bg-gradient-to-br from-background via-muted/20 to-muted/30 min-h-screen max-w-[2000px] mx-auto w-full">
+          <main className="flex-1 p-4 lg:p-6 bg-gradient-to-br from-background via-muted/20 to-muted/30 min-h-screen max-w-[2000px] mx-auto w-full">
             {children}
           </main>
         </div>
