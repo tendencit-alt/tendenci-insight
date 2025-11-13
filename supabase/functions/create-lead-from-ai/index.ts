@@ -19,7 +19,7 @@ interface LeadData {
   product_type?: string // "Planejado" | "Móvel"
   pipeline_id?: string // UUID do funil
   stage_id?: string // UUID da etapa inicial
-  conversation_history?: string
+  conversation_history?: string | Array<{sender: string, message: string}> // String formatada OU array estruturado
   ai_status?: string
 }
 
@@ -58,25 +58,47 @@ function detectProductType(conversation: string): string {
 }
 
 // Função para formatar conversa no formato esperado
-function formatConversation(rawConversation: string): string {
+function formatConversation(rawConversation: string | any): string {
   if (!rawConversation) return ''
   
-  // Se já está formatado, retorna como está
-  if (rawConversation.includes('👤 Cliente:') || rawConversation.includes('🤖 IA:')) {
-    return rawConversation
+  // Se é um array de mensagens estruturadas
+  if (Array.isArray(rawConversation)) {
+    return rawConversation.map(msg => {
+      const sender = msg.sender === 'client' || msg.sender === 'cliente' ? '👤 Cliente' : '🤖 IA'
+      return `${sender}: ${msg.message}`
+    }).join('\n')
   }
   
-  // Tenta parsear a conversa assumindo que mensagens alternam entre cliente e IA
-  const lines = rawConversation.split('\n').filter(line => line.trim())
+  // Se é string
+  const conversationStr = String(rawConversation)
+  
+  // Se já está formatado com emojis, retorna como está
+  if (conversationStr.includes('👤 Cliente:') || conversationStr.includes('🤖 IA:')) {
+    return conversationStr
+  }
+  
+  // Se está formatado com CLIENT: e AI:
+  if (conversationStr.includes('CLIENT:') || conversationStr.includes('AI:')) {
+    return conversationStr
+      .replace(/CLIENT:/g, '👤 Cliente:')
+      .replace(/AI:/g, '🤖 IA:')
+      .replace(/CLIENTE:/g, '👤 Cliente:')
+      .replace(/IA:/g, '🤖 IA:')
+  }
+  
+  // Tenta parsear a conversa identificando padrões comuns
+  const lines = conversationStr.split('\n').filter(line => line.trim())
   const formattedMessages: string[] = []
   
   for (let i = 0; i < lines.length; i++) {
     const message = lines[i].trim()
     if (!message) continue
     
-    // Identifica se é mensagem do cliente ou da IA
-    // Heurística: mensagens mais curtas ou com "?" geralmente são do cliente
-    const isClientMessage = i % 2 === 0 || message.includes('?') || message.length < 50
+    // Detecta padrões que indicam cliente vs IA
+    const isClientMessage = 
+      message.match(/^(olá|oi|bom dia|boa tarde|boa noite|gostaria|preciso|quanto|valor|preço)/i) ||
+      message.includes('?') ||
+      (message.length < 100 && !message.match(/^(claro|com certeza|perfeito|entendo|vou|posso)/i))
     
     if (isClientMessage) {
       formattedMessages.push(`👤 Cliente: ${message}`)
@@ -271,8 +293,10 @@ Deno.serve(async (req) => {
     const dealIds: string[] = []
     
     if (data.conversation_history) {
-      // Formatar nova mensagem
-      const newMessages = data.conversation_history.trim()
+      // Garantir que conversation_history seja string
+      const newMessages = typeof data.conversation_history === 'string' 
+        ? data.conversation_history.trim() 
+        : data.conversation_history
       
       if (isNewLead) {
         // Lead novo: criar deals em todos os funis com "Lead"
