@@ -576,10 +576,35 @@ export function DealDetailSheet({
               <CollapsibleContent>
                 <div className="border-t p-3 space-y-2 animate-in slide-in-from-top-2 bg-background max-h-80 overflow-y-auto">
                   {deal.conversation_history ? (
-                    <div className="bg-muted/30 p-2 rounded-md border border-border/50">
-                      <p className="text-xs whitespace-pre-wrap leading-relaxed">
-                        {deal.conversation_history}
-                      </p>
+                    <div className="space-y-2">
+                      {deal.conversation_history.split('\n').map((line: string, idx: number) => {
+                        if (!line.trim()) return null;
+                        
+                        const isClient = line.includes('👤 Cliente:');
+                        const isAI = line.includes('🤖 IA:');
+                        
+                        if (isClient) {
+                          const message = line.replace('👤 Cliente:', '').trim();
+                          return (
+                            <div key={idx} className="bg-blue-50 dark:bg-blue-950/30 p-2 rounded-md border border-blue-200 dark:border-blue-800">
+                              <p className="text-xs font-semibold text-blue-700 dark:text-blue-300 mb-1">👤 Cliente</p>
+                              <p className="text-xs text-blue-900 dark:text-blue-100">{message}</p>
+                            </div>
+                          );
+                        }
+                        
+                        if (isAI) {
+                          const message = line.replace('🤖 IA:', '').trim();
+                          return (
+                            <div key={idx} className="bg-purple-50 dark:bg-purple-950/30 p-2 rounded-md border border-purple-200 dark:border-purple-800">
+                              <p className="text-xs font-semibold text-purple-700 dark:text-purple-300 mb-1">🤖 IA</p>
+                              <p className="text-xs text-purple-900 dark:text-purple-100">{message}</p>
+                            </div>
+                          );
+                        }
+                        
+                        return null;
+                      })}
                     </div>
                   ) : (
                     <div className="text-center py-4 text-muted-foreground">
