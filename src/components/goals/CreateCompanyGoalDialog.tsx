@@ -29,7 +29,7 @@ export function CreateCompanyGoalDialog({ open, onOpenChange, onSuccess }: Creat
     setLoading(true);
 
     try {
-      const { error } = await supabase.from("tendenci_company_goals").insert({
+      const { error } = await supabase.from("tendenci_company_goals" as any).insert({
         valor_meta_total: parseFloat(formData.valor_meta_total),
         data_inicio: formData.data_inicio,
         data_fim: formData.data_fim,

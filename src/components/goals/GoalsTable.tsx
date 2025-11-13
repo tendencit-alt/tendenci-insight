@@ -40,7 +40,7 @@ export function GoalsTable({ type, refreshTrigger, onRefresh }: GoalsTableProps)
       
       if (type === "seller") {
         const { data, error } = await supabase
-          .from("tendenci_seller_goals")
+          .from("tendenci_seller_goals" as any)
           .select(`
             *,
             profiles:vendedor_id (full_name, email),
@@ -52,7 +52,7 @@ export function GoalsTable({ type, refreshTrigger, onRefresh }: GoalsTableProps)
         setGoals(data || []);
       } else {
         const { data, error } = await supabase
-          .from("tendenci_company_goals")
+          .from("tendenci_company_goals" as any)
           .select(`
             *,
             tendenci_goal_progress (valor_vendido, percentual)
@@ -75,7 +75,7 @@ export function GoalsTable({ type, refreshTrigger, onRefresh }: GoalsTableProps)
 
     try {
       const table = type === "seller" ? "tendenci_seller_goals" : "tendenci_company_goals";
-      const { error } = await supabase.from(table).delete().eq("id", deleteGoalId);
+      const { error } = await supabase.from(table as any).delete().eq("id", deleteGoalId);
 
       if (error) throw error;
 
@@ -92,7 +92,7 @@ export function GoalsTable({ type, refreshTrigger, onRefresh }: GoalsTableProps)
   const handleStatusChange = async (goalId: string, newStatus: string) => {
     try {
       const table = type === "seller" ? "tendenci_seller_goals" : "tendenci_company_goals";
-      const { error } = await supabase.from(table).update({ status: newStatus }).eq("id", goalId);
+      const { error } = await supabase.from(table as any).update({ status: newStatus }).eq("id", goalId);
 
       if (error) throw error;
 
