@@ -37,32 +37,18 @@ export function usePermissions() {
       const isAdmin = profile?.role === 'admin';
       setIsMaster(isAdmin);
 
-      // Buscar permissões
-      const { data, error } = await supabase
-        .from('tendenci_user_permissions')
-        .select('*')
-        .eq('user_id', user!.id)
-        .maybeSingle();
-
-      if (error) throw error;
-
-      if (data) {
-        setPermissions(data as UserPermissions);
-        setIsMaster(data.role === 'master' || isAdmin);
-      } else {
-        // Se não tem permissões, usar defaults baseado no role do profile
-        const defaultPermissions: UserPermissions = {
-          role: isAdmin ? 'master' : 'vendedor',
-          acesso_leads: true,
-          acesso_arquitetos: true,
-          acesso_projetos: true,
-          acesso_crm_kanban: true,
-          acesso_metas: true,
-          acesso_configuracoes: isAdmin,
-          active: true,
-        };
-        setPermissions(defaultPermissions);
-      }
+      // Usar defaults baseado no role do profile
+      const defaultPermissions: UserPermissions = {
+        role: isAdmin ? 'master' : 'vendedor',
+        acesso_leads: true,
+        acesso_arquitetos: true,
+        acesso_projetos: true,
+        acesso_crm_kanban: true,
+        acesso_metas: true,
+        acesso_configuracoes: isAdmin,
+        active: true,
+      };
+      setPermissions(defaultPermissions);
     } catch (error) {
       console.error('Erro ao buscar permissões:', error);
     } finally {
