@@ -90,6 +90,34 @@ export function CRMBoard({ pipelineId, onRefresh }: CRMBoardProps) {
     setIsDetailOpen(true);
   };
 
+  const handleDeleteDeal = async (dealId: string) => {
+    if (!confirm("Tem certeza que deseja excluir este negócio?")) {
+      return;
+    }
+
+    const { error } = await supabase
+      .from("crm_deals")
+      .delete()
+      .eq("id", dealId);
+
+    if (error) {
+      toast({
+        title: "Erro ao excluir negócio",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "Negócio excluído",
+      description: "O negócio foi excluído com sucesso",
+    });
+
+    fetchData();
+    onRefresh();
+  };
+
   const getDealsByStage = (stageId: string) => {
     return deals.filter((deal) => deal.stage_id === stageId && deal.status === "aberto");
   };
@@ -206,6 +234,7 @@ export function CRMBoard({ pipelineId, onRefresh }: CRMBoardProps) {
                       timeInStage={getTimeInStage(deal)}
                       onClick={() => handleDealClick(deal)}
                       onDragStart={handleDragStart(deal)}
+                      onDelete={handleDeleteDeal}
                     />
                   ))
                 )}
@@ -235,6 +264,7 @@ export function CRMBoard({ pipelineId, onRefresh }: CRMBoardProps) {
                   timeInStage={getTimeInStage(deal)}
                   onClick={() => handleDealClick(deal)}
                   onDragStart={handleDragStart(deal)}
+                  onDelete={handleDeleteDeal}
                 />
               ))
             )}
@@ -262,6 +292,7 @@ export function CRMBoard({ pipelineId, onRefresh }: CRMBoardProps) {
                   timeInStage={getTimeInStage(deal)}
                   onClick={() => handleDealClick(deal)}
                   onDragStart={handleDragStart(deal)}
+                  onDelete={handleDeleteDeal}
                 />
               ))
             )}
