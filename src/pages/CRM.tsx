@@ -66,15 +66,15 @@ export default function CRM() {
     <DashboardLayout>
       <div className="space-y-6 relative pb-20 sm:pb-0 w-full max-w-full overflow-hidden">
         {/* Header */}
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">🗂️ CRM Kanban</h1>
             <p className="text-sm sm:text-base text-muted-foreground">
               Funis e cadências personalizadas, com métricas, SLA e integrações
             </p>
           </div>
-          {/* Botões Desktop */}
-          <div className="hidden sm:flex flex-wrap gap-2 justify-end">
+          {/* Botões Desktop - sempre visível em telas médias+ */}
+          <div className="hidden md:flex flex-wrap gap-2">
             <Button onClick={() => setIsCreateDialogOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
               Novo Negócio
@@ -93,7 +93,7 @@ export default function CRM() {
             </Button>
           </div>
           {/* Menu Dropdown Mobile/Tablet */}
-          <div className="sm:hidden flex justify-end">
+          <div className="md:hidden flex justify-end">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm">
@@ -121,7 +121,7 @@ export default function CRM() {
 
         {/* Botão flutuante mobile para Novo Negócio */}
         <Button 
-          className="sm:hidden fixed bottom-6 right-6 z-50 h-[clamp(56px,14vw,64px)] w-[clamp(56px,14vw,64px)] rounded-full shadow-lg"
+          className="md:hidden fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg"
           onClick={() => setIsCreateDialogOpen(true)}
           size="icon"
         >
