@@ -70,39 +70,31 @@ export function CRMKPIs({ pipelineId }: CRMKPIsProps) {
 
   if (loading) {
     return (
-      <div className="w-full overflow-x-auto pb-2" style={{ scrollbarWidth: 'thin' }}>
-        <div className="flex gap-4" style={{ minWidth: 'max-content' }}>
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Card key={i} className="flex-shrink-0" style={{ minWidth: '240px', width: '240px' }}>
-              <CardContent className="p-4">
-                <Skeleton className="h-24 w-full" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <Card key={i}>
+            <CardContent className="p-6">
+              <Skeleton className="h-20 w-full" />
+            </CardContent>
+          </Card>
+        ))}
       </div>
     );
   }
 
   return (
-    <div className="w-full overflow-x-auto pb-2" style={{ scrollbarWidth: 'thin' }}>
-      <div className="flex gap-4" style={{ minWidth: 'max-content' }}>
-        {kpis.map((kpi, index) => (
-          <Card 
-            key={index} 
-            className="flex-shrink-0 hover:shadow-md transition-all duration-200 border-border/50"
-            style={{ minWidth: '240px', width: '240px' }}
-          >
-            <CardContent className="p-4">
-              <div className="flex flex-col gap-2">
-                <kpi.icon className={`h-8 w-8 flex-shrink-0 ${kpi.color}`} />
-                <p className="text-sm text-muted-foreground leading-tight line-clamp-2">{kpi.label}</p>
-                <p className="text-2xl font-bold tracking-tight">{kpi.value}</p>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {kpis.map((kpi, index) => (
+        <Card key={index} className="hover:shadow-md transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex flex-col gap-3">
+              <kpi.icon className={`h-8 w-8 ${kpi.color}`} />
+              <p className="text-sm text-muted-foreground">{kpi.label}</p>
+              <p className="text-2xl font-bold">{kpi.value}</p>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
     </div>
   );
 }
