@@ -55,27 +55,27 @@ export function DealCard({ deal, timeInStage, onClick, onDragStart, onDelete }: 
           <X className="h-4 w-4 text-destructive" />
         </Button>
       )}
-      <CardContent className="p-4">
+      <CardContent className="p-[clamp(12px,2vw,20px)]">
         <div className="space-y-2">
           {/* Nome do cliente em destaque com tag IA */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             {fromAI && (
-              <Badge variant="secondary" className="text-xs bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300">
+              <Badge variant="secondary" className="text-xs bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300 flex-shrink-0">
                 <Bot className="h-3 w-3 mr-1" />
                 IA
               </Badge>
             )}
-            <p className="font-bold text-base">{clientName}</p>
+            <p className="font-bold text-base line-clamp-1 flex-1 min-w-0">{clientName}</p>
           </div>
           
           {/* Título do negócio com indicador de etapa Lead */}
           <div className="flex items-center gap-2">
-            <p className="text-sm text-muted-foreground flex-1">{deal.title}</p>
+            <p className="text-sm text-muted-foreground flex-1 line-clamp-1">{deal.title}</p>
           </div>
           
           {/* Telefone */}
           {phone && (
-            <p className="text-xs text-muted-foreground">{phone}</p>
+            <p className="text-xs text-muted-foreground truncate">{phone}</p>
           )}
           
           {/* Observações */}
@@ -88,13 +88,13 @@ export function DealCard({ deal, timeInStage, onClick, onDragStart, onDelete }: 
           {/* Badges: Temperatura e Tipo de Produto */}
           <div className="flex flex-wrap gap-1">
             {temperature && (
-              <Badge variant="outline" className="text-xs flex items-center gap-1">
+              <Badge variant="outline" className="text-xs flex items-center gap-1 flex-shrink-0">
                 {getTemperatureIcon()}
-                {temperature.charAt(0).toUpperCase() + temperature.slice(1)}
+                <span className="truncate">{temperature.charAt(0).toUpperCase() + temperature.slice(1)}</span>
               </Badge>
             )}
             {productType && (
-              <Badge variant="secondary" className="text-xs">
+              <Badge variant="secondary" className="text-xs truncate">
                 {productType}
               </Badge>
             )}
@@ -102,18 +102,18 @@ export function DealCard({ deal, timeInStage, onClick, onDragStart, onDelete }: 
           
           {/* Responsável */}
           {ownerName && (
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <User className="h-3 w-3" />
-              <span>{ownerName}</span>
+            <div className="flex items-center gap-1 text-xs text-muted-foreground min-w-0">
+              <User className="h-3 w-3 flex-shrink-0" />
+              <span className="truncate">{ownerName}</span>
             </div>
           )}
           
           {/* Valor e Tempo */}
-          <div className="flex items-center justify-between pt-2 border-t">
-            <Badge variant="secondary" className="text-xs font-semibold">
+          <div className="flex items-center justify-between pt-2 border-t gap-2">
+            <Badge variant="secondary" className="text-xs font-semibold truncate">
               R$ {Number(deal.value || 0).toLocaleString("pt-BR")}
             </Badge>
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1 text-xs text-muted-foreground flex-shrink-0">
               <Clock className="h-3 w-3" />
               <span>{timeInStage}h</span>
             </div>

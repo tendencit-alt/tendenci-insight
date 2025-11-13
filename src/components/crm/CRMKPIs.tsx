@@ -70,10 +70,10 @@ export function CRMKPIs({ pipelineId }: CRMKPIsProps) {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         {Array.from({ length: 6 }).map((_, i) => (
           <Card key={i}>
-            <CardContent className="p-6">
+            <CardContent className="p-[clamp(12px,2vw,20px)]">
               <Skeleton className="h-20 w-full" />
             </CardContent>
           </Card>
@@ -83,14 +83,14 @@ export function CRMKPIs({ pipelineId }: CRMKPIsProps) {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
       {kpis.map((kpi, index) => (
         <Card key={index} className="hover:shadow-lg transition-shadow">
-          <CardContent className="p-6">
+          <CardContent className="p-[clamp(12px,2vw,20px)]">
             <div className="flex flex-col space-y-2">
               <kpi.icon className={`h-8 w-8 ${kpi.color}`} />
-              <p className="text-sm text-muted-foreground">{kpi.label}</p>
-              <p className="text-2xl font-bold">{kpi.value}</p>
+              <p className="text-sm text-muted-foreground line-clamp-2">{kpi.label}</p>
+              <p className="text-2xl font-bold truncate">{kpi.value}</p>
             </div>
           </CardContent>
         </Card>
