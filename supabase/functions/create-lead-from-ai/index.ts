@@ -23,6 +23,71 @@ interface LeadData {
   ai_status?: string
 }
 
+// Função para detectar tipo de produto baseado na conversa
+function detectProductType(conversation: string): string {
+  const lowerConv = conversation.toLowerCase()
+  
+  // Mapeamento de palavras-chave para tipos de produto
+  const productKeywords: { [key: string]: string[] } = {
+    'Sofá': ['sofá', 'sofa', 'sofas', 'sofás'],
+    'Poltrona': ['poltrona', 'poltronas'],
+    'Mesa': ['mesa', 'mesas'],
+    'Cadeira': ['cadeira', 'cadeiras'],
+    'Aparador': ['aparador', 'aparadores'],
+    'Banqueta': ['banqueta', 'banquetas', 'banco'],
+    'Rack': ['rack', 'racks', 'estante tv'],
+    'Cristaleira': ['cristaleira', 'cristaleiras'],
+    'Estante': ['estante', 'estantes', 'estanteria'],
+    'Vaso': ['vaso', 'vasos'],
+    'Quadro': ['quadro', 'quadros'],
+    'Chaise': ['chaise'],
+  }
+  
+  // Procura por cada palavra-chave
+  for (const [product, keywords] of Object.entries(productKeywords)) {
+    for (const keyword of keywords) {
+      if (lowerConv.includes(keyword)) {
+        console.log(`🔍 Tipo de produto detectado: "${product}" (keyword: "${keyword}")`)
+        return product
+      }
+    }
+  }
+  
+  console.log('⚠️ Tipo de produto não detectado, usando "Personalizado" como padrão')
+  return 'Personalizado'
+}
+
+// Função para formatar conversa no formato esperado
+function formatConversation(rawConversation: string): string {
+  if (!rawConversation) return ''
+  
+  // Se já está formatado, retorna como está
+  if (rawConversation.includes('👤 Cliente:') || rawConversation.includes('🤖 IA:')) {
+    return rawConversation
+  }
+  
+  // Tenta parsear a conversa assumindo que mensagens alternam entre cliente e IA
+  const lines = rawConversation.split('\n').filter(line => line.trim())
+  const formattedMessages: string[] = []
+  
+  for (let i = 0; i < lines.length; i++) {
+    const message = lines[i].trim()
+    if (!message) continue
+    
+    // Identifica se é mensagem do cliente ou da IA
+    // Heurística: mensagens mais curtas ou com "?" geralmente são do cliente
+    const isClientMessage = i % 2 === 0 || message.includes('?') || message.length < 50
+    
+    if (isClientMessage) {
+      formattedMessages.push(`👤 Cliente: ${message}`)
+    } else {
+      formattedMessages.push(`🤖 IA: ${message}`)
+    }
+  }
+  
+  return formattedMessages.join('\n')
+}
+
 Deno.serve(async (req) => {
   console.log('🚀 Edge Function create-lead-from-ai iniciada')
   console.log('📥 Método HTTP:', req.method)
@@ -63,6 +128,10 @@ Deno.serve(async (req) => {
     }
 
     // Normalizar campos para aceitar português e inglês
+    const rawConversation = rawData.conversation_history || rawData.conversa_whatsapp || rawData.historico_conversa || ''
+    const formattedConversation = formatConversation(rawConversation)
+    const detectedProductType = detectProductType(rawConversation)
+    
     const data: LeadData = {
       name: rawData.name || rawData.nome,
       phone: (rawData.phone || rawData.contato_whatsapp || rawData.telefone || '')
@@ -78,10 +147,10 @@ Deno.serve(async (req) => {
         .trim(),
       deal_title: rawData.deal_title || rawData.titulo_negocio,
       deal_value: rawData.deal_value || rawData.valor_negocio,
-      product_type: rawData.product_type || rawData.tipo_produto,
+      product_type: rawData.product_type || rawData.tipo_produto || detectedProductType,
       pipeline_id: rawData.pipeline_id || rawData.funil_id,
       stage_id: rawData.stage_id || rawData.etapa_id,
-      conversation_history: rawData.conversation_history || rawData.conversa_whatsapp || rawData.historico_conversa,
+      conversation_history: formattedConversation,
       ai_status: rawData.ai_status || rawData.status_ia
     }
 
@@ -102,31 +171,25 @@ Deno.serve(async (req) => {
     console.log('✅ Validação passou')
 
     // 1. Verificar se cliente já existe pelo telefone
-    const { data: existingClient } = await supabase
+    console.log('🔎 Buscando cliente com telefone:', data.phone)
+    const { data: existingClient, error: clientSearchError } = await supabase
       .from('clients')
       .select('id')
       .eq('phone', data.phone)
-      .single()
+      .maybeSingle()
+
+    if (clientSearchError) {
+      console.error('Erro ao buscar cliente:', clientSearchError)
+    }
 
     let clientId: string
 
     if (existingClient) {
       console.log('Cliente existente encontrado:', existingClient.id)
       clientId = existingClient.id
-      
-      // Atualizar dados do cliente se necessário
-      await supabase
-        .from('clients')
-        .update({
-          name: data.name,
-          email: data.email,
-          city: data.city,
-          state: data.state,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', clientId)
     } else {
-      // 2. Criar novo cliente
+      // 2. Criar novo cliente se não existir
+      console.log('Cliente não existe, criando novo...')
       const { data: newClient, error: clientError } = await supabase
         .from('clients')
         .insert({
@@ -151,26 +214,17 @@ Deno.serve(async (req) => {
       clientId = newClient.id
     }
 
-    // 3. Buscar ou criar source_id
-    let sourceId = null
-    if (data.source) {
-      const { data: sourceData } = await supabase
-        .from('lead_sources')
-        .select('id')
-        .ilike('name', data.source)
-        .single()
-      
-      sourceId = sourceData?.id || null
-    }
-
-    // 4. Verificar se já existe lead para este cliente
-    const { data: existingLead } = await supabase
+    // 3. Verificar se lead já existe para esse cliente
+    console.log('🔎 Buscando lead existente para cliente:', clientId)
+    const { data: existingLead, error: leadSearchError } = await supabase
       .from('leads')
-      .select('id, temperature')
+      .select('id')
       .eq('client_id', clientId)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single()
+      .maybeSingle()
+
+    if (leadSearchError) {
+      console.error('Erro ao buscar lead:', leadSearchError)
+    }
 
     let leadId: string
     let isNewLead = false
@@ -179,21 +233,21 @@ Deno.serve(async (req) => {
       console.log('Lead existente encontrado:', existingLead.id)
       leadId = existingLead.id
       
-      // Atualizar temperatura se mudou
-      if (data.temperature && data.temperature !== existingLead.temperature) {
+      // Atualizar temperatura do lead se mudou
+      if (data.temperature) {
         await supabase
           .from('leads')
           .update({ temperature: data.temperature })
           .eq('id', leadId)
-        console.log('Temperatura atualizada para:', data.temperature)
       }
     } else {
-      // Criar novo lead
+      // 4. Criar novo lead
+      console.log('Lead não existe, criando novo...')
       const { data: newLead, error: leadError } = await supabase
         .from('leads')
         .insert({
           client_id: clientId,
-          source_id: sourceId,
+          source_id: null,
           temperature: data.temperature || 'frio',
           status: 'novo'
         })
@@ -251,8 +305,8 @@ Deno.serve(async (req) => {
                   value: data.deal_value || 0,
                   categoria: 'Móveis Soltos',
                   centro_custo: 'Industrial',
-                  tipo_produto: data.product_type || 'Sofá',
-                  product_type: data.product_type || 'Sofá',
+                  tipo_produto: data.product_type || detectedProductType,
+                  product_type: data.product_type || detectedProductType,
                   conversation_history: newMessages,
                   ai_status: data.ai_status,
                   status: 'aberto',
@@ -301,12 +355,11 @@ Deno.serve(async (req) => {
               if (updateError) {
                 console.error(`❌ Erro ao atualizar deal ${deal.id}:`, updateError)
               } else {
-                console.log(`✅ Deal ${deal.id} atualizado com novas mensagens`)
+                console.log(`✅ Deal ${deal.id} atualizado com sucesso`)
                 dealIds.push(deal.id)
               }
             } else {
-              console.log(`⏭️ Deal ${deal.id} já contém estas mensagens - ignorando`)
-              dealIds.push(deal.id)
+              console.log(`ℹ️ Deal ${deal.id} já possui esta mensagem, pulando...`)
             }
           }
         }
@@ -314,34 +367,26 @@ Deno.serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({
+      JSON.stringify({ 
         success: true,
-        message: isNewLead 
-          ? `Lead criado com sucesso em ${dealIds.length} funil(is)` 
-          : `Lead existente atualizado em ${dealIds.length} deal(s)`,
+        message: isNewLead ? 'Lead e negócio(s) criado(s) com sucesso' : 'Lead existente atualizado',
         data: {
-          client_id: clientId,
-          lead_id: leadId,
-          deal_ids: dealIds,
-          is_new_lead: isNewLead,
-          deals_affected: dealIds.length
+          clientId,
+          leadId,
+          dealIds,
+          isNew: isNewLead,
+          detectedProductType: detectedProductType
         }
       }),
-      { 
-        status: 200, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
   } catch (error) {
-    console.error('❌ ERRO GERAL CAPTURADO:', error)
-    console.error('Stack trace:', error instanceof Error ? error.stack : 'N/A')
-    const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido'
+    console.error('❌ Erro inesperado:', error)
     return new Response(
       JSON.stringify({ 
-        error: 'Erro interno do servidor', 
-        details: errorMessage,
-        stack: error instanceof Error ? error.stack : 'N/A'
+        error: 'Erro interno do servidor',
+        details: error instanceof Error ? error.message : 'Erro desconhecido'
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
