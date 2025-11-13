@@ -133,8 +133,8 @@ export function CreateSellerGoalDialog({ open, onOpenChange, onSuccess }: Create
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="vendas">Vendas (Valor em R$)</SelectItem>
-                <SelectItem value="captacao">Captação (Quantidade de Leads)</SelectItem>
-                <SelectItem value="efetivacao">Efetivação (Quantidade de Arquitetos)</SelectItem>
+                <SelectItem value="captacao">Captação (Quantidade de Arquitetos)</SelectItem>
+                <SelectItem value="efetivacao">Efetivação (Quantidade de Projetos)</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -155,7 +155,7 @@ export function CreateSellerGoalDialog({ open, onOpenChange, onSuccess }: Create
           ) : (
             <div className="space-y-2">
               <Label htmlFor="quantidade_meta">
-                {formData.tipo_meta === "captacao" ? "Quantidade de Leads *" : "Quantidade de Arquitetos *"}
+                {formData.tipo_meta === "captacao" ? "Quantidade de Arquitetos *" : "Quantidade de Projetos *"}
               </Label>
               <Input
                 id="quantidade_meta"
@@ -164,7 +164,7 @@ export function CreateSellerGoalDialog({ open, onOpenChange, onSuccess }: Create
                 required
                 value={formData.quantidade_meta}
                 onChange={(e) => setFormData({ ...formData, quantidade_meta: e.target.value })}
-                placeholder={formData.tipo_meta === "captacao" ? "Ex: 100" : "Ex: 50"}
+                placeholder={formData.tipo_meta === "captacao" ? "Ex: 50" : "Ex: 30"}
               />
             </div>
           )}
