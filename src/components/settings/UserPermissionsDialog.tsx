@@ -40,15 +40,7 @@ export function UserPermissionsDialog({
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [role, setRole] = useState<'master' | 'vendedor'>('vendedor');
-  const [permissions, setPermissions] = useState({
-    acesso_leads: true,
-    acesso_arquitetos: true,
-    acesso_projetos: true,
-    acesso_crm_kanban: true,
-    acesso_metas: true,
-    acesso_configuracoes: false,
-  });
+  const [role, setRole] = useState<'admin' | 'vendedor' | 'arquiteto'>('vendedor');
 
   useEffect(() => {
     if (open && userId) {
@@ -59,30 +51,22 @@ export function UserPermissionsDialog({
   const fetchPermissions = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('tendenci_user_permissions')
-        .select('*')
-        .eq('user_id', userId)
-        .maybeSingle();
+      const { data, error} = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', userId)
+        .single();
 
       if (error) throw error;
 
       if (data) {
-        setRole(data.role as 'master' | 'vendedor');
-        setPermissions({
-          acesso_leads: data.acesso_leads,
-          acesso_arquitetos: data.acesso_arquitetos,
-          acesso_projetos: data.acesso_projetos,
-          acesso_crm_kanban: data.acesso_crm_kanban,
-          acesso_metas: data.acesso_metas,
-          acesso_configuracoes: data.acesso_configuracoes,
-        });
+        setRole(data.role as 'admin' | 'vendedor' | 'arquiteto');
       }
     } catch (error) {
-      console.error('Erro ao buscar permissões:', error);
+      console.error('Erro ao buscar role do usuário:', error);
       toast({
         title: 'Erro',
-        description: 'Não foi possível carregar as permissões do usuário.',
+        description: 'Não foi possível carregar o perfil do usuário.',
         variant: 'destructive',
       });
     } finally {
@@ -94,31 +78,25 @@ export function UserPermissionsDialog({
     try {
       setSaving(true);
 
-      const permissionsData = {
-        user_id: userId,
-        role,
-        ...permissions,
-        acesso_configuracoes: role === 'master' ? true : false,
-      };
-
       const { error } = await supabase
-        .from('tendenci_user_permissions')
-        .upsert(permissionsData, { onConflict: 'user_id' });
+        .from('profiles')
+        .update({ role })
+        .eq('id', userId);
 
       if (error) throw error;
 
       toast({
-        title: '✅ Permissões atualizadas',
-        description: 'As permissões do usuário foram atualizadas com sucesso.',
+        title: '✅ Perfil atualizado',
+        description: 'O perfil do usuário foi atualizado com sucesso.',
       });
 
       onSuccess();
       onOpenChange(false);
     } catch (error) {
-      console.error('Erro ao salvar permissões:', error);
+      console.error('Erro ao salvar perfil:', error);
       toast({
         title: 'Erro',
-        description: 'Não foi possível atualizar as permissões.',
+        description: 'Não foi possível atualizar o perfil.',
         variant: 'destructive',
       });
     } finally {
@@ -126,7 +104,7 @@ export function UserPermissionsDialog({
     }
   };
 
-  const isMaster = role === 'master';
+  const isMaster = role === 'admin';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
