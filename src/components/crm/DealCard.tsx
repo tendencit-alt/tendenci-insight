@@ -1,15 +1,23 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Clock, Flame, Snowflake, User, Bot } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Clock, Flame, Snowflake, User, Bot, X } from "lucide-react";
 
 interface DealCardProps {
   deal: any;
   timeInStage: number;
   onClick: () => void;
   onDragStart?: (e: React.DragEvent) => void;
+  onDelete?: (dealId: string) => void;
 }
 
-export function DealCard({ deal, timeInStage, onClick, onDragStart }: DealCardProps) {
+export function DealCard({ deal, timeInStage, onClick, onDragStart, onDelete }: DealCardProps) {
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onDelete) {
+      onDelete(deal.id);
+    }
+  };
   const clientName = deal.lead?.client?.name || "Sem cliente";
   const phone = deal.lead?.client?.phone || "";
   const temperature = deal.lead?.temperature || "frio";
@@ -32,11 +40,21 @@ export function DealCard({ deal, timeInStage, onClick, onDragStart }: DealCardPr
 
   return (
     <Card
-      className="cursor-pointer hover:shadow-md transition-shadow"
+      className="cursor-pointer hover:shadow-md transition-shadow relative group"
       onClick={onClick}
       draggable
       onDragStart={onDragStart}
     >
+      {onDelete && (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+          onClick={handleDelete}
+        >
+          <X className="h-4 w-4 text-destructive" />
+        </Button>
+      )}
       <CardContent className="p-4">
         <div className="space-y-2">
           {/* Nome do cliente em destaque com tag IA */}

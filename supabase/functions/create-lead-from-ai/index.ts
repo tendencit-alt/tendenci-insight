@@ -218,7 +218,10 @@ Deno.serve(async (req) => {
               lead_id: newLead.id,
               title: data.deal_title || `Lead ${data.name}`,
               value: data.deal_value || 0,
-              product_type: data.product_type,
+              categoria: 'Móveis Soltos', // Valor padrão para leads de IA
+              centro_custo: 'Industrial', // Valor padrão para leads de IA
+              tipo_produto: data.product_type || 'Sofá', // Valor padrão
+              product_type: data.product_type || 'Sofá', // Manter compatibilidade
               conversation_history: data.conversation_history,
               ai_status: data.ai_status,
               status: 'aberto',
