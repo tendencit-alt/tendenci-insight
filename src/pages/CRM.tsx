@@ -63,46 +63,45 @@ export default function CRM() {
 
   return (
     <DashboardLayout>
-      <div className="w-full">
-        <div className="space-y-6 pb-24 md:pb-6 max-w-full">
-          {/* Header */}
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">🗂️ CRM Kanban</h1>
-              <p className="text-muted-foreground mt-1">
-                Funis e cadências personalizadas, com métricas, SLA e integrações
-              </p>
-            </div>
-            
-            {/* Botões Desktop */}
-            <div className="hidden md:flex items-center gap-2 flex-shrink-0">
-              <Button onClick={() => setIsCreateDialogOpen(true)}>
-                <Plus className="mr-2 h-4 w-4" />
-                Novo Negócio
-              </Button>
-              <Button variant="outline" onClick={() => setIsManageDialogOpen(true)}>
-                <Settings className="mr-2 h-4 w-4" />
-                Funis/Etapas
-              </Button>
-              <Button variant="outline" onClick={handleRefresh}>
-                <RefreshCcw className="mr-2 h-4 w-4" />
-                Atualizar
-              </Button>
-              <Button variant="outline" onClick={handleExport}>
-                <Download className="mr-2 h-4 w-4" />
-                Exportar
-              </Button>
-            </div>
+      <div className="flex flex-col gap-6 pb-6">
+        {/* Header */}
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-col gap-1">
+            <h1 className="text-3xl font-bold tracking-tight">🗂️ CRM Kanban</h1>
+            <p className="text-sm text-muted-foreground">
+              Funis e cadências personalizadas, com métricas, SLA e integrações
+            </p>
           </div>
+            
+          {/* Botões Desktop */}
+          <div className="hidden lg:flex items-center gap-2">
+            <Button onClick={() => setIsCreateDialogOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Novo Negócio
+            </Button>
+            <Button variant="outline" onClick={() => setIsManageDialogOpen(true)}>
+              <Settings className="mr-2 h-4 w-4" />
+              Funis/Etapas
+            </Button>
+            <Button variant="outline" onClick={handleRefresh}>
+              <RefreshCcw className="mr-2 h-4 w-4" />
+              Atualizar
+            </Button>
+            <Button variant="outline" onClick={handleExport}>
+              <Download className="mr-2 h-4 w-4" />
+              Exportar
+            </Button>
+          </div>
+        </div>
 
-          {/* Botão flutuante mobile */}
-          <Button 
-            className="md:hidden fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-2xl"
-            onClick={() => setIsCreateDialogOpen(true)}
-            size="icon"
-          >
-            <Plus className="h-6 w-6" />
-          </Button>
+        {/* Botão flutuante mobile */}
+        <Button 
+          className="lg:hidden fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-2xl"
+          onClick={() => setIsCreateDialogOpen(true)}
+          size="icon"
+        >
+          <Plus className="h-6 w-6" />
+        </Button>
 
         {/* Filters */}
         <CRMFilters
@@ -132,8 +131,8 @@ export default function CRM() {
         )}
         
         {!selectedPipeline && pipelines.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">Nenhum funil cadastrado. Crie seu primeiro funil de vendas!</p>
+          <div className="flex items-center justify-center py-12">
+            <p className="text-sm text-muted-foreground">Nenhum funil cadastrado. Crie seu primeiro funil de vendas!</p>
           </div>
         )}
 
@@ -151,7 +150,6 @@ export default function CRM() {
           selectedPipeline={selectedPipeline}
           onSuccess={handleRefresh}
         />
-        </div>
       </div>
     </DashboardLayout>
   );
