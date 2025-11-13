@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { TrendingUp, TrendingDown, Users, Award, Target, Trophy } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { usePermissions } from "@/hooks/usePermissions";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface GoalsAnalyticsProps {
   refreshTrigger: number;
@@ -19,6 +21,8 @@ interface SellerRanking {
 }
 
 export function GoalsAnalytics({ refreshTrigger }: GoalsAnalyticsProps) {
+  const { isMaster } = usePermissions();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [analytics, setAnalytics] = useState<any>(null);
 
@@ -30,48 +34,90 @@ export function GoalsAnalytics({ refreshTrigger }: GoalsAnalyticsProps) {
     try {
       setLoading(true);
 
-      // Buscar ranking completo
-      const { data: ranking, error: rankingError } = await supabase
-        .from("tendenci_seller_ranking" as any)
-        .select(`
-          vendedor_id,
-          percentual_meta_atualizado,
-          valor_total_vendido,
-          posicao_atual,
-          profiles:vendedor_id (full_name, email)
-        `)
-        .order("percentual_meta_atualizado", { ascending: false })
-        .limit(10);
+      if (isMaster) {
+        // Masters veem o ranking completo
+        const { data: ranking, error: rankingError } = await supabase
+          .from("tendenci_seller_ranking" as any)
+          .select(`
+            vendedor_id,
+            percentual_meta_atualizado,
+            valor_total_vendido,
+            posicao_atual,
+            profiles:vendedor_id (full_name, email)
+          `)
+          .order("percentual_meta_atualizado", { ascending: false })
+          .limit(10);
 
-      if (rankingError) throw rankingError;
+        if (rankingError) throw rankingError;
 
-      // Calcular estatísticas
-      const percentuais = ranking?.map((r: any) => r.percentual_meta_atualizado) || [];
-      const mediaEquipe = percentuais.length > 0 ? percentuais.reduce((a: number, b: number) => a + b, 0) / percentuais.length : 0;
+        // Calcular estatísticas
+        const percentuais = ranking?.map((r: any) => r.percentual_meta_atualizado) || [];
+        const mediaEquipe = percentuais.length > 0 ? percentuais.reduce((a: number, b: number) => a + b, 0) / percentuais.length : 0;
 
-      // Buscar meta consolidada ativa
-      const { data: companyGoal, error: companyError } = await supabase
-        .from("tendenci_company_goals" as any)
-        .select("*, tendenci_goal_progress(*)")
-        .eq("status", "ativa")
-        .gte("data_fim", new Date().toISOString())
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .single();
+        // Buscar meta consolidada ativa
+        const { data: companyGoal, error: companyError } = await supabase
+          .from("tendenci_company_goals" as any)
+          .select("*, tendenci_goal_progress(*)")
+          .eq("status", "ativa")
+          .gte("data_fim", new Date().toISOString())
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .single();
 
-      // Contar vendedores em diferentes faixas
-      const acimaMedia = ranking?.filter((r: any) => r.percentual_meta_atualizado > mediaEquipe).length || 0;
-      const abaixoMedia = ranking?.filter((r: any) => r.percentual_meta_atualizado <= mediaEquipe).length || 0;
-      const atingiuMeta = ranking?.filter((r: any) => r.percentual_meta_atualizado >= 100).length || 0;
+        // Contar vendedores em diferentes faixas
+        const acimaMedia = ranking?.filter((r: any) => r.percentual_meta_atualizado > mediaEquipe).length || 0;
+        const abaixoMedia = ranking?.filter((r: any) => r.percentual_meta_atualizado <= mediaEquipe).length || 0;
+        const atingiuMeta = ranking?.filter((r: any) => r.percentual_meta_atualizado >= 100).length || 0;
 
-      setAnalytics({
-        ranking,
-        mediaEquipe,
-        acimaMedia,
-        abaixoMedia,
-        atingiuMeta,
-        companyGoal,
-      });
+        setAnalytics({
+          ranking,
+          mediaEquipe,
+          acimaMedia,
+          abaixoMedia,
+          atingiuMeta,
+          companyGoal,
+        });
+      } else {
+        // Vendedores veem apenas seu próprio desempenho
+        const { data: myRanking, error: rankingError } = await supabase
+          .from("tendenci_seller_ranking" as any)
+          .select(`
+            vendedor_id,
+            percentual_meta_atualizado,
+            valor_total_vendido,
+            posicao_atual,
+            profiles:vendedor_id (full_name, email)
+          `)
+          .eq("vendedor_id", user?.id)
+          .single();
+
+        if (rankingError) throw rankingError;
+
+        // Buscar média da equipe para comparação
+        const { data: allRankings } = await supabase
+          .from("tendenci_seller_ranking" as any)
+          .select("percentual_meta_atualizado");
+
+        const percentuais = (allRankings || []).map((r: any) => r.percentual_meta_atualizado);
+        const mediaEquipe = percentuais.length > 0 ? percentuais.reduce((a: number, b: number) => a + b, 0) / percentuais.length : 0;
+
+        // Buscar meta consolidada ativa
+        const { data: companyGoal } = await supabase
+          .from("tendenci_company_goals" as any)
+          .select("*, tendenci_goal_progress(*)")
+          .eq("status", "ativa")
+          .gte("data_fim", new Date().toISOString())
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .single();
+
+        setAnalytics({
+          ranking: myRanking ? [myRanking] : [],
+          mediaEquipe,
+          myPerformance: (myRanking as any)?.percentual_meta_atualizado || 0,
+          companyGoal,
+        });
+      }
     } catch (error) {
       console.error("Erro ao buscar analytics:", error);
     } finally {
