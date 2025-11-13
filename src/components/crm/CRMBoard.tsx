@@ -199,26 +199,28 @@ export function CRMBoard({ pipelineId, onRefresh }: CRMBoardProps) {
 
   return (
     <>
-      <div className="w-full overflow-x-auto cursor-grab active:cursor-grabbing">
-        <div className="flex gap-4 pb-4 min-w-max">
+      <div className="w-full overflow-x-auto" style={{ scrollbarWidth: 'thin' }}>
+        <div className="flex gap-6 pb-4" style={{ minWidth: 'max-content' }}>
           {/* Regular pipeline stages */}
           {stages.map((stage) => {
           const stageDeals = getDealsByStage(stage.id);
           return (
             <Card 
               key={stage.id} 
-              className="min-w-[320px] max-w-[320px] flex-shrink-0 hover:shadow-lg transition-shadow"
+              className="flex-shrink-0 hover:shadow-md transition-all duration-200 border-border/50"
+              style={{ minWidth: '320px', width: '320px' }}
               onDragOver={handleDragOver}
               onDrop={handleDrop(stage.id)}
             >
-              <CardHeader className="pb-3 px-4">
-                <CardTitle className="flex items-center justify-between text-base gap-2">
-                  <span className="truncate">{stage.name}</span>
-                  <Badge variant="secondary" className="flex-shrink-0">{stageDeals.length}</Badge>
+              <CardHeader className="pb-3 px-5 pt-4">
+                <CardTitle className="flex items-center justify-between text-base gap-3">
+                  <span className="truncate font-semibold">{stage.name}</span>
+                  <Badge variant="secondary" className="flex-shrink-0 font-medium">{stageDeals.length}</Badge>
                 </CardTitle>
               </CardHeader>
               <CardContent 
-                className="space-y-3 max-h-[600px] overflow-y-auto px-4"
+                className="space-y-3 px-5 pb-4"
+                style={{ maxHeight: '600px', overflowY: 'auto' }}
                 onDragOver={handleDragOver}
                 onDrop={handleDrop(stage.id)}
               >
@@ -244,14 +246,17 @@ export function CRMBoard({ pipelineId, onRefresh }: CRMBoardProps) {
         })}
 
         {/* Fixed Won column */}
-        <Card className="min-w-[320px] max-w-[320px] flex-shrink-0 bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
-          <CardHeader className="pb-3 px-4">
-            <CardTitle className="flex items-center justify-between text-base text-green-700 dark:text-green-300 gap-2">
-              <span className="truncate">✅ Ganho</span>
-              <Badge variant="default" className="bg-green-600 flex-shrink-0">{getWonDeals().length}</Badge>
+        <Card 
+          className="flex-shrink-0 bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800 hover:shadow-md transition-all duration-200"
+          style={{ minWidth: '320px', width: '320px' }}
+        >
+          <CardHeader className="pb-3 px-5 pt-4">
+            <CardTitle className="flex items-center justify-between text-base text-green-700 dark:text-green-300 gap-3">
+              <span className="truncate font-semibold">✅ Ganho</span>
+              <Badge variant="default" className="bg-green-600 hover:bg-green-700 flex-shrink-0 font-medium">{getWonDeals().length}</Badge>
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3 max-h-[600px] overflow-y-auto px-4">
+          <CardContent className="space-y-3 px-5 pb-4" style={{ maxHeight: '600px', overflowY: 'auto' }}>
             {getWonDeals().length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">
                 Nenhum negócio ganho ainda
@@ -272,14 +277,17 @@ export function CRMBoard({ pipelineId, onRefresh }: CRMBoardProps) {
         </Card>
 
         {/* Fixed Lost column */}
-        <Card className="min-w-[320px] max-w-[320px] flex-shrink-0 bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800">
-          <CardHeader className="pb-3 px-4">
-            <CardTitle className="flex items-center justify-between text-base text-red-700 dark:text-red-300 gap-2">
-              <span className="truncate">❌ Perdido</span>
-              <Badge variant="destructive" className="flex-shrink-0">{getLostDeals().length}</Badge>
+        <Card 
+          className="flex-shrink-0 bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800 hover:shadow-md transition-all duration-200"
+          style={{ minWidth: '320px', width: '320px' }}
+        >
+          <CardHeader className="pb-3 px-5 pt-4">
+            <CardTitle className="flex items-center justify-between text-base text-red-700 dark:text-red-300 gap-3">
+              <span className="truncate font-semibold">❌ Perdido</span>
+              <Badge variant="destructive" className="hover:bg-destructive/90 flex-shrink-0 font-medium">{getLostDeals().length}</Badge>
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3 max-h-[600px] overflow-y-auto px-4">
+          <CardContent className="space-y-3 px-5 pb-4" style={{ maxHeight: '600px', overflowY: 'auto' }}>
             {getLostDeals().length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">
                 Nenhum negócio perdido
