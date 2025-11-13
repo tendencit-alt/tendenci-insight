@@ -11,10 +11,20 @@ import Projects from "./pages/Projects";
 import ProjectSettings from "./pages/ProjectSettings";
 import Architects from "./pages/Architects";
 import CRM from "./pages/CRM";
+import Goals from "./pages/Goals";
+import GoalsManagement from "./pages/GoalsManagement";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import { useAuth } from "@/contexts/AuthContext";
 
 const queryClient = new QueryClient();
+
+const GoalsRouter = () => {
+  const { profile } = useAuth();
+  const isAdmin = profile?.role === 'admin';
+  
+  return isAdmin ? <GoalsManagement /> : <Goals />;
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -32,6 +42,7 @@ const App = () => (
             <Route path="/projects/settings" element={<ProtectedRoute><ProjectSettings /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><ProjectSettings /></ProtectedRoute>} />
             <Route path="/architects" element={<ProtectedRoute><Architects /></ProtectedRoute>} />
+            <Route path="/metas" element={<ProtectedRoute><GoalsRouter /></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
