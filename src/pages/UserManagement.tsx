@@ -7,32 +7,23 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { UserPermissionsDialog } from '@/components/settings/UserPermissionsDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Shield, User, Settings, Loader2, ArrowLeft, CheckCircle, XCircle } from 'lucide-react';
+import { Shield, User, Loader2, ArrowLeft, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-interface UserWithPermissions {
+interface UserProfile {
   id: string;
   email: string;
   full_name?: string;
-  role: string;
-  permissions?: {
-    role: string;
-    active: boolean;
-    acesso_leads: boolean;
-    acesso_arquitetos: boolean;
-    acesso_projetos: boolean;
-    acesso_crm_kanban: boolean;
-    acesso_metas: boolean;
-    acesso_configuracoes: boolean;
-  };
+  role: 'admin' | 'vendedor' | 'arquiteto';
+  created_at: string;
 }
 
 const UserManagement = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [users, setUsers] = useState<UserWithPermissions[]>([]);
+  const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedUser, setSelectedUser] = useState<UserWithPermissions | null>(null);
+  const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
   useEffect(() => {
@@ -43,7 +34,6 @@ const UserManagement = () => {
     try {
       setLoading(true);
 
-      // Buscar todos os profiles
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('*')
@@ -51,23 +41,7 @@ const UserManagement = () => {
 
       if (profilesError) throw profilesError;
 
-      // Buscar permissões
-      const { data: permissions, error: permissionsError } = await supabase
-        .from('tendenci_user_permissions')
-        .select('*');
-
-      if (permissionsError) throw permissionsError;
-
-      // Combinar dados
-      const usersWithPermissions = profiles.map((profile) => {
-        const userPermissions = permissions?.find((p) => p.user_id === profile.id);
-        return {
-          ...profile,
-          permissions: userPermissions || undefined,
-        };
-      });
-
-      setUsers(usersWithPermissions);
+      setUsers(profiles || []);
     } catch (error) {
       console.error('Erro ao buscar usuários:', error);
       toast({
@@ -80,17 +54,22 @@ const UserManagement = () => {
     }
   };
 
-  const handleEditUser = (user: UserWithPermissions) => {
+  const handleEditUser = (user: UserProfile) => {
     setSelectedUser(user);
     setDialogOpen(true);
   };
 
-  const getRoleBadge = (user: UserWithPermissions) => {
-    const isMaster = user.role === 'admin' || user.permissions?.role === 'master';
+  const getRoleBadge = (user: UserProfile) => {
+    const isMaster = user.role === 'admin';
     return isMaster ? (
       <Badge className="bg-primary/20 text-primary border-primary/30">
         <Shield className="w-3 h-3 mr-1" />
         Master
+      </Badge>
+    ) : user.role === 'arquiteto' ? (
+      <Badge variant="outline">
+        <User className="w-3 h-3 mr-1" />
+        Arquiteto
       </Badge>
     ) : (
       <Badge variant="outline">
@@ -100,163 +79,112 @@ const UserManagement = () => {
     );
   };
 
-  const getStatusBadge = (user: UserWithPermissions) => {
-    const isActive = user.permissions?.active !== false;
-    return isActive ? (
+  const getStatusBadge = () => {
+    return (
       <Badge variant="outline" className="border-green-500 text-green-500">
         <CheckCircle className="w-3 h-3 mr-1" />
         Ativo
       </Badge>
-    ) : (
-      <Badge variant="outline" className="border-red-500 text-red-500">
-        <XCircle className="w-3 h-3 mr-1" />
-        Desativado
-      </Badge>
     );
   };
 
-  const countActivePermissions = (user: UserWithPermissions) => {
-    if (!user.permissions) return 0;
-    const perms = user.permissions;
-    const count = [
-      perms.acesso_leads,
-      perms.acesso_arquitetos,
-      perms.acesso_projetos,
-      perms.acesso_crm_kanban,
-      perms.acesso_metas,
-      perms.acesso_configuracoes,
-    ].filter(Boolean).length;
-    return count;
+  const getInitials = (name?: string, email?: string) => {
+    if (name) {
+      return name
+        .split(' ')
+        .map((n) => n[0])
+        .join('')
+        .toUpperCase()
+        .slice(0, 2);
+    }
+    return email?.charAt(0).toUpperCase() || 'U';
   };
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
-      <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        {/* Header */}
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => navigate('/settings')} className="gap-2">
-            <ArrowLeft className="w-4 h-4" />
-            Voltar
-          </Button>
-          <div className="space-y-2">
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary via-primary/80 to-accent bg-clip-text text-transparent">
-              🔐 Gerenciamento de Acessos
-            </h1>
-            <p className="text-muted-foreground text-lg">
-              Configure permissões e níveis de acesso dos usuários do sistema
-            </p>
+      <div className="space-y-6 p-6">
+        <div className="flex items-center justify-between">
+          <div className="space-y-1">
+            <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate('/configuracoes')}
+                className="h-8 w-8"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </Button>
+              <div>
+                <h1 className="text-3xl font-bold">Gestão de Usuários</h1>
+                <p className="text-muted-foreground">
+                  Gerencie perfis e permissões de acesso dos usuários
+                </p>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Stats */}
-        <div className="grid gap-4 md:grid-cols-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total de Usuários</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">{users.length}</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Masters</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold text-primary">
-                {users.filter((u) => u.role === 'admin' || u.permissions?.role === 'master').length}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Vendedores</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold text-blue-500">
-                {users.filter((u) => u.role !== 'admin' && u.permissions?.role !== 'master').length}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Ativos</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold text-green-500">
-                {users.filter((u) => u.permissions?.active !== false).length}
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Lista de Usuários */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Settings className="w-5 h-5" />
-              Lista de Usuários
-            </CardTitle>
-            <CardDescription>Gerencie as permissões de acesso de cada usuário</CardDescription>
+            <CardTitle>Usuários do Sistema</CardTitle>
+            <CardDescription>
+              Total de {users.length} usuário(s) cadastrado(s)
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            {loading ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="w-8 h-8 animate-spin text-primary" />
-              </div>
-            ) : users.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">
-                Nenhum usuário encontrado
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {users.map((user) => (
-                  <div
-                    key={user.id}
-                    className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/5 transition-colors"
-                  >
-                    <div className="flex items-center gap-4 flex-1">
-                      <Avatar className="w-12 h-12">
-                        <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                          {user.full_name?.[0]?.toUpperCase() || user.email[0].toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
+            <div className="space-y-4">
+              {users.map((user) => (
+                <div
+                  key={user.id}
+                  className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                >
+                  <div className="flex items-center gap-4 flex-1">
+                    <Avatar className="h-12 w-12">
+                      <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                        {getInitials(user.full_name, user.email)}
+                      </AvatarFallback>
+                    </Avatar>
 
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <p className="font-semibold">{user.full_name || 'Sem nome'}</p>
-                          {getRoleBadge(user)}
-                          {getStatusBadge(user)}
-                        </div>
-                        <p className="text-sm text-muted-foreground">{user.email}</p>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-semibold truncate">
+                          {user.full_name || 'Sem nome'}
+                        </h3>
+                        {getRoleBadge(user)}
+                        {getStatusBadge()}
                       </div>
-
-                      <div className="text-center px-4">
-                        <p className="text-2xl font-bold text-primary">{countActivePermissions(user)}/6</p>
-                        <p className="text-xs text-muted-foreground">Módulos</p>
-                      </div>
+                      <p className="text-sm text-muted-foreground truncate">
+                        {user.email}
+                      </p>
                     </div>
+                  </div>
 
+                  <div className="flex items-center gap-3">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleEditUser(user)}
-                      className="gap-2"
                     >
-                      <Settings className="w-4 h-4" />
-                      Editar Permissões
+                      <Shield className="w-4 h-4 mr-2" />
+                      Editar Perfil
                     </Button>
                   </div>
-                ))}
-              </div>
-            )}
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
 
-        {/* Dialog de Edição */}
         {selectedUser && (
           <UserPermissionsDialog
             open={dialogOpen}
