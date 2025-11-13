@@ -20,20 +20,28 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import tendenciLogo from "@/assets/tendenci-logo.png";
+import { usePermissions } from "@/hooks/usePermissions";
 
 const menuItems = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Leads", url: "/leads", icon: TrendingUp },
-  { title: "Projetos", url: "/projects", icon: Package },
-  { title: "Arquitetos", url: "/architects", icon: Users },
-  { title: "CRM KANBAN", url: "/kanban", icon: MessageSquare },
-  { title: "Metas", url: "/metas", icon: Target },
-  { title: "Configurações", url: "/settings", icon: Settings },
+  { title: "Dashboard", url: "/", icon: LayoutDashboard, module: null },
+  { title: "Leads", url: "/leads", icon: TrendingUp, module: "leads" },
+  { title: "Projetos", url: "/projects", icon: Package, module: "projetos" },
+  { title: "Arquitetos", url: "/architects", icon: Users, module: "arquitetos" },
+  { title: "CRM KANBAN", url: "/kanban", icon: MessageSquare, module: "crm" },
+  { title: "Metas", url: "/metas", icon: Target, module: "metas" },
+  { title: "Configurações", url: "/settings", icon: Settings, module: "configuracoes" },
 ];
 
 export function AppSidebar() {
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
+  const { hasModuleAccess, loading } = usePermissions();
+
+  const visibleMenuItems = menuItems.filter((item) => {
+    if (loading) return true; // Show all while loading
+    if (!item.module) return true; // Dashboard is always visible
+    return hasModuleAccess(item.module);
+  });
 
   return (
     <Sidebar 
@@ -65,7 +73,7 @@ export function AppSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menuItems.map((item) => (
+              {visibleMenuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink 

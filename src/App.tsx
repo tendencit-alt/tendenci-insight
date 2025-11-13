@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { PermissionGuard } from "@/components/auth/PermissionGuard";
 import Index from "./pages/Index";
 import Leads from "./pages/Leads";
 import Projects from "./pages/Projects";
@@ -13,6 +14,7 @@ import Architects from "./pages/Architects";
 import CRM from "./pages/CRM";
 import Goals from "./pages/Goals";
 import GoalsManagement from "./pages/GoalsManagement";
+import UserManagement from "./pages/UserManagement";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -28,14 +30,15 @@ const App = () => (
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-            <Route path="/leads" element={<ProtectedRoute><Leads /></ProtectedRoute>} />
-            <Route path="/kanban" element={<ProtectedRoute><CRM /></ProtectedRoute>} />
-            <Route path="/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
-            <Route path="/projects/settings" element={<ProtectedRoute><ProjectSettings /></ProtectedRoute>} />
-            <Route path="/settings" element={<ProtectedRoute><ProjectSettings /></ProtectedRoute>} />
-            <Route path="/architects" element={<ProtectedRoute><Architects /></ProtectedRoute>} />
-            <Route path="/metas" element={<ProtectedRoute><Goals /></ProtectedRoute>} />
-            <Route path="/metas/gestao" element={<ProtectedRoute><GoalsManagement /></ProtectedRoute>} />
+            <Route path="/leads" element={<ProtectedRoute><PermissionGuard module="leads"><Leads /></PermissionGuard></ProtectedRoute>} />
+            <Route path="/kanban" element={<ProtectedRoute><PermissionGuard module="crm"><CRM /></PermissionGuard></ProtectedRoute>} />
+            <Route path="/projects" element={<ProtectedRoute><PermissionGuard module="projetos"><Projects /></PermissionGuard></ProtectedRoute>} />
+            <Route path="/projects/settings" element={<ProtectedRoute><PermissionGuard module="configuracoes"><ProjectSettings /></PermissionGuard></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute><PermissionGuard module="configuracoes"><ProjectSettings /></PermissionGuard></ProtectedRoute>} />
+            <Route path="/settings/users" element={<ProtectedRoute><PermissionGuard module="configuracoes"><UserManagement /></PermissionGuard></ProtectedRoute>} />
+            <Route path="/architects" element={<ProtectedRoute><PermissionGuard module="arquitetos"><Architects /></PermissionGuard></ProtectedRoute>} />
+            <Route path="/metas" element={<ProtectedRoute><PermissionGuard module="metas"><Goals /></PermissionGuard></ProtectedRoute>} />
+            <Route path="/metas/gestao" element={<ProtectedRoute><PermissionGuard module="metas"><GoalsManagement /></PermissionGuard></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
