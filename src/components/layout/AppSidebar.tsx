@@ -4,7 +4,8 @@ import {
   TrendingUp, 
   MessageSquare,
   Settings,
-  Package
+  Package,
+  Target
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
@@ -26,6 +27,7 @@ const menuItems = [
   { title: "Projetos", url: "/projects", icon: Package },
   { title: "Arquitetos", url: "/architects", icon: Users },
   { title: "CRM KANBAN", url: "/kanban", icon: MessageSquare },
+  { title: "Metas", url: "/metas", icon: Target },
   { title: "Configurações", url: "/settings", icon: Settings },
 ];
 
