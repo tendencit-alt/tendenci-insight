@@ -8,8 +8,6 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { 
-  DollarSign, 
-  MessageSquare, 
   TrendingUp, 
   TrendingDown,
   Target,
@@ -17,9 +15,7 @@ import {
   Package,
   Clock,
   AlertTriangle,
-  RefreshCcw,
-  Wifi,
-  WifiOff
+  RefreshCcw
 } from "lucide-react";
 import { 
   BarChart, 
@@ -39,10 +35,10 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 
 const COLORS = {
-  primary: "hsl(357 75% 48%)",
+  primary: "hsl(220 13% 32%)",
   success: "hsl(142 71% 45%)",
   warning: "hsl(38 92% 50%)",
-  info: "hsl(221 83% 53%)",
+  info: "hsl(220 13% 52%)",
   muted: "hsl(240 8% 20%)"
 };
 
@@ -53,9 +49,6 @@ const Index = () => {
   
   // Estados para os dados
   const [crmMetrics, setCrmMetrics] = useState<any>(null);
-  const [metaMessageCost, setMetaMessageCost] = useState<any>(null);
-  const [metaAdSpend, setMetaAdSpend] = useState<any>(null);
-  const [metaInitiatedMessages, setMetaInitiatedMessages] = useState<any>(null);
   const [leadOrigins, setLeadOrigins] = useState<any[]>([]);
   const [projectsByStage, setProjectsByStage] = useState<any[]>([]);
   const [architectsWithoutProjects, setArchitectsWithoutProjects] = useState<any[]>([]);
@@ -75,37 +68,19 @@ const Index = () => {
         setCrmMetrics(crmData);
       }
 
-      // 2. Custo de mensagens Meta
-      const { data: msgCostData, error: msgError } = await supabase.rpc('dashboard_meta_message_cost');
-      if (!msgError && msgCostData) {
-        setMetaMessageCost(msgCostData);
-      }
-
-      // 3. Gasto com Meta Ads
-      const { data: adSpendData, error: adError } = await supabase.rpc('dashboard_meta_ad_spend');
-      if (!adError && adSpendData) {
-        setMetaAdSpend(adSpendData);
-      }
-
-      // 3.5. Mensagens Iniciadas Meta
-      const { data: initiatedMsgData, error: initiatedError } = await supabase.rpc('dashboard_meta_initiated_messages');
-      if (!initiatedError && initiatedMsgData) {
-        setMetaInitiatedMessages(initiatedMsgData);
-      }
-
-      // 4. Origem dos leads
+      // 2. Origem dos leads
       const { data: originsData, error: originsError } = await supabase.rpc('dashboard_lead_origins');
       if (!originsError && originsData) {
         setLeadOrigins(originsData);
       }
 
-      // 5. Projetos por estágio
+      // 3. Projetos por estágio
       const { data: stagesData, error: stagesError } = await supabase.rpc('dashboard_projects_by_stage');
       if (!stagesError && stagesData) {
         setProjectsByStage(stagesData);
       }
 
-      // 6. Arquitetos sem projeto
+      // 4. Arquitetos sem projeto
       const { data: archData, error: archError } = await supabase.rpc('dashboard_architects_without_projects', {
         days_threshold: 30
       });
@@ -113,7 +88,7 @@ const Index = () => {
         setArchitectsWithoutProjects(archData);
       }
 
-      // 7. Tempo de resposta de arquitetos
+      // 5. Tempo de resposta de arquitetos
       const { data: responseData, error: responseError } = await supabase.rpc('dashboard_architect_response_time');
       if (!responseError && responseData) {
         setArchitectResponseTime(responseData);
@@ -191,52 +166,7 @@ const Index = () => {
         </div>
 
         {/* KPI Cards - Primeira linha */}
-        <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-          <StatCard
-            title="Custo de Mensagem"
-            value={
-              metaMessageCost?.api_connected 
-                ? `R$ ${Number(metaMessageCost.total_cost || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
-                : "API não conectada"
-            }
-            subtitle={
-              metaMessageCost?.api_connected 
-                ? `${metaMessageCost.message_count} mensagens • Últimos 30 dias`
-                : "Configure a API Meta"
-            }
-            icon={metaMessageCost?.api_connected ? MessageSquare : WifiOff}
-            variant={metaMessageCost?.api_connected ? "default" : "destructive"}
-          />
-          <StatCard
-            title="Valor Gasto (Meta)"
-            value={
-              metaAdSpend?.api_connected 
-                ? `R$ ${Number(metaAdSpend.total_spend || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
-                : "API não conectada"
-            }
-            subtitle={
-              metaAdSpend?.api_connected 
-                ? `CPL: R$ ${Number(metaAdSpend.cpl || 0).toFixed(2)} • ${metaAdSpend.total_leads} leads`
-                : "Configure a API Meta"
-            }
-            icon={metaAdSpend?.api_connected ? DollarSign : WifiOff}
-            variant={metaAdSpend?.api_connected ? "warning" : "destructive"}
-          />
-          <StatCard
-            title="Mensagens Iniciadas Meta"
-            value={
-              metaInitiatedMessages?.api_connected 
-                ? `${metaInitiatedMessages.total_initiated}`
-                : "API não conectada"
-            }
-            subtitle={
-              metaInitiatedMessages?.api_connected 
-                ? `Últimos 30 dias`
-                : "Configure a API Meta"
-            }
-            icon={metaInitiatedMessages?.api_connected ? MessageSquare : WifiOff}
-            variant={metaInitiatedMessages?.api_connected ? "default" : "destructive"}
-          />
+        <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
           <StatCard
             title="Em Orçamento"
             value={`${crmMetrics?.em_orcamento || 0}`}
@@ -250,17 +180,6 @@ const Index = () => {
             subtitle={`${crmMetrics?.fechado || 0} negócios ganhos`}
             icon={TrendingUp}
             variant="success"
-          />
-        </div>
-
-        {/* KPI Cards - Segunda linha */}
-        <div className="grid gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-4">
-          <StatCard
-            title="Perdido"
-            value={`R$ ${Number(crmMetrics?.valor_perdido || 0).toLocaleString('pt-BR')}`}
-            subtitle={`${crmMetrics?.perdido || 0} negócios perdidos`}
-            icon={TrendingDown}
-            variant="destructive"
           />
           <StatCard
             title="Total de Leads"
@@ -276,12 +195,30 @@ const Index = () => {
             icon={Package}
             variant="success"
           />
+        </div>
+
+        {/* KPI Cards - Segunda linha */}
+        <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+          <StatCard
+            title="Perdido"
+            value={`R$ ${Number(crmMetrics?.valor_perdido || 0).toLocaleString('pt-BR')}`}
+            subtitle={`${crmMetrics?.perdido || 0} negócios perdidos`}
+            icon={TrendingDown}
+            variant="destructive"
+          />
           <StatCard
             title="Tempo Médio"
             value={`${architectResponseTime?.avg_days || 0} dias`}
             subtitle="Resposta de arquitetos"
             icon={Clock}
             variant="warning"
+          />
+          <StatCard
+            title="Leads Cadastrados"
+            value={`${leadOrigins.reduce((acc, item) => acc + Number(item.count), 0)}`}
+            subtitle="Total de leads por origem"
+            icon={Users}
+            variant="default"
           />
         </div>
 
@@ -372,36 +309,6 @@ const Index = () => {
           </div>
         </div>
 
-        {/* Gasto vs Leads - Full Width */}
-        <Card className="shadow-card border-t-4 border-t-primary hover:shadow-hover transition-all duration-300">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-xl font-bold flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-                Gasto Meta Ads vs Leads Gerados
-              </CardTitle>
-              {!metaAdSpend?.api_connected && (
-                <Badge variant="destructive" className="flex items-center gap-2">
-                  <WifiOff className="h-3 w-3" />
-                  API Meta não conectada
-                </Badge>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[380px] flex items-center justify-center">
-              <div className="text-center space-y-4">
-                <WifiOff className="h-16 w-16 mx-auto text-muted-foreground" />
-                <div>
-                  <p className="text-lg font-semibold">API Meta Ads não configurada</p>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Configure a integração com Meta Ads para visualizar métricas de campanha
-                  </p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
         {/* Alertas de Arquitetos - Widget Premium */}
         <Card className="glass-card shadow-hover border-l-4 border-l-warning hover:shadow-lg transition-all duration-300">
