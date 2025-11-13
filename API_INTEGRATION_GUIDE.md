@@ -59,6 +59,21 @@ https://emnwuzrysqoiwapzmnbv.supabase.co/functions/v1/create-lead-from-ai
 - `pipeline_id` ou `funil_id`: UUID do funil (ver IDs disponíveis abaixo)
 - `stage_id` ou `etapa_id`: UUID da etapa inicial (opcional)
 - `conversation_history` ou `conversa_whatsapp` ou `historico_conversa`: Histórico completo da conversa
+  - **Formato 1 (Recomendado)**: String com prefixos `CLIENT:` e `AI:` para identificar remetente
+    ```
+    CLIENT: Olá, gostaria de saber sobre móveis planejados
+    AI: Claro! Temos várias opções. Qual ambiente você quer mobiliar?
+    CLIENT: Minha cozinha
+    ```
+  - **Formato 2 (Estruturado)**: Array de objetos com `sender` e `message`
+    ```json
+    [
+      {"sender": "client", "message": "Olá, gostaria de saber sobre móveis planejados"},
+      {"sender": "ai", "message": "Claro! Temos várias opções. Qual ambiente você quer mobiliar?"},
+      {"sender": "client", "message": "Minha cozinha"}
+    ]
+    ```
+  - **Formato 3 (Texto livre)**: Texto corrido será interpretado automaticamente
 - `ai_status` ou `status_ia`: Status identificado pela IA
 
 ### Exemplo Mínimo (Português)
@@ -83,12 +98,28 @@ https://emnwuzrysqoiwapzmnbv.supabase.co/functions/v1/create-lead-from-ai
   "nome": "Felipe",
   "contato_whatsapp": "553484297404",
   "temperatura": "quente",
-  "conversa_whatsapp": "Vamos avançar com a visita técnica pra medir e iniciar o 3D. Tenho hoje às 16h ou amanhã às 10h, qual você prefere?",
-  "status_ia": "Aguardando agendamento",
-  "titulo_negocio": "Cozinha Planejada",
-  "valor_negocio": 15000,
-  "tipo_produto": "Planejado",
+  "conversa_whatsapp": "CLIENT: Olá, gostaria de informações sobre mesa de jantar\nAI: Olá! Temos várias opções de mesa de jantar. Você tem preferência por algum estilo?\nCLIENT: Quero algo rústico, para 8 lugares\nAI: Perfeito! Temos mesas rústicas lindas. Vou te enviar algumas fotos. Você já tem um comprimento em mente pro tampo?",
+  "status_ia": "Aguardando resposta",
+  "titulo_negocio": "Mesa de Jantar Rústica",
+  "valor_negocio": 5000,
+  "tipo_produto": "Mesa",
   "funil_id": "34747cb5-063a-4369-b619-d4afa6095d0d"
+}
+```
+
+### Exemplo com Conversa Estruturada (Array)
+```json
+{
+  "nome": "Ana Paula",
+  "contato_whatsapp": "5534987654321",
+  "temperatura": "morno",
+  "conversation_history": [
+    {"sender": "client", "message": "Boa tarde, vocês trabalham com sofás?"},
+    {"sender": "ai", "message": "Boa tarde! Sim, temos diversos modelos de sofás. Você procura algo específico?"},
+    {"sender": "client", "message": "Sofá de 3 lugares, tecido"},
+    {"sender": "ai", "message": "Temos várias opções! Qual estilo você prefere? Rústico, industrial ou moderno?"}
+  ],
+  "tipo_produto": "Sofá"
 }
 ```
 
