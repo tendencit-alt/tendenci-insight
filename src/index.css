@@ -18,15 +18,15 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
 
-    /* Primary - Tendenci Red */
-    --primary: 357 75% 48%;
+    /* Primary - Neutral Gray */
+    --primary: 220 13% 32%;
     --primary-foreground: 0 0% 100%;
-    --primary-light: 357 75% 58%;
-    --primary-dark: 357 75% 38%;
+    --primary-light: 220 13% 42%;
+    --primary-dark: 220 13% 22%;
 
-    /* Accent - Red Light */
-    --accent: 0 100% 70%;
-    --accent-foreground: 0 0% 100%;
+    /* Accent - Light Gray */
+    --accent: 220 13% 85%;
+    --accent-foreground: 220 13% 22%;
 
     /* Secondary - Neutral grey */
     --secondary: 220 13% 42%;
@@ -52,31 +52,31 @@ All colors MUST be HSL.
     --destructive-light: 0 84% 90%;
 
     /* Chart colors */
-    --chart-1: 357 75% 48%;
-    --chart-2: 142 71% 45%;
-    --chart-3: 38 92% 50%;
-    --chart-4: 157 56% 62%;
-    --chart-5: 199 89% 48%;
+    --chart-1: 220 13% 32%;
+    --chart-2: 220 13% 52%;
+    --chart-3: 220 13% 72%;
+    --chart-4: 220 9% 62%;
+    --chart-5: 220 9% 42%;
 
     /* Borders and inputs */
     --border: 220 13% 91%;
     --input: 220 13% 91%;
-    --ring: 357 75% 48%;
+    --ring: 220 13% 32%;
 
     --radius: 1rem;
 
     /* Sidebar - Dark Gradient */
     --sidebar-background: 0 0% 9%;
     --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 357 75% 48%;
+    --sidebar-primary: 220 13% 32%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 0 0% 15%;
     --sidebar-accent-foreground: 0 0% 98%;
     --sidebar-border: 0 0% 12%;
-    --sidebar-ring: 357 75% 48%;
+    --sidebar-ring: 220 13% 32%;
 
     /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(357 75% 48%), hsl(357 75% 38%));
+    --gradient-primary: linear-gradient(135deg, hsl(220 13% 32%), hsl(220 13% 22%));
     --gradient-success: linear-gradient(135deg, hsl(142 71% 45%), hsl(142 71% 55%));
     --gradient-warning: linear-gradient(135deg, hsl(38 92% 50%), hsl(38 92% 60%));
     --gradient-dark: linear-gradient(180deg, hsl(0 0% 9%), hsl(0 0% 6%));
@@ -87,8 +87,8 @@ All colors MUST be HSL.
     --shadow-md: 0 4px 6px -1px hsl(220 13% 9% / 0.1), 0 2px 4px -2px hsl(220 13% 9% / 0.1);
     --shadow-lg: 0 10px 15px -3px hsl(220 13% 9% / 0.1), 0 4px 6px -4px hsl(220 13% 9% / 0.1);
     --shadow-card: 0 6px 18px hsl(220 13% 9% / 0.08);
-    --shadow-hover: 0 12px 28px hsl(357 75% 48% / 0.15), 0 8px 12px hsl(357 75% 48% / 0.1);
-    --shadow-glow: 0 0 24px hsl(357 75% 48% / 0.4);
+    --shadow-hover: 0 12px 28px hsl(220 13% 32% / 0.15), 0 8px 12px hsl(220 13% 32% / 0.1);
+    --shadow-glow: 0 0 24px hsl(220 13% 32% / 0.4);
 
     /* Transitions */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -105,15 +105,15 @@ All colors MUST be HSL.
     --popover: 0 0% 12%;
     --popover-foreground: 0 0% 90%;
 
-    /* Primary - Tendenci Red Bright */
-    --primary: 0 100% 60%;
+    /* Primary - Neutral Gray */
+    --primary: 220 13% 52%;
     --primary-foreground: 0 0% 100%;
-    --primary-light: 0 100% 70%;
-    --primary-dark: 357 75% 48%;
+    --primary-light: 220 13% 62%;
+    --primary-dark: 220 13% 42%;
 
-    /* Accent - Red Coral */
-    --accent: 0 85% 68%;
-    --accent-foreground: 0 0% 100%;
+    /* Accent - Light Gray */
+    --accent: 220 13% 75%;
+    --accent-foreground: 0 0% 10%;
 
     /* Secondary */
     --secondary: 0 0% 20%;
@@ -138,22 +138,22 @@ All colors MUST be HSL.
     /* Borders */
     --border: 0 0% 20%;
     --input: 0 0% 20%;
-    --ring: 0 100% 60%;
+    --ring: 220 13% 52%;
 
     /* Sidebar Dark */
     --sidebar-background: 0 0% 7%;
     --sidebar-foreground: 0 0% 90%;
-    --sidebar-primary: 0 100% 60%;
+    --sidebar-primary: 220 13% 52%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 0 0% 12%;
     --sidebar-accent-foreground: 0 0% 90%;
     --sidebar-border: 0 0% 15%;
-    --sidebar-ring: 0 100% 60%;
+    --sidebar-ring: 220 13% 52%;
 
     /* Dark Shadows */
     --shadow-card: 0 6px 18px hsl(0 0% 0% / 0.4);
-    --shadow-hover: 0 12px 28px hsl(0 100% 60% / 0.25), 0 8px 12px hsl(0 100% 60% / 0.15);
-    --shadow-glow: 0 0 32px hsl(0 100% 60% / 0.5);
+    --shadow-hover: 0 12px 28px hsl(220 13% 52% / 0.25), 0 8px 12px hsl(220 13% 52% / 0.15);
+    --shadow-glow: 0 0 32px hsl(220 13% 52% / 0.5);
   }
 }
 
