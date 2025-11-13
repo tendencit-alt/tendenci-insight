@@ -70,9 +70,9 @@ export function CRMKPIs({ pipelineId }: CRMKPIsProps) {
 
   if (loading) {
     return (
-      <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))' }}>
+      <div className="flex gap-4 overflow-x-auto pb-2">
         {Array.from({ length: 6 }).map((_, i) => (
-          <Card key={i}>
+          <Card key={i} className="flex-shrink-0" style={{ width: '280px' }}>
             <CardContent className="p-6">
               <Skeleton className="h-20 w-full" />
             </CardContent>
@@ -83,9 +83,9 @@ export function CRMKPIs({ pipelineId }: CRMKPIsProps) {
   }
 
   return (
-    <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))' }}>
+    <div className="flex gap-4 overflow-x-auto pb-2">
       {kpis.map((kpi, index) => (
-        <Card key={index} className="hover:shadow-md transition-shadow">
+        <Card key={index} className="flex-shrink-0 hover:shadow-md transition-shadow" style={{ width: '280px' }}>
           <CardContent className="p-6">
             <div className="flex flex-col gap-3">
               <kpi.icon className={`h-8 w-8 ${kpi.color}`} />
