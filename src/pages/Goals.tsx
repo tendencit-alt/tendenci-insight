@@ -40,11 +40,12 @@ const badgeInfo = {
 };
 
 export default function Goals() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [loading, setLoading] = useState(true);
   const [goalData, setGoalData] = useState<GoalData | null>(null);
   const [companyGoal, setCompanyGoal] = useState<any>(null);
   const [teamAverage, setTeamAverage] = useState<number>(0);
+  const isAdmin = profile?.role === 'admin';
 
   useEffect(() => {
     if (user) {
@@ -56,7 +57,7 @@ export default function Goals() {
 
   const fetchGoalData = async () => {
     try {
-      const { data, error } = await supabase.rpc("get_seller_goal_stats", {
+      const { data, error } = await supabase.rpc("get_seller_goal_stats" as any, {
         p_vendedor_id: user?.id,
       });
 
@@ -72,7 +73,7 @@ export default function Goals() {
   const fetchCompanyGoal = async () => {
     try {
       const { data: goals, error } = await supabase
-        .from("tendenci_company_goals")
+        .from("tendenci_company_goals" as any)
         .select("*, tendenci_goal_progress(*)")
         .eq("status", "ativa")
         .gte("data_fim", new Date().toISOString())
@@ -91,12 +92,12 @@ export default function Goals() {
   const fetchTeamAverage = async () => {
     try {
       const { data, error } = await supabase
-        .from("tendenci_seller_ranking")
+        .from("tendenci_seller_ranking" as any)
         .select("percentual_meta_atualizado");
 
       if (error) throw error;
       if (data && data.length > 0) {
-        const avg = data.reduce((acc, curr) => acc + (curr.percentual_meta_atualizado || 0), 0) / data.length;
+        const avg = data.reduce((acc: number, curr: any) => acc + (curr.percentual_meta_atualizado || 0), 0) / data.length;
         setTeamAverage(avg);
       }
     } catch (error) {
@@ -134,6 +135,31 @@ export default function Goals() {
   const valorMeta = metaAtiva?.valor_meta || 0;
   const valorRestante = valorMeta - valorVendido;
   const motivationalMsg = getMotivationalMessage(percentual, teamAverage);
+
+  // Redirecionar admins para página de gestão
+  if (isAdmin) {
+    return (
+      <DashboardLayout>
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-2xl lg:text-3xl font-bold tracking-tight">Gestão de Metas</h1>
+              <p className="text-muted-foreground">Você é um administrador. Acesse a gestão completa de metas.</p>
+            </div>
+          </div>
+          <Card>
+            <CardContent className="py-12 text-center space-y-4">
+              <Target className="w-16 h-16 mx-auto text-primary" />
+              <p className="text-lg font-medium">Área de Gestão de Metas</p>
+              <p className="text-sm text-muted-foreground">
+                Como administrador, você tem acesso completo para criar, editar e gerenciar metas de todos os vendedores.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>

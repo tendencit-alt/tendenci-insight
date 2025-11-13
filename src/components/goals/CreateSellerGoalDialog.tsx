@@ -54,7 +54,7 @@ export function CreateSellerGoalDialog({ open, onOpenChange, onSuccess }: Create
     setLoading(true);
 
     try {
-      const { error } = await supabase.from("tendenci_seller_goals").insert({
+      const { error } = await supabase.from("tendenci_seller_goals" as any).insert({
         vendedor_id: formData.vendedor_id,
         valor_meta: parseFloat(formData.valor_meta),
         data_inicio: formData.data_inicio,

@@ -22,7 +22,7 @@ export function GoalsAnalytics({ refreshTrigger }: GoalsAnalyticsProps) {
 
       // Buscar ranking completo
       const { data: ranking, error: rankingError } = await supabase
-        .from("tendenci_seller_ranking")
+        .from("tendenci_seller_ranking" as any)
         .select(`
           vendedor_id,
           percentual_meta_atualizado,
@@ -36,12 +36,12 @@ export function GoalsAnalytics({ refreshTrigger }: GoalsAnalyticsProps) {
       if (rankingError) throw rankingError;
 
       // Calcular estatísticas
-      const percentuais = ranking?.map((r) => r.percentual_meta_atualizado) || [];
-      const mediaEquipe = percentuais.length > 0 ? percentuais.reduce((a, b) => a + b, 0) / percentuais.length : 0;
+      const percentuais = ranking?.map((r: any) => r.percentual_meta_atualizado) || [];
+      const mediaEquipe = percentuais.length > 0 ? percentuais.reduce((a: number, b: number) => a + b, 0) / percentuais.length : 0;
 
       // Buscar meta consolidada ativa
       const { data: companyGoal, error: companyError } = await supabase
-        .from("tendenci_company_goals")
+        .from("tendenci_company_goals" as any)
         .select("*, tendenci_goal_progress(*)")
         .eq("status", "ativa")
         .gte("data_fim", new Date().toISOString())
@@ -50,9 +50,9 @@ export function GoalsAnalytics({ refreshTrigger }: GoalsAnalyticsProps) {
         .single();
 
       // Contar vendedores em diferentes faixas
-      const acimaMedia = ranking?.filter((r) => r.percentual_meta_atualizado > mediaEquipe).length || 0;
-      const abaixoMedia = ranking?.filter((r) => r.percentual_meta_atualizado <= mediaEquipe).length || 0;
-      const atingiuMeta = ranking?.filter((r) => r.percentual_meta_atualizado >= 100).length || 0;
+      const acimaMedia = ranking?.filter((r: any) => r.percentual_meta_atualizado > mediaEquipe).length || 0;
+      const abaixoMedia = ranking?.filter((r: any) => r.percentual_meta_atualizado <= mediaEquipe).length || 0;
+      const atingiuMeta = ranking?.filter((r: any) => r.percentual_meta_atualizado >= 100).length || 0;
 
       setAnalytics({
         ranking,
