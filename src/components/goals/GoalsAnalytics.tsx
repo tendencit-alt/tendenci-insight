@@ -183,12 +183,109 @@ export function GoalsAnalytics({ refreshTrigger }: GoalsAnalyticsProps) {
       )}
 
       {/* Ranking Completo */}
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* Top Performers */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Trophy className="w-5 h-5 text-yellow-500" />
+              Top Performers
+            </CardTitle>
+            <CardDescription>Vendedores com performance acima de 80%</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {analytics.ranking
+                ?.filter((seller: any) => seller.percentual_meta_atualizado >= 80)
+                .map((seller: any, index: number) => (
+                  <div
+                    key={seller.vendedor_id}
+                    className="flex items-center justify-between p-3 rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-green-500 text-white font-bold text-sm">
+                        {index + 1}
+                      </div>
+                      <div>
+                        <p className="font-medium">{seller.profiles?.full_name || seller.profiles?.email || "Vendedor"}</p>
+                        <p className="text-sm text-muted-foreground">{seller.profiles?.email}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-lg font-bold text-green-600">{seller.percentual_meta_atualizado.toFixed(1)}%</p>
+                      <p className="text-xs text-muted-foreground">
+                        {seller.valor_total_vendido.toLocaleString("pt-BR", {
+                          style: "currency",
+                          currency: "BRL",
+                          maximumFractionDigits: 0,
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              {analytics.ranking?.filter((s: any) => s.percentual_meta_atualizado >= 80).length === 0 && (
+                <p className="text-center text-muted-foreground py-8">Nenhum vendedor acima de 80% ainda</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Precisam de Atenção */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingDown className="w-5 h-5 text-orange-500" />
+              Precisam de Atenção
+            </CardTitle>
+            <CardDescription>Vendedores com performance abaixo de 50%</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {analytics.ranking
+                ?.filter((seller: any) => seller.percentual_meta_atualizado < 50)
+                .sort((a: any, b: any) => a.percentual_meta_atualizado - b.percentual_meta_atualizado)
+                .map((seller: any, index: number) => (
+                  <div
+                    key={seller.vendedor_id}
+                    className="flex items-center justify-between p-3 rounded-lg bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-orange-500 text-white font-bold text-sm">
+                        !
+                      </div>
+                      <div>
+                        <p className="font-medium">{seller.profiles?.full_name || seller.profiles?.email || "Vendedor"}</p>
+                        <p className="text-sm text-muted-foreground">{seller.profiles?.email}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-lg font-bold text-orange-600">{seller.percentual_meta_atualizado.toFixed(1)}%</p>
+                      <p className="text-xs text-muted-foreground">
+                        {seller.valor_total_vendido.toLocaleString("pt-BR", {
+                          style: "currency",
+                          currency: "BRL",
+                          maximumFractionDigits: 0,
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              {analytics.ranking?.filter((s: any) => s.percentual_meta_atualizado < 50).length === 0 && (
+                <p className="text-center text-muted-foreground py-8">Todos os vendedores estão acima de 50%! 🎉</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Ranking Completo */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="w-5 h-5" />
             Ranking Geral da Equipe
           </CardTitle>
+          <CardDescription>Performance de todos os vendedores</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
