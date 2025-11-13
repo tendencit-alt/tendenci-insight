@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
-import { Plus, Settings, RefreshCcw, Download, Menu } from "lucide-react";
+import { Plus, Settings, RefreshCcw, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { CRMKPIs } from "@/components/crm/CRMKPIs";
@@ -11,7 +11,6 @@ import { CRMBoard } from "@/components/crm/CRMBoard";
 import { CRMFilters } from "@/components/crm/CRMFilters";
 import { CreateDealDialog } from "@/components/crm/CreateDealDialog";
 import { ManagePipelineDialog } from "@/components/crm/ManagePipelineDialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 export default function CRM() {
   const { toast } = useToast();
@@ -64,11 +63,11 @@ export default function CRM() {
 
   return (
     <DashboardLayout>
-      <div className="flex flex-col gap-6 pb-20 md:pb-6 w-full">
-        {/* Header */}
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-            <div className="flex-1">
+      <div className="w-full">
+        <div className="space-y-6 pb-24 md:pb-6 max-w-full">
+          {/* Header */}
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
               <h1 className="text-3xl font-bold tracking-tight">🗂️ CRM Kanban</h1>
               <p className="text-muted-foreground mt-1">
                 Funis e cadências personalizadas, com métricas, SLA e integrações
@@ -94,43 +93,16 @@ export default function CRM() {
                 Exportar
               </Button>
             </div>
-
-            {/* Menu Dropdown Mobile */}
-            <div className="md:hidden">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <Menu className="h-4 w-4 mr-2" />
-                    Menu
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48 z-50 bg-background border shadow-md">
-                  <DropdownMenuItem onClick={() => setIsManageDialogOpen(true)}>
-                    <Settings className="mr-2 h-4 w-4" />
-                    Funis/Etapas
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleRefresh}>
-                    <RefreshCcw className="mr-2 h-4 w-4" />
-                    Atualizar
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleExport}>
-                    <Download className="mr-2 h-4 w-4" />
-                    Exportar
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
           </div>
-        </div>
 
-        {/* Botão flutuante mobile */}
-        <Button 
-          className="md:hidden fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-2xl hover:shadow-xl transition-shadow"
-          onClick={() => setIsCreateDialogOpen(true)}
-          size="icon"
-        >
-          <Plus className="h-6 w-6" />
-        </Button>
+          {/* Botão flutuante mobile */}
+          <Button 
+            className="md:hidden fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-2xl"
+            onClick={() => setIsCreateDialogOpen(true)}
+            size="icon"
+          >
+            <Plus className="h-6 w-6" />
+          </Button>
 
         {/* Filters */}
         <CRMFilters
@@ -179,6 +151,7 @@ export default function CRM() {
           selectedPipeline={selectedPipeline}
           onSuccess={handleRefresh}
         />
+        </div>
       </div>
     </DashboardLayout>
   );
