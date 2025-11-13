@@ -10,9 +10,9 @@ interface CRMFiltersProps {
 
 export function CRMFilters({ pipelines, selectedPipeline, onPipelineChange }: CRMFiltersProps) {
   return (
-    <div className="flex flex-col sm:flex-row gap-4">
+    <div className="flex flex-col gap-4 lg:flex-row">
       <Select value={selectedPipeline} onValueChange={onPipelineChange}>
-        <SelectTrigger className="w-full sm:w-80">
+        <SelectTrigger className="lg:w-80">
           <SelectValue placeholder="Selecione um funil" />
         </SelectTrigger>
         <SelectContent>
