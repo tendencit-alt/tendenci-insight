@@ -64,7 +64,7 @@ export default function CRM() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 relative pb-20 sm:pb-0">
+      <div className="space-y-6 relative pb-20 sm:pb-0 w-full max-w-full overflow-hidden">
         {/* Header */}
         <div className="flex flex-col gap-4">
           <div>

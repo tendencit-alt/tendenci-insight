@@ -199,26 +199,26 @@ export function CRMBoard({ pipelineId, onRefresh }: CRMBoardProps) {
 
   return (
     <>
-      <div className="w-full overflow-x-auto">
-        <div className="flex gap-4 pb-4 min-w-min">
+      <div className="w-full overflow-x-auto cursor-grab active:cursor-grabbing">
+        <div className="flex gap-4 pb-4 min-w-max">
           {/* Regular pipeline stages */}
           {stages.map((stage) => {
           const stageDeals = getDealsByStage(stage.id);
           return (
             <Card 
               key={stage.id} 
-              className="min-w-[300px] w-[clamp(300px,30vw,400px)] flex-shrink-0 hover:shadow-lg transition-shadow"
+              className="min-w-[320px] max-w-[320px] flex-shrink-0 hover:shadow-lg transition-shadow"
               onDragOver={handleDragOver}
               onDrop={handleDrop(stage.id)}
             >
-              <CardHeader className="pb-3 px-[clamp(12px,2vw,20px)]">
+              <CardHeader className="pb-3 px-4">
                 <CardTitle className="flex items-center justify-between text-base gap-2">
                   <span className="truncate">{stage.name}</span>
                   <Badge variant="secondary" className="flex-shrink-0">{stageDeals.length}</Badge>
                 </CardTitle>
               </CardHeader>
               <CardContent 
-                className="space-y-3 max-h-[600px] overflow-y-auto px-[clamp(12px,2vw,20px)]"
+                className="space-y-3 max-h-[600px] overflow-y-auto px-4"
                 onDragOver={handleDragOver}
                 onDrop={handleDrop(stage.id)}
               >
@@ -244,14 +244,14 @@ export function CRMBoard({ pipelineId, onRefresh }: CRMBoardProps) {
         })}
 
         {/* Fixed Won column */}
-        <Card className="min-w-[300px] w-[clamp(300px,30vw,400px)] flex-shrink-0 bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
-          <CardHeader className="pb-3 px-[clamp(12px,2vw,20px)]">
+        <Card className="min-w-[320px] max-w-[320px] flex-shrink-0 bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
+          <CardHeader className="pb-3 px-4">
             <CardTitle className="flex items-center justify-between text-base text-green-700 dark:text-green-300 gap-2">
               <span className="truncate">✅ Ganho</span>
               <Badge variant="default" className="bg-green-600 flex-shrink-0">{getWonDeals().length}</Badge>
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3 max-h-[600px] overflow-y-auto px-[clamp(12px,2vw,20px)]">
+          <CardContent className="space-y-3 max-h-[600px] overflow-y-auto px-4">
             {getWonDeals().length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">
                 Nenhum negócio ganho ainda
@@ -272,14 +272,14 @@ export function CRMBoard({ pipelineId, onRefresh }: CRMBoardProps) {
         </Card>
 
         {/* Fixed Lost column */}
-        <Card className="min-w-[300px] w-[clamp(300px,30vw,400px)] flex-shrink-0 bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800">
-          <CardHeader className="pb-3 px-[clamp(12px,2vw,20px)]">
+        <Card className="min-w-[320px] max-w-[320px] flex-shrink-0 bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800">
+          <CardHeader className="pb-3 px-4">
             <CardTitle className="flex items-center justify-between text-base text-red-700 dark:text-red-300 gap-2">
               <span className="truncate">❌ Perdido</span>
               <Badge variant="destructive" className="flex-shrink-0">{getLostDeals().length}</Badge>
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3 max-h-[600px] overflow-y-auto px-[clamp(12px,2vw,20px)]">
+          <CardContent className="space-y-3 max-h-[600px] overflow-y-auto px-4">
             {getLostDeals().length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">
                 Nenhum negócio perdido
