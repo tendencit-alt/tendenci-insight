@@ -8,6 +8,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Trash2, CheckCircle, XCircle } from "lucide-react";
 import { toast } from "sonner";
+import { usePermissions } from "@/hooks/usePermissions";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,6 +27,7 @@ interface GoalsTableProps {
 }
 
 export function GoalsTable({ type, refreshTrigger, onRefresh }: GoalsTableProps) {
+  const { isMaster } = usePermissions();
   const [loading, setLoading] = useState(true);
   const [goals, setGoals] = useState<any[]>([]);
   const [deleteGoalId, setDeleteGoalId] = useState<string | null>(null);
@@ -203,31 +205,36 @@ export function GoalsTable({ type, refreshTrigger, onRefresh }: GoalsTableProps)
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        {goal.status === "ativa" && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleStatusChange(goal.id, "concluida")}
-                            title="Marcar como concluída"
-                          >
-                            <CheckCircle className="w-4 h-4" />
+                      {isMaster && (
+                        <div className="flex justify-end gap-2">
+                          {goal.status === "ativa" && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleStatusChange(goal.id, "concluida")}
+                              title="Marcar como concluída"
+                            >
+                              <CheckCircle className="w-4 h-4" />
+                            </Button>
+                          )}
+                          {goal.status === "ativa" && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleStatusChange(goal.id, "cancelada")}
+                              title="Cancelar meta"
+                            >
+                              <XCircle className="w-4 h-4" />
+                            </Button>
+                          )}
+                          <Button size="sm" variant="ghost" onClick={() => setDeleteGoalId(goal.id)}>
+                            <Trash2 className="w-4 h-4 text-destructive" />
                           </Button>
-                        )}
-                        {goal.status === "ativa" && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleStatusChange(goal.id, "cancelada")}
-                            title="Cancelar meta"
-                          >
-                            <XCircle className="w-4 h-4" />
-                          </Button>
-                        )}
-                        <Button size="sm" variant="ghost" onClick={() => setDeleteGoalId(goal.id)}>
-                          <Trash2 className="w-4 h-4 text-destructive" />
-                        </Button>
-                      </div>
+                        </div>
+                      )}
+                      {!isMaster && (
+                        <Badge variant="secondary">Somente leitura</Badge>
+                      )}
                     </TableCell>
                   </TableRow>
                 );
