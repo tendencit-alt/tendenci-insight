@@ -83,12 +83,12 @@ export function CRMKPIs({ pipelineId }: CRMKPIsProps) {
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 w-full">
       {kpis.map((kpi, index) => (
-        <Card key={index} className="hover:shadow-lg transition-shadow">
-          <CardContent className="p-[clamp(12px,2vw,20px)]">
+        <Card key={index} className="hover:shadow-lg transition-shadow min-w-0">
+          <CardContent className="p-4">
             <div className="flex flex-col space-y-2">
-              <kpi.icon className={`h-8 w-8 ${kpi.color}`} />
+              <kpi.icon className={`h-8 w-8 flex-shrink-0 ${kpi.color}`} />
               <p className="text-sm text-muted-foreground line-clamp-2">{kpi.label}</p>
               <p className="text-2xl font-bold truncate">{kpi.value}</p>
             </div>

@@ -55,7 +55,7 @@ export function DealCard({ deal, timeInStage, onClick, onDragStart, onDelete }: 
           <X className="h-4 w-4 text-destructive" />
         </Button>
       )}
-      <CardContent className="p-[clamp(12px,2vw,20px)]">
+      <CardContent className="p-4">
         <div className="space-y-2">
           {/* Nome do cliente em destaque com tag IA */}
           <div className="flex items-center gap-2 flex-wrap">
