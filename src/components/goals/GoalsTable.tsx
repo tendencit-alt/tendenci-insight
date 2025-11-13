@@ -6,7 +6,9 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Trash2, CheckCircle, XCircle } from "lucide-react";
+import { Trash2, CheckCircle, XCircle, Pencil } from "lucide-react";
+import { EditSellerGoalDialog } from "./EditSellerGoalDialog";
+import { EditCompanyGoalDialog } from "./EditCompanyGoalDialog";
 import { toast } from "sonner";
 import { usePermissions } from "@/hooks/usePermissions";
 import {
@@ -31,6 +33,8 @@ export function GoalsTable({ type, refreshTrigger, onRefresh }: GoalsTableProps)
   const [loading, setLoading] = useState(true);
   const [goals, setGoals] = useState<any[]>([]);
   const [deleteGoalId, setDeleteGoalId] = useState<string | null>(null);
+  const [editGoal, setEditGoal] = useState<any | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   useEffect(() => {
     fetchGoals();
@@ -229,6 +233,17 @@ export function GoalsTable({ type, refreshTrigger, onRefresh }: GoalsTableProps)
                     <TableCell className="text-right">
                       {isMaster && (
                         <div className="flex justify-end gap-2">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              setEditGoal(goal);
+                              setEditDialogOpen(true);
+                            }}
+                            title="Editar meta"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Button>
                           {goal.status === "ativa" && (
                             <Button
                               size="sm"
@@ -280,6 +295,22 @@ export function GoalsTable({ type, refreshTrigger, onRefresh }: GoalsTableProps)
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {type === "seller" ? (
+        <EditSellerGoalDialog
+          open={editDialogOpen}
+          onOpenChange={setEditDialogOpen}
+          goal={editGoal}
+          onSuccess={onRefresh}
+        />
+      ) : (
+        <EditCompanyGoalDialog
+          open={editDialogOpen}
+          onOpenChange={setEditDialogOpen}
+          goal={editGoal}
+          onSuccess={onRefresh}
+        />
+      )}
     </>
   );
 }

@@ -8,6 +8,7 @@ import { CreateSellerGoalDialog } from "@/components/goals/CreateSellerGoalDialo
 import { CreateCompanyGoalDialog } from "@/components/goals/CreateCompanyGoalDialog";
 import { GoalsTable } from "@/components/goals/GoalsTable";
 import { GoalsAnalytics } from "@/components/goals/GoalsAnalytics";
+import { AdvancedAnalytics } from "@/components/goals/AdvancedAnalytics";
 import { supabase } from "@/integrations/supabase/client";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useAuth } from "@/contexts/AuthContext";
@@ -204,7 +205,11 @@ export default function GoalsManagement() {
           </TabsContent>
 
           <TabsContent value="analytics" className="space-y-4">
-            <GoalsAnalytics refreshTrigger={refreshTrigger} />
+            {isMaster ? (
+              <AdvancedAnalytics refreshTrigger={refreshTrigger} />
+            ) : (
+              <GoalsAnalytics refreshTrigger={refreshTrigger} />
+            )}
           </TabsContent>
         </Tabs>
 
