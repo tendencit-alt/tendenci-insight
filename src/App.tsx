@@ -12,6 +12,7 @@ import ProjectSettings from "./pages/ProjectSettings";
 import Architects from "./pages/Architects";
 import CRM from "./pages/CRM";
 import Goals from "./pages/Goals";
+import GoalsManagement from "./pages/GoalsManagement";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -34,6 +35,7 @@ const App = () => (
             <Route path="/settings" element={<ProtectedRoute><ProjectSettings /></ProtectedRoute>} />
             <Route path="/architects" element={<ProtectedRoute><Architects /></ProtectedRoute>} />
             <Route path="/metas" element={<ProtectedRoute><Goals /></ProtectedRoute>} />
+            <Route path="/metas/gestao" element={<ProtectedRoute><GoalsManagement /></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

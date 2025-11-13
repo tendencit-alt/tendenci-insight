@@ -1,11 +1,21 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
-import { TrendingUp, TrendingDown, Users, Award, Target } from "lucide-react";
+import { TrendingUp, TrendingDown, Users, Award, Target, Trophy } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
 
 interface GoalsAnalyticsProps {
   refreshTrigger: number;
+}
+
+interface SellerRanking {
+  vendedor_id: string;
+  full_name: string;
+  email: string;
+  percentual_meta_atualizado: number;
+  valor_total_vendido: number;
+  posicao_atual: number;
 }
 
 export function GoalsAnalytics({ refreshTrigger }: GoalsAnalyticsProps) {
