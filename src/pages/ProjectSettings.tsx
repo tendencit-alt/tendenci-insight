@@ -1,14 +1,17 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { WebhookSettings } from "@/components/projects/WebhookSettings";
 import { N8nIntegrationGuide } from "@/components/settings/N8nIntegrationGuide";
 import { ImportDataGuide } from "@/components/settings/ImportDataGuide";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { usePermissions } from "@/hooks/usePermissions";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const ProjectSettings = () => {
   const navigate = useNavigate();
+  const { isMaster } = usePermissions();
 
   return (
     <DashboardLayout>
@@ -31,10 +34,11 @@ const ProjectSettings = () => {
 
         {/* Settings Sections */}
         <Tabs defaultValue="import" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className={`grid w-full ${isMaster ? 'grid-cols-4' : 'grid-cols-3'}`}>
             <TabsTrigger value="import">📥 Importar Dados</TabsTrigger>
             <TabsTrigger value="n8n">🤖 Integração n8n</TabsTrigger>
             <TabsTrigger value="webhooks">🔗 Webhooks</TabsTrigger>
+            {isMaster && <TabsTrigger value="users">🔐 Acessos</TabsTrigger>}
           </TabsList>
 
           <TabsContent value="import" className="space-y-6 pt-6">
@@ -48,6 +52,42 @@ const ProjectSettings = () => {
           <TabsContent value="webhooks" className="space-y-6 pt-6">
             <WebhookSettings />
           </TabsContent>
+
+          {isMaster && (
+            <TabsContent value="users" className="space-y-6 pt-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Shield className="w-5 h-5 text-primary" />
+                    Gerenciamento de Acessos e Permissões
+                  </CardTitle>
+                  <CardDescription>
+                    Configure níveis de acesso, permissões por módulo e controle de usuários do sistema
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <h3 className="font-semibold">Recursos disponíveis:</h3>
+                    <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground ml-4">
+                      <li>Definir usuários como Master ou Vendedor</li>
+                      <li>Limitar acesso a módulos específicos</li>
+                      <li>Configurar visualização de dados por vendedor</li>
+                      <li>Ativar/desativar usuários</li>
+                      <li>Ver resumo completo de permissões</li>
+                    </ul>
+                  </div>
+                  
+                  <Button 
+                    onClick={() => navigate('/settings/users')}
+                    className="w-full sm:w-auto gap-2"
+                  >
+                    <Shield className="w-4 h-4" />
+                    Acessar Gerenciamento Completo
+                  </Button>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
         </Tabs>
       </div>
     </DashboardLayout>
