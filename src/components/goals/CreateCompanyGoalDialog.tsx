@@ -91,8 +91,8 @@ export function CreateCompanyGoalDialog({ open, onOpenChange, onSuccess }: Creat
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="vendas">Vendas (Valor em R$)</SelectItem>
-                <SelectItem value="captacao">Captação (Quantidade de Leads)</SelectItem>
-                <SelectItem value="efetivacao">Efetivação (Quantidade de Arquitetos)</SelectItem>
+                <SelectItem value="captacao">Captação (Quantidade de Arquitetos)</SelectItem>
+                <SelectItem value="efetivacao">Efetivação (Quantidade de Projetos)</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -113,7 +113,7 @@ export function CreateCompanyGoalDialog({ open, onOpenChange, onSuccess }: Creat
           ) : (
             <div className="space-y-2">
               <Label htmlFor="quantidade_meta">
-                {formData.tipo_meta === "captacao" ? "Quantidade Total de Leads *" : "Quantidade Total de Arquitetos *"}
+                {formData.tipo_meta === "captacao" ? "Quantidade Total de Arquitetos *" : "Quantidade Total de Projetos *"}
               </Label>
               <Input
                 id="quantidade_meta"
@@ -122,7 +122,7 @@ export function CreateCompanyGoalDialog({ open, onOpenChange, onSuccess }: Creat
                 required
                 value={formData.quantidade_meta}
                 onChange={(e) => setFormData({ ...formData, quantidade_meta: e.target.value })}
-                placeholder={formData.tipo_meta === "captacao" ? "Ex: 1000" : "Ex: 500"}
+                placeholder={formData.tipo_meta === "captacao" ? "Ex: 500" : "Ex: 300"}
               />
             </div>
           )}
