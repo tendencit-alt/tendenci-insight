@@ -137,9 +137,10 @@ export function GoalsTable({ type, refreshTrigger, onRefresh }: GoalsTableProps)
             <TableHeader>
               <TableRow>
                 {type === "seller" && <TableHead>Vendedor</TableHead>}
-                <TableHead>Valor Meta</TableHead>
+                <TableHead>Tipo</TableHead>
+                <TableHead>Meta</TableHead>
                 <TableHead>Período</TableHead>
-                <TableHead>Vendido</TableHead>
+                <TableHead>Alcançado</TableHead>
                 <TableHead>Progresso</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
@@ -149,8 +150,18 @@ export function GoalsTable({ type, refreshTrigger, onRefresh }: GoalsTableProps)
               {goals.map((goal) => {
                 const progress = goal.tendenci_goal_progress?.[0];
                 const valorVendido = progress?.valor_vendido || 0;
+                const quantidadeAlcancada = progress?.quantidade_alcancada || 0;
                 const percentual = progress?.percentual || 0;
                 const valorMeta = type === "seller" ? goal.valor_meta : goal.valor_meta_total;
+                const quantidadeMeta = goal.quantidade_meta;
+                const tipoMeta = goal.tipo_meta || "vendas";
+
+                // Determinar labels de tipo
+                const tipoLabel = {
+                  vendas: "Vendas",
+                  captacao: "Captação",
+                  efetivacao: "Efetivação"
+                }[tipoMeta] || "Vendas";
 
                 return (
                   <TableRow key={goal.id}>
@@ -163,10 +174,17 @@ export function GoalsTable({ type, refreshTrigger, onRefresh }: GoalsTableProps)
                       </TableCell>
                     )}
                     <TableCell>
-                      {valorMeta.toLocaleString("pt-BR", {
-                        style: "currency",
-                        currency: "BRL",
-                      })}
+                      <Badge variant="outline">{tipoLabel}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      {tipoMeta === "vendas" ? (
+                        valorMeta?.toLocaleString("pt-BR", {
+                          style: "currency",
+                          currency: "BRL",
+                        })
+                      ) : (
+                        <span>{quantidadeMeta} {tipoMeta === "captacao" ? "leads" : "arquitetos"}</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <div className="text-sm">
@@ -175,10 +193,14 @@ export function GoalsTable({ type, refreshTrigger, onRefresh }: GoalsTableProps)
                       </div>
                     </TableCell>
                     <TableCell>
-                      {valorVendido.toLocaleString("pt-BR", {
-                        style: "currency",
-                        currency: "BRL",
-                      })}
+                      {tipoMeta === "vendas" ? (
+                        valorVendido.toLocaleString("pt-BR", {
+                          style: "currency",
+                          currency: "BRL",
+                        })
+                      ) : (
+                        <span>{quantidadeAlcancada} {tipoMeta === "captacao" ? "leads" : "arquitetos"}</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">

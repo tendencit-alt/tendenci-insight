@@ -21,7 +21,9 @@ export function CreateSellerGoalDialog({ open, onOpenChange, onSuccess }: Create
   const [sellers, setSellers] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     vendedor_id: "",
+    tipo_meta: "vendas",
     valor_meta: "",
+    quantidade_meta: "",
     data_inicio: "",
     data_fim: "",
     descricao: "",
@@ -54,15 +56,24 @@ export function CreateSellerGoalDialog({ open, onOpenChange, onSuccess }: Create
     setLoading(true);
 
     try {
-      const { error } = await supabase.from("tendenci_seller_goals" as any).insert({
+      const insertData: any = {
         vendedor_id: formData.vendedor_id,
-        valor_meta: parseFloat(formData.valor_meta),
+        tipo_meta: formData.tipo_meta,
         data_inicio: formData.data_inicio,
         data_fim: formData.data_fim,
         descricao: formData.descricao,
         criado_por: user?.id,
         status: "ativa",
-      });
+      };
+
+      // Adicionar valor ou quantidade conforme o tipo
+      if (formData.tipo_meta === "vendas") {
+        insertData.valor_meta = parseFloat(formData.valor_meta);
+      } else {
+        insertData.quantidade_meta = parseInt(formData.quantidade_meta);
+      }
+
+      const { error } = await supabase.from("tendenci_seller_goals" as any).insert(insertData);
 
       if (error) throw error;
 
@@ -71,7 +82,9 @@ export function CreateSellerGoalDialog({ open, onOpenChange, onSuccess }: Create
       onOpenChange(false);
       setFormData({
         vendedor_id: "",
+        tipo_meta: "vendas",
         valor_meta: "",
+        quantidade_meta: "",
         data_inicio: "",
         data_fim: "",
         descricao: "",
@@ -89,7 +102,7 @@ export function CreateSellerGoalDialog({ open, onOpenChange, onSuccess }: Create
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>Criar Meta Individual</DialogTitle>
-          <DialogDescription>Defina uma meta de vendas para um vendedor específico</DialogDescription>
+          <DialogDescription>Defina uma meta para um vendedor específico</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -110,17 +123,51 @@ export function CreateSellerGoalDialog({ open, onOpenChange, onSuccess }: Create
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="valor_meta">Valor da Meta (R$) *</Label>
-            <Input
-              id="valor_meta"
-              type="number"
-              step="0.01"
-              required
-              value={formData.valor_meta}
-              onChange={(e) => setFormData({ ...formData, valor_meta: e.target.value })}
-              placeholder="Ex: 50000.00"
-            />
+            <Label htmlFor="tipo_meta">Tipo de Meta *</Label>
+            <Select 
+              value={formData.tipo_meta} 
+              onValueChange={(value) => setFormData({ ...formData, tipo_meta: value, valor_meta: "", quantidade_meta: "" })}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="vendas">Vendas (Valor em R$)</SelectItem>
+                <SelectItem value="captacao">Captação (Quantidade de Leads)</SelectItem>
+                <SelectItem value="efetivacao">Efetivação (Quantidade de Arquitetos)</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
+
+          {formData.tipo_meta === "vendas" ? (
+            <div className="space-y-2">
+              <Label htmlFor="valor_meta">Valor da Meta (R$) *</Label>
+              <Input
+                id="valor_meta"
+                type="number"
+                step="0.01"
+                required
+                value={formData.valor_meta}
+                onChange={(e) => setFormData({ ...formData, valor_meta: e.target.value })}
+                placeholder="Ex: 50000.00"
+              />
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <Label htmlFor="quantidade_meta">
+                {formData.tipo_meta === "captacao" ? "Quantidade de Leads *" : "Quantidade de Arquitetos *"}
+              </Label>
+              <Input
+                id="quantidade_meta"
+                type="number"
+                min="1"
+                required
+                value={formData.quantidade_meta}
+                onChange={(e) => setFormData({ ...formData, quantidade_meta: e.target.value })}
+                placeholder={formData.tipo_meta === "captacao" ? "Ex: 100" : "Ex: 50"}
+              />
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
