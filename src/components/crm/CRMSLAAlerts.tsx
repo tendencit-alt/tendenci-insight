@@ -34,12 +34,12 @@ export function CRMSLAAlerts({ pipelineId }: CRMSLAAlertsProps) {
   if (alerts.length === 0) {
     return (
       <Card>
-        <CardContent className="p-6">
-          <div className="flex items-center gap-3 text-green-600">
-            <ShieldCheck className="h-6 w-6" />
-            <p className="font-medium">Sem pendências de SLA 🎉</p>
-          </div>
-        </CardContent>
+      <CardContent className="p-6">
+        <div className="flex items-center gap-3 text-green-600">
+          <ShieldCheck className="h-5 w-5 sm:h-6 sm:w-6 flex-shrink-0" />
+          <p className="font-medium text-sm sm:text-base">Sem pendências de SLA 🎉</p>
+        </div>
+      </CardContent>
       </Card>
     );
   }
@@ -47,9 +47,9 @@ export function CRMSLAAlerts({ pipelineId }: CRMSLAAlertsProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <AlertTriangle className="h-5 w-5 text-yellow-500" />
-          ⏰ Alertas de SLA (sem resposta / prazo estourando)
+        <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+          <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-500 flex-shrink-0" />
+          <span className="truncate">⏰ Alertas de SLA (sem resposta / prazo estourando)</span>
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -57,15 +57,15 @@ export function CRMSLAAlerts({ pipelineId }: CRMSLAAlertsProps) {
           {alerts.map((alert) => (
             <div
               key={alert.deal_id}
-              className="flex items-center justify-between p-4 bg-muted/50 rounded-lg hover:bg-muted transition-colors cursor-pointer"
+              className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 p-3 sm:p-4 bg-muted/50 rounded-lg hover:bg-muted transition-colors cursor-pointer"
             >
-              <div className="flex-1">
-                <p className="font-semibold">{alert.title}</p>
-                <p className="text-sm text-muted-foreground">
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-sm truncate">{alert.title}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2">
                   Cliente: {alert.lead_name} • Estágio: {alert.stage_name} • Atraso: {alert.delay_h}h
                 </p>
               </div>
-              <Badge variant="outline">Resp: {alert.owner_name}</Badge>
+              <Badge variant="outline" className="flex-shrink-0 text-xs sm:text-sm w-fit">Resp: {alert.owner_name}</Badge>
             </div>
           ))}
         </div>

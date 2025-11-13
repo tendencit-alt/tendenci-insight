@@ -131,9 +131,9 @@ export function CRMTasksPanel({ pipelineId }: CRMTasksPanelProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg flex items-center gap-2">
-          <span className="text-xl">✅</span>
-          Tarefas Pendentes ({tasks.length})
+        <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+          <span className="text-lg sm:text-xl">✅</span>
+          <span className="truncate">Tarefas Pendentes ({tasks.length})</span>
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -154,16 +154,16 @@ export function CRMTasksPanel({ pipelineId }: CRMTasksPanelProps) {
                   className="p-3 border rounded-md bg-background space-y-2"
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 space-y-1">
-                      <p className="font-medium text-sm">{task.title}</p>
-                      <p className="text-xs text-muted-foreground">
+                    <div className="flex-1 space-y-1 min-w-0">
+                      <p className="font-medium text-sm line-clamp-1">{task.title}</p>
+                      <p className="text-xs text-muted-foreground line-clamp-1">
                         {task.deal?.title} • {clientName}
                       </p>
                     </div>
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="h-6 w-6 p-0"
+                      className="h-6 w-6 p-0 flex-shrink-0"
                       onClick={() => handleMarkDone(task.id)}
                     >
                       <CheckCircle className="h-4 w-4" />
@@ -171,10 +171,10 @@ export function CRMTasksPanel({ pipelineId }: CRMTasksPanelProps) {
                   </div>
 
                   <div className="flex items-center gap-2 flex-wrap">
-                    <Badge variant={dueInfo.variant} className="text-xs">
+                    <Badge variant={dueInfo.variant} className="text-xs flex-shrink-0">
                       {dueInfo.icon} {dueInfo.text}
                     </Badge>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-xs text-muted-foreground truncate">
                       {dueDate.toLocaleString("pt-BR", {
                         dateStyle: "short",
                         timeStyle: "short",

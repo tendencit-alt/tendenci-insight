@@ -207,18 +207,18 @@ export function CRMBoard({ pipelineId, onRefresh }: CRMBoardProps) {
           return (
             <Card 
               key={stage.id} 
-              className="min-w-[350px] max-w-[400px] flex-shrink-0 hover:shadow-lg transition-shadow"
+              className="min-w-[300px] w-[clamp(300px,30vw,400px)] flex-shrink-0 hover:shadow-lg transition-shadow"
               onDragOver={handleDragOver}
               onDrop={handleDrop(stage.id)}
             >
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center justify-between text-base">
-                  <span>{stage.name}</span>
-                  <Badge variant="secondary">{stageDeals.length}</Badge>
+              <CardHeader className="pb-3 px-[clamp(12px,2vw,20px)]">
+                <CardTitle className="flex items-center justify-between text-base gap-2">
+                  <span className="truncate">{stage.name}</span>
+                  <Badge variant="secondary" className="flex-shrink-0">{stageDeals.length}</Badge>
                 </CardTitle>
               </CardHeader>
               <CardContent 
-                className="space-y-3 max-h-[600px] overflow-y-auto"
+                className="space-y-3 max-h-[600px] overflow-y-auto px-[clamp(12px,2vw,20px)]"
                 onDragOver={handleDragOver}
                 onDrop={handleDrop(stage.id)}
               >
@@ -244,14 +244,14 @@ export function CRMBoard({ pipelineId, onRefresh }: CRMBoardProps) {
         })}
 
         {/* Fixed Won column */}
-        <Card className="min-w-[350px] max-w-[400px] flex-shrink-0 bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center justify-between text-base text-green-700 dark:text-green-300">
-              <span>✅ Ganho</span>
-              <Badge variant="default" className="bg-green-600">{getWonDeals().length}</Badge>
+        <Card className="min-w-[300px] w-[clamp(300px,30vw,400px)] flex-shrink-0 bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
+          <CardHeader className="pb-3 px-[clamp(12px,2vw,20px)]">
+            <CardTitle className="flex items-center justify-between text-base text-green-700 dark:text-green-300 gap-2">
+              <span className="truncate">✅ Ganho</span>
+              <Badge variant="default" className="bg-green-600 flex-shrink-0">{getWonDeals().length}</Badge>
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3 max-h-[600px] overflow-y-auto">
+          <CardContent className="space-y-3 max-h-[600px] overflow-y-auto px-[clamp(12px,2vw,20px)]">
             {getWonDeals().length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">
                 Nenhum negócio ganho ainda
@@ -272,14 +272,14 @@ export function CRMBoard({ pipelineId, onRefresh }: CRMBoardProps) {
         </Card>
 
         {/* Fixed Lost column */}
-        <Card className="min-w-[350px] max-w-[400px] flex-shrink-0 bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center justify-between text-base text-red-700 dark:text-red-300">
-              <span>❌ Perdido</span>
-              <Badge variant="destructive">{getLostDeals().length}</Badge>
+        <Card className="min-w-[300px] w-[clamp(300px,30vw,400px)] flex-shrink-0 bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800">
+          <CardHeader className="pb-3 px-[clamp(12px,2vw,20px)]">
+            <CardTitle className="flex items-center justify-between text-base text-red-700 dark:text-red-300 gap-2">
+              <span className="truncate">❌ Perdido</span>
+              <Badge variant="destructive" className="flex-shrink-0">{getLostDeals().length}</Badge>
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3 max-h-[600px] overflow-y-auto">
+          <CardContent className="space-y-3 max-h-[600px] overflow-y-auto px-[clamp(12px,2vw,20px)]">
             {getLostDeals().length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">
                 Nenhum negócio perdido

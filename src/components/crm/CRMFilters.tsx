@@ -10,8 +10,8 @@ interface CRMFiltersProps {
 
 export function CRMFilters({ pipelines, selectedPipeline, onPipelineChange }: CRMFiltersProps) {
   return (
-    <div className="flex flex-wrap gap-4 p-4 bg-card rounded-lg border">
-      <div className="flex-1 min-w-[200px]">
+    <div className="flex flex-col sm:flex-row gap-4 p-4 bg-card rounded-lg border">
+      <div className="w-full sm:flex-1 sm:min-w-[200px]">
         <Select value={selectedPipeline} onValueChange={onPipelineChange}>
           <SelectTrigger>
             <SelectValue placeholder="Selecione o funil" />
@@ -26,7 +26,7 @@ export function CRMFilters({ pipelines, selectedPipeline, onPipelineChange }: CR
         </Select>
       </div>
 
-      <div className="flex-1 min-w-[200px] relative">
+      <div className="w-full sm:flex-1 sm:min-w-[200px] relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="Buscar cliente, negócio, telefone..."

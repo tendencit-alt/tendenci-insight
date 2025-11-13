@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
-import { Plus, Settings, RefreshCcw, Download } from "lucide-react";
+import { Plus, Settings, RefreshCcw, Download, Menu } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { CRMKPIs } from "@/components/crm/CRMKPIs";
@@ -11,6 +11,7 @@ import { CRMBoard } from "@/components/crm/CRMBoard";
 import { CRMFilters } from "@/components/crm/CRMFilters";
 import { CreateDealDialog } from "@/components/crm/CreateDealDialog";
 import { ManagePipelineDialog } from "@/components/crm/ManagePipelineDialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 export default function CRM() {
   const { toast } = useToast();
@@ -63,16 +64,17 @@ export default function CRM() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="space-y-6 relative pb-20 sm:pb-0">
         {/* Header */}
-        <div className="flex flex-col lg:flex-row gap-4 lg:items-center lg:justify-between">
+        <div className="flex flex-col gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">🗂️ CRM Kanban</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">🗂️ CRM Kanban</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">
               Funis e cadências personalizadas, com métricas, SLA e integrações
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
+          {/* Botões Desktop */}
+          <div className="hidden sm:flex flex-wrap gap-2 justify-end">
             <Button onClick={() => setIsCreateDialogOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
               Novo Negócio
@@ -90,7 +92,41 @@ export default function CRM() {
               Exportar
             </Button>
           </div>
+          {/* Menu Dropdown Mobile/Tablet */}
+          <div className="sm:hidden flex justify-end">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Menu className="h-4 w-4 mr-2" />
+                  Menu
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={() => setIsManageDialogOpen(true)}>
+                  <Settings className="mr-2 h-4 w-4" />
+                  Funis/Etapas
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleRefresh}>
+                  <RefreshCcw className="mr-2 h-4 w-4" />
+                  Atualizar
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExport}>
+                  <Download className="mr-2 h-4 w-4" />
+                  Exportar
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
+
+        {/* Botão flutuante mobile para Novo Negócio */}
+        <Button 
+          className="sm:hidden fixed bottom-6 right-6 z-50 h-[clamp(56px,14vw,64px)] w-[clamp(56px,14vw,64px)] rounded-full shadow-lg"
+          onClick={() => setIsCreateDialogOpen(true)}
+          size="icon"
+        >
+          <Plus className="h-6 w-6" />
+        </Button>
 
         {/* Filters */}
         <CRMFilters
