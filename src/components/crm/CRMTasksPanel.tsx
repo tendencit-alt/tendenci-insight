@@ -114,9 +114,9 @@ export function CRMTasksPanel({ pipelineId }: CRMTasksPanelProps) {
 
   if (loading) {
     return (
-      <Card>
+      <Card className="border-border/50">
         <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
+          <CardTitle className="text-lg font-semibold flex items-center gap-2">
             <span className="text-xl">✅</span>
             Tarefas Pendentes
           </CardTitle>
@@ -129,16 +129,16 @@ export function CRMTasksPanel({ pipelineId }: CRMTasksPanelProps) {
   }
 
   return (
-    <Card>
+    <Card className="border-border/50">
       <CardHeader>
-        <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-          <span className="text-lg sm:text-xl">✅</span>
+        <CardTitle className="text-lg font-semibold flex items-center gap-2">
+          <span className="text-xl">✅</span>
           <span className="truncate">Tarefas Pendentes ({tasks.length})</span>
         </CardTitle>
       </CardHeader>
       <CardContent>
         {tasks.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-4">
+          <p className="text-center py-8 text-muted-foreground text-sm">
             Nenhuma tarefa pendente
           </p>
         ) : (
@@ -151,9 +151,9 @@ export function CRMTasksPanel({ pipelineId }: CRMTasksPanelProps) {
               return (
                 <div
                   key={task.id}
-                  className="p-3 border rounded-md bg-background space-y-2"
+                  className="p-4 border border-border/50 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors space-y-3"
                 >
-                  <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 space-y-1 min-w-0">
                       <p className="font-medium text-sm line-clamp-1">{task.title}</p>
                       <p className="text-xs text-muted-foreground line-clamp-1">
@@ -163,7 +163,7 @@ export function CRMTasksPanel({ pipelineId }: CRMTasksPanelProps) {
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="h-6 w-6 p-0 flex-shrink-0"
+                      className="h-7 w-7 p-0 flex-shrink-0 hover:bg-primary/10"
                       onClick={() => handleMarkDone(task.id)}
                     >
                       <CheckCircle className="h-4 w-4" />
@@ -171,10 +171,10 @@ export function CRMTasksPanel({ pipelineId }: CRMTasksPanelProps) {
                   </div>
 
                   <div className="flex items-center gap-2 flex-wrap">
-                    <Badge variant={dueInfo.variant} className="text-xs flex-shrink-0">
+                    <Badge variant={dueInfo.variant} className="text-xs flex-shrink-0 font-medium">
                       {dueInfo.icon} {dueInfo.text}
                     </Badge>
-                    <span className="text-xs text-muted-foreground truncate">
+                    <span className="text-xs text-muted-foreground">
                       {dueDate.toLocaleString("pt-BR", {
                         dateStyle: "short",
                         timeStyle: "short",

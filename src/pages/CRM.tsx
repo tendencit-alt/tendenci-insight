@@ -64,64 +64,68 @@ export default function CRM() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 relative pb-20 sm:pb-0 w-full max-w-full overflow-hidden">
+      <div className="flex flex-col gap-6 pb-20 md:pb-6 w-full">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">🗂️ CRM Kanban</h1>
-            <p className="text-sm sm:text-base text-muted-foreground">
-              Funis e cadências personalizadas, com métricas, SLA e integrações
-            </p>
-          </div>
-          {/* Botões Desktop - sempre visível em telas médias+ */}
-          <div className="hidden md:flex flex-wrap gap-2">
-            <Button onClick={() => setIsCreateDialogOpen(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              Novo Negócio
-            </Button>
-            <Button variant="outline" onClick={() => setIsManageDialogOpen(true)}>
-              <Settings className="mr-2 h-4 w-4" />
-              Funis/Etapas
-            </Button>
-            <Button variant="ghost" onClick={handleRefresh}>
-              <RefreshCcw className="mr-2 h-4 w-4" />
-              Atualizar
-            </Button>
-            <Button variant="ghost" onClick={handleExport}>
-              <Download className="mr-2 h-4 w-4" />
-              Exportar
-            </Button>
-          </div>
-          {/* Menu Dropdown Mobile/Tablet */}
-          <div className="md:hidden flex justify-end">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Menu className="h-4 w-4 mr-2" />
-                  Menu
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem onClick={() => setIsManageDialogOpen(true)}>
-                  <Settings className="mr-2 h-4 w-4" />
-                  Funis/Etapas
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleRefresh}>
-                  <RefreshCcw className="mr-2 h-4 w-4" />
-                  Atualizar
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleExport}>
-                  <Download className="mr-2 h-4 w-4" />
-                  Exportar
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+            <div className="flex-1">
+              <h1 className="text-3xl font-bold tracking-tight">🗂️ CRM Kanban</h1>
+              <p className="text-muted-foreground mt-1">
+                Funis e cadências personalizadas, com métricas, SLA e integrações
+              </p>
+            </div>
+            
+            {/* Botões Desktop */}
+            <div className="hidden md:flex items-center gap-2 flex-shrink-0">
+              <Button onClick={() => setIsCreateDialogOpen(true)}>
+                <Plus className="mr-2 h-4 w-4" />
+                Novo Negócio
+              </Button>
+              <Button variant="outline" onClick={() => setIsManageDialogOpen(true)}>
+                <Settings className="mr-2 h-4 w-4" />
+                Funis/Etapas
+              </Button>
+              <Button variant="outline" onClick={handleRefresh}>
+                <RefreshCcw className="mr-2 h-4 w-4" />
+                Atualizar
+              </Button>
+              <Button variant="outline" onClick={handleExport}>
+                <Download className="mr-2 h-4 w-4" />
+                Exportar
+              </Button>
+            </div>
+
+            {/* Menu Dropdown Mobile */}
+            <div className="md:hidden">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Menu className="h-4 w-4 mr-2" />
+                    Menu
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48 z-50 bg-background border shadow-md">
+                  <DropdownMenuItem onClick={() => setIsManageDialogOpen(true)}>
+                    <Settings className="mr-2 h-4 w-4" />
+                    Funis/Etapas
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleRefresh}>
+                    <RefreshCcw className="mr-2 h-4 w-4" />
+                    Atualizar
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleExport}>
+                    <Download className="mr-2 h-4 w-4" />
+                    Exportar
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         </div>
 
-        {/* Botão flutuante mobile para Novo Negócio */}
+        {/* Botão flutuante mobile */}
         <Button 
-          className="md:hidden fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg"
+          className="md:hidden fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-2xl hover:shadow-xl transition-shadow"
           onClick={() => setIsCreateDialogOpen(true)}
           size="icon"
         >

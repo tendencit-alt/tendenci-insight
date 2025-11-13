@@ -33,23 +33,23 @@ export function CRMSLAAlerts({ pipelineId }: CRMSLAAlertsProps) {
 
   if (alerts.length === 0) {
     return (
-      <Card>
-      <CardContent className="p-6">
-        <div className="flex items-center gap-3 text-green-600">
-          <ShieldCheck className="h-5 w-5 sm:h-6 sm:w-6 flex-shrink-0" />
-          <p className="font-medium text-sm sm:text-base">Sem pendências de SLA 🎉</p>
-        </div>
-      </CardContent>
+      <Card className="border-green-200 bg-green-50/50 dark:border-green-800 dark:bg-green-950/20 border-border/50">
+        <CardContent className="p-6">
+          <div className="flex items-center gap-3 text-green-600 dark:text-green-400">
+            <ShieldCheck className="h-5 w-5 flex-shrink-0" />
+            <p className="font-medium text-sm">Sem pendências de SLA 🎉</p>
+          </div>
+        </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-          <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-500 flex-shrink-0" />
-          <span className="truncate">⏰ Alertas de SLA (sem resposta / prazo estourando)</span>
+    <Card className="border-yellow-200 bg-yellow-50/50 dark:border-yellow-800 dark:bg-yellow-950/20 border-border/50">
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-yellow-700 dark:text-yellow-300 text-lg font-semibold">
+          <AlertTriangle className="h-5 w-5 flex-shrink-0" />
+          Alertas de SLA
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -57,15 +57,17 @@ export function CRMSLAAlerts({ pipelineId }: CRMSLAAlertsProps) {
           {alerts.map((alert) => (
             <div
               key={alert.deal_id}
-              className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 p-3 sm:p-4 bg-muted/50 rounded-lg hover:bg-muted transition-colors cursor-pointer"
+              className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-background rounded-lg border border-border/50 hover:border-border transition-colors cursor-pointer"
             >
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-sm truncate">{alert.title}</p>
-                <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2">
+                <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
                   Cliente: {alert.lead_name} • Estágio: {alert.stage_name} • Atraso: {alert.delay_h}h
                 </p>
               </div>
-              <Badge variant="outline" className="flex-shrink-0 text-xs sm:text-sm w-fit">Resp: {alert.owner_name}</Badge>
+              <Badge variant="outline" className="flex-shrink-0 text-xs w-fit font-medium">
+                Resp: {alert.owner_name}
+              </Badge>
             </div>
           ))}
         </div>

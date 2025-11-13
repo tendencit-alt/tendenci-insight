@@ -40,7 +40,7 @@ export function DealCard({ deal, timeInStage, onClick, onDragStart, onDelete }: 
 
   return (
     <Card
-      className="cursor-pointer hover:shadow-md transition-shadow relative group"
+      className="cursor-pointer hover:shadow-md hover:border-primary/20 transition-all duration-200 relative group border-border/50"
       onClick={onClick}
       draggable
       onDragStart={onDragStart}
@@ -49,13 +49,13 @@ export function DealCard({ deal, timeInStage, onClick, onDragStart, onDelete }: 
         <Button
           variant="ghost"
           size="icon"
-          className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+          className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity z-10 hover:bg-destructive/10"
           onClick={handleDelete}
         >
-          <X className="h-4 w-4 text-destructive" />
+          <X className="h-3.5 w-3.5 text-destructive" />
         </Button>
       )}
-      <CardContent className="p-4">
+      <CardContent className="p-4" style={{ paddingTop: '1rem', paddingBottom: '1rem' }}>
         <div className="space-y-2">
           {/* Nome do cliente em destaque com tag IA */}
           <div className="flex items-center gap-2 flex-wrap">
