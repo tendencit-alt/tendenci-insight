@@ -65,43 +65,32 @@ export default function CRM() {
     <DashboardLayout>
       <div className="flex flex-col gap-4">
         {/* Header */}
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex flex-col gap-1">
-            <h1 className="text-2xl lg:text-3xl font-bold tracking-tight">🗂️ CRM Kanban</h1>
-            <p className="text-xs lg:text-sm text-muted-foreground">
-              Funis e cadências personalizadas, com métricas, SLA e integrações
-            </p>
-          </div>
-            
-          {/* Botões Desktop */}
-          <div className="hidden lg:flex items-center gap-2 flex-shrink-0">
-            <Button onClick={() => setIsCreateDialogOpen(true)} size="sm">
-              <Plus className="mr-2 h-4 w-4" />
-              Novo Negócio
-            </Button>
-            <Button variant="outline" onClick={() => setIsManageDialogOpen(true)} size="sm">
-              <Settings className="mr-2 h-4 w-4" />
-              Funis/Etapas
-            </Button>
-            <Button variant="outline" onClick={handleRefresh} size="sm">
-              <RefreshCcw className="mr-2 h-4 w-4" />
-              Atualizar
-            </Button>
-            <Button variant="outline" onClick={handleExport} size="sm">
-              <Download className="mr-2 h-4 w-4" />
-              Exportar
-            </Button>
-          </div>
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl lg:text-3xl font-bold tracking-tight">🗂️ CRM Kanban</h1>
+          <p className="text-xs lg:text-sm text-muted-foreground">
+            Funis e cadências personalizadas, com métricas, SLA e integrações
+          </p>
         </div>
 
-        {/* Botão flutuante mobile */}
-        <Button 
-          className="lg:hidden fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-2xl"
-          onClick={() => setIsCreateDialogOpen(true)}
-          size="icon"
-        >
-          <Plus className="h-6 w-6" />
-        </Button>
+        {/* Botões de Ação */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button onClick={() => setIsCreateDialogOpen(true)} size="sm">
+            <Plus className="mr-2 h-4 w-4" />
+            Novo Negócio
+          </Button>
+          <Button variant="outline" onClick={() => setIsManageDialogOpen(true)} size="sm">
+            <Settings className="mr-2 h-4 w-4" />
+            Funis/Etapas
+          </Button>
+          <Button variant="outline" onClick={handleRefresh} size="sm">
+            <RefreshCcw className="mr-2 h-4 w-4" />
+            Atualizar
+          </Button>
+          <Button variant="outline" onClick={handleExport} size="sm">
+            <Download className="mr-2 h-4 w-4" />
+            Exportar
+          </Button>
+        </div>
 
         {/* Filters */}
         <CRMFilters
