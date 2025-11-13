@@ -30,7 +30,7 @@ export function StatCard({
   };
 
   return (
-    <Card className="group overflow-hidden shadow-card hover:shadow-hover transition-all duration-300 border-l-4 border-l-primary hover:-translate-y-1">
+    <Card className="group overflow-hidden shadow-card hover:shadow-hover transition-all duration-300 border-l-4 border-l-primary/50 hover:-translate-y-1">
       <CardContent className="p-6">
         <div className="flex items-start justify-between">
           <div className="space-y-2 flex-1">
