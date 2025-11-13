@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -41,6 +42,7 @@ const badgeInfo = {
 
 export default function Goals() {
   const { user, profile } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [goalData, setGoalData] = useState<GoalData | null>(null);
   const [companyGoal, setCompanyGoal] = useState<any>(null);
@@ -48,12 +50,18 @@ export default function Goals() {
   const isAdmin = profile?.role === 'admin';
 
   useEffect(() => {
+    // Redirecionar admins para página de gestão
+    if (isAdmin) {
+      navigate('/metas/gestao');
+      return;
+    }
+    
     if (user) {
       fetchGoalData();
       fetchCompanyGoal();
       fetchTeamAverage();
     }
-  }, [user]);
+  }, [user, isAdmin, navigate]);
 
   const fetchGoalData = async () => {
     try {
@@ -135,31 +143,6 @@ export default function Goals() {
   const valorMeta = metaAtiva?.valor_meta || 0;
   const valorRestante = valorMeta - valorVendido;
   const motivationalMsg = getMotivationalMessage(percentual, teamAverage);
-
-  // Redirecionar admins para página de gestão
-  if (isAdmin) {
-    return (
-      <DashboardLayout>
-        <div className="space-y-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl lg:text-3xl font-bold tracking-tight">Gestão de Metas</h1>
-              <p className="text-muted-foreground">Você é um administrador. Acesse a gestão completa de metas.</p>
-            </div>
-          </div>
-          <Card>
-            <CardContent className="py-12 text-center space-y-4">
-              <Target className="w-16 h-16 mx-auto text-primary" />
-              <p className="text-lg font-medium">Área de Gestão de Metas</p>
-              <p className="text-sm text-muted-foreground">
-                Como administrador, você tem acesso completo para criar, editar e gerenciar metas de todos os vendedores.
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      </DashboardLayout>
-    );
-  }
 
   return (
     <DashboardLayout>
