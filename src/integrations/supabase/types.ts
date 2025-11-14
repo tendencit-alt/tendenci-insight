@@ -1449,6 +1449,274 @@ export type Database = {
         }
         Relationships: []
       }
+      tendenci_badges: {
+        Row: {
+          badge_type: string
+          earned_at: string | null
+          id: string
+          percentual_atingido: number | null
+          seller_goal_id: string | null
+          vendedor_id: string
+        }
+        Insert: {
+          badge_type: string
+          earned_at?: string | null
+          id?: string
+          percentual_atingido?: number | null
+          seller_goal_id?: string | null
+          vendedor_id: string
+        }
+        Update: {
+          badge_type?: string
+          earned_at?: string | null
+          id?: string
+          percentual_atingido?: number | null
+          seller_goal_id?: string | null
+          vendedor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tendenci_badges_seller_goal_id_fkey"
+            columns: ["seller_goal_id"]
+            isOneToOne: false
+            referencedRelation: "tendenci_seller_goals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tendenci_badges_vendedor_id_fkey"
+            columns: ["vendedor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tendenci_company_goals: {
+        Row: {
+          created_at: string | null
+          criado_por: string | null
+          data_fim: string
+          data_inicio: string
+          descricao: string | null
+          id: string
+          quantidade_meta: number | null
+          status: string | null
+          tipo_meta: string | null
+          updated_at: string | null
+          valor_meta_total: number
+        }
+        Insert: {
+          created_at?: string | null
+          criado_por?: string | null
+          data_fim: string
+          data_inicio: string
+          descricao?: string | null
+          id?: string
+          quantidade_meta?: number | null
+          status?: string | null
+          tipo_meta?: string | null
+          updated_at?: string | null
+          valor_meta_total: number
+        }
+        Update: {
+          created_at?: string | null
+          criado_por?: string | null
+          data_fim?: string
+          data_inicio?: string
+          descricao?: string | null
+          id?: string
+          quantidade_meta?: number | null
+          status?: string | null
+          tipo_meta?: string | null
+          updated_at?: string | null
+          valor_meta_total?: number
+        }
+        Relationships: []
+      }
+      tendenci_goal_progress: {
+        Row: {
+          atualizado_em: string | null
+          company_goal_id: string | null
+          id: string
+          percentual: number | null
+          quantidade_alcancada: number | null
+          seller_goal_id: string | null
+          valor_vendido: number | null
+        }
+        Insert: {
+          atualizado_em?: string | null
+          company_goal_id?: string | null
+          id?: string
+          percentual?: number | null
+          quantidade_alcancada?: number | null
+          seller_goal_id?: string | null
+          valor_vendido?: number | null
+        }
+        Update: {
+          atualizado_em?: string | null
+          company_goal_id?: string | null
+          id?: string
+          percentual?: number | null
+          quantidade_alcancada?: number | null
+          seller_goal_id?: string | null
+          valor_vendido?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tendenci_goal_progress_company_goal_id_fkey"
+            columns: ["company_goal_id"]
+            isOneToOne: false
+            referencedRelation: "tendenci_company_goals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tendenci_goal_progress_seller_goal_id_fkey"
+            columns: ["seller_goal_id"]
+            isOneToOne: false
+            referencedRelation: "tendenci_seller_goals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tendenci_seller_goals: {
+        Row: {
+          created_at: string | null
+          criado_por: string | null
+          data_fim: string
+          data_inicio: string
+          descricao: string | null
+          id: string
+          quantidade_meta: number | null
+          status: string | null
+          tipo_meta: string | null
+          updated_at: string | null
+          valor_meta: number
+          vendedor_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          criado_por?: string | null
+          data_fim: string
+          data_inicio: string
+          descricao?: string | null
+          id?: string
+          quantidade_meta?: number | null
+          status?: string | null
+          tipo_meta?: string | null
+          updated_at?: string | null
+          valor_meta: number
+          vendedor_id: string
+        }
+        Update: {
+          created_at?: string | null
+          criado_por?: string | null
+          data_fim?: string
+          data_inicio?: string
+          descricao?: string | null
+          id?: string
+          quantidade_meta?: number | null
+          status?: string | null
+          tipo_meta?: string | null
+          updated_at?: string | null
+          valor_meta?: number
+          vendedor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tendenci_seller_goals_vendedor_id_fkey"
+            columns: ["vendedor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tendenci_seller_ranking: {
+        Row: {
+          atualizado_em: string | null
+          id: string
+          percentual_meta_atualizado: number | null
+          periodo_fim: string
+          periodo_inicio: string
+          posicao_atual: number | null
+          valor_total_vendido: number | null
+          vendedor_id: string
+        }
+        Insert: {
+          atualizado_em?: string | null
+          id?: string
+          percentual_meta_atualizado?: number | null
+          periodo_fim: string
+          periodo_inicio: string
+          posicao_atual?: number | null
+          valor_total_vendido?: number | null
+          vendedor_id: string
+        }
+        Update: {
+          atualizado_em?: string | null
+          id?: string
+          percentual_meta_atualizado?: number | null
+          periodo_fim?: string
+          periodo_inicio?: string
+          posicao_atual?: number | null
+          valor_total_vendido?: number | null
+          vendedor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tendenci_seller_ranking_vendedor_id_fkey"
+            columns: ["vendedor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tendenci_user_permissions: {
+        Row: {
+          acesso_arquitetos: boolean | null
+          acesso_configuracoes: boolean | null
+          acesso_crm_kanban: boolean | null
+          acesso_leads: boolean | null
+          acesso_metas: boolean | null
+          acesso_projetos: boolean | null
+          active: boolean | null
+          created_at: string | null
+          id: string
+          role: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          acesso_arquitetos?: boolean | null
+          acesso_configuracoes?: boolean | null
+          acesso_crm_kanban?: boolean | null
+          acesso_leads?: boolean | null
+          acesso_metas?: boolean | null
+          acesso_projetos?: boolean | null
+          active?: boolean | null
+          created_at?: string | null
+          id?: string
+          role: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          acesso_arquitetos?: boolean | null
+          acesso_configuracoes?: boolean | null
+          acesso_crm_kanban?: boolean | null
+          acesso_leads?: boolean | null
+          acesso_metas?: boolean | null
+          acesso_projetos?: boolean | null
+          active?: boolean | null
+          created_at?: string | null
+          id?: string
+          role?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       users: {
         Row: {
           created_at: string | null
@@ -1526,6 +1794,7 @@ export type Database = {
         }[]
       }
       architects_aggregates: { Args: never; Returns: Json }
+      calculate_seller_rankings: { Args: never; Returns: undefined }
       crm_agg: {
         Args: { p_end?: string; p_pipeline_id: string; p_start?: string }
         Returns: Json
@@ -1598,11 +1867,21 @@ export type Database = {
         Args: { email_input: string }
         Returns: string
       }
+      get_seller_goal_stats: { Args: { p_vendedor_id: string }; Returns: Json }
+      get_seller_performance_by_goal: {
+        Args: { p_seller_goal_id: string }
+        Returns: Json
+      }
       get_user_role: {
         Args: { user_id: string }
         Returns: Database["public"]["Enums"]["user_role"]
       }
+      has_module_permission: {
+        Args: { _module: string; _user_id: string }
+        Returns: boolean
+      }
       is_admin: { Args: never; Returns: boolean }
+      is_user_master: { Args: { _user_id: string }; Returns: boolean }
       leads_aggregates: { Args: never; Returns: Json }
       project_deadline_alerts: { Args: never; Returns: Json }
       project_deadline_alerts_detailed: {

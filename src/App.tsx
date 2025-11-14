@@ -14,6 +14,7 @@ import Architects from "./pages/Architects";
 import CRM from "./pages/CRM";
 import Goals from "./pages/Goals";
 import GoalsManagement from "./pages/GoalsManagement";
+import SellerPerformance from "./pages/SellerPerformance";
 import UserManagement from "./pages/UserManagement";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
@@ -39,6 +40,7 @@ const App = () => (
             <Route path="/architects" element={<ProtectedRoute><PermissionGuard module="arquitetos"><Architects /></PermissionGuard></ProtectedRoute>} />
             <Route path="/metas" element={<ProtectedRoute><PermissionGuard module="metas"><Goals /></PermissionGuard></ProtectedRoute>} />
             <Route path="/metas/gestao" element={<ProtectedRoute><PermissionGuard module="metas"><GoalsManagement /></PermissionGuard></ProtectedRoute>} />
+            <Route path="/metas/desempenho/:goalId" element={<ProtectedRoute><PermissionGuard module="metas"><SellerPerformance /></PermissionGuard></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
