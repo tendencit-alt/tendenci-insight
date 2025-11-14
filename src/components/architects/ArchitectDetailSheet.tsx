@@ -135,6 +135,12 @@ export function ArchitectDetailSheet({ open, onOpenChange, architectId }: Archit
                 <Badge variant="outline">{architect.tier}</Badge>
               </div>
               <div>
+                <p className="text-muted-foreground">Categoria</p>
+                <Badge variant={architect.categoria === 'metropolitano' ? 'default' : 'secondary'}>
+                  {architect.categoria === 'metropolitano' ? 'Metropolitano' : 'Captado'}
+                </Badge>
+              </div>
+              <div>
                 <p className="text-muted-foreground">Comissão</p>
                 <p className="font-medium">{architect.commission_percent}%</p>
               </div>
