@@ -62,7 +62,7 @@ export function CampanhasManager() {
           *,
           segmento:tendenci_prospec_arq_segments(nome),
           sequencia:tendenci_prospec_arq_sequences(nome),
-          vendedor:profiles(full_name, email)
+          vendedor:profiles!tendenci_prospec_arq_campaigns_vendedor_id_fkey(full_name, email)
         `)
         .order("created_at", { ascending: false });
 
