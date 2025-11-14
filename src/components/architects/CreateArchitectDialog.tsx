@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -18,7 +19,8 @@ export function CreateArchitectDialog({ open, onOpenChange, onSuccess }: CreateA
     name: "",
     company: "",
     phone: "",
-    birthday: ""
+    birthday: "",
+    categoria: "metropolitano"
   });
 
 
@@ -30,6 +32,11 @@ export function CreateArchitectDialog({ open, onOpenChange, onSuccess }: CreateA
       return;
     }
 
+    if (!formData.phone) {
+      toast.error("WhatsApp é obrigatório");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -38,8 +45,9 @@ export function CreateArchitectDialog({ open, onOpenChange, onSuccess }: CreateA
         .insert({
           name: formData.name,
           company: formData.company || null,
-          phone: formData.phone || null,
+          phone: formData.phone,
           birthday: formData.birthday || null,
+          categoria: formData.categoria,
           active: true
         })
         .select()
@@ -57,7 +65,8 @@ export function CreateArchitectDialog({ open, onOpenChange, onSuccess }: CreateA
         name: "",
         company: "",
         phone: "",
-        birthday: ""
+        birthday: "",
+        categoria: "metropolitano"
       });
       
     } catch (error: any) {
@@ -98,13 +107,30 @@ export function CreateArchitectDialog({ open, onOpenChange, onSuccess }: CreateA
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="phone">WhatsApp</Label>
+              <Label htmlFor="phone">WhatsApp *</Label>
               <Input
                 id="phone"
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 placeholder="(11) 99999-9999"
+                required
               />
+            </div>
+
+            <div className="space-y-2 col-span-2">
+              <Label htmlFor="categoria">Categoria *</Label>
+              <Select
+                value={formData.categoria}
+                onValueChange={(value) => setFormData({ ...formData, categoria: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a categoria" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="metropolitano">Metropolitano</SelectItem>
+                  <SelectItem value="captado">Captado</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2 col-span-2">

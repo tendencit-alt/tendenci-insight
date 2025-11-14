@@ -181,6 +181,7 @@ export type Database = {
         Row: {
           active: boolean | null
           birthday: string | null
+          categoria: string
           city: string | null
           commission_percent: number | null
           company: string | null
@@ -198,6 +199,7 @@ export type Database = {
         Insert: {
           active?: boolean | null
           birthday?: string | null
+          categoria?: string
           city?: string | null
           commission_percent?: number | null
           company?: string | null
@@ -215,6 +217,7 @@ export type Database = {
         Update: {
           active?: boolean | null
           birthday?: string | null
+          categoria?: string
           city?: string | null
           commission_percent?: number | null
           company?: string | null
