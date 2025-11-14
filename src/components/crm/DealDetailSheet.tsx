@@ -83,36 +83,39 @@ export function DealDetailSheet({
     setOpenSections(prev => ({ ...prev, [section]: !prev[section] }));
   };
 
+  // Função para buscar projeto vinculado
+  const fetchProject = async () => {
+    if (!deal?.id) return;
+    
+    console.log('Buscando projeto para deal:', deal.id);
+    const { data, error } = await supabase
+      .from("projects")
+      .select(`
+        *,
+        client:clients(name),
+        architect:architects(name)
+      `)
+      .eq("crm_deal_id", deal.id)
+      .maybeSingle();
+    
+    console.log('Resultado busca projeto:', { data, error });
+    
+    if (error) {
+      console.error('Erro ao buscar projeto:', error);
+    }
+    
+    if (data) {
+      console.log('Projeto encontrado:', data.name);
+      setProject(data);
+    } else {
+      console.log('Nenhum projeto vinculado');
+      setProject(null);
+    }
+  };
+
   // Fetch histórico de movimentações e etapas
   useEffect(() => {
     if (!deal?.id) return;
-
-    const fetchProject = async () => {
-      console.log('Buscando projeto para deal:', deal.id);
-      const { data, error } = await supabase
-        .from("projects")
-        .select(`
-          *,
-          client:clients(name),
-          architect:architects(name)
-        `)
-        .eq("crm_deal_id", deal.id)
-        .maybeSingle();
-      
-      console.log('Resultado busca projeto:', { data, error });
-      
-      if (error) {
-        console.error('Erro ao buscar projeto:', error);
-      }
-      
-      if (data) {
-        console.log('Projeto encontrado:', data.name);
-        setProject(data);
-      } else {
-        console.log('Nenhum projeto vinculado');
-        setProject(null);
-      }
-    };
 
     const fetchHistory = async () => {
       const { data, error } = await supabase
@@ -168,12 +171,14 @@ export function DealDetailSheet({
       }
     };
 
+    fetchProject();
+    fetchProject();
     fetchHistory();
     fetchStages();
     fetchPipelines();
 
-    // Configurar realtime
-    const channel = supabase
+    // Configurar realtime para histórico
+    const historyChannel = supabase
       .channel("deal-history-changes")
       .on(
         "postgres_changes",
@@ -188,9 +193,28 @@ export function DealDetailSheet({
         }
       )
       .subscribe();
+    
+    // Configurar realtime para projetos
+    const projectsChannel = supabase
+      .channel("deal-projects-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "projects",
+          filter: `crm_deal_id=eq.${deal.id}`,
+        },
+        () => {
+          console.log('Projeto atualizado via realtime');
+          fetchProject();
+        }
+      )
+      .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(historyChannel);
+      supabase.removeChannel(projectsChannel);
     };
   }, [deal?.id, deal?.pipeline_id]);
 
@@ -1159,6 +1183,9 @@ export function DealDetailSheet({
                 title: "Sucesso",
                 description: "Projeto criado e vinculado ao negócio!",
               });
+              
+              // Recarregar projeto para garantir dados atualizados
+              fetchProject();
             }
           }
           
@@ -1243,6 +1270,9 @@ export function DealDetailSheet({
                     title: "Sucesso",
                     description: "Projeto vinculado ao negócio!",
                   });
+                  
+                  // Recarregar projeto para garantir dados atualizados
+                  fetchProject();
                 }
                 
                 setSelectedProjectToLink("");
@@ -1301,6 +1331,9 @@ export function DealDetailSheet({
                   title: "Sucesso",
                   description: "Projeto desvinculado do negócio!",
                 });
+                
+                // Recarregar para garantir estado correto
+                fetchProject();
                 
                 setIsUnlinkProjectOpen(false);
               }}
