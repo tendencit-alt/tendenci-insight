@@ -48,9 +48,39 @@ export function CreateCompanyGoalDialog({ open, onOpenChange, onSuccess }: Creat
         insertData.quantidade_meta = parseInt(formData.quantidade_meta);
       }
 
-      const { error } = await supabase.from("tendenci_company_goals" as any).insert(insertData);
+      // Inserir a meta
+      const { error: insertError } = await supabase
+        .from("tendenci_company_goals" as any)
+        .insert(insertData);
 
-      if (error) throw error;
+      if (insertError) throw insertError;
+
+      // Buscar a meta recém-criada para pegar o ID
+      const { data: newGoal, error: selectError } = await supabase
+        .from("tendenci_company_goals" as any)
+        .select("id")
+        .eq("criado_por", user?.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single();
+
+      if (selectError) throw selectError;
+
+      // Criar registro de progresso inicial
+      if (newGoal?.id) {
+        const { error: progressError } = await supabase
+          .from("tendenci_goal_progress" as any)
+          .insert({
+            company_goal_id: newGoal.id,
+            valor_vendido: 0,
+            percentual: 0,
+            quantidade_alcancada: 0
+          });
+
+        if (progressError) {
+          console.error("Erro ao criar progresso inicial:", progressError);
+        }
+      }
 
       toast.success("Meta consolidada criada com sucesso!");
       onSuccess();
