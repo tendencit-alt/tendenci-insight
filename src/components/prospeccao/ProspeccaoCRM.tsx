@@ -18,33 +18,32 @@ export function ProspeccaoCRM({ onManageStages }: ProspeccaoCRMProps) {
 
   return (
     <div className="space-y-6">
-      {/* Header com título e toggle de visualização */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">CRM de Arquitetos</h2>
-          <p className="text-muted-foreground">Gerencie o funil de prospecção dos arquitetos</p>
-        </div>
-        
-        <div className="flex items-center gap-2 p-1 bg-muted rounded-lg">
-          <Button
-            variant={viewMode === "kanban" ? "default" : "ghost"}
-            size="sm"
-            onClick={() => setViewMode("kanban")}
-            className="gap-2"
-          >
-            <LayoutGrid className="h-4 w-4" />
-            Kanban
-          </Button>
-          <Button
-            variant={viewMode === "table" ? "default" : "ghost"}
-            size="sm"
-            onClick={() => setViewMode("table")}
-            className="gap-2"
-          >
-            <TableIcon className="h-4 w-4" />
-            Tabela
-          </Button>
-        </div>
+      {/* Header */}
+      <div>
+        <h2 className="text-2xl font-bold">CRM de Arquitetos</h2>
+        <p className="text-muted-foreground">Gerencie o funil de prospecção dos arquitetos</p>
+      </div>
+
+      {/* Toggle de visualização */}
+      <div className="flex items-center gap-2 p-1 bg-muted rounded-lg w-fit">
+        <Button
+          variant={viewMode === "kanban" ? "default" : "ghost"}
+          size="sm"
+          onClick={() => setViewMode("kanban")}
+          className="gap-2"
+        >
+          <LayoutGrid className="h-4 w-4" />
+          Kanban
+        </Button>
+        <Button
+          variant={viewMode === "table" ? "default" : "ghost"}
+          size="sm"
+          onClick={() => setViewMode("table")}
+          className="gap-2"
+        >
+          <TableIcon className="h-4 w-4" />
+          Tabela
+        </Button>
       </div>
 
       {/* Gerenciar Etapas */}
