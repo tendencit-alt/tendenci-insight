@@ -18,22 +18,12 @@ export function ProspeccaoCRM({ onManageStages }: ProspeccaoCRMProps) {
 
   return (
     <div className="space-y-6">
-      {/* Header com título */}
-      <div>
-        <h2 className="text-2xl font-bold">CRM de Arquitetos</h2>
-        <p className="text-muted-foreground">Gerencie o funil de prospecção dos arquitetos</p>
-      </div>
-
-      {/* Gerenciar Etapas + Toggle de visualização */}
+      {/* Header com título e toggle de visualização */}
       <div className="flex items-center justify-between">
-        <Button 
-          variant="outline" 
-          onClick={onManageStages}
-          className="gap-2"
-        >
-          <List className="h-4 w-4" />
-          Gerenciar Etapas
-        </Button>
+        <div>
+          <h2 className="text-2xl font-bold">CRM de Arquitetos</h2>
+          <p className="text-muted-foreground">Gerencie o funil de prospecção dos arquitetos</p>
+        </div>
         
         <div className="flex items-center gap-2 p-1 bg-muted rounded-lg">
           <Button
@@ -55,6 +45,18 @@ export function ProspeccaoCRM({ onManageStages }: ProspeccaoCRMProps) {
             Tabela
           </Button>
         </div>
+      </div>
+
+      {/* Gerenciar Etapas */}
+      <div>
+        <Button 
+          variant="outline" 
+          onClick={onManageStages}
+          className="gap-2"
+        >
+          <List className="h-4 w-4" />
+          Gerenciar Etapas
+        </Button>
       </div>
 
       {/* Filtros */}
