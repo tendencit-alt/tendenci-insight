@@ -36,9 +36,10 @@ interface ArchitectsTableProps {
   refreshKey: number;
   onEdit: (architect: Architect) => void;
   onView: (architectId: string) => void;
+  onDelete?: () => void;
 }
 
-export function ArchitectsTable({ refreshKey, onEdit, onView }: ArchitectsTableProps) {
+export function ArchitectsTable({ refreshKey, onEdit, onView, onDelete }: ArchitectsTableProps) {
   const [architects, setArchitects] = useState<Architect[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -51,10 +52,10 @@ export function ArchitectsTable({ refreshKey, onEdit, onView }: ArchitectsTableP
   const fetchArchitects = async () => {
     setLoading(true);
     
-    // Buscar arquitetos com data de criação
+    // Buscar arquitetos com todos os campos necessários
     let query = supabase
       .from('architects')
-      .select('id, name, company, phone, categoria, created_at');
+      .select('*');
     
     // Aplicar filtro de categoria se não for "todos"
     if (categoriaFilter !== "todos") {
@@ -109,6 +110,7 @@ export function ArchitectsTable({ refreshKey, onEdit, onView }: ArchitectsTableP
     } else {
       toast.success('Arquiteto excluído com sucesso');
       fetchArchitects();
+      onDelete?.();
     }
     setDeleteId(null);
   };
