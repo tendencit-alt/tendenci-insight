@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { Plus, Edit, Trash2, Megaphone, Play, Pause } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -38,6 +39,12 @@ export function CampanhasManager() {
     status: "rascunho",
     data_inicio: "",
     data_fim: "",
+    webhook_n8n: "",
+    agendar_automatico: false,
+    dias_semana: [] as number[],
+    horarios: { inicio: "09:00", fim: "18:00" },
+    intervalo_minimo_minutos: 30,
+    criterio_interesse: { palavras_chave: ["interessado", "sim", "quero"], resposta_obrigatoria: true },
   });
   const queryClient = useQueryClient();
 
@@ -116,6 +123,12 @@ export function CampanhasManager() {
         status: formData.status,
         data_inicio: formData.data_inicio || null,
         data_fim: formData.data_fim || null,
+        webhook_n8n: formData.webhook_n8n || null,
+        agendar_automatico: formData.agendar_automatico,
+        dias_semana: formData.dias_semana.length > 0 ? formData.dias_semana : null,
+        horarios: formData.agendar_automatico ? formData.horarios : null,
+        intervalo_minimo_minutos: formData.agendar_automatico ? formData.intervalo_minimo_minutos : null,
+        criterio_interesse: formData.criterio_interesse,
       };
 
       if (editingCampaign) {
@@ -188,6 +201,12 @@ export function CampanhasManager() {
       status: "rascunho",
       data_inicio: "",
       data_fim: "",
+      webhook_n8n: "",
+      agendar_automatico: false,
+      dias_semana: [],
+      horarios: { inicio: "09:00", fim: "18:00" },
+      intervalo_minimo_minutos: 30,
+      criterio_interesse: { palavras_chave: ["interessado", "sim", "quero"], resposta_obrigatoria: true },
     });
     setEditingCampaign(null);
   };
@@ -203,6 +222,12 @@ export function CampanhasManager() {
       status: campaign.status,
       data_inicio: campaign.data_inicio ? campaign.data_inicio.split("T")[0] : "",
       data_fim: campaign.data_fim ? campaign.data_fim.split("T")[0] : "",
+      webhook_n8n: campaign.webhook_n8n || "",
+      agendar_automatico: campaign.agendar_automatico || false,
+      dias_semana: campaign.dias_semana || [],
+      horarios: campaign.horarios || { inicio: "09:00", fim: "18:00" },
+      intervalo_minimo_minutos: campaign.intervalo_minimo_minutos || 30,
+      criterio_interesse: campaign.criterio_interesse || { palavras_chave: ["interessado", "sim", "quero"], resposta_obrigatoria: true },
     });
     setDialogOpen(true);
   };
@@ -344,6 +369,106 @@ export function CampanhasManager() {
                     onChange={(e) => setFormData({ ...formData, data_fim: e.target.value })}
                   />
                 </div>
+              </div>
+
+              {/* Webhook n8n */}
+              <div className="space-y-2">
+                <Label htmlFor="webhook_n8n">Webhook n8n (Opcional)</Label>
+                <Input
+                  id="webhook_n8n"
+                  type="url"
+                  value={formData.webhook_n8n}
+                  onChange={(e) => setFormData({ ...formData, webhook_n8n: e.target.value })}
+                  placeholder="https://seu-n8n.com/webhook/..."
+                />
+                <p className="text-xs text-muted-foreground">
+                  URL do webhook n8n para envio automático de mensagens
+                </p>
+              </div>
+
+              {/* Agendamento Automático */}
+              <div className="border-t pt-4 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label>Agendamento Automático</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Criar agendamentos automaticamente quando houver interesse
+                    </p>
+                  </div>
+                  <Switch
+                    checked={formData.agendar_automatico}
+                    onCheckedChange={(checked) => setFormData({ ...formData, agendar_automatico: checked })}
+                  />
+                </div>
+
+                {formData.agendar_automatico && (
+                  <>
+                    <div className="space-y-2">
+                      <Label>Dias da Semana</Label>
+                      <div className="flex flex-wrap gap-2">
+                        {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map((dia, index) => (
+                          <Button
+                            key={index}
+                            type="button"
+                            variant={formData.dias_semana.includes(index) ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => {
+                              const newDias = formData.dias_semana.includes(index)
+                                ? formData.dias_semana.filter(d => d !== index)
+                                : [...formData.dias_semana, index].sort();
+                              setFormData({ ...formData, dias_semana: newDias });
+                            }}
+                          >
+                            {dia}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="horario_inicio">Horário Início</Label>
+                        <Input
+                          id="horario_inicio"
+                          type="time"
+                          value={formData.horarios.inicio}
+                          onChange={(e) => setFormData({ 
+                            ...formData, 
+                            horarios: { ...formData.horarios, inicio: e.target.value }
+                          })}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="horario_fim">Horário Fim</Label>
+                        <Input
+                          id="horario_fim"
+                          type="time"
+                          value={formData.horarios.fim}
+                          onChange={(e) => setFormData({ 
+                            ...formData, 
+                            horarios: { ...formData.horarios, fim: e.target.value }
+                          })}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="intervalo">Intervalo Mínimo (minutos)</Label>
+                      <Input
+                        id="intervalo"
+                        type="number"
+                        min="15"
+                        step="15"
+                        value={formData.intervalo_minimo_minutos}
+                        onChange={(e) => setFormData({ ...formData, intervalo_minimo_minutos: parseInt(e.target.value) })}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Espaçamento mínimo entre agendamentos
+                      </p>
+                    </div>
+                  </>
+                )}
               </div>
 
               <div className="flex gap-2 justify-end pt-4">
