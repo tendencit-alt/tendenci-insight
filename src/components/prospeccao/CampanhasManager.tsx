@@ -10,9 +10,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Plus, Edit, Trash2, Megaphone, Play, Pause } from "lucide-react";
+import { Plus, Edit, Trash2, Megaphone, Play, Pause, Rocket } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
+import { CampanhaExecutor } from "./CampanhaExecutor";
 
 interface Campaign {
   id: string;
@@ -29,6 +30,8 @@ interface Campaign {
 
 export function CampanhasManager() {
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [executorOpen, setExecutorOpen] = useState(false);
+  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
   const [formData, setFormData] = useState({
     nome: "",
@@ -559,6 +562,16 @@ export function CampanhasManager() {
                           <Play className="h-4 w-4" />
                         </Button>
                       )}
+                      <Button 
+                        variant="default" 
+                        size="sm" 
+                        onClick={() => {
+                          setSelectedCampaign(campaign);
+                          setExecutorOpen(true);
+                        }}
+                      >
+                        <Rocket className="h-4 w-4" />
+                      </Button>
                       <Button variant="ghost" size="sm" onClick={() => handleEdit(campaign)}>
                         <Edit className="h-4 w-4" />
                       </Button>
@@ -613,6 +626,25 @@ export function CampanhasManager() {
           )}
         </div>
       )}
+
+      {/* Dialog Executor */}
+      <Dialog open={executorOpen} onOpenChange={setExecutorOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Executar Campanha</DialogTitle>
+          </DialogHeader>
+          {selectedCampaign && (
+            <CampanhaExecutor
+              campaignId={selectedCampaign.id}
+              campaignName={selectedCampaign.nome}
+              onComplete={() => {
+                setExecutorOpen(false);
+                setSelectedCampaign(null);
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
