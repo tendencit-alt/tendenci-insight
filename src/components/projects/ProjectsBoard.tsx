@@ -285,6 +285,7 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
           project={selectedProject}
           open={detailOpen}
           onOpenChange={setDetailOpen}
+          onSuccess={fetchProjects}
         />
       )}
     </>

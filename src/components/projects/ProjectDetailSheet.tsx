@@ -18,21 +18,25 @@ interface ProjectDetailSheetProps {
   project: any;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onSuccess?: () => void;
 }
 
-export function ProjectDetailSheet({ project, open, onOpenChange }: ProjectDetailSheetProps) {
+export function ProjectDetailSheet({ project, open, onOpenChange, onSuccess }: ProjectDetailSheetProps) {
   const [files, setFiles] = useState<any[]>([]);
   const [quotes, setQuotes] = useState<any[]>([]);
   const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [currentStage, setCurrentStage] = useState(project?.stage || "recebido");
+  const [originalStage, setOriginalStage] = useState(project?.stage || "recebido");
+  const [savingStage, setSavingStage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { notifyFileUploaded, notifyStageChanged } = useWebhookSync();
 
   useEffect(() => {
     if (open && project) {
       setCurrentStage(project.stage || "recebido");
+      setOriginalStage(project.stage || "recebido");
       fetchProjectData();
     }
   }, [open, project]);
@@ -82,30 +86,39 @@ export function ProjectDetailSheet({ project, open, onOpenChange }: ProjectDetai
     }
   };
 
-  const handleStageChange = async (newStage: string) => {
-    const oldStage = currentStage;
+  const handleSaveStage = async () => {
+    setSavingStage(true);
     
     try {
       const { error } = await supabase
         .from('projects')
-        .update({ stage: newStage })
+        .update({ stage: currentStage })
         .eq('id', project.id);
 
       if (error) throw error;
 
-      setCurrentStage(newStage);
+      setOriginalStage(currentStage);
       
       // Notificar webhook
-      notifyStageChanged(project, oldStage, newStage);
+      notifyStageChanged(project, originalStage, currentStage);
       
       toast.success("Estágio atualizado com sucesso!");
       
       // Recarregar histórico para mostrar a mudança
       fetchHistory();
+      
+      // Chamar callback para atualizar a lista
+      if (onSuccess) {
+        onSuccess();
+      }
     } catch (error: any) {
       toast.error(error.message || "Erro ao atualizar estágio");
+    } finally {
+      setSavingStage(false);
     }
   };
+
+  const stageChanged = currentStage !== originalStage;
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
@@ -225,18 +238,29 @@ export function ProjectDetailSheet({ project, open, onOpenChange }: ProjectDetai
               </div>
               <div className="space-y-2">
                 <Label className="text-sm text-muted-foreground">Estágio</Label>
-                <Select value={currentStage} onValueChange={handleStageChange}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="recebido">Recebido</SelectItem>
-                    <SelectItem value="em_desenvolvimento">Em Desenvolvimento</SelectItem>
-                    <SelectItem value="aguardando_aprovacao">Aguardando Aprovação</SelectItem>
-                    <SelectItem value="aprovado">Aprovado</SelectItem>
-                    <SelectItem value="perdido">Perdido</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="flex gap-2">
+                  <Select value={currentStage} onValueChange={setCurrentStage}>
+                    <SelectTrigger className="flex-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="recebido">Recebido</SelectItem>
+                      <SelectItem value="em_desenvolvimento">Em Desenvolvimento</SelectItem>
+                      <SelectItem value="aguardando_aprovacao">Aguardando Aprovação</SelectItem>
+                      <SelectItem value="aprovado">Aprovado</SelectItem>
+                      <SelectItem value="perdido">Perdido</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {stageChanged && (
+                    <Button 
+                      onClick={handleSaveStage} 
+                      disabled={savingStage}
+                      size="sm"
+                    >
+                      {savingStage ? "Salvando..." : "Salvar"}
+                    </Button>
+                  )}
+                </div>
               </div>
               <div>
                 <span className="text-sm text-muted-foreground">Valor</span>
