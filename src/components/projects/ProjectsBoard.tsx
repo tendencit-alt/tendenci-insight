@@ -50,8 +50,9 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
 
   const getStageColor = (stage: string) => {
     const colors: Record<string, string> = {
-      captado: "bg-blue-500",
-      orçamento: "bg-yellow-500",
+      recebido: "bg-blue-500",
+      em_desenvolvimento: "bg-yellow-500",
+      aguardando_aprovacao: "bg-orange-500",
       aprovado: "bg-green-500",
       perdido: "bg-red-500"
     };
@@ -59,8 +60,9 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
   };
 
   const groupedProjects = {
-    captado: projects.filter(p => p.stage === "captado"),
-    orçamento: projects.filter(p => p.stage === "orçamento"),
+    recebido: projects.filter(p => p.stage === "recebido"),
+    em_desenvolvimento: projects.filter(p => p.stage === "em_desenvolvimento"),
+    aguardando_aprovacao: projects.filter(p => p.stage === "aguardando_aprovacao"),
     aprovado: projects.filter(p => p.stage === "aprovado"),
     perdido: projects.filter(p => p.stage === "perdido")
   };
