@@ -15,26 +15,6 @@ import { format } from "date-fns";
 import { useState } from "react";
 import { ArchitectProspeccaoSheet } from "./ArchitectProspeccaoSheet";
 
-const STATUS_LABELS: Record<string, string> = {
-  novo_arquiteto: "Novo Arquiteto",
-  contato_iniciado: "Contato Iniciado",
-  em_conversa: "Em Conversa",
-  interessado: "Interessado",
-  reuniao_agendada: "Reunião Agendada",
-  parceiro_ativo: "Parceiro Ativo",
-  sem_interesse: "Sem Interesse",
-};
-
-const STATUS_COLORS: Record<string, string> = {
-  novo_arquiteto: "bg-gray-500",
-  contato_iniciado: "bg-blue-500",
-  em_conversa: "bg-cyan-500",
-  interessado: "bg-orange-500",
-  reuniao_agendada: "bg-purple-500",
-  parceiro_ativo: "bg-green-500",
-  sem_interesse: "bg-red-500",
-};
-
 interface ProspeccaoTableProps {
   filters?: any;
   showNaoContactados?: boolean;
@@ -43,6 +23,27 @@ interface ProspeccaoTableProps {
 export function ProspeccaoTable({ filters = {}, showNaoContactados = false }: ProspeccaoTableProps) {
   const [selectedArchitectId, setSelectedArchitectId] = useState<string | null>(null);
   
+  // Buscar stages dinâmicos
+  const { data: stages } = useQuery({
+    queryKey: ["prospec-stages"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("tendenci_prospec_arq_stages")
+        .select("*")
+        .eq("ativa", true)
+        .order("position");
+
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  // Criar mapeamento de stages
+  const stageMap = stages?.reduce((acc, stage) => {
+    acc[stage.slug] = { nome: stage.nome, cor: stage.cor };
+    return acc;
+  }, {} as Record<string, { nome: string; cor: string }>) || {};
+  
   const { data: architects, isLoading } = useQuery({
     queryKey: ["prospeccao-architects-table", filters, showNaoContactados],
     queryFn: async () => {
@@ -50,13 +51,14 @@ export function ProspeccaoTable({ filters = {}, showNaoContactados = false }: Pr
         .from("architects")
         .select(`
           *,
-          vendedor:profiles!architects_vendedor_responsavel_fkey(full_name, email)
+          vendedor:profiles!architects_vendedor_responsavel_fkey(full_name, email),
+          projects:projects(id)
         `)
         .eq("active", true);
 
       // Aplicar filtro de não contactados
       if (showNaoContactados) {
-        query = query.or("data_primeiro_contato.is.null,status_funil.eq.novo_arquiteto");
+        query = query.is("data_primeiro_contato", null);
       }
 
       // Aplicar filtros
@@ -117,13 +119,11 @@ export function ProspeccaoTable({ filters = {}, showNaoContactados = false }: Pr
                   {architect.vendedor?.full_name || architect.vendedor?.email || "-"}
                 </TableCell>
                 <TableCell>
-                  <Badge 
-                    className={`${STATUS_COLORS[architect.status_funil || "novo_arquiteto"]} text-white`}
-                  >
-                    {STATUS_LABELS[architect.status_funil || "novo_arquiteto"]}
+                  <Badge className={stageMap[architect.status_funil || "novo_arquiteto"]?.cor || "bg-gray-500"}>
+                    {stageMap[architect.status_funil || "novo_arquiteto"]?.nome || "Novo Arquiteto"}
                   </Badge>
                 </TableCell>
-                <TableCell>0</TableCell>
+                <TableCell className="text-center">{architect.projects?.length || 0}</TableCell>
                 <TableCell className="text-sm text-muted-foreground">
                   {architect.data_ultimo_contato 
                     ? format(new Date(architect.data_ultimo_contato), "dd/MM/yyyy")
