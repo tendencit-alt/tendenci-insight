@@ -27,6 +27,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Plus, Calendar as CalendarIcon } from "lucide-react";
 import { CreateClientDialog } from "./CreateClientDialog";
 import { CreateArchitectDialog } from "../architects/CreateArchitectDialog";
+import { CreateProjectDialog } from "../projects/CreateProjectDialog";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
@@ -50,14 +51,17 @@ export function CreateDealDialog({
   const [architects, setArchitects] = useState<any[]>([]);
   const [sources, setSources] = useState<any[]>([]);
   const [owners, setOwners] = useState<any[]>([]);
+  const [projects, setProjects] = useState<any[]>([]);
   const [isClientDialogOpen, setIsClientDialogOpen] = useState(false);
   const [isArchitectDialogOpen, setIsArchitectDialogOpen] = useState(false);
+  const [isProjectDialogOpen, setIsProjectDialogOpen] = useState(false);
   const [scheduledCall, setScheduledCall] = useState<Date>();
 
   const [formData, setFormData] = useState({
     stage_id: "",
     lead_id: "",
     architect_id: "",
+    project_id: "",
     value: "",
     note: "",
     temperature: "frio",
@@ -109,11 +113,20 @@ export function CreateDealDialog({
       .select("id, full_name, email")
       .order("full_name");
 
+    // Fetch projects
+    const { data: projectsData } = await supabase
+      .from("projects")
+      .select("id, name, client:clients(name)")
+      .is("deal_id", null)
+      .order("created_at", { ascending: false })
+      .limit(50);
+
     setStages(stagesData || []);
     setLeads(leadsData || []);
     setArchitects(architectsData || []);
     setSources(sourcesData || []);
     setOwners(ownersData || []);
+    setProjects(projectsData || []);
 
     if (stagesData && stagesData.length > 0) {
       setFormData((prev) => ({ ...prev, stage_id: stagesData[0].id }));
@@ -154,6 +167,27 @@ export function CreateDealDialog({
     });
   };
 
+  const handleProjectCreated = async () => {
+    await fetchOptions();
+    // Buscar o último projeto criado sem deal_id vinculado
+    const { data } = await supabase
+      .from("projects")
+      .select("id")
+      .is("deal_id", null)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single();
+    
+    if (data) {
+      setFormData((prev) => ({ ...prev, project_id: data.id }));
+    }
+    
+    toast({
+      title: "Sucesso",
+      description: "Projeto criado e vinculado!",
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -174,7 +208,7 @@ export function CreateDealDialog({
       const autoTitle = `${formData.categoria} - ${formData.tipo_produto}`;
 
       // Insert deal
-      const { error } = await supabase.from("crm_deals").insert({
+      const { data: dealData, error } = await supabase.from("crm_deals").insert({
         pipeline_id: pipelineId,
         title: autoTitle,
         stage_id: formData.stage_id,
@@ -189,11 +223,10 @@ export function CreateDealDialog({
         conversation_history: formData.conversation_history || null,
         scheduled_call: scheduledCall?.toISOString() || null,
         status: "aberto",
-      });
-
-      setLoading(false);
+      }).select().single();
 
       if (error) {
+        setLoading(false);
         toast({
           title: "Erro ao criar negócio",
           description: error.message,
@@ -201,6 +234,16 @@ export function CreateDealDialog({
         });
         return;
       }
+
+      // Se um projeto foi selecionado, vincular ao deal
+      if (formData.project_id && dealData) {
+        await supabase
+          .from("projects")
+          .update({ deal_id: dealData.id })
+          .eq("id", formData.project_id);
+      }
+
+      setLoading(false);
 
       toast({
         title: "Sucesso",
@@ -211,6 +254,7 @@ export function CreateDealDialog({
         stage_id: "",
         lead_id: "",
         architect_id: "",
+        project_id: "",
         value: "",
         note: "",
         temperature: "frio",
@@ -355,6 +399,44 @@ export function CreateDealDialog({
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+          </div>
+
+          {/* Seção: Projeto */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase">Projeto (Opcional)</h3>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="project">Projeto Existente</Label>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsProjectDialogOpen(true)}
+                  className="h-7 text-xs"
+                >
+                  <Plus className="mr-1 h-3 w-3" />
+                  Criar Projeto
+                </Button>
+              </div>
+              <Select
+                value={formData.project_id}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, project_id: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um projeto" />
+                </SelectTrigger>
+                <SelectContent>
+                  {projects.map((project) => (
+                    <SelectItem key={project.id} value={project.id}>
+                      {project.name}
+                      {project.client?.name && ` - ${project.client.name}`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
@@ -551,6 +633,15 @@ export function CreateDealDialog({
         open={isArchitectDialogOpen}
         onOpenChange={setIsArchitectDialogOpen}
         onSuccess={handleArchitectCreated}
+      />
+
+      <CreateProjectDialog
+        open={isProjectDialogOpen}
+        onOpenChange={setIsProjectDialogOpen}
+        onSuccess={() => {
+          setIsProjectDialogOpen(false);
+          handleProjectCreated();
+        }}
       />
     </Dialog>
   );
