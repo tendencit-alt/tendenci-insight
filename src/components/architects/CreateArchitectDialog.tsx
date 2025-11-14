@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -20,7 +21,10 @@ export function CreateArchitectDialog({ open, onOpenChange, onSuccess }: CreateA
     company: "",
     phone: "",
     birthday: "",
-    categoria: "metropolitano"
+    categoria: "metropolitano",
+    ja_contactado: false,
+    data_primeiro_contato: "",
+    data_ultimo_contato: ""
   });
 
 
@@ -48,7 +52,14 @@ export function CreateArchitectDialog({ open, onOpenChange, onSuccess }: CreateA
           phone: formData.phone,
           birthday: formData.birthday || null,
           categoria: formData.categoria,
-          active: true
+          active: true,
+          data_primeiro_contato: formData.ja_contactado && formData.data_primeiro_contato 
+            ? formData.data_primeiro_contato 
+            : null,
+          data_ultimo_contato: formData.ja_contactado && formData.data_ultimo_contato 
+            ? formData.data_ultimo_contato 
+            : null,
+          status_funil: formData.ja_contactado ? "contato_iniciado" : "novo_arquiteto"
         })
         .select()
         .single();
@@ -66,7 +77,10 @@ export function CreateArchitectDialog({ open, onOpenChange, onSuccess }: CreateA
         company: "",
         phone: "",
         birthday: "",
-        categoria: "metropolitano"
+        categoria: "metropolitano",
+        ja_contactado: false,
+        data_primeiro_contato: "",
+        data_ultimo_contato: ""
       });
       
     } catch (error: any) {
@@ -142,6 +156,50 @@ export function CreateArchitectDialog({ open, onOpenChange, onSuccess }: CreateA
                 onChange={(e) => setFormData({ ...formData, birthday: e.target.value })}
               />
             </div>
+          </div>
+
+          {/* Seção de Contato */}
+          <div className="space-y-4 p-4 bg-muted/50 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="ja_contactado" className="text-base">Já foi contactado?</Label>
+                <p className="text-sm text-muted-foreground">Marque se este arquiteto já teve contato com a empresa</p>
+              </div>
+              <Switch
+                id="ja_contactado"
+                checked={formData.ja_contactado}
+                onCheckedChange={(checked) => setFormData({ 
+                  ...formData, 
+                  ja_contactado: checked,
+                  data_primeiro_contato: checked ? formData.data_primeiro_contato : "",
+                  data_ultimo_contato: checked ? formData.data_ultimo_contato : ""
+                })}
+              />
+            </div>
+
+            {formData.ja_contactado && (
+              <div className="grid grid-cols-2 gap-4 pt-2">
+                <div className="space-y-2">
+                  <Label htmlFor="data_primeiro_contato">Data do Primeiro Contato</Label>
+                  <Input
+                    id="data_primeiro_contato"
+                    type="date"
+                    value={formData.data_primeiro_contato}
+                    onChange={(e) => setFormData({ ...formData, data_primeiro_contato: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="data_ultimo_contato">Data do Último Contato (Opcional)</Label>
+                  <Input
+                    id="data_ultimo_contato"
+                    type="date"
+                    value={formData.data_ultimo_contato}
+                    onChange={(e) => setFormData({ ...formData, data_ultimo_contato: e.target.value })}
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="flex gap-3 pt-4">

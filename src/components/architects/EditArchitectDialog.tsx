@@ -34,7 +34,9 @@ export function EditArchitectDialog({ open, onOpenChange, onSuccess, architect }
     birthday: "",
     active: true,
     notes: "",
-    categoria: "metropolitano"
+    categoria: "metropolitano",
+    data_primeiro_contato: "",
+    data_ultimo_contato: ""
   });
 
   useEffect(() => {
@@ -51,7 +53,9 @@ export function EditArchitectDialog({ open, onOpenChange, onSuccess, architect }
         birthday: architect.birthday || "",
         active: architect.active ?? true,
         notes: architect.notes || "",
-        categoria: architect.categoria || "metropolitano"
+        categoria: architect.categoria || "metropolitano",
+        data_primeiro_contato: architect.data_primeiro_contato || "",
+        data_ultimo_contato: architect.data_ultimo_contato || ""
       });
       fetchProjects();
     }
@@ -114,7 +118,9 @@ export function EditArchitectDialog({ open, onOpenChange, onSuccess, architect }
           birthday: formData.birthday || null,
           active: formData.active,
           notes: formData.notes || null,
-          categoria: formData.categoria
+          categoria: formData.categoria,
+          data_primeiro_contato: formData.data_primeiro_contato || null,
+          data_ultimo_contato: formData.data_ultimo_contato || null
         })
         .eq('id', architect.id);
 
@@ -299,6 +305,36 @@ export function EditArchitectDialog({ open, onOpenChange, onSuccess, architect }
                 placeholder="Anotações sobre o arquiteto..."
                 rows={3}
               />
+            </div>
+
+            {/* Seção de Contato */}
+            <div className="space-y-4 p-4 bg-muted/50 rounded-lg col-span-2">
+              <div className="space-y-0.5">
+                <Label className="text-base">Gestão de Contato</Label>
+                <p className="text-sm text-muted-foreground">Controle de interações e histórico de contato</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 pt-2">
+                <div className="space-y-2">
+                  <Label htmlFor="data_primeiro_contato">Data do Primeiro Contato</Label>
+                  <Input
+                    id="data_primeiro_contato"
+                    type="date"
+                    value={formData.data_primeiro_contato}
+                    onChange={(e) => setFormData({ ...formData, data_primeiro_contato: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="data_ultimo_contato">Data do Último Contato</Label>
+                  <Input
+                    id="data_ultimo_contato"
+                    type="date"
+                    value={formData.data_ultimo_contato}
+                    onChange={(e) => setFormData({ ...formData, data_ultimo_contato: e.target.value })}
+                  />
+                </div>
+              </div>
             </div>
 
             <div className="space-y-2 col-span-2">

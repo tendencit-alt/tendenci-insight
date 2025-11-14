@@ -30,6 +30,8 @@ interface Architect {
   last_project_date: string | null;
   created_at: string;
   days_without_project: number;
+  data_primeiro_contato: string | null;
+  data_ultimo_contato: string | null;
 }
 
 interface ArchitectsTableProps {
@@ -169,7 +171,8 @@ export function ArchitectsTable({ refreshKey, onEdit, onView, onDelete }: Archit
                 <TableHead>Categoria</TableHead>
                 <TableHead>WhatsApp</TableHead>
                 <TableHead className="text-center">Projetos Enviados</TableHead>
-                <TableHead>Data do Último Projeto</TableHead>
+                <TableHead>Último Projeto</TableHead>
+                <TableHead>Último Contato</TableHead>
                 <TableHead className="text-center">Dias Sem Projeto</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
@@ -211,6 +214,22 @@ export function ArchitectsTable({ refreshKey, onEdit, onView, onDelete }: Archit
                       </span>
                     ) : (
                       <span className="text-muted-foreground text-sm">Nenhum projeto</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {arch.data_ultimo_contato ? (
+                      <div className="flex flex-col gap-1">
+                        <span className="text-sm">
+                          {format(new Date(arch.data_ultimo_contato), "dd/MM/yyyy", { locale: ptBR })}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          há {Math.floor((new Date().getTime() - new Date(arch.data_ultimo_contato).getTime()) / (1000 * 60 * 60 * 24))} dias
+                        </span>
+                      </div>
+                    ) : (
+                      <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20">
+                        Nunca contactado
+                      </Badge>
                     )}
                   </TableCell>
                   <TableCell className="text-center">
