@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -6,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Trash2, CheckCircle, XCircle, Pencil } from "lucide-react";
+import { Trash2, CheckCircle, XCircle, Pencil, BarChart3 } from "lucide-react";
 import { EditSellerGoalDialog } from "./EditSellerGoalDialog";
 import { EditCompanyGoalDialog } from "./EditCompanyGoalDialog";
 import { toast } from "sonner";
@@ -29,6 +30,7 @@ interface GoalsTableProps {
 }
 
 export function GoalsTable({ type, refreshTrigger, onRefresh }: GoalsTableProps) {
+  const navigate = useNavigate();
   const { isMaster } = usePermissions();
   const [loading, setLoading] = useState(true);
   const [goals, setGoals] = useState<any[]>([]);
@@ -171,9 +173,21 @@ export function GoalsTable({ type, refreshTrigger, onRefresh }: GoalsTableProps)
                   <TableRow key={goal.id}>
                     {type === "seller" && (
                       <TableCell>
-                        <div>
-                          <p className="font-medium">{goal.profiles?.full_name}</p>
-                          <p className="text-xs text-muted-foreground">{goal.profiles?.email}</p>
+                        <div className="flex items-center justify-between gap-2">
+                          <div>
+                            <p className="font-medium">{goal.profiles?.full_name}</p>
+                            <p className="text-xs text-muted-foreground">{goal.profiles?.email}</p>
+                          </div>
+                          {isMaster && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => navigate(`/metas/desempenho/${goal.id}`)}
+                              title="Ver dashboard executivo"
+                            >
+                              <BarChart3 className="w-4 h-4" />
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     )}
