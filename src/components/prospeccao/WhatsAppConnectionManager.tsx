@@ -31,7 +31,7 @@ export function WhatsAppConnectionManager() {
   const queryClient = useQueryClient();
 
   // Buscar conexões
-  const { data: connections, isLoading } = useQuery({
+  const { data: connections, isLoading, refetch } = useQuery({
     queryKey: ["whatsapp-connections"],
     queryFn: async () => {
       // Primeiro busca do banco
@@ -49,6 +49,8 @@ export function WhatsAppConnectionManager() {
         });
 
         if (statusData?.success && statusData.instances) {
+          console.log("📱 Evolution instances:", statusData.instances);
+          
           // Atualiza status no banco para cada instância
           for (const conn of data) {
             const evolutionInstance = statusData.instances.find(
@@ -57,14 +59,29 @@ export function WhatsAppConnectionManager() {
 
             if (evolutionInstance) {
               const state = evolutionInstance.instance?.state || "close";
-              const newStatus = state === "open" ? "connected" : state === "close" ? "disconnected" : "connecting";
+              const phoneNumber = evolutionInstance.instance?.owner || conn.phone_number;
               
-              if (conn.status !== newStatus) {
+              let newStatus = "disconnected";
+              if (state === "open") newStatus = "connected";
+              else if (state === "connecting") newStatus = "connecting";
+              else if (state === "close") newStatus = "disconnected";
+              
+              console.log(`📱 ${conn.instance_name}: ${state} -> ${newStatus}, phone: ${phoneNumber}`);
+              
+              if (conn.status !== newStatus || (phoneNumber && conn.phone_number !== phoneNumber)) {
+                const updateData: any = { status: newStatus };
+                if (phoneNumber && phoneNumber !== conn.phone_number) {
+                  updateData.phone_number = phoneNumber;
+                  updateData.connected_at = new Date().toISOString();
+                }
+                
                 await supabase
                   .from("tendenci_whatsapp_connections")
-                  .update({ status: newStatus })
+                  .update(updateData)
                   .eq("id", conn.id);
+                
                 conn.status = newStatus;
+                if (phoneNumber) conn.phone_number = phoneNumber;
               }
             }
           }
@@ -75,7 +92,7 @@ export function WhatsAppConnectionManager() {
 
       return data as WhatsAppConnection[];
     },
-    refetchInterval: 15000, // Refetch a cada 15s
+    refetchInterval: 10000, // Refetch a cada 10s
   });
 
   // Criar nova conexão
@@ -192,14 +209,18 @@ export function WhatsAppConnectionManager() {
           <h2 className="text-2xl font-bold">Conexões WhatsApp</h2>
           <p className="text-muted-foreground">Gerencie conexões via Evolution API</p>
         </div>
-
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="gap-2">
-              <Smartphone className="h-4 w-4" />
-              Nova Conexão
-            </Button>
-          </DialogTrigger>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => refetch()}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Sincronizar Status
+          </Button>
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="gap-2">
+                <Smartphone className="h-4 w-4" />
+                Nova Conexão
+              </Button>
+            </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Nova Conexão WhatsApp</DialogTitle>
@@ -240,6 +261,7 @@ export function WhatsAppConnectionManager() {
             </div>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       {/* QR Code Dialog */}

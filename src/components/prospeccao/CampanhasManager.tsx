@@ -122,13 +122,18 @@ export function CampanhasManager() {
       const { data, error } = await supabase
         .from("tendenci_whatsapp_connections")
         .select("id, instance_name, phone_number, status")
-        .in("status", ["connected", "open"]) // Aceita ambos os status
         .order("instance_name");
 
       if (error) throw error;
-      return data;
+      
+      // Retorna todas as conexões, mas marca as conectadas
+      return data?.filter(conn => 
+        conn.status === "connected" || 
+        conn.status === "open" || 
+        conn.phone_number !== null
+      ) || [];
     },
-    refetchInterval: 10000,
+    refetchInterval: 5000, // Atualiza a cada 5s
   });
 
   // Criar/atualizar campanha
@@ -424,13 +429,26 @@ export function CampanhasManager() {
                     <SelectValue placeholder="Selecione uma conexão" />
                   </SelectTrigger>
                   <SelectContent>
-                    {whatsappConnections?.map((conn) => (
-                      <SelectItem key={conn.id} value={conn.id}>
-                        {conn.instance_name} {conn.phone_number && `- ${conn.phone_number}`}
+                    {whatsappConnections && whatsappConnections.length > 0 ? (
+                      whatsappConnections.map((conn) => (
+                        <SelectItem key={conn.id} value={conn.id}>
+                          {conn.instance_name} 
+                          {conn.phone_number ? ` (${conn.phone_number})` : ""} 
+                          {conn.status === "connected" ? " ✓" : ""}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="none" disabled>
+                        Nenhuma conexão disponível
                       </SelectItem>
-                    ))}
+                    )}
                   </SelectContent>
                 </Select>
+                {(!whatsappConnections || whatsappConnections.length === 0) && (
+                  <p className="text-xs text-muted-foreground">
+                    Configure uma conexão WhatsApp na aba "WhatsApp" primeiro
+                  </p>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
