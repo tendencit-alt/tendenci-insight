@@ -1982,6 +1982,42 @@ export type Database = {
           },
         ]
       }
+      tendenci_prospec_arq_stages: {
+        Row: {
+          ativa: boolean
+          cor: string
+          created_at: string | null
+          editavel: boolean
+          id: string
+          nome: string
+          position: number
+          slug: string
+          updated_at: string | null
+        }
+        Insert: {
+          ativa?: boolean
+          cor?: string
+          created_at?: string | null
+          editavel?: boolean
+          id?: string
+          nome: string
+          position: number
+          slug: string
+          updated_at?: string | null
+        }
+        Update: {
+          ativa?: boolean
+          cor?: string
+          created_at?: string | null
+          editavel?: boolean
+          id?: string
+          nome?: string
+          position?: number
+          slug?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       tendenci_prospec_settings: {
         Row: {
           id: string
