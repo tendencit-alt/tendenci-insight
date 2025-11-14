@@ -32,7 +32,7 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess }: CreatePro
     name: "",
     client_id: "",
     architect_id: "",
-    stage: "captado",
+    stage: "recebido",
     value: "",
     deadline: "",
     notes: ""
@@ -274,10 +274,12 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess }: CreatePro
                   <SelectValue placeholder="Selecione o estágio" />
                 </SelectTrigger>
                 <SelectContent className="bg-popover z-50">
-                  <SelectItem value="captado">Captado</SelectItem>
-                  <SelectItem value="orçamento">Em Orçamento</SelectItem>
+                  <SelectItem value="recebido">Recebido do Arquiteto</SelectItem>
+                  <SelectItem value="em_desenvolvimento">Em Desenvolvimento</SelectItem>
+                  <SelectItem value="aguardando_aprovacao">Aguardando Aprovação</SelectItem>
                   <SelectItem value="aprovado">Aprovado</SelectItem>
                   <SelectItem value="perdido">Perdido</SelectItem>
+                </SelectContent>
                 </SelectContent>
               </Select>
             </div>
