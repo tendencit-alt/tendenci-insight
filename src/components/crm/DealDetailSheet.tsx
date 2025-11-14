@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Edit, CheckCircle, XCircle, ChevronDown, FileText, User, Users, MessageCircle, Phone, Settings, Clock, CheckSquare, History, FolderOpen, Plus } from "lucide-react";
+import { Edit, CheckCircle, XCircle, ChevronDown, FileText, User, Users, MessageCircle, Phone, Settings, Clock, CheckSquare, History, FolderOpen, Plus, Unlink } from "lucide-react";
 import {
   Collapsible,
   CollapsibleContent,
@@ -64,6 +64,7 @@ export function DealDetailSheet({
   const [isLinkProjectOpen, setIsLinkProjectOpen] = useState(false);
   const [availableProjects, setAvailableProjects] = useState<any[]>([]);
   const [selectedProjectToLink, setSelectedProjectToLink] = useState("");
+  const [isUnlinkProjectOpen, setIsUnlinkProjectOpen] = useState(false);
   
   // Estados para controlar seções abertas/fechadas
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
@@ -560,7 +561,18 @@ export function DealDetailSheet({
 
                     {project && (
                       <div className="border-t pt-3 mt-3">
-                        <p className="text-xs text-muted-foreground mb-2">📁 Projeto Vinculado</p>
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-xs text-muted-foreground">📁 Projeto Vinculado</p>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setIsUnlinkProjectOpen(true)}
+                            className="h-6 px-2 text-xs text-muted-foreground hover:text-destructive"
+                          >
+                            <Unlink className="h-3 w-3 mr-1" />
+                            Desvincular
+                          </Button>
+                        </div>
                         <Button
                           variant="outline"
                           size="sm"
@@ -1199,6 +1211,53 @@ export function DealDetailSheet({
               }}
             >
               Vincular
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={isUnlinkProjectOpen} onOpenChange={setIsUnlinkProjectOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Desvincular Projeto</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja desvincular o projeto "{project?.name}" deste negócio? 
+              O projeto não será excluído, apenas desvinculado.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setIsUnlinkProjectOpen(false)}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (!project?.id) return;
+                
+                const { error } = await supabase
+                  .from("projects")
+                  .update({ deal_id: null })
+                  .eq("id", project.id);
+                
+                if (error) {
+                  toast({
+                    title: "Erro",
+                    description: "Erro ao desvincular projeto.",
+                    variant: "destructive",
+                  });
+                  return;
+                }
+                
+                setProject(null);
+                toast({
+                  title: "Sucesso",
+                  description: "Projeto desvinculado do negócio!",
+                });
+                
+                setIsUnlinkProjectOpen(false);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Desvincular
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
