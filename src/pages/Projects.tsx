@@ -92,53 +92,71 @@ const Projects = () => {
         </div>
 
         {/* KPIs */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-4">
           <Card className="p-6 space-y-2 hover:shadow-xl transition-all duration-300 border-l-4 border-l-blue-500">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-muted-foreground">Captados</span>
-              <span className="text-2xl">🟦</span>
+              <span className="text-sm font-medium text-muted-foreground">Recebidos</span>
+              <span className="text-2xl">📥</span>
             </div>
-            <p className="text-3xl font-bold text-blue-600">{metrics.captado_count}</p>
+            <p className="text-3xl font-bold text-blue-600">{metrics.recebido_count}</p>
           </Card>
 
           <Card className="p-6 space-y-2 hover:shadow-xl transition-all duration-300 border-l-4 border-l-yellow-500">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-muted-foreground">Em Orçamento</span>
-              <span className="text-2xl">🟨</span>
+              <span className="text-sm font-medium text-muted-foreground">Em Desenvolvimento</span>
+              <span className="text-2xl">⚙️</span>
             </div>
-            <p className="text-3xl font-bold text-yellow-600">{metrics.orcamento_count}</p>
+            <p className="text-3xl font-bold text-yellow-600">{metrics.em_desenvolvimento_count}</p>
+          </Card>
+
+          <Card className="p-6 space-y-2 hover:shadow-xl transition-all duration-300 border-l-4 border-l-orange-500">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-muted-foreground">Aguardando Aprovação</span>
+              <span className="text-2xl">⏳</span>
+            </div>
+            <p className="text-3xl font-bold text-orange-600">{metrics.aguardando_aprovacao_count}</p>
           </Card>
 
           <Card className="p-6 space-y-2 hover:shadow-xl transition-all duration-300 border-l-4 border-l-green-500">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium text-muted-foreground">Aprovados</span>
-              <span className="text-2xl">🟩</span>
+              <span className="text-2xl">✅</span>
             </div>
             <p className="text-3xl font-bold text-green-600">{metrics.aprovado_count}</p>
+          </Card>
+
+          <Card className="p-6 space-y-2 hover:shadow-xl transition-all duration-300 border-l-4 border-l-green-700 col-span-1 sm:col-span-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-muted-foreground">Valor Total Aprovado</span>
+              <span className="text-2xl">💰</span>
+            </div>
+            <p className="text-3xl font-bold text-green-700">
+              R$ {(metrics.aprovado_value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            </p>
           </Card>
 
           <Card className="p-6 space-y-2 hover:shadow-xl transition-all duration-300 border-l-4 border-l-red-500">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium text-muted-foreground">Perdidos</span>
-              <span className="text-2xl">🟥</span>
+              <span className="text-2xl">❌</span>
             </div>
             <p className="text-3xl font-bold text-red-600">{metrics.perdido_count}</p>
           </Card>
 
-          <Card className="p-6 space-y-2 hover:shadow-xl transition-all duration-300 border-l-4 border-l-orange-500">
+          <Card className="p-6 space-y-2 hover:shadow-xl transition-all duration-300 border-l-4 border-l-orange-600">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium text-muted-foreground">Prazos Próximos</span>
-              <span className="text-2xl">📅</span>
-            </div>
-            <p className="text-3xl font-bold text-orange-600">{alerts.near_due_count}</p>
-          </Card>
-
-          <Card className="p-6 space-y-2 hover:shadow-xl transition-all duration-300 border-l-4 border-l-purple-500">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-muted-foreground">Prazos Vencidos</span>
               <span className="text-2xl">⚠️</span>
             </div>
-            <p className="text-3xl font-bold text-purple-600">{alerts.overdue_count}</p>
+            <p className="text-3xl font-bold text-orange-600">{metrics.near_due_count}</p>
+          </Card>
+
+          <Card className="p-6 space-y-2 hover:shadow-xl transition-all duration-300 border-l-4 border-l-red-700">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-muted-foreground">Prazos Vencidos</span>
+              <span className="text-2xl">🚨</span>
+            </div>
+            <p className="text-3xl font-bold text-red-700">{metrics.overdue_count}</p>
           </Card>
         </div>
 
@@ -146,18 +164,30 @@ const Projects = () => {
         <DeadlineAlerts refreshKey={refreshKey} />
 
         {/* Tabs */}
-        <Tabs defaultValue="board" className="w-full">
-          <TabsList className="grid w-full max-w-md grid-cols-2">
-            <TabsTrigger value="board">Board Visual</TabsTrigger>
-            <TabsTrigger value="table">Tabela Completa</TabsTrigger>
+        <Tabs defaultValue="board" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-grid">
+            <TabsTrigger value="board" className="gap-2">
+              📋 Board
+            </TabsTrigger>
+            <TabsTrigger value="table" className="gap-2">
+              📊 Tabela
+            </TabsTrigger>
+            <TabsTrigger value="performance" className="gap-2">
+              <TrendingUp className="w-4 h-4" />
+              Desempenho dos Arquitetos
+            </TabsTrigger>
           </TabsList>
-          
-          <TabsContent value="board" className="mt-6">
-            <ProjectsBoard filters={filters} key={refreshKey} />
+
+          <TabsContent value="board" className="space-y-6">
+            <ProjectsBoard key={refreshKey} filters={filters} />
           </TabsContent>
-          
-          <TabsContent value="table" className="mt-6">
-            <ProjectsTable filters={filters} key={refreshKey} />
+
+          <TabsContent value="table" className="space-y-6">
+            <ProjectsTable key={refreshKey} filters={filters} />
+          </TabsContent>
+
+          <TabsContent value="performance" className="space-y-6">
+            <ArchitectPerformance key={refreshKey} />
           </TabsContent>
         </Tabs>
 
