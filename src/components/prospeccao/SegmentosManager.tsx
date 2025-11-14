@@ -207,7 +207,7 @@ export function SegmentosManager() {
                   <div className="space-y-2">
                     <Label>Tier</Label>
                     <Select
-                      value={formData.filtros.tier?.[0] || ""}
+                      value={formData.filtros.tier?.[0] || undefined}
                       onValueChange={(value) => 
                         setFormData({
                           ...formData,
@@ -216,10 +216,9 @@ export function SegmentosManager() {
                       }
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Todos" />
+                        <SelectValue placeholder="Todos os tiers" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Todos</SelectItem>
                         <SelectItem value="A">Tier A</SelectItem>
                         <SelectItem value="B">Tier B</SelectItem>
                         <SelectItem value="C">Tier C</SelectItem>
@@ -230,7 +229,7 @@ export function SegmentosManager() {
                   <div className="space-y-2">
                     <Label>Categoria</Label>
                     <Select
-                      value={formData.filtros.categoria?.[0] || ""}
+                      value={formData.filtros.categoria?.[0] || undefined}
                       onValueChange={(value) =>
                         setFormData({
                           ...formData,
@@ -239,10 +238,9 @@ export function SegmentosManager() {
                       }
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Todas" />
+                        <SelectValue placeholder="Todas as categorias" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Todas</SelectItem>
                         <SelectItem value="metropolitano">Metropolitano</SelectItem>
                         <SelectItem value="regional">Regional</SelectItem>
                       </SelectContent>
