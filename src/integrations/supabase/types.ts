@@ -1915,6 +1915,7 @@ export type Database = {
       }
       tendenci_prospec_arq_segments: {
         Row: {
+          architect_ids: string[] | null
           created_at: string | null
           created_by: string | null
           descricao: string | null
@@ -1924,6 +1925,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          architect_ids?: string[] | null
           created_at?: string | null
           created_by?: string | null
           descricao?: string | null
@@ -1933,6 +1935,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          architect_ids?: string[] | null
           created_at?: string | null
           created_by?: string | null
           descricao?: string | null
