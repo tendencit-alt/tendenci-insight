@@ -39,13 +39,14 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
         .from("architects")
         .select(`
           *,
-          vendedor:profiles!architects_vendedor_responsavel_fkey(full_name, email)
+          vendedor:profiles!architects_vendedor_responsavel_fkey(full_name, email),
+          projects:projects(id)
         `)
         .eq("active", true);
 
       // Aplicar filtro de não contactados
       if (showNaoContactados) {
-        query = query.or("data_primeiro_contato.is.null,status_funil.eq.novo_arquiteto");
+        query = query.is("data_primeiro_contato", null);
       }
 
       // Aplicar filtros
@@ -201,6 +202,11 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
                     {architect.tier && (
                       <Badge variant="outline" className="text-xs">
                         Tier {architect.tier}
+                      </Badge>
+                    )}
+                    {architect.projects && architect.projects.length > 0 && (
+                      <Badge variant="secondary" className="text-xs">
+                        {architect.projects.length} projeto{architect.projects.length > 1 ? 's' : ''}
                       </Badge>
                     )}
                     {architect.data_ultimo_contato && (

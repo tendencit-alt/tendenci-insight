@@ -4,9 +4,24 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export function ProspeccaoOverview() {
+  // Buscar stages dinâmicos
+  const { data: stages } = useQuery({
+    queryKey: ["prospec-stages"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("tendenci_prospec_arq_stages")
+        .select("slug")
+        .eq("ativa", true)
+        .order("position");
+
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
   // Buscar KPIs
   const { data: kpis } = useQuery({
-    queryKey: ["prospeccao-kpis"],
+    queryKey: ["prospeccao-kpis", stages],
     queryFn: async () => {
       const { data: architects, error } = await supabase
         .from("architects")
@@ -16,9 +31,13 @@ export function ProspeccaoOverview() {
       if (error) throw error;
 
       const total = architects?.length || 0;
+      
+      // Status de prospecção ativa (excluir novo_arquiteto, parceiro_ativo e sem_interesse)
       const emProspeccao = architects?.filter(a => 
-        ['contato_iniciado', 'em_conversa', 'interessado'].includes(a.status_funil)
+        a.status_funil && 
+        !['novo_arquiteto', 'parceiro_ativo', 'sem_interesse'].includes(a.status_funil)
       ).length || 0;
+      
       const ativados = architects?.filter(a => a.status_funil === 'parceiro_ativo').length || 0;
       const interessados = architects?.filter(a => a.status_funil === 'interessado').length || 0;
       
@@ -29,15 +48,25 @@ export function ProspeccaoOverview() {
         !a.data_ultimo_contato || new Date(a.data_ultimo_contato) < thirtyDaysAgo
       ).length || 0;
 
+      // Buscar reuniões agendadas
+      const { data: agendamentos, error: agendError } = await supabase
+        .from("tendenci_prospec_arq_agendamentos")
+        .select("id")
+        .gte("data_agendamento", new Date().toISOString())
+        .in("status", ["agendado", "pendente"]);
+
+      if (agendError) console.error("Erro ao buscar agendamentos:", agendError);
+
       return {
         total,
         emProspeccao,
         ativados,
         interessados,
         semContato,
-        reunioesAgendadas: 0, // TODO: buscar da tabela de agendamentos
+        reunioesAgendadas: agendamentos?.length || 0,
       };
     },
+    enabled: !!stages,
   });
 
   const stats = [
