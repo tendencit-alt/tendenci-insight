@@ -8,8 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useWebhookSync } from "@/hooks/useWebhookSync";
-import { Upload, X, FileText } from "lucide-react";
+import { Upload, X, FileText, Plus } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { CreateClientDialog } from "@/components/crm/CreateClientDialog";
+import { CreateArchitectDialog } from "@/components/architects/CreateArchitectDialog";
 
 interface CreateProjectDialogProps {
   open: boolean;
@@ -23,6 +25,8 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess }: CreatePro
   const [leads, setLeads] = useState<any[]>([]);
   const [architects, setArchitects] = useState<any[]>([]);
   const [files, setFiles] = useState<File[]>([]);
+  const [isCreateClientOpen, setIsCreateClientOpen] = useState(false);
+  const [isCreateArchitectOpen, setIsCreateArchitectOpen] = useState(false);
   const { notifyProjectCreated } = useWebhookSync();
   const [formData, setFormData] = useState({
     name: "",
@@ -109,11 +113,33 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess }: CreatePro
     setUploading(false);
   };
 
+  const handleClientCreated = async (newClient: any) => {
+    await fetchLeads();
+    setFormData(prev => ({ ...prev, client_id: newClient.id }));
+    setIsCreateClientOpen(false);
+  };
+
+  const handleArchitectCreated = async (newArchitect: any) => {
+    await fetchArchitects();
+    setFormData(prev => ({ ...prev, architect_id: newArchitect.id }));
+    setIsCreateArchitectOpen(false);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.name) {
       toast.error("Nome do projeto é obrigatório");
+      return;
+    }
+
+    if (!formData.client_id) {
+      toast.error("Cliente é obrigatório");
+      return;
+    }
+
+    if (!formData.architect_id) {
+      toast.error("Arquiteto é obrigatório");
       return;
     }
 
@@ -190,36 +216,55 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess }: CreatePro
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="client">Cliente</Label>
-              <Select value={formData.client_id} onValueChange={(v) => setFormData({ ...formData, client_id: v })}>
-                <SelectTrigger className="bg-background">
-                  <SelectValue placeholder="Selecione o cliente (opcional)" />
-                </SelectTrigger>
-                <SelectContent className="bg-popover z-50">
-                  <SelectItem value="none">Sem cliente vinculado</SelectItem>
-                  {leads.map((lead) => (
-                    <SelectItem key={lead.id} value={lead.id}>
-                      {lead.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="client">Cliente *</Label>
+              <div className="flex gap-2">
+                <Select value={formData.client_id} onValueChange={(v) => setFormData({ ...formData, client_id: v })}>
+                  <SelectTrigger className="bg-background">
+                    <SelectValue placeholder="Selecione o cliente" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover z-50">
+                    {leads.map((lead) => (
+                      <SelectItem key={lead.id} value={lead.id}>
+                        {lead.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setIsCreateClientOpen(true)}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="architect">Arquiteto</Label>
-              <Select value={formData.architect_id} onValueChange={(v) => setFormData({ ...formData, architect_id: v })}>
-                <SelectTrigger className="bg-background">
-                  <SelectValue placeholder="Selecione o arquiteto" />
-                </SelectTrigger>
-                <SelectContent className="bg-popover z-50">
-                  {architects.map((arch) => (
-                    <SelectItem key={arch.id} value={arch.id}>
-                      {arch.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="architect">Arquiteto *</Label>
+              <div className="flex gap-2">
+                <Select value={formData.architect_id} onValueChange={(v) => setFormData({ ...formData, architect_id: v })}>
+                  <SelectTrigger className="bg-background">
+                    <SelectValue placeholder="Selecione o arquiteto" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover z-50">
+                    {architects.map((arch) => (
+                      <SelectItem key={arch.id} value={arch.id}>
+                        {arch.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setIsCreateArchitectOpen(true)}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -335,6 +380,18 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess }: CreatePro
           </div>
         </form>
       </DialogContent>
+
+      <CreateClientDialog
+        open={isCreateClientOpen}
+        onOpenChange={setIsCreateClientOpen}
+        onSuccess={handleClientCreated}
+      />
+
+      <CreateArchitectDialog
+        open={isCreateArchitectOpen}
+        onOpenChange={setIsCreateArchitectOpen}
+        onSuccess={handleArchitectCreated}
+      />
     </Dialog>
   );
 }
