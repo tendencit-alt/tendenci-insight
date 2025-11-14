@@ -33,7 +33,8 @@ export function EditArchitectDialog({ open, onOpenChange, onSuccess, architect }
     commission_percent: "10.00",
     birthday: "",
     active: true,
-    notes: ""
+    notes: "",
+    categoria: "metropolitano"
   });
 
   useEffect(() => {
@@ -49,7 +50,8 @@ export function EditArchitectDialog({ open, onOpenChange, onSuccess, architect }
         commission_percent: architect.commission_percent?.toString() || "10.00",
         birthday: architect.birthday || "",
         active: architect.active ?? true,
-        notes: architect.notes || ""
+        notes: architect.notes || "",
+        categoria: architect.categoria || "metropolitano"
       });
       fetchProjects();
     }
@@ -90,6 +92,11 @@ export function EditArchitectDialog({ open, onOpenChange, onSuccess, architect }
       return;
     }
 
+    if (!formData.phone) {
+      toast.error("WhatsApp é obrigatório");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -98,7 +105,7 @@ export function EditArchitectDialog({ open, onOpenChange, onSuccess, architect }
         .update({
           name: formData.name,
           company: formData.company || null,
-          phone: formData.phone || null,
+          phone: formData.phone,
           email: formData.email || null,
           instagram: formData.instagram || null,
           city: formData.city || null,
@@ -106,7 +113,8 @@ export function EditArchitectDialog({ open, onOpenChange, onSuccess, architect }
           commission_percent: parseFloat(formData.commission_percent),
           birthday: formData.birthday || null,
           active: formData.active,
-          notes: formData.notes || null
+          notes: formData.notes || null,
+          categoria: formData.categoria
         })
         .eq('id', architect.id);
 
@@ -189,12 +197,13 @@ export function EditArchitectDialog({ open, onOpenChange, onSuccess, architect }
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="phone">Telefone</Label>
+              <Label htmlFor="phone">WhatsApp *</Label>
               <Input
                 id="phone"
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 placeholder="(11) 99999-9999"
+                required
               />
             </div>
 
@@ -217,6 +226,22 @@ export function EditArchitectDialog({ open, onOpenChange, onSuccess, architect }
                 onChange={(e) => setFormData({ ...formData, instagram: e.target.value })}
                 placeholder="@usuario"
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="categoria">Categoria *</Label>
+              <Select
+                value={formData.categoria}
+                onValueChange={(value) => setFormData({ ...formData, categoria: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a categoria" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="metropolitano">Metropolitano</SelectItem>
+                  <SelectItem value="captado">Captado</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
