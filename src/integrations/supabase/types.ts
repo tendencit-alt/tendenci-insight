@@ -187,14 +187,20 @@ export type Database = {
           company: string | null
           created_at: string | null
           created_by: string | null
+          data_primeiro_contato: string | null
+          data_ultimo_contato: string | null
           email: string | null
           id: string
           instagram: string | null
           name: string
           notes: string | null
+          origem: string | null
           phone: string | null
+          status_funil: string | null
+          tag_prospeccao: string | null
           tier: string | null
           updated_at: string | null
+          vendedor_responsavel: string | null
         }
         Insert: {
           active?: boolean | null
@@ -205,14 +211,20 @@ export type Database = {
           company?: string | null
           created_at?: string | null
           created_by?: string | null
+          data_primeiro_contato?: string | null
+          data_ultimo_contato?: string | null
           email?: string | null
           id?: string
           instagram?: string | null
           name: string
           notes?: string | null
+          origem?: string | null
           phone?: string | null
+          status_funil?: string | null
+          tag_prospeccao?: string | null
           tier?: string | null
           updated_at?: string | null
+          vendedor_responsavel?: string | null
         }
         Update: {
           active?: boolean | null
@@ -223,14 +235,20 @@ export type Database = {
           company?: string | null
           created_at?: string | null
           created_by?: string | null
+          data_primeiro_contato?: string | null
+          data_ultimo_contato?: string | null
           email?: string | null
           id?: string
           instagram?: string | null
           name?: string
           notes?: string | null
+          origem?: string | null
           phone?: string | null
+          status_funil?: string | null
+          tag_prospeccao?: string | null
           tier?: string | null
           updated_at?: string | null
+          vendedor_responsavel?: string | null
         }
         Relationships: [
           {
@@ -238,6 +256,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "architects_vendedor_responsavel_fkey"
+            columns: ["vendedor_responsavel"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1608,6 +1633,398 @@ export type Database = {
             columns: ["seller_goal_id"]
             isOneToOne: false
             referencedRelation: "tendenci_seller_goals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tendenci_prospec_arq_agendamentos: {
+        Row: {
+          architect_id: string
+          campanha_id: string | null
+          canal: string | null
+          client_id: string | null
+          created_at: string | null
+          criado_por_ia: boolean | null
+          data_agendamento: string
+          id: string
+          metadata: Json | null
+          observacoes: string | null
+          status: string | null
+          updated_at: string | null
+          vendedor_id: string | null
+        }
+        Insert: {
+          architect_id: string
+          campanha_id?: string | null
+          canal?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          criado_por_ia?: boolean | null
+          data_agendamento: string
+          id?: string
+          metadata?: Json | null
+          observacoes?: string | null
+          status?: string | null
+          updated_at?: string | null
+          vendedor_id?: string | null
+        }
+        Update: {
+          architect_id?: string
+          campanha_id?: string | null
+          canal?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          criado_por_ia?: boolean | null
+          data_agendamento?: string
+          id?: string
+          metadata?: Json | null
+          observacoes?: string | null
+          status?: string | null
+          updated_at?: string | null
+          vendedor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tendenci_prospec_arq_agendamentos_architect_id_fkey"
+            columns: ["architect_id"]
+            isOneToOne: false
+            referencedRelation: "architects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tendenci_prospec_arq_agendamentos_campanha_id_fkey"
+            columns: ["campanha_id"]
+            isOneToOne: false
+            referencedRelation: "tendenci_prospec_arq_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tendenci_prospec_arq_agendamentos_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tendenci_prospec_arq_agendamentos_vendedor_id_fkey"
+            columns: ["vendedor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tendenci_prospec_arq_campaign_architects: {
+        Row: {
+          agendamento_id: string | null
+          architect_id: string
+          campanha_id: string
+          created_at: string | null
+          data_envio: string | null
+          data_interesse: string | null
+          data_resposta: string | null
+          id: string
+          interessado: boolean | null
+          metadata: Json | null
+          respondeu: boolean | null
+          status: string | null
+        }
+        Insert: {
+          agendamento_id?: string | null
+          architect_id: string
+          campanha_id: string
+          created_at?: string | null
+          data_envio?: string | null
+          data_interesse?: string | null
+          data_resposta?: string | null
+          id?: string
+          interessado?: boolean | null
+          metadata?: Json | null
+          respondeu?: boolean | null
+          status?: string | null
+        }
+        Update: {
+          agendamento_id?: string | null
+          architect_id?: string
+          campanha_id?: string
+          created_at?: string | null
+          data_envio?: string | null
+          data_interesse?: string | null
+          data_resposta?: string | null
+          id?: string
+          interessado?: boolean | null
+          metadata?: Json | null
+          respondeu?: boolean | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tendenci_prospec_arq_campaign_architects_architect_id_fkey"
+            columns: ["architect_id"]
+            isOneToOne: false
+            referencedRelation: "architects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tendenci_prospec_arq_campaign_architects_campanha_id_fkey"
+            columns: ["campanha_id"]
+            isOneToOne: false
+            referencedRelation: "tendenci_prospec_arq_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tendenci_prospec_arq_campaigns: {
+        Row: {
+          agendar_automatico: boolean | null
+          created_at: string | null
+          created_by: string | null
+          criterio_interesse: Json | null
+          data_fim: string | null
+          data_inicio: string | null
+          descricao: string | null
+          dias_semana: number[] | null
+          horarios: Json | null
+          id: string
+          intervalo_minimo_minutos: number | null
+          nome: string
+          segmento_id: string | null
+          sequencia_id: string | null
+          status: string | null
+          updated_at: string | null
+          vendedor_id: string | null
+          webhook_n8n: string | null
+        }
+        Insert: {
+          agendar_automatico?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          criterio_interesse?: Json | null
+          data_fim?: string | null
+          data_inicio?: string | null
+          descricao?: string | null
+          dias_semana?: number[] | null
+          horarios?: Json | null
+          id?: string
+          intervalo_minimo_minutos?: number | null
+          nome: string
+          segmento_id?: string | null
+          sequencia_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+          vendedor_id?: string | null
+          webhook_n8n?: string | null
+        }
+        Update: {
+          agendar_automatico?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          criterio_interesse?: Json | null
+          data_fim?: string | null
+          data_inicio?: string | null
+          descricao?: string | null
+          dias_semana?: number[] | null
+          horarios?: Json | null
+          id?: string
+          intervalo_minimo_minutos?: number | null
+          nome?: string
+          segmento_id?: string | null
+          sequencia_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+          vendedor_id?: string | null
+          webhook_n8n?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tendenci_prospec_arq_campaigns_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tendenci_prospec_arq_campaigns_vendedor_id_fkey"
+            columns: ["vendedor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tendenci_prospec_arq_logs: {
+        Row: {
+          architect_id: string
+          campanha_id: string | null
+          canal: string | null
+          created_at: string | null
+          enviado_por: string | null
+          id: string
+          mensagem: string | null
+          metadata: Json | null
+          tipo: string
+        }
+        Insert: {
+          architect_id: string
+          campanha_id?: string | null
+          canal?: string | null
+          created_at?: string | null
+          enviado_por?: string | null
+          id?: string
+          mensagem?: string | null
+          metadata?: Json | null
+          tipo: string
+        }
+        Update: {
+          architect_id?: string
+          campanha_id?: string | null
+          canal?: string | null
+          created_at?: string | null
+          enviado_por?: string | null
+          id?: string
+          mensagem?: string | null
+          metadata?: Json | null
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tendenci_prospec_arq_logs_architect_id_fkey"
+            columns: ["architect_id"]
+            isOneToOne: false
+            referencedRelation: "architects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tendenci_prospec_arq_logs_enviado_por_fkey"
+            columns: ["enviado_por"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tendenci_prospec_arq_segments: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          descricao: string | null
+          filtros: Json
+          id: string
+          nome: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          descricao?: string | null
+          filtros?: Json
+          id?: string
+          nome: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          descricao?: string | null
+          filtros?: Json
+          id?: string
+          nome?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tendenci_prospec_arq_segments_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tendenci_prospec_arq_sequences: {
+        Row: {
+          ativa: boolean | null
+          created_at: string | null
+          created_by: string | null
+          descricao: string | null
+          id: string
+          mensagens: Json
+          nome: string
+          updated_at: string | null
+        }
+        Insert: {
+          ativa?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          descricao?: string | null
+          id?: string
+          mensagens?: Json
+          nome: string
+          updated_at?: string | null
+        }
+        Update: {
+          ativa?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          descricao?: string | null
+          id?: string
+          mensagens?: Json
+          nome?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tendenci_prospec_arq_sequences_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tendenci_prospec_settings: {
+        Row: {
+          id: string
+          metadata: Json | null
+          numero_whatsapp: string | null
+          status_conexao: string | null
+          token: string | null
+          ultima_verificacao: string | null
+          updated_at: string | null
+          updated_by: string | null
+          webhook_envio: string | null
+          webhook_retorno: string | null
+        }
+        Insert: {
+          id?: string
+          metadata?: Json | null
+          numero_whatsapp?: string | null
+          status_conexao?: string | null
+          token?: string | null
+          ultima_verificacao?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          webhook_envio?: string | null
+          webhook_retorno?: string | null
+        }
+        Update: {
+          id?: string
+          metadata?: Json | null
+          numero_whatsapp?: string | null
+          status_conexao?: string | null
+          token?: string | null
+          ultima_verificacao?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+          webhook_envio?: string | null
+          webhook_retorno?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tendenci_prospec_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]

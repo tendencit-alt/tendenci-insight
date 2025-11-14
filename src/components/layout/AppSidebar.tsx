@@ -5,7 +5,8 @@ import {
   MessageSquare,
   Settings,
   Package,
-  Target
+  Target,
+  UserSearch
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
@@ -27,6 +28,7 @@ const menuItems = [
   { title: "Leads", url: "/leads", icon: TrendingUp, module: "leads" },
   { title: "Projetos", url: "/projects", icon: Package, module: "projetos" },
   { title: "Arquitetos", url: "/architects", icon: Users, module: "arquitetos" },
+  { title: "Prospecção Arquitetos", url: "/prospeccao", icon: UserSearch, module: "arquitetos" },
   { title: "CRM KANBAN", url: "/kanban", icon: MessageSquare, module: "crm" },
   { title: "Metas", url: "/metas", icon: Target, module: "metas" },
   { title: "Configurações", url: "/settings", icon: Settings, module: "configuracoes" },
