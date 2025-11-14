@@ -2204,6 +2204,54 @@ export type Database = {
         }
         Relationships: []
       }
+      tendenci_whatsapp_connections: {
+        Row: {
+          connected_at: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          instance_id: string | null
+          instance_name: string
+          last_sync: string | null
+          metadata: Json | null
+          phone_number: string | null
+          qr_code: string | null
+          qr_code_base64: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          connected_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          instance_id?: string | null
+          instance_name: string
+          last_sync?: string | null
+          metadata?: Json | null
+          phone_number?: string | null
+          qr_code?: string | null
+          qr_code_base64?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          connected_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          instance_id?: string | null
+          instance_name?: string
+          last_sync?: string | null
+          metadata?: Json | null
+          phone_number?: string | null
+          qr_code?: string | null
+          qr_code_base64?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       users: {
         Row: {
           created_at: string | null

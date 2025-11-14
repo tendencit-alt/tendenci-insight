@@ -36,6 +36,7 @@ export function CampanhasManager() {
     segmento_id: "",
     sequencia_id: "",
     vendedor_id: "",
+    whatsapp_connection_id: "",
     status: "rascunho",
     data_inicio: "",
     data_fim: "",
@@ -111,6 +112,21 @@ export function CampanhasManager() {
     },
   });
 
+  // Buscar conexões WhatsApp para select
+  const { data: whatsappConnections } = useQuery({
+    queryKey: ["whatsapp-connections-select"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("tendenci_whatsapp_connections")
+        .select("id, instance_name, phone_number, status")
+        .eq("status", "connected")
+        .order("instance_name");
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
   // Criar/atualizar campanha
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -120,6 +136,7 @@ export function CampanhasManager() {
         segmento_id: formData.segmento_id || null,
         sequencia_id: formData.sequencia_id || null,
         vendedor_id: formData.vendedor_id || null,
+        whatsapp_connection_id: formData.whatsapp_connection_id || null,
         status: formData.status,
         data_inicio: formData.data_inicio || null,
         data_fim: formData.data_fim || null,
@@ -198,6 +215,7 @@ export function CampanhasManager() {
       segmento_id: "",
       sequencia_id: "",
       vendedor_id: "",
+      whatsapp_connection_id: "",
       status: "rascunho",
       data_inicio: "",
       data_fim: "",
@@ -219,6 +237,7 @@ export function CampanhasManager() {
       segmento_id: campaign.segmento_id || "",
       sequencia_id: campaign.sequencia_id || "",
       vendedor_id: campaign.vendedor_id || "",
+      whatsapp_connection_id: campaign.whatsapp_connection_id || "",
       status: campaign.status,
       data_inicio: campaign.data_inicio ? campaign.data_inicio.split("T")[0] : "",
       data_fim: campaign.data_fim ? campaign.data_fim.split("T")[0] : "",
@@ -343,6 +362,25 @@ export function CampanhasManager() {
                     {vendedores?.map((v) => (
                       <SelectItem key={v.id} value={v.id}>
                         {v.full_name || v.email}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="whatsapp">Conexão WhatsApp *</Label>
+                <Select
+                  value={formData.whatsapp_connection_id}
+                  onValueChange={(value) => setFormData({ ...formData, whatsapp_connection_id: value })}
+                >
+                  <SelectTrigger id="whatsapp">
+                    <SelectValue placeholder="Selecione uma conexão" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {whatsappConnections?.map((conn) => (
+                      <SelectItem key={conn.id} value={conn.id}>
+                        {conn.instance_name} {conn.phone_number && `- ${conn.phone_number}`}
                       </SelectItem>
                     ))}
                   </SelectContent>
