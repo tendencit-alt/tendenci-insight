@@ -62,8 +62,8 @@ export function DealDetailSheet({
   
   // Estados para controlar seções abertas/fechadas
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
-    deal: false,
-    client: false,
+    deal: true,
+    client: true,
     owners: false,
     whatsapp: false,
     call: false,
@@ -82,7 +82,7 @@ export function DealDetailSheet({
     if (!deal?.id) return;
 
     const fetchProject = async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("projects")
         .select(`
           *,
@@ -90,10 +90,18 @@ export function DealDetailSheet({
           architect:architects(name)
         `)
         .eq("deal_id", deal.id)
-        .single();
+        .maybeSingle();
+      
+      if (error) {
+        console.error("Erro ao buscar projeto:", error);
+      }
       
       if (data) {
+        console.log("Projeto vinculado encontrado:", data);
         setProject(data);
+      } else {
+        console.log("Nenhum projeto vinculado a este negócio");
+        setProject(null);
       }
     };
 
@@ -546,8 +554,8 @@ export function DealDetailSheet({
                     </div>
 
                     {project && (
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-2">Projeto Vinculado</p>
+                      <div className="border-t pt-3 mt-3">
+                        <p className="text-xs text-muted-foreground mb-2">📁 Projeto Vinculado</p>
                         <Button
                           variant="outline"
                           size="sm"
@@ -555,10 +563,17 @@ export function DealDetailSheet({
                           className="w-full flex items-center justify-start gap-2"
                         >
                           <FolderOpen className="h-4 w-4" />
-                          <div className="flex flex-col items-start text-left">
+                          <div className="flex flex-col items-start text-left flex-1">
                             <span className="font-medium">{project.name}</span>
                             <span className="text-xs text-muted-foreground">
-                              Etapa: {project.stage || 'N/A'}
+                              Etapa: {
+                                project.stage === 'recebido' ? '📥 Recebido' :
+                                project.stage === 'em_desenvolvimento' ? '🔨 Em Desenvolvimento' :
+                                project.stage === 'aguardando_aprovacao' ? '⏳ Aguardando Aprovação' :
+                                project.stage === 'aprovado' ? '✅ Aprovado' :
+                                project.stage === 'perdido' ? '❌ Perdido' :
+                                project.stage || 'N/A'
+                              }
                             </span>
                           </div>
                         </Button>
