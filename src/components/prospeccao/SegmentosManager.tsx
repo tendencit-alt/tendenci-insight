@@ -22,7 +22,9 @@ interface Segment {
     categoria?: string[];
     vendedor?: string;
     status_funil?: string[];
+    nao_contactados?: boolean;
   };
+  architect_ids?: string[];
   created_at: string;
 }
 
@@ -38,9 +40,12 @@ export function SegmentosManager() {
       categoria: [] as string[],
       vendedor: "",
       status_funil: [] as string[],
+      nao_contactados: false,
     },
   });
   const [selectedCidades, setSelectedCidades] = useState<string[]>([]);
+  const [selectedArchitects, setSelectedArchitects] = useState<string[]>([]);
+  const [selectionMode, setSelectionMode] = useState<"filtros" | "manual">("filtros");
   const queryClient = useQueryClient();
 
   // Buscar segmentos
@@ -92,13 +97,49 @@ export function SegmentosManager() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("tendenci_prospec_arq_stages")
-        .select("id, nome")
+        .select("id, nome, slug")
         .eq("ativa", true)
-        .order("ordem");
+        .order("position");
 
       if (error) throw error;
       return data;
     },
+  });
+
+  // Buscar arquitetos para seleção manual
+  const { data: architects } = useQuery({
+    queryKey: ["architects-for-selection", formData.filtros],
+    queryFn: async () => {
+      let query = supabase
+        .from("architects")
+        .select("id, name, company, city, tier, phone, status_funil")
+        .eq("active", true);
+
+      // Aplicar filtros
+      if (formData.filtros.cidade.length > 0) {
+        query = query.in("city", formData.filtros.cidade);
+      }
+      if (formData.filtros.tier.length > 0) {
+        query = query.in("tier", formData.filtros.tier);
+      }
+      if (formData.filtros.categoria.length > 0) {
+        query = query.in("categoria", formData.filtros.categoria);
+      }
+      if (formData.filtros.vendedor) {
+        query = query.eq("vendedor_responsavel", formData.filtros.vendedor);
+      }
+      if (formData.filtros.status_funil.length > 0) {
+        query = query.in("status_funil", formData.filtros.status_funil);
+      }
+      if (formData.filtros.nao_contactados) {
+        query = query.is("data_primeiro_contato", null);
+      }
+
+      const { data, error } = await query.order("name");
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: selectionMode === "manual",
   });
 
   // Criar/atualizar segmento
@@ -111,6 +152,7 @@ export function SegmentosManager() {
           ...formData.filtros,
           cidade: selectedCidades,
         },
+        architect_ids: selectionMode === "manual" ? selectedArchitects : null,
       };
 
       if (editingSegment) {
