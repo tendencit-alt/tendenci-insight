@@ -1794,6 +1794,7 @@ export type Database = {
           updated_at: string | null
           vendedor_id: string | null
           webhook_n8n: string | null
+          whatsapp_connection_id: string | null
         }
         Insert: {
           agendar_automatico?: boolean | null
@@ -1814,6 +1815,7 @@ export type Database = {
           updated_at?: string | null
           vendedor_id?: string | null
           webhook_n8n?: string | null
+          whatsapp_connection_id?: string | null
         }
         Update: {
           agendar_automatico?: boolean | null
@@ -1834,6 +1836,7 @@ export type Database = {
           updated_at?: string | null
           vendedor_id?: string | null
           webhook_n8n?: string | null
+          whatsapp_connection_id?: string | null
         }
         Relationships: [
           {
@@ -1848,6 +1851,13 @@ export type Database = {
             columns: ["vendedor_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tendenci_prospec_arq_campaigns_whatsapp_connection_id_fkey"
+            columns: ["whatsapp_connection_id"]
+            isOneToOne: false
+            referencedRelation: "tendenci_whatsapp_connections"
             referencedColumns: ["id"]
           },
         ]
