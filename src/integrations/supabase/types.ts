@@ -294,6 +294,9 @@ export type Database = {
       }
       clients: {
         Row: {
+          attachment_name: string | null
+          attachment_path: string | null
+          attachment_type: string | null
           city: string | null
           created_at: string | null
           email: string | null
@@ -304,6 +307,9 @@ export type Database = {
           state: string | null
         }
         Insert: {
+          attachment_name?: string | null
+          attachment_path?: string | null
+          attachment_type?: string | null
           city?: string | null
           created_at?: string | null
           email?: string | null
@@ -314,6 +320,9 @@ export type Database = {
           state?: string | null
         }
         Update: {
+          attachment_name?: string | null
+          attachment_path?: string | null
+          attachment_type?: string | null
           city?: string | null
           created_at?: string | null
           email?: string | null

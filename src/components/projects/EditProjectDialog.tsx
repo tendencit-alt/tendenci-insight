@@ -39,7 +39,7 @@ export function EditProjectDialog({ project, open, onOpenChange, onSuccess }: Ed
       setFormData({
         name: project.name || "",
         architect_id: project.architect_id || "",
-        stage: project.stage || "captado",
+        stage: project.stage || "recebido",
         value: project.value?.toString() || "",
         deadline: project.deadline ? project.deadline.split('T')[0] : ""
       });
@@ -138,8 +138,9 @@ export function EditProjectDialog({ project, open, onOpenChange, onSuccess }: Ed
                   <SelectValue placeholder="Selecione o estágio" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="captado">Captado</SelectItem>
-                  <SelectItem value="orçamento">Em Orçamento</SelectItem>
+                  <SelectItem value="recebido">Recebido</SelectItem>
+                  <SelectItem value="em_desenvolvimento">Em Desenvolvimento</SelectItem>
+                  <SelectItem value="aguardando_aprovacao">Aguardando Aprovação</SelectItem>
                   <SelectItem value="aprovado">Aprovado</SelectItem>
                   <SelectItem value="perdido">Perdido</SelectItem>
                 </SelectContent>
