@@ -95,7 +95,7 @@ export function DealDetailSheet({
           client:clients(name),
           architect:architects(name)
         `)
-        .eq("deal_id", deal.id)
+        .eq("crm_deal_id", deal.id)
         .maybeSingle();
       
       if (error) {
@@ -618,11 +618,11 @@ export function DealDetailSheet({
                               variant="outline"
                               size="sm"
                               onClick={async () => {
-                                const { data } = await supabase
-                                  .from("projects")
-                                  .select("id, name, stage")
-                                  .is("deal_id", null)
-                                  .order("created_at", { ascending: false });
+      const { data } = await supabase
+        .from("projects")
+        .select("id, name, stage")
+        .is("crm_deal_id", null)
+        .order("created_at", { ascending: false });
                                 
                                 setAvailableProjects(data || []);
                                 setIsLinkProjectOpen(true);
@@ -1119,7 +1119,7 @@ export function DealDetailSheet({
             // Vincular ao deal atual
             const { error: updateError } = await supabase
               .from("projects")
-              .update({ deal_id: deal.id })
+              .update({ crm_deal_id: deal.id })
               .eq("id", data.id);
             
             if (updateError) {
@@ -1201,7 +1201,7 @@ export function DealDetailSheet({
                 
                 const { error: updateError } = await supabase
                   .from("projects")
-                  .update({ deal_id: deal.id })
+                  .update({ crm_deal_id: deal.id })
                   .eq("id", selectedProjectToLink);
                 
                 if (updateError) {
@@ -1273,7 +1273,7 @@ export function DealDetailSheet({
                 
                 const { error } = await supabase
                   .from("projects")
-                  .update({ deal_id: null })
+                  .update({ crm_deal_id: null })
                   .eq("id", project.id);
                 
                 if (error) {

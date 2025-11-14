@@ -1347,6 +1347,7 @@ export type Database = {
           architect_id: string | null
           client_id: string | null
           created_at: string | null
+          crm_deal_id: string | null
           deadline: string | null
           deal_id: string | null
           id: string
@@ -1364,6 +1365,7 @@ export type Database = {
           architect_id?: string | null
           client_id?: string | null
           created_at?: string | null
+          crm_deal_id?: string | null
           deadline?: string | null
           deal_id?: string | null
           id?: string
@@ -1381,6 +1383,7 @@ export type Database = {
           architect_id?: string | null
           client_id?: string | null
           created_at?: string | null
+          crm_deal_id?: string | null
           deadline?: string | null
           deal_id?: string | null
           id?: string
@@ -1406,6 +1409,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_crm_deal_id_fkey"
+            columns: ["crm_deal_id"]
+            isOneToOne: false
+            referencedRelation: "crm_deals"
             referencedColumns: ["id"]
           },
           {
