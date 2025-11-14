@@ -9,8 +9,10 @@ import { SegmentosManager } from "@/components/prospeccao/SegmentosManager";
 import { SequenciasManager } from "@/components/prospeccao/SequenciasManager";
 import { CampanhasManager } from "@/components/prospeccao/CampanhasManager";
 import { AgendamentosManager } from "@/components/prospeccao/AgendamentosManager";
+import { WhatsAppConnectionManager } from "@/components/prospeccao/WhatsAppConnectionManager";
+import { EvolutionAPIGuide } from "@/components/settings/EvolutionAPIGuide";
 import { N8nAgendamentoGuide } from "@/components/settings/N8nAgendamentoGuide";
-import { UserSearch, LayoutGrid, Megaphone, Users as UsersIcon, Zap, Calendar, Settings, List } from "lucide-react";
+import { UserSearch, LayoutGrid, Megaphone, Users as UsersIcon, Zap, Calendar, Settings, List, Smartphone } from "lucide-react";
 
 export default function Prospeccao() {
   const [activeTab, setActiveTab] = useState("overview");
@@ -57,9 +59,17 @@ export default function Prospeccao() {
               <Calendar className="h-4 w-4" />
               Agendamentos
             </TabsTrigger>
+            <TabsTrigger value="whatsapp" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <Smartphone className="h-4 w-4" />
+              WhatsApp
+            </TabsTrigger>
+            <TabsTrigger value="evolution-config" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <Settings className="h-4 w-4" />
+              Config Evolution
+            </TabsTrigger>
             <TabsTrigger value="configuracoes" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <Settings className="h-4 w-4" />
-              Conexão n8n
+              Config n8n
             </TabsTrigger>
           </TabsList>
 
@@ -85,6 +95,14 @@ export default function Prospeccao() {
 
           <TabsContent value="agendamentos" className="space-y-6">
             <AgendamentosManager />
+          </TabsContent>
+
+          <TabsContent value="whatsapp" className="space-y-6">
+            <WhatsAppConnectionManager />
+          </TabsContent>
+
+          <TabsContent value="evolution-config" className="space-y-6">
+            <EvolutionAPIGuide />
           </TabsContent>
 
           <TabsContent value="configuracoes" className="space-y-6">
