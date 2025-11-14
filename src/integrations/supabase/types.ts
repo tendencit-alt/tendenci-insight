@@ -1334,41 +1334,53 @@ export type Database = {
       }
       projects: {
         Row: {
+          approved_date: string | null
           architect_id: string | null
           client_id: string | null
           created_at: string | null
           deadline: string | null
           deal_id: string | null
           id: string
+          lost_date: string | null
+          lost_reason: string | null
           name: string | null
           presented_at: string | null
           sent_at: string | null
+          sent_date: string | null
           stage: string | null
           value: number | null
         }
         Insert: {
+          approved_date?: string | null
           architect_id?: string | null
           client_id?: string | null
           created_at?: string | null
           deadline?: string | null
           deal_id?: string | null
           id?: string
+          lost_date?: string | null
+          lost_reason?: string | null
           name?: string | null
           presented_at?: string | null
           sent_at?: string | null
+          sent_date?: string | null
           stage?: string | null
           value?: number | null
         }
         Update: {
+          approved_date?: string | null
           architect_id?: string | null
           client_id?: string | null
           created_at?: string | null
           deadline?: string | null
           deal_id?: string | null
           id?: string
+          lost_date?: string | null
+          lost_reason?: string | null
           name?: string | null
           presented_at?: string | null
           sent_at?: string | null
+          sent_date?: string | null
           stage?: string | null
           value?: number | null
         }
@@ -1789,6 +1801,20 @@ export type Database = {
           phone: string
         }[]
       }
+      architect_performance_metrics: {
+        Args: { period_days?: number }
+        Returns: {
+          approval_rate: number
+          approved_projects: number
+          architect_id: string
+          architect_name: string
+          categoria: string
+          in_progress_projects: number
+          lost_projects: number
+          total_projects: number
+          total_value: number
+        }[]
+      }
       architect_projects_count: {
         Args: never
         Returns: {
@@ -1901,6 +1927,19 @@ export type Database = {
         }[]
       }
       projects_aggregates: { Args: never; Returns: Json }
+      projects_metrics: {
+        Args: never
+        Returns: {
+          aguardando_aprovacao_count: number
+          aprovado_count: number
+          aprovado_value: number
+          em_desenvolvimento_count: number
+          near_due_count: number
+          overdue_count: number
+          perdido_count: number
+          recebido_count: number
+        }[]
+      }
       user_has_role: { Args: { required_role: string }; Returns: boolean }
       user_has_role_check: {
         Args: { required_role: Database["public"]["Enums"]["user_role"] }
