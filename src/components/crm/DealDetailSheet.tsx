@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Edit, CheckCircle, XCircle, ChevronDown, FileText, User, Users, MessageCircle, Phone, Settings, Clock, CheckSquare, History, FolderOpen } from "lucide-react";
+import { Edit, CheckCircle, XCircle, ChevronDown, FileText, User, Users, MessageCircle, Phone, Settings, Clock, CheckSquare, History, FolderOpen, Plus } from "lucide-react";
 import {
   Collapsible,
   CollapsibleContent,
@@ -20,6 +20,7 @@ import { EditDealDialog } from "./EditDealDialog";
 import { DealTimeline } from "./DealTimeline";
 import { DealTasks } from "./DealTasks";
 import { ProjectDetailSheet } from "../projects/ProjectDetailSheet";
+import { CreateProjectDialog } from "../projects/CreateProjectDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -59,6 +60,10 @@ export function DealDetailSheet({
   const [selectedPipeline, setSelectedPipeline] = useState("");
   const [project, setProject] = useState<any>(null);
   const [isProjectSheetOpen, setIsProjectSheetOpen] = useState(false);
+  const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
+  const [isLinkProjectOpen, setIsLinkProjectOpen] = useState(false);
+  const [availableProjects, setAvailableProjects] = useState<any[]>([]);
+  const [selectedProjectToLink, setSelectedProjectToLink] = useState("");
   
   // Estados para controlar seções abertas/fechadas
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
@@ -579,6 +584,46 @@ export function DealDetailSheet({
                         </Button>
                       </div>
                     )}
+
+                    {!project && (
+                      <div className="border-t pt-3 mt-3">
+                        <div className="bg-muted/50 border border-dashed rounded-lg p-4 text-center">
+                          <FolderOpen className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                          <p className="text-sm text-muted-foreground mb-3">
+                            Nenhum projeto vinculado a este negócio
+                          </p>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setIsCreateProjectOpen(true)}
+                              className="flex-1"
+                            >
+                              <Plus className="h-4 w-4 mr-1" />
+                              Criar Projeto
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={async () => {
+                                const { data } = await supabase
+                                  .from("projects")
+                                  .select("id, name, stage")
+                                  .is("deal_id", null)
+                                  .order("created_at", { ascending: false });
+                                
+                                setAvailableProjects(data || []);
+                                setIsLinkProjectOpen(true);
+                              }}
+                              className="flex-1"
+                            >
+                              <FolderOpen className="h-4 w-4 mr-1" />
+                              Vincular
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </CollapsibleContent>
@@ -1036,7 +1081,7 @@ export function DealDetailSheet({
                   architect:architects(name)
                 `)
                 .eq("deal_id", deal.id)
-                .single()
+                .maybeSingle()
                 .then(({ data }) => {
                   if (data) setProject(data);
                 });
@@ -1044,6 +1089,120 @@ export function DealDetailSheet({
           }}
         />
       )}
+
+      <CreateProjectDialog
+        open={isCreateProjectOpen}
+        onOpenChange={setIsCreateProjectOpen}
+        onSuccess={async () => {
+          // Buscar o último projeto criado sem deal_id
+          const { data } = await supabase
+            .from("projects")
+            .select("id")
+            .is("deal_id", null)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .single();
+          
+          if (data) {
+            // Vincular ao deal atual
+            await supabase
+              .from("projects")
+              .update({ deal_id: deal.id })
+              .eq("id", data.id);
+            
+            // Recarregar projeto
+            const { data: projectData } = await supabase
+              .from("projects")
+              .select(`
+                *,
+                client:clients(name),
+                architect:architects(name)
+              `)
+              .eq("id", data.id)
+              .single();
+            
+            if (projectData) {
+              setProject(projectData);
+              toast({
+                title: "Sucesso",
+                description: "Projeto criado e vinculado ao negócio!",
+              });
+            }
+          }
+          
+          setIsCreateProjectOpen(false);
+        }}
+      />
+
+      <AlertDialog open={isLinkProjectOpen} onOpenChange={setIsLinkProjectOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Vincular Projeto Existente</AlertDialogTitle>
+            <AlertDialogDescription>
+              Selecione um projeto existente para vincular a este negócio.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <div className="py-4">
+            <Label htmlFor="project-select">Projeto</Label>
+            <Select value={selectedProjectToLink} onValueChange={setSelectedProjectToLink}>
+              <SelectTrigger id="project-select">
+                <SelectValue placeholder="Selecione um projeto" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableProjects.map((proj) => (
+                  <SelectItem key={proj.id} value={proj.id}>
+                    {proj.name} - {proj.stage || "Sem etapa"}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setSelectedProjectToLink("");
+              setIsLinkProjectOpen(false);
+            }}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (!selectedProjectToLink) return;
+                
+                await supabase
+                  .from("projects")
+                  .update({ deal_id: deal.id })
+                  .eq("id", selectedProjectToLink);
+                
+                // Recarregar projeto
+                const { data: projectData } = await supabase
+                  .from("projects")
+                  .select(`
+                    *,
+                    client:clients(name),
+                    architect:architects(name)
+                  `)
+                  .eq("id", selectedProjectToLink)
+                  .single();
+                
+                if (projectData) {
+                  setProject(projectData);
+                  toast({
+                    title: "Sucesso",
+                    description: "Projeto vinculado ao negócio!",
+                  });
+                }
+                
+                setSelectedProjectToLink("");
+                setIsLinkProjectOpen(false);
+              }}
+            >
+              Vincular
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Sheet>
   );
 }
