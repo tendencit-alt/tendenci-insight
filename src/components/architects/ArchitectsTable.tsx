@@ -3,8 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Eye, Pencil, Trash2, MessageCircle } from "lucide-react";
+import { Eye, Pencil, Trash2, MessageCircle, Filter } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -24,6 +25,7 @@ interface Architect {
   name: string;
   company: string;
   phone: string;
+  categoria: string;
   projects_count: number;
   last_project_date: string | null;
   created_at: string;
@@ -40,19 +42,26 @@ export function ArchitectsTable({ refreshKey, onEdit, onView }: ArchitectsTableP
   const [architects, setArchitects] = useState<Architect[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [categoriaFilter, setCategoriaFilter] = useState<string>("todos");
 
   useEffect(() => {
     fetchArchitects();
-  }, [refreshKey]);
+  }, [refreshKey, categoriaFilter]);
 
   const fetchArchitects = async () => {
     setLoading(true);
     
     // Buscar arquitetos com data de criação
-    const { data: architectsData, error } = await supabase
+    let query = supabase
       .from('architects')
-      .select('id, name, company, phone, created_at')
-      .order('name');
+      .select('id, name, company, phone, categoria, created_at');
+    
+    // Aplicar filtro de categoria se não for "todos"
+    if (categoriaFilter !== "todos") {
+      query = query.eq('categoria', categoriaFilter);
+    }
+    
+    const { data: architectsData, error } = await query.order('name');
     
     if (error || !architectsData) {
       setLoading(false);
@@ -127,7 +136,27 @@ export function ArchitectsTable({ refreshKey, onEdit, onView }: ArchitectsTableP
     <>
       <Card className="overflow-hidden">
         <div className="p-6 border-b bg-gradient-to-r from-background to-muted/20">
-          <h2 className="text-xl font-semibold">Todos os Arquitetos</h2>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-xl font-semibold">Todos os Arquitetos</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                {architects.length} arquitetos cadastrados
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Filter className="w-4 h-4 text-muted-foreground" />
+              <Select value={categoriaFilter} onValueChange={setCategoriaFilter}>
+                <SelectTrigger className="w-[180px] bg-background">
+                  <SelectValue placeholder="Filtrar por categoria" />
+                </SelectTrigger>
+                <SelectContent className="bg-background z-50">
+                  <SelectItem value="todos">Todas as categorias</SelectItem>
+                  <SelectItem value="metropolitano">Metropolitano</SelectItem>
+                  <SelectItem value="captado">Captado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </div>
         <div className="overflow-x-auto">
           <Table>
@@ -135,6 +164,7 @@ export function ArchitectsTable({ refreshKey, onEdit, onView }: ArchitectsTableP
               <TableRow>
                 <TableHead>Nome do Arquiteto</TableHead>
                 <TableHead>Empresa</TableHead>
+                <TableHead>Categoria</TableHead>
                 <TableHead>WhatsApp</TableHead>
                 <TableHead className="text-center">Projetos Enviados</TableHead>
                 <TableHead>Data do Último Projeto</TableHead>
@@ -147,6 +177,11 @@ export function ArchitectsTable({ refreshKey, onEdit, onView }: ArchitectsTableP
                 <TableRow key={arch.id}>
                   <TableCell className="font-medium">{arch.name}</TableCell>
                   <TableCell>{arch.company || '-'}</TableCell>
+                  <TableCell>
+                    <Badge variant={arch.categoria === 'metropolitano' ? 'default' : 'secondary'}>
+                      {arch.categoria === 'metropolitano' ? 'Metropolitano' : 'Captado'}
+                    </Badge>
+                  </TableCell>
                   <TableCell>
                     {arch.phone ? (
                       <Button
