@@ -122,12 +122,13 @@ export function CampanhasManager() {
       const { data, error } = await supabase
         .from("tendenci_whatsapp_connections")
         .select("id, instance_name, phone_number, status")
-        .eq("status", "connected")
+        .in("status", ["connected", "open"]) // Aceita ambos os status
         .order("instance_name");
 
       if (error) throw error;
       return data;
     },
+    refetchInterval: 10000,
   });
 
   // Criar/atualizar campanha
@@ -208,6 +209,48 @@ export function CampanhasManager() {
     },
     onError: () => {
       toast.error("Erro ao alterar status");
+    },
+  });
+
+  // Iniciar campanha e disparar webhook n8n
+  const startCampaignMutation = useMutation({
+    mutationFn: async (campaign: any) => {
+      // Atualizar status para "ativa"
+      const { error: updateError } = await supabase
+        .from("tendenci_prospec_arq_campaigns")
+        .update({ status: "ativa", data_inicio: new Date().toISOString() })
+        .eq("id", campaign.id);
+      
+      if (updateError) throw updateError;
+
+      // Disparar webhook n8n se configurado
+      if (campaign.webhook_n8n) {
+        try {
+          const response = await fetch(campaign.webhook_n8n, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              campaign_id: campaign.id,
+              campaign_name: campaign.nome,
+              status: "ativa",
+              timestamp: new Date().toISOString(),
+            }),
+          });
+
+          if (!response.ok) {
+            console.error("Erro ao disparar webhook n8n:", response.statusText);
+          }
+        } catch (error) {
+          console.error("Erro ao disparar webhook n8n:", error);
+        }
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["prospec-campaigns"] });
+      toast.success("Campanha iniciada! Webhook n8n disparado.");
+    },
+    onError: () => {
+      toast.error("Erro ao iniciar campanha");
     },
   });
 
@@ -544,6 +587,18 @@ export function CampanhasManager() {
                       <h3 className="font-semibold">{campaign.nome}</h3>
                     </div>
                     <div className="flex gap-1">
+                      {campaign.status === "rascunho" && (
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => startCampaignMutation.mutate(campaign)}
+                          disabled={startCampaignMutation.isPending}
+                          className="gap-1"
+                        >
+                          <Rocket className="h-4 w-4" />
+                          <span className="text-xs">Iniciar</span>
+                        </Button>
+                      )}
                       {campaign.status === "ativa" && (
                         <Button
                           variant="ghost"
@@ -569,6 +624,7 @@ export function CampanhasManager() {
                           setSelectedCampaign(campaign);
                           setExecutorOpen(true);
                         }}
+                        title="Executar Campanha Manualmente"
                       >
                         <Rocket className="h-4 w-4" />
                       </Button>
