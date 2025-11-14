@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Edit, CheckCircle, XCircle, ChevronDown, FileText, User, Users, MessageCircle, Phone, Settings, Clock, CheckSquare, History } from "lucide-react";
+import { Edit, CheckCircle, XCircle, ChevronDown, FileText, User, Users, MessageCircle, Phone, Settings, Clock, CheckSquare, History, FolderOpen } from "lucide-react";
 import {
   Collapsible,
   CollapsibleContent,
@@ -19,6 +19,7 @@ import { Label } from "@/components/ui/label";
 import { EditDealDialog } from "./EditDealDialog";
 import { DealTimeline } from "./DealTimeline";
 import { DealTasks } from "./DealTasks";
+import { ProjectDetailSheet } from "../projects/ProjectDetailSheet";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -56,6 +57,8 @@ export function DealDetailSheet({
   const [selectedStage, setSelectedStage] = useState("");
   const [allPipelines, setAllPipelines] = useState<any[]>([]);
   const [selectedPipeline, setSelectedPipeline] = useState("");
+  const [project, setProject] = useState<any>(null);
+  const [isProjectSheetOpen, setIsProjectSheetOpen] = useState(false);
   
   // Estados para controlar seções abertas/fechadas
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
@@ -77,6 +80,22 @@ export function DealDetailSheet({
   // Fetch histórico de movimentações e etapas
   useEffect(() => {
     if (!deal?.id) return;
+
+    const fetchProject = async () => {
+      const { data } = await supabase
+        .from("projects")
+        .select(`
+          *,
+          client:clients(name),
+          architect:architects(name)
+        `)
+        .eq("deal_id", deal.id)
+        .single();
+      
+      if (data) {
+        setProject(data);
+      }
+    };
 
     const fetchHistory = async () => {
       const { data, error } = await supabase
@@ -525,6 +544,26 @@ export function DealDetailSheet({
                       <p className="text-xs text-muted-foreground">Origem do Lead</p>
                       <p className="font-medium text-sm">{sourceName}</p>
                     </div>
+
+                    {project && (
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-2">Projeto Vinculado</p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setIsProjectSheetOpen(true)}
+                          className="w-full flex items-center justify-start gap-2"
+                        >
+                          <FolderOpen className="h-4 w-4" />
+                          <div className="flex flex-col items-start text-left">
+                            <span className="font-medium">{project.name}</span>
+                            <span className="text-xs text-muted-foreground">
+                              Etapa: {project.stage || 'N/A'}
+                            </span>
+                          </div>
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </CollapsibleContent>
@@ -965,6 +1004,31 @@ export function DealDetailSheet({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {project && (
+        <ProjectDetailSheet
+          project={project}
+          open={isProjectSheetOpen}
+          onOpenChange={setIsProjectSheetOpen}
+          onSuccess={() => {
+            // Recarregar dados do projeto após atualização
+            if (deal?.id) {
+              supabase
+                .from("projects")
+                .select(`
+                  *,
+                  client:clients(name),
+                  architect:architects(name)
+                `)
+                .eq("deal_id", deal.id)
+                .single()
+                .then(({ data }) => {
+                  if (data) setProject(data);
+                });
+            }
+          }}
+        />
+      )}
     </Sheet>
   );
 }
