@@ -124,6 +124,17 @@ export default function CRM() {
   return (
     <DashboardLayout>
       <div className="flex flex-col gap-4">
+        {/* Metas do Vendedor */}
+        {!isAdmin && goalData && (
+          <SellerDashboard 
+            userName={profile?.full_name || user?.email || "Vendedor"}
+            userAvatar={profile?.avatar_url}
+            goalData={goalData}
+            companyGoal={companyGoal}
+            teamAverage={teamAverage}
+          />
+        )}
+
         {/* Header */}
         <div className="flex flex-col gap-1">
           <h1 className="text-2xl lg:text-3xl font-bold tracking-tight">🗂️ CRM Kanban</h1>
@@ -158,17 +169,6 @@ export default function CRM() {
           selectedPipeline={selectedPipeline}
           onPipelineChange={setSelectedPipeline}
         />
-
-        {/* Metas do Vendedor */}
-        {!isAdmin && goalData && (
-          <SellerDashboard 
-            userName={profile?.full_name || user?.email || "Vendedor"}
-            userAvatar={profile?.avatar_url}
-            goalData={goalData}
-            companyGoal={companyGoal}
-            teamAverage={teamAverage}
-          />
-        )}
 
         {selectedPipeline && (
           <>
