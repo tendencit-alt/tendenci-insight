@@ -1,0 +1,109 @@
+import { useState } from "react";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ProspeccaoOverview } from "@/components/prospeccao/ProspeccaoOverview";
+import { ProspeccaoCRM } from "@/components/prospeccao/ProspeccaoCRM";
+import { UserSearch, LayoutGrid, Megaphone, Users as UsersIcon, Zap, Calendar, Settings } from "lucide-react";
+
+export default function Prospeccao() {
+  const [activeTab, setActiveTab] = useState("overview");
+
+  return (
+    <DashboardLayout>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center gap-3">
+          <div className="p-3 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20">
+            <UserSearch className="h-6 w-6 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Prospecção de Arquitetos</h1>
+            <p className="text-muted-foreground">CRM completo com IA, campanhas automáticas e agendamentos</p>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="bg-card border border-border p-1 h-auto flex-wrap">
+            <TabsTrigger value="overview" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <LayoutGrid className="h-4 w-4" />
+              Visão Geral
+            </TabsTrigger>
+            <TabsTrigger value="crm" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <UserSearch className="h-4 w-4" />
+              CRM de Arquitetos
+            </TabsTrigger>
+            <TabsTrigger value="campanhas" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <Megaphone className="h-4 w-4" />
+              Campanhas IA
+            </TabsTrigger>
+            <TabsTrigger value="segmentos" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <UsersIcon className="h-4 w-4" />
+              Segmentos
+            </TabsTrigger>
+            <TabsTrigger value="sequencias" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <Zap className="h-4 w-4" />
+              Sequências IA
+            </TabsTrigger>
+            <TabsTrigger value="agendamentos" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <Calendar className="h-4 w-4" />
+              Agendamentos
+            </TabsTrigger>
+            <TabsTrigger value="configuracoes" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <Settings className="h-4 w-4" />
+              Conexão n8n
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview" className="space-y-6">
+            <ProspeccaoOverview />
+          </TabsContent>
+
+          <TabsContent value="crm" className="space-y-6">
+            <ProspeccaoCRM />
+          </TabsContent>
+
+          <TabsContent value="campanhas" className="space-y-6">
+            <div className="bg-card border border-border rounded-xl p-8 text-center">
+              <Megaphone className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-xl font-semibold mb-2">Campanhas IA</h3>
+              <p className="text-muted-foreground">Em desenvolvimento - Fase 5</p>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="segmentos" className="space-y-6">
+            <div className="bg-card border border-border rounded-xl p-8 text-center">
+              <UsersIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-xl font-semibold mb-2">Segmentos</h3>
+              <p className="text-muted-foreground">Em desenvolvimento - Fase 4</p>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="sequencias" className="space-y-6">
+            <div className="bg-card border border-border rounded-xl p-8 text-center">
+              <Zap className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-xl font-semibold mb-2">Sequências IA</h3>
+              <p className="text-muted-foreground">Em desenvolvimento - Fase 5</p>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="agendamentos" className="space-y-6">
+            <div className="bg-card border border-border rounded-xl p-8 text-center">
+              <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-xl font-semibold mb-2">Agendamentos</h3>
+              <p className="text-muted-foreground">Em desenvolvimento - Fase 5</p>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="configuracoes" className="space-y-6">
+            <div className="bg-card border border-border rounded-xl p-8 text-center">
+              <Settings className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-xl font-semibold mb-2">Conexão n8n / WhatsApp</h3>
+              <p className="text-muted-foreground">Em desenvolvimento - Fase 6</p>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </DashboardLayout>
+  );
+}
