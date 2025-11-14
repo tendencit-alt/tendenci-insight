@@ -295,27 +295,27 @@ export function ManageStagesDialog({ open, onOpenChange }: ManageStagesDialogPro
                           )}
                         </div>
                         <div className="flex gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEdit(stage)}
+                            title="Editar nome e cor"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
                           {stage.editavel && (
-                            <>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleEdit(stage)}
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                  if (confirm(`Remover etapa "${stage.nome}"?`)) {
-                                    deleteMutation.mutate(stage.id);
-                                  }
-                                }}
-                              >
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
-                            </>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                if (confirm(`Remover etapa "${stage.nome}"?`)) {
+                                  deleteMutation.mutate(stage.id);
+                                }
+                              }}
+                              title="Deletar etapa"
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
                           )}
                         </div>
                       </div>
