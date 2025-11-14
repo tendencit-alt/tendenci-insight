@@ -1134,6 +1134,14 @@ export function DealDetailSheet({
               .single();
             
             if (projectData) {
+              // Registrar no histórico
+              await supabase.from("crm_timeline").insert({
+                deal_id: deal.id,
+                author_id: (await supabase.auth.getUser()).data.user?.id,
+                message: `Projeto "${projectData.name}" criado e vinculado ao negócio`,
+                update_type: "Projeto Vinculado",
+              });
+              
               setProject(projectData);
               toast({
                 title: "Sucesso",
@@ -1199,6 +1207,14 @@ export function DealDetailSheet({
                   .single();
                 
                 if (projectData) {
+                  // Registrar no histórico
+                  await supabase.from("crm_timeline").insert({
+                    deal_id: deal.id,
+                    author_id: (await supabase.auth.getUser()).data.user?.id,
+                    message: `Projeto "${projectData.name}" vinculado ao negócio`,
+                    update_type: "Projeto Vinculado",
+                  });
+                  
                   setProject(projectData);
                   toast({
                     title: "Sucesso",
@@ -1233,6 +1249,8 @@ export function DealDetailSheet({
               onClick={async () => {
                 if (!project?.id) return;
                 
+                const projectName = project.name;
+                
                 const { error } = await supabase
                   .from("projects")
                   .update({ deal_id: null })
@@ -1246,6 +1264,14 @@ export function DealDetailSheet({
                   });
                   return;
                 }
+                
+                // Registrar no histórico
+                await supabase.from("crm_timeline").insert({
+                  deal_id: deal.id,
+                  author_id: (await supabase.auth.getUser()).data.user?.id,
+                  message: `Projeto "${projectName}" desvinculado do negócio`,
+                  update_type: "Projeto Desvinculado",
+                });
                 
                 setProject(null);
                 toast({
