@@ -34,15 +34,48 @@ export function WhatsAppConnectionManager() {
   const { data: connections, isLoading } = useQuery({
     queryKey: ["whatsapp-connections"],
     queryFn: async () => {
+      // Primeiro busca do banco
       const { data, error } = await supabase
         .from("tendenci_whatsapp_connections")
         .select("*")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
+
+      // Depois verifica status real na Evolution API
+      try {
+        const { data: statusData } = await supabase.functions.invoke("whatsapp-evolution", {
+          body: { action: "status" },
+        });
+
+        if (statusData?.success && statusData.instances) {
+          // Atualiza status no banco para cada instância
+          for (const conn of data) {
+            const evolutionInstance = statusData.instances.find(
+              (i: any) => i.instance.instanceName === conn.instance_name
+            );
+
+            if (evolutionInstance) {
+              const state = evolutionInstance.instance?.state || "close";
+              const newStatus = state === "open" ? "connected" : state === "close" ? "disconnected" : "connecting";
+              
+              if (conn.status !== newStatus) {
+                await supabase
+                  .from("tendenci_whatsapp_connections")
+                  .update({ status: newStatus })
+                  .eq("id", conn.id);
+                conn.status = newStatus;
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Erro ao verificar status:", error);
+      }
+
       return data as WhatsAppConnection[];
     },
-    refetchInterval: 10000, // Refetch a cada 10s para atualizar status
+    refetchInterval: 15000, // Refetch a cada 15s
   });
 
   // Criar nova conexão

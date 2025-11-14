@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
         status = 'connecting'
       }
 
-      console.log(`📱 Instance ${instance} status: ${status}`)
+      console.log(`📱 Instance ${instance} - state: ${state} -> status: ${status}`)
 
       // Atualizar no banco
       const updateData: any = {
