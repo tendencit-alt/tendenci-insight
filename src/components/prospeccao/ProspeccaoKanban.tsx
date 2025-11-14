@@ -7,16 +7,6 @@ import { Building, MapPin, Phone, Package } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
-const STAGES = [
-  { id: "novo_arquiteto", label: "Novo Arquiteto", color: "bg-gray-500" },
-  { id: "contato_iniciado", label: "Contato Iniciado", color: "bg-blue-500" },
-  { id: "em_conversa", label: "Em Conversa", color: "bg-cyan-500" },
-  { id: "interessado", label: "Interessado", color: "bg-orange-500" },
-  { id: "reuniao_agendada", label: "Reunião Agendada", color: "bg-purple-500" },
-  { id: "parceiro_ativo", label: "Parceiro Ativo", color: "bg-green-500" },
-  { id: "sem_interesse", label: "Sem Interesse", color: "bg-red-500" },
-];
-
 interface ProspeccaoKanbanProps {
   filters?: any;
   showNaoContactados?: boolean;
@@ -25,6 +15,21 @@ interface ProspeccaoKanbanProps {
 export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: ProspeccaoKanbanProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Buscar stages dinâmicos
+  const { data: stages } = useQuery({
+    queryKey: ["prospec-stages"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("tendenci_prospec_arq_stages")
+        .select("*")
+        .eq("ativa", true)
+        .order("position");
+
+      if (error) throw error;
+      return data || [];
+    },
+  });
 
   // Buscar arquitetos com filtros aplicados
   const { data: architects, isLoading } = useQuery({
@@ -110,107 +115,109 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
     updateStatusMutation.mutate({ architectId, newStatus });
   };
 
-  if (isLoading) {
+  if (isLoading || !stages) {
     return <div className="text-center py-8">Carregando...</div>;
   }
 
   // Agrupar arquitetos por status
-  const architectsByStatus = STAGES.reduce((acc, stage) => {
-    acc[stage.id] = architects?.filter(a => (a.status_funil || "novo_arquiteto") === stage.id) || [];
+  const architectsByStatus = stages.reduce((acc, stage) => {
+    acc[stage.slug] = architects?.filter(a => (a.status_funil || "novo_arquiteto") === stage.slug) || [];
     return acc;
   }, {} as Record<string, any[]>);
 
   return (
     <div className="flex gap-4 overflow-x-auto pb-4">
-      {STAGES.map((stage) => (
+      {stages.map((stage) => (
         <div
-          key={stage.id}
+          key={stage.slug}
           className="flex-shrink-0 w-80"
           onDragOver={handleDragOver}
-          onDrop={(e) => handleDrop(e, stage.id)}
+          onDrop={(e) => handleDrop(e, stage.slug)}
         >
           {/* Column Header */}
           <div className="mb-4">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="font-semibold text-sm">{stage.label}</h3>
-              <Badge variant="secondary" className="text-xs">
-                {architectsByStatus[stage.id]?.length || 0}
+              <h3 className="font-semibold text-sm">{stage.nome}</h3>
+              <Badge variant="outline" className="text-xs">
+                {architectsByStatus[stage.slug]?.length || 0}
               </Badge>
             </div>
-            <div className={`h-1 rounded-full ${stage.color}`} />
+            <Badge className={`${stage.cor} w-full justify-center`}>
+              {stage.nome}
+            </Badge>
           </div>
 
           {/* Cards */}
-          <div className="space-y-3">
-            {architectsByStatus[stage.id]?.map((architect) => (
+          <div className="space-y-3 max-h-[600px] overflow-y-auto">
+            {architectsByStatus[stage.slug]?.map((architect) => (
               <Card
                 key={architect.id}
+                className="p-4 cursor-move hover:shadow-md transition-shadow"
                 draggable
                 onDragStart={(e) => handleDragStart(e, architect.id)}
-                className="p-4 cursor-move hover:shadow-lg transition-shadow"
               >
                 <div className="space-y-3">
-                  {/* Header */}
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-10 w-10">
-                        <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                          {architect.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <h4 className="font-semibold text-sm">{architect.name}</h4>
-                        <Badge variant="outline" className="text-xs mt-1">
-                          {architect.tier || 'B'}
-                        </Badge>
-                      </div>
+                  {/* Header com Avatar e Nome */}
+                  <div className="flex items-start gap-3">
+                    <Avatar className="h-10 w-10">
+                      <AvatarFallback className="bg-primary/10 text-primary">
+                        {architect.name?.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-semibold text-sm truncate">{architect.name}</h4>
+                      {architect.vendedor?.full_name && (
+                        <p className="text-xs text-muted-foreground truncate">
+                          Vendedor: {architect.vendedor.full_name}
+                        </p>
+                      )}
                     </div>
                   </div>
 
-                  {/* Info */}
-                  <div className="space-y-2 text-xs text-muted-foreground">
+                  {/* Informações */}
+                  <div className="space-y-2 text-xs">
                     {architect.company && (
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 text-muted-foreground">
                         <Building className="h-3 w-3" />
                         <span className="truncate">{architect.company}</span>
                       </div>
                     )}
                     {architect.city && (
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 text-muted-foreground">
                         <MapPin className="h-3 w-3" />
                         <span>{architect.city}</span>
                       </div>
                     )}
                     {architect.phone && (
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 text-muted-foreground">
                         <Phone className="h-3 w-3" />
                         <span>{architect.phone}</span>
                       </div>
                     )}
                   </div>
 
-                  {/* Footer */}
-                  <div className="flex items-center justify-between pt-2 border-t border-border">
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Package className="h-3 w-3" />
-                      <span>0 projetos</span>
-                    </div>
+                  {/* Badges */}
+                  <div className="flex gap-2 flex-wrap">
+                    {architect.tier && (
+                      <Badge variant="outline" className="text-xs">
+                        Tier {architect.tier}
+                      </Badge>
+                    )}
                     {architect.data_ultimo_contato && (
-                      <span className="text-xs text-muted-foreground">
-                        {format(new Date(architect.data_ultimo_contato), "dd/MM")}
-                      </span>
+                      <Badge variant="secondary" className="text-xs">
+                        Último: {format(new Date(architect.data_ultimo_contato), "dd/MM")}
+                      </Badge>
                     )}
                   </div>
-
-                  {/* Vendedor */}
-                  {architect.vendedor && (
-                    <div className="text-xs text-muted-foreground">
-                      📊 {architect.vendedor.full_name || architect.vendedor.email}
-                    </div>
-                  )}
                 </div>
               </Card>
             ))}
+
+            {architectsByStatus[stage.slug]?.length === 0 && (
+              <div className="text-center py-8 text-muted-foreground text-sm">
+                Nenhum arquiteto nesta etapa
+              </div>
+            )}
           </div>
         </div>
       ))}
