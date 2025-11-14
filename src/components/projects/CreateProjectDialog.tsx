@@ -143,25 +143,55 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess }: CreatePro
       return;
     }
 
+    if (files.length === 0) {
+      toast.error("É obrigatório anexar pelo menos um arquivo");
+      return;
+    }
+
     setLoading(true);
 
     try {
-        const { data, error } = await supabase
-          .from("projects")
-          .insert({
-            name: formData.name,
-            client_id: formData.client_id && formData.client_id !== 'none' ? formData.client_id : null,
-            architect_id: formData.architect_id || null,
-            stage: formData.stage,
-            value: formData.value ? parseFloat(formData.value) : 0,
-            deadline: formData.deadline || null
-          })
-          .select()
-          .single();
+      // Upload do arquivo para o cliente primeiro
+      const { data: { user } } = await supabase.auth.getUser();
+      const clientFile = files[0];
+      const fileExt = clientFile.name.split('.').pop();
+      const clientFileName = `${formData.client_id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('client-files')
+        .upload(clientFileName, clientFile);
+
+      if (uploadError) throw uploadError;
+
+      // Atualizar cliente com referência ao arquivo
+      const { error: clientError } = await supabase
+        .from('clients')
+        .update({
+          attachment_path: clientFileName,
+          attachment_name: clientFile.name,
+          attachment_type: clientFile.type
+        })
+        .eq('id', formData.client_id);
+
+      if (clientError) throw clientError;
+
+      // Criar projeto
+      const { data, error } = await supabase
+        .from("projects")
+        .insert({
+          name: formData.name,
+          client_id: formData.client_id && formData.client_id !== 'none' ? formData.client_id : null,
+          architect_id: formData.architect_id || null,
+          stage: formData.stage,
+          value: formData.value ? parseFloat(formData.value) : 0,
+          deadline: formData.deadline || null
+        })
+        .select()
+        .single();
 
       if (error) throw error;
 
-      // Upload de arquivos
+      // Upload de arquivos adicionais do projeto
       if (data && files.length > 0) {
         await uploadFiles(data.id);
       }
@@ -181,7 +211,7 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess }: CreatePro
         name: "",
         client_id: "",
         architect_id: "",
-        stage: "captado",
+        stage: "recebido",
         value: "",
         deadline: "",
         notes: ""
@@ -317,7 +347,7 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess }: CreatePro
             </div>
 
             <div className="space-y-2 col-span-2">
-              <Label>Anexar Arquivos</Label>
+              <Label>Anexar Arquivos *</Label>
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
                   <Button
