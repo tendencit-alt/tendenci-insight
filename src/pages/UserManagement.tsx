@@ -5,9 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { UserPermissionsDialog } from '@/components/settings/UserPermissionsDialog';
+import { CreateUserDialog } from '@/components/settings/CreateUserDialog';
+import { ResetPasswordDialog } from '@/components/settings/ResetPasswordDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Shield, User, Loader2, ArrowLeft, CheckCircle } from 'lucide-react';
+import { Shield, User, Loader2, ArrowLeft, CheckCircle, UserPlus, Key } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface UserProfile {
@@ -25,6 +27,8 @@ const UserManagement = () => {
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [resetPasswordDialogOpen, setResetPasswordDialogOpen] = useState(false);
 
   useEffect(() => {
     fetchUsers();
@@ -57,6 +61,11 @@ const UserManagement = () => {
   const handleEditUser = (user: UserProfile) => {
     setSelectedUser(user);
     setDialogOpen(true);
+  };
+
+  const handleResetPassword = (user: UserProfile) => {
+    setSelectedUser(user);
+    setResetPasswordDialogOpen(true);
   };
 
   const getRoleBadge = (user: UserProfile) => {
@@ -132,6 +141,10 @@ const UserManagement = () => {
               </div>
             </div>
           </div>
+          <Button onClick={() => setCreateDialogOpen(true)} className="gap-2">
+            <UserPlus className="w-4 h-4" />
+            Criar Usuário
+          </Button>
         </div>
 
         <Card>
@@ -178,6 +191,15 @@ const UserManagement = () => {
                       <Shield className="w-4 h-4 mr-2" />
                       Editar Perfil
                     </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleResetPassword(user)}
+                      className="gap-2"
+                    >
+                      <Key className="w-4 h-4" />
+                      Senha
+                    </Button>
                   </div>
                 </div>
               ))}
@@ -185,7 +207,14 @@ const UserManagement = () => {
           </CardContent>
         </Card>
 
-        {selectedUser && (
+      <CreateUserDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+        onSuccess={fetchUsers}
+      />
+
+      {selectedUser && (
+        <>
           <UserPermissionsDialog
             open={dialogOpen}
             onOpenChange={setDialogOpen}
@@ -194,7 +223,16 @@ const UserManagement = () => {
             userName={selectedUser.full_name}
             onSuccess={fetchUsers}
           />
-        )}
+          
+          <ResetPasswordDialog
+            open={resetPasswordDialogOpen}
+            onOpenChange={setResetPasswordDialogOpen}
+            userId={selectedUser.id}
+            userEmail={selectedUser.email}
+            userName={selectedUser.full_name}
+          />
+        </>
+      )}
       </div>
     </DashboardLayout>
   );
