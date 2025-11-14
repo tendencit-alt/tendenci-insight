@@ -25,10 +25,12 @@ const Architects = () => {
 
   const handleCreateSuccess = () => {
     setRefreshKey(prev => prev + 1);
+    setIsCreateOpen(false);
   };
 
   const handleEditSuccess = () => {
     setRefreshKey(prev => prev + 1);
+    setIsEditOpen(false);
   };
 
   const handleEdit = (architect: any) => {
@@ -39,6 +41,10 @@ const Architects = () => {
   const handleView = (architectId: string) => {
     setSelectedArchitectId(architectId);
     setIsDetailOpen(true);
+  };
+
+  const handleDeleteSuccess = () => {
+    setRefreshKey(prev => prev + 1);
   };
 
   return (
@@ -87,6 +93,7 @@ const Architects = () => {
               refreshKey={refreshKey} 
               onEdit={handleEdit}
               onView={handleView}
+              onDelete={handleDeleteSuccess}
             />
           </TabsContent>
           
