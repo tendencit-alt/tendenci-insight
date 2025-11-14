@@ -5,6 +5,9 @@ import { Button } from "@/components/ui/button";
 import { ProspeccaoOverview } from "@/components/prospeccao/ProspeccaoOverview";
 import { ProspeccaoCRM } from "@/components/prospeccao/ProspeccaoCRM";
 import { ManageStagesDialog } from "@/components/prospeccao/ManageStagesDialog";
+import { SegmentosManager } from "@/components/prospeccao/SegmentosManager";
+import { SequenciasManager } from "@/components/prospeccao/SequenciasManager";
+import { CampanhasManager } from "@/components/prospeccao/CampanhasManager";
 import { UserSearch, LayoutGrid, Megaphone, Users as UsersIcon, Zap, Calendar, Settings, List } from "lucide-react";
 
 export default function Prospeccao() {
@@ -67,27 +70,15 @@ export default function Prospeccao() {
           </TabsContent>
 
           <TabsContent value="campanhas" className="space-y-6">
-            <div className="bg-card border border-border rounded-xl p-8 text-center">
-              <Megaphone className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Campanhas IA</h3>
-              <p className="text-muted-foreground">Em desenvolvimento - Fase 5</p>
-            </div>
+            <CampanhasManager />
           </TabsContent>
 
           <TabsContent value="segmentos" className="space-y-6">
-            <div className="bg-card border border-border rounded-xl p-8 text-center">
-              <UsersIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Segmentos</h3>
-              <p className="text-muted-foreground">Em desenvolvimento - Fase 4</p>
-            </div>
+            <SegmentosManager />
           </TabsContent>
 
           <TabsContent value="sequencias" className="space-y-6">
-            <div className="bg-card border border-border rounded-xl p-8 text-center">
-              <Zap className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Sequências IA</h3>
-              <p className="text-muted-foreground">Em desenvolvimento - Fase 5</p>
-            </div>
+            <SequenciasManager />
           </TabsContent>
 
           <TabsContent value="agendamentos" className="space-y-6">
