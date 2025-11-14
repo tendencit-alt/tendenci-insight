@@ -280,7 +280,6 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess }: CreatePro
                   <SelectItem value="aprovado">Aprovado</SelectItem>
                   <SelectItem value="perdido">Perdido</SelectItem>
                 </SelectContent>
-                </SelectContent>
               </Select>
             </div>
 

@@ -78,17 +78,17 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
 
   return (
     <>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* Captado */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+        {/* Recebido */}
         <div className="space-y-4">
           <div className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 rounded-lg">
             <span className="text-2xl">🟦</span>
             <h3 className="font-semibold text-blue-700 dark:text-blue-400">
-              Captado ({groupedProjects.captado.length})
+              Recebido ({groupedProjects.recebido.length})
             </h3>
           </div>
           <div className="space-y-3">
-            {groupedProjects.captado.map((project) => (
+            {groupedProjects.recebido.map((project) => (
               <Card
                 key={project.id}
                 className="p-4 cursor-pointer hover:shadow-lg transition-all duration-200 border-l-4 border-l-blue-500"
@@ -111,24 +111,24 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
                 </p>
               </Card>
             ))}
-            {groupedProjects.captado.length === 0 && (
+            {groupedProjects.recebido.length === 0 && (
               <p className="text-sm text-muted-foreground text-center py-4">
-                Nenhum projeto captado
+                Nenhum projeto recebido
               </p>
             )}
           </div>
         </div>
 
-        {/* Em Orçamento */}
+        {/* Em Desenvolvimento */}
         <div className="space-y-4">
           <div className="flex items-center gap-2 px-4 py-2 bg-yellow-500/10 rounded-lg">
             <span className="text-2xl">🟨</span>
             <h3 className="font-semibold text-yellow-700 dark:text-yellow-400">
-              Em Orçamento ({groupedProjects.orçamento.length})
+              Em Desenvolvimento ({groupedProjects.em_desenvolvimento.length})
             </h3>
           </div>
           <div className="space-y-3">
-            {groupedProjects.orçamento.map((project) => (
+            {groupedProjects.em_desenvolvimento.map((project) => (
               <Card
                 key={project.id}
                 className="p-4 cursor-pointer hover:shadow-lg transition-all duration-200 border-l-4 border-l-yellow-500"
@@ -151,9 +151,49 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
                 </p>
               </Card>
             ))}
-            {groupedProjects.orçamento.length === 0 && (
+            {groupedProjects.em_desenvolvimento.length === 0 && (
               <p className="text-sm text-muted-foreground text-center py-4">
-                Nenhum projeto em orçamento
+                Nenhum projeto em desenvolvimento
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Aguardando Aprovação */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 px-4 py-2 bg-orange-500/10 rounded-lg">
+            <span className="text-2xl">🟧</span>
+            <h3 className="font-semibold text-orange-700 dark:text-orange-400">
+              Aguardando Aprovação ({groupedProjects.aguardando_aprovacao.length})
+            </h3>
+          </div>
+          <div className="space-y-3">
+            {groupedProjects.aguardando_aprovacao.map((project) => (
+              <Card
+                key={project.id}
+                className="p-4 cursor-pointer hover:shadow-lg transition-all duration-200 border-l-4 border-l-orange-500"
+                onClick={() => handleCardClick(project)}
+              >
+                <h4 className="font-semibold mb-2">{project.name || "Sem título"}</h4>
+                <p className="text-sm text-muted-foreground mb-2">
+                  {project.client?.name || "Cliente não definido"}
+                </p>
+                <div className="flex items-center justify-between">
+                  <Badge className={getStageColor(project.stage)}>
+                    R$ {project.value?.toLocaleString('pt-BR') || "0"}
+                  </Badge>
+                  <span className="text-xs text-muted-foreground">
+                    {project.deadline ? formatDistanceToNow(new Date(project.deadline), { addSuffix: true, locale: ptBR }) : "Sem prazo"}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  {project.architect?.name || "Sem responsável"}
+                </p>
+              </Card>
+            ))}
+            {groupedProjects.aguardando_aprovacao.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                Nenhum projeto aguardando aprovação
               </p>
             )}
           </div>
