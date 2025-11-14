@@ -88,6 +88,7 @@ export function DealDetailSheet({
     if (!deal?.id) return;
 
     const fetchProject = async () => {
+      console.log('Buscando projeto para deal:', deal.id);
       const { data, error } = await supabase
         .from("projects")
         .select(`
@@ -98,15 +99,17 @@ export function DealDetailSheet({
         .eq("crm_deal_id", deal.id)
         .maybeSingle();
       
+      console.log('Resultado busca projeto:', { data, error });
+      
       if (error) {
-        console.error("Erro ao buscar projeto:", error);
+        console.error('Erro ao buscar projeto:', error);
       }
       
       if (data) {
-        console.log("Projeto vinculado encontrado:", data);
+        console.log('Projeto encontrado:', data.name);
         setProject(data);
       } else {
-        console.log("Nenhum projeto vinculado a este negócio");
+        console.log('Nenhum projeto vinculado');
         setProject(null);
       }
     };
