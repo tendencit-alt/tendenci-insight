@@ -8,6 +8,8 @@ import { ManageStagesDialog } from "@/components/prospeccao/ManageStagesDialog";
 import { SegmentosManager } from "@/components/prospeccao/SegmentosManager";
 import { SequenciasManager } from "@/components/prospeccao/SequenciasManager";
 import { CampanhasManager } from "@/components/prospeccao/CampanhasManager";
+import { AgendamentosManager } from "@/components/prospeccao/AgendamentosManager";
+import { N8nAgendamentoGuide } from "@/components/settings/N8nAgendamentoGuide";
 import { UserSearch, LayoutGrid, Megaphone, Users as UsersIcon, Zap, Calendar, Settings, List } from "lucide-react";
 
 export default function Prospeccao() {
@@ -82,19 +84,11 @@ export default function Prospeccao() {
           </TabsContent>
 
           <TabsContent value="agendamentos" className="space-y-6">
-            <div className="bg-card border border-border rounded-xl p-8 text-center">
-              <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Agendamentos</h3>
-              <p className="text-muted-foreground">Em desenvolvimento - Fase 5</p>
-            </div>
+            <AgendamentosManager />
           </TabsContent>
 
           <TabsContent value="configuracoes" className="space-y-6">
-            <div className="bg-card border border-border rounded-xl p-8 text-center">
-              <Settings className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Conexão n8n / WhatsApp</h3>
-              <p className="text-muted-foreground">Em desenvolvimento - Fase 6</p>
-            </div>
+            <N8nAgendamentoGuide />
           </TabsContent>
         </Tabs>
 
