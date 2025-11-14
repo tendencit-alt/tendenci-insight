@@ -159,6 +159,17 @@ export default function CRM() {
           onPipelineChange={setSelectedPipeline}
         />
 
+        {/* Metas do Vendedor */}
+        {!isAdmin && goalData && (
+          <SellerDashboard 
+            userName={profile?.full_name || user?.email || "Vendedor"}
+            userAvatar={profile?.avatar_url}
+            goalData={goalData}
+            companyGoal={companyGoal}
+            teamAverage={teamAverage}
+          />
+        )}
+
         {selectedPipeline && (
           <>
             {/* KPIs */}
@@ -169,17 +180,6 @@ export default function CRM() {
 
             {/* Tarefas Pendentes */}
             <CRMTasksPanel pipelineId={selectedPipeline} key={`tasks-${refreshKey}`} />
-
-            {/* Metas do Vendedor */}
-            {!isAdmin && goalData && (
-              <SellerDashboard 
-                userName={profile?.full_name || user?.email || "Vendedor"}
-                userAvatar={profile?.avatar_url}
-                goalData={goalData}
-                companyGoal={companyGoal}
-                teamAverage={teamAverage}
-              />
-            )}
 
             {/* Kanban Board */}
             <CRMBoard
