@@ -177,6 +177,57 @@ export type Database = {
           },
         ]
       }
+      architect_projects: {
+        Row: {
+          architect_id: string
+          created_at: string | null
+          created_by: string | null
+          data_projeto: string
+          id: string
+          nome_projeto: string
+          observacoes: string | null
+          tipo: string | null
+          valor: number | null
+        }
+        Insert: {
+          architect_id: string
+          created_at?: string | null
+          created_by?: string | null
+          data_projeto?: string
+          id?: string
+          nome_projeto: string
+          observacoes?: string | null
+          tipo?: string | null
+          valor?: number | null
+        }
+        Update: {
+          architect_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          data_projeto?: string
+          id?: string
+          nome_projeto?: string
+          observacoes?: string | null
+          tipo?: string | null
+          valor?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "architect_projects_architect_id_fkey"
+            columns: ["architect_id"]
+            isOneToOne: false
+            referencedRelation: "architects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "architect_projects_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       architects: {
         Row: {
           active: boolean | null
@@ -187,6 +238,7 @@ export type Database = {
           company: string | null
           created_at: string | null
           created_by: string | null
+          data_marcado_inativo: string | null
           data_primeiro_contato: string | null
           data_ultimo_contato: string | null
           email: string | null
@@ -199,6 +251,7 @@ export type Database = {
           status_funil: string | null
           tag_prospeccao: string | null
           tier: string | null
+          ultimo_projeto_data: string | null
           updated_at: string | null
           vendedor_responsavel: string | null
         }
@@ -211,6 +264,7 @@ export type Database = {
           company?: string | null
           created_at?: string | null
           created_by?: string | null
+          data_marcado_inativo?: string | null
           data_primeiro_contato?: string | null
           data_ultimo_contato?: string | null
           email?: string | null
@@ -223,6 +277,7 @@ export type Database = {
           status_funil?: string | null
           tag_prospeccao?: string | null
           tier?: string | null
+          ultimo_projeto_data?: string | null
           updated_at?: string | null
           vendedor_responsavel?: string | null
         }
@@ -235,6 +290,7 @@ export type Database = {
           company?: string | null
           created_at?: string | null
           created_by?: string | null
+          data_marcado_inativo?: string | null
           data_primeiro_contato?: string | null
           data_ultimo_contato?: string | null
           email?: string | null
@@ -247,6 +303,7 @@ export type Database = {
           status_funil?: string | null
           tag_prospeccao?: string | null
           tier?: string | null
+          ultimo_projeto_data?: string | null
           updated_at?: string | null
           vendedor_responsavel?: string | null
         }
@@ -2443,6 +2500,25 @@ export type Database = {
         Args: { email_input: string }
         Returns: string
       }
+      get_architect_ranking_by_type: {
+        Args: { p_tipo?: string }
+        Returns: {
+          architect_id: string
+          architect_name: string
+          quantidade_projetos: number
+          ticket_medio: number
+          valor_total: number
+        }[]
+      }
+      get_project_stats_by_type: {
+        Args: never
+        Returns: {
+          quantidade: number
+          ticket_medio: number
+          tipo: string
+          valor_total: number
+        }[]
+      }
       get_seller_goal_stats: { Args: { p_vendedor_id: string }; Returns: Json }
       get_seller_performance_by_goal: {
         Args: { p_seller_goal_id: string }
@@ -2459,6 +2535,7 @@ export type Database = {
       is_admin: { Args: never; Returns: boolean }
       is_user_master: { Args: { _user_id: string }; Returns: boolean }
       leads_aggregates: { Args: never; Returns: Json }
+      mark_inactive_architects: { Args: never; Returns: undefined }
       project_deadline_alerts: { Args: never; Returns: Json }
       project_deadline_alerts_detailed: {
         Args: never

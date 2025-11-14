@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Plus, RefreshCw } from "lucide-react";
@@ -10,14 +10,26 @@ import { ArchitectsTable } from "@/components/architects/ArchitectsTable";
 import { CreateArchitectDialog } from "@/components/architects/CreateArchitectDialog";
 import { EditArchitectDialog } from "@/components/architects/EditArchitectDialog";
 import { ArchitectDetailSheet } from "@/components/architects/ArchitectDetailSheet";
+import { ProjectTypesDashboard } from "@/components/architects/ProjectTypesDashboard";
+import { useLocation } from "react-router-dom";
 
 const Architects = () => {
+  const location = useLocation();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [selectedArchitect, setSelectedArchitect] = useState<any>(null);
   const [selectedArchitectId, setSelectedArchitectId] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [activeTab, setActiveTab] = useState("table");
+
+  // Handle URL tab parameter
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tab = params.get("tab");
+    if (tab === "birthdays") setActiveTab("birthdays");
+    if (tab === "inactive") setActiveTab("inactive");
+  }, [location]);
 
   const handleRefresh = () => {
     setRefreshKey(prev => prev + 1);

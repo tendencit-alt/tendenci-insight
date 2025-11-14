@@ -6,7 +6,10 @@ import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Calendar, Briefcase, TrendingUp, History } from "lucide-react";
+import { Calendar, Briefcase, TrendingUp, History, PlusCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { CreateProjectDialog } from "./CreateProjectDialog";
+import { ArchitectTags } from "./ArchitectTags";
 
 interface ArchitectDetailSheetProps {
   open: boolean;
@@ -27,6 +30,7 @@ export function ArchitectDetailSheet({ open, onOpenChange, architectId }: Archit
     totalValue: 0
   });
   const [loading, setLoading] = useState(true);
+  const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
 
   useEffect(() => {
     if (open && architectId) {
@@ -99,10 +103,23 @@ export function ArchitectDetailSheet({ open, onOpenChange, architectId }: Archit
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
         <SheetHeader>
-          <SheetTitle className="text-2xl">{architect.name}</SheetTitle>
+          <div className="flex items-center justify-between">
+            <SheetTitle className="text-2xl">{architect.name}</SheetTitle>
+            <Button onClick={() => setIsCreateProjectOpen(true)} size="sm">
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Cadastrar Projeto
+            </Button>
+          </div>
         </SheetHeader>
 
         <div className="space-y-6 mt-6">
+          {/* Tags Automáticas */}
+          <ArchitectTags
+            ultimoProjetoData={architect.ultimo_projeto_data}
+            dataUltimoContato={architect.data_ultimo_contato}
+            active={architect.active}
+          />
+
           {/* Informações Básicas */}
           <Card className="p-6 space-y-4">
             <h3 className="font-semibold text-lg flex items-center gap-2">
@@ -263,6 +280,13 @@ export function ArchitectDetailSheet({ open, onOpenChange, architectId }: Archit
           </Tabs>
         </div>
       </SheetContent>
+
+      <CreateProjectDialog
+        open={isCreateProjectOpen}
+        onOpenChange={setIsCreateProjectOpen}
+        architectId={architectId || ""}
+        onSuccess={fetchArchitectData}
+      />
     </Sheet>
   );
 }

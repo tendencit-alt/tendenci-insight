@@ -13,6 +13,7 @@ import { CRMFilters } from "@/components/crm/CRMFilters";
 import { CreateDealDialog } from "@/components/crm/CreateDealDialog";
 import { ManagePipelineDialog } from "@/components/crm/ManagePipelineDialog";
 import { SellerDashboard } from "@/components/goals/seller/SellerDashboard";
+import { CRMKPIsDashboard } from "@/components/crm/CRMKPIsDashboard";
 
 export default function CRM() {
   const { toast } = useToast();
@@ -172,7 +173,10 @@ export default function CRM() {
 
         {selectedPipeline && (
           <>
-            {/* KPIs */}
+            {/* Dashboard de KPIs Quantitativos */}
+            <CRMKPIsDashboard pipelineId={selectedPipeline} refreshKey={refreshKey} />
+
+            {/* KPIs Originais */}
             <CRMKPIs pipelineId={selectedPipeline} key={`kpi-${refreshKey}`} />
 
             {/* SLA Alerts */}
