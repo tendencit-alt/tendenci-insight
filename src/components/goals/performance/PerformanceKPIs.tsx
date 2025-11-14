@@ -70,7 +70,7 @@ export function PerformanceKPIs({ kpis, arquitetosResumo }: PerformanceKPIsProps
           <Target className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-primary">{kpis.conversao_percentual.toFixed(1)}%</div>
+          <div className="text-2xl font-bold text-primary">{(kpis.conversao_percentual || 0).toFixed(1)}%</div>
           <p className="text-xs text-muted-foreground">Taxa de fechamento</p>
         </CardContent>
       </Card>

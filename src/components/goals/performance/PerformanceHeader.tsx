@@ -102,7 +102,7 @@ export function PerformanceHeader({ sellerInfo, goalInfo, kpis }: PerformanceHea
               <div>
                 <p className="text-primary-foreground/70 text-sm mb-1">% da Meta</p>
                 <p className={`text-2xl font-bold ${isAboveGoal ? 'text-green-300' : 'text-yellow-300'}`}>
-                  {percentualAtingido.toFixed(1)}%
+                  {(percentualAtingido || 0).toFixed(1)}%
                 </p>
               </div>
               
@@ -125,7 +125,7 @@ export function PerformanceHeader({ sellerInfo, goalInfo, kpis }: PerformanceHea
               
               <div>
                 <p className="text-primary-foreground/70 text-sm mb-1">Conversão Geral</p>
-                <p className="text-xl font-semibold">{kpis.conversao_percentual.toFixed(1)}%</p>
+                <p className="text-xl font-semibold">{(kpis.conversao_percentual || 0).toFixed(1)}%</p>
               </div>
             </div>
           </div>
