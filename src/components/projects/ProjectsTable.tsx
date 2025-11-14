@@ -192,7 +192,7 @@ export function ProjectsTable({ filters }: ProjectsTableProps) {
 
       {selectedProject && (
         <>
-          <ProjectDetailSheet project={selectedProject} open={detailOpen} onOpenChange={setDetailOpen} />
+          <ProjectDetailSheet project={selectedProject} open={detailOpen} onOpenChange={setDetailOpen} onSuccess={fetchProjects} />
           <EditProjectDialog project={selectedProject} open={editOpen} onOpenChange={setEditOpen} onSuccess={fetchProjects} />
         </>
       )}
