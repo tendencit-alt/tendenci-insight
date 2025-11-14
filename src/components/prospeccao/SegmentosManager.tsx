@@ -40,6 +40,7 @@ export function SegmentosManager() {
       status_funil: [] as string[],
     },
   });
+  const [selectedCidades, setSelectedCidades] = useState<string[]>([]);
   const queryClient = useQueryClient();
 
   // Buscar segmentos
@@ -70,13 +71,46 @@ export function SegmentosManager() {
     },
   });
 
+  // Buscar vendedores para filtro
+  const { data: vendedores } = useQuery({
+    queryKey: ["vendedores-filter"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, full_name, email")
+        .in("role", ["admin", "vendedor"])
+        .order("full_name");
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Buscar stages para filtro
+  const { data: stages } = useQuery({
+    queryKey: ["prospec-stages-filter"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("tendenci_prospec_arq_stages")
+        .select("id, nome")
+        .eq("ativa", true)
+        .order("ordem");
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
   // Criar/atualizar segmento
   const saveMutation = useMutation({
     mutationFn: async () => {
       const payload = {
         nome: formData.nome,
         descricao: formData.descricao,
-        filtros: formData.filtros,
+        filtros: {
+          ...formData.filtros,
+          cidade: selectedCidades,
+        },
       };
 
       if (editingSegment) {
@@ -133,6 +167,7 @@ export function SegmentosManager() {
         status_funil: [],
       },
     });
+    setSelectedCidades([]);
     setEditingSegment(null);
   };
 
@@ -149,6 +184,7 @@ export function SegmentosManager() {
         status_funil: segment.filtros?.status_funil || [],
       },
     });
+    setSelectedCidades(segment.filtros?.cidade || []);
     setDialogOpen(true);
   };
 
@@ -246,11 +282,89 @@ export function SegmentosManager() {
                       </SelectContent>
                     </Select>
                   </div>
+
+                  <div className="space-y-2">
+                    <Label>Vendedor Responsável</Label>
+                    <Select
+                      value={formData.filtros.vendedor || undefined}
+                      onValueChange={(value) =>
+                        setFormData({
+                          ...formData,
+                          filtros: { ...formData.filtros, vendedor: value },
+                        })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Todos os vendedores" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {vendedores?.map((v) => (
+                          <SelectItem key={v.id} value={v.id}>
+                            {v.full_name || v.email}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Status no Funil</Label>
+                    <Select
+                      value={formData.filtros.status_funil?.[0] || undefined}
+                      onValueChange={(value) =>
+                        setFormData({
+                          ...formData,
+                          filtros: { ...formData.filtros, status_funil: value ? [value] : [] },
+                        })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Todos os status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {stages?.map((stage) => (
+                          <SelectItem key={stage.id} value={stage.id}>
+                            {stage.nome}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
 
-                <p className="text-xs text-muted-foreground mt-4">
-                  * Filtros adicionais podem ser configurados via API
-                </p>
+                <div className="space-y-2 mt-4">
+                  <Label>Cidades</Label>
+                  <div className="border rounded-md p-3 max-h-40 overflow-y-auto">
+                    {cidades && cidades.length > 0 ? (
+                      <div className="space-y-2">
+                        {cidades.map((cidade) => (
+                          <label key={cidade} className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={selectedCidades.includes(cidade)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedCidades([...selectedCidades, cidade]);
+                                } else {
+                                  setSelectedCidades(selectedCidades.filter(c => c !== cidade));
+                                }
+                              }}
+                              className="rounded"
+                            />
+                            <span className="text-sm">{cidade}</span>
+                          </label>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">Nenhuma cidade disponível</p>
+                    )}
+                  </div>
+                  {selectedCidades.length > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      {selectedCidades.length} cidade(s) selecionada(s)
+                    </p>
+                  )}
+                </div>
               </div>
 
               <div className="flex gap-2 justify-end pt-4">
