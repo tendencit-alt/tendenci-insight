@@ -1847,6 +1847,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "tendenci_prospec_arq_campaigns_segmento_id_fkey"
+            columns: ["segmento_id"]
+            isOneToOne: false
+            referencedRelation: "tendenci_prospec_arq_segments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tendenci_prospec_arq_campaigns_sequencia_id_fkey"
+            columns: ["sequencia_id"]
+            isOneToOne: false
+            referencedRelation: "tendenci_prospec_arq_sequences"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "tendenci_prospec_arq_campaigns_vendedor_id_fkey"
             columns: ["vendedor_id"]
             isOneToOne: false
