@@ -48,16 +48,14 @@ export function ProspeccaoCRM({ onManageStages }: ProspeccaoCRMProps) {
       </div>
 
       {/* Gerenciar Etapas */}
-      <div>
-        <Button 
-          variant="outline" 
-          onClick={onManageStages}
-          className="gap-2"
-        >
-          <List className="h-4 w-4" />
-          Gerenciar Etapas
-        </Button>
-      </div>
+      <Button 
+        variant="outline" 
+        onClick={onManageStages}
+        className="gap-2"
+      >
+        <List className="h-4 w-4" />
+        Gerenciar Etapas
+      </Button>
 
       {/* Filtros */}
       <ProspeccaoFilters 
