@@ -1,25 +1,39 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { LayoutGrid, Table as TableIcon } from "lucide-react";
+import { LayoutGrid, Table as TableIcon, List } from "lucide-react";
 import { ProspeccaoKanban } from "./ProspeccaoKanban";
 import { ProspeccaoTable } from "./ProspeccaoTable";
 import { ProspeccaoFilters } from "./ProspeccaoFilters";
 
 type ViewMode = "kanban" | "table";
 
-export function ProspeccaoCRM() {
+interface ProspeccaoCRMProps {
+  onManageStages: () => void;
+}
+
+export function ProspeccaoCRM({ onManageStages }: ProspeccaoCRMProps) {
   const [viewMode, setViewMode] = useState<ViewMode>("kanban");
   const [filters, setFilters] = useState<any>({});
   const [showNaoContactados, setShowNaoContactados] = useState(false);
 
   return (
     <div className="space-y-6">
-      {/* Header com toggle de visualização */}
+      {/* Header com título */}
+      <div>
+        <h2 className="text-2xl font-bold">CRM de Arquitetos</h2>
+        <p className="text-muted-foreground">Gerencie o funil de prospecção dos arquitetos</p>
+      </div>
+
+      {/* Gerenciar Etapas + Toggle de visualização */}
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">CRM de Arquitetos</h2>
-          <p className="text-muted-foreground">Gerencie o funil de prospecção dos arquitetos</p>
-        </div>
+        <Button 
+          variant="outline" 
+          onClick={onManageStages}
+          className="gap-2"
+        >
+          <List className="h-4 w-4" />
+          Gerenciar Etapas
+        </Button>
         
         <div className="flex items-center gap-2 p-1 bg-muted rounded-lg">
           <Button
