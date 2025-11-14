@@ -1117,10 +1117,19 @@ export function DealDetailSheet({
           
           if (data) {
             // Vincular ao deal atual
-            await supabase
+            const { error: updateError } = await supabase
               .from("projects")
               .update({ deal_id: deal.id })
               .eq("id", data.id);
+            
+            if (updateError) {
+              toast({
+                title: "Erro",
+                description: "Erro ao vincular projeto ao negócio.",
+                variant: "destructive",
+              });
+              return;
+            }
             
             // Recarregar projeto
             const { data: projectData } = await supabase
@@ -1190,10 +1199,21 @@ export function DealDetailSheet({
               onClick={async () => {
                 if (!selectedProjectToLink) return;
                 
-                await supabase
+                const { error: updateError } = await supabase
                   .from("projects")
                   .update({ deal_id: deal.id })
                   .eq("id", selectedProjectToLink);
+                
+                if (updateError) {
+                  toast({
+                    title: "Erro",
+                    description: "Erro ao vincular projeto ao negócio.",
+                    variant: "destructive",
+                  });
+                  setSelectedProjectToLink("");
+                  setIsLinkProjectOpen(false);
+                  return;
+                }
                 
                 // Recarregar projeto
                 const { data: projectData } = await supabase
