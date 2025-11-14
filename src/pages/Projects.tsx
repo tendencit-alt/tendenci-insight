@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
-import { Plus, RefreshCw, Download } from "lucide-react";
+import { Plus, RefreshCw, Download, TrendingUp } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,6 +10,7 @@ import { ProjectsTable } from "@/components/projects/ProjectsTable";
 import { CreateProjectDialog } from "@/components/projects/CreateProjectDialog";
 import { ProjectsFilters } from "@/components/projects/ProjectsFilters";
 import { DeadlineAlerts } from "@/components/projects/DeadlineAlerts";
+import { ArchitectPerformance } from "@/components/projects/ArchitectPerformance";
 
 const Projects = () => {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -22,32 +23,24 @@ const Projects = () => {
     search: ""
   });
   const [metrics, setMetrics] = useState({
-    captado_count: 0,
-    orcamento_count: 0,
+    recebido_count: 0,
+    em_desenvolvimento_count: 0,
+    aguardando_aprovacao_count: 0,
     aprovado_count: 0,
-    perdido_count: 0
-  });
-  const [alerts, setAlerts] = useState({
+    aprovado_value: 0,
+    perdido_count: 0,
     near_due_count: 0,
     overdue_count: 0
   });
 
   useEffect(() => {
     fetchMetrics();
-    fetchAlerts();
   }, [refreshKey]);
 
   const fetchMetrics = async () => {
-    const { data, error } = await supabase.rpc('projects_aggregates');
-    if (!error && data) {
-      setMetrics(data as any);
-    }
-  };
-
-  const fetchAlerts = async () => {
-    const { data, error } = await supabase.rpc('project_deadline_alerts');
-    if (!error && data) {
-      setAlerts(data as any);
+    const { data, error } = await supabase.rpc('projects_metrics');
+    if (!error && data && data.length > 0) {
+      setMetrics(data[0] as any);
     }
   };
 
@@ -72,7 +65,7 @@ const Projects = () => {
             📦 Projetos
           </h1>
           <p className="text-muted-foreground text-lg">
-            Visão consolidada de Captados, Orçamentos, Aprovados e Perdidos, com controle de arquivos, orçamentos e prazos.
+            Gerenciamento de todos os projetos enviados pelos arquitetos parceiros - acompanhe status, prazos e desempenho.
           </p>
         </div>
 
