@@ -6,18 +6,18 @@ import { Badge } from "@/components/ui/badge";
 interface ConversionByOriginProps {
   conversaoPorOrigem: Array<{
     origem: string;
-    leads_total: number;
-    trabalhados: number;
-    ganhos: number;
-    conversao: number;
+    leads_recebidos: number;
+    leads_trabalhados: number;
+    leads_ganhos: number;
+    taxa_conversao: number;
     ticket_medio: number;
   }>;
 }
 
 export function ConversionByOrigin({ conversaoPorOrigem }: ConversionByOriginProps) {
-  const getConversaoColor = (conversao: number) => {
-    if (conversao >= 50) return "text-green-600 bg-green-50 border-green-200";
-    if (conversao >= 30) return "text-yellow-600 bg-yellow-50 border-yellow-200";
+  const getConversaoColor = (taxaConversao: number) => {
+    if (taxaConversao >= 50) return "text-green-600 bg-green-50 border-green-200";
+    if (taxaConversao >= 30) return "text-yellow-600 bg-yellow-50 border-yellow-200";
     return "text-red-600 bg-red-50 border-red-200";
   };
 
@@ -50,18 +50,18 @@ export function ConversionByOrigin({ conversaoPorOrigem }: ConversionByOriginPro
                 conversaoPorOrigem?.map((origem, index) => (
                   <TableRow key={index}>
                     <TableCell className="font-medium">{origem.origem}</TableCell>
-                    <TableCell className="text-right">{origem.leads_total}</TableCell>
-                    <TableCell className="text-right">{origem.trabalhados}</TableCell>
+                    <TableCell className="text-right">{origem.leads_recebidos}</TableCell>
+                    <TableCell className="text-right">{origem.leads_trabalhados}</TableCell>
                     <TableCell className="text-right font-semibold text-green-600">
-                      {origem.ganhos}
+                      {origem.leads_ganhos}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Badge className={getConversaoColor(origem.conversao)}>
-                        {origem.conversao.toFixed(1)}%
+                      <Badge className={getConversaoColor(origem.taxa_conversao || 0)}>
+                        {(origem.taxa_conversao || 0).toFixed(1)}%
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      {formatCurrency(origem.ticket_medio)}
+                      {formatCurrency(origem.ticket_medio || 0)}
                     </TableCell>
                   </TableRow>
                 ))
