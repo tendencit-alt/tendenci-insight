@@ -179,7 +179,7 @@ export function CreateDealDialog({
         title: autoTitle,
         stage_id: formData.stage_id,
         lead_id: formData.lead_id || null,
-        architect_id: formData.architect_id || null,
+        architect_id: formData.architect_id && formData.architect_id !== "sem-arquiteto" ? formData.architect_id : null,
         owner_id: formData.owner_id || null,
         value: formData.value ? Number(formData.value) : 0,
         note: formData.note || null,
@@ -346,6 +346,7 @@ export function CreateDealDialog({
                     <SelectValue placeholder="Selecione o arquiteto" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="sem-arquiteto">Cliente sem arquiteto</SelectItem>
                     {architects.map((arch) => (
                       <SelectItem key={arch.id} value={arch.id}>
                         {arch.name}
