@@ -54,19 +54,20 @@ export function WhatsAppConnectionManager() {
           // Atualiza status no banco para cada instância
           for (const conn of data) {
             const evolutionInstance = statusData.instances.find(
-              (i: any) => i.instance.instanceName === conn.instance_name
+              (i: any) => i.name === conn.instance_name
             );
 
             if (evolutionInstance) {
-              const state = evolutionInstance.instance?.state || "close";
-              const phoneNumber = evolutionInstance.instance?.owner || conn.phone_number;
+              // Evolution API retorna connectionStatus diretamente no objeto raiz
+              const connectionStatus = evolutionInstance.connectionStatus || "close";
+              const phoneNumber = evolutionInstance.ownerJid?.split('@')[0] || conn.phone_number;
               
               let newStatus = "disconnected";
-              if (state === "open") newStatus = "connected";
-              else if (state === "connecting") newStatus = "connecting";
-              else if (state === "close") newStatus = "disconnected";
+              if (connectionStatus === "open") newStatus = "connected";
+              else if (connectionStatus === "connecting") newStatus = "connecting";
+              else if (connectionStatus === "close") newStatus = "disconnected";
               
-              console.log(`📱 ${conn.instance_name}: ${state} -> ${newStatus}, phone: ${phoneNumber}`);
+              console.log(`📱 ${conn.instance_name}: ${connectionStatus} -> ${newStatus}, phone: ${phoneNumber}`);
               
               if (conn.status !== newStatus || (phoneNumber && conn.phone_number !== phoneNumber)) {
                 const updateData: any = { status: newStatus };
