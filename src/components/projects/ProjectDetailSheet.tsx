@@ -5,6 +5,8 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import { FileText, Image as ImageIcon, Download, Upload, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -24,11 +26,13 @@ export function ProjectDetailSheet({ project, open, onOpenChange }: ProjectDetai
   const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [currentStage, setCurrentStage] = useState(project?.stage || "recebido");
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { notifyFileUploaded } = useWebhookSync();
+  const { notifyFileUploaded, notifyStageChanged } = useWebhookSync();
 
   useEffect(() => {
     if (open && project) {
+      setCurrentStage(project.stage || "recebido");
       fetchProjectData();
     }
   }, [open, project]);
@@ -75,6 +79,31 @@ export function ProjectDetailSheet({ project, open, onOpenChange }: ProjectDetai
 
     if (!error && data) {
       setHistory(data);
+    }
+  };
+
+  const handleStageChange = async (newStage: string) => {
+    const oldStage = currentStage;
+    
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .update({ stage: newStage })
+        .eq('id', project.id);
+
+      if (error) throw error;
+
+      setCurrentStage(newStage);
+      
+      // Notificar webhook
+      notifyStageChanged(project, oldStage, newStage);
+      
+      toast.success("Estágio atualizado com sucesso!");
+      
+      // Recarregar histórico para mostrar a mudança
+      fetchHistory();
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao atualizar estágio");
     }
   };
 
@@ -194,9 +223,20 @@ export function ProjectDetailSheet({ project, open, onOpenChange }: ProjectDetai
                 <span className="text-sm text-muted-foreground">Arquiteto</span>
                 <p className="font-medium">{project.architect?.name || "Não atribuído"}</p>
               </div>
-              <div>
-                <span className="text-sm text-muted-foreground">Estágio</span>
-                <Badge>{project.stage}</Badge>
+              <div className="space-y-2">
+                <Label className="text-sm text-muted-foreground">Estágio</Label>
+                <Select value={currentStage} onValueChange={handleStageChange}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="recebido">Recebido</SelectItem>
+                    <SelectItem value="em_desenvolvimento">Em Desenvolvimento</SelectItem>
+                    <SelectItem value="aguardando_aprovacao">Aguardando Aprovação</SelectItem>
+                    <SelectItem value="aprovado">Aprovado</SelectItem>
+                    <SelectItem value="perdido">Perdido</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <span className="text-sm text-muted-foreground">Valor</span>
