@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { EditDealDialog } from "./EditDealDialog";
 import { DealTimeline } from "./DealTimeline";
 import { DealHistory } from "./DealHistory";
+import { DealTasks } from "./DealTasks";
 import { ProjectDetailSheet } from "../projects/ProjectDetailSheet";
 import { CreateProjectDialog } from "../projects/CreateProjectDialog";
 import { supabase } from "@/integrations/supabase/client";
@@ -656,88 +657,97 @@ export function DealDetailSheet({
 
           {/* Tab: Ações & Projeto */}
           <TabsContent value="actions" className="space-y-4">
-            {/* Projeto */}
-            {project ? (
-              <Card className="p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <FolderOpen className="h-5 w-5 text-primary" />
-                    <h3 className="font-semibold text-lg">Projeto Vinculado</h3>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div className="space-y-4">
+                {/* Projeto */}
+                {project ? (
+                  <Card className="p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <FolderOpen className="h-5 w-5 text-primary" />
+                        <h3 className="font-semibold text-lg">Projeto Vinculado</h3>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setIsProjectSheetOpen(true)}
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setIsUnlinkProjectOpen(true)}
+                        >
+                          <Unlink className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <p className="font-medium">{project.name}</p>
+                      {project.stage && (
+                        <Badge variant="outline">{project.stage}</Badge>
+                      )}
+                    </div>
+                  </Card>
+                ) : (
+                  <Card className="p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <FolderOpen className="h-5 w-5 text-primary" />
+                      <h3 className="font-semibold text-lg">Projeto</h3>
+                    </div>
+                    <Button
+                      variant="outline"
+                      className="w-full gap-2"
+                      onClick={() => setIsCreateProjectOpen(true)}
+                    >
+                      <Plus className="h-4 w-4" />
+                      Criar Projeto
+                    </Button>
+                  </Card>
+                )}
+
+                {/* Ações */}
+                <Card className="p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <TagIcon className="h-5 w-5 text-primary" />
+                    <h3 className="font-semibold text-lg">Ações</h3>
                   </div>
                   <div className="flex gap-2">
                     <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setIsProjectSheetOpen(true)}
+                      variant="default"
+                      className="flex-1 gap-2"
+                      onClick={handleWinDeal}
+                      disabled={deal.status === "won"}
                     >
-                      <ExternalLink className="h-4 w-4" />
+                      <CheckCircle className="h-4 w-4" />
+                      Ganhar
                     </Button>
                     <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setIsUnlinkProjectOpen(true)}
+                      variant="destructive"
+                      className="flex-1 gap-2"
+                      onClick={() => setLostDialog(true)}
+                      disabled={deal.status === "lost"}
                     >
-                      <Unlink className="h-4 w-4" />
+                      <XCircle className="h-4 w-4" />
+                      Perder
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setDeleteDialog(true)}
+                    >
+                      Excluir
                     </Button>
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <p className="font-medium">{project.name}</p>
-                  {project.stage && (
-                    <Badge variant="outline">{project.stage}</Badge>
-                  )}
-                </div>
-              </Card>
-            ) : (
-              <Card className="p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <FolderOpen className="h-5 w-5 text-primary" />
-                  <h3 className="font-semibold text-lg">Projeto</h3>
-                </div>
-                <Button
-                  variant="outline"
-                  className="w-full gap-2"
-                  onClick={() => setIsCreateProjectOpen(true)}
-                >
-                  <Plus className="h-4 w-4" />
-                  Criar Projeto
-                </Button>
-              </Card>
-            )}
+                </Card>
+              </div>
 
-            {/* Ações */}
-            <Card className="p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <TagIcon className="h-5 w-5 text-primary" />
-                <h3 className="font-semibold text-lg">Ações</h3>
+              {/* Tarefas */}
+              <div>
+                <DealTasks dealId={deal.id} />
               </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="default"
-                  className="flex-1 gap-2"
-                  onClick={handleWinDeal}
-                  disabled={deal.status === "won"}
-                >
-                  <CheckCircle className="h-4 w-4" />
-                  Ganhar
-                </Button>
-                <Button
-                  variant="destructive"
-                  className="flex-1 gap-2"
-                  onClick={() => setLostDialog(true)}
-                  disabled={deal.status === "lost"}
-                >
-                  <XCircle className="h-4 w-4" />
-                  Perder
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => setDeleteDialog(true)}
-                >
-                  Excluir
-                </Button>
-              </div>
-            </Card>
+            </div>
           </TabsContent>
         </Tabs>
 
