@@ -299,52 +299,51 @@ Deno.serve(async (req) => {
         : data.conversation_history
       
       if (isNewLead) {
-        // Lead novo: criar deals em todos os funis com "Lead"
-        const { data: allPipelines } = await supabase
+        // Lead novo: criar deal APENAS no primeiro pipeline encontrado
+        const { data: firstPipeline } = await supabase
           .from('crm_pipelines')
           .select('id, name')
+          .order('created_at', { ascending: true })
+          .limit(1)
+          .single()
         
-        if (allPipelines && allPipelines.length > 0) {
-          console.log(`📋 Encontrados ${allPipelines.length} funis no sistema`)
+        if (firstPipeline) {
+          const { data: firstStage } = await supabase
+            .from('crm_stages')
+            .select('id, name')
+            .eq('pipeline_id', firstPipeline.id)
+            .order('position', { ascending: true })
+            .limit(1)
+            .single()
           
-          for (const pipeline of allPipelines) {
-            const { data: firstStage } = await supabase
-              .from('crm_stages')
-              .select('id, name')
-              .eq('pipeline_id', pipeline.id)
-              .order('position', { ascending: true })
-              .limit(1)
-              .single()
+          if (firstStage) {
+            console.log(`✅ Criando deal no funil "${firstPipeline.name}" na etapa "${firstStage.name}"`)
             
-            if (firstStage && firstStage.name.toLowerCase() === 'lead') {
-              console.log(`✅ Funil "${pipeline.name}" tem primeira etapa "Lead" - criando deal...`)
-              
-              const { data: newDeal, error: dealError } = await supabase
-                .from('crm_deals')
-                .insert({
-                  pipeline_id: pipeline.id,
-                  stage_id: firstStage.id,
-                  lead_id: leadId,
-                  title: data.deal_title || `Lead ${data.name}`,
-                  value: data.deal_value || 0,
-                  categoria: 'Móveis Soltos',
-                  centro_custo: 'Industrial',
-                  tipo_produto: data.product_type || detectedProductType,
-                  product_type: data.product_type || detectedProductType,
-                  conversation_history: newMessages,
-                  ai_status: data.ai_status,
-                  status: 'aberto',
-                  from_ai: true
-                })
-                .select()
-                .single()
+            const { data: newDeal, error: dealError } = await supabase
+              .from('crm_deals')
+              .insert({
+                pipeline_id: firstPipeline.id,
+                stage_id: firstStage.id,
+                lead_id: leadId,
+                title: data.deal_title || `Lead ${data.name}`,
+                value: data.deal_value || 0,
+                categoria: 'Móveis Soltos',
+                centro_custo: 'Industrial',
+                tipo_produto: data.product_type || detectedProductType,
+                product_type: data.product_type || detectedProductType,
+                conversation_history: newMessages,
+                ai_status: data.ai_status,
+                status: 'aberto',
+                from_ai: true
+              })
+              .select()
+              .single()
 
-              if (dealError) {
-                console.error(`❌ Erro ao criar deal no funil "${pipeline.name}":`, dealError)
-              } else {
-                console.log(`✅ Deal criado no funil "${pipeline.name}":`, newDeal.id)
-                dealIds.push(newDeal.id)
-              }
+            if (dealError) {
+              console.error(`❌ Erro ao criar deal no funil "${firstPipeline.name}":`, dealError)
+            } else {
+              console.log(`✅ Deal criado no funil "${firstPipeline.name}":`, newDeal.id)
+              dealIds.push(newDeal.id)
             }
           }
         }
