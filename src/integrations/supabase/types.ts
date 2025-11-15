@@ -228,6 +228,92 @@ export type Database = {
           },
         ]
       }
+      architect_timeline: {
+        Row: {
+          ai_summary: string | null
+          architect_id: string
+          author_id: string | null
+          created_at: string
+          id: string
+          mentioned_users: string[] | null
+          message: string
+          update_type: string
+        }
+        Insert: {
+          ai_summary?: string | null
+          architect_id: string
+          author_id?: string | null
+          created_at?: string
+          id?: string
+          mentioned_users?: string[] | null
+          message: string
+          update_type?: string
+        }
+        Update: {
+          ai_summary?: string | null
+          architect_id?: string
+          author_id?: string | null
+          created_at?: string
+          id?: string
+          mentioned_users?: string[] | null
+          message?: string
+          update_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "architect_timeline_architect_id_fkey"
+            columns: ["architect_id"]
+            isOneToOne: false
+            referencedRelation: "architects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "architect_timeline_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      architect_timeline_attachments: {
+        Row: {
+          file_name: string
+          file_path: string
+          file_size: number
+          file_type: string
+          id: string
+          timeline_id: string
+          uploaded_at: string | null
+        }
+        Insert: {
+          file_name: string
+          file_path: string
+          file_size: number
+          file_type: string
+          id?: string
+          timeline_id: string
+          uploaded_at?: string | null
+        }
+        Update: {
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          file_type?: string
+          id?: string
+          timeline_id?: string
+          uploaded_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "architect_timeline_attachments_timeline_id_fkey"
+            columns: ["timeline_id"]
+            isOneToOne: false
+            referencedRelation: "architect_timeline"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       architects: {
         Row: {
           active: boolean | null
