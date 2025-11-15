@@ -49,7 +49,7 @@ export default function Prospeccao() {
               <Zap className="h-4 w-4" />
               Sequências IA
             </TabsTrigger> */}
-            <TabsTrigger value="agendamentos" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <TabsTrigger value="agendamentos" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" style={{ display: 'none' }}>
               <CheckSquare className="h-4 w-4" />
               Tarefas
             </TabsTrigger>
