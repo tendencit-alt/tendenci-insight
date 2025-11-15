@@ -246,14 +246,10 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
 
                   {/* Badges */}
                   <div className="flex gap-1.5 flex-wrap">
-                    {/* STATUS: Contato e Projeto */}
-                    {!architect.data_primeiro_contato && !architect.data_ultimo_contato ? (
+                    {/* STATUS: Primeiro Contato */}
+                    {!architect.data_primeiro_contato ? (
                       <Badge variant="outline" className="text-xs bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800 text-red-700 dark:text-red-300">
                         ⚠️ Nunca Contactado
-                      </Badge>
-                    ) : architect.ultimo_projeto_data ? (
-                      <Badge variant="outline" className="text-xs bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
-                        📅 {format(new Date(architect.ultimo_projeto_data), "dd/MM/yy")}
                       </Badge>
                     ) : (
                       <Badge variant="outline" className="text-xs bg-yellow-50 dark:bg-yellow-950 border-yellow-200 dark:border-yellow-800">
