@@ -6,52 +6,56 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Bot, Send, Loader2 } from "lucide-react";
 import { streamChat, type Message } from "@/utils/aiChat";
 import { useToast } from "@/hooks/use-toast";
-
 export function TendenciAssistant() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const { toast } = useToast();
-
+  const {
+    toast
+  } = useToast();
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
-
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
-
-    const userMessage: Message = { role: "user", content: input };
-    setMessages((prev) => [...prev, userMessage]);
+    const userMessage: Message = {
+      role: "user",
+      content: input
+    };
+    setMessages(prev => [...prev, userMessage]);
     setInput("");
     setIsLoading(true);
-
     try {
       await streamChat({
         messages: [...messages, userMessage],
-        onChunk: (chunk) => {
-          setMessages((prev) => {
+        onChunk: chunk => {
+          setMessages(prev => {
             const last = prev[prev.length - 1];
             if (last?.role === "assistant") {
-              return prev.map((m, i) =>
-                i === prev.length - 1 ? { ...m, content: last.content + chunk } : m
-              );
+              return prev.map((m, i) => i === prev.length - 1 ? {
+                ...m,
+                content: last.content + chunk
+              } : m);
             }
-            return [...prev, { role: "assistant", content: chunk }];
+            return [...prev, {
+              role: "assistant",
+              content: chunk
+            }];
           });
         },
         onDone: () => setIsLoading(false),
-        onError: (error) => {
+        onError: error => {
           toast({
             title: "Erro",
             description: error,
-            variant: "destructive",
+            variant: "destructive"
           });
           setIsLoading(false);
-        },
+        }
       });
     } catch (error) {
       console.error("Error sending message:", error);
@@ -59,27 +63,19 @@ export function TendenciAssistant() {
       toast({
         title: "Erro",
         description: "Falha ao enviar mensagem. Tente novamente.",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
-
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
   };
-
-  return (
-    <Sheet open={isOpen} onOpenChange={setIsOpen}>
+  return <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetTrigger asChild>
-        <Button
-          size="icon"
-          className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg bg-primary hover:bg-primary/90"
-        >
-          <Bot className="h-6 w-6" />
-        </Button>
+        
       </SheetTrigger>
       <SheetContent className="w-full sm:max-w-xl flex flex-col">
         <SheetHeader>
@@ -90,8 +86,7 @@ export function TendenciAssistant() {
         </SheetHeader>
 
         <ScrollArea ref={scrollRef} className="flex-1 pr-4 mt-4">
-          {messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-8">
+          {messages.length === 0 ? <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-8">
               <Bot className="h-16 w-16 mb-4 opacity-50" />
               <p className="text-lg font-medium mb-2">
                 Olá! Sou sua Assistente de Inteligência Tendenci
@@ -100,50 +95,21 @@ export function TendenciAssistant() {
                 Posso ajudar com análises de CRM, projetos, clientes e desempenho comercial.
                 Faça uma pergunta para começar!
               </p>
-            </div>
-          ) : (
-            <div className="space-y-4 pb-4">
-              {messages.map((msg, idx) => (
-                <div
-                  key={idx}
-                  className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-                >
-                  <div
-                    className={`max-w-[80%] rounded-lg px-4 py-2 ${
-                      msg.role === "user"
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted"
-                    }`}
-                  >
+            </div> : <div className="space-y-4 pb-4">
+              {messages.map((msg, idx) => <div key={idx} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+                  <div className={`max-w-[80%] rounded-lg px-4 py-2 ${msg.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
                     <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
+                </div>)}
+            </div>}
         </ScrollArea>
 
         <div className="flex gap-2 pt-4 border-t">
-          <Input
-            placeholder="Digite sua pergunta..."
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyPress={handleKeyPress}
-            disabled={isLoading}
-          />
-          <Button
-            size="icon"
-            onClick={handleSend}
-            disabled={isLoading || !input.trim()}
-          >
-            {isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Send className="h-4 w-4" />
-            )}
+          <Input placeholder="Digite sua pergunta..." value={input} onChange={e => setInput(e.target.value)} onKeyPress={handleKeyPress} disabled={isLoading} />
+          <Button size="icon" onClick={handleSend} disabled={isLoading || !input.trim()}>
+            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           </Button>
         </div>
       </SheetContent>
-    </Sheet>
-  );
+    </Sheet>;
 }
