@@ -67,6 +67,8 @@ export function DealDetailSheet({
   const [selectedProjectToLink, setSelectedProjectToLink] = useState("");
   const [isUnlinkProjectOpen, setIsUnlinkProjectOpen] = useState(false);
   const [dealFiles, setDealFiles] = useState<any[]>([]);
+  const [owners, setOwners] = useState<any[]>([]);
+  const [selectedOwner, setSelectedOwner] = useState("");
 
   const fetchProject = async () => {
     if (!deal?.id) return;
@@ -100,14 +102,27 @@ export function DealDetailSheet({
     }
   };
 
+  const fetchOwners = async () => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("id, full_name, email")
+      .order("full_name");
+    
+    if (data) {
+      setOwners(data);
+    }
+  };
+
   useEffect(() => {
     if (open && deal?.id) {
       setSelectedStage(deal.stage_id);
       setSelectedPipeline(deal.pipeline_id);
+      setSelectedOwner(deal.owner_id || "");
       fetchAllPipelines();
       fetchAllStages(deal.pipeline_id);
       fetchProject();
       fetchDealFiles();
+      fetchOwners();
     }
   }, [open, deal]);
 
@@ -180,6 +195,29 @@ export function DealDetailSheet({
       toast({
         title: "Etapa atualizada",
         description: "A etapa do negócio foi atualizada com sucesso.",
+      });
+      onSuccess();
+    }
+  };
+
+  const handleOwnerChange = async (ownerId: string) => {
+    setSelectedOwner(ownerId);
+
+    const { error } = await supabase
+      .from("crm_deals")
+      .update({ owner_id: ownerId || null })
+      .eq("id", deal.id);
+
+    if (error) {
+      toast({
+        title: "Erro ao atualizar vendedor",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Vendedor atualizado",
+        description: "O vendedor responsável foi atualizado com sucesso.",
       });
       onSuccess();
     }
@@ -530,15 +568,25 @@ export function DealDetailSheet({
                       </SelectContent>
                     </Select>
                   </div>
-                  {deal.owner?.full_name && (
-                    <div className="col-span-2">
-                      <Label className="text-xs text-muted-foreground">Vendedor Responsável</Label>
-                      <div className="flex items-center gap-2 mt-1">
-                        <User className="h-4 w-4 text-muted-foreground" />
-                        <span>{deal.owner.full_name}</span>
-                      </div>
-                    </div>
-                  )}
+                  <div className="col-span-2">
+                    <Label className="text-xs text-muted-foreground">Vendedor Responsável</Label>
+                    <Select
+                      value={selectedOwner}
+                      onValueChange={handleOwnerChange}
+                    >
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="Selecionar vendedor" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Nenhum</SelectItem>
+                        {owners.map((owner) => (
+                          <SelectItem key={owner.id} value={owner.id}>
+                            {owner.full_name || owner.email}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </Card>
             )}
