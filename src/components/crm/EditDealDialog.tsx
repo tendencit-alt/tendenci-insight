@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -24,7 +24,7 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Calendar as CalendarIcon } from "lucide-react";
+import { Calendar as CalendarIcon, Mic, Square, Paperclip, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { DealFileUpload } from "./DealFileUpload";
@@ -53,6 +53,12 @@ export function EditDealDialog({
   const [owners, setOwners] = useState<any[]>([]);
   const [scheduledCall, setScheduledCall] = useState<Date>();
   const [dealFiles, setDealFiles] = useState<any[]>([]);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -139,6 +145,146 @@ export function EditDealDialog({
 
     if (!error && data) {
       setDealFiles(data);
+    }
+  };
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+        await saveAudioFile(audioBlob);
+        stream.getTracks().forEach((track) => track.stop());
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+    } catch (error) {
+      toast({
+        title: "Erro ao iniciar gravação",
+        description: "Verifique as permissões do microfone.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+  };
+
+  const saveAudioFile = async (audioBlob: Blob) => {
+    setIsUploading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
+
+      const fileName = `audio_${Date.now()}.webm`;
+      const filePath = `${deal.id}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("crm-files")
+        .upload(filePath, audioBlob);
+
+      if (uploadError) throw uploadError;
+
+      const { error: dbError } = await supabase.from("crm_deal_files").insert({
+        deal_id: deal.id,
+        file_name: fileName,
+        file_path: filePath,
+        file_type: "audio/webm",
+        file_size: audioBlob.size,
+        uploaded_by: user.id,
+      });
+
+      if (dbError) throw dbError;
+
+      toast({
+        title: "Áudio gravado",
+        description: "O áudio foi salvo com sucesso.",
+      });
+
+      fetchDealFiles();
+    } catch (error: any) {
+      toast({
+        title: "Erro ao salvar áudio",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setIsUploading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
+
+      for (const file of Array.from(files)) {
+        if (file.size > 10 * 1024 * 1024) {
+          toast({
+            title: "Arquivo muito grande",
+            description: `${file.name} excede o limite de 10MB`,
+            variant: "destructive",
+          });
+          continue;
+        }
+
+        const fileName = `${Date.now()}_${file.name}`;
+        const filePath = `${deal.id}/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("crm-files")
+          .upload(filePath, file);
+
+        if (uploadError) throw uploadError;
+
+        const { error: dbError } = await supabase.from("crm_deal_files").insert({
+          deal_id: deal.id,
+          file_name: file.name,
+          file_path: filePath,
+          file_type: file.type,
+          file_size: file.size,
+          uploaded_by: user.id,
+        });
+
+        if (dbError) throw dbError;
+      }
+
+      toast({
+        title: "Arquivos enviados",
+        description: "Os arquivos foram enviados com sucesso.",
+      });
+
+      fetchDealFiles();
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    } catch (error: any) {
+      toast({
+        title: "Erro ao enviar arquivos",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -476,6 +622,65 @@ export function EditDealDialog({
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="note">Observações</Label>
+                
+                <div className="flex gap-2 mb-2">
+                  <Button
+                    type="button"
+                    variant={isRecording ? "destructive" : "outline"}
+                    size="sm"
+                    onClick={isRecording ? stopRecording : startRecording}
+                    disabled={isUploading}
+                  >
+                    {isRecording ? (
+                      <>
+                        <Square className="h-4 w-4 mr-2" />
+                        Parar Gravação
+                      </>
+                    ) : (
+                      <>
+                        <Mic className="h-4 w-4 mr-2" />
+                        Gravar Áudio
+                      </>
+                    )}
+                  </Button>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading}
+                  >
+                    {isUploading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Enviando...
+                      </>
+                    ) : (
+                      <>
+                        <Paperclip className="h-4 w-4 mr-2" />
+                        Anexar Arquivo
+                      </>
+                    )}
+                  </Button>
+
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    className="hidden"
+                    multiple
+                    onChange={handleFileUpload}
+                    accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.webp"
+                  />
+                </div>
+
+                {isUploading && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Salvando arquivo...
+                  </div>
+                )}
+                
                 <Textarea
                   id="note"
                   value={formData.note}

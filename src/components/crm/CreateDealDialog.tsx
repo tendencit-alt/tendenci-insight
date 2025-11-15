@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -24,7 +24,7 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Calendar as CalendarIcon, Clock, Trash2 } from "lucide-react";
+import { Plus, Calendar as CalendarIcon, Clock, Trash2, Mic, Square, Paperclip, Loader2 } from "lucide-react";
 import { CreateClientDialog } from "./CreateClientDialog";
 import { CreateArchitectDialog } from "../architects/CreateArchitectDialog";
 import { CreateProjectDialog } from "../projects/CreateProjectDialog";
@@ -60,6 +60,12 @@ export function CreateDealDialog({
   const [tasks, setTasks] = useState<Array<{ title: string; due_at: string; note: string }>>([]);
   const [newTask, setNewTask] = useState({ title: "", due_at: "", note: "" });
   const [isAddingTask, setIsAddingTask] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
     stage_id: "",
@@ -575,6 +581,34 @@ export function CreateDealDialog({
           <div className="space-y-4">
             <h3 className="text-sm font-semibold text-muted-foreground uppercase">Observações</h3>
             <div className="space-y-2">
+              <div className="flex gap-2 mb-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled
+                  title="Salve o negócio primeiro para gravar áudio"
+                >
+                  <Mic className="h-4 w-4 mr-2" />
+                  Gravar Áudio
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled
+                  title="Salve o negócio primeiro para anexar arquivos"
+                >
+                  <Paperclip className="h-4 w-4 mr-2" />
+                  Anexar Arquivo
+                </Button>
+              </div>
+              
+              <p className="text-xs text-muted-foreground">
+                💡 Para gravar áudio ou anexar documentos, salve o negócio primeiro e depois edite-o.
+              </p>
+              
               <Textarea
                 id="observations"
                 value={formData.observations}
