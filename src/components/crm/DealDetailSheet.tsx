@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { EditDealDialog } from "./EditDealDialog";
 import { DealTimeline } from "./DealTimeline";
+import { DealHistory } from "./DealHistory";
 import { ProjectDetailSheet } from "../projects/ProjectDetailSheet";
 import { CreateProjectDialog } from "../projects/CreateProjectDialog";
 import { supabase } from "@/integrations/supabase/client";
@@ -33,6 +34,7 @@ import {
 import { DealFileUpload } from "./DealFileUpload";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
+import { logDealChange, logStageChange, getDisplayValue } from "@/utils/dealHistory";
 
 interface DealDetailSheetProps {
   deal: any;
@@ -202,6 +204,7 @@ export function DealDetailSheet({
 
   const handleOwnerChange = async (ownerId: string) => {
     const actualOwnerId = ownerId === "none" ? "" : ownerId;
+    const oldOwnerId = deal.owner_id || "";
     setSelectedOwner(actualOwnerId);
 
     const { error } = await supabase
@@ -216,6 +219,15 @@ export function DealDetailSheet({
         variant: "destructive",
       });
     } else {
+      const oldValue = await getDisplayValue('owner_id', oldOwnerId);
+      const newValue = await getDisplayValue('owner_id', actualOwnerId);
+      
+      await logDealChange(deal.id, {
+        field_name: 'owner_id',
+        old_value: oldValue,
+        new_value: newValue,
+      });
+
       toast({
         title: "Vendedor atualizado",
         description: "O vendedor responsável foi atualizado com sucesso.",
@@ -237,6 +249,12 @@ export function DealDetailSheet({
         variant: "destructive",
       });
     } else {
+      await logDealChange(deal.id, {
+        field_name: 'status',
+        old_value: deal.status || 'aberto',
+        new_value: 'won',
+      });
+
       toast({
         title: "Negócio ganho!",
         description: "O negócio foi marcado como ganho.",
@@ -263,6 +281,32 @@ export function DealDetailSheet({
         variant: "destructive",
       });
     } else {
+      const changes = [
+        {
+          field_name: 'status',
+          old_value: deal.status || 'aberto',
+          new_value: 'lost',
+        }
+      ];
+      
+      if (lostReason) {
+        changes.push({
+          field_name: 'lost_reason',
+          old_value: deal.lost_reason || '',
+          new_value: lostReason,
+        });
+      }
+      
+      if (lostNote) {
+        changes.push({
+          field_name: 'lost_note',
+          old_value: deal.lost_note || '',
+          new_value: lostNote,
+        });
+      }
+      
+      await logDealChange(deal.id, changes);
+
       toast({
         title: "Negócio perdido",
         description: "O negócio foi marcado como perdido.",
@@ -647,13 +691,7 @@ export function DealDetailSheet({
 
           {/* Tab: Histórico */}
           <TabsContent value="history" className="space-y-4">
-            <Card className="p-4">
-              <div className="flex items-center gap-2 mb-4">
-                <History className="h-5 w-5 text-primary" />
-                <h3 className="font-semibold text-lg">Histórico de Mudanças</h3>
-              </div>
-              <p className="text-sm text-muted-foreground">Histórico de mudanças do negócio.</p>
-            </Card>
+            <DealHistory dealId={deal.id} />
           </TabsContent>
 
           {/* Tab: Ações & Projeto */}
