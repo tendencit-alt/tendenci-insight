@@ -68,11 +68,15 @@ export default function DashboardsPersonalizados() {
   };
 
   const handleCreate = () => {
-    navigate("/dashboards/novo");
+    navigate("/dashboards/editar/novo");
   };
 
   const handleEdit = (id: string) => {
-    navigate(`/dashboards/${id}`);
+    navigate(`/dashboards/editar/${id}`);
+  };
+
+  const handleView = (id: string) => {
+    navigate(`/dashboards/view/${id}`);
   };
 
   const handleDuplicate = async (dashboard: Dashboard) => {
@@ -188,9 +192,11 @@ export default function DashboardsPersonalizados() {
                 </CardHeader>
                 <CardContent>
                   <div className="flex gap-2">
-                    <Button variant="default" size="sm" onClick={() => handleEdit(dashboard.id)} className="flex-1">
-                      <Edit className="mr-2 h-4 w-4" />
-                      Editar
+                    <Button variant="default" size="sm" onClick={() => handleView(dashboard.id)} className="flex-1">
+                      Visualizar
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => handleEdit(dashboard.id)}>
+                      <Edit className="h-4 w-4" />
                     </Button>
                     <Button variant="outline" size="sm" onClick={() => handleDuplicate(dashboard)}>
                       <Copy className="h-4 w-4" />

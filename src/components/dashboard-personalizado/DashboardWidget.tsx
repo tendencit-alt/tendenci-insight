@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { GripVertical, X } from "lucide-react";
 import { KPIRenderer } from "./KPIRenderer";
+import { DashboardFiltersData } from "./DashboardFilters";
 
 interface WidgetData {
   i: string;
@@ -16,10 +17,11 @@ interface WidgetData {
 
 interface DashboardWidgetProps {
   widget: WidgetData;
+  filters?: DashboardFiltersData;
   onRemove: () => void;
 }
 
-export function DashboardWidget({ widget, onRemove }: DashboardWidgetProps) {
+export function DashboardWidget({ widget, filters, onRemove }: DashboardWidgetProps) {
   return (
     <Card className="h-full flex flex-col">
       <CardHeader className="drag-handle cursor-move p-3 flex-row items-center justify-between space-y-0 border-b">
@@ -39,7 +41,7 @@ export function DashboardWidget({ widget, onRemove }: DashboardWidgetProps) {
         </Button>
       </CardHeader>
       <CardContent className="flex-1 p-4 overflow-auto">
-        <KPIRenderer kpiId={widget.kpi_id} type={widget.type} config={widget.config} />
+        <KPIRenderer kpiId={widget.kpi_id} type={widget.type} config={widget.config} filters={filters} />
       </CardContent>
     </Card>
   );

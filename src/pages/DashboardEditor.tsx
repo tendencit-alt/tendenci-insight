@@ -13,6 +13,7 @@ import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 import { KPISidebar } from "@/components/dashboard-personalizado/KPISidebar";
 import { DashboardWidget } from "@/components/dashboard-personalizado/DashboardWidget";
+import { DashboardFilters, DashboardFiltersData } from "@/components/dashboard-personalizado/DashboardFilters";
 
 interface WidgetData {
   i: string;
@@ -32,6 +33,7 @@ export default function DashboardEditor() {
   const { id } = useParams();
   const [nome, setNome] = useState("Novo Dashboard");
   const [layout, setLayout] = useState<WidgetData[]>([]);
+  const [filters, setFilters] = useState<DashboardFiltersData>({});
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -81,6 +83,21 @@ export default function DashboardEditor() {
       setNome(data.nome);
       const layoutData = data.layout as { widgets?: WidgetData[] };
       setLayout(layoutData?.widgets || []);
+      
+      // Carregar filtros salvos
+      if (data.filtros && typeof data.filtros === 'object') {
+        const savedFilters = data.filtros as any;
+        setFilters({
+          dateRange: savedFilters.dateRange ? {
+            from: savedFilters.dateRange.from ? new Date(savedFilters.dateRange.from) : undefined,
+            to: savedFilters.dateRange.to ? new Date(savedFilters.dateRange.to) : undefined,
+          } : undefined,
+          vendedor: savedFilters.vendedor,
+          arquiteto: savedFilters.arquiteto,
+          pipeline: savedFilters.pipeline,
+          categoria: savedFilters.categoria,
+        });
+      }
     } catch (error: any) {
       toast({
         title: "Erro ao carregar dashboard",
@@ -108,6 +125,7 @@ export default function DashboardEditor() {
         user_id: user?.id,
         nome: nome.trim(),
         layout: { widgets: layout } as any,
+        filtros: filters as any,
       };
 
       if (isEditing) {
@@ -216,6 +234,11 @@ export default function DashboardEditor() {
             </div>
           </div>
 
+          {/* Filtros do dashboard */}
+          <div className="px-6 pt-4">
+            <DashboardFilters filters={filters} onChange={setFilters} />
+          </div>
+
           {/* Canvas do dashboard */}
           <div className="flex-1 overflow-auto p-6 bg-muted/20">
             {loading ? (
@@ -253,6 +276,7 @@ export default function DashboardEditor() {
                   <div key={widget.i} className="bg-background rounded-lg shadow-sm border">
                     <DashboardWidget
                       widget={widget}
+                      filters={filters}
                       onRemove={() => handleRemoveWidget(widget.i)}
                     />
                   </div>

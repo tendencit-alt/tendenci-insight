@@ -1043,6 +1043,7 @@ export type Database = {
         Row: {
           atualizado_em: string | null
           criado_em: string | null
+          filtros: Json | null
           id: string
           layout: Json
           nome: string
@@ -1051,6 +1052,7 @@ export type Database = {
         Insert: {
           atualizado_em?: string | null
           criado_em?: string | null
+          filtros?: Json | null
           id?: string
           layout?: Json
           nome: string
@@ -1059,6 +1061,7 @@ export type Database = {
         Update: {
           atualizado_em?: string | null
           criado_em?: string | null
+          filtros?: Json | null
           id?: string
           layout?: Json
           nome?: string

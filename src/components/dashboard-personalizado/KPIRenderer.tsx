@@ -3,20 +3,22 @@ import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency } from "@/lib/utils";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from "recharts";
+import { DashboardFiltersData } from "./DashboardFilters";
 
 interface KPIRendererProps {
   kpiId: string;
   type: "card" | "graph" | "table";
   config?: any;
+  filters?: DashboardFiltersData;
 }
 
-export function KPIRenderer({ kpiId, type, config }: KPIRendererProps) {
+export function KPIRenderer({ kpiId, type, config, filters }: KPIRendererProps) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchKPIData();
-  }, [kpiId]);
+  }, [kpiId, filters]);
 
   const fetchKPIData = async () => {
     setLoading(true);
@@ -31,37 +33,73 @@ export function KPIRenderer({ kpiId, type, config }: KPIRendererProps) {
     }
   };
 
+  const applyFilters = (query: any) => {
+    if (filters?.dateRange?.from) {
+      query = query.gte("created_at", filters.dateRange.from.toISOString());
+    }
+    if (filters?.dateRange?.to) {
+      query = query.lte("created_at", filters.dateRange.to.toISOString());
+    }
+    if (filters?.vendedor) {
+      query = query.eq("owner_id", filters.vendedor);
+    }
+    if (filters?.arquiteto) {
+      query = query.eq("architect_id", filters.arquiteto);
+    }
+    if (filters?.pipeline) {
+      query = query.eq("pipeline_id", filters.pipeline);
+    }
+    if (filters?.categoria) {
+      // Filtro de categoria se aplicável
+    }
+    return query;
+  };
+
   const getKPIData = async (kpiId: string) => {
     // Mapear KPIs para suas queries
     switch (kpiId) {
       case "crm_contatos_feitos":
-        const { data: deals1 } = await supabase.from("crm_deals").select("id", { count: "exact" });
+        let query1 = supabase.from("crm_deals").select("id", { count: "exact" });
+        query1 = applyFilters(query1);
+        const { data: deals1 } = await query1;
         return { value: deals1?.length || 0, label: "Contatos" };
 
       case "crm_projetos_captados":
-        const { data: deals2 } = await supabase.from("crm_deals").select("id", { count: "exact" }).eq("status", "aberto");
+        let query2 = supabase.from("crm_deals").select("id", { count: "exact" }).eq("status", "aberto");
+        query2 = applyFilters(query2);
+        const { data: deals2 } = await query2;
         return { value: deals2?.length || 0, label: "Captados" };
 
       case "crm_em_orcamento":
-        const { data: deals3 } = await supabase.from("crm_deals").select("*, crm_stages(name)");
+        let query3 = supabase.from("crm_deals").select("*, crm_stages(name)");
+        query3 = applyFilters(query3);
+        const { data: deals3 } = await query3;
         const orcamento = deals3?.filter(d => d.crm_stages?.name?.toLowerCase().includes("orçamento")).length || 0;
         return { value: orcamento, label: "Em Orçamento" };
 
       case "crm_apresentado":
-        const { data: deals4 } = await supabase.from("crm_deals").select("*, crm_stages(name)");
+        let query4 = supabase.from("crm_deals").select("*, crm_stages(name)");
+        query4 = applyFilters(query4);
+        const { data: deals4 } = await query4;
         const apresentado = deals4?.filter(d => d.crm_stages?.name?.toLowerCase().includes("apresent")).length || 0;
         return { value: apresentado, label: "Apresentados" };
 
       case "crm_perdido":
-        const { data: deals5 } = await supabase.from("crm_deals").select("id", { count: "exact" }).eq("status", "perdido");
+        let query5 = supabase.from("crm_deals").select("id", { count: "exact" }).eq("status", "perdido");
+        query5 = applyFilters(query5);
+        const { data: deals5 } = await query5;
         return { value: deals5?.length || 0, label: "Perdidos" };
 
       case "crm_conquistado":
-        const { data: deals6 } = await supabase.from("crm_deals").select("id", { count: "exact" }).eq("status", "ganho");
+        let query6 = supabase.from("crm_deals").select("id", { count: "exact" }).eq("status", "ganho");
+        query6 = applyFilters(query6);
+        const { data: deals6 } = await query6;
         return { value: deals6?.length || 0, label: "Conquistados" };
 
       case "crm_valor_conquistado":
-        const { data: deals7 } = await supabase.from("crm_deals").select("value").eq("status", "ganho");
+        let query7 = supabase.from("crm_deals").select("value").eq("status", "ganho");
+        query7 = applyFilters(query7);
+        const { data: deals7 } = await query7;
         const total = deals7?.reduce((acc, d) => acc + (d.value || 0), 0) || 0;
         return { value: total, label: "Valor Total", isCurrency: true };
 
