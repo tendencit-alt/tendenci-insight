@@ -135,19 +135,29 @@ export default function DashboardEditor() {
           .eq("id", id);
 
         if (error) throw error;
+        
+        toast({
+          title: "Dashboard salvo",
+          description: "Suas alterações foram salvas com sucesso!",
+        });
       } else {
-        const { error } = await supabase
+        const { data: newDashboard, error } = await supabase
           .from("dashboards_personalizados")
-          .insert(dashboardData);
+          .insert(dashboardData)
+          .select()
+          .single();
 
         if (error) throw error;
-      }
 
-      toast({
-        title: "Dashboard salvo",
-        description: "Suas alterações foram salvas com sucesso!",
-      });
-      navigate("/dashboards");
+        toast({
+          title: "Dashboard criado",
+          description: "Dashboard criado com sucesso!",
+        });
+        
+        // Redirecionar para a visualização do novo dashboard
+        navigate(`/dashboards/view/${newDashboard.id}`);
+        return;
+      }
     } catch (error: any) {
       toast({
         title: "Erro ao salvar dashboard",
@@ -223,10 +233,16 @@ export default function DashboardEditor() {
               />
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" disabled>
-                <Eye className="mr-2 h-4 w-4" />
-                Visualizar
-              </Button>
+              {isEditing && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => navigate(`/dashboards/view/${id}`)}
+                >
+                  <Eye className="mr-2 h-4 w-4" />
+                  Visualizar
+                </Button>
+              )}
               <Button size="sm" onClick={handleSave} disabled={saving}>
                 <Save className="mr-2 h-4 w-4" />
                 {saving ? "Salvando..." : "Salvar"}
@@ -278,6 +294,7 @@ export default function DashboardEditor() {
                       widget={widget}
                       filters={filters}
                       onRemove={() => handleRemoveWidget(widget.i)}
+                      isViewMode={false}
                     />
                   </div>
                 ))}

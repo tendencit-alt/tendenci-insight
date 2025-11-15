@@ -134,27 +134,37 @@ export default function DashboardView() {
                 <p className="text-muted-foreground">Carregando dashboard...</p>
               </div>
             </div>
+          ) : layout.length === 0 ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <p className="text-muted-foreground text-lg">Dashboard vazio</p>
+                <p className="text-sm text-muted-foreground mt-2">Adicione widgets para visualizar os dados</p>
+              </div>
+            </div>
           ) : (
-            <GridLayout
-              className="layout"
-              layout={layout}
-              cols={12}
-              rowHeight={80}
-              width={1200}
-              isDraggable={false}
-              isResizable={false}
-              compactType="vertical"
-            >
-              {layout.map((widget) => (
-                <div key={widget.i} className="bg-background rounded-lg shadow-sm border">
-                  <DashboardWidget
-                    widget={widget}
-                    filters={filters}
-                    onRemove={() => {}}
-                  />
-                </div>
-              ))}
-            </GridLayout>
+            <div style={{ width: '100%' }}>
+              <GridLayout
+                className="layout"
+                layout={layout}
+                cols={12}
+                rowHeight={80}
+                width={1200}
+                isDraggable={false}
+                isResizable={false}
+                compactType="vertical"
+              >
+                {layout.map((widget) => (
+                  <div key={widget.i} className="bg-background rounded-lg shadow-sm border">
+                    <DashboardWidget
+                      widget={widget}
+                      filters={filters}
+                      onRemove={() => {}}
+                      isViewMode={true}
+                    />
+                  </div>
+                ))}
+              </GridLayout>
+            </div>
           )}
         </div>
       </div>
