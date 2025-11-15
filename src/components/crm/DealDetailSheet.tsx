@@ -480,11 +480,11 @@ export function DealDetailSheet({
               )}
             </Card>
 
-            {/* Responsáveis */}
+            {/* Pipeline e Vendedor */}
             <Card className="p-4">
               <div className="flex items-center gap-2 mb-3">
                 <Users className="h-5 w-5 text-primary" />
-                <h3 className="font-semibold text-lg">Responsáveis</h3>
+                <h3 className="font-semibold text-lg">Pipeline e Vendedor</h3>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -527,7 +527,7 @@ export function DealDetailSheet({
                 </div>
                 {deal.owner?.full_name && (
                   <div className="col-span-2">
-                    <Label className="text-xs text-muted-foreground">Responsável</Label>
+                    <Label className="text-xs text-muted-foreground">Vendedor</Label>
                     <div className="flex items-center gap-2 mt-1">
                       <User className="h-4 w-4 text-muted-foreground" />
                       <span>{deal.owner.full_name}</span>

@@ -378,7 +378,7 @@ export function EditDealDialog({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="owner">Responsável Principal</Label>
+                <Label htmlFor="owner">Vendedor</Label>
                 <Select
                   value={formData.owner_id || "none"}
                   onValueChange={(value) =>
@@ -386,7 +386,7 @@ export function EditDealDialog({
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione o responsável" />
+                    <SelectValue placeholder="Selecione o vendedor" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">Nenhum</SelectItem>
