@@ -9,9 +9,14 @@ import { DealDetailSheet } from "./DealDetailSheet";
 interface CRMBoardProps {
   pipelineId: string;
   onRefresh: () => void;
+  filters?: {
+    owner: string;
+    search: string;
+    status: string;
+  };
 }
 
-export function CRMBoard({ pipelineId, onRefresh }: CRMBoardProps) {
+export function CRMBoard({ pipelineId, onRefresh, filters }: CRMBoardProps) {
   const { toast } = useToast();
   const [stages, setStages] = useState<any[]>([]);
   const [deals, setDeals] = useState<any[]>([]);
@@ -44,7 +49,7 @@ export function CRMBoard({ pipelineId, onRefresh }: CRMBoardProps) {
     return () => {
       supabase.removeChannel(tasksChannel);
     };
-  }, [pipelineId]);
+  }, [pipelineId, filters]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -75,7 +80,7 @@ export function CRMBoard({ pipelineId, onRefresh }: CRMBoardProps) {
     }
 
     // Fetch deals with related data (including won and lost)
-    const { data: dealsData, error: dealsError } = await supabase
+    let dealsQuery = supabase
       .from("crm_deals")
       .select(`
         *,
@@ -89,8 +94,18 @@ export function CRMBoard({ pipelineId, onRefresh }: CRMBoardProps) {
         owner:profiles(id, full_name, email),
         stage:crm_stages(name)
       `)
-      .eq("pipeline_id", pipelineId)
-      .order("stage_position", { ascending: true });
+      .eq("pipeline_id", pipelineId);
+
+    // Aplicar filtros
+    if (filters?.owner && filters.owner !== "all") {
+      dealsQuery = dealsQuery.eq("owner_id", filters.owner);
+    }
+
+    if (filters?.status && filters.status !== "all") {
+      dealsQuery = dealsQuery.eq("status", filters.status);
+    }
+
+    const { data: dealsData, error: dealsError } = await dealsQuery.order("stage_position", { ascending: true });
 
     if (dealsError) {
       toast({
@@ -101,8 +116,27 @@ export function CRMBoard({ pipelineId, onRefresh }: CRMBoardProps) {
       return;
     }
 
+    // Aplicar filtro de busca no cliente
+    let filteredDeals = dealsData || [];
+    if (filters?.search) {
+      const searchLower = filters.search.toLowerCase();
+      filteredDeals = filteredDeals.filter(deal => {
+        const title = deal.title?.toLowerCase() || "";
+        const clientName = deal.lead?.client?.name?.toLowerCase() || "";
+        const architectName = deal.architect?.name?.toLowerCase() || "";
+        const clientPhone = deal.lead?.client?.phone?.toLowerCase() || "";
+        const clientEmail = deal.lead?.client?.email?.toLowerCase() || "";
+        
+        return title.includes(searchLower) || 
+               clientName.includes(searchLower) || 
+               architectName.includes(searchLower) ||
+               clientPhone.includes(searchLower) ||
+               clientEmail.includes(searchLower);
+      });
+    }
+
     setStages(stagesData || []);
-    setDeals(dealsData || []);
+    setDeals(filteredDeals);
     setLoading(false);
   };
 
