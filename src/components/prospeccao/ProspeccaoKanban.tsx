@@ -175,6 +175,16 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
                     </Avatar>
                     <div className="flex-1 min-w-0">
                       <h4 className="font-semibold text-sm truncate">{architect.name}</h4>
+                      {architect.data_ultimo_contato && (
+                        <p className="text-xs text-muted-foreground">
+                          Último contato: {format(new Date(architect.data_ultimo_contato), "dd/MM/yyyy")}
+                        </p>
+                      )}
+                      {!architect.data_ultimo_contato && (
+                        <p className="text-xs text-muted-foreground italic">
+                          Sem contato registrado
+                        </p>
+                      )}
                       {architect.vendedor?.full_name && (
                         <p className="text-xs text-muted-foreground truncate">
                           Vendedor: {architect.vendedor.full_name}
@@ -207,6 +217,17 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
 
                   {/* Badges */}
                   <div className="flex gap-2 flex-wrap">
+                    {/* TAG: Data último projeto ou Nunca Enviou */}
+                    {architect.ultimo_projeto_data ? (
+                      <Badge variant="outline" className="text-xs bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+                        📅 Último projeto: {format(new Date(architect.ultimo_projeto_data), "dd/MM/yyyy")}
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-xs bg-orange-50 dark:bg-orange-950 border-orange-200 dark:border-orange-800">
+                        ⚠️ Nunca Enviou
+                      </Badge>
+                    )}
+                    
                     {architect.tier && (
                       <Badge variant="outline" className="text-xs">
                         Tier {architect.tier}
@@ -215,11 +236,6 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
                     {architect.projects && architect.projects.length > 0 && (
                       <Badge variant="secondary" className="text-xs">
                         {architect.projects.length} projeto{architect.projects.length > 1 ? 's' : ''}
-                      </Badge>
-                    )}
-                    {architect.data_ultimo_contato && (
-                      <Badge variant="secondary" className="text-xs">
-                        Último: {format(new Date(architect.data_ultimo_contato), "dd/MM")}
                       </Badge>
                     )}
                   </div>
