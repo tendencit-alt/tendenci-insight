@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -6,6 +7,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Building, MapPin, Phone, Package } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { ArchitectProspeccaoSheet } from "./ArchitectProspeccaoSheet";
 
 interface ProspeccaoKanbanProps {
   filters?: any;
@@ -15,6 +17,8 @@ interface ProspeccaoKanbanProps {
 export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: ProspeccaoKanbanProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [selectedArchitectId, setSelectedArchitectId] = useState<string | null>(null);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
 
   // Buscar stages dinâmicos
   const { data: stages } = useQuery({
@@ -153,9 +157,13 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
             {architectsByStatus[stage.slug]?.map((architect) => (
               <Card
                 key={architect.id}
-                className="p-4 cursor-move hover:shadow-md transition-shadow"
+                className="p-4 cursor-pointer hover:shadow-md transition-shadow"
                 draggable
                 onDragStart={(e) => handleDragStart(e, architect.id)}
+                onClick={() => {
+                  setSelectedArchitectId(architect.id);
+                  setIsSheetOpen(true);
+                }}
               >
                 <div className="space-y-3">
                   {/* Header com Avatar e Nome */}
@@ -227,6 +235,14 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
           </div>
         </div>
       ))}
+
+      {selectedArchitectId && (
+        <ArchitectProspeccaoSheet
+          architectId={selectedArchitectId}
+          open={isSheetOpen}
+          onOpenChange={setIsSheetOpen}
+        />
+      )}
     </div>
   );
 }
