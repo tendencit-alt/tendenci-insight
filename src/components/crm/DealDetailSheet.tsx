@@ -322,6 +322,10 @@ export function DealDetailSheet({
     }
   };
 
+  if (!deal) {
+    return null;
+  }
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-3xl overflow-y-auto">
