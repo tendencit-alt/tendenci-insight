@@ -174,6 +174,11 @@ export function CRMTasksPanel({ pipelineId }: CRMTasksPanelProps) {
                     <Badge variant={dueInfo.variant} className="text-xs flex-shrink-0 font-medium">
                       {dueInfo.icon} {dueInfo.text}
                     </Badge>
+                    {task.origem_modulo === "prospeccao" && (
+                      <Badge variant="outline" className="text-xs flex-shrink-0">
+                        📋 Prospecção
+                      </Badge>
+                    )}
                     <span className="text-xs text-muted-foreground">
                       {dueDate.toLocaleString("pt-BR", {
                         dateStyle: "short",
