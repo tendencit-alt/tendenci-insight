@@ -11,6 +11,9 @@ interface CRMKPIsProps {
   showPlanned?: boolean;
   dateFilter?: string;
   customDateRange?: { from: Date | undefined; to: Date | undefined };
+  ownerFilter?: string;
+  statusFilter?: string;
+  searchQuery?: string;
 }
 
 interface SellerBreakdown {
@@ -38,7 +41,10 @@ export function CRMKPIsDashboard({
   categoryFilter = "all", 
   showPlanned = false,
   dateFilter = "all",
-  customDateRange
+  customDateRange,
+  ownerFilter = "all",
+  statusFilter = "all",
+  searchQuery = ""
 }: CRMKPIsProps) {
   const [loading, setLoading] = useState(true);
   const [kpis, setKpis] = useState<KPIData>({
@@ -59,7 +65,7 @@ export function CRMKPIsDashboard({
     if (pipelineId) {
       fetchKPIs();
     }
-  }, [pipelineId, refreshKey, categoryFilter, showPlanned, dateFilter, customDateRange]);
+  }, [pipelineId, refreshKey, categoryFilter, showPlanned, dateFilter, customDateRange, ownerFilter, statusFilter, searchQuery]);
 
   // Realtime subscription for automatic KPI updates
   useEffect(() => {
@@ -92,9 +98,28 @@ export function CRMKPIsDashboard({
     try {
       let query = supabase
         .from("crm_deals")
-        .select("*, crm_stages(name), owner:profiles!crm_deals_owner_id_fkey(id, full_name, email)")
+        .select(`
+          *, 
+          crm_stages(name), 
+          owner:profiles!crm_deals_owner_id_fkey(id, full_name, email),
+          architect:architects(name),
+          lead:leads(
+            client:clients(name, phone, email)
+          )
+        `)
         .eq("pipeline_id", pipelineId);
 
+      // Filtro de responsável
+      if (ownerFilter && ownerFilter !== "all") {
+        query = query.eq("owner_id", ownerFilter);
+      }
+
+      // Filtro de status
+      if (statusFilter && statusFilter !== "all") {
+        query = query.eq("status", statusFilter);
+      }
+
+      // Filtro de categoria ou planejados
       if (showPlanned) {
         query = query.not("scheduled_call", "is", null);
       } else if (categoryFilter && categoryFilter !== "all") {
@@ -144,11 +169,30 @@ export function CRMKPIsDashboard({
 
       if (error) throw error;
 
+      // Aplicar filtro de busca (client-side porque envolve dados relacionados)
+      let filteredDeals = deals || [];
+      if (searchQuery) {
+        const searchLower = searchQuery.toLowerCase();
+        filteredDeals = filteredDeals.filter(deal => {
+          const title = deal.title?.toLowerCase() || "";
+          const clientName = deal.lead?.client?.name?.toLowerCase() || "";
+          const architectName = deal.architect?.name?.toLowerCase() || "";
+          const clientPhone = deal.lead?.client?.phone?.toLowerCase() || "";
+          const clientEmail = deal.lead?.client?.email?.toLowerCase() || "";
+          
+          return title.includes(searchLower) || 
+                 clientName.includes(searchLower) || 
+                 architectName.includes(searchLower) ||
+                 clientPhone.includes(searchLower) ||
+                 clientEmail.includes(searchLower);
+        });
+      }
+
       // Calcular breakdown por vendedor para contatos e captados
       const contatosPorVendedor = new Map<string, number>();
       const captadosPorVendedor = new Map<string, number>();
 
-      deals?.forEach((deal) => {
+      filteredDeals.forEach((deal) => {
         const sellerName = deal.owner?.full_name || deal.owner?.email || "Sem responsável";
         
         // Todos os deals são contatos
@@ -161,15 +205,15 @@ export function CRMKPIsDashboard({
       });
 
       const kpiData: KPIData = {
-        contatos_feitos: deals?.length || 0,
-        projetos_captados: deals?.filter((d) => d.stage_id && d.status === "aberto").length || 0,
-        em_orcamento: deals?.filter((d) => d.crm_stages?.name?.toLowerCase().includes("orçamento")).length || 0,
-        apresentado: deals?.filter((d) => d.crm_stages?.name?.toLowerCase().includes("apresent")).length || 0,
-        perdido: deals?.filter((d) => d.status === "perdido").length || 0,
-        conquistado: deals?.filter((d) => d.status === "ganho").length || 0,
-        valor_total_conquistado: deals?.filter((d) => d.status === "ganho").reduce((acc, d) => acc + (d.value || 0), 0) || 0,
-        valor_total_em_orcamento: deals?.filter((d) => d.crm_stages?.name?.toLowerCase().includes("orçamento")).reduce((acc, d) => acc + (d.value || 0), 0) || 0,
-        valor_total_perdido: deals?.filter((d) => d.status === "perdido").reduce((acc, d) => acc + (d.value || 0), 0) || 0,
+        contatos_feitos: filteredDeals.length || 0,
+        projetos_captados: filteredDeals.filter((d) => d.stage_id && d.status === "aberto").length || 0,
+        em_orcamento: filteredDeals.filter((d) => d.crm_stages?.name?.toLowerCase().includes("orçamento")).length || 0,
+        apresentado: filteredDeals.filter((d) => d.crm_stages?.name?.toLowerCase().includes("apresent")).length || 0,
+        perdido: filteredDeals.filter((d) => d.status === "perdido").length || 0,
+        conquistado: filteredDeals.filter((d) => d.status === "ganho").length || 0,
+        valor_total_conquistado: filteredDeals.filter((d) => d.status === "ganho").reduce((acc, d) => acc + (d.value || 0), 0) || 0,
+        valor_total_em_orcamento: filteredDeals.filter((d) => d.crm_stages?.name?.toLowerCase().includes("orçamento")).reduce((acc, d) => acc + (d.value || 0), 0) || 0,
+        valor_total_perdido: filteredDeals.filter((d) => d.status === "perdido").reduce((acc, d) => acc + (d.value || 0), 0) || 0,
         contatos_por_vendedor: Array.from(contatosPorVendedor.entries())
           .map(([seller_name, count]) => ({ seller_name, count }))
           .sort((a, b) => b.count - a.count),
