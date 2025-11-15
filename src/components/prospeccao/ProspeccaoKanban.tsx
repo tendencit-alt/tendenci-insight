@@ -269,11 +269,20 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
                     )}
 
                     {/* DIAS SEM ENVIAR PROJETO */}
-                    {architect.ultimo_projeto_data && (
-                      <Badge variant="outline" className="text-xs bg-purple-50 dark:bg-purple-950 border-purple-200 dark:border-purple-800">
-                        ⏱️ {differenceInDays(new Date(), new Date(architect.ultimo_projeto_data))} dias sem projeto
-                      </Badge>
-                    )}
+                    {(() => {
+                      const referenceDate = architect.ultimo_projeto_data 
+                        ? new Date(architect.ultimo_projeto_data)
+                        : architect.data_primeiro_contato 
+                          ? new Date(architect.data_primeiro_contato)
+                          : new Date(architect.created_at);
+                      const days = differenceInDays(new Date(), referenceDate);
+                      
+                      return (
+                        <Badge variant="outline" className="text-xs bg-purple-50 dark:bg-purple-950 border-purple-200 dark:border-purple-800">
+                          ⏱️ {days} {days === 1 ? 'dia' : 'dias'} sem projeto
+                        </Badge>
+                      );
+                    })()}
 
                     {/* PROJETOS ENVIADOS */}
                     {architect.architect_projects && architect.architect_projects.length > 0 ? (
