@@ -33,6 +33,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { DealFileUpload } from "./DealFileUpload";
 
 interface DealDetailSheetProps {
   deal: any;
@@ -65,6 +66,7 @@ export function DealDetailSheet({
   const [availableProjects, setAvailableProjects] = useState<any[]>([]);
   const [selectedProjectToLink, setSelectedProjectToLink] = useState("");
   const [isUnlinkProjectOpen, setIsUnlinkProjectOpen] = useState(false);
+  const [dealFiles, setDealFiles] = useState<any[]>([]);
   
   // Estados para controlar seções abertas/fechadas
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
@@ -110,6 +112,20 @@ export function DealDetailSheet({
     } else {
       console.log('Nenhum projeto vinculado');
       setProject(null);
+    }
+  };
+
+  const fetchDealFiles = async () => {
+    if (!deal?.id) return;
+
+    const { data, error } = await supabase
+      .from("crm_deal_files")
+      .select("*")
+      .eq("deal_id", deal.id)
+      .order("uploaded_at", { ascending: false });
+
+    if (!error && data) {
+      setDealFiles(data);
     }
   };
 
@@ -176,6 +192,7 @@ export function DealDetailSheet({
     fetchHistory();
     fetchStages();
     fetchPipelines();
+    fetchDealFiles();
 
     // Configurar realtime para histórico
     const historyChannel = supabase
@@ -521,6 +538,17 @@ export function DealDetailSheet({
                       <div className="pt-2 border-t">
                         <p className="text-xs text-muted-foreground">Observações</p>
                         <p className="text-xs mt-1">{deal.note}</p>
+                      </div>
+                    )}
+
+                    {dealFiles.length > 0 && (
+                      <div className="pt-2 border-t">
+                        <p className="text-xs text-muted-foreground mb-2">Documentos Anexados</p>
+                        <DealFileUpload
+                          dealId={deal.id}
+                          files={dealFiles}
+                          onFilesChange={fetchDealFiles}
+                        />
                       </div>
                     )}
                   </div>
