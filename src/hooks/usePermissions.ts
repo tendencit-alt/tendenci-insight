@@ -2,79 +2,190 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
+export type AppModule = 
+  | 'dashboard'
+  | 'prospeccao'
+  | 'crm'
+  | 'projetos'
+  | 'metas'
+  | 'leads'
+  | 'dashboards_personalizados'
+  | 'gestao_usuarios';
+
+export interface ModulePermission {
+  module: AppModule;
+  can_view: boolean;
+  can_create: boolean;
+  can_edit: boolean;
+  can_delete: boolean;
+}
+
 export interface UserPermissions {
-  role: 'master' | 'vendedor';
-  acesso_leads: boolean;
-  acesso_arquitetos: boolean;
-  acesso_projetos: boolean;
-  acesso_crm_kanban: boolean;
-  acesso_metas: boolean;
-  acesso_configuracoes: boolean;
+  role: string;
+  permissions: ModulePermission[];
   active: boolean;
 }
 
 export function usePermissions() {
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const [permissions, setPermissions] = useState<UserPermissions | null>(null);
   const [loading, setLoading] = useState(true);
   const [isMaster, setIsMaster] = useState(false);
 
   useEffect(() => {
-    if (!user) {
-      setPermissions(null);
-      setLoading(false);
-      return;
-    }
+    const fetchPermissions = async () => {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        // Buscar perfil do usuário
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+
+        if (profileError) throw profileError;
+
+        const isAdmin = profile?.role === 'admin';
+        setIsMaster(isAdmin);
+
+        // Se for admin, tem todas as permissões
+        if (isAdmin) {
+          const allModules: AppModule[] = [
+            'dashboard',
+            'prospeccao',
+            'crm',
+            'projetos',
+            'metas',
+            'leads',
+            'dashboards_personalizados',
+            'gestao_usuarios'
+          ];
+
+          setPermissions({
+            role: profile.role,
+            permissions: allModules.map(module => ({
+              module,
+              can_view: true,
+              can_create: true,
+              can_edit: true,
+              can_delete: true
+            })),
+            active: true
+          });
+        } else {
+          // Buscar permissões específicas do usuário
+          const { data: userPermissions, error: permError } = await supabase
+            .from('user_permissions')
+            .select('*')
+            .eq('user_id', user.id);
+
+          if (permError) throw permError;
+
+          setPermissions({
+            role: profile.role,
+            permissions: userPermissions as ModulePermission[],
+            active: true
+          });
+        }
+      } catch (error) {
+        console.error('Erro ao buscar permissões:', error);
+        setPermissions(null);
+      } finally {
+        setLoading(false);
+      }
+    };
 
     fetchPermissions();
-  }, [user, profile]);
+  }, [user]);
 
-  const fetchPermissions = async () => {
-    try {
-      setLoading(true);
-      
-      // Verificar se é admin pelo profile
-      const isAdmin = profile?.role === 'admin';
-      setIsMaster(isAdmin);
-
-      // Usar defaults baseado no role do profile
-      const defaultPermissions: UserPermissions = {
-        role: isAdmin ? 'master' : 'vendedor',
-        acesso_leads: true,
-        acesso_arquitetos: true,
-        acesso_projetos: true,
-        acesso_crm_kanban: true,
-        acesso_metas: true,
-        acesso_configuracoes: isAdmin,
-        active: true,
-      };
-      setPermissions(defaultPermissions);
-    } catch (error) {
-      console.error('Erro ao buscar permissões:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const hasModuleAccess = (module: string): boolean => {
+  const hasModuleAccess = (module: AppModule, action: 'view' | 'create' | 'edit' | 'delete' = 'view') => {
     if (!permissions) return false;
     if (isMaster) return true;
 
-    switch (module) {
-      case 'leads':
-        return permissions.acesso_leads;
-      case 'arquitetos':
-        return permissions.acesso_arquitetos;
-      case 'projetos':
-        return permissions.acesso_projetos;
-      case 'crm':
-        return permissions.acesso_crm_kanban;
-      case 'metas':
-        return permissions.acesso_metas;
-      case 'configuracoes':
-        return permissions.acesso_configuracoes;
+    const modulePermission = permissions.permissions.find(p => p.module === module);
+    if (!modulePermission) return false;
+
+    switch (action) {
+      case 'view':
+        return modulePermission.can_view;
+      case 'create':
+        return modulePermission.can_create;
+      case 'edit':
+        return modulePermission.can_edit;
+      case 'delete':
+        return modulePermission.can_delete;
       default:
         return false;
+    }
+  };
+
+  const refetch = async () => {
+    setLoading(true);
+    // Re-executar o efeito
+    if (user) {
+      const fetchPermissions = async () => {
+        try {
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single();
+
+          if (profileError) throw profileError;
+
+          const isAdmin = profile?.role === 'admin';
+          setIsMaster(isAdmin);
+
+          if (isAdmin) {
+            const allModules: AppModule[] = [
+              'dashboard',
+              'prospeccao',
+              'crm',
+              'projetos',
+              'metas',
+              'leads',
+              'dashboards_personalizados',
+              'gestao_usuarios'
+            ];
+
+            setPermissions({
+              role: profile.role,
+              permissions: allModules.map(module => ({
+                module,
+                can_view: true,
+                can_create: true,
+                can_edit: true,
+                can_delete: true
+              })),
+              active: true
+            });
+          } else {
+            const { data: userPermissions, error: permError } = await supabase
+              .from('user_permissions')
+              .select('*')
+              .eq('user_id', user.id);
+
+            if (permError) throw permError;
+
+            setPermissions({
+              role: profile.role,
+              permissions: userPermissions as ModulePermission[],
+              active: true
+            });
+          }
+        } catch (error) {
+          console.error('Erro ao buscar permissões:', error);
+          setPermissions(null);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchPermissions();
     }
   };
 
@@ -83,6 +194,6 @@ export function usePermissions() {
     loading,
     isMaster,
     hasModuleAccess,
-    refetch: fetchPermissions,
+    refetch
   };
 }

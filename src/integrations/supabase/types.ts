@@ -2493,6 +2493,42 @@ export type Database = {
         }
         Relationships: []
       }
+      user_permissions: {
+        Row: {
+          can_create: boolean
+          can_delete: boolean
+          can_edit: boolean
+          can_view: boolean
+          created_at: string | null
+          id: string
+          module: Database["public"]["Enums"]["app_module"]
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          can_create?: boolean
+          can_delete?: boolean
+          can_edit?: boolean
+          can_view?: boolean
+          created_at?: string | null
+          id?: string
+          module: Database["public"]["Enums"]["app_module"]
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          can_create?: boolean
+          can_delete?: boolean
+          can_edit?: boolean
+          can_view?: boolean
+          created_at?: string | null
+          id?: string
+          module?: Database["public"]["Enums"]["app_module"]
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       users: {
         Row: {
           created_at: string | null
@@ -2700,6 +2736,7 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
+      is_user_admin: { Args: { _user_id: string }; Returns: boolean }
       is_user_master: { Args: { _user_id: string }; Returns: boolean }
       leads_aggregates: { Args: never; Returns: Json }
       mark_inactive_architects: { Args: never; Returns: undefined }
@@ -2731,6 +2768,13 @@ export type Database = {
           recebido_count: number
         }[]
       }
+      user_can_access_module: {
+        Args: {
+          _module: Database["public"]["Enums"]["app_module"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       user_has_role: { Args: { required_role: string }; Returns: boolean }
       user_has_role_check: {
         Args: { required_role: Database["public"]["Enums"]["user_role"] }
@@ -2738,6 +2782,15 @@ export type Database = {
       }
     }
     Enums: {
+      app_module:
+        | "dashboard"
+        | "prospeccao"
+        | "crm"
+        | "projetos"
+        | "metas"
+        | "leads"
+        | "dashboards_personalizados"
+        | "gestao_usuarios"
       user_role: "admin" | "vendedor" | "arquiteto"
     }
     CompositeTypes: {
@@ -2866,6 +2919,16 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_module: [
+        "dashboard",
+        "prospeccao",
+        "crm",
+        "projetos",
+        "metas",
+        "leads",
+        "dashboards_personalizados",
+        "gestao_usuarios",
+      ],
       user_role: ["admin", "vendedor", "arquiteto"],
     },
   },
