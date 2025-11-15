@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Paperclip, Send, MessageSquare, Phone, Users, Bot, Download, Edit2, X, Check } from "lucide-react";
+import { Paperclip, Send, MessageSquare, Phone, Users, Bot, Download, Edit2, X, Check, Mic, Square, Play, Pause } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -51,6 +51,7 @@ export function ArchitectTimeline({ architectId }: ArchitectTimelineProps) {
   const [message, setMessage] = useState("");
   const [updateType, setUpdateType] = useState("Comentário Interno");
   const [files, setFiles] = useState<FileList | null>(null);
+  const [audioFiles, setAudioFiles] = useState<FileList | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [allUsers, setAllUsers] = useState<any[]>([]);
   const [showMentionSuggestions, setShowMentionSuggestions] = useState(false);
@@ -58,6 +59,12 @@ export function ArchitectTimeline({ architectId }: ArchitectTimelineProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editMessage, setEditMessage] = useState("");
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const audioRefs = useRef<{ [key: string]: HTMLAudioElement }>({});
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
