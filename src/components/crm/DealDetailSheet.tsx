@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Edit, CheckCircle, XCircle, FileText, User, Users, Phone, Mail, MapPin, Package, TrendingUp, DollarSign, ExternalLink, Calendar, Tag as TagIcon, History, Paperclip, Mic, FolderOpen, Plus, Unlink } from "lucide-react";
+import { Edit, CheckCircle, XCircle, FileText, User, Users, Phone, Mail, MapPin, Package, TrendingUp, DollarSign, ExternalLink, Calendar, Tag as TagIcon, History, FolderOpen, Plus, Unlink } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -539,41 +539,9 @@ export function DealDetailSheet({
 
             {/* Histórico com anexos */}
             <Card className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <History className="h-5 w-5 text-primary" />
-                  <h3 className="font-semibold text-lg">Histórico</h3>
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      toast({
-                        title: "Em breve",
-                        description: "Funcionalidade de anexar documento em desenvolvimento.",
-                      });
-                    }}
-                    className="gap-2"
-                  >
-                    <Paperclip className="h-4 w-4" />
-                    Documento
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      toast({
-                        title: "Em breve",
-                        description: "Funcionalidade de anexar áudio em desenvolvimento.",
-                      });
-                    }}
-                    className="gap-2"
-                  >
-                    <Mic className="h-4 w-4" />
-                    Áudio
-                  </Button>
-                </div>
+              <div className="flex items-center gap-2 mb-3">
+                <History className="h-5 w-5 text-primary" />
+                <h3 className="font-semibold text-lg">Histórico</h3>
               </div>
               
               <DealTimeline dealId={deal.id} />
