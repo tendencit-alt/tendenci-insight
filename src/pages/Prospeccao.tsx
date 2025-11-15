@@ -1,18 +1,11 @@
 import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
 import { ProspeccaoOverview } from "@/components/prospeccao/ProspeccaoOverview";
 import { ProspeccaoCRM } from "@/components/prospeccao/ProspeccaoCRM";
 import { ManageStagesDialog } from "@/components/prospeccao/ManageStagesDialog";
-import { SegmentosManager } from "@/components/prospeccao/SegmentosManager";
-import { SequenciasManager } from "@/components/prospeccao/SequenciasManager";
-import { CampanhasManager } from "@/components/prospeccao/CampanhasManager";
-import { AgendamentosManager } from "@/components/prospeccao/AgendamentosManager";
-import { WhatsAppConnectionManager } from "@/components/prospeccao/WhatsAppConnectionManager";
-import { EvolutionAPIGuide } from "@/components/settings/EvolutionAPIGuide";
-import { N8nAgendamentoGuide } from "@/components/settings/N8nAgendamentoGuide";
-import { UserSearch, LayoutGrid, Megaphone, Users as UsersIcon, Zap, Calendar, Settings, List, Smartphone } from "lucide-react";
+import { ProspeccaoTasksManager } from "@/components/prospeccao/ProspeccaoTasksManager";
+import { UserSearch, LayoutGrid, CheckSquare } from "lucide-react";
 
 export default function Prospeccao() {
   const [activeTab, setActiveTab] = useState("overview");
@@ -57,8 +50,8 @@ export default function Prospeccao() {
               Sequências IA
             </TabsTrigger> */}
             <TabsTrigger value="agendamentos" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <Calendar className="h-4 w-4" />
-              Agendamentos
+              <CheckSquare className="h-4 w-4" />
+              Tarefas
             </TabsTrigger>
             {/* <TabsTrigger value="whatsapp" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <Smartphone className="h-4 w-4" />
@@ -96,7 +89,7 @@ export default function Prospeccao() {
           </TabsContent> */}
 
           <TabsContent value="agendamentos" className="space-y-6">
-            <AgendamentosManager />
+            <ProspeccaoTasksManager />
           </TabsContent>
 
           {/* <TabsContent value="whatsapp" className="space-y-6">
