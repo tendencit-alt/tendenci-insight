@@ -207,6 +207,15 @@ All colors MUST be HSL.
     z-index: 100;
   }
 
+  .react-grid-item.react-grid-placeholder {
+    background: hsl(var(--primary) / 0.15);
+    opacity: 0.6;
+    transition-duration: 100ms;
+    z-index: 2;
+    border-radius: 0.75rem;
+    border: 2px dashed hsl(var(--primary) / 0.5);
+  }
+
   .react-grid-item > .react-resizable-handle {
     position: absolute;
     width: 20px;
@@ -222,5 +231,13 @@ All colors MUST be HSL.
     height: 8px;
     border-right: 2px solid hsl(var(--border));
     border-bottom: 2px solid hsl(var(--border));
+  }
+
+  /* Grid background pattern */
+  .bg-grid-white\/\[0\.02\] {
+    background-image: 
+      linear-gradient(to right, hsl(var(--foreground) / 0.02) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(var(--foreground) / 0.02) 1px, transparent 1px);
+    background-size: 24px 24px;
   }
 }
