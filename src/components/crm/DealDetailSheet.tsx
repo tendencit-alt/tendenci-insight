@@ -33,6 +33,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { DealFileUpload } from "./DealFileUpload";
+import { DealNotes } from "./DealNotes";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { logDealChange, logStageChange, getDisplayValue } from "@/utils/dealHistory";
@@ -547,13 +548,16 @@ export function DealDetailSheet({
                   </div>
                 </div>
               </div>
-              {deal.note && (
-                <div className="mt-4 pt-4 border-t">
-                  <Label className="text-xs text-muted-foreground">Observações</Label>
-                  <p className="text-sm mt-1 whitespace-pre-wrap">{deal.note}</p>
-                </div>
-              )}
             </Card>
+
+            {/* Observações com Áudio e Anexos */}
+            <DealNotes
+              dealId={deal.id}
+              currentNote={deal.note || ""}
+              onNoteUpdate={(newNote) => {
+                deal.note = newNote;
+              }}
+            />
 
             {/* Responsáveis - Visível apenas para o vendedor responsável ou admin */}
             {(isMaster || deal.owner_id === user?.id) && (
