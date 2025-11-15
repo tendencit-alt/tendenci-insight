@@ -105,7 +105,7 @@ export function CreateLeadDialog({ open, onOpenChange, onSuccess }: CreateLeadDi
           email: formData.email ? formData.email.trim() : null
         })
         .select()
-        .single();
+        .maybeSingle();
 
       if (clientError) {
         console.error('❌ Erro ao criar cliente:', clientError);
@@ -125,7 +125,7 @@ export function CreateLeadDialog({ open, onOpenChange, onSuccess }: CreateLeadDi
           architect_id: formData.responsible || null
         })
         .select()
-        .single();
+        .maybeSingle();
 
       if (leadError) {
         console.error('❌ Erro ao criar lead:', leadError);

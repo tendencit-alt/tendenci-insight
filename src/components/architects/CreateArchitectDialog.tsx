@@ -62,7 +62,7 @@ export function CreateArchitectDialog({ open, onOpenChange, onSuccess }: CreateA
           status_funil: formData.ja_contactado ? "contato_iniciado" : "novo_arquiteto"
         })
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
 

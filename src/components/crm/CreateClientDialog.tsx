@@ -70,7 +70,7 @@ export function CreateClientDialog({
           notes: formData.notes.trim() || null,
         })
         .select()
-        .single();
+        .maybeSingle();
 
       setLoading(false);
 
