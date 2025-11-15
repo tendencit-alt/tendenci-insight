@@ -175,6 +175,22 @@ export function CRMBoard({ pipelineId, onRefresh }: CRMBoardProps) {
       return;
     }
 
+    // Encontrar a etapa de destino
+    const targetStage = stages.find(s => s.id === stageId);
+    
+    // Verificar se está tentando mover para uma etapa após Qualificação sem valor
+    if (targetStage && targetStage.position > 1) { // position > 1 significa após Qualificação
+      if (!draggedDeal.value || draggedDeal.value <= 0) {
+        toast({
+          title: "Valor obrigatório",
+          description: "Para mover para esta etapa, o negócio precisa ter um valor (R$) definido. Edite o negócio e adicione o valor antes de avançar.",
+          variant: "destructive",
+        });
+        setDraggedDeal(null);
+        return;
+      }
+    }
+
     const updateData: any = {
       stage_id: stageId,
       stage_entered_at: new Date().toISOString(),
