@@ -201,11 +201,12 @@ export function DealDetailSheet({
   };
 
   const handleOwnerChange = async (ownerId: string) => {
-    setSelectedOwner(ownerId);
+    const actualOwnerId = ownerId === "none" ? "" : ownerId;
+    setSelectedOwner(actualOwnerId);
 
     const { error } = await supabase
       .from("crm_deals")
-      .update({ owner_id: ownerId || null })
+      .update({ owner_id: actualOwnerId || null })
       .eq("id", deal.id);
 
     if (error) {
@@ -571,14 +572,14 @@ export function DealDetailSheet({
                   <div className="col-span-2">
                     <Label className="text-xs text-muted-foreground">Vendedor Responsável</Label>
                     <Select
-                      value={selectedOwner}
+                      value={selectedOwner || "none"}
                       onValueChange={handleOwnerChange}
                     >
                       <SelectTrigger className="mt-1">
                         <SelectValue placeholder="Selecionar vendedor" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Nenhum</SelectItem>
+                        <SelectItem value="none">Nenhum</SelectItem>
                         {owners.map((owner) => (
                           <SelectItem key={owner.id} value={owner.id}>
                             {owner.full_name || owner.email}
