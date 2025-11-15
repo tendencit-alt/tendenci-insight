@@ -6,29 +6,43 @@ import { supabase } from "@/integrations/supabase/client";
 import { CheckCircle, Circle, TrendingUp, Calendar } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useAuth } from "@/contexts/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
 
 export function DailyArchitectGoals() {
+  const { user } = useAuth();
+  const { isMaster } = usePermissions();
   const [dailyProgress, setDailyProgress] = useState<any>(null);
   const [weeklyProgress, setWeeklyProgress] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchProgress();
-    initializeTodayGoal();
-  }, []);
+    // Apenas vendedores (não masters) devem ter metas diárias
+    if (!isMaster && user) {
+      fetchProgress();
+      initializeTodayGoal();
+    } else {
+      setLoading(false);
+    }
+  }, [isMaster, user]);
 
   const initializeTodayGoal = async () => {
     try {
-      // Chamar função para criar metas diárias se não existirem
-      await supabase.rpc('create_daily_architect_goals');
+      // Chamar edge function para inicializar metas diárias de todos os vendedores
+      const { data, error } = await supabase.functions.invoke('initialize-daily-goals');
+      
+      if (error) {
+        console.error("Erro ao inicializar metas diárias:", error);
+      } else {
+        console.log("Metas diárias inicializadas:", data);
+      }
     } catch (error) {
-      console.error("Erro ao inicializar metas diárias:", error);
+      console.error("Erro ao chamar função de inicialização:", error);
     }
   };
 
   const fetchProgress = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
       // Buscar progresso diário
@@ -50,6 +64,19 @@ export function DailyArchitectGoals() {
       setLoading(false);
     }
   };
+
+  // Se for master, não mostrar metas diárias
+  if (isMaster) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <p className="text-sm text-muted-foreground text-center">
+            Metas diárias são aplicadas apenas para vendedores. Use o botão "Editar Metas Diárias" para configurar as metas de cada vendedor.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (loading) {
     return (
