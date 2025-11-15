@@ -28,6 +28,9 @@ import { Calendar as CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { DealFileUpload } from "./DealFileUpload";
+import { useAuth } from "@/contexts/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
+import { logDealChange, logStageChange, getDisplayValue } from "@/utils/dealHistory";
 
 interface EditDealDialogProps {
   deal: any;
@@ -154,6 +157,62 @@ export function EditDealDialog({
     setLoading(true);
 
     try {
+      // Track all changes
+      const changes: Array<{field_name: string, old_value: string, new_value: string}> = [];
+      
+      // Check each field for changes
+      if (formData.title !== deal.title) {
+        changes.push({
+          field_name: 'title',
+          old_value: deal.title || '',
+          new_value: formData.title,
+        });
+      }
+      
+      if (formData.value !== deal.value?.toString()) {
+        changes.push({
+          field_name: 'value',
+          old_value: deal.value?.toString() || '0',
+          new_value: formData.value || '0',
+        });
+      }
+      
+      if (formData.note !== deal.note) {
+        changes.push({
+          field_name: 'note',
+          old_value: deal.note || '',
+          new_value: formData.note || '',
+        });
+      }
+      
+      if (formData.product_type !== deal.product_type) {
+        changes.push({
+          field_name: 'product_type',
+          old_value: deal.product_type || '',
+          new_value: formData.product_type || '',
+        });
+      }
+      
+      if (formData.architect_id !== deal.architect_id) {
+        const oldValue = await getDisplayValue('architect_id', deal.architect_id);
+        const newValue = await getDisplayValue('architect_id', formData.architect_id);
+        changes.push({
+          field_name: 'architect_id',
+          old_value: oldValue,
+          new_value: newValue,
+        });
+      }
+      
+      if (formData.owner_id !== deal.owner_id) {
+        const oldValue = await getDisplayValue('owner_id', deal.owner_id);
+        const newValue = await getDisplayValue('owner_id', formData.owner_id);
+        changes.push({
+          field_name: 'owner_id',
+          old_value: oldValue,
+          new_value: newValue,
+        });
+      }
+      
       const updateData: any = {
         title: formData.title,
         architect_id: formData.architect_id || null,
@@ -188,6 +247,16 @@ export function EditDealDialog({
           variant: "destructive",
         });
         return;
+      }
+
+      // Log stage change separately if changed
+      if (formData.stage_id && formData.stage_id !== deal.stage_id) {
+        await logStageChange(deal.id, deal.stage_id, formData.stage_id);
+      }
+      
+      // Log all other changes
+      if (changes.length > 0) {
+        await logDealChange(deal.id, changes);
       }
 
       // Atualizar temperatura e origem do lead se houver lead vinculado
