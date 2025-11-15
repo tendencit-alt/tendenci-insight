@@ -26,10 +26,15 @@ export default function CRM() {
   const [goalData, setGoalData] = useState<any>(null);
   const [companyGoal, setCompanyGoal] = useState<any>(null);
   const [teamAverage, setTeamAverage] = useState<number>(0);
+  const [owners, setOwners] = useState<any[]>([]);
+  const [selectedOwner, setSelectedOwner] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const isAdmin = profile?.role === 'admin';
 
   useEffect(() => {
     fetchPipelines();
+    fetchOwners();
     if (user && !isAdmin) {
       fetchGoalData();
       fetchCompanyGoal();
@@ -55,6 +60,17 @@ export default function CRM() {
     setPipelines(data || []);
     if (data && data.length > 0 && !selectedPipeline) {
       setSelectedPipeline(data[0].id);
+    }
+  };
+
+  const fetchOwners = async () => {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id, full_name, email")
+      .order("full_name");
+
+    if (!error && data) {
+      setOwners(data);
     }
   };
 
@@ -165,11 +181,18 @@ export default function CRM() {
         </div>
 
         {/* Filters */}
-        <CRMFilters
-          pipelines={pipelines}
-          selectedPipeline={selectedPipeline}
-          onPipelineChange={setSelectedPipeline}
-        />
+            <CRMFilters
+              pipelines={pipelines}
+              selectedPipeline={selectedPipeline}
+              onPipelineChange={setSelectedPipeline}
+              owners={owners}
+              selectedOwner={selectedOwner}
+              onOwnerChange={setSelectedOwner}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              selectedStatus={selectedStatus}
+              onStatusChange={setSelectedStatus}
+            />
 
         {selectedPipeline && (
           <>
@@ -190,6 +213,11 @@ export default function CRM() {
               pipelineId={selectedPipeline} 
               key={`board-${refreshKey}`}
               onRefresh={handleRefresh}
+              filters={{
+                owner: selectedOwner,
+                search: searchQuery,
+                status: selectedStatus
+              }}
             />
           </>
         )}
