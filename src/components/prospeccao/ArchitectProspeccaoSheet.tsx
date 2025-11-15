@@ -300,15 +300,20 @@ export function ArchitectProspeccaoSheet({
           <TabsContent value="history" className="space-y-4">
             <Card className="p-4">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold flex items-center gap-2">
-                  <History className="h-4 w-4" />
-                  Histórico de Interações
-                </h3>
+                <div>
+                  <h3 className="font-semibold flex items-center gap-2">
+                    <History className="h-4 w-4" />
+                    Histórico Completo
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Todas as atividades, mudanças e interações registradas
+                  </p>
+                </div>
                 <Dialog open={isAddLogOpen} onOpenChange={setIsAddLogOpen}>
                   <DialogTrigger asChild>
                     <Button size="sm" className="gap-2">
                       <MessageSquare className="h-4 w-4" />
-                      Nova Interação
+                      Registrar Interação
                     </Button>
                   </DialogTrigger>
                   <DialogContent>
@@ -415,7 +420,7 @@ export function ArchitectProspeccaoSheet({
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground text-center py-8">
-                  Nenhuma interação registrada
+                  Nenhuma atividade registrada ainda
                 </p>
               )}
             </Card>
