@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { 
   Building, 
@@ -18,9 +18,12 @@ import {
   Tag as TagIcon,
   User,
   TrendingUp,
-  ExternalLink
+  ExternalLink,
+  Plus
 } from "lucide-react";
 import { format } from "date-fns";
+import { CreateProjectDialog } from "@/components/projects/CreateProjectDialog";
+import { toast } from "sonner";
 
 interface ArchitectProspeccaoSheetProps {
   architectId: string;
@@ -34,6 +37,8 @@ export function ArchitectProspeccaoSheet({
   onOpenChange 
 }: ArchitectProspeccaoSheetProps) {
   const [architect, setArchitect] = useState<any>(null);
+  const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
+  const queryClient = useQueryClient();
 
   // Buscar dados do arquiteto
   useEffect(() => {
@@ -298,10 +303,20 @@ export function ArchitectProspeccaoSheet({
 
           <TabsContent value="projects" className="space-y-4">
             <Card className="p-4">
-              <h3 className="font-semibold mb-4 flex items-center gap-2">
-                <Package className="h-4 w-4" />
-                Projetos Enviados
-              </h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold flex items-center gap-2">
+                  <Package className="h-4 w-4" />
+                  Projetos Enviados
+                </h3>
+                <Button 
+                  size="sm" 
+                  onClick={() => setIsCreateProjectOpen(true)}
+                  className="gap-2"
+                >
+                  <Plus className="h-4 w-4" />
+                  Novo Projeto
+                </Button>
+              </div>
               
               {projects && projects.length > 0 ? (
                 <div className="space-y-3">
@@ -337,6 +352,18 @@ export function ArchitectProspeccaoSheet({
             </Card>
           </TabsContent>
         </Tabs>
+
+        <CreateProjectDialog
+          open={isCreateProjectOpen}
+          onOpenChange={setIsCreateProjectOpen}
+          preSelectedArchitectId={architectId}
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ["architect-projects", architectId] });
+            queryClient.invalidateQueries({ queryKey: ["prospeccao-architects"] });
+            toast.success("Projeto criado com sucesso!");
+            setIsCreateProjectOpen(false);
+          }}
+        />
       </SheetContent>
     </Sheet>
   );
