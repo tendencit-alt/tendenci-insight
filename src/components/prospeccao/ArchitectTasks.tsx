@@ -10,8 +10,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ArchitectTimeline } from "./ArchitectTimeline";
-import { Separator } from "@/components/ui/separator";
 
 interface ArchitectTasksProps {
   architectId: string;
@@ -333,11 +331,6 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
           })
         )}
       </div>
-
-      <Separator className="my-6" />
-
-      {/* Timeline Colaborativa */}
-      <ArchitectTimeline architectId={architectId} />
     </div>
   );
 }

@@ -24,6 +24,7 @@ import { format } from "date-fns";
 import { CreateProjectDialog } from "@/components/projects/CreateProjectDialog";
 import { ArchitectTasks } from "./ArchitectTasks";
 import { ArchitectHistory } from "./ArchitectHistory";
+import { ArchitectTimeline } from "./ArchitectTimeline";
 import { useToast } from "@/hooks/use-toast";
 
 interface ArchitectProspeccaoSheetProps {
@@ -115,11 +116,12 @@ export function ArchitectProspeccaoSheet({
         </SheetHeader>
 
         <Tabs defaultValue="info" className="mt-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="info">Informações</TabsTrigger>
             <TabsTrigger value="history">Histórico</TabsTrigger>
             <TabsTrigger value="projects">Projetos</TabsTrigger>
             <TabsTrigger value="tasks">Tarefas</TabsTrigger>
+            <TabsTrigger value="timeline">Timeline</TabsTrigger>
           </TabsList>
 
           <TabsContent value="info" className="space-y-6">
@@ -299,6 +301,12 @@ export function ArchitectProspeccaoSheet({
           <TabsContent value="tasks" className="space-y-4">
             <Card className="p-4">
               <ArchitectTasks architectId={architectId} />
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="timeline" className="space-y-4">
+            <Card className="p-4">
+              <ArchitectTimeline architectId={architectId} />
             </Card>
           </TabsContent>
         </Tabs>
