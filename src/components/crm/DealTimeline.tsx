@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Paperclip, Send, MessageSquare, Phone, Users, Bot, Download } from "lucide-react";
+import { Paperclip, Send, MessageSquare, Phone, Users, Bot, Download, Edit2, X, Check } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -58,7 +58,18 @@ export function DealTimeline({ dealId }: DealTimelineProps) {
   const [allUsers, setAllUsers] = useState<any[]>([]);
   const [showMentionSuggestions, setShowMentionSuggestions] = useState(false);
   const [mentionSearch, setMentionSearch] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editMessage, setEditMessage] = useState("");
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) setCurrentUserId(user.id);
+    };
+    getCurrentUser();
+  }, []);
 
   useEffect(() => {
     fetchTimeline();
@@ -303,6 +314,42 @@ export function DealTimeline({ dealId }: DealTimelineProps) {
     URL.revokeObjectURL(url);
   };
 
+  const handleEdit = async (timelineId: string) => {
+    try {
+      const { error } = await supabase
+        .from("crm_timeline")
+        .update({ message: editMessage })
+        .eq("id", timelineId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Atualização editada",
+        description: "Sua mensagem foi editada com sucesso.",
+      });
+
+      setEditingId(null);
+      setEditMessage("");
+      fetchTimeline();
+    } catch (error: any) {
+      toast({
+        title: "Erro ao editar",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const startEdit = (timelineId: string, currentMessage: string) => {
+    setEditingId(timelineId);
+    setEditMessage(currentMessage);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditMessage("");
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -400,17 +447,61 @@ export function DealTimeline({ dealId }: DealTimelineProps) {
                   </div>
                   
                   <div className="flex-1 space-y-2">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-semibold">
-                        {update.profiles?.full_name || update.profiles?.email || "Usuário desconhecido"}
-                      </span>
-                      <Badge variant="outline">{config?.label || update.update_type}</Badge>
-                      <span className="text-sm text-muted-foreground">
-                        {format(new Date(update.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-                      </span>
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-semibold">
+                          {update.profiles?.full_name || update.profiles?.email || "Usuário desconhecido"}
+                        </span>
+                        <Badge variant="outline">{config?.label || update.update_type}</Badge>
+                        <span className="text-sm text-muted-foreground">
+                          {format(new Date(update.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                        </span>
+                      </div>
+                      
+                      {/* Botão de editar - apenas para o autor */}
+                      {currentUserId === update.author_id && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => startEdit(update.id, update.message)}
+                          className="h-8"
+                        >
+                          <Edit2 className="h-3 w-3" />
+                        </Button>
+                      )}
                     </div>
                     
-                    <p className="text-sm whitespace-pre-wrap">{update.message}</p>
+                    {editingId === update.id ? (
+                      <div className="space-y-2">
+                        <Textarea
+                          value={editMessage}
+                          onChange={(e) => setEditMessage(e.target.value)}
+                          rows={3}
+                          className="text-sm"
+                        />
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            onClick={() => handleEdit(update.id)}
+                            className="gap-1"
+                          >
+                            <Check className="h-3 w-3" />
+                            Salvar
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={cancelEdit}
+                            className="gap-1"
+                          >
+                            <X className="h-3 w-3" />
+                            Cancelar
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-sm whitespace-pre-wrap">{update.message}</p>
+                    )}
                     
                     {update.ai_summary && (
                       <div className="bg-cyan-50 dark:bg-cyan-950 border border-cyan-200 dark:border-cyan-800 rounded p-3 text-sm">
