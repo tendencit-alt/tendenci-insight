@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { 
   Building, 
@@ -19,11 +19,16 @@ import {
   User,
   TrendingUp,
   ExternalLink,
-  Plus
+  Plus,
+  MessageSquare
 } from "lucide-react";
 import { format } from "date-fns";
 import { CreateProjectDialog } from "@/components/projects/CreateProjectDialog";
 import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface ArchitectProspeccaoSheetProps {
   architectId: string;
@@ -38,6 +43,12 @@ export function ArchitectProspeccaoSheet({
 }: ArchitectProspeccaoSheetProps) {
   const [architect, setArchitect] = useState<any>(null);
   const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
+  const [isAddLogOpen, setIsAddLogOpen] = useState(false);
+  const [logForm, setLogForm] = useState({
+    tipo: "vendedor",
+    canal: "telefone",
+    mensagem: ""
+  });
   const queryClient = useQueryClient();
 
   // Buscar dados do arquiteto
@@ -63,7 +74,7 @@ export function ArchitectProspeccaoSheet({
   }, [architectId, open]);
 
   // Buscar logs de interação
-  const { data: logs } = useQuery({
+  const { data: logs, refetch: refetchLogs } = useQuery({
     queryKey: ["architect-logs", architectId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -80,6 +91,34 @@ export function ArchitectProspeccaoSheet({
       return data;
     },
     enabled: !!architectId && open,
+  });
+
+  // Mutation para adicionar log
+  const addLogMutation = useMutation({
+    mutationFn: async (logData: any) => {
+      const { data, error } = await supabase.functions.invoke('log-prospeccao-interaction', {
+        body: {
+          architect_id: architectId,
+          ...logData
+        }
+      });
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      toast.success("Interação registrada com sucesso!");
+      refetchLogs();
+      setIsAddLogOpen(false);
+      setLogForm({
+        tipo: "vendedor",
+        canal: "telefone",
+        mensagem: ""
+      });
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Erro ao registrar interação");
+    }
   });
 
   // Buscar projetos do arquiteto
@@ -260,10 +299,91 @@ export function ArchitectProspeccaoSheet({
 
           <TabsContent value="history" className="space-y-4">
             <Card className="p-4">
-              <h3 className="font-semibold mb-4 flex items-center gap-2">
-                <History className="h-4 w-4" />
-                Histórico de Interações
-              </h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold flex items-center gap-2">
+                  <History className="h-4 w-4" />
+                  Histórico de Interações
+                </h3>
+                <Dialog open={isAddLogOpen} onOpenChange={setIsAddLogOpen}>
+                  <DialogTrigger asChild>
+                    <Button size="sm" className="gap-2">
+                      <MessageSquare className="h-4 w-4" />
+                      Nova Interação
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Registrar Nova Interação</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label>Tipo de Interação</Label>
+                        <Select
+                          value={logForm.tipo}
+                          onValueChange={(value) => setLogForm(prev => ({ ...prev, tipo: value }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="vendedor">👤 Vendedor</SelectItem>
+                            <SelectItem value="sistema">⚙️ Sistema</SelectItem>
+                            <SelectItem value="agendamento">📅 Agendamento</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Canal</Label>
+                        <Select
+                          value={logForm.canal}
+                          onValueChange={(value) => setLogForm(prev => ({ ...prev, canal: value }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="telefone">📞 Telefone</SelectItem>
+                            <SelectItem value="whatsapp">💬 WhatsApp</SelectItem>
+                            <SelectItem value="email">📧 E-mail</SelectItem>
+                            <SelectItem value="reuniao">🤝 Reunião</SelectItem>
+                            <SelectItem value="visita">🏢 Visita</SelectItem>
+                            <SelectItem value="outro">📝 Outro</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Descrição da Interação</Label>
+                        <Textarea
+                          placeholder="Descreva o que foi discutido, acordado ou observado..."
+                          value={logForm.mensagem}
+                          onChange={(e) => setLogForm(prev => ({ ...prev, mensagem: e.target.value }))}
+                          rows={4}
+                        />
+                      </div>
+
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          className="flex-1"
+                          onClick={() => setIsAddLogOpen(false)}
+                          disabled={addLogMutation.isPending}
+                        >
+                          Cancelar
+                        </Button>
+                        <Button
+                          className="flex-1"
+                          onClick={() => addLogMutation.mutate(logForm)}
+                          disabled={!logForm.mensagem || addLogMutation.isPending}
+                        >
+                          {addLogMutation.isPending ? "Salvando..." : "Salvar Interação"}
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
               
               {logs && logs.length > 0 ? (
                 <div className="space-y-4">
