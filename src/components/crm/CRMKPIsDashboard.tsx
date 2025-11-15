@@ -8,6 +8,7 @@ interface CRMKPIsProps {
   pipelineId: string;
   refreshKey?: number;
   categoryFilter?: string;
+  showPlanned?: boolean;
 }
 
 interface KPIData {
@@ -22,7 +23,7 @@ interface KPIData {
   valor_total_perdido: number;
 }
 
-export function CRMKPIsDashboard({ pipelineId, refreshKey = 0, categoryFilter = "all" }: CRMKPIsProps) {
+export function CRMKPIsDashboard({ pipelineId, refreshKey = 0, categoryFilter = "all", showPlanned = false }: CRMKPIsProps) {
   const [loading, setLoading] = useState(true);
   const [kpis, setKpis] = useState<KPIData>({
     contatos_feitos: 0,
@@ -40,7 +41,7 @@ export function CRMKPIsDashboard({ pipelineId, refreshKey = 0, categoryFilter = 
     if (pipelineId) {
       fetchKPIs();
     }
-  }, [pipelineId, refreshKey, categoryFilter]);
+  }, [pipelineId, refreshKey, categoryFilter, showPlanned]);
 
   const fetchKPIs = async () => {
     setLoading(true);
@@ -50,7 +51,9 @@ export function CRMKPIsDashboard({ pipelineId, refreshKey = 0, categoryFilter = 
         .select("*, crm_stages(name)")
         .eq("pipeline_id", pipelineId);
 
-      if (categoryFilter && categoryFilter !== "all") {
+      if (showPlanned) {
+        query = query.not("scheduled_call", "is", null);
+      } else if (categoryFilter && categoryFilter !== "all") {
         query = query.eq("categoria", categoryFilter);
       }
 

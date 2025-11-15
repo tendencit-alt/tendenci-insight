@@ -14,6 +14,7 @@ interface CRMBoardProps {
     search: string;
     status: string;
     category?: string;
+    showPlanned?: boolean;
   };
 }
 
@@ -106,7 +107,9 @@ export function CRMBoard({ pipelineId, onRefresh, filters }: CRMBoardProps) {
         dealsQuery = dealsQuery.eq("status", filters.status);
       }
 
-      if (filters?.category && filters.category !== "all") {
+      if (filters?.showPlanned) {
+        dealsQuery = dealsQuery.not("scheduled_call", "is", null);
+      } else if (filters?.category && filters.category !== "all") {
         dealsQuery = dealsQuery.eq("categoria", filters.category);
       }
 
