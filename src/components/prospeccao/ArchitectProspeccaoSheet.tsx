@@ -143,7 +143,7 @@ export function ArchitectProspeccaoSheet({
   // Gerar tags automáticas
   const tags: string[] = [];
   
-  if (!architect.data_primeiro_contato) tags.push("Nunca Contactado");
+  if (!architect.data_primeiro_contato && !architect.data_ultimo_contato) tags.push("Nunca Contactado");
   if (architect.status_funil === "em_conversa") tags.push("Em Conversa");
   if (architect.status_funil === "interessado") tags.push("Interessado");
   if (architect.status_funil === "reuniao_agendada") tags.push("Reunião Agendada");
