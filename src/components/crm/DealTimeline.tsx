@@ -54,6 +54,7 @@ export function DealTimeline({ dealId }: DealTimelineProps) {
   const [message, setMessage] = useState("");
   const [updateType, setUpdateType] = useState("Comentário Interno");
   const [files, setFiles] = useState<FileList | null>(null);
+  const [audioFiles, setAudioFiles] = useState<FileList | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [allUsers, setAllUsers] = useState<any[]>([]);
   const [showMentionSuggestions, setShowMentionSuggestions] = useState(false);
@@ -259,6 +260,10 @@ export function DealTimeline({ dealId }: DealTimelineProps) {
         filesToUpload.push(...Array.from(files));
       }
       
+      if (audioFiles && audioFiles.length > 0) {
+        filesToUpload.push(...Array.from(audioFiles));
+      }
+      
       if (audioBlob) {
         const audioFile = new File([audioBlob], `audio-${Date.now()}.webm`, { type: 'audio/webm' });
         filesToUpload.push(audioFile);
@@ -293,6 +298,7 @@ export function DealTimeline({ dealId }: DealTimelineProps) {
 
       setMessage("");
       setFiles(null);
+      setAudioFiles(null);
       setAudioBlob(null);
       setUpdateType("Comentário Interno");
       fetchTimeline();
@@ -507,7 +513,7 @@ export function DealTimeline({ dealId }: DealTimelineProps) {
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <div>
               <Label htmlFor="timeline-files">Anexar Arquivos</Label>
               <Input
@@ -519,7 +525,23 @@ export function DealTimeline({ dealId }: DealTimelineProps) {
               />
               {files && files.length > 0 && (
                 <p className="text-sm text-muted-foreground mt-1">
-                  {files.length} arquivo(s) selecionado(s)
+                  {files.length} arquivo(s)
+                </p>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="timeline-audio-files">Anexar Áudio</Label>
+              <Input
+                id="timeline-audio-files"
+                type="file"
+                multiple
+                onChange={(e) => setAudioFiles(e.target.files)}
+                accept="audio/*"
+              />
+              {audioFiles && audioFiles.length > 0 && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  {audioFiles.length} áudio(s)
                 </p>
               )}
             </div>
