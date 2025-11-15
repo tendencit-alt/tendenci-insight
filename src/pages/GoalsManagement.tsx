@@ -9,6 +9,7 @@ import { CreateCompanyGoalDialog } from "@/components/goals/CreateCompanyGoalDia
 import { GoalsTable } from "@/components/goals/GoalsTable";
 import { GoalsAnalytics } from "@/components/goals/GoalsAnalytics";
 import { AdvancedAnalytics } from "@/components/goals/AdvancedAnalytics";
+import { DailyArchitectGoals } from "@/components/goals/DailyArchitectGoals";
 import { supabase } from "@/integrations/supabase/client";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useAuth } from "@/contexts/AuthContext";
@@ -191,6 +192,7 @@ export default function GoalsManagement() {
           <TabsList>
             {isMaster && <TabsTrigger value="seller">Metas Individuais</TabsTrigger>}
             <TabsTrigger value="company">Meta da Empresa</TabsTrigger>
+            <TabsTrigger value="daily">Captação Diária</TabsTrigger>
             <TabsTrigger value="analytics">{isMaster ? "Análise Avançada" : "Meu Desempenho"}</TabsTrigger>
           </TabsList>
 
@@ -202,6 +204,10 @@ export default function GoalsManagement() {
 
           <TabsContent value="company" className="space-y-4">
             <GoalsTable type="company" refreshTrigger={refreshTrigger} onRefresh={handleRefresh} />
+          </TabsContent>
+
+          <TabsContent value="daily" className="space-y-4">
+            <DailyArchitectGoals />
           </TabsContent>
 
           <TabsContent value="analytics" className="space-y-4">
