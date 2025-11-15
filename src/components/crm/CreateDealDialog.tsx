@@ -62,6 +62,8 @@ export function CreateDealDialog({
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [pendingAudios, setPendingAudios] = useState<Blob[]>([]);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -199,6 +201,122 @@ export function CreateDealDialog({
     });
   };
 
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+        setPendingAudios(prev => [...prev, audioBlob]);
+        stream.getTracks().forEach((track) => track.stop());
+        toast({
+          title: "Áudio gravado",
+          description: "O áudio será salvo quando você criar o negócio.",
+        });
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+    } catch (error) {
+      toast({
+        title: "Erro ao iniciar gravação",
+        description: "Verifique as permissões do microfone.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const newFiles = Array.from(files).filter(file => {
+      if (file.size > 10 * 1024 * 1024) {
+        toast({
+          title: "Arquivo muito grande",
+          description: `${file.name} excede o limite de 10MB`,
+          variant: "destructive",
+        });
+        return false;
+      }
+      return true;
+    });
+
+    setPendingFiles(prev => [...prev, ...newFiles]);
+    toast({
+      title: "Arquivos adicionados",
+      description: `${newFiles.length} arquivo(s) serão salvos quando você criar o negócio.`,
+    });
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const uploadPendingFiles = async (dealId: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    // Upload audios
+    for (let i = 0; i < pendingAudios.length; i++) {
+      const audioBlob = pendingAudios[i];
+      const fileName = `audio_${Date.now()}_${i}.webm`;
+      const filePath = `${dealId}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("crm-files")
+        .upload(filePath, audioBlob);
+
+      if (!uploadError) {
+        await supabase.from("crm_deal_files").insert({
+          deal_id: dealId,
+          file_name: fileName,
+          file_path: filePath,
+          file_type: "audio/webm",
+          file_size: audioBlob.size,
+          uploaded_by: user.id,
+        });
+      }
+    }
+
+    // Upload files
+    for (const file of pendingFiles) {
+      const fileName = `${Date.now()}_${file.name}`;
+      const filePath = `${dealId}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("crm-files")
+        .upload(filePath, file);
+
+      if (!uploadError) {
+        await supabase.from("crm_deal_files").insert({
+          deal_id: dealId,
+          file_name: file.name,
+          file_path: filePath,
+          file_type: file.type,
+          file_size: file.size,
+          uploaded_by: user.id,
+        });
+      }
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -268,6 +386,11 @@ export function CreateDealDialog({
         await supabase.from("crm_tasks").insert(tasksToInsert);
       }
 
+      // Upload arquivos e áudios pendentes
+      if ((pendingFiles.length > 0 || pendingAudios.length > 0) && dealData) {
+        await uploadPendingFiles(dealData.id);
+      }
+
       setLoading(false);
 
       toast({
@@ -294,6 +417,8 @@ export function CreateDealDialog({
       setTasks([]);
       setNewTask({ title: "", due_at: "", note: "" });
       setIsAddingTask(false);
+      setPendingFiles([]);
+      setPendingAudios([]);
       onOpenChange(false);
       onSuccess();
     } catch (error: any) {
@@ -584,30 +709,56 @@ export function CreateDealDialog({
               <div className="flex gap-2 mb-2">
                 <Button
                   type="button"
-                  variant="outline"
+                  variant={isRecording ? "destructive" : "outline"}
                   size="sm"
-                  disabled
-                  title="Salve o negócio primeiro para gravar áudio"
+                  onClick={isRecording ? stopRecording : startRecording}
+                  disabled={isUploading}
                 >
-                  <Mic className="h-4 w-4 mr-2" />
-                  Gravar Áudio
+                  {isRecording ? (
+                    <>
+                      <Square className="h-4 w-4 mr-2" />
+                      Parar Gravação
+                    </>
+                  ) : (
+                    <>
+                      <Mic className="h-4 w-4 mr-2" />
+                      Gravar Áudio
+                    </>
+                  )}
                 </Button>
 
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
-                  disabled
-                  title="Salve o negócio primeiro para anexar arquivos"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading}
                 >
                   <Paperclip className="h-4 w-4 mr-2" />
                   Anexar Arquivo
                 </Button>
+
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  className="hidden"
+                  multiple
+                  onChange={handleFileSelect}
+                  accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.webp"
+                />
               </div>
-              
-              <p className="text-xs text-muted-foreground">
-                💡 Para gravar áudio ou anexar documentos, salve o negócio primeiro e depois edite-o.
-              </p>
+
+              {(pendingAudios.length > 0 || pendingFiles.length > 0) && (
+                <div className="text-sm text-muted-foreground bg-secondary p-3 rounded-md">
+                  {pendingAudios.length > 0 && (
+                    <div>🎤 {pendingAudios.length} áudio(s) gravado(s)</div>
+                  )}
+                  {pendingFiles.length > 0 && (
+                    <div>📎 {pendingFiles.length} arquivo(s) anexado(s)</div>
+                  )}
+                  <div className="text-xs mt-1">Serão salvos quando criar o negócio</div>
+                </div>
+              )}
               
               <Textarea
                 id="observations"
