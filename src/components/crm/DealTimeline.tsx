@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Paperclip, Send, MessageSquare, Phone, Users, Bot, Download, Edit2, X, Check, Mic, Square, Play } from "lucide-react";
+import { Paperclip, Send, MessageSquare, Phone, Users, Bot, Download, Edit2, X, Check, Mic, Square, Play, Pause } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -64,8 +64,10 @@ export function DealTimeline({ dealId }: DealTimelineProps) {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+  const audioRefs = useRef<{ [key: string]: HTMLAudioElement }>({});
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -456,6 +458,37 @@ export function DealTimeline({ dealId }: DealTimelineProps) {
     audio.play();
   };
 
+  const toggleAudioPlayback = async (audioId: string, audioPath: string) => {
+    // Pause if already playing
+    if (playingAudioId === audioId && audioRefs.current[audioId]) {
+      audioRefs.current[audioId].pause();
+      setPlayingAudioId(null);
+      return;
+    }
+
+    // Pause any currently playing audio
+    if (playingAudioId && audioRefs.current[playingAudioId]) {
+      audioRefs.current[playingAudioId].pause();
+    }
+
+    // Get signed URL and play
+    const { data } = await supabase.storage
+      .from('crm-timeline-attachments')
+      .createSignedUrl(audioPath, 60);
+
+    if (data?.signedUrl) {
+      // Create or reuse audio element
+      if (!audioRefs.current[audioId]) {
+        const audio = new Audio(data.signedUrl);
+        audio.onended = () => setPlayingAudioId(null);
+        audioRefs.current[audioId] = audio;
+      }
+
+      audioRefs.current[audioId].play();
+      setPlayingAudioId(audioId);
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -707,21 +740,28 @@ export function DealTimeline({ dealId }: DealTimelineProps) {
                           const isAudio = attachment.file_type.startsWith('audio/');
                           
                           if (isAudio) {
+                            const audioId = attachment.id;
+                            const isPlaying = playingAudioId === audioId;
+                            
                             return (
                               <div key={attachment.id} className="flex items-center gap-2 p-2 border rounded-lg bg-muted/50">
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={async () => {
-                                    const { data } = await supabase.storage
-                                      .from('crm-timeline-attachments')
-                                      .createSignedUrl(attachment.file_path, 60);
-                                    if (data?.signedUrl) {
-                                      playAudio(data.signedUrl);
-                                    }
-                                  }}
+                                  onClick={() => toggleAudioPlayback(audioId, attachment.file_path)}
+                                  className="gap-1"
                                 >
-                                  <Play className="h-4 w-4" />
+                                  {isPlaying ? (
+                                    <>
+                                      <Pause className="h-4 w-4" />
+                                      Pausar
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Play className="h-4 w-4" />
+                                      Ouvir
+                                    </>
+                                  )}
                                 </Button>
                                 <span className="text-sm">🎤 Áudio</span>
                                 <Button
