@@ -85,7 +85,10 @@ export function BirthdayAlerts({ refreshKey }: BirthdayAlertsProps) {
                     {format(new Date(birthday.birthday), "dd 'de' MMMM", { locale: ptBR })}
                   </span></p>
                   <p>Cidade: <span className="font-medium">{birthday.city || 'Não informado'}</span></p>
-                  <p>Tier: <Badge variant="outline">{birthday.tier}</Badge></p>
+                  <div className="flex items-center gap-2">
+                    <span>Tier:</span>
+                    <Badge variant="outline">{birthday.tier}</Badge>
+                  </div>
                 </div>
               </div>
               
