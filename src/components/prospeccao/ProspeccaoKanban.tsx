@@ -48,7 +48,8 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
         .select(`
           *,
           vendedor:profiles!architects_vendedor_responsavel_fkey(full_name, email),
-          projects:projects(id)
+          projects:projects(id),
+          architect_projects:architect_projects(id)
         `)
         .eq("active", true);
 
@@ -242,14 +243,25 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
 
                   {/* Badges */}
                   <div className="flex gap-2 flex-wrap">
-                    {/* TAG: Data último projeto ou Nunca Enviou */}
+                    {/* TAG: Status de Projeto e Contato */}
                     {architect.ultimo_projeto_data ? (
                       <Badge variant="outline" className="text-xs bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
                         📅 Último projeto: {format(new Date(architect.ultimo_projeto_data), "dd/MM/yyyy")}
                       </Badge>
+                    ) : architect.data_primeiro_contato ? (
+                      <Badge variant="outline" className="text-xs bg-yellow-50 dark:bg-yellow-950 border-yellow-200 dark:border-yellow-800">
+                        📞 Contactado - Sem Projeto
+                      </Badge>
                     ) : (
                       <Badge variant="outline" className="text-xs bg-orange-50 dark:bg-orange-950 border-orange-200 dark:border-orange-800">
-                        ⚠️ Nunca Enviou
+                        ⚠️ Nunca Contactado
+                      </Badge>
+                    )}
+
+                    {/* TAG: Quantidade de Projetos */}
+                    {architect.architect_projects && architect.architect_projects.length > 0 && (
+                      <Badge variant="secondary" className="text-xs bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
+                        📦 {architect.architect_projects.length} projeto{architect.architect_projects.length > 1 ? 's' : ''} enviado{architect.architect_projects.length > 1 ? 's' : ''}
                       </Badge>
                     )}
                     
@@ -260,7 +272,7 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
                     )}
                     {architect.projects && architect.projects.length > 0 && (
                       <Badge variant="secondary" className="text-xs">
-                        {architect.projects.length} projeto{architect.projects.length > 1 ? 's' : ''}
+                        {architect.projects.length} projeto{architect.projects.length > 1 ? 's' : ''} ativo{architect.projects.length > 1 ? 's' : ''}
                       </Badge>
                     )}
                   </div>
