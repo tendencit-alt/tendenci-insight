@@ -55,7 +55,6 @@ export function CreateDealDialog({
   const [isClientDialogOpen, setIsClientDialogOpen] = useState(false);
   const [isArchitectDialogOpen, setIsArchitectDialogOpen] = useState(false);
   const [isProjectDialogOpen, setIsProjectDialogOpen] = useState(false);
-  const [scheduledCall, setScheduledCall] = useState<Date>();
 
   const [formData, setFormData] = useState({
     stage_id: "",
@@ -221,7 +220,6 @@ export function CreateDealDialog({
         centro_custo: formData.centro_custo,
         tipo_produto: formData.tipo_produto,
         conversation_history: formData.conversation_history || null,
-        scheduled_call: scheduledCall?.toISOString() || null,
         status: "aberto",
       }).select().single();
 
@@ -265,7 +263,6 @@ export function CreateDealDialog({
         owner_id: "",
         source_id: "",
       });
-      setScheduledCall(undefined);
       onOpenChange(false);
       onSuccess();
     } catch (error: any) {
@@ -573,37 +570,6 @@ export function CreateDealDialog({
                 <p className="text-xs text-muted-foreground">
                   💬 Integração futura com WhatsApp para preencher automaticamente
                 </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="scheduled_call">Agendar Ligação</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !scheduledCall && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {scheduledCall ? (
-                        format(scheduledCall, "dd/MM/yyyy")
-                      ) : (
-                        <span>Defina data e hora para follow-up</span>
-                      )}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={scheduledCall}
-                      onSelect={setScheduledCall}
-                      initialFocus
-                      className="pointer-events-auto"
-                    />
-                  </PopoverContent>
-                </Popover>
               </div>
             </div>
           </div>
