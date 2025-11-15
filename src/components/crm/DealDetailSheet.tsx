@@ -426,36 +426,43 @@ export function DealDetailSheet({
                 <User className="h-5 w-5 text-primary" />
                 <h3 className="font-semibold text-lg">Cliente</h3>
               </div>
-              <div className="space-y-2">
-                {deal.architect?.name && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <User className="h-4 w-4 text-muted-foreground" />
-                    <span className="font-medium">{deal.architect.name}</span>
-                  </div>
-                )}
-                {deal.architect?.email && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <Mail className="h-4 w-4 text-muted-foreground" />
-                    <a href={`mailto:${deal.architect.email}`} className="text-primary hover:underline">
-                      {deal.architect.email}
-                    </a>
-                  </div>
-                )}
-                {deal.architect?.phone && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <Phone className="h-4 w-4 text-muted-foreground" />
-                    <a href={`tel:${deal.architect.phone}`} className="text-primary hover:underline">
-                      {deal.architect.phone}
-                    </a>
-                  </div>
-                )}
-                {deal.architect?.city && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                    <span>{deal.architect.city}</span>
-                  </div>
-                )}
-              </div>
+              {deal.lead?.client ? (
+                <div className="space-y-2">
+                  {deal.lead.client.name && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <User className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-medium">{deal.lead.client.name}</span>
+                    </div>
+                  )}
+                  {deal.lead.client.email && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <Mail className="h-4 w-4 text-muted-foreground" />
+                      <a href={`mailto:${deal.lead.client.email}`} className="text-primary hover:underline">
+                        {deal.lead.client.email}
+                      </a>
+                    </div>
+                  )}
+                  {deal.lead.client.phone && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <Phone className="h-4 w-4 text-muted-foreground" />
+                      <a href={`tel:${deal.lead.client.phone}`} className="text-primary hover:underline">
+                        {deal.lead.client.phone}
+                      </a>
+                    </div>
+                  )}
+                  {deal.lead.client.city && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <MapPin className="h-4 w-4 text-muted-foreground" />
+                      <span>{deal.lead.client.city}</span>
+                      {deal.lead.client.state && ` - ${deal.lead.client.state}`}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-4 text-muted-foreground text-sm">
+                  Nenhum cliente vinculado
+                </div>
+              )}
             </Card>
 
             {/* Dados do Negócio e Status */}
