@@ -231,7 +231,7 @@ export function ArchitectProspeccaoSheet({
                   <span className="ml-2">
                     {architect.data_primeiro_contato 
                       ? format(new Date(architect.data_primeiro_contato), "dd/MM/yyyy HH:mm")
-                      : "Nunca contactado"
+                      : (!architect.data_ultimo_contato ? "Nunca contactado" : "-")
                     }
                   </span>
                 </div>
