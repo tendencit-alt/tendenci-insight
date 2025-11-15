@@ -2469,6 +2469,7 @@ export type Database = {
       }
       architects_aggregates: { Args: never; Returns: Json }
       calculate_seller_rankings: { Args: never; Returns: undefined }
+      check_and_update_inactive_architects: { Args: never; Returns: undefined }
       create_daily_architect_goals: { Args: never; Returns: undefined }
       crm_agg: {
         Args: { p_end?: string; p_pipeline_id: string; p_start?: string }
