@@ -372,7 +372,6 @@ export function ArchitectTimeline({ architectId }: ArchitectTimelineProps) {
 
       audio.onended = () => {
         setPlayingAudioId(null);
-        URL.revokeObjectURL(url);
       };
 
       audio.play();
@@ -381,130 +380,7 @@ export function ArchitectTimeline({ architectId }: ArchitectTimelineProps) {
       console.error("Erro ao reproduzir áudio:", error);
       toast({
         title: "Erro",
-        description: "Erro ao reproduzir áudio",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const startRecording = async () => {
-    try {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error("Seu navegador não suporta gravação de áudio");
-      }
-
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-        } 
-      });
-      
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm;codecs=opus'
-      });
-      
-      mediaRecorderRef.current = mediaRecorder;
-      audioChunksRef.current = [];
-
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
-      };
-
-      mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        setAudioBlob(audioBlob);
-        stream.getTracks().forEach(track => track.stop());
-      };
-
-      mediaRecorder.start();
-      setIsRecording(true);
-      toast({
-        title: "🎤 Gravando áudio",
-        description: "Clique em 'Parar' quando terminar",
-      });
-    } catch (error: any) {
-      console.error("Erro ao iniciar gravação:", error);
-      let errorMessage = "Não foi possível acessar o microfone";
-      
-      if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
-        errorMessage = "Permissão para usar o microfone foi negada. Verifique as configurações do navegador.";
-      } else if (error.name === 'NotFoundError') {
-        errorMessage = "Nenhum microfone foi encontrado no dispositivo.";
-      } else if (error.name === 'NotReadableError') {
-        errorMessage = "O microfone está sendo usado por outro aplicativo.";
-      }
-      
-      toast({
-        title: "Erro ao gravar áudio",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-      toast({
-        title: "Gravação concluída",
-        description: "Áudio pronto para enviar",
-      });
-    }
-  };
-
-  const clearAudio = () => {
-    setAudioBlob(null);
-    audioChunksRef.current = [];
-  };
-
-  const playAudio = (blobOrUrl: Blob | string) => {
-    const audio = new Audio();
-    if (typeof blobOrUrl === 'string') {
-      audio.src = blobOrUrl;
-    } else {
-      audio.src = URL.createObjectURL(blobOrUrl);
-    }
-    audio.play();
-  };
-
-  const toggleAudioPlayback = async (audioId: string, audioPath: string) => {
-    if (playingAudioId === audioId && audioRefs.current[audioId]) {
-      audioRefs.current[audioId].pause();
-      setPlayingAudioId(null);
-      return;
-    }
-
-    if (playingAudioId && audioRefs.current[playingAudioId]) {
-      audioRefs.current[playingAudioId].pause();
-    }
-
-    try {
-      const { data, error } = await supabase.storage
-        .from('architect-files')
-        .download(audioPath);
-
-      if (error) throw error;
-
-      const url = URL.createObjectURL(data);
-      const audio = new Audio(url);
-      audioRefs.current[audioId] = audio;
-
-      audio.onended = () => {
-        setPlayingAudioId(null);
-        URL.revokeObjectURL(url);
-      };
-
-      audio.play();
-      setPlayingAudioId(audioId);
-    } catch (error) {
-      console.error("Erro ao reproduzir áudio:", error);
-      toast({
-        title: "Erro",
-        description: "Erro ao reproduzir áudio",
+        description: "Não foi possível reproduzir o áudio",
         variant: "destructive",
       });
     }
