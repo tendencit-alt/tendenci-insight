@@ -16,7 +16,7 @@ export function PermissionGuard({ children, module, redirectTo = '/' }: Permissi
   const { toast } = useToast();
 
   useEffect(() => {
-    if (!loading && !hasModuleAccess(module)) {
+    if (!loading && !hasModuleAccess(module as any)) {
       toast({
         title: '⛔ Acesso Negado',
         description: 'Você não tem permissão para acessar este módulo.',
@@ -37,7 +37,7 @@ export function PermissionGuard({ children, module, redirectTo = '/' }: Permissi
     );
   }
 
-  if (!hasModuleAccess(module) || !permissions?.active) {
+  if (!hasModuleAccess(module as any) || !permissions?.active) {
     return null;
   }
 
