@@ -69,7 +69,7 @@ export function CRMTasksPanel({ pipelineId }: CRMTasksPanelProps) {
       .in("deal_id", dealIds)
       .eq("status", "open")
       .order("due_at", { ascending: true })
-      .limit(10);
+      .limit(20);
 
     if (error) {
       console.error("Erro ao buscar tarefas:", error);
@@ -77,7 +77,22 @@ export function CRMTasksPanel({ pipelineId }: CRMTasksPanelProps) {
       return;
     }
 
-    setTasks(data || []);
+    // Ordenar: atrasadas primeiro, depois por data mais próxima
+    const sortedData = (data || []).sort((a, b) => {
+      const aDate = new Date(a.due_at);
+      const bDate = new Date(b.due_at);
+      const now = new Date();
+      
+      const aOverdue = aDate < now;
+      const bOverdue = bDate < now;
+      
+      if (aOverdue && !bOverdue) return -1;
+      if (!aOverdue && bOverdue) return 1;
+      
+      return aDate.getTime() - bDate.getTime();
+    });
+
+    setTasks(sortedData);
     setLoading(false);
   };
 
@@ -142,53 +157,197 @@ export function CRMTasksPanel({ pipelineId }: CRMTasksPanelProps) {
             Nenhuma tarefa pendente
           </p>
         ) : (
-          <div className="space-y-3">
-            {tasks.map((task) => {
-              const dueInfo = getDaysUntilDue(task.due_at);
+          <div className="space-y-4">
+            {/* Tarefas Atrasadas */}
+            {tasks.filter(task => {
               const dueDate = new Date(task.due_at);
-              const clientName = task.deal?.lead?.client?.name || "Sem cliente";
+              return dueDate < new Date();
+            }).length > 0 && (
+              <div className="space-y-2">
+                <h4 className="text-xs font-semibold text-destructive uppercase tracking-wide">
+                  Atrasadas
+                </h4>
+                {tasks.filter(task => {
+                  const dueDate = new Date(task.due_at);
+                  return dueDate < new Date();
+                }).map((task) => {
+                  const dueInfo = getDaysUntilDue(task.due_at);
+                  const dueDate = new Date(task.due_at);
+                  const clientName = task.deal?.lead?.client?.name || "Sem cliente";
 
-              return (
-                <div
-                  key={task.id}
-                  className="p-4 border border-border/50 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors space-y-3"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 space-y-1 min-w-0">
-                      <p className="font-medium text-sm line-clamp-1">{task.title}</p>
-                      <p className="text-xs text-muted-foreground line-clamp-1">
-                        {task.deal?.title} • {clientName}
-                      </p>
-                    </div>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 w-7 p-0 flex-shrink-0 hover:bg-primary/10"
-                      onClick={() => handleMarkDone(task.id)}
+                  return (
+                    <div
+                      key={task.id}
+                      className="p-4 border border-destructive/30 rounded-lg bg-destructive/5 hover:bg-destructive/10 transition-colors space-y-3"
                     >
-                      <CheckCircle className="h-4 w-4" />
-                    </Button>
-                  </div>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 space-y-1 min-w-0">
+                          <p className="font-medium text-sm line-clamp-1">{task.title}</p>
+                          <p className="text-xs text-muted-foreground line-clamp-1">
+                            {task.deal?.title} • {clientName}
+                          </p>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 w-7 p-0 flex-shrink-0 hover:bg-primary/10"
+                          onClick={() => handleMarkDone(task.id)}
+                        >
+                          <CheckCircle className="h-4 w-4" />
+                        </Button>
+                      </div>
 
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <Badge variant={dueInfo.variant} className="text-xs flex-shrink-0 font-medium">
-                      {dueInfo.icon} {dueInfo.text}
-                    </Badge>
-                    {task.origem_modulo === "prospeccao" && (
-                      <Badge variant="outline" className="text-xs flex-shrink-0">
-                        📋 Prospecção
-                      </Badge>
-                    )}
-                    <span className="text-xs text-muted-foreground">
-                      {dueDate.toLocaleString("pt-BR", {
-                        dateStyle: "short",
-                        timeStyle: "short",
-                      })}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge variant={dueInfo.variant} className="text-xs flex-shrink-0 font-medium">
+                          {dueInfo.icon} {dueInfo.text}
+                        </Badge>
+                        {task.origem_modulo === "prospeccao" && (
+                          <Badge variant="outline" className="text-xs flex-shrink-0">
+                            📋 Prospecção
+                          </Badge>
+                        )}
+                        <span className="text-xs text-muted-foreground">
+                          {dueDate.toLocaleString("pt-BR", {
+                            dateStyle: "short",
+                            timeStyle: "short",
+                          })}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Tarefas Hoje e Amanhã */}
+            {tasks.filter(task => {
+              const dueDate = new Date(task.due_at);
+              const now = new Date();
+              const diffDays = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+              return diffDays >= 0 && diffDays <= 1;
+            }).length > 0 && (
+              <div className="space-y-2">
+                <h4 className="text-xs font-semibold text-primary uppercase tracking-wide">
+                  Hoje e Amanhã
+                </h4>
+                {tasks.filter(task => {
+                  const dueDate = new Date(task.due_at);
+                  const now = new Date();
+                  const diffDays = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+                  return diffDays >= 0 && diffDays <= 1;
+                }).map((task) => {
+                  const dueInfo = getDaysUntilDue(task.due_at);
+                  const dueDate = new Date(task.due_at);
+                  const clientName = task.deal?.lead?.client?.name || "Sem cliente";
+
+                  return (
+                    <div
+                      key={task.id}
+                      className="p-4 border border-primary/30 rounded-lg bg-primary/5 hover:bg-primary/10 transition-colors space-y-3"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 space-y-1 min-w-0">
+                          <p className="font-medium text-sm line-clamp-1">{task.title}</p>
+                          <p className="text-xs text-muted-foreground line-clamp-1">
+                            {task.deal?.title} • {clientName}
+                          </p>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 w-7 p-0 flex-shrink-0 hover:bg-primary/10"
+                          onClick={() => handleMarkDone(task.id)}
+                        >
+                          <CheckCircle className="h-4 w-4" />
+                        </Button>
+                      </div>
+
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge variant={dueInfo.variant} className="text-xs flex-shrink-0 font-medium">
+                          {dueInfo.icon} {dueInfo.text}
+                        </Badge>
+                        {task.origem_modulo === "prospeccao" && (
+                          <Badge variant="outline" className="text-xs flex-shrink-0">
+                            📋 Prospecção
+                          </Badge>
+                        )}
+                        <span className="text-xs text-muted-foreground">
+                          {dueDate.toLocaleString("pt-BR", {
+                            dateStyle: "short",
+                            timeStyle: "short",
+                          })}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Próximas Tarefas */}
+            {tasks.filter(task => {
+              const dueDate = new Date(task.due_at);
+              const now = new Date();
+              const diffDays = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+              return diffDays > 1;
+            }).length > 0 && (
+              <div className="space-y-2">
+                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                  Próximas
+                </h4>
+                {tasks.filter(task => {
+                  const dueDate = new Date(task.due_at);
+                  const now = new Date();
+                  const diffDays = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+                  return diffDays > 1;
+                }).map((task) => {
+                  const dueInfo = getDaysUntilDue(task.due_at);
+                  const dueDate = new Date(task.due_at);
+                  const clientName = task.deal?.lead?.client?.name || "Sem cliente";
+
+                  return (
+                    <div
+                      key={task.id}
+                      className="p-4 border border-border/50 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors space-y-3"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 space-y-1 min-w-0">
+                          <p className="font-medium text-sm line-clamp-1">{task.title}</p>
+                          <p className="text-xs text-muted-foreground line-clamp-1">
+                            {task.deal?.title} • {clientName}
+                          </p>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 w-7 p-0 flex-shrink-0 hover:bg-primary/10"
+                          onClick={() => handleMarkDone(task.id)}
+                        >
+                          <CheckCircle className="h-4 w-4" />
+                        </Button>
+                      </div>
+
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge variant={dueInfo.variant} className="text-xs flex-shrink-0 font-medium">
+                          {dueInfo.icon} {dueInfo.text}
+                        </Badge>
+                        {task.origem_modulo === "prospeccao" && (
+                          <Badge variant="outline" className="text-xs flex-shrink-0">
+                            📋 Prospecção
+                          </Badge>
+                        )}
+                        <span className="text-xs text-muted-foreground">
+                          {dueDate.toLocaleString("pt-BR", {
+                            dateStyle: "short",
+                            timeStyle: "short",
+                          })}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
       </CardContent>
