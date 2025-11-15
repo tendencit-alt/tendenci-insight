@@ -1649,6 +1649,44 @@ export type Database = {
         }
         Relationships: []
       }
+      tendenci_daily_architect_goals: {
+        Row: {
+          captacoes_realizadas: number
+          created_at: string | null
+          data: string
+          id: string
+          meta_captacoes: number
+          updated_at: string | null
+          vendedor_id: string
+        }
+        Insert: {
+          captacoes_realizadas?: number
+          created_at?: string | null
+          data: string
+          id?: string
+          meta_captacoes?: number
+          updated_at?: string | null
+          vendedor_id: string
+        }
+        Update: {
+          captacoes_realizadas?: number
+          created_at?: string | null
+          data?: string
+          id?: string
+          meta_captacoes?: number
+          updated_at?: string | null
+          vendedor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tendenci_daily_architect_goals_vendedor_id_fkey"
+            columns: ["vendedor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tendenci_goal_progress: {
         Row: {
           atualizado_em: string | null
@@ -2428,6 +2466,7 @@ export type Database = {
       }
       architects_aggregates: { Args: never; Returns: Json }
       calculate_seller_rankings: { Args: never; Returns: undefined }
+      create_daily_architect_goals: { Args: never; Returns: undefined }
       crm_agg: {
         Args: { p_end?: string; p_pipeline_id: string; p_start?: string }
         Returns: Json
@@ -2510,6 +2549,10 @@ export type Database = {
           valor_total: number
         }[]
       }
+      get_daily_architect_goal_progress: {
+        Args: { p_date?: string; p_vendedor_id: string }
+        Returns: Json
+      }
       get_project_stats_by_type: {
         Args: never
         Returns: {
@@ -2527,6 +2570,10 @@ export type Database = {
       get_user_role: {
         Args: { user_id: string }
         Returns: Database["public"]["Enums"]["user_role"]
+      }
+      get_weekly_architect_goal_progress: {
+        Args: { p_vendedor_id: string }
+        Returns: Json
       }
       has_module_permission: {
         Args: { _module: string; _user_id: string }
