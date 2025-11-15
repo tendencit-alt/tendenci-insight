@@ -540,9 +540,26 @@ export function DealTimeline({ dealId }: DealTimelineProps) {
                 accept="audio/*"
               />
               {audioFiles && audioFiles.length > 0 && (
-                <p className="text-sm text-muted-foreground mt-1">
-                  {audioFiles.length} áudio(s)
-                </p>
+                <div className="space-y-1 mt-1">
+                  {Array.from(audioFiles).map((file, idx) => (
+                    <div key={idx} className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Play className="h-3 w-3" />
+                      <span className="truncate flex-1">{file.name}</span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          const audio = new Audio(URL.createObjectURL(file));
+                          audio.play();
+                        }}
+                        className="h-6 px-2"
+                      >
+                        Ouvir
+                      </Button>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
 
