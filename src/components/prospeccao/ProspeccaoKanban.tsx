@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format, differenceInDays } from "date-fns";
 import { ArchitectProspeccaoSheet } from "./ArchitectProspeccaoSheet";
 import { CreateProjectDialog } from "@/components/projects/CreateProjectDialog";
+import { CreateArchitectDialog } from "@/components/architects/CreateArchitectDialog";
 
 interface ProspeccaoKanbanProps {
   filters?: any;
@@ -23,6 +24,7 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
   const [projectArchitectId, setProjectArchitectId] = useState<string | null>(null);
+  const [isCreateArchitectOpen, setIsCreateArchitectOpen] = useState(false);
 
   // Buscar stages dinâmicos
   const { data: stages } = useQuery({
@@ -148,9 +150,20 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
           <div className="mb-4">
             <div className="flex items-center justify-between mb-2">
               <h3 className="font-semibold text-sm">{stage.nome}</h3>
-              <Badge variant="outline" className="text-xs">
-                {architectsByStatus[stage.slug]?.length || 0}
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 w-7 p-0"
+                  onClick={() => setIsCreateArchitectOpen(true)}
+                  title="Adicionar novo arquiteto"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+                <Badge variant="outline" className="text-xs">
+                  {architectsByStatus[stage.slug]?.length || 0}
+                </Badge>
+              </div>
             </div>
             <Badge className={`${stage.cor} w-full justify-center`}>
               {stage.nome}
@@ -321,6 +334,18 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
           toast({
             title: "Sucesso",
             description: "Projeto criado e arquiteto movido para Parceiro Ativo!",
+          });
+        }}
+      />
+
+      <CreateArchitectDialog
+        open={isCreateArchitectOpen}
+        onOpenChange={setIsCreateArchitectOpen}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ["prospeccao-architects"] });
+          toast({
+            title: "Sucesso",
+            description: "Arquiteto adicionado com sucesso!",
           });
         }}
       />
