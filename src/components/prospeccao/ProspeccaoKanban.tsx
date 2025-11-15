@@ -4,10 +4,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Building, MapPin, Phone, Package } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Building, MapPin, Phone, Package, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ArchitectProspeccaoSheet } from "./ArchitectProspeccaoSheet";
+import { CreateProjectDialog } from "@/components/projects/CreateProjectDialog";
 
 interface ProspeccaoKanbanProps {
   filters?: any;
@@ -19,6 +21,8 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
   const queryClient = useQueryClient();
   const [selectedArchitectId, setSelectedArchitectId] = useState<string | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
+  const [projectArchitectId, setProjectArchitectId] = useState<string | null>(null);
 
   // Buscar stages dinâmicos
   const { data: stages } = useQuery({
@@ -157,23 +161,31 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
             {architectsByStatus[stage.slug]?.map((architect) => (
               <Card
                 key={architect.id}
-                className="p-4 cursor-pointer hover:shadow-md transition-shadow"
+                className="p-4 hover:shadow-md transition-shadow"
                 draggable
                 onDragStart={(e) => handleDragStart(e, architect.id)}
-                onClick={() => {
-                  setSelectedArchitectId(architect.id);
-                  setIsSheetOpen(true);
-                }}
               >
                 <div className="space-y-3">
-                  {/* Header com Avatar e Nome */}
+                  {/* Header com Avatar, Nome e Botão */}
                   <div className="flex items-start gap-3">
-                    <Avatar className="h-10 w-10">
+                    <Avatar 
+                      className="h-10 w-10 cursor-pointer" 
+                      onClick={() => {
+                        setSelectedArchitectId(architect.id);
+                        setIsSheetOpen(true);
+                      }}
+                    >
                       <AvatarFallback className="bg-primary/10 text-primary">
                         {architect.name?.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
-                    <div className="flex-1 min-w-0">
+                    <div 
+                      className="flex-1 min-w-0 cursor-pointer"
+                      onClick={() => {
+                        setSelectedArchitectId(architect.id);
+                        setIsSheetOpen(true);
+                      }}
+                    >
                       <h4 className="font-semibold text-sm truncate">{architect.name}</h4>
                       {architect.data_ultimo_contato && (
                         <p className="text-xs text-muted-foreground">
@@ -191,6 +203,19 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
                         </p>
                       )}
                     </div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 w-8 p-0"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setProjectArchitectId(architect.id);
+                        setIsCreateProjectOpen(true);
+                      }}
+                      title="Criar novo projeto"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
                   </div>
 
                   {/* Informações */}
@@ -259,6 +284,19 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
           onOpenChange={setIsSheetOpen}
         />
       )}
+
+      <CreateProjectDialog
+        open={isCreateProjectOpen}
+        onOpenChange={setIsCreateProjectOpen}
+        preSelectedArchitectId={projectArchitectId}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ["prospeccao-architects"] });
+          toast({
+            title: "Sucesso",
+            description: "Projeto criado e arquiteto movido para Parceiro Ativo!",
+          });
+        }}
+      />
     </div>
   );
 }

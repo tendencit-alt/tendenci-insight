@@ -17,9 +17,10 @@ interface CreateProjectDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
+  preSelectedArchitectId?: string | null;
 }
 
-export function CreateProjectDialog({ open, onOpenChange, onSuccess }: CreateProjectDialogProps) {
+export function CreateProjectDialog({ open, onOpenChange, onSuccess, preSelectedArchitectId }: CreateProjectDialogProps) {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [leads, setLeads] = useState<any[]>([]);
@@ -42,8 +43,12 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess }: CreatePro
     if (open) {
       fetchLeads();
       fetchArchitects();
+      // Pré-selecionar arquiteto se fornecido
+      if (preSelectedArchitectId) {
+        setFormData(prev => ({ ...prev, architect_id: preSelectedArchitectId }));
+      }
     }
-  }, [open]);
+  }, [open, preSelectedArchitectId]);
 
   const fetchLeads = async () => {
     const { data, error } = await supabase
