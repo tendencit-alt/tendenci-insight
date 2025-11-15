@@ -31,6 +31,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { DealFileUpload } from "./DealFileUpload";
+import { useAuth } from "@/contexts/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
 
 interface DealDetailSheetProps {
   deal: any;
@@ -46,6 +48,8 @@ export function DealDetailSheet({
   onSuccess,
 }: DealDetailSheetProps) {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const { isMaster } = usePermissions();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [lostDialog, setLostDialog] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState(false);
@@ -480,62 +484,64 @@ export function DealDetailSheet({
               )}
             </Card>
 
-            {/* Pipeline e Vendedor */}
-            <Card className="p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <Users className="h-5 w-5 text-primary" />
-                <h3 className="font-semibold text-lg">Pipeline e Vendedor</h3>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-xs text-muted-foreground">Pipeline</Label>
-                  <Select
-                    value={selectedPipeline}
-                    onValueChange={handlePipelineChange}
-                    disabled={!allPipelines.length}
-                  >
-                    <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Selecionar pipeline" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {allPipelines.map((pipeline) => (
-                        <SelectItem key={pipeline.id} value={pipeline.id}>
-                          {pipeline.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+            {/* Responsáveis - Visível apenas para o vendedor responsável ou admin */}
+            {(isMaster || deal.owner_id === user?.id) && (
+              <Card className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Users className="h-5 w-5 text-primary" />
+                  <h3 className="font-semibold text-lg">Responsáveis</h3>
                 </div>
-                <div>
-                  <Label className="text-xs text-muted-foreground">Etapa</Label>
-                  <Select
-                    value={selectedStage}
-                    onValueChange={handleStageChange}
-                    disabled={!allStages.length}
-                  >
-                    <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Selecionar etapa" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {allStages.map((stage) => (
-                        <SelectItem key={stage.id} value={stage.id}>
-                          {stage.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                {deal.owner?.full_name && (
-                  <div className="col-span-2">
-                    <Label className="text-xs text-muted-foreground">Vendedor</Label>
-                    <div className="flex items-center gap-2 mt-1">
-                      <User className="h-4 w-4 text-muted-foreground" />
-                      <span>{deal.owner.full_name}</span>
-                    </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Pipeline</Label>
+                    <Select
+                      value={selectedPipeline}
+                      onValueChange={handlePipelineChange}
+                      disabled={!allPipelines.length}
+                    >
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="Selecionar pipeline" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {allPipelines.map((pipeline) => (
+                          <SelectItem key={pipeline.id} value={pipeline.id}>
+                            {pipeline.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                )}
-              </div>
-            </Card>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Etapa</Label>
+                    <Select
+                      value={selectedStage}
+                      onValueChange={handleStageChange}
+                      disabled={!allStages.length}
+                    >
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="Selecionar etapa" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {allStages.map((stage) => (
+                          <SelectItem key={stage.id} value={stage.id}>
+                            {stage.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {deal.owner?.full_name && (
+                    <div className="col-span-2">
+                      <Label className="text-xs text-muted-foreground">Vendedor Responsável</Label>
+                      <div className="flex items-center gap-2 mt-1">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                        <span>{deal.owner.full_name}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </Card>
+            )}
 
             {/* Histórico com anexos */}
             <Card className="p-4">
