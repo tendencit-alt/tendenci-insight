@@ -14,7 +14,17 @@ export function DailyArchitectGoals() {
 
   useEffect(() => {
     fetchProgress();
+    initializeTodayGoal();
   }, []);
+
+  const initializeTodayGoal = async () => {
+    try {
+      // Chamar função para criar metas diárias se não existirem
+      await supabase.rpc('create_daily_architect_goals');
+    } catch (error) {
+      console.error("Erro ao inicializar metas diárias:", error);
+    }
+  };
 
   const fetchProgress = async () => {
     try {
