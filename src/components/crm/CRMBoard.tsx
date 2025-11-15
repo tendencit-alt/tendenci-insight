@@ -13,6 +13,7 @@ interface CRMBoardProps {
     owner: string;
     search: string;
     status: string;
+    category?: string;
   };
 }
 
@@ -101,9 +102,13 @@ export function CRMBoard({ pipelineId, onRefresh, filters }: CRMBoardProps) {
       dealsQuery = dealsQuery.eq("owner_id", filters.owner);
     }
 
-    if (filters?.status && filters.status !== "all") {
-      dealsQuery = dealsQuery.eq("status", filters.status);
-    }
+      if (filters?.status && filters.status !== "all") {
+        dealsQuery = dealsQuery.eq("status", filters.status);
+      }
+
+      if (filters?.category && filters.category !== "all") {
+        dealsQuery = dealsQuery.eq("categoria", filters.category);
+      }
 
     const { data: dealsData, error: dealsError } = await dealsQuery.order("stage_position", { ascending: true });
 
