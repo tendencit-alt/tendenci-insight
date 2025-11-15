@@ -31,6 +31,24 @@ export function CRMBoard({ pipelineId, onRefresh, filters }: CRMBoardProps) {
     if (!pipelineId) return;
     fetchData();
 
+    // Setup realtime subscription for deals updates
+    const dealsChannel = supabase
+      .channel('crm-deals-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'crm_deals',
+          filter: `pipeline_id=eq.${pipelineId}`
+        },
+        (payload) => {
+          console.log('Deal change detected:', payload);
+          fetchData(); // Refresh all deals when any deal changes
+        }
+      )
+      .subscribe();
+
     // Setup realtime subscription for tasks updates
     const tasksChannel = supabase
       .channel('crm-tasks-changes')
@@ -49,6 +67,7 @@ export function CRMBoard({ pipelineId, onRefresh, filters }: CRMBoardProps) {
       .subscribe();
 
     return () => {
+      supabase.removeChannel(dealsChannel);
       supabase.removeChannel(tasksChannel);
     };
   }, [pipelineId, filters]);

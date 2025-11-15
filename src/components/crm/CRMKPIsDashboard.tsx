@@ -43,6 +43,32 @@ export function CRMKPIsDashboard({ pipelineId, refreshKey = 0, categoryFilter = 
     }
   }, [pipelineId, refreshKey, categoryFilter, showPlanned]);
 
+  // Realtime subscription for automatic KPI updates
+  useEffect(() => {
+    if (!pipelineId) return;
+
+    const channel = supabase
+      .channel('kpi-deals-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'crm_deals',
+          filter: `pipeline_id=eq.${pipelineId}`
+        },
+        (payload) => {
+          console.log('Deal changed, updating KPIs:', payload);
+          fetchKPIs();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [pipelineId, categoryFilter, showPlanned]);
+
   const fetchKPIs = async () => {
     setLoading(true);
     try {
