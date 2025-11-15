@@ -83,56 +83,56 @@ export function CRMKPIsDashboard({ pipelineId, refreshKey = 0 }: CRMKPIsProps) {
       title: "Contatos Feitos",
       value: kpis.contatos_feitos,
       icon: PhoneCall,
-      color: "text-blue-600",
-      bgColor: "bg-blue-50",
+      colorClass: "text-primary",
+      bgClass: "bg-primary/10",
     },
     {
       title: "Projetos Captados",
       value: kpis.projetos_captados,
       icon: Target,
-      color: "text-purple-600",
-      bgColor: "bg-purple-50",
+      colorClass: "text-accent",
+      bgClass: "bg-accent/10",
     },
     {
       title: "Em Orçamento",
       value: kpis.em_orcamento,
       subtitle: formatCurrency(kpis.valor_total_em_orcamento),
       icon: FileText,
-      color: "text-orange-600",
-      bgColor: "bg-orange-50",
+      colorClass: "text-chart-2",
+      bgClass: "bg-chart-2/10",
     },
     {
       title: "Apresentado",
       value: kpis.apresentado,
       icon: PresentationIcon,
-      color: "text-cyan-600",
-      bgColor: "bg-cyan-50",
+      colorClass: "text-chart-3",
+      bgClass: "bg-chart-3/10",
     },
     {
       title: "Perdido",
       value: kpis.perdido,
       subtitle: formatCurrency(kpis.valor_total_perdido),
       icon: XCircle,
-      color: "text-red-600",
-      bgColor: "bg-red-50",
+      colorClass: "text-destructive",
+      bgClass: "bg-destructive/10",
     },
     {
       title: "Conquistado",
       value: kpis.conquistado,
       subtitle: formatCurrency(kpis.valor_total_conquistado),
       icon: CheckCircle,
-      color: "text-green-600",
-      bgColor: "bg-green-50",
+      colorClass: "text-chart-1",
+      bgClass: "bg-chart-1/10",
     },
   ];
 
   if (loading) {
     return (
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
         {Array.from({ length: 6 }).map((_, i) => (
-          <Card key={i}>
-            <CardContent className="p-6">
-              <Skeleton className="h-20 w-full" />
+          <Card key={i} className="border-border/50">
+            <CardContent className="p-4">
+              <Skeleton className="h-16 w-full" />
             </CardContent>
           </Card>
         ))}
@@ -141,21 +141,30 @@ export function CRMKPIsDashboard({ pipelineId, refreshKey = 0 }: CRMKPIsProps) {
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+    <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
       {kpiCards.map((kpi, index) => (
-        <Card key={index} className="hover:shadow-lg transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{kpi.title}</CardTitle>
-            <div className={`p-2 rounded-lg ${kpi.bgColor}`}>
-              <kpi.icon className={`h-4 w-4 ${kpi.color}`} />
+        <Card 
+          key={index} 
+          className="hover:shadow-md transition-all hover:scale-[1.02] border-border/50 bg-card/50 backdrop-blur-sm"
+        >
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4">
+            <div className="flex flex-col gap-1 flex-1 min-w-0">
+              <CardTitle className="text-xs font-medium text-muted-foreground truncate">
+                {kpi.title}
+              </CardTitle>
+              <div className="text-2xl font-bold tabular-nums">{kpi.value}</div>
+            </div>
+            <div className={`p-2 rounded-lg ${kpi.bgClass} shrink-0`}>
+              <kpi.icon className={`h-4 w-4 ${kpi.colorClass}`} />
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{kpi.value}</div>
-            {kpi.subtitle && (
-              <p className="text-xs text-muted-foreground mt-1">{kpi.subtitle}</p>
-            )}
-          </CardContent>
+          {kpi.subtitle && (
+            <CardContent className="p-4 pt-0">
+              <p className="text-xs font-medium text-muted-foreground truncate">
+                {kpi.subtitle}
+              </p>
+            </CardContent>
+          )}
         </Card>
       ))}
     </div>
