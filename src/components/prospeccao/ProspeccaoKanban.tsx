@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Building, MapPin, Phone, Package, Plus } from "lucide-react";
+import { Building, MapPin, Phone, Package, Plus, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ArchitectProspeccaoSheet } from "./ArchitectProspeccaoSheet";
@@ -166,11 +166,11 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
                 draggable
                 onDragStart={(e) => handleDragStart(e, architect.id)}
               >
-                <div className="space-y-3">
+                  <div className="space-y-3">
                   {/* Header com Avatar, Nome e Botão */}
                   <div className="flex items-start gap-3">
                     <Avatar 
-                      className="h-10 w-10 cursor-pointer" 
+                      className="h-10 w-10 cursor-pointer flex-shrink-0" 
                       onClick={() => {
                         setSelectedArchitectId(architect.id);
                         setIsSheetOpen(true);
@@ -180,99 +180,102 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
                         {architect.name?.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
-                    <div 
-                      className="flex-1 min-w-0 cursor-pointer"
-                      onClick={() => {
-                        setSelectedArchitectId(architect.id);
-                        setIsSheetOpen(true);
-                      }}
-                    >
-                      <h4 className="font-semibold text-sm truncate">{architect.name}</h4>
-                      {architect.data_ultimo_contato && (
-                        <p className="text-xs text-muted-foreground">
-                          Último contato: {format(new Date(architect.data_ultimo_contato), "dd/MM/yyyy")}
-                        </p>
-                      )}
-                      {!architect.data_ultimo_contato && (
-                        <p className="text-xs text-muted-foreground italic">
-                          Sem contato registrado
-                        </p>
-                      )}
-                      {architect.vendedor?.full_name && (
-                        <p className="text-xs text-muted-foreground truncate">
-                          Vendedor: {architect.vendedor.full_name}
-                        </p>
-                      )}
+                    <div className="flex-1 min-w-0">
+                      <div 
+                        className="cursor-pointer"
+                        onClick={() => {
+                          setSelectedArchitectId(architect.id);
+                          setIsSheetOpen(true);
+                        }}
+                      >
+                        <h4 className="font-semibold text-sm truncate">{architect.name}</h4>
+                        {architect.data_ultimo_contato && (
+                          <p className="text-xs text-muted-foreground">
+                            Último contato: {format(new Date(architect.data_ultimo_contato), "dd/MM/yyyy")}
+                          </p>
+                        )}
+                        {!architect.data_ultimo_contato && (
+                          <p className="text-xs text-red-500 italic">
+                            Sem contato registrado
+                          </p>
+                        )}
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-6 w-6 p-0 mt-1"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setProjectArchitectId(architect.id);
+                          setIsCreateProjectOpen(true);
+                        }}
+                        title="Criar novo projeto"
+                      >
+                        <Plus className="h-3 w-3" />
+                      </Button>
                     </div>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-8 w-8 p-0"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setProjectArchitectId(architect.id);
-                        setIsCreateProjectOpen(true);
-                      }}
-                      title="Criar novo projeto"
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
                   </div>
 
-                  {/* Informações */}
-                  <div className="space-y-2 text-xs">
+                  {/* Informações de Contato */}
+                  <div className="space-y-1.5 text-xs">
                     {architect.company && (
                       <div className="flex items-center gap-2 text-muted-foreground">
-                        <Building className="h-3 w-3" />
+                        <Building className="h-3 w-3 flex-shrink-0" />
                         <span className="truncate">{architect.company}</span>
-                      </div>
-                    )}
-                    {architect.city && (
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <MapPin className="h-3 w-3" />
-                        <span>{architect.city}</span>
                       </div>
                     )}
                     {architect.phone && (
                       <div className="flex items-center gap-2 text-muted-foreground">
-                        <Phone className="h-3 w-3" />
+                        <Phone className="h-3 w-3 flex-shrink-0" />
                         <span>{architect.phone}</span>
+                      </div>
+                    )}
+                    {architect.city && (
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <MapPin className="h-3 w-3 flex-shrink-0" />
+                        <span>{architect.city}</span>
+                      </div>
+                    )}
+                    {architect.vendedor?.full_name && (
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <User className="h-3 w-3 flex-shrink-0" />
+                        <span className="truncate">{architect.vendedor.full_name}</span>
                       </div>
                     )}
                   </div>
 
                   {/* Badges */}
-                  <div className="flex gap-2 flex-wrap">
-                    {/* TAG: Status de Projeto e Contato */}
-                    {architect.ultimo_projeto_data ? (
-                      <Badge variant="outline" className="text-xs bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
-                        📅 Último projeto: {format(new Date(architect.ultimo_projeto_data), "dd/MM/yyyy")}
+                  <div className="flex gap-1.5 flex-wrap">
+                    {/* STATUS: Contato e Projeto */}
+                    {!architect.data_primeiro_contato ? (
+                      <Badge variant="outline" className="text-xs bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800 text-red-700 dark:text-red-300">
+                        ⚠️ Nunca Contactado
                       </Badge>
-                    ) : architect.data_primeiro_contato ? (
-                      <Badge variant="outline" className="text-xs bg-yellow-50 dark:bg-yellow-950 border-yellow-200 dark:border-yellow-800">
-                        📞 Contactado - Sem Projeto
+                    ) : architect.ultimo_projeto_data ? (
+                      <Badge variant="outline" className="text-xs bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+                        📅 {format(new Date(architect.ultimo_projeto_data), "dd/MM/yy")}
                       </Badge>
                     ) : (
-                      <Badge variant="outline" className="text-xs bg-orange-50 dark:bg-orange-950 border-orange-200 dark:border-orange-800">
-                        ⚠️ Nunca Contactado
+                      <Badge variant="outline" className="text-xs bg-yellow-50 dark:bg-yellow-950 border-yellow-200 dark:border-yellow-800">
+                        📞 Contactado
                       </Badge>
                     )}
 
-                    {/* TAG: Quantidade de Projetos */}
-                    {architect.architect_projects && architect.architect_projects.length > 0 && (
-                      <Badge variant="secondary" className="text-xs bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
-                        📦 {architect.architect_projects.length} projeto{architect.architect_projects.length > 1 ? 's' : ''} enviado{architect.architect_projects.length > 1 ? 's' : ''}
-                      </Badge>
-                    )}
-                    
+                    {/* TIER */}
                     {architect.tier && (
                       <Badge variant="outline" className="text-xs">
                         Tier {architect.tier}
                       </Badge>
                     )}
-                    {architect.projects && architect.projects.length > 0 && (
-                      <Badge variant="secondary" className="text-xs">
-                        {architect.projects.length} projeto{architect.projects.length > 1 ? 's' : ''} ativo{architect.projects.length > 1 ? 's' : ''}
+
+                    {/* PROJETOS ENVIADOS */}
+                    {architect.architect_projects && architect.architect_projects.length > 0 ? (
+                      <Badge className="text-xs bg-green-600 hover:bg-green-700">
+                        📦 {architect.architect_projects.length} {architect.architect_projects.length === 1 ? 'projeto' : 'projetos'}
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-xs bg-orange-50 dark:bg-orange-950 border-orange-200 dark:border-orange-800 text-orange-700 dark:text-orange-300">
+                        0 projetos
                       </Badge>
                     )}
                   </div>
