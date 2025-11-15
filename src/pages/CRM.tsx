@@ -31,6 +31,7 @@ export default function CRM() {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [showPlanned, setShowPlanned] = useState<boolean>(false);
   const [categories, setCategories] = useState<string[]>([]);
   const isAdmin = profile?.role === 'admin';
 
@@ -211,22 +212,36 @@ export default function CRM() {
 
         {selectedPipeline && (
           <>
-            {/* Tabs de Categorias */}
+            {/* Tabs de Categorias e Planejados */}
             <div className="flex items-center gap-2 overflow-x-auto pb-2">
               <Button
-                variant={selectedCategory === "all" ? "default" : "outline"}
+                variant={!showPlanned && selectedCategory === "all" ? "default" : "outline"}
                 size="sm"
-                onClick={() => setSelectedCategory("all")}
+                onClick={() => {
+                  setShowPlanned(false);
+                  setSelectedCategory("all");
+                }}
                 className="shrink-0"
               >
                 Todas as Categorias
               </Button>
+              <Button
+                variant={showPlanned ? "default" : "outline"}
+                size="sm"
+                onClick={() => setShowPlanned(true)}
+                className="shrink-0"
+              >
+                📅 Planejados
+              </Button>
               {categories.map((category) => (
                 <Button
                   key={category}
-                  variant={selectedCategory === category ? "default" : "outline"}
+                  variant={!showPlanned && selectedCategory === category ? "default" : "outline"}
                   size="sm"
-                  onClick={() => setSelectedCategory(category)}
+                  onClick={() => {
+                    setShowPlanned(false);
+                    setSelectedCategory(category);
+                  }}
                   className="shrink-0"
                 >
                   {category}
@@ -239,6 +254,7 @@ export default function CRM() {
               pipelineId={selectedPipeline} 
               refreshKey={refreshKey}
               categoryFilter={selectedCategory}
+              showPlanned={showPlanned}
             />
 
             {/* KPIs Originais */}
@@ -259,7 +275,8 @@ export default function CRM() {
                 owner: selectedOwner,
                 search: searchQuery,
                 status: selectedStatus,
-                category: selectedCategory
+                category: selectedCategory,
+                showPlanned: showPlanned
               }}
             />
           </>
