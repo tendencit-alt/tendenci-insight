@@ -64,9 +64,6 @@ export function DealDetailSheet({
   const [project, setProject] = useState<any>(null);
   const [isProjectSheetOpen, setIsProjectSheetOpen] = useState(false);
   const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
-  const [isLinkProjectOpen, setIsLinkProjectOpen] = useState(false);
-  const [availableProjects, setAvailableProjects] = useState<any[]>([]);
-  const [selectedProjectToLink, setSelectedProjectToLink] = useState("");
   const [isUnlinkProjectOpen, setIsUnlinkProjectOpen] = useState(false);
   const [dealFiles, setDealFiles] = useState<any[]>([]);
   const [owners, setOwners] = useState<any[]>([]);
@@ -337,43 +334,6 @@ export function DealDetailSheet({
       setDeleteDialog(false);
       onSuccess();
       onOpenChange(false);
-    }
-  };
-
-  const handleLinkProject = async () => {
-    const { data } = await supabase
-      .from("projects")
-      .select("*")
-      .is("crm_deal_id", null)
-      .order("name");
-
-    if (data) {
-      setAvailableProjects(data);
-      setIsLinkProjectOpen(true);
-    }
-  };
-
-  const confirmLinkProject = async () => {
-    if (!selectedProjectToLink) return;
-
-    const { error } = await supabase
-      .from("projects")
-      .update({ crm_deal_id: deal.id })
-      .eq("id", selectedProjectToLink);
-
-    if (error) {
-      toast({
-        title: "Erro",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
-      toast({
-        title: "Projeto vinculado",
-        description: "O projeto foi vinculado ao negócio com sucesso.",
-      });
-      setIsLinkProjectOpen(false);
-      fetchProject();
     }
   };
 
@@ -734,24 +694,14 @@ export function DealDetailSheet({
                   <FolderOpen className="h-5 w-5 text-primary" />
                   <h3 className="font-semibold text-lg">Projeto</h3>
                 </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    className="flex-1 gap-2"
-                    onClick={() => setIsCreateProjectOpen(true)}
-                  >
-                    <Plus className="h-4 w-4" />
-                    Criar Projeto
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="flex-1 gap-2"
-                    onClick={handleLinkProject}
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                    Vincular Existente
-                  </Button>
-                </div>
+                <Button
+                  variant="outline"
+                  className="w-full gap-2"
+                  onClick={() => setIsCreateProjectOpen(true)}
+                >
+                  <Plus className="h-4 w-4" />
+                  Criar Projeto
+                </Button>
               </Card>
             )}
 
@@ -878,37 +828,6 @@ export function DealDetailSheet({
             onSuccess();
           }}
         />
-
-        <AlertDialog open={isLinkProjectOpen} onOpenChange={setIsLinkProjectOpen}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Vincular projeto existente</AlertDialogTitle>
-              <AlertDialogDescription>
-                Selecione um projeto existente para vincular a este negócio.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <div className="py-4">
-              <Select value={selectedProjectToLink} onValueChange={setSelectedProjectToLink}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecionar projeto" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableProjects.map((proj) => (
-                    <SelectItem key={proj.id} value={proj.id}>
-                      {proj.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction onClick={confirmLinkProject}>
-                Vincular
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
 
         <AlertDialog open={isUnlinkProjectOpen} onOpenChange={setIsUnlinkProjectOpen}>
           <AlertDialogContent>
