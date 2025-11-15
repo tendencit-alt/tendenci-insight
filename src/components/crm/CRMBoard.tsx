@@ -179,7 +179,8 @@ export function CRMBoard({ pipelineId, onRefresh }: CRMBoardProps) {
     const targetStage = stages.find(s => s.id === stageId);
     
     // Verificar se está tentando mover para uma etapa após Qualificação sem valor
-    if (targetStage && targetStage.position > 1) { // position > 1 significa após Qualificação
+    // Position 0 = Lead, Position 1 = Qualificação, Position > 1 = Etapas seguintes
+    if (targetStage && targetStage.position >= 2) { // A partir da 3ª etapa (position 2+) exige valor
       if (!draggedDeal.value || draggedDeal.value <= 0) {
         toast({
           title: "Valor obrigatório",
