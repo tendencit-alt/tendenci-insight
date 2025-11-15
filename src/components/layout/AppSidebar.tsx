@@ -5,7 +5,8 @@ import {
   Settings,
   Package,
   Target,
-  UserSearch
+  UserSearch,
+  PanelTop
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
@@ -21,6 +22,7 @@ import {
 } from "@/components/ui/sidebar";
 import tendenciLogo from "@/assets/tendenci-logo-new.png";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useAuth } from "@/contexts/AuthContext";
 
 const menuItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard, module: null },
@@ -29,6 +31,7 @@ const menuItems = [
   { title: "Prospecção Arquitetos", url: "/prospeccao", icon: UserSearch, module: "arquitetos" },
   { title: "CRM KANBAN", url: "/kanban", icon: MessageSquare, module: "crm" },
   { title: "Metas", url: "/metas", icon: Target, module: "metas" },
+  { title: "Dashboards Personalizados", url: "/dashboards", icon: PanelTop, module: null, masterOnly: true },
   { title: "Configurações", url: "/settings", icon: Settings, module: "configuracoes" },
 ];
 
@@ -36,10 +39,17 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
   const { hasModuleAccess, loading } = usePermissions();
+  const { profile } = useAuth();
+
+  const isMaster = profile?.role === 'admin';
 
   const visibleMenuItems = menuItems.filter((item) => {
     if (loading) return true; // Show all while loading
-    if (!item.module) return true; // Dashboard is always visible
+    if (!item.module) {
+      // Para itens sem módulo, verificar se é masterOnly
+      if (item.masterOnly) return isMaster;
+      return true; // Dashboard is always visible
+    }
     return hasModuleAccess(item.module);
   });
 

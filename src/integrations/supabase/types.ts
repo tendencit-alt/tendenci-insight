@@ -1039,6 +1039,33 @@ export type Database = {
           },
         ]
       }
+      dashboards_personalizados: {
+        Row: {
+          atualizado_em: string | null
+          criado_em: string | null
+          id: string
+          layout: Json
+          nome: string
+          user_id: string
+        }
+        Insert: {
+          atualizado_em?: string | null
+          criado_em?: string | null
+          id?: string
+          layout?: Json
+          nome: string
+          user_id: string
+        }
+        Update: {
+          atualizado_em?: string | null
+          criado_em?: string | null
+          id?: string
+          layout?: Json
+          nome?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       deals: {
         Row: {
           amount: number | null

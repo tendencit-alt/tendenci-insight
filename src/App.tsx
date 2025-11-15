@@ -16,6 +16,8 @@ import Goals from "./pages/Goals";
 import GoalsManagement from "./pages/GoalsManagement";
 import SellerPerformance from "./pages/SellerPerformance";
 import UserManagement from "./pages/UserManagement";
+import DashboardsPersonalizados from "./pages/DashboardsPersonalizados";
+import DashboardEditor from "./pages/DashboardEditor";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -41,6 +43,8 @@ const App = () => (
             <Route path="/metas" element={<ProtectedRoute><PermissionGuard module="metas"><Goals /></PermissionGuard></ProtectedRoute>} />
             <Route path="/metas/gestao" element={<ProtectedRoute><PermissionGuard module="metas"><GoalsManagement /></PermissionGuard></ProtectedRoute>} />
             <Route path="/metas/desempenho/:goalId" element={<ProtectedRoute><PermissionGuard module="metas"><SellerPerformance /></PermissionGuard></ProtectedRoute>} />
+            <Route path="/dashboards" element={<ProtectedRoute><DashboardsPersonalizados /></ProtectedRoute>} />
+            <Route path="/dashboards/:id" element={<ProtectedRoute><DashboardEditor /></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
