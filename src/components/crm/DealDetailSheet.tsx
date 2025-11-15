@@ -422,9 +422,18 @@ export function DealDetailSheet({
           <TabsContent value="info" className="space-y-4">
             {/* Cliente */}
             <Card className="p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <User className="h-5 w-5 text-primary" />
-                <h3 className="font-semibold text-lg">Cliente</h3>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <User className="h-5 w-5 text-primary" />
+                  <h3 className="font-semibold text-lg">Cliente</h3>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsEditDialogOpen(true)}
+                >
+                  <Edit className="h-4 w-4" />
+                </Button>
               </div>
               {deal.lead?.client ? (
                 <div className="space-y-2">
@@ -467,9 +476,18 @@ export function DealDetailSheet({
 
             {/* Dados do Negócio e Status */}
             <Card className="p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <TrendingUp className="h-5 w-5 text-primary" />
-                <h3 className="font-semibold text-lg">Dados do Negócio</h3>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-primary" />
+                  <h3 className="font-semibold text-lg">Dados do Negócio</h3>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsEditDialogOpen(true)}
+                >
+                  <Edit className="h-4 w-4" />
+                </Button>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
