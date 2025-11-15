@@ -57,6 +57,9 @@ export function CreateDealDialog({
   const [isArchitectDialogOpen, setIsArchitectDialogOpen] = useState(false);
   const [isProjectDialogOpen, setIsProjectDialogOpen] = useState(false);
 
+  const [tasks, setTasks] = useState<Array<{ title: string; due_at: Date | undefined; note: string }>>([]);
+  const [newTask, setNewTask] = useState({ title: "", due_at: undefined as Date | undefined, note: "" });
+
   const [formData, setFormData] = useState({
     stage_id: "",
     lead_id: "",
@@ -245,6 +248,19 @@ export function CreateDealDialog({
           .eq("id", formData.project_id);
       }
 
+      // Criar tarefas vinculadas ao deal
+      if (tasks.length > 0 && dealData) {
+        const tasksToInsert = tasks.map(task => ({
+          deal_id: dealData.id,
+          title: task.title,
+          due_at: task.due_at?.toISOString() || new Date().toISOString(),
+          note: task.note || null,
+          status: "open",
+        }));
+
+        await supabase.from("crm_tasks").insert(tasksToInsert);
+      }
+
       setLoading(false);
 
       toast({
@@ -268,6 +284,8 @@ export function CreateDealDialog({
         owner_id: "",
         source_id: "",
       });
+      setTasks([]);
+      setNewTask({ title: "", due_at: undefined, note: "" });
       onOpenChange(false);
       onSuccess();
     } catch (error: any) {
@@ -586,6 +604,118 @@ export function CreateDealDialog({
                   💬 Integração futura com WhatsApp para preencher automaticamente
                 </p>
               </div>
+            </div>
+          </div>
+
+          {/* Seção: Tarefas */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase">Tarefas</h3>
+            
+            {/* Lista de tarefas adicionadas */}
+            {tasks.length > 0 && (
+              <div className="space-y-2 border rounded-md p-3">
+                {tasks.map((task, index) => (
+                  <div key={index} className="flex items-start justify-between gap-2 p-2 bg-muted/50 rounded">
+                    <div className="flex-1">
+                      <p className="font-medium text-sm">{task.title}</p>
+                      {task.due_at && (
+                        <p className="text-xs text-muted-foreground">
+                          📅 {format(task.due_at, "dd/MM/yyyy")}
+                        </p>
+                      )}
+                      {task.note && (
+                        <p className="text-xs text-muted-foreground mt-1">{task.note}</p>
+                      )}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setTasks(tasks.filter((_, i) => i !== index))}
+                      className="h-7 px-2"
+                    >
+                      Remover
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Formulário para adicionar nova tarefa */}
+            <div className="space-y-3 border rounded-md p-3 bg-muted/20">
+              <div className="space-y-2">
+                <Label htmlFor="task_title">Título da Tarefa</Label>
+                <Input
+                  id="task_title"
+                  value={newTask.title}
+                  onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+                  placeholder="Ex: Ligar para cliente, Enviar proposta..."
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>Data de Vencimento</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !newTask.due_at && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {newTask.due_at ? (
+                          format(newTask.due_at, "dd/MM/yyyy")
+                        ) : (
+                          <span>Selecione a data</span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={newTask.due_at}
+                        onSelect={(date) => setNewTask({ ...newTask, due_at: date })}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="task_note">Observação</Label>
+                  <Input
+                    id="task_note"
+                    value={newTask.note}
+                    onChange={(e) => setNewTask({ ...newTask, note: e.target.value })}
+                    placeholder="Observação opcional"
+                  />
+                </div>
+              </div>
+
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => {
+                  if (newTask.title.trim()) {
+                    setTasks([...tasks, newTask]);
+                    setNewTask({ title: "", due_at: undefined, note: "" });
+                  } else {
+                    toast({
+                      title: "Atenção",
+                      description: "Digite um título para a tarefa",
+                      variant: "destructive",
+                    });
+                  }
+                }}
+                className="w-full"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Adicionar Tarefa
+              </Button>
             </div>
           </div>
 
