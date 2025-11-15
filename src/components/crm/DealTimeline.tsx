@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Paperclip, Send, MessageSquare, Phone, Users, Bot, Download, Edit2, X, Check, Mic, Square } from "lucide-react";
+import { Paperclip, Send, MessageSquare, Phone, Users, Bot, Download, Edit2, X, Check, Mic, Square, Play } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -367,8 +367,22 @@ export function DealTimeline({ dealId }: DealTimelineProps) {
 
   const startRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
+      // Check if browser supports getUserMedia
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error("Seu navegador não suporta gravação de áudio");
+      }
+
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+        } 
+      });
+      
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'audio/webm;codecs=opus'
+      });
+      
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
 
@@ -387,14 +401,24 @@ export function DealTimeline({ dealId }: DealTimelineProps) {
       mediaRecorder.start();
       setIsRecording(true);
       toast({
-        title: "Gravando áudio",
-        description: "Clique novamente para parar a gravação",
+        title: "🎤 Gravando áudio",
+        description: "Clique em 'Parar' quando terminar",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao iniciar gravação:", error);
+      let errorMessage = "Não foi possível acessar o microfone";
+      
+      if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+        errorMessage = "Permissão para usar o microfone foi negada. Verifique as configurações do navegador.";
+      } else if (error.name === 'NotFoundError') {
+        errorMessage = "Nenhum microfone foi encontrado no dispositivo.";
+      } else if (error.name === 'NotReadableError') {
+        errorMessage = "O microfone está sendo usado por outro aplicativo.";
+      }
+      
       toast({
-        title: "Erro",
-        description: "Não foi possível acessar o microfone",
+        title: "Erro ao gravar áudio",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -414,6 +438,16 @@ export function DealTimeline({ dealId }: DealTimelineProps) {
   const clearAudio = () => {
     setAudioBlob(null);
     audioChunksRef.current = [];
+  };
+
+  const playAudio = (blobOrUrl: Blob | string) => {
+    const audio = new Audio();
+    if (typeof blobOrUrl === 'string') {
+      audio.src = blobOrUrl;
+    } else {
+      audio.src = URL.createObjectURL(blobOrUrl);
+    }
+    audio.play();
   };
 
   return (
@@ -523,9 +557,20 @@ export function DealTimeline({ dealId }: DealTimelineProps) {
                 )}
               </div>
               {audioBlob && (
-                <p className="text-sm text-muted-foreground mt-1">
-                  Áudio gravado pronto para enviar
-                </p>
+                <div className="flex items-center gap-2 mt-1">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => playAudio(audioBlob)}
+                  >
+                    <Play className="h-3 w-3 mr-1" />
+                    Ouvir
+                  </Button>
+                  <p className="text-sm text-muted-foreground">
+                    Áudio pronto para enviar
+                  </p>
+                </div>
               )}
             </div>
           </div>
@@ -619,18 +664,51 @@ export function DealTimeline({ dealId }: DealTimelineProps) {
                     
                     {update.attachments && update.attachments.length > 0 && (
                       <div className="flex flex-wrap gap-2">
-                        {update.attachments.map((attachment) => (
-                          <Button
-                            key={attachment.id}
-                            variant="outline"
-                            size="sm"
-                            onClick={() => downloadFile(attachment.file_path, attachment.file_name)}
-                          >
-                            <Paperclip className="mr-2 h-3 w-3" />
-                            {attachment.file_name}
-                            <Download className="ml-2 h-3 w-3" />
-                          </Button>
-                        ))}
+                        {update.attachments.map((attachment) => {
+                          const isAudio = attachment.file_type.startsWith('audio/');
+                          
+                          if (isAudio) {
+                            return (
+                              <div key={attachment.id} className="flex items-center gap-2 p-2 border rounded-lg bg-muted/50">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={async () => {
+                                    const { data } = await supabase.storage
+                                      .from('crm-timeline-attachments')
+                                      .createSignedUrl(attachment.file_path, 60);
+                                    if (data?.signedUrl) {
+                                      playAudio(data.signedUrl);
+                                    }
+                                  }}
+                                >
+                                  <Play className="h-4 w-4" />
+                                </Button>
+                                <span className="text-sm">🎤 Áudio</span>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => downloadFile(attachment.file_path, attachment.file_name)}
+                                >
+                                  <Download className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            );
+                          }
+                          
+                          return (
+                            <Button
+                              key={attachment.id}
+                              variant="outline"
+                              size="sm"
+                              onClick={() => downloadFile(attachment.file_path, attachment.file_name)}
+                            >
+                              <Paperclip className="mr-2 h-3 w-3" />
+                              {attachment.file_name}
+                              <Download className="ml-2 h-3 w-3" />
+                            </Button>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
