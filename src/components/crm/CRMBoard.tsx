@@ -23,6 +23,27 @@ export function CRMBoard({ pipelineId, onRefresh }: CRMBoardProps) {
   useEffect(() => {
     if (!pipelineId) return;
     fetchData();
+
+    // Setup realtime subscription for tasks updates
+    const tasksChannel = supabase
+      .channel('crm-tasks-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'crm_tasks'
+        },
+        (payload) => {
+          console.log('Task change detected:', payload);
+          fetchData(); // Refresh all deals when tasks change
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(tasksChannel);
+    };
   }, [pipelineId]);
 
   const fetchData = async () => {
