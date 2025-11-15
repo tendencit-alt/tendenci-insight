@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { GripVertical, Pencil, Trash2, Plus, Lock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { usePermissions } from "@/hooks/usePermissions";
 
 interface ManageStagesDialogProps {
   open: boolean;
@@ -35,6 +36,7 @@ export function ManageStagesDialog({ open, onOpenChange }: ManageStagesDialogPro
   const [newStageName, setNewStageName] = useState("");
   const [newStageColor, setNewStageColor] = useState("bg-blue-500");
   const queryClient = useQueryClient();
+  const { isMaster } = usePermissions();
 
   // Buscar etapas
   const { data: stages, isLoading } = useQuery({
@@ -174,50 +176,58 @@ export function ManageStagesDialog({ open, onOpenChange }: ManageStagesDialogPro
           <DialogTitle>Gerenciar Etapas do Funil</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
-          {/* Adicionar Nova Etapa */}
-          <Card className="p-4 bg-muted/50">
-            <h3 className="font-semibold mb-4 flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              Adicionar Nova Etapa
-            </h3>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="new-stage-name">Nome da Etapa</Label>
-                  <Input
-                    id="new-stage-name"
-                    value={newStageName}
-                    onChange={(e) => setNewStageName(e.target.value)}
-                    placeholder="Ex: Proposta Enviada"
-                  />
+        {!isMaster ? (
+          <div className="p-6 text-center">
+            <Lock className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+            <p className="text-muted-foreground">
+              Apenas usuários Master podem gerenciar as etapas do funil.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {/* Adicionar Nova Etapa */}
+            <Card className="p-4 bg-muted/50">
+              <h3 className="font-semibold mb-4 flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                Adicionar Nova Etapa
+              </h3>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="new-stage-name">Nome da Etapa</Label>
+                    <Input
+                      id="new-stage-name"
+                      value={newStageName}
+                      onChange={(e) => setNewStageName(e.target.value)}
+                      placeholder="Ex: Proposta Enviada"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="new-stage-color">Cor</Label>
+                    <select
+                      id="new-stage-color"
+                      value={newStageColor}
+                      onChange={(e) => setNewStageColor(e.target.value)}
+                      className="w-full h-10 px-3 rounded-md border border-input bg-background"
+                    >
+                      {COLORS.map((color) => (
+                        <option key={color.value} value={color.value}>
+                          {color.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="new-stage-color">Cor</Label>
-                  <select
-                    id="new-stage-color"
-                    value={newStageColor}
-                    onChange={(e) => setNewStageColor(e.target.value)}
-                    className="w-full h-10 px-3 rounded-md border border-input bg-background"
-                  >
-                    {COLORS.map((color) => (
-                      <option key={color.value} value={color.value}>
-                        {color.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                <Button 
+                  onClick={() => createMutation.mutate()} 
+                  disabled={createMutation.isPending || !newStageName.trim()}
+                  className="w-full"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Adicionar Etapa
+                </Button>
               </div>
-              <Button 
-                onClick={() => createMutation.mutate()} 
-                disabled={createMutation.isPending || !newStageName.trim()}
-                className="w-full"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Adicionar Etapa
-              </Button>
-            </div>
-          </Card>
+            </Card>
 
           {/* Lista de Etapas */}
           <div className="space-y-2">
@@ -326,6 +336,7 @@ export function ManageStagesDialog({ open, onOpenChange }: ManageStagesDialogPro
             )}
           </div>
         </div>
+        )}
       </DialogContent>
     </Dialog>
   );
