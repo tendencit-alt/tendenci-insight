@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { Loader2, Lock } from 'lucide-react';
-import tendenciLogo from '@/assets/tendenci-logo.png';
+import tendenciLogo from '@/assets/tendenci-logo-new.png';
 
 const motivationalMessages = [
   "Bom dia! Vamos conquistar mais um dia de sucesso!",
@@ -118,7 +118,7 @@ const Auth = () => {
       <Card className="w-full max-w-md shadow-2xl animate-fade-in animate-scale-in">
         <CardHeader className="space-y-4 bg-red-800">
           <div className="flex justify-center">
-            <img src={tendenciLogo} alt="Tendenci" className="h-16 w-auto" />
+            <img src={tendenciLogo} alt="Tendenci" className="h-32 w-auto" />
           </div>
           <div className="text-center space-y-2">
             

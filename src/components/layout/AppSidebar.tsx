@@ -19,7 +19,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import tendenciLogo from "@/assets/tendenci-logo.png";
+import tendenciLogo from "@/assets/tendenci-logo-new.png";
 import { usePermissions } from "@/hooks/usePermissions";
 
 const menuItems = [
@@ -55,11 +55,11 @@ export function AppSidebar() {
         <div className="px-4 py-6 border-b border-sidebar-border/50">
           {isCollapsed ? (
             <div className="flex items-center justify-center">
-              <img src={tendenciLogo} alt="Tendenci" className="h-8 w-8 object-contain" />
+              <img src={tendenciLogo} alt="Tendenci" className="h-12 w-12 object-contain" />
             </div>
           ) : (
             <div className="space-y-2">
-              <img src={tendenciLogo} alt="Tendenci" className="h-10 w-auto object-contain" />
+              <img src={tendenciLogo} alt="Tendenci" className="h-16 w-auto object-contain" />
               <p className="text-xs text-sidebar-foreground/60 font-semibold tracking-wider uppercase">
                 System
               </p>
