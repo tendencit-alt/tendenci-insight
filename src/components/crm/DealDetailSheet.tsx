@@ -8,6 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Edit, CheckCircle, XCircle, FileText, User, Users, Phone, Mail, MapPin, Package, TrendingUp, DollarSign, ExternalLink, Calendar, Tag as TagIcon, History, Paperclip, Mic, FolderOpen, Plus, Unlink } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -325,7 +326,7 @@ export function DealDetailSheet({
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-3xl overflow-y-auto">
-        <SheetHeader className="mb-6">
+        <SheetHeader>
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <SheetTitle className="text-2xl mb-2">{deal.title}</SheetTitle>
@@ -358,355 +359,380 @@ export function DealDetailSheet({
           </div>
         </SheetHeader>
 
-        <div className="space-y-6">
-          {/* Cliente */}
-          <Card className="p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <User className="h-5 w-5 text-primary" />
-              <h3 className="font-semibold text-lg">Cliente</h3>
-            </div>
-            <div className="space-y-2">
-              {deal.architect?.name && (
-                <div className="flex items-center gap-2 text-sm">
-                  <User className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">{deal.architect.name}</span>
-                </div>
-              )}
-              {deal.architect?.email && (
-                <div className="flex items-center gap-2 text-sm">
-                  <Mail className="h-4 w-4 text-muted-foreground" />
-                  <a href={`mailto:${deal.architect.email}`} className="text-primary hover:underline">
-                    {deal.architect.email}
-                  </a>
-                </div>
-              )}
-              {deal.architect?.phone && (
-                <div className="flex items-center gap-2 text-sm">
-                  <Phone className="h-4 w-4 text-muted-foreground" />
-                  <a href={`tel:${deal.architect.phone}`} className="text-primary hover:underline">
-                    {deal.architect.phone}
-                  </a>
-                </div>
-              )}
-              {deal.architect?.city && (
-                <div className="flex items-center gap-2 text-sm">
-                  <MapPin className="h-4 w-4 text-muted-foreground" />
-                  <span>{deal.architect.city}</span>
-                </div>
-              )}
-            </div>
-          </Card>
+        <Tabs defaultValue="info" className="mt-6">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="info">Informações</TabsTrigger>
+            <TabsTrigger value="history">Histórico</TabsTrigger>
+            <TabsTrigger value="actions">Ações & Projeto</TabsTrigger>
+          </TabsList>
 
-          {/* Dados do Negócio e Status */}
-          <Card className="p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <TrendingUp className="h-5 w-5 text-primary" />
-              <h3 className="font-semibold text-lg">Dados do Negócio</h3>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label className="text-xs text-muted-foreground">Valor</Label>
-                <div className="flex items-center gap-2 mt-1">
-                  <DollarSign className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-semibold text-lg">
-                    {deal.value
-                      ? new Intl.NumberFormat("pt-BR", {
-                          style: "currency",
-                          currency: "BRL",
-                        }).format(deal.value)
-                      : "—"}
-                  </span>
-                </div>
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Status</Label>
-                <div className="mt-1">
-                  {deal.status && (
-                    <Badge variant={getStatusVariant(deal.status)} className="text-sm">
-                      {deal.status}
-                    </Badge>
-                  )}
-                </div>
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Categoria</Label>
-                <div className="flex items-center gap-2 mt-1">
-                  <TagIcon className="h-4 w-4 text-muted-foreground" />
-                  <span>{deal.categoria || "—"}</span>
-                </div>
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Tipo de Produto</Label>
-                <div className="flex items-center gap-2 mt-1">
-                  <Package className="h-4 w-4 text-muted-foreground" />
-                  <span>{deal.product_type || deal.tipo_produto || "—"}</span>
-                </div>
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Centro de Custo</Label>
-                <div className="flex items-center gap-2 mt-1">
-                  <DollarSign className="h-4 w-4 text-muted-foreground" />
-                  <span>{deal.centro_custo || "—"}</span>
-                </div>
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Criado em</Label>
-                <div className="flex items-center gap-2 mt-1">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <span>
-                    {deal.created_at
-                      ? format(new Date(deal.created_at), "dd/MM/yyyy")
-                      : "—"}
-                  </span>
-                </div>
-              </div>
-            </div>
-            {deal.note && (
-              <div className="mt-4 pt-4 border-t">
-                <Label className="text-xs text-muted-foreground">Observações</Label>
-                <p className="text-sm mt-1 whitespace-pre-wrap">{deal.note}</p>
-              </div>
-            )}
-          </Card>
-
-          {/* Responsáveis */}
-          <Card className="p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <Users className="h-5 w-5 text-primary" />
-              <h3 className="font-semibold text-lg">Responsáveis</h3>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label className="text-xs text-muted-foreground">Pipeline</Label>
-                <Select
-                  value={selectedPipeline}
-                  onValueChange={handlePipelineChange}
-                  disabled={!allPipelines.length}
-                >
-                  <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Selecionar pipeline" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {allPipelines.map((pipeline) => (
-                      <SelectItem key={pipeline.id} value={pipeline.id}>
-                        {pipeline.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Etapa</Label>
-                <Select
-                  value={selectedStage}
-                  onValueChange={handleStageChange}
-                  disabled={!allStages.length}
-                >
-                  <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Selecionar etapa" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {allStages.map((stage) => (
-                      <SelectItem key={stage.id} value={stage.id}>
-                        {stage.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              {deal.owner?.full_name && (
-                <div className="col-span-2">
-                  <Label className="text-xs text-muted-foreground">Responsável</Label>
-                  <div className="flex items-center gap-2 mt-1">
-                    <User className="h-4 w-4 text-muted-foreground" />
-                    <span>{deal.owner.full_name}</span>
-                  </div>
-                </div>
-              )}
-            </div>
-          </Card>
-
-          {/* Histórico com anexos */}
-          <Card className="p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <History className="h-5 w-5 text-primary" />
-                <h3 className="font-semibold text-lg">Histórico</h3>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    toast({
-                      title: "Em breve",
-                      description: "Funcionalidade de anexar documento em desenvolvimento.",
-                    });
-                  }}
-                  className="gap-2"
-                >
-                  <Paperclip className="h-4 w-4" />
-                  Documento
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    toast({
-                      title: "Em breve",
-                      description: "Funcionalidade de anexar áudio em desenvolvimento.",
-                    });
-                  }}
-                  className="gap-2"
-                >
-                  <Mic className="h-4 w-4" />
-                  Áudio
-                </Button>
-              </div>
-            </div>
-            
-            <DealTimeline dealId={deal.id} />
-            
-            {dealFiles.length > 0 && (
-              <div className="mt-4 pt-4 border-t">
-                <Label className="text-sm font-medium mb-2 block">Documentos Anexados</Label>
-                <div className="space-y-2">
-                  {dealFiles.map((file) => (
-                    <div
-                      key={file.id}
-                      className="flex items-center justify-between p-2 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
-                    >
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium truncate">{file.file_name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {(file.file_size / 1024).toFixed(1)} KB
-                          </p>
-                        </div>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={async () => {
-                          const { data } = await supabase.storage
-                            .from("deal-files")
-                            .createSignedUrl(file.file_path, 60);
-                          if (data?.signedUrl) {
-                            window.open(data.signedUrl, "_blank");
-                          }
-                        }}
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-            
-            <div className="mt-4">
-              <DealFileUpload dealId={deal.id} files={dealFiles} onFilesChange={fetchDealFiles} />
-            </div>
-          </Card>
-
-          {/* Projeto e Ações */}
-          {project ? (
+          {/* Tab: Informações */}
+          <TabsContent value="info" className="space-y-4">
+            {/* Cliente */}
             <Card className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <FolderOpen className="h-5 w-5 text-primary" />
-                  <h3 className="font-semibold text-lg">Projeto Vinculado</h3>
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setIsProjectSheetOpen(true)}
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setIsUnlinkProjectOpen(true)}
-                  >
-                    <Unlink className="h-4 w-4" />
-                  </Button>
-                </div>
+              <div className="flex items-center gap-2 mb-3">
+                <User className="h-5 w-5 text-primary" />
+                <h3 className="font-semibold text-lg">Cliente</h3>
               </div>
               <div className="space-y-2">
-                <p className="font-medium">{project.name}</p>
-                {project.stage && (
-                  <Badge variant="outline">{project.stage}</Badge>
+                {deal.architect?.name && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <User className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-medium">{deal.architect.name}</span>
+                  </div>
+                )}
+                {deal.architect?.email && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Mail className="h-4 w-4 text-muted-foreground" />
+                    <a href={`mailto:${deal.architect.email}`} className="text-primary hover:underline">
+                      {deal.architect.email}
+                    </a>
+                  </div>
+                )}
+                {deal.architect?.phone && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Phone className="h-4 w-4 text-muted-foreground" />
+                    <a href={`tel:${deal.architect.phone}`} className="text-primary hover:underline">
+                      {deal.architect.phone}
+                    </a>
+                  </div>
+                )}
+                {deal.architect?.city && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                    <span>{deal.architect.city}</span>
+                  </div>
                 )}
               </div>
             </Card>
-          ) : (
+
+            {/* Dados do Negócio e Status */}
             <Card className="p-4">
               <div className="flex items-center gap-2 mb-3">
-                <FolderOpen className="h-5 w-5 text-primary" />
-                <h3 className="font-semibold text-lg">Projeto</h3>
+                <TrendingUp className="h-5 w-5 text-primary" />
+                <h3 className="font-semibold text-lg">Dados do Negócio</h3>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Valor</Label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-semibold text-lg">
+                      {deal.value
+                        ? new Intl.NumberFormat("pt-BR", {
+                            style: "currency",
+                            currency: "BRL",
+                          }).format(deal.value)
+                        : "—"}
+                    </span>
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Status</Label>
+                  <div className="mt-1">
+                    {deal.status && (
+                      <Badge variant={getStatusVariant(deal.status)} className="text-sm">
+                        {deal.status}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Categoria</Label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <TagIcon className="h-4 w-4 text-muted-foreground" />
+                    <span>{deal.categoria || "—"}</span>
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Tipo de Produto</Label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Package className="h-4 w-4 text-muted-foreground" />
+                    <span>{deal.product_type || deal.tipo_produto || "—"}</span>
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Centro de Custo</Label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                    <span>{deal.centro_custo || "—"}</span>
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Criado em</Label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <span>
+                      {deal.created_at
+                        ? format(new Date(deal.created_at), "dd/MM/yyyy")
+                        : "—"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              {deal.note && (
+                <div className="mt-4 pt-4 border-t">
+                  <Label className="text-xs text-muted-foreground">Observações</Label>
+                  <p className="text-sm mt-1 whitespace-pre-wrap">{deal.note}</p>
+                </div>
+              )}
+            </Card>
+
+            {/* Responsáveis */}
+            <Card className="p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Users className="h-5 w-5 text-primary" />
+                <h3 className="font-semibold text-lg">Responsáveis</h3>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Pipeline</Label>
+                  <Select
+                    value={selectedPipeline}
+                    onValueChange={handlePipelineChange}
+                    disabled={!allPipelines.length}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Selecionar pipeline" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {allPipelines.map((pipeline) => (
+                        <SelectItem key={pipeline.id} value={pipeline.id}>
+                          {pipeline.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Etapa</Label>
+                  <Select
+                    value={selectedStage}
+                    onValueChange={handleStageChange}
+                    disabled={!allStages.length}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Selecionar etapa" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {allStages.map((stage) => (
+                        <SelectItem key={stage.id} value={stage.id}>
+                          {stage.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {deal.owner?.full_name && (
+                  <div className="col-span-2">
+                    <Label className="text-xs text-muted-foreground">Responsável</Label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <User className="h-4 w-4 text-muted-foreground" />
+                      <span>{deal.owner.full_name}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </Card>
+
+            {/* Histórico com anexos */}
+            <Card className="p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <History className="h-5 w-5 text-primary" />
+                  <h3 className="font-semibold text-lg">Histórico</h3>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      toast({
+                        title: "Em breve",
+                        description: "Funcionalidade de anexar documento em desenvolvimento.",
+                      });
+                    }}
+                    className="gap-2"
+                  >
+                    <Paperclip className="h-4 w-4" />
+                    Documento
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      toast({
+                        title: "Em breve",
+                        description: "Funcionalidade de anexar áudio em desenvolvimento.",
+                      });
+                    }}
+                    className="gap-2"
+                  >
+                    <Mic className="h-4 w-4" />
+                    Áudio
+                  </Button>
+                </div>
+              </div>
+              
+              <DealTimeline dealId={deal.id} />
+              
+              {dealFiles.length > 0 && (
+                <div className="mt-4 pt-4 border-t">
+                  <Label className="text-sm font-medium mb-2 block">Documentos Anexados</Label>
+                  <div className="space-y-2">
+                    {dealFiles.map((file) => (
+                      <div
+                        key={file.id}
+                        className="flex items-center justify-between p-2 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+                      >
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium truncate">{file.file_name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {(file.file_size / 1024).toFixed(1)} KB
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={async () => {
+                            const { data } = await supabase.storage
+                              .from("deal-files")
+                              .createSignedUrl(file.file_path, 60);
+                            if (data?.signedUrl) {
+                              window.open(data.signedUrl, "_blank");
+                            }
+                          }}
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              <div className="mt-4">
+                <DealFileUpload dealId={deal.id} files={dealFiles} onFilesChange={fetchDealFiles} />
+              </div>
+            </Card>
+          </TabsContent>
+
+          {/* Tab: Histórico */}
+          <TabsContent value="history" className="space-y-4">
+            <Card className="p-4">
+              <div className="flex items-center gap-2 mb-4">
+                <History className="h-5 w-5 text-primary" />
+                <h3 className="font-semibold text-lg">Histórico de Mudanças</h3>
+              </div>
+              <p className="text-sm text-muted-foreground">Histórico de mudanças do negócio.</p>
+            </Card>
+          </TabsContent>
+
+          {/* Tab: Ações & Projeto */}
+          <TabsContent value="actions" className="space-y-4">
+            {/* Projeto */}
+            {project ? (
+              <Card className="p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <FolderOpen className="h-5 w-5 text-primary" />
+                    <h3 className="font-semibold text-lg">Projeto Vinculado</h3>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setIsProjectSheetOpen(true)}
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setIsUnlinkProjectOpen(true)}
+                    >
+                      <Unlink className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <p className="font-medium">{project.name}</p>
+                  {project.stage && (
+                    <Badge variant="outline">{project.stage}</Badge>
+                  )}
+                </div>
+              </Card>
+            ) : (
+              <Card className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <FolderOpen className="h-5 w-5 text-primary" />
+                  <h3 className="font-semibold text-lg">Projeto</h3>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1 gap-2"
+                    onClick={() => setIsCreateProjectOpen(true)}
+                  >
+                    <Plus className="h-4 w-4" />
+                    Criar Projeto
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="flex-1 gap-2"
+                    onClick={handleLinkProject}
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    Vincular Existente
+                  </Button>
+                </div>
+              </Card>
+            )}
+
+            {/* Ações */}
+            <Card className="p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <TagIcon className="h-5 w-5 text-primary" />
+                <h3 className="font-semibold text-lg">Ações</h3>
               </div>
               <div className="flex gap-2">
                 <Button
-                  onClick={() => setIsCreateProjectOpen(true)}
-                  variant="outline"
+                  variant="default"
                   className="flex-1 gap-2"
+                  onClick={handleWinDeal}
+                  disabled={deal.status === "won"}
                 >
-                  <Plus className="h-4 w-4" />
-                  Criar Projeto
+                  <CheckCircle className="h-4 w-4" />
+                  Ganhar
                 </Button>
                 <Button
-                  onClick={handleLinkProject}
-                  variant="outline"
+                  variant="destructive"
                   className="flex-1 gap-2"
+                  onClick={() => setLostDialog(true)}
+                  disabled={deal.status === "lost"}
                 >
-                  <FolderOpen className="h-4 w-4" />
-                  Vincular Projeto
+                  <XCircle className="h-4 w-4" />
+                  Perder
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setDeleteDialog(true)}
+                >
+                  Excluir
                 </Button>
               </div>
             </Card>
-          )}
+          </TabsContent>
+        </Tabs>
 
-          {/* Ações */}
-          <div className="flex gap-2 pt-4">
-            <Button
-              onClick={handleWinDeal}
-              className="flex-1 gap-2"
-              variant="default"
-            >
-              <CheckCircle className="h-4 w-4" />
-              Marcar como Ganho
-            </Button>
-            <Button
-              onClick={() => setLostDialog(true)}
-              variant="outline"
-              className="flex-1 gap-2"
-            >
-              <XCircle className="h-4 w-4" />
-              Marcar como Perdido
-            </Button>
-          </div>
-
-          <Button
-            onClick={() => setDeleteDialog(true)}
-            variant="destructive"
-            className="w-full"
-          >
-            Excluir Negócio
-          </Button>
-        </div>
-
-        {/* Dialogs */}
         <EditDealDialog
           deal={deal}
           open={isEditDialogOpen}
           onOpenChange={setIsEditDialogOpen}
-          onSuccess={() => {
-            onSuccess();
-            setIsEditDialogOpen(false);
-          }}
+          onSuccess={onSuccess}
         />
 
         <AlertDialog open={lostDialog} onOpenChange={setLostDialog}>
@@ -714,27 +740,34 @@ export function DealDetailSheet({
             <AlertDialogHeader>
               <AlertDialogTitle>Marcar negócio como perdido</AlertDialogTitle>
               <AlertDialogDescription>
-                Por favor, informe o motivo da perda:
+                Por favor, informe o motivo da perda do negócio.
               </AlertDialogDescription>
             </AlertDialogHeader>
-            <div className="space-y-4">
-              <Select value={lostReason} onValueChange={setLostReason}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o motivo" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Preço">Preço</SelectItem>
-                  <SelectItem value="Prazo">Prazo</SelectItem>
-                  <SelectItem value="Concorrência">Concorrência</SelectItem>
-                  <SelectItem value="Sem resposta">Sem resposta</SelectItem>
-                  <SelectItem value="Outro">Outro</SelectItem>
-                </SelectContent>
-              </Select>
-              <Textarea
-                placeholder="Observações adicionais (opcional)"
-                value={lostNote}
-                onChange={(e) => setLostNote(e.target.value)}
-              />
+            <div className="space-y-4 py-4">
+              <div>
+                <Label htmlFor="lost-reason">Motivo da Perda</Label>
+                <Select value={lostReason} onValueChange={setLostReason}>
+                  <SelectTrigger id="lost-reason">
+                    <SelectValue placeholder="Selecionar motivo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="price">Preço</SelectItem>
+                    <SelectItem value="competition">Concorrência</SelectItem>
+                    <SelectItem value="timing">Timing</SelectItem>
+                    <SelectItem value="no_budget">Sem Orçamento</SelectItem>
+                    <SelectItem value="other">Outro</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="lost-note">Observações</Label>
+                <Textarea
+                  id="lost-note"
+                  value={lostNote}
+                  onChange={(e) => setLostNote(e.target.value)}
+                  placeholder="Detalhes adicionais..."
+                />
+              </div>
             </div>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancelar</AlertDialogCancel>
@@ -748,40 +781,63 @@ export function DealDetailSheet({
         <AlertDialog open={deleteDialog} onOpenChange={setDeleteDialog}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+              <AlertDialogTitle>Excluir negócio</AlertDialogTitle>
               <AlertDialogDescription>
-                Esta ação não pode ser desfeita. O negócio será permanentemente excluído.
+                Tem certeza que deseja excluir este negócio? Esta ação não pode ser desfeita.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
+              <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
                 Excluir
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
 
+        {project && (
+          <ProjectDetailSheet
+            project={project}
+            open={isProjectSheetOpen}
+            onOpenChange={setIsProjectSheetOpen}
+            onSuccess={() => {
+              fetchProject();
+              onSuccess();
+            }}
+          />
+        )}
+
+        <CreateProjectDialog
+          open={isCreateProjectOpen}
+          onOpenChange={setIsCreateProjectOpen}
+          onSuccess={() => {
+            fetchProject();
+            onSuccess();
+          }}
+        />
+
         <AlertDialog open={isLinkProjectOpen} onOpenChange={setIsLinkProjectOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Vincular projeto existente</AlertDialogTitle>
               <AlertDialogDescription>
-                Selecione um projeto para vincular a este negócio:
+                Selecione um projeto existente para vincular a este negócio.
               </AlertDialogDescription>
             </AlertDialogHeader>
-            <Select value={selectedProjectToLink} onValueChange={setSelectedProjectToLink}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione um projeto" />
-              </SelectTrigger>
-              <SelectContent>
-                {availableProjects.map((proj) => (
-                  <SelectItem key={proj.id} value={proj.id}>
-                    {proj.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="py-4">
+              <Select value={selectedProjectToLink} onValueChange={setSelectedProjectToLink}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecionar projeto" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableProjects.map((proj) => (
+                    <SelectItem key={proj.id} value={proj.id}>
+                      {proj.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancelar</AlertDialogCancel>
               <AlertDialogAction onClick={confirmLinkProject}>
@@ -807,24 +863,6 @@ export function DealDetailSheet({
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-
-        {project && (
-          <ProjectDetailSheet
-            project={project}
-            open={isProjectSheetOpen}
-            onOpenChange={setIsProjectSheetOpen}
-            onSuccess={fetchProject}
-          />
-        )}
-
-        <CreateProjectDialog
-          open={isCreateProjectOpen}
-          onOpenChange={setIsCreateProjectOpen}
-          onSuccess={() => {
-            fetchProject();
-            setIsCreateProjectOpen(false);
-          }}
-        />
       </SheetContent>
     </Sheet>
   );
