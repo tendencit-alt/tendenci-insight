@@ -116,6 +116,7 @@ export function ProspeccaoTasksManager() {
       note: newTask.note || null,
       due_at: newTask.due_at,
       status: "open",
+      origem_modulo: "prospeccao",
     });
 
     if (error) {
@@ -333,6 +334,11 @@ export function ProspeccaoTasksManager() {
                           <Badge variant={dueInfo.variant}>
                             {dueInfo.text}
                           </Badge>
+                          {task.origem_modulo === "prospeccao" && (
+                            <Badge variant="outline" className="text-xs">
+                              Prospecção
+                            </Badge>
+                          )}
                         </div>
                         <p className="text-sm text-muted-foreground">
                           <strong>Negócio:</strong>{" "}

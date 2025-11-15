@@ -83,6 +83,7 @@ export function DealTasks({ dealId }: DealTasksProps) {
       note: newTask.note || null,
       due_at: newTask.due_at,
       status: "open",
+      origem_modulo: "crm",
     }).select();
 
     if (error) {

@@ -828,6 +828,7 @@ export type Database = {
           due_at: string
           id: string
           note: string | null
+          origem_modulo: string | null
           status: string | null
           title: string
           updated_at: string | null
@@ -839,6 +840,7 @@ export type Database = {
           due_at: string
           id?: string
           note?: string | null
+          origem_modulo?: string | null
           status?: string | null
           title: string
           updated_at?: string | null
@@ -850,6 +852,7 @@ export type Database = {
           due_at?: string
           id?: string
           note?: string | null
+          origem_modulo?: string | null
           status?: string | null
           title?: string
           updated_at?: string | null
