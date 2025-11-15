@@ -7,6 +7,7 @@ import { PhoneCall, Target, FileText, PresentationIcon, XCircle, CheckCircle } f
 interface CRMKPIsProps {
   pipelineId: string;
   refreshKey?: number;
+  categoryFilter?: string;
 }
 
 interface KPIData {
@@ -21,7 +22,7 @@ interface KPIData {
   valor_total_perdido: number;
 }
 
-export function CRMKPIsDashboard({ pipelineId, refreshKey = 0 }: CRMKPIsProps) {
+export function CRMKPIsDashboard({ pipelineId, refreshKey = 0, categoryFilter = "all" }: CRMKPIsProps) {
   const [loading, setLoading] = useState(true);
   const [kpis, setKpis] = useState<KPIData>({
     contatos_feitos: 0,
@@ -39,15 +40,21 @@ export function CRMKPIsDashboard({ pipelineId, refreshKey = 0 }: CRMKPIsProps) {
     if (pipelineId) {
       fetchKPIs();
     }
-  }, [pipelineId, refreshKey]);
+  }, [pipelineId, refreshKey, categoryFilter]);
 
   const fetchKPIs = async () => {
     setLoading(true);
     try {
-      const { data: deals, error } = await supabase
+      let query = supabase
         .from("crm_deals")
         .select("*, crm_stages(name)")
         .eq("pipeline_id", pipelineId);
+
+      if (categoryFilter && categoryFilter !== "all") {
+        query = query.eq("categoria", categoryFilter);
+      }
+
+      const { data: deals, error } = await query;
 
       if (error) throw error;
 

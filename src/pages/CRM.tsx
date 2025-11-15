@@ -30,11 +30,14 @@ export default function CRM() {
   const [selectedOwner, setSelectedOwner] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [categories, setCategories] = useState<string[]>([]);
   const isAdmin = profile?.role === 'admin';
 
   useEffect(() => {
     fetchPipelines();
     fetchOwners();
+    fetchCategories();
     if (user && !isAdmin) {
       fetchGoalData();
       fetchCompanyGoal();
@@ -71,6 +74,18 @@ export default function CRM() {
 
     if (!error && data) {
       setOwners(data);
+    }
+  };
+
+  const fetchCategories = async () => {
+    const { data, error } = await supabase
+      .from("crm_deals")
+      .select("categoria")
+      .not("categoria", "is", null);
+
+    if (!error && data) {
+      const uniqueCategories = Array.from(new Set(data.map(d => d.categoria).filter(Boolean)));
+      setCategories(uniqueCategories as string[]);
     }
   };
 
@@ -196,8 +211,35 @@ export default function CRM() {
 
         {selectedPipeline && (
           <>
+            {/* Tabs de Categorias */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-2">
+              <Button
+                variant={selectedCategory === "all" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSelectedCategory("all")}
+                className="shrink-0"
+              >
+                Todas as Categorias
+              </Button>
+              {categories.map((category) => (
+                <Button
+                  key={category}
+                  variant={selectedCategory === category ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedCategory(category)}
+                  className="shrink-0"
+                >
+                  {category}
+                </Button>
+              ))}
+            </div>
+
             {/* Dashboard de KPIs Quantitativos */}
-            <CRMKPIsDashboard pipelineId={selectedPipeline} refreshKey={refreshKey} />
+            <CRMKPIsDashboard 
+              pipelineId={selectedPipeline} 
+              refreshKey={refreshKey}
+              categoryFilter={selectedCategory}
+            />
 
             {/* KPIs Originais */}
             <CRMKPIs pipelineId={selectedPipeline} key={`kpi-${refreshKey}`} />
@@ -216,7 +258,8 @@ export default function CRM() {
               filters={{
                 owner: selectedOwner,
                 search: searchQuery,
-                status: selectedStatus
+                status: selectedStatus,
+                category: selectedCategory
               }}
             />
           </>
