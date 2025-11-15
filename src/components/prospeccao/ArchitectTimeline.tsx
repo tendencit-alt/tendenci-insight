@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Paperclip, Send, MessageSquare, Phone, Users, Bot, Download, Edit2, X, Check, Mic, Square, Play, Pause } from "lucide-react";
 import { format } from "date-fns";
@@ -262,6 +264,252 @@ export function ArchitectTimeline({ architectId }: ArchitectTimelineProps) {
     }
   };
 
+  const startRecording = async () => {
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error("Seu navegador não suporta gravação de áudio");
+      }
+
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+        } 
+      });
+      
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'audio/webm;codecs=opus'
+      });
+      
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        setAudioBlob(audioBlob);
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+      toast({
+        title: "🎤 Gravando áudio",
+        description: "Clique em 'Parar' quando terminar",
+      });
+    } catch (error: any) {
+      console.error("Erro ao iniciar gravação:", error);
+      let errorMessage = "Não foi possível acessar o microfone";
+      
+      if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+        errorMessage = "Permissão para usar o microfone foi negada. Verifique as configurações do navegador.";
+      } else if (error.name === 'NotFoundError') {
+        errorMessage = "Nenhum microfone foi encontrado no dispositivo.";
+      } else if (error.name === 'NotReadableError') {
+        errorMessage = "O microfone está sendo usado por outro aplicativo.";
+      }
+      
+      toast({
+        title: "Erro ao gravar áudio",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      toast({
+        title: "Gravação concluída",
+        description: "Áudio pronto para enviar",
+      });
+    }
+  };
+
+  const clearAudio = () => {
+    setAudioBlob(null);
+    audioChunksRef.current = [];
+  };
+
+  const playAudio = (blobOrUrl: Blob | string) => {
+    const audio = new Audio();
+    if (typeof blobOrUrl === 'string') {
+      audio.src = blobOrUrl;
+    } else {
+      audio.src = URL.createObjectURL(blobOrUrl);
+    }
+    audio.play();
+  };
+
+  const toggleAudioPlayback = async (audioId: string, audioPath: string) => {
+    if (playingAudioId === audioId && audioRefs.current[audioId]) {
+      audioRefs.current[audioId].pause();
+      setPlayingAudioId(null);
+      return;
+    }
+
+    if (playingAudioId && audioRefs.current[playingAudioId]) {
+      audioRefs.current[playingAudioId].pause();
+    }
+
+    try {
+      const { data, error } = await supabase.storage
+        .from('architect-files')
+        .download(audioPath);
+
+      if (error) throw error;
+
+      const url = URL.createObjectURL(data);
+      const audio = new Audio(url);
+      audioRefs.current[audioId] = audio;
+
+      audio.onended = () => {
+        setPlayingAudioId(null);
+        URL.revokeObjectURL(url);
+      };
+
+      audio.play();
+      setPlayingAudioId(audioId);
+    } catch (error) {
+      console.error("Erro ao reproduzir áudio:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao reproduzir áudio",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const startRecording = async () => {
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error("Seu navegador não suporta gravação de áudio");
+      }
+
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+        } 
+      });
+      
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'audio/webm;codecs=opus'
+      });
+      
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        setAudioBlob(audioBlob);
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+      toast({
+        title: "🎤 Gravando áudio",
+        description: "Clique em 'Parar' quando terminar",
+      });
+    } catch (error: any) {
+      console.error("Erro ao iniciar gravação:", error);
+      let errorMessage = "Não foi possível acessar o microfone";
+      
+      if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+        errorMessage = "Permissão para usar o microfone foi negada. Verifique as configurações do navegador.";
+      } else if (error.name === 'NotFoundError') {
+        errorMessage = "Nenhum microfone foi encontrado no dispositivo.";
+      } else if (error.name === 'NotReadableError') {
+        errorMessage = "O microfone está sendo usado por outro aplicativo.";
+      }
+      
+      toast({
+        title: "Erro ao gravar áudio",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      toast({
+        title: "Gravação concluída",
+        description: "Áudio pronto para enviar",
+      });
+    }
+  };
+
+  const clearAudio = () => {
+    setAudioBlob(null);
+    audioChunksRef.current = [];
+  };
+
+  const playAudio = (blobOrUrl: Blob | string) => {
+    const audio = new Audio();
+    if (typeof blobOrUrl === 'string') {
+      audio.src = blobOrUrl;
+    } else {
+      audio.src = URL.createObjectURL(blobOrUrl);
+    }
+    audio.play();
+  };
+
+  const toggleAudioPlayback = async (audioId: string, audioPath: string) => {
+    if (playingAudioId === audioId && audioRefs.current[audioId]) {
+      audioRefs.current[audioId].pause();
+      setPlayingAudioId(null);
+      return;
+    }
+
+    if (playingAudioId && audioRefs.current[playingAudioId]) {
+      audioRefs.current[playingAudioId].pause();
+    }
+
+    try {
+      const { data, error } = await supabase.storage
+        .from('architect-files')
+        .download(audioPath);
+
+      if (error) throw error;
+
+      const url = URL.createObjectURL(data);
+      const audio = new Audio(url);
+      audioRefs.current[audioId] = audio;
+
+      audio.onended = () => {
+        setPlayingAudioId(null);
+        URL.revokeObjectURL(url);
+      };
+
+      audio.play();
+      setPlayingAudioId(audioId);
+    } catch (error) {
+      console.error("Erro ao reproduzir áudio:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao reproduzir áudio",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleMention = (userId: string, userName: string) => {
     const mention = `@[${userName}](${userId}) `;
     setMessage(message + mention);
@@ -343,36 +591,113 @@ export function ArchitectTimeline({ architectId }: ArchitectTimelineProps) {
             )}
           </div>
 
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => document.getElementById('architect-file-input')?.click()}
-            >
-              <Paperclip className="h-4 w-4 mr-2" />
-              Anexar
-            </Button>
-            <input
+          <div>
+            <Label htmlFor="architect-file-input">Anexar Arquivos</Label>
+            <Input
               id="architect-file-input"
               type="file"
               multiple
-              className="hidden"
               onChange={(e) => setFiles(e.target.files)}
+              className="mt-1"
             />
             {files && files.length > 0 && (
-              <span className="text-sm text-muted-foreground">
+              <span className="text-sm text-muted-foreground mt-1 block">
                 {files.length} arquivo(s) selecionado(s)
               </span>
             )}
-            <Button
-              onClick={handleSubmit}
-              disabled={submitting || (!message.trim() && !files)}
-              className="ml-auto"
-            >
-              <Send className="h-4 w-4 mr-2" />
-              {submitting ? "Enviando..." : "Enviar"}
-            </Button>
           </div>
+
+          <div>
+            <Label htmlFor="architect-audio-input">Anexar Áudio</Label>
+            <Input
+              id="architect-audio-input"
+              type="file"
+              multiple
+              accept="audio/*"
+              onChange={(e) => setAudioFiles(e.target.files)}
+              className="mt-1"
+            />
+            {audioFiles && audioFiles.length > 0 && (
+              <div className="mt-2 space-y-1">
+                {Array.from(audioFiles).map((file, idx) => (
+                  <div key={idx} className="flex items-center gap-2 text-sm p-1 bg-muted rounded">
+                    <span className="truncate flex-1">{file.name}</span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        const audio = new Audio(URL.createObjectURL(file));
+                        audio.play();
+                      }}
+                      className="h-6 px-2"
+                    >
+                      Ouvir
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div>
+            <Label>Gravar Áudio</Label>
+            <div className="flex gap-2 mt-1">
+              <Button
+                type="button"
+                variant={isRecording ? "destructive" : "outline"}
+                className="flex-1"
+                onClick={isRecording ? stopRecording : startRecording}
+              >
+                {isRecording ? (
+                  <>
+                    <Square className="mr-2 h-4 w-4" />
+                    Parar
+                  </>
+                ) : (
+                  <>
+                    <Mic className="mr-2 h-4 w-4" />
+                    Gravar
+                  </>
+                )}
+              </Button>
+              {audioBlob && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={clearAudio}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+            {audioBlob && (
+              <div className="flex items-center gap-2 mt-1">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => playAudio(audioBlob)}
+                >
+                  <Play className="h-3 w-3 mr-1" />
+                  Ouvir
+                </Button>
+                <p className="text-sm text-muted-foreground">
+                  Áudio pronto para enviar
+                </p>
+              </div>
+            )}
+          </div>
+
+          <Button
+            onClick={handleSubmit}
+            disabled={submitting || (!message.trim() && !files && !audioBlob && !audioFiles)}
+            className="w-full"
+          >
+            <Send className="h-4 w-4 mr-2" />
+            {submitting ? "Enviando..." : "Enviar"}
+          </Button>
         </div>
 
         {/* Timeline */}
