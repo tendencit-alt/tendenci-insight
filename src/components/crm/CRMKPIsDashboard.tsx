@@ -9,6 +9,13 @@ interface CRMKPIsProps {
   refreshKey?: number;
   categoryFilter?: string;
   showPlanned?: boolean;
+  dateFilter?: string;
+  customDateRange?: { from: Date | undefined; to: Date | undefined };
+}
+
+interface SellerBreakdown {
+  seller_name: string;
+  count: number;
 }
 
 interface KPIData {
@@ -21,9 +28,18 @@ interface KPIData {
   valor_total_conquistado: number;
   valor_total_em_orcamento: number;
   valor_total_perdido: number;
+  contatos_por_vendedor: SellerBreakdown[];
+  captados_por_vendedor: SellerBreakdown[];
 }
 
-export function CRMKPIsDashboard({ pipelineId, refreshKey = 0, categoryFilter = "all", showPlanned = false }: CRMKPIsProps) {
+export function CRMKPIsDashboard({ 
+  pipelineId, 
+  refreshKey = 0, 
+  categoryFilter = "all", 
+  showPlanned = false,
+  dateFilter = "all",
+  customDateRange
+}: CRMKPIsProps) {
   const [loading, setLoading] = useState(true);
   const [kpis, setKpis] = useState<KPIData>({
     contatos_feitos: 0,
@@ -35,13 +51,15 @@ export function CRMKPIsDashboard({ pipelineId, refreshKey = 0, categoryFilter = 
     valor_total_conquistado: 0,
     valor_total_em_orcamento: 0,
     valor_total_perdido: 0,
+    contatos_por_vendedor: [],
+    captados_por_vendedor: [],
   });
 
   useEffect(() => {
     if (pipelineId) {
       fetchKPIs();
     }
-  }, [pipelineId, refreshKey, categoryFilter, showPlanned]);
+  }, [pipelineId, refreshKey, categoryFilter, showPlanned, dateFilter, customDateRange]);
 
   // Realtime subscription for automatic KPI updates
   useEffect(() => {
@@ -74,7 +92,7 @@ export function CRMKPIsDashboard({ pipelineId, refreshKey = 0, categoryFilter = 
     try {
       let query = supabase
         .from("crm_deals")
-        .select("*, crm_stages(name)")
+        .select("*, crm_stages(name), owner:profiles!crm_deals_owner_id_fkey(id, full_name, email)")
         .eq("pipeline_id", pipelineId);
 
       if (showPlanned) {
@@ -83,20 +101,81 @@ export function CRMKPIsDashboard({ pipelineId, refreshKey = 0, categoryFilter = 
         query = query.eq("categoria", categoryFilter);
       }
 
+      // Filtro de período
+      if (dateFilter && dateFilter !== "all") {
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        
+        switch (dateFilter) {
+          case "today":
+            query = query.gte("created_at", today.toISOString());
+            break;
+          case "yesterday":
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+            query = query.gte("created_at", yesterday.toISOString()).lt("created_at", today.toISOString());
+            break;
+          case "last7days":
+            const last7days = new Date(today);
+            last7days.setDate(last7days.getDate() - 7);
+            query = query.gte("created_at", last7days.toISOString());
+            break;
+          case "last30days":
+            const last30days = new Date(today);
+            last30days.setDate(last30days.getDate() - 30);
+            query = query.gte("created_at", last30days.toISOString());
+            break;
+          case "custom":
+            if (customDateRange?.from) {
+              const fromDate = new Date(customDateRange.from);
+              fromDate.setHours(0, 0, 0, 0);
+              query = query.gte("created_at", fromDate.toISOString());
+            }
+            if (customDateRange?.to) {
+              const toDate = new Date(customDateRange.to);
+              toDate.setHours(23, 59, 59, 999);
+              query = query.lte("created_at", toDate.toISOString());
+            }
+            break;
+        }
+      }
+
       const { data: deals, error } = await query;
 
       if (error) throw error;
+
+      // Calcular breakdown por vendedor para contatos e captados
+      const contatosPorVendedor = new Map<string, number>();
+      const captadosPorVendedor = new Map<string, number>();
+
+      deals?.forEach((deal) => {
+        const sellerName = deal.owner?.full_name || deal.owner?.email || "Sem responsável";
+        
+        // Todos os deals são contatos
+        contatosPorVendedor.set(sellerName, (contatosPorVendedor.get(sellerName) || 0) + 1);
+        
+        // Apenas deals abertos e com stage são captados
+        if (deal.stage_id && deal.status === "aberto") {
+          captadosPorVendedor.set(sellerName, (captadosPorVendedor.get(sellerName) || 0) + 1);
+        }
+      });
 
       const kpiData: KPIData = {
         contatos_feitos: deals?.length || 0,
         projetos_captados: deals?.filter((d) => d.stage_id && d.status === "aberto").length || 0,
         em_orcamento: deals?.filter((d) => d.crm_stages?.name?.toLowerCase().includes("orçamento")).length || 0,
         apresentado: deals?.filter((d) => d.crm_stages?.name?.toLowerCase().includes("apresent")).length || 0,
-        perdido: deals?.filter((d) => d.status === "lost").length || 0,
-        conquistado: deals?.filter((d) => d.status === "won").length || 0,
-        valor_total_conquistado: deals?.filter((d) => d.status === "won").reduce((acc, d) => acc + (d.value || 0), 0) || 0,
+        perdido: deals?.filter((d) => d.status === "perdido").length || 0,
+        conquistado: deals?.filter((d) => d.status === "ganho").length || 0,
+        valor_total_conquistado: deals?.filter((d) => d.status === "ganho").reduce((acc, d) => acc + (d.value || 0), 0) || 0,
         valor_total_em_orcamento: deals?.filter((d) => d.crm_stages?.name?.toLowerCase().includes("orçamento")).reduce((acc, d) => acc + (d.value || 0), 0) || 0,
-        valor_total_perdido: deals?.filter((d) => d.status === "lost").reduce((acc, d) => acc + (d.value || 0), 0) || 0,
+        valor_total_perdido: deals?.filter((d) => d.status === "perdido").reduce((acc, d) => acc + (d.value || 0), 0) || 0,
+        contatos_por_vendedor: Array.from(contatosPorVendedor.entries())
+          .map(([seller_name, count]) => ({ seller_name, count }))
+          .sort((a, b) => b.count - a.count),
+        captados_por_vendedor: Array.from(captadosPorVendedor.entries())
+          .map(([seller_name, count]) => ({ seller_name, count }))
+          .sort((a, b) => b.count - a.count),
       };
 
       setKpis(kpiData);
@@ -121,6 +200,7 @@ export function CRMKPIsDashboard({ pipelineId, refreshKey = 0, categoryFilter = 
       icon: PhoneCall,
       colorClass: "text-primary",
       bgClass: "bg-primary/10",
+      breakdown: kpis.contatos_por_vendedor,
     },
     {
       title: "Projetos Captados",
@@ -128,6 +208,7 @@ export function CRMKPIsDashboard({ pipelineId, refreshKey = 0, categoryFilter = 
       icon: Target,
       colorClass: "text-accent",
       bgClass: "bg-accent/10",
+      breakdown: kpis.captados_por_vendedor,
     },
     {
       title: "Em Orçamento",
@@ -194,13 +275,27 @@ export function CRMKPIsDashboard({ pipelineId, refreshKey = 0, categoryFilter = 
               <kpi.icon className={`h-4 w-4 ${kpi.colorClass}`} />
             </div>
           </CardHeader>
-          {kpi.subtitle && (
-            <CardContent className="p-4 pt-0">
+          <CardContent className="p-4 pt-0 space-y-1">
+            {kpi.subtitle && (
               <p className="text-xs font-medium text-muted-foreground truncate">
                 {kpi.subtitle}
               </p>
-            </CardContent>
-          )}
+            )}
+            {kpi.breakdown && kpi.breakdown.length > 0 && (
+              <div className="space-y-0.5 mt-2 pt-2 border-t border-border/50">
+                {kpi.breakdown.map((seller, idx) => (
+                  <div key={idx} className="flex justify-between items-center text-xs">
+                    <span className="text-muted-foreground truncate flex-1 mr-2">
+                      {seller.seller_name}
+                    </span>
+                    <span className="font-semibold text-foreground tabular-nums shrink-0">
+                      {seller.count}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
         </Card>
       ))}
     </div>

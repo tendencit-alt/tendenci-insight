@@ -218,7 +218,14 @@ export default function CRM() {
             </div>
 
             {/* Dashboard de KPIs Quantitativos */}
-            <CRMKPIsDashboard pipelineId={selectedPipeline} refreshKey={refreshKey} categoryFilter={selectedCategory} showPlanned={showPlanned} />
+            <CRMKPIsDashboard 
+              pipelineId={selectedPipeline} 
+              refreshKey={refreshKey} 
+              categoryFilter={selectedCategory} 
+              showPlanned={showPlanned}
+              dateFilter={dateFilter}
+              customDateRange={customDateRange}
+            />
 
             {/* KPIs Originais */}
             <CRMKPIs pipelineId={selectedPipeline} key={`kpi-${refreshKey}`} />
