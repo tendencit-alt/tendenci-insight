@@ -28,6 +28,7 @@ import { Plus, Calendar as CalendarIcon } from "lucide-react";
 import { CreateClientDialog } from "./CreateClientDialog";
 import { CreateArchitectDialog } from "../architects/CreateArchitectDialog";
 import { CreateProjectDialog } from "../projects/CreateProjectDialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
@@ -64,9 +65,10 @@ export function CreateDealDialog({
     value: "",
     note: "",
     temperature: "frio",
-    categoria: "",
-    centro_custo: "",
-    tipo_produto: "",
+    categorias: [] as string[],
+    centros_custo: [] as string[],
+    tipos_produto: [] as string[],
+    observations: "",
     conversation_history: "",
     owner_id: "",
     source_id: "",
@@ -203,8 +205,10 @@ export function CreateDealDialog({
           .eq("id", formData.lead_id);
       }
 
-      // Gerar título automaticamente baseado em categoria e tipo de produto
-      const autoTitle = `${formData.categoria} - ${formData.tipo_produto}`;
+      // Gerar título automaticamente baseado em categorias e tipos de produto
+      const categoriasTxt = formData.categorias.join(", ") || "Sem categoria";
+      const produtosTxt = formData.tipos_produto.join(", ") || "Sem produto";
+      const autoTitle = `${categoriasTxt} - ${produtosTxt}`;
 
       // Insert deal
       const { data: dealData, error } = await supabase.from("crm_deals").insert({
@@ -214,11 +218,11 @@ export function CreateDealDialog({
         lead_id: formData.lead_id || null,
         architect_id: formData.architect_id && formData.architect_id !== "sem-arquiteto" ? formData.architect_id : null,
         owner_id: formData.owner_id || null,
-        value: formData.value ? Number(formData.value) : 0,
-        note: formData.note || null,
-        categoria: formData.categoria,
-        centro_custo: formData.centro_custo,
-        tipo_produto: formData.tipo_produto,
+        value: formData.value ? Number(formData.value) : null,
+        note: `${formData.observations ? formData.observations + '\n\n' : ''}${formData.note || ''}`.trim() || null,
+        categoria: formData.categorias.join(", ") || null,
+        centro_custo: formData.centros_custo.join(", ") || null,
+        tipo_produto: formData.tipos_produto.join(", ") || null,
         conversation_history: formData.conversation_history || null,
         status: "aberto",
       }).select().single();
@@ -256,9 +260,10 @@ export function CreateDealDialog({
         value: "",
         note: "",
         temperature: "frio",
-        categoria: "",
-        centro_custo: "",
-        tipo_produto: "",
+        categorias: [],
+        centros_custo: [],
+        tipos_produto: [],
+        observations: "",
         conversation_history: "",
         owner_id: "",
         source_id: "",
@@ -442,78 +447,73 @@ export function CreateDealDialog({
             <h3 className="text-sm font-semibold text-muted-foreground uppercase">Detalhes do Negócio</h3>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="categoria">Categoria *</Label>
-                <Select
-                  value={formData.categoria}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, categoria: value })
-                  }
-                  required
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione a categoria" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Planejados">Planejados</SelectItem>
-                    <SelectItem value="Móveis Soltos">Móveis Soltos</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label>Categoria *</Label>
+                <div className="space-y-2 border rounded-md p-3">
+                  {["Planejados", "Móveis Soltos"].map((cat) => (
+                    <div key={cat} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`cat-${cat}`}
+                        checked={formData.categorias.includes(cat)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setFormData({ ...formData, categorias: [...formData.categorias, cat] });
+                          } else {
+                            setFormData({ ...formData, categorias: formData.categorias.filter(c => c !== cat) });
+                          }
+                        }}
+                      />
+                      <label htmlFor={`cat-${cat}`} className="text-sm cursor-pointer">{cat}</label>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="centro_custo">Centro de Custo *</Label>
-                <Select
-                  value={formData.centro_custo}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, centro_custo: value })
-                  }
-                  required
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o centro de custo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Rústico">Rústico</SelectItem>
-                    <SelectItem value="Industrial">Industrial</SelectItem>
-                    <SelectItem value="Revenda">Revenda</SelectItem>
-                    <SelectItem value="Planejado">Planejado</SelectItem>
-                    <SelectItem value="Náutico">Náutico</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label>Centro de Custo *</Label>
+                <div className="space-y-2 border rounded-md p-3 max-h-40 overflow-y-auto">
+                  {["Rústico", "Industrial", "Revenda", "Planejado", "Náutico"].map((cc) => (
+                    <div key={cc} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`cc-${cc}`}
+                        checked={formData.centros_custo.includes(cc)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setFormData({ ...formData, centros_custo: [...formData.centros_custo, cc] });
+                          } else {
+                            setFormData({ ...formData, centros_custo: formData.centros_custo.filter(c => c !== cc) });
+                          }
+                        }}
+                      />
+                      <label htmlFor={`cc-${cc}`} className="text-sm cursor-pointer">{cc}</label>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               <div className="space-y-2 col-span-2">
-                <Label htmlFor="tipo_produto">Tipo de Produto *</Label>
-                <Select
-                  value={formData.tipo_produto}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, tipo_produto: value })
-                  }
-                  required
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o tipo de produto" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Sofá">Sofá</SelectItem>
-                    <SelectItem value="Poltrona">Poltrona</SelectItem>
-                    <SelectItem value="Mesa">Mesa</SelectItem>
-                    <SelectItem value="Cadeira">Cadeira</SelectItem>
-                    <SelectItem value="Aparador">Aparador</SelectItem>
-                    <SelectItem value="Banqueta">Banqueta</SelectItem>
-                    <SelectItem value="Rack">Rack</SelectItem>
-                    <SelectItem value="Cristaleira">Cristaleira</SelectItem>
-                    <SelectItem value="Estante">Estante</SelectItem>
-                    <SelectItem value="Vaso">Vaso</SelectItem>
-                    <SelectItem value="Quadro">Quadro</SelectItem>
-                    <SelectItem value="Chaise">Chaise</SelectItem>
-                    <SelectItem value="Personalizado">Personalizado</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label>Tipo de Produto *</Label>
+                <div className="grid grid-cols-3 gap-2 border rounded-md p-3 max-h-48 overflow-y-auto">
+                  {["Sofá", "Poltrona", "Mesa", "Cadeira", "Aparador", "Banqueta", "Rack", "Cristaleira", "Estante", "Vaso", "Quadro", "Chaise", "Personalizado"].map((tp) => (
+                    <div key={tp} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`tp-${tp}`}
+                        checked={formData.tipos_produto.includes(tp)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setFormData({ ...formData, tipos_produto: [...formData.tipos_produto, tp] });
+                          } else {
+                            setFormData({ ...formData, tipos_produto: formData.tipos_produto.filter(t => t !== tp) });
+                          }
+                        }}
+                      />
+                      <label htmlFor={`tp-${tp}`} className="text-sm cursor-pointer">{tp}</label>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="value">Valor (R$) *</Label>
+                <Label htmlFor="value">Valor (R$)</Label>
                 <Input
                   id="value"
                   type="number"
@@ -523,7 +523,6 @@ export function CreateDealDialog({
                     setFormData({ ...formData, value: e.target.value })
                   }
                   placeholder="0.00"
-                  required
                 />
               </div>
 
@@ -551,6 +550,22 @@ export function CreateDealDialog({
             </div>
           </div>
 
+
+          {/* Seção: Observações */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase">Observações</h3>
+            <div className="space-y-2">
+              <Textarea
+                id="observations"
+                value={formData.observations}
+                onChange={(e) =>
+                  setFormData({ ...formData, observations: e.target.value })
+                }
+                placeholder="Adicione observações sobre este negócio..."
+                rows={3}
+              />
+            </div>
+          </div>
 
           {/* Seção: Comunicação */}
           <div className="space-y-4">
