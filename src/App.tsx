@@ -10,7 +10,6 @@ import Index from "./pages/Index";
 import Leads from "./pages/Leads";
 import Projects from "./pages/Projects";
 import ProjectSettings from "./pages/ProjectSettings";
-import ProspeccaoOverview from "./pages/ProspeccaoOverview";
 import Prospeccao from "./pages/Prospeccao";
 import CRM from "./pages/CRM";
 import Goals from "./pages/Goals";
@@ -38,8 +37,7 @@ const App = () => (
             <Route path="/projects/settings" element={<ProtectedRoute><PermissionGuard module="configuracoes"><ProjectSettings /></PermissionGuard></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><PermissionGuard module="configuracoes"><ProjectSettings /></PermissionGuard></ProtectedRoute>} />
             <Route path="/settings/users" element={<ProtectedRoute><PermissionGuard module="configuracoes"><UserManagement /></PermissionGuard></ProtectedRoute>} />
-            <Route path="/prospeccao" element={<ProtectedRoute><PermissionGuard module="arquitetos"><ProspeccaoOverview /></PermissionGuard></ProtectedRoute>} />
-            <Route path="/prospeccao/kanban" element={<ProtectedRoute><PermissionGuard module="arquitetos"><Prospeccao /></PermissionGuard></ProtectedRoute>} />
+            <Route path="/prospeccao" element={<ProtectedRoute><PermissionGuard module="arquitetos"><Prospeccao /></PermissionGuard></ProtectedRoute>} />
             <Route path="/metas" element={<ProtectedRoute><PermissionGuard module="metas"><Goals /></PermissionGuard></ProtectedRoute>} />
             <Route path="/metas/gestao" element={<ProtectedRoute><PermissionGuard module="metas"><GoalsManagement /></PermissionGuard></ProtectedRoute>} />
             <Route path="/metas/desempenho/:goalId" element={<ProtectedRoute><PermissionGuard module="metas"><SellerPerformance /></PermissionGuard></ProtectedRoute>} />
