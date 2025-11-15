@@ -3,9 +3,10 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, TrendingUp, Users, Target, Award } from "lucide-react";
+import { Plus, TrendingUp, Users, Target, Award, Settings } from "lucide-react";
 import { CreateSellerGoalDialog } from "@/components/goals/CreateSellerGoalDialog";
 import { CreateCompanyGoalDialog } from "@/components/goals/CreateCompanyGoalDialog";
+import { EditDailyGoalsDialog } from "@/components/goals/EditDailyGoalsDialog";
 import { GoalsTable } from "@/components/goals/GoalsTable";
 import { GoalsAnalytics } from "@/components/goals/GoalsAnalytics";
 import { AdvancedAnalytics } from "@/components/goals/AdvancedAnalytics";
@@ -19,6 +20,7 @@ export default function GoalsManagement() {
   const { user } = useAuth();
   const [showSellerDialog, setShowSellerDialog] = useState(false);
   const [showCompanyDialog, setShowCompanyDialog] = useState(false);
+  const [showDailyGoalsDialog, setShowDailyGoalsDialog] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [stats, setStats] = useState({
     totalSellers: 0,
@@ -126,6 +128,10 @@ export default function GoalsManagement() {
           </div>
           {isMaster && (
             <div className="flex gap-2">
+              <Button onClick={() => setShowDailyGoalsDialog(true)} variant="outline">
+                <Settings className="mr-2 h-4 w-4" />
+                Editar Metas Diárias
+              </Button>
               <Button onClick={() => setShowSellerDialog(true)}>
                 <Plus className="mr-2 h-4 w-4" />
                 Nova Meta Individual
@@ -228,6 +234,12 @@ export default function GoalsManagement() {
         <CreateCompanyGoalDialog
           open={showCompanyDialog}
           onOpenChange={setShowCompanyDialog}
+          onSuccess={handleRefresh}
+        />
+
+        <EditDailyGoalsDialog
+          open={showDailyGoalsDialog}
+          onOpenChange={setShowDailyGoalsDialog}
           onSuccess={handleRefresh}
         />
       </div>
