@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Paperclip, Send, MessageSquare, Phone, Users, Bot, Download, Edit2, X, Check } from "lucide-react";
+import { Paperclip, Send, MessageSquare, Phone, Users, Bot, Download, Edit2, X, Check, Mic, Square } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -61,6 +61,10 @@ export function DealTimeline({ dealId }: DealTimelineProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editMessage, setEditMessage] = useState("");
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -248,10 +252,20 @@ export function DealTimeline({ dealId }: DealTimelineProps) {
         await supabase.from('notifications').insert(notifications);
       }
 
-      // Upload files if any
+      // Upload files if any (including audio)
+      const filesToUpload: File[] = [];
+      
       if (files && files.length > 0) {
-        for (let i = 0; i < files.length; i++) {
-          const file = files[i];
+        filesToUpload.push(...Array.from(files));
+      }
+      
+      if (audioBlob) {
+        const audioFile = new File([audioBlob], `audio-${Date.now()}.webm`, { type: 'audio/webm' });
+        filesToUpload.push(audioFile);
+      }
+
+      if (filesToUpload.length > 0) {
+        for (const file of filesToUpload) {
           const fileExt = file.name.split('.').pop();
           const filePath = `${dealId}/${timelineEntry.id}/${Date.now()}.${fileExt}`;
 
@@ -279,6 +293,7 @@ export function DealTimeline({ dealId }: DealTimelineProps) {
 
       setMessage("");
       setFiles(null);
+      setAudioBlob(null);
       setUpdateType("Comentário Interno");
       fetchTimeline();
     } catch (error: any) {
@@ -350,6 +365,57 @@ export function DealTimeline({ dealId }: DealTimelineProps) {
     setEditMessage("");
   };
 
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        setAudioBlob(audioBlob);
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+      toast({
+        title: "Gravando áudio",
+        description: "Clique novamente para parar a gravação",
+      });
+    } catch (error) {
+      console.error("Erro ao iniciar gravação:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível acessar o microfone",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      toast({
+        title: "Gravação concluída",
+        description: "Áudio pronto para enviar",
+      });
+    }
+  };
+
+  const clearAudio = () => {
+    setAudioBlob(null);
+    audioChunksRef.current = [];
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -407,20 +473,61 @@ export function DealTimeline({ dealId }: DealTimelineProps) {
             )}
           </div>
 
-          <div>
-            <Label htmlFor="timeline-files">Anexar Arquivos</Label>
-            <Input
-              id="timeline-files"
-              type="file"
-              multiple
-              onChange={(e) => setFiles(e.target.files)}
-              accept="image/*,.pdf,.doc,.docx"
-            />
-            {files && files.length > 0 && (
-              <p className="text-sm text-muted-foreground mt-1">
-                {files.length} arquivo(s) selecionado(s)
-              </p>
-            )}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label htmlFor="timeline-files">Anexar Arquivos</Label>
+              <Input
+                id="timeline-files"
+                type="file"
+                multiple
+                onChange={(e) => setFiles(e.target.files)}
+                accept="image/*,.pdf,.doc,.docx"
+              />
+              {files && files.length > 0 && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  {files.length} arquivo(s) selecionado(s)
+                </p>
+              )}
+            </div>
+
+            <div>
+              <Label>Gravar Áudio</Label>
+              <div className="flex gap-2 mt-1">
+                <Button
+                  type="button"
+                  variant={isRecording ? "destructive" : "outline"}
+                  className="flex-1"
+                  onClick={isRecording ? stopRecording : startRecording}
+                >
+                  {isRecording ? (
+                    <>
+                      <Square className="mr-2 h-4 w-4" />
+                      Parar
+                    </>
+                  ) : (
+                    <>
+                      <Mic className="mr-2 h-4 w-4" />
+                      Gravar
+                    </>
+                  )}
+                </Button>
+                {audioBlob && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={clearAudio}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+              {audioBlob && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  Áudio gravado pronto para enviar
+                </p>
+              )}
+            </div>
           </div>
 
           <Button onClick={handleSubmit} disabled={submitting} className="w-full">
