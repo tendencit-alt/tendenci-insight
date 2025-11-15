@@ -15,6 +15,8 @@ interface CRMBoardProps {
     status: string;
     category?: string;
     showPlanned?: boolean;
+    dateFilter?: string;
+    customDateRange?: { from: Date | undefined; to: Date | undefined };
   };
 }
 
@@ -122,15 +124,58 @@ export function CRMBoard({ pipelineId, onRefresh, filters }: CRMBoardProps) {
       dealsQuery = dealsQuery.eq("owner_id", filters.owner);
     }
 
-      if (filters?.status && filters.status !== "all") {
-        dealsQuery = dealsQuery.eq("status", filters.status);
-      }
+    if (filters?.status && filters.status !== "all") {
+      dealsQuery = dealsQuery.eq("status", filters.status);
+    }
 
-      if (filters?.showPlanned) {
-        dealsQuery = dealsQuery.not("scheduled_call", "is", null);
-      } else if (filters?.category && filters.category !== "all") {
-        dealsQuery = dealsQuery.eq("categoria", filters.category);
+    if (filters?.showPlanned) {
+      dealsQuery = dealsQuery.not("scheduled_call", "is", null);
+    } else if (filters?.category && filters.category !== "all") {
+      dealsQuery = dealsQuery.eq("categoria", filters.category);
+    }
+
+    // Filtro de período
+    if (filters?.dateFilter && filters.dateFilter !== "all") {
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      
+      switch (filters.dateFilter) {
+        case "today":
+          dealsQuery = dealsQuery.gte("created_at", today.toISOString());
+          break;
+        case "yesterday":
+          const yesterday = new Date(today);
+          yesterday.setDate(yesterday.getDate() - 1);
+          dealsQuery = dealsQuery.gte("created_at", yesterday.toISOString()).lt("created_at", today.toISOString());
+          break;
+        case "last7days":
+          const last7days = new Date(today);
+          last7days.setDate(last7days.getDate() - 7);
+          dealsQuery = dealsQuery.gte("created_at", last7days.toISOString());
+          break;
+        case "last30days":
+          const last30days = new Date(today);
+          last30days.setDate(last30days.getDate() - 30);
+          dealsQuery = dealsQuery.gte("created_at", last30days.toISOString());
+          break;
+        case "custom":
+          if (filters.customDateRange?.from) {
+            const fromDate = new Date(filters.customDateRange.from);
+            fromDate.setHours(0, 0, 0, 0);
+            dealsQuery = dealsQuery.gte("created_at", fromDate.toISOString());
+          }
+          if (filters.customDateRange?.to) {
+            const toDate = new Date(filters.customDateRange.to);
+            toDate.setHours(23, 59, 59, 999);
+            dealsQuery = dealsQuery.lte("created_at", toDate.toISOString());
+          }
+          break;
       }
+    }
+
+    if (filters?.search) {
+      const searchLower = filters.search.toLowerCase();
+    }
 
     const { data: dealsData, error: dealsError } = await dealsQuery.order("stage_position", { ascending: true });
 

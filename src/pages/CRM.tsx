@@ -37,6 +37,8 @@ export default function CRM() {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [showPlanned, setShowPlanned] = useState<boolean>(false);
   const [categories, setCategories] = useState<string[]>([]);
+  const [dateFilter, setDateFilter] = useState<string>("all");
+  const [customDateRange, setCustomDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({ from: undefined, to: undefined });
   const isAdmin = profile?.role === 'admin';
   useEffect(() => {
     fetchPipelines();
@@ -180,7 +182,22 @@ export default function CRM() {
         </div>
 
         {/* Filters */}
-            <CRMFilters pipelines={pipelines} selectedPipeline={selectedPipeline} onPipelineChange={setSelectedPipeline} owners={owners} selectedOwner={selectedOwner} onOwnerChange={setSelectedOwner} searchQuery={searchQuery} onSearchChange={setSearchQuery} selectedStatus={selectedStatus} onStatusChange={setSelectedStatus} />
+            <CRMFilters 
+              pipelines={pipelines} 
+              selectedPipeline={selectedPipeline} 
+              onPipelineChange={setSelectedPipeline} 
+              owners={owners} 
+              selectedOwner={selectedOwner} 
+              onOwnerChange={setSelectedOwner} 
+              searchQuery={searchQuery} 
+              onSearchChange={setSearchQuery} 
+              selectedStatus={selectedStatus} 
+              onStatusChange={setSelectedStatus}
+              dateFilter={dateFilter}
+              onDateFilterChange={setDateFilter}
+              customDateRange={customDateRange}
+              onCustomDateRangeChange={setCustomDateRange}
+            />
 
         {selectedPipeline && <>
             {/* Tabs de Categorias e Planejados */}
@@ -213,13 +230,20 @@ export default function CRM() {
             <CRMTasksPanel pipelineId={selectedPipeline} key={`tasks-${refreshKey}`} />
 
             {/* Kanban Board */}
-            <CRMBoard pipelineId={selectedPipeline} key={`board-${refreshKey}`} onRefresh={handleRefresh} filters={{
-          owner: selectedOwner,
-          search: searchQuery,
-          status: selectedStatus,
-          category: selectedCategory,
-          showPlanned: showPlanned
-        }} />
+            <CRMBoard 
+              pipelineId={selectedPipeline} 
+              key={`board-${refreshKey}`} 
+              onRefresh={handleRefresh} 
+              filters={{
+                owner: selectedOwner,
+                search: searchQuery,
+                status: selectedStatus,
+                category: selectedCategory,
+                showPlanned: showPlanned,
+                dateFilter,
+                customDateRange
+              }} 
+            />
           </>}
         
         {!selectedPipeline && pipelines.length === 0 && <div className="flex items-center justify-center py-12">

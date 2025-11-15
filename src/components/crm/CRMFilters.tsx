@@ -1,8 +1,12 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import { Search, CalendarIcon, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 
 interface CRMFiltersProps {
   pipelines: any[];
@@ -15,6 +19,10 @@ interface CRMFiltersProps {
   onSearchChange: (value: string) => void;
   selectedStatus: string;
   onStatusChange: (value: string) => void;
+  dateFilter: string;
+  onDateFilterChange: (value: string) => void;
+  customDateRange?: { from: Date | undefined; to: Date | undefined };
+  onCustomDateRangeChange?: (range: { from: Date | undefined; to: Date | undefined }) => void;
 }
 
 export function CRMFilters({ 
@@ -27,7 +35,11 @@ export function CRMFilters({
   searchQuery,
   onSearchChange,
   selectedStatus,
-  onStatusChange
+  onStatusChange,
+  dateFilter,
+  onDateFilterChange,
+  customDateRange,
+  onCustomDateRangeChange
 }: CRMFiltersProps) {
   return (
     <div className="flex flex-col gap-4">
@@ -56,7 +68,7 @@ export function CRMFilters({
         </div>
       </div>
 
-      <div className="flex flex-col gap-4 lg:flex-row">
+      <div className="flex flex-col gap-4 lg:flex-row lg:flex-wrap">
         <Select value={selectedOwner} onValueChange={onOwnerChange}>
           <SelectTrigger className="lg:w-64">
             <SelectValue placeholder="Responsável" />
@@ -83,7 +95,69 @@ export function CRMFilters({
           </SelectContent>
         </Select>
 
-        {(selectedOwner !== "all" || searchQuery || selectedStatus !== "all") && (
+        <Select value={dateFilter} onValueChange={onDateFilterChange}>
+          <SelectTrigger className="lg:w-64">
+            <SelectValue placeholder="Período" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os períodos</SelectItem>
+            <SelectItem value="today">Hoje</SelectItem>
+            <SelectItem value="yesterday">Ontem</SelectItem>
+            <SelectItem value="last7days">Últimos 7 dias</SelectItem>
+            <SelectItem value="last30days">Últimos 30 dias</SelectItem>
+            <SelectItem value="custom">Personalizado</SelectItem>
+          </SelectContent>
+        </Select>
+
+        {dateFilter === "custom" && onCustomDateRangeChange && (
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  "lg:w-80 justify-start text-left font-normal",
+                  !customDateRange?.from && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {customDateRange?.from ? (
+                  customDateRange.to ? (
+                    <>
+                      {format(customDateRange.from, "dd/MM/yyyy", { locale: ptBR })} -{" "}
+                      {format(customDateRange.to, "dd/MM/yyyy", { locale: ptBR })}
+                    </>
+                  ) : (
+                    format(customDateRange.from, "dd/MM/yyyy", { locale: ptBR })
+                  )
+                ) : (
+                  <span>Selecione o período</span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                initialFocus
+                mode="range"
+                defaultMonth={customDateRange?.from}
+                selected={{
+                  from: customDateRange?.from,
+                  to: customDateRange?.to,
+                }}
+                onSelect={(range) => {
+                  onCustomDateRangeChange({
+                    from: range?.from,
+                    to: range?.to,
+                  });
+                }}
+                numberOfMonths={2}
+                locale={ptBR}
+                className="pointer-events-auto"
+              />
+            </PopoverContent>
+          </Popover>
+        )}
+
+        {(selectedOwner !== "all" || searchQuery || selectedStatus !== "all" || dateFilter !== "all") && (
           <Button 
             variant="outline" 
             size="sm"
@@ -91,6 +165,10 @@ export function CRMFilters({
               onOwnerChange("all");
               onSearchChange("");
               onStatusChange("all");
+              onDateFilterChange("all");
+              if (onCustomDateRangeChange) {
+                onCustomDateRangeChange({ from: undefined, to: undefined });
+              }
             }}
             className="gap-2"
           >
