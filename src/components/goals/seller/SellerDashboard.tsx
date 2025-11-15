@@ -2,6 +2,7 @@ import { GoalHeader } from "./GoalHeader";
 import { SellerGoalCards } from "./SellerGoalCards";
 import { ComparisonCards } from "./ComparisonCards";
 import { BadgesSection } from "./BadgesSection";
+import { DailyArchitectGoals } from "../DailyArchitectGoals";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -110,6 +111,9 @@ export function SellerDashboard({
         </TabsList>
 
         <TabsContent value="performance" className="space-y-6 mt-6">
+          {/* Meta Diária de Captação */}
+          <DailyArchitectGoals />
+
           {/* Cards Principais */}
           <div>
             <h2 className="text-xl font-semibold mb-4">Metas Principais</h2>
