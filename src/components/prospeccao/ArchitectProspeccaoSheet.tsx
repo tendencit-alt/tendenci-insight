@@ -29,6 +29,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ArchitectTasks } from "./ArchitectTasks";
 
 interface ArchitectProspeccaoSheetProps {
   architectId: string;
@@ -172,10 +173,11 @@ export function ArchitectProspeccaoSheet({
         </SheetHeader>
 
         <Tabs defaultValue="info" className="mt-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="info">Informações</TabsTrigger>
             <TabsTrigger value="history">Histórico</TabsTrigger>
             <TabsTrigger value="projects">Projetos</TabsTrigger>
+            <TabsTrigger value="tasks">Tarefas</TabsTrigger>
           </TabsList>
 
           <TabsContent value="info" className="space-y-6">
@@ -474,6 +476,12 @@ export function ArchitectProspeccaoSheet({
                   Nenhum projeto enviado ainda
                 </p>
               )}
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="tasks" className="space-y-4">
+            <Card className="p-4">
+              <ArchitectTasks architectId={architectId} />
             </Card>
           </TabsContent>
         </Tabs>
