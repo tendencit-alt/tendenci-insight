@@ -225,6 +225,9 @@ export default function CRM() {
               showPlanned={showPlanned}
               dateFilter={dateFilter}
               customDateRange={customDateRange}
+              ownerFilter={selectedOwner}
+              statusFilter={selectedStatus}
+              searchQuery={searchQuery}
             />
 
             {/* KPIs Originais */}
