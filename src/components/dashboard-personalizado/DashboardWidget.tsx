@@ -24,11 +24,15 @@ interface DashboardWidgetProps {
 
 export function DashboardWidget({ widget, filters, onRemove, isViewMode = false }: DashboardWidgetProps) {
   return (
-    <Card className="h-full flex flex-col">
-      <CardHeader className={`p-3 flex-row items-center justify-between space-y-0 border-b ${!isViewMode ? 'drag-handle cursor-move' : ''}`}>
-        <div className="flex items-center gap-2">
-          {!isViewMode && <GripVertical className="h-4 w-4 text-muted-foreground" />}
-          <CardTitle className="text-sm">
+    <Card className="h-full flex flex-col border-0 bg-transparent shadow-none">
+      <CardHeader className={`p-4 flex-row items-center justify-between space-y-0 ${!isViewMode ? 'drag-handle cursor-move border-b border-border/50' : 'border-b border-border/30'}`}>
+        <div className="flex items-center gap-3">
+          {!isViewMode && (
+            <div className="p-1.5 rounded-md bg-muted/50 hover:bg-muted transition-colors">
+              <GripVertical className="h-4 w-4 text-muted-foreground" />
+            </div>
+          )}
+          <CardTitle className="text-base font-semibold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
             {widget.kpi_id.replace(/_/g, " ").toUpperCase()}
           </CardTitle>
         </div>
@@ -37,7 +41,7 @@ export function DashboardWidget({ widget, filters, onRemove, isViewMode = false 
             variant="ghost"
             size="sm"
             onClick={onRemove}
-            className="h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive"
+            className="h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive transition-colors"
           >
             <X className="h-4 w-4" />
           </Button>

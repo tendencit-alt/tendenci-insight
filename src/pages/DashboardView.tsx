@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -108,59 +108,83 @@ export default function DashboardView() {
 
   return (
     <DashboardLayout>
-      <div className="flex flex-col h-[calc(100vh-4rem)]">
-        {/* Barra superior */}
-        <div className="flex items-center justify-between p-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" onClick={() => navigate("/dashboards")}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Voltar
-            </Button>
-            <h1 className="text-2xl font-bold">{nome}</h1>
+      <div className="flex flex-col h-[calc(100vh-4rem)] bg-gradient-to-br from-background via-background to-muted/20">
+        {/* Barra superior com gradiente */}
+        <div className="relative border-b bg-gradient-to-r from-primary/5 via-background to-primary/5 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
+          <div className="absolute inset-0 bg-grid-white/[0.02] pointer-events-none" />
+          <div className="relative flex items-center justify-between p-6">
+            <div className="flex items-center gap-4">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => navigate("/dashboards")}
+                className="hover:bg-primary/10 transition-colors"
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Voltar
+              </Button>
+              <div>
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-transparent">
+                  {nome}
+                </h1>
+                <p className="text-sm text-muted-foreground mt-1">Dashboard personalizado</p>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Filtros do dashboard */}
-        <div className="px-6 pt-4">
+        {/* Filtros com design melhorado */}
+        <div className="px-6 pt-6">
           <DashboardFilters filters={filters} onChange={setFilters} />
         </div>
 
-        {/* Dashboard visualização */}
-        <div className="flex-1 overflow-auto p-6 bg-muted/20">
+        {/* Dashboard visualização com grid melhorado */}
+        <div className="flex-1 overflow-auto p-6">
           {loading ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4" />
-                <p className="text-muted-foreground">Carregando dashboard...</p>
+                <div className="relative">
+                  <div className="animate-spin rounded-full h-16 w-16 border-4 border-primary/20 border-t-primary mx-auto mb-4" />
+                  <div className="absolute inset-0 rounded-full bg-primary/5 blur-xl" />
+                </div>
+                <p className="text-muted-foreground font-medium">Carregando dashboard...</p>
               </div>
             </div>
           ) : layout.length === 0 ? (
             <div className="flex items-center justify-center h-full">
-              <div className="text-center">
-                <p className="text-muted-foreground text-lg">Dashboard vazio</p>
-                <p className="text-sm text-muted-foreground mt-2">Adicione widgets para visualizar os dados</p>
+              <div className="text-center p-8 rounded-2xl bg-gradient-to-br from-muted/50 to-muted/20 border border-border/50 backdrop-blur-sm">
+                <div className="rounded-full bg-gradient-to-br from-primary/20 to-primary/5 p-6 mx-auto w-fit mb-4">
+                  <Plus className="h-12 w-12 text-primary" />
+                </div>
+                <h3 className="text-2xl font-bold mb-2">Dashboard vazio</h3>
+                <p className="text-muted-foreground">Adicione widgets no editor para visualizar os dados</p>
               </div>
             </div>
           ) : (
-            <div style={{ width: '100%' }}>
+            <div className="max-w-[1400px] mx-auto">
               <GridLayout
                 className="layout"
                 layout={layout}
                 cols={12}
-                rowHeight={80}
-                width={1200}
+                rowHeight={90}
+                width={1400}
                 isDraggable={false}
                 isResizable={false}
                 compactType="vertical"
               >
                 {layout.map((widget) => (
-                  <div key={widget.i} className="bg-background rounded-lg shadow-sm border">
-                    <DashboardWidget
-                      widget={widget}
-                      filters={filters}
-                      onRemove={() => {}}
-                      isViewMode={true}
-                    />
+                  <div 
+                    key={widget.i} 
+                    className="group transition-all duration-300 hover:scale-[1.02]"
+                  >
+                    <div className="h-full rounded-xl bg-gradient-to-br from-card via-card to-card/80 border border-border/50 shadow-lg hover:shadow-2xl hover:border-primary/30 transition-all duration-300 backdrop-blur-sm">
+                      <DashboardWidget
+                        widget={widget}
+                        filters={filters}
+                        onRemove={() => {}}
+                        isViewMode={true}
+                      />
+                    </div>
                   </div>
                 ))}
               </GridLayout>

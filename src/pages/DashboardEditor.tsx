@@ -212,41 +212,55 @@ export default function DashboardEditor() {
 
   return (
     <DashboardLayout>
-      <div className="flex h-[calc(100vh-4rem)]">
+      <div className="flex h-[calc(100vh-4rem)] bg-gradient-to-br from-background via-background to-muted/20">
         {/* Sidebar com KPIs disponíveis */}
         <KPISidebar onAddKPI={handleAddKPI} />
 
         {/* Área principal do editor */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Barra superior */}
-          <div className="flex items-center justify-between p-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-            <div className="flex items-center gap-4 flex-1">
-              <Button variant="ghost" size="sm" onClick={() => navigate("/dashboards")}>
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Voltar
-              </Button>
-              <Input
-                value={nome}
-                onChange={(e) => setNome(e.target.value)}
-                placeholder="Nome do Dashboard"
-                className="max-w-md"
-              />
-            </div>
-            <div className="flex gap-2">
-              {isEditing && (
+          {/* Barra superior com gradiente */}
+          <div className="relative border-b bg-gradient-to-r from-primary/5 via-background to-primary/5 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
+            <div className="absolute inset-0 bg-grid-white/[0.02] pointer-events-none" />
+            <div className="relative flex items-center justify-between p-4">
+              <div className="flex items-center gap-4 flex-1">
                 <Button 
-                  variant="outline" 
+                  variant="ghost" 
                   size="sm" 
-                  onClick={() => navigate(`/dashboards/view/${id}`)}
+                  onClick={() => navigate("/dashboards")}
+                  className="hover:bg-primary/10 transition-colors"
                 >
-                  <Eye className="mr-2 h-4 w-4" />
-                  Visualizar
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Voltar
                 </Button>
-              )}
-              <Button size="sm" onClick={handleSave} disabled={saving}>
-                <Save className="mr-2 h-4 w-4" />
-                {saving ? "Salvando..." : "Salvar"}
-              </Button>
+                <Input
+                  value={nome}
+                  onChange={(e) => setNome(e.target.value)}
+                  placeholder="Nome do Dashboard"
+                  className="max-w-md bg-background/50 border-border/60 focus:border-primary/50 transition-all"
+                />
+              </div>
+              <div className="flex gap-2">
+                {isEditing && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => navigate(`/dashboards/view/${id}`)}
+                    className="hover:bg-primary/10 transition-colors"
+                  >
+                    <Eye className="mr-2 h-4 w-4" />
+                    Visualizar
+                  </Button>
+                )}
+                <Button 
+                  size="sm" 
+                  onClick={handleSave} 
+                  disabled={saving}
+                  className="shadow-lg hover:shadow-xl transition-all"
+                >
+                  <Save className="mr-2 h-4 w-4" />
+                  {saving ? "Salvando..." : "Salvar"}
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -256,49 +270,59 @@ export default function DashboardEditor() {
           </div>
 
           {/* Canvas do dashboard */}
-          <div className="flex-1 overflow-auto p-6 bg-muted/20">
+          <div className="flex-1 overflow-auto p-6">
             {loading ? (
               <div className="flex items-center justify-center h-full">
                 <div className="text-center">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4" />
-                  <p className="text-muted-foreground">Carregando dashboard...</p>
+                  <div className="relative">
+                    <div className="animate-spin rounded-full h-16 w-16 border-4 border-primary/20 border-t-primary mx-auto mb-4" />
+                    <div className="absolute inset-0 rounded-full bg-primary/5 blur-xl" />
+                  </div>
+                  <p className="text-muted-foreground font-medium">Carregando dashboard...</p>
                 </div>
               </div>
             ) : layout.length === 0 ? (
-              <Card className="border-dashed h-full flex items-center justify-center">
+              <Card className="border-dashed border-2 h-full flex items-center justify-center bg-gradient-to-br from-muted/20 to-transparent">
                 <div className="text-center max-w-md">
-                  <div className="rounded-full bg-muted p-4 mx-auto w-fit mb-4">
-                    <Plus className="h-8 w-8 text-muted-foreground" />
+                  <div className="rounded-full bg-gradient-to-br from-primary/20 to-primary/5 p-6 mx-auto w-fit mb-4">
+                    <Plus className="h-10 w-10 text-primary" />
                   </div>
-                  <h3 className="text-xl font-semibold mb-2">Canvas vazio</h3>
+                  <h3 className="text-2xl font-bold mb-2">Canvas vazio</h3>
                   <p className="text-muted-foreground">
                     Arraste KPIs da barra lateral para começar a montar seu dashboard personalizado
                   </p>
                 </div>
               </Card>
             ) : (
-              <GridLayout
-                className="layout"
-                layout={layout}
-                cols={12}
-                rowHeight={80}
-                width={1200}
-                onLayoutChange={handleLayoutChange}
-                draggableHandle=".drag-handle"
-                compactType="vertical"
-                preventCollision={false}
-              >
-                {layout.map((widget) => (
-                  <div key={widget.i} className="bg-background rounded-lg shadow-sm border">
-                    <DashboardWidget
-                      widget={widget}
-                      filters={filters}
-                      onRemove={() => handleRemoveWidget(widget.i)}
-                      isViewMode={false}
-                    />
-                  </div>
-                ))}
-              </GridLayout>
+              <div className="max-w-[1400px] mx-auto">
+                <GridLayout
+                  className="layout"
+                  layout={layout}
+                  cols={12}
+                  rowHeight={90}
+                  width={1400}
+                  onLayoutChange={handleLayoutChange}
+                  draggableHandle=".drag-handle"
+                  compactType="vertical"
+                  preventCollision={false}
+                >
+                  {layout.map((widget) => (
+                    <div 
+                      key={widget.i} 
+                      className="group transition-all duration-300"
+                    >
+                      <div className="h-full rounded-xl bg-gradient-to-br from-card via-card to-card/80 border border-border/50 shadow-lg hover:shadow-2xl hover:border-primary/30 transition-all duration-300 backdrop-blur-sm">
+                        <DashboardWidget
+                          widget={widget}
+                          filters={filters}
+                          onRemove={() => handleRemoveWidget(widget.i)}
+                          isViewMode={false}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </GridLayout>
+              </div>
             )}
           </div>
         </div>

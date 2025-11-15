@@ -67,7 +67,7 @@ export function DashboardFilters({ filters, onChange }: DashboardFiltersProps) {
   const hasActiveFilters = filters.dateRange || filters.vendedor || filters.arquiteto || filters.pipeline || filters.categoria;
 
   return (
-    <div className="flex flex-wrap items-center gap-3 p-4 bg-muted/30 rounded-lg border">
+    <div className="flex flex-wrap items-center gap-3 p-5 bg-gradient-to-r from-card/80 via-card to-card/80 rounded-xl border border-border/50 shadow-lg backdrop-blur-sm">
       <div className="flex items-center gap-2 flex-wrap flex-1">
         {/* Filtro de Período */}
         <Popover>
@@ -75,8 +75,9 @@ export function DashboardFilters({ filters, onChange }: DashboardFiltersProps) {
             <Button 
               variant="outline" 
               className={cn(
-                "w-[280px] justify-start text-left font-normal",
-                filters.dateRange && "border-primary"
+                "w-[280px] justify-start text-left font-normal shadow-sm hover:shadow-md transition-all",
+                "bg-background/50 backdrop-blur-sm border-border/60",
+                filters.dateRange && "border-primary/50 bg-primary/5"
               )}
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
@@ -112,7 +113,10 @@ export function DashboardFilters({ filters, onChange }: DashboardFiltersProps) {
           value={filters.vendedor || "todos"} 
           onValueChange={(value) => onChange({ ...filters, vendedor: value === "todos" ? undefined : value })}
         >
-          <SelectTrigger className={cn("w-[200px]", filters.vendedor && "border-primary")}>
+          <SelectTrigger className={cn(
+            "w-[200px] shadow-sm hover:shadow-md transition-all bg-background/50 backdrop-blur-sm border-border/60",
+            filters.vendedor && "border-primary/50 bg-primary/5"
+          )}>
             <SelectValue placeholder="Vendedor" />
           </SelectTrigger>
           <SelectContent>
@@ -130,7 +134,10 @@ export function DashboardFilters({ filters, onChange }: DashboardFiltersProps) {
           value={filters.arquiteto || "todos"} 
           onValueChange={(value) => onChange({ ...filters, arquiteto: value === "todos" ? undefined : value })}
         >
-          <SelectTrigger className={cn("w-[200px]", filters.arquiteto && "border-primary")}>
+          <SelectTrigger className={cn(
+            "w-[200px] shadow-sm hover:shadow-md transition-all bg-background/50 backdrop-blur-sm border-border/60",
+            filters.arquiteto && "border-primary/50 bg-primary/5"
+          )}>
             <SelectValue placeholder="Arquiteto" />
           </SelectTrigger>
           <SelectContent>
@@ -148,7 +155,10 @@ export function DashboardFilters({ filters, onChange }: DashboardFiltersProps) {
           value={filters.pipeline || "todos"} 
           onValueChange={(value) => onChange({ ...filters, pipeline: value === "todos" ? undefined : value })}
         >
-          <SelectTrigger className={cn("w-[200px]", filters.pipeline && "border-primary")}>
+          <SelectTrigger className={cn(
+            "w-[200px] shadow-sm hover:shadow-md transition-all bg-background/50 backdrop-blur-sm border-border/60",
+            filters.pipeline && "border-primary/50 bg-primary/5"
+          )}>
             <SelectValue placeholder="Pipeline" />
           </SelectTrigger>
           <SelectContent>
@@ -166,7 +176,10 @@ export function DashboardFilters({ filters, onChange }: DashboardFiltersProps) {
           value={filters.categoria || "todos"} 
           onValueChange={(value) => onChange({ ...filters, categoria: value === "todos" ? undefined : value })}
         >
-          <SelectTrigger className={cn("w-[200px]", filters.categoria && "border-primary")}>
+          <SelectTrigger className={cn(
+            "w-[200px] shadow-sm hover:shadow-md transition-all bg-background/50 backdrop-blur-sm border-border/60",
+            filters.categoria && "border-primary/50 bg-primary/5"
+          )}>
             <SelectValue placeholder="Categoria" />
           </SelectTrigger>
           <SelectContent>
@@ -184,7 +197,7 @@ export function DashboardFilters({ filters, onChange }: DashboardFiltersProps) {
           variant="ghost" 
           size="sm" 
           onClick={clearFilters}
-          className="ml-auto"
+          className="ml-auto hover:bg-destructive/10 hover:text-destructive transition-colors"
         >
           <X className="mr-2 h-4 w-4" />
           Limpar filtros
