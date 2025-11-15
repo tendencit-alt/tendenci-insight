@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PhoneCall, Target, FileText, PresentationIcon, XCircle, CheckCircle, Users, Building2 } from "lucide-react";
+import { Target, FileText, PresentationIcon, XCircle, CheckCircle, Users, Building2 } from "lucide-react";
 
 interface CRMKPIsProps {
   pipelineId: string;
@@ -22,9 +22,8 @@ interface SellerBreakdown {
 }
 
 interface KPIData {
-  contatos_feitos: number;
   contatos_captacao_arquitetos: number;
-  projetos_captados: number;
+  oportunidades_crm: number;
   projetos_arquitetos: number;
   projetos_crm: number;
   em_orcamento: number;
@@ -34,8 +33,8 @@ interface KPIData {
   valor_total_conquistado: number;
   valor_total_em_orcamento: number;
   valor_total_perdido: number;
-  contatos_por_vendedor: SellerBreakdown[];
-  captados_por_vendedor: SellerBreakdown[];
+  contatos_arquitetos_por_vendedor: SellerBreakdown[];
+  oportunidades_por_vendedor: SellerBreakdown[];
 }
 
 export function CRMKPIsDashboard({ 
@@ -51,9 +50,8 @@ export function CRMKPIsDashboard({
 }: CRMKPIsProps) {
   const [loading, setLoading] = useState(true);
   const [kpis, setKpis] = useState<KPIData>({
-    contatos_feitos: 0,
     contatos_captacao_arquitetos: 0,
-    projetos_captados: 0,
+    oportunidades_crm: 0,
     projetos_arquitetos: 0,
     projetos_crm: 0,
     em_orcamento: 0,
@@ -63,8 +61,8 @@ export function CRMKPIsDashboard({
     valor_total_conquistado: 0,
     valor_total_em_orcamento: 0,
     valor_total_perdido: 0,
-    contatos_por_vendedor: [],
-    captados_por_vendedor: [],
+    contatos_arquitetos_por_vendedor: [],
+    oportunidades_por_vendedor: [],
   });
 
   useEffect(() => {
@@ -194,27 +192,36 @@ export function CRMKPIsDashboard({
         });
       }
 
-      // Calcular breakdown por vendedor para contatos e captados
-      const contatosPorVendedor = new Map<string, number>();
-      const captadosPorVendedor = new Map<string, number>();
+      // Calcular breakdown por vendedor para oportunidades CRM
+      const oportunidadesPorVendedor = new Map<string, number>();
 
       filteredDeals.forEach((deal) => {
         const sellerName = deal.owner?.full_name || deal.owner?.email || "Sem responsável";
         
-        // Todos os deals são contatos
-        contatosPorVendedor.set(sellerName, (contatosPorVendedor.get(sellerName) || 0) + 1);
-        
-        // Apenas deals abertos e com stage são captados
+        // Apenas deals abertos e com stage são oportunidades
         if (deal.stage_id && deal.status === "aberto") {
-          captadosPorVendedor.set(sellerName, (captadosPorVendedor.get(sellerName) || 0) + 1);
+          oportunidadesPorVendedor.set(sellerName, (oportunidadesPorVendedor.get(sellerName) || 0) + 1);
         }
       });
 
-      // Buscar contatos de captação de arquitetos
+      // Buscar contatos de captação de arquitetos com breakdown por vendedor
       const { data: contatosArquitetos, error: errorArquitetos } = await supabase
         .from("tendenci_prospec_arq_logs")
-        .select("id, architect_id, enviado_por")
+        .select(`
+          id, 
+          architect_id, 
+          enviado_por,
+          profiles:enviado_por(full_name, email)
+        `)
         .eq("tipo", "vendedor");
+
+      // Calcular breakdown por vendedor para contatos de arquitetos
+      const contatosArquitetosPorVendedor = new Map<string, number>();
+      
+      contatosArquitetos?.forEach((contato: any) => {
+        const sellerName = contato.profiles?.full_name || contato.profiles?.email || "Sem responsável";
+        contatosArquitetosPorVendedor.set(sellerName, (contatosArquitetosPorVendedor.get(sellerName) || 0) + 1);
+      });
 
       // Buscar projetos de arquitetos
       const { data: projetosArquitetos, error: errorProjetosArq } = await supabase
@@ -222,9 +229,8 @@ export function CRMKPIsDashboard({
         .select("id, architect_id, created_by");
 
       const kpiData: KPIData = {
-        contatos_feitos: filteredDeals.length || 0,
         contatos_captacao_arquitetos: contatosArquitetos?.length || 0,
-        projetos_captados: filteredDeals.filter((d) => d.stage_id && d.status === "aberto").length || 0,
+        oportunidades_crm: filteredDeals.filter((d) => d.stage_id && d.status === "aberto").length || 0,
         projetos_arquitetos: projetosArquitetos?.length || 0,
         projetos_crm: filteredDeals.filter((d) => !d.architect_id && d.status === "ganho").length || 0,
         em_orcamento: filteredDeals.filter((d) => d.crm_stages?.name?.toLowerCase().includes("orçamento")).length || 0,
@@ -234,10 +240,10 @@ export function CRMKPIsDashboard({
         valor_total_conquistado: filteredDeals.filter((d) => d.status === "ganho").reduce((acc, d) => acc + (d.value || 0), 0) || 0,
         valor_total_em_orcamento: filteredDeals.filter((d) => d.crm_stages?.name?.toLowerCase().includes("orçamento")).reduce((acc, d) => acc + (d.value || 0), 0) || 0,
         valor_total_perdido: filteredDeals.filter((d) => d.status === "perdido").reduce((acc, d) => acc + (d.value || 0), 0) || 0,
-        contatos_por_vendedor: Array.from(contatosPorVendedor.entries())
+        contatos_arquitetos_por_vendedor: Array.from(contatosArquitetosPorVendedor.entries())
           .map(([seller_name, count]) => ({ seller_name, count }))
           .sort((a, b) => b.count - a.count),
-        captados_por_vendedor: Array.from(captadosPorVendedor.entries())
+        oportunidades_por_vendedor: Array.from(oportunidadesPorVendedor.entries())
           .map(([seller_name, count]) => ({ seller_name, count }))
           .sort((a, b) => b.count - a.count),
       };
@@ -259,27 +265,20 @@ export function CRMKPIsDashboard({
 
   const kpiCards = [
     {
-      title: "Contatos CRM",
-      value: kpis.contatos_feitos,
-      icon: PhoneCall,
-      colorClass: "text-primary",
-      bgClass: "bg-primary/10",
-      breakdown: kpis.contatos_por_vendedor,
-    },
-    {
       title: "Contatos Captação Arquitetos",
       value: kpis.contatos_captacao_arquitetos,
       icon: Users,
       colorClass: "text-blue-500",
       bgClass: "bg-blue-500/10",
+      breakdown: kpis.contatos_arquitetos_por_vendedor,
     },
     {
-      title: "Projetos Captados",
-      value: kpis.projetos_captados,
+      title: "Oportunidades no CRM",
+      value: kpis.oportunidades_crm,
       icon: Target,
       colorClass: "text-accent",
       bgClass: "bg-accent/10",
-      breakdown: kpis.captados_por_vendedor,
+      breakdown: kpis.oportunidades_por_vendedor,
     },
     {
       title: "Projetos de Arquitetos",
