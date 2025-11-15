@@ -27,6 +27,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { DealFileUpload } from "./DealFileUpload";
 
 interface EditDealDialogProps {
   deal: any;
@@ -48,6 +49,7 @@ export function EditDealDialog({
   const [sources, setSources] = useState<any[]>([]);
   const [owners, setOwners] = useState<any[]>([]);
   const [scheduledCall, setScheduledCall] = useState<Date>();
+  const [dealFiles, setDealFiles] = useState<any[]>([]);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -84,6 +86,7 @@ export function EditDealDialog({
       }
       
       fetchOptions();
+      fetchDealFiles();
     }
   }, [open, deal]);
 
@@ -120,6 +123,20 @@ export function EditDealDialog({
     setArchitects(architectsData || []);
     setSources(sourcesData || []);
     setOwners(ownersData || []);
+  };
+
+  const fetchDealFiles = async () => {
+    if (!deal?.id) return;
+
+    const { data, error } = await supabase
+      .from("crm_deal_files")
+      .select("*")
+      .eq("deal_id", deal.id)
+      .order("uploaded_at", { ascending: false });
+
+    if (!error && data) {
+      setDealFiles(data);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -400,6 +417,12 @@ export function EditDealDialog({
                   rows={3}
                 />
               </div>
+
+              <DealFileUpload
+                dealId={deal?.id || ""}
+                files={dealFiles}
+                onFilesChange={fetchDealFiles}
+              />
 
               <div className="space-y-2">
                 <Label htmlFor="conversation_history">Histórico de Mensagens (IA / WhatsApp)</Label>
