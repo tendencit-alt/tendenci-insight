@@ -247,7 +247,7 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
                   {/* Badges */}
                   <div className="flex gap-1.5 flex-wrap">
                     {/* STATUS: Contato e Projeto */}
-                    {!architect.data_primeiro_contato ? (
+                    {!architect.data_primeiro_contato && !architect.data_ultimo_contato ? (
                       <Badge variant="outline" className="text-xs bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800 text-red-700 dark:text-red-300">
                         ⚠️ Nunca Contactado
                       </Badge>
