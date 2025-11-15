@@ -43,7 +43,8 @@ export default function Prospeccao() {
               <UserSearch className="h-4 w-4" />
               CRM de Arquitetos
             </TabsTrigger>
-            <TabsTrigger value="campanhas" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            {/* Tabs ocultas temporariamente */}
+            {/* <TabsTrigger value="campanhas" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <Megaphone className="h-4 w-4" />
               Campanhas IA
             </TabsTrigger>
@@ -54,12 +55,12 @@ export default function Prospeccao() {
             <TabsTrigger value="sequencias" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <Zap className="h-4 w-4" />
               Sequências IA
-            </TabsTrigger>
+            </TabsTrigger> */}
             <TabsTrigger value="agendamentos" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <Calendar className="h-4 w-4" />
               Agendamentos
             </TabsTrigger>
-            <TabsTrigger value="whatsapp" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            {/* <TabsTrigger value="whatsapp" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <Smartphone className="h-4 w-4" />
               WhatsApp
             </TabsTrigger>
@@ -70,7 +71,7 @@ export default function Prospeccao() {
             <TabsTrigger value="configuracoes" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <Settings className="h-4 w-4" />
               Config n8n
-            </TabsTrigger>
+            </TabsTrigger> */}
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
@@ -81,7 +82,8 @@ export default function Prospeccao() {
             <ProspeccaoCRM onManageStages={() => setManageStagesOpen(true)} />
           </TabsContent>
 
-          <TabsContent value="campanhas" className="space-y-6">
+          {/* Tabs ocultas temporariamente */}
+          {/* <TabsContent value="campanhas" className="space-y-6">
             <CampanhasManager />
           </TabsContent>
 
@@ -91,13 +93,13 @@ export default function Prospeccao() {
 
           <TabsContent value="sequencias" className="space-y-6">
             <SequenciasManager />
-          </TabsContent>
+          </TabsContent> */}
 
           <TabsContent value="agendamentos" className="space-y-6">
             <AgendamentosManager />
           </TabsContent>
 
-          <TabsContent value="whatsapp" className="space-y-6">
+          {/* <TabsContent value="whatsapp" className="space-y-6">
             <WhatsAppConnectionManager />
           </TabsContent>
 
@@ -107,7 +109,7 @@ export default function Prospeccao() {
 
           <TabsContent value="configuracoes" className="space-y-6">
             <N8nAgendamentoGuide />
-          </TabsContent>
+          </TabsContent> */}
         </Tabs>
 
         {/* Dialog de Gerenciar Etapas */}
