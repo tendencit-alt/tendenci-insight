@@ -4,6 +4,7 @@ import { LayoutGrid, Table as TableIcon, List } from "lucide-react";
 import { ProspeccaoKanban } from "./ProspeccaoKanban";
 import { ProspeccaoTable } from "./ProspeccaoTable";
 import { ProspeccaoFilters } from "./ProspeccaoFilters";
+import { usePermissions } from "@/hooks/usePermissions";
 
 type ViewMode = "kanban" | "table";
 
@@ -15,6 +16,7 @@ export function ProspeccaoCRM({ onManageStages }: ProspeccaoCRMProps) {
   const [viewMode, setViewMode] = useState<ViewMode>("kanban");
   const [filters, setFilters] = useState<any>({});
   const [showNaoContactados, setShowNaoContactados] = useState(false);
+  const { isMaster } = usePermissions();
 
   return (
     <div className="space-y-6">
@@ -46,15 +48,17 @@ export function ProspeccaoCRM({ onManageStages }: ProspeccaoCRMProps) {
         </Button>
       </div>
 
-      {/* Gerenciar Etapas */}
-      <Button 
-        variant="outline" 
-        onClick={onManageStages}
-        className="gap-2"
-      >
-        <List className="h-4 w-4" />
-        Gerenciar Etapas
-      </Button>
+      {/* Gerenciar Etapas - Apenas Master */}
+      {isMaster && (
+        <Button 
+          variant="outline" 
+          onClick={onManageStages}
+          className="gap-2"
+        >
+          <List className="h-4 w-4" />
+          Gerenciar Etapas
+        </Button>
+      )}
 
       {/* Filtros */}
       <ProspeccaoFilters 
