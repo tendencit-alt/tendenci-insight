@@ -410,10 +410,11 @@ export function DealDetailSheet({
         </SheetHeader>
 
         <Tabs defaultValue="info" className="mt-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="info">Informações</TabsTrigger>
             <TabsTrigger value="history">Histórico</TabsTrigger>
             <TabsTrigger value="tasks">Tarefas</TabsTrigger>
+            <TabsTrigger value="whatsapp">WhatsApp IA</TabsTrigger>
             <TabsTrigger value="actions">Ações & Projeto</TabsTrigger>
           </TabsList>
 
@@ -659,6 +660,35 @@ export function DealDetailSheet({
           {/* Tab: Tarefas */}
           <TabsContent value="tasks" className="space-y-4">
             <DealTasks dealId={deal.id} />
+          </TabsContent>
+
+          {/* Tab: WhatsApp IA */}
+          <TabsContent value="whatsapp" className="space-y-4">
+            <Card className="p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Phone className="h-5 w-5 text-primary" />
+                <h3 className="font-semibold text-lg">Histórico do WhatsApp IA</h3>
+              </div>
+              {deal.conversation_history ? (
+                <div className="space-y-2">
+                  <div className="bg-muted/50 rounded-lg p-4">
+                    <pre className="whitespace-pre-wrap text-sm font-mono">
+                      {deal.conversation_history}
+                    </pre>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Phone className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                  <p className="text-sm">
+                    Nenhum histórico de conversas disponível
+                  </p>
+                  <p className="text-xs mt-2">
+                    💬 As conversas via WhatsApp IA aparecerão aqui automaticamente
+                  </p>
+                </div>
+              )}
+            </Card>
           </TabsContent>
 
           {/* Tab: Ações & Projeto */}
