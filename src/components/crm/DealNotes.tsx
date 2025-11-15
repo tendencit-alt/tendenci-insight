@@ -3,8 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Mic, Square, FileText, Paperclip, Trash2, Download, Loader2 } from "lucide-react";
+import { Mic, Square, FileText, Paperclip, Trash2, Download, Loader2, Play, Pause } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
@@ -20,12 +19,13 @@ export function DealNotes({ dealId, currentNote, onNoteUpdate }: DealNotesProps)
   const { toast } = useToast();
   const [note, setNote] = useState(currentNote);
   const [isRecording, setIsRecording] = useState(false);
-  const [isTranscribing, setIsTranscribing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [attachments, setAttachments] = useState<any[]>([]);
+  const [playingAudio, setPlayingAudio] = useState<string | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const audioRefs = useRef<Map<string, HTMLAudioElement>>(new Map());
 
   useEffect(() => {
     setNote(currentNote);
@@ -80,7 +80,7 @@ export function DealNotes({ dealId, currentNote, onNoteUpdate }: DealNotesProps)
 
       mediaRecorder.onstop = async () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
-        await transcribeAudio(audioBlob);
+        await saveAudioFile(audioBlob);
         stream.getTracks().forEach((track) => track.stop());
       };
 
@@ -102,141 +102,151 @@ export function DealNotes({ dealId, currentNote, onNoteUpdate }: DealNotesProps)
     }
   };
 
-  const transcribeAudio = async (audioBlob: Blob) => {
-    setIsTranscribing(true);
+  const saveAudioFile = async (audioBlob: Blob) => {
+    setIsUploading(true);
     try {
-      // Convert blob to base64
-      const reader = new FileReader();
-      reader.readAsDataURL(audioBlob);
-      reader.onloadend = async () => {
-        const base64Audio = reader.result?.toString().split(",")[1];
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
 
-        const { data, error } = await supabase.functions.invoke(
-          "transcribe-audio",
-          {
-            body: { audio: base64Audio },
-          }
-        );
+      const fileName = `audio_${Date.now()}.webm`;
+      const filePath = `${dealId}/${fileName}`;
 
-        if (error) throw error;
+      const { error: uploadError } = await supabase.storage
+        .from("crm-files")
+        .upload(filePath, audioBlob);
 
-        if (data?.text) {
-          const transcription = data.text;
-          setNote((prev) => (prev ? `${prev}\n\n${transcription}` : transcription));
-          toast({
-            title: "Áudio transcrito",
-            description: "A transcrição foi adicionada às observações.",
-          });
-        }
-      };
+      if (uploadError) throw uploadError;
+
+      const { error: dbError } = await supabase.from("crm_deal_files").insert({
+        deal_id: dealId,
+        file_name: fileName,
+        file_path: filePath,
+        file_type: "audio/webm",
+        file_size: audioBlob.size,
+        uploaded_by: user.id,
+      });
+
+      if (dbError) throw dbError;
+
+      toast({
+        title: "Áudio gravado",
+        description: "O áudio foi salvo com sucesso.",
+      });
+
+      fetchAttachments();
     } catch (error: any) {
       toast({
-        title: "Erro ao transcrever áudio",
+        title: "Erro ao salvar áudio",
         description: error.message,
         variant: "destructive",
       });
     } finally {
-      setIsTranscribing(false);
+      setIsUploading(false);
     }
   };
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
     if (!files || files.length === 0) return;
 
     setIsUploading(true);
-
     try {
-      for (const file of Array.from(files)) {
-        const fileExt = file.name.split(".").pop();
-        const fileName = `${dealId}/${Date.now()}-${file.name}`;
-        const filePath = `deal-attachments/${fileName}`;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
 
-        // Upload to storage
+      for (const file of Array.from(files)) {
+        if (file.size > 10 * 1024 * 1024) {
+          toast({
+            title: "Arquivo muito grande",
+            description: `${file.name} excede o limite de 10MB`,
+            variant: "destructive",
+          });
+          continue;
+        }
+
+        const fileName = `${Date.now()}_${file.name}`;
+        const filePath = `${dealId}/${fileName}`;
+
         const { error: uploadError } = await supabase.storage
           .from("crm-files")
           .upload(filePath, file);
 
         if (uploadError) throw uploadError;
 
-        // Save reference to database
-        const { error: dbError } = await supabase
-          .from("crm_deal_files")
-          .insert({
-            deal_id: dealId,
-            file_name: file.name,
-            file_path: filePath,
-            file_type: file.type,
-            file_size: file.size,
-          });
+        const { error: dbError } = await supabase.from("crm_deal_files").insert({
+          deal_id: dealId,
+          file_name: file.name,
+          file_path: filePath,
+          file_type: file.type,
+          file_size: file.size,
+          uploaded_by: user.id,
+        });
 
         if (dbError) throw dbError;
       }
 
       toast({
-        title: "Arquivos anexados",
-        description: `${files.length} arquivo(s) anexado(s) com sucesso.`,
+        title: "Arquivos enviados",
+        description: "Os arquivos foram enviados com sucesso.",
       });
 
       fetchAttachments();
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     } catch (error: any) {
       toast({
-        title: "Erro ao anexar arquivos",
+        title: "Erro ao enviar arquivos",
         description: error.message,
         variant: "destructive",
       });
     } finally {
       setIsUploading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
     }
   };
 
-  const handleDeleteAttachment = async (attachmentId: string, filePath: string) => {
+  const handleDeleteAttachment = async (fileId: string, filePath: string) => {
     try {
-      // Delete from storage
       const { error: storageError } = await supabase.storage
         .from("crm-files")
         .remove([filePath]);
 
       if (storageError) throw storageError;
 
-      // Delete from database
       const { error: dbError } = await supabase
         .from("crm_deal_files")
         .delete()
-        .eq("id", attachmentId);
+        .eq("id", fileId);
 
       if (dbError) throw dbError;
 
       toast({
-        title: "Arquivo removido",
+        title: "Arquivo excluído",
         description: "O arquivo foi removido com sucesso.",
       });
 
       fetchAttachments();
     } catch (error: any) {
       toast({
-        title: "Erro ao remover arquivo",
+        title: "Erro ao excluir arquivo",
         description: error.message,
         variant: "destructive",
       });
     }
   };
 
-  const handleDownloadAttachment = async (filePath: string, fileName: string) => {
+  const handleDownloadAttachment = async (file: any) => {
     try {
       const { data, error } = await supabase.storage
         .from("crm-files")
-        .download(filePath);
+        .download(file.file_path);
 
       if (error) throw error;
 
       const url = URL.createObjectURL(data);
       const a = document.createElement("a");
       a.href = url;
-      a.download = fileName;
+      a.download = file.file_name;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -250,38 +260,87 @@ export function DealNotes({ dealId, currentNote, onNoteUpdate }: DealNotesProps)
     }
   };
 
+  const togglePlayAudio = async (file: any) => {
+    const audioId = file.id;
+    
+    if (playingAudio === audioId) {
+      const audio = audioRefs.current.get(audioId);
+      if (audio) {
+        audio.pause();
+        setPlayingAudio(null);
+      }
+      return;
+    }
+
+    // Pause any currently playing audio
+    audioRefs.current.forEach((audio) => audio.pause());
+    setPlayingAudio(null);
+
+    try {
+      let audio = audioRefs.current.get(audioId);
+      
+      if (!audio) {
+        const { data, error } = await supabase.storage
+          .from("crm-files")
+          .download(file.file_path);
+
+        if (error) throw error;
+
+        const url = URL.createObjectURL(data);
+        audio = new Audio(url);
+        audio.onended = () => setPlayingAudio(null);
+        audioRefs.current.set(audioId, audio);
+      }
+
+      audio.play();
+      setPlayingAudio(audioId);
+    } catch (error: any) {
+      toast({
+        title: "Erro ao reproduzir áudio",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return "0 Bytes";
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + " " + sizes[i];
+  };
+
   return (
-    <Card className="p-4">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <FileText className="h-5 w-5 text-primary" />
-          <h3 className="font-semibold text-lg">Observações</h3>
+    <Card className="p-6">
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <Label>Observações</Label>
         </div>
+
         <div className="flex gap-2">
           <Button
-            variant="outline"
+            type="button"
+            variant={isRecording ? "destructive" : "outline"}
             size="sm"
             onClick={isRecording ? stopRecording : startRecording}
-            disabled={isTranscribing}
+            disabled={isUploading}
           >
             {isRecording ? (
               <>
-                <Square className="h-4 w-4 mr-2 fill-current" />
-                Parar
-              </>
-            ) : isTranscribing ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Transcrevendo...
+                <Square className="h-4 w-4 mr-2" />
+                Parar Gravação
               </>
             ) : (
               <>
                 <Mic className="h-4 w-4 mr-2" />
-                Gravar
+                Gravar Áudio
               </>
             )}
           </Button>
+
           <Button
+            type="button"
             variant="outline"
             size="sm"
             onClick={() => fileInputRef.current?.click()}
@@ -295,92 +354,98 @@ export function DealNotes({ dealId, currentNote, onNoteUpdate }: DealNotesProps)
             ) : (
               <>
                 <Paperclip className="h-4 w-4 mr-2" />
-                Anexar
+                Anexar Arquivo
               </>
             )}
           </Button>
+
           <input
             ref={fileInputRef}
             type="file"
-            multiple
             className="hidden"
+            multiple
             onChange={handleFileUpload}
             accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.webp"
           />
         </div>
-      </div>
 
-      <div className="space-y-4">
-        <div>
-          <Label htmlFor="note">Texto</Label>
-          <Textarea
-            id="note"
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder="Digite ou grave suas observações..."
-            rows={6}
-            className="mt-1"
-          />
-        </div>
+        {isUploading && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Salvando arquivo...
+          </div>
+        )}
 
-        <div className="flex justify-end">
-          <Button onClick={handleSaveNote} disabled={note === currentNote}>
-            Salvar Observação
-          </Button>
-        </div>
+        <Textarea
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="Adicione observações sobre este negócio..."
+          className="min-h-[120px]"
+        />
+
+        <Button type="button" onClick={handleSaveNote}>
+          Salvar Observação
+        </Button>
 
         {attachments.length > 0 && (
-          <div>
-            <Label className="text-xs text-muted-foreground mb-2 block">
-              Anexos ({attachments.length})
-            </Label>
-            <div className="space-y-2">
-              {attachments.map((attachment) => (
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Arquivos Anexados</Label>
+            {attachments.map((file) => {
+              const isAudio = file.file_type?.startsWith('audio/');
+              
+              return (
                 <div
-                  key={attachment.id}
-                  className="flex items-center justify-between p-2 border rounded-lg hover:bg-muted/50"
+                  key={file.id}
+                  className="flex items-center justify-between p-3 bg-secondary rounded-md"
                 >
                   <div className="flex items-center gap-2 flex-1 min-w-0">
                     <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">
-                        {attachment.file_name}
-                      </p>
+                      <p className="text-sm font-medium truncate">{file.file_name}</p>
                       <p className="text-xs text-muted-foreground">
-                        {(attachment.file_size / 1024).toFixed(1)} KB •{" "}
-                        {formatDistanceToNow(new Date(attachment.uploaded_at), {
+                        {formatFileSize(file.file_size)} •{" "}
+                        {formatDistanceToNow(new Date(file.uploaded_at), {
                           addSuffix: true,
                           locale: ptBR,
                         })}
                       </p>
                     </div>
                   </div>
-                  <div className="flex gap-1">
+                  <div className="flex gap-1 ml-2">
+                    {isAudio && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => togglePlayAudio(file)}
+                      >
+                        {playingAudio === file.id ? (
+                          <Pause className="h-4 w-4" />
+                        ) : (
+                          <Play className="h-4 w-4" />
+                        )}
+                      </Button>
+                    )}
                     <Button
+                      type="button"
                       variant="ghost"
                       size="sm"
-                      onClick={() =>
-                        handleDownloadAttachment(
-                          attachment.file_path,
-                          attachment.file_name
-                        )
-                      }
+                      onClick={() => handleDownloadAttachment(file)}
                     >
                       <Download className="h-4 w-4" />
                     </Button>
                     <Button
+                      type="button"
                       variant="ghost"
                       size="sm"
-                      onClick={() =>
-                        handleDeleteAttachment(attachment.id, attachment.file_path)
-                      }
+                      onClick={() => handleDeleteAttachment(file.id, file.file_path)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
-              ))}
-            </div>
+              );
+            })}
           </div>
         )}
       </div>
