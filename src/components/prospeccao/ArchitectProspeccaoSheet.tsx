@@ -55,7 +55,7 @@ export function ArchitectProspeccaoSheet({
           vendedor:profiles!architects_vendedor_responsavel_fkey(full_name, email, avatar_url)
         `)
         .eq("id", architectId)
-        .single();
+        .maybeSingle();
 
       if (!error && data) {
         setArchitect(data);

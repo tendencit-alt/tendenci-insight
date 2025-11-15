@@ -157,7 +157,7 @@ export function CreateDealDialog({
         source_id: formData.source_id ? Number(formData.source_id) : null
       })
       .select()
-      .single();
+      .maybeSingle();
 
     if (!error && leadData) {
       await fetchOptions();
@@ -189,7 +189,7 @@ export function CreateDealDialog({
       .is("deal_id", null)
       .order("created_at", { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
     
     if (data) {
       setFormData((prev) => ({ ...prev, project_id: data.id }));
@@ -353,7 +353,7 @@ export function CreateDealDialog({
         tipo_produto: formData.tipos_produto.join(", ") || null,
         conversation_history: formData.conversation_history || null,
         status: "aberto",
-      }).select().single();
+      }).select().maybeSingle();
 
       if (error) {
         setLoading(false);

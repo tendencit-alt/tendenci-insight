@@ -41,7 +41,7 @@ export function CampanhaExecutor({ campaignId, campaignName, onComplete }: Execu
         .from('tendenci_prospec_arq_campaigns')
         .select('*')
         .eq('id', campaignId)
-        .single();
+        .maybeSingle();
 
       if (campError) throw new Error('Erro ao carregar campanha');
       if (!campanha) throw new Error('Campanha não encontrada');
@@ -51,7 +51,7 @@ export function CampanhaExecutor({ campaignId, campaignName, onComplete }: Execu
         .from('tendenci_whatsapp_connections')
         .select('*')
         .eq('id', campanha.whatsapp_connection_id)
-        .single();
+        .maybeSingle();
 
       if (whatsappError || !whatsappConn) {
         throw new Error('Nenhuma conexão WhatsApp configurada');
@@ -66,7 +66,7 @@ export function CampanhaExecutor({ campaignId, campaignName, onComplete }: Execu
         .from('tendenci_prospec_arq_sequences')
         .select('*')
         .eq('id', campanha.sequencia_id)
-        .single();
+        .maybeSingle();
 
       if (seqError || !sequencia) {
         throw new Error('Sequência não encontrada');
@@ -88,7 +88,7 @@ export function CampanhaExecutor({ campaignId, campaignName, onComplete }: Execu
         .from('tendenci_prospec_arq_segments')
         .select('*')
         .eq('id', campanha.segmento_id)
-        .single();
+        .maybeSingle();
 
       // 5. Buscar arquitetos do segmento
       let query = supabase

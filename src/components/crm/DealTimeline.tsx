@@ -230,7 +230,7 @@ export function DealTimeline({ dealId }: DealTimelineProps) {
           mentioned_users: mentionedUserIds,
         })
         .select()
-        .single();
+        .maybeSingle();
 
       if (timelineError) throw timelineError;
 
@@ -240,7 +240,7 @@ export function DealTimeline({ dealId }: DealTimelineProps) {
           .from('profiles')
           .select('username, full_name')
           .eq('id', userData.user.id)
-          .single();
+          .maybeSingle();
 
         const authorName = currentProfile?.full_name || currentProfile?.username || 'Alguém';
 

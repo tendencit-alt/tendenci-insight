@@ -192,7 +192,7 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess, preSelected
           deadline: formData.deadline || null
         })
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
 

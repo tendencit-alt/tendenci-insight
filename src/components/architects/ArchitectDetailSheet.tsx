@@ -48,7 +48,7 @@ export function ArchitectDetailSheet({ open, onOpenChange, architectId }: Archit
       .from('architects')
       .select('*')
       .eq('id', architectId)
-      .single();
+      .maybeSingle();
 
     if (archData) {
       setArchitect(archData);

@@ -157,7 +157,7 @@ export function ArchitectTimeline({ architectId }: ArchitectTimelineProps) {
           mentioned_users: mentionedUsers,
         })
         .select()
-        .single();
+        .maybeSingle();
 
       if (timelineError) throw timelineError;
 

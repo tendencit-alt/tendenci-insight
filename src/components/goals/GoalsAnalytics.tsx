@@ -62,7 +62,7 @@ export function GoalsAnalytics({ refreshTrigger }: GoalsAnalyticsProps) {
           .gte("data_fim", new Date().toISOString())
           .order("created_at", { ascending: false })
           .limit(1)
-          .single();
+          .maybeSingle();
 
         // Contar vendedores em diferentes faixas
         const acimaMedia = ranking?.filter((r: any) => r.percentual_meta_atualizado > mediaEquipe).length || 0;
@@ -89,7 +89,7 @@ export function GoalsAnalytics({ refreshTrigger }: GoalsAnalyticsProps) {
             profiles:vendedor_id (full_name, email)
           `)
           .eq("vendedor_id", user?.id)
-          .single();
+          .maybeSingle();
 
         if (rankingError) throw rankingError;
 
@@ -109,7 +109,7 @@ export function GoalsAnalytics({ refreshTrigger }: GoalsAnalyticsProps) {
           .gte("data_fim", new Date().toISOString())
           .order("created_at", { ascending: false })
           .limit(1)
-          .single();
+          .maybeSingle();
 
         setAnalytics({
           ranking: myRanking ? [myRanking] : [],
