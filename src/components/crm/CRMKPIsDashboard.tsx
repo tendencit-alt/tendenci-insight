@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PhoneCall, Target, FileText, PresentationIcon, XCircle, CheckCircle } from "lucide-react";
+import { PhoneCall, Target, FileText, PresentationIcon, XCircle, CheckCircle, Users, Building2 } from "lucide-react";
 
 interface CRMKPIsProps {
   pipelineId: string;
@@ -23,7 +23,10 @@ interface SellerBreakdown {
 
 interface KPIData {
   contatos_feitos: number;
+  contatos_captacao_arquitetos: number;
   projetos_captados: number;
+  projetos_arquitetos: number;
+  projetos_crm: number;
   em_orcamento: number;
   apresentado: number;
   perdido: number;
@@ -49,7 +52,10 @@ export function CRMKPIsDashboard({
   const [loading, setLoading] = useState(true);
   const [kpis, setKpis] = useState<KPIData>({
     contatos_feitos: 0,
+    contatos_captacao_arquitetos: 0,
     projetos_captados: 0,
+    projetos_arquitetos: 0,
+    projetos_crm: 0,
     em_orcamento: 0,
     apresentado: 0,
     perdido: 0,
@@ -204,9 +210,23 @@ export function CRMKPIsDashboard({
         }
       });
 
+      // Buscar contatos de captação de arquitetos
+      const { data: contatosArquitetos, error: errorArquitetos } = await supabase
+        .from("tendenci_prospec_arq_logs")
+        .select("id, architect_id, enviado_por")
+        .eq("tipo", "vendedor");
+
+      // Buscar projetos de arquitetos
+      const { data: projetosArquitetos, error: errorProjetosArq } = await supabase
+        .from("architect_projects")
+        .select("id, architect_id, created_by");
+
       const kpiData: KPIData = {
         contatos_feitos: filteredDeals.length || 0,
+        contatos_captacao_arquitetos: contatosArquitetos?.length || 0,
         projetos_captados: filteredDeals.filter((d) => d.stage_id && d.status === "aberto").length || 0,
+        projetos_arquitetos: projetosArquitetos?.length || 0,
+        projetos_crm: filteredDeals.filter((d) => !d.architect_id && d.status === "ganho").length || 0,
         em_orcamento: filteredDeals.filter((d) => d.crm_stages?.name?.toLowerCase().includes("orçamento")).length || 0,
         apresentado: filteredDeals.filter((d) => d.crm_stages?.name?.toLowerCase().includes("apresent")).length || 0,
         perdido: filteredDeals.filter((d) => d.status === "perdido").length || 0,
@@ -239,12 +259,19 @@ export function CRMKPIsDashboard({
 
   const kpiCards = [
     {
-      title: "Contatos Feitos",
+      title: "Contatos CRM",
       value: kpis.contatos_feitos,
       icon: PhoneCall,
       colorClass: "text-primary",
       bgClass: "bg-primary/10",
       breakdown: kpis.contatos_por_vendedor,
+    },
+    {
+      title: "Contatos Captação Arquitetos",
+      value: kpis.contatos_captacao_arquitetos,
+      icon: Users,
+      colorClass: "text-blue-500",
+      bgClass: "bg-blue-500/10",
     },
     {
       title: "Projetos Captados",
@@ -253,6 +280,20 @@ export function CRMKPIsDashboard({
       colorClass: "text-accent",
       bgClass: "bg-accent/10",
       breakdown: kpis.captados_por_vendedor,
+    },
+    {
+      title: "Projetos de Arquitetos",
+      value: kpis.projetos_arquitetos,
+      icon: Users,
+      colorClass: "text-purple-500",
+      bgClass: "bg-purple-500/10",
+    },
+    {
+      title: "Projetos CRM (Sem Arquiteto)",
+      value: kpis.projetos_crm,
+      icon: Building2,
+      colorClass: "text-orange-500",
+      bgClass: "bg-orange-500/10",
     },
     {
       title: "Em Orçamento",
@@ -282,8 +323,8 @@ export function CRMKPIsDashboard({
       value: kpis.conquistado,
       subtitle: formatCurrency(kpis.valor_total_conquistado),
       icon: CheckCircle,
-      colorClass: "text-chart-1",
-      bgClass: "bg-chart-1/10",
+      colorClass: "text-green-600",
+      bgClass: "bg-green-600/10",
     },
   ];
 
