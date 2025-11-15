@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Building, MapPin, Phone, Package, Plus, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
+import { format, differenceInDays } from "date-fns";
 import { ArchitectProspeccaoSheet } from "./ArchitectProspeccaoSheet";
 import { CreateProjectDialog } from "@/components/projects/CreateProjectDialog";
 
@@ -265,6 +265,13 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
                     {architect.tier && (
                       <Badge variant="outline" className="text-xs">
                         Tier {architect.tier}
+                      </Badge>
+                    )}
+
+                    {/* DIAS SEM ENVIAR PROJETO */}
+                    {architect.ultimo_projeto_data && (
+                      <Badge variant="outline" className="text-xs bg-purple-50 dark:bg-purple-950 border-purple-200 dark:border-purple-800">
+                        ⏱️ {differenceInDays(new Date(), new Date(architect.ultimo_projeto_data))} dias sem projeto
                       </Badge>
                     )}
 
