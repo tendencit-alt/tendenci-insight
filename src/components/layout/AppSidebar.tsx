@@ -6,9 +6,7 @@ import {
   Settings,
   Package,
   Target,
-  UserSearch,
-  Cake,
-  Clock
+  UserSearch
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
@@ -29,10 +27,8 @@ const menuItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard, module: null },
   { title: "Leads", url: "/leads", icon: TrendingUp, module: "leads" },
   { title: "Projetos", url: "/projects", icon: Package, module: "projetos" },
-  { title: "Arquitetos", url: "/architects", icon: Users, module: "arquitetos" },
-  { title: "Próximos Aniversários", url: "/architects?tab=birthdays", icon: Cake, module: "arquitetos" },
-  { title: "Arquitetos Inativos", url: "/architects?tab=inactive", icon: Clock, module: "arquitetos" },
-  { title: "Prospecção Arquitetos", url: "/prospeccao", icon: UserSearch, module: "arquitetos" },
+  { title: "Prospecção - Visão Geral", url: "/prospeccao", icon: Users, module: "arquitetos" },
+  { title: "Prospecção - Kanban", url: "/prospeccao/kanban", icon: UserSearch, module: "arquitetos" },
   { title: "CRM KANBAN", url: "/kanban", icon: MessageSquare, module: "crm" },
   { title: "Metas", url: "/metas", icon: Target, module: "metas" },
   { title: "Configurações", url: "/settings", icon: Settings, module: "configuracoes" },
