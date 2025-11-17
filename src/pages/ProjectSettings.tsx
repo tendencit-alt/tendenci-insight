@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { WebhookSettings } from "@/components/projects/WebhookSettings";
 import { N8nIntegrationGuide } from "@/components/settings/N8nIntegrationGuide";
 import { ImportDataGuide } from "@/components/settings/ImportDataGuide";
+import { ImportArchitectsData } from "@/components/settings/ImportArchitectsData";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,13 +34,18 @@ const ProjectSettings = () => {
         </div>
 
         {/* Settings Sections */}
-        <Tabs defaultValue="import" className="w-full">
-          <TabsList className={`grid w-full ${isMaster ? 'grid-cols-4' : 'grid-cols-3'}`}>
+        <Tabs defaultValue="architects" className="w-full">
+          <TabsList className={`grid w-full ${isMaster ? 'grid-cols-5' : 'grid-cols-4'}`}>
+            <TabsTrigger value="architects">👥 Arquitetos</TabsTrigger>
             <TabsTrigger value="import">📥 Importar Dados</TabsTrigger>
             <TabsTrigger value="n8n">🤖 Integração n8n</TabsTrigger>
             <TabsTrigger value="webhooks">🔗 Webhooks</TabsTrigger>
             {isMaster && <TabsTrigger value="users">🔐 Acessos</TabsTrigger>}
           </TabsList>
+
+          <TabsContent value="architects" className="space-y-6 pt-6">
+            <ImportArchitectsData />
+          </TabsContent>
 
           <TabsContent value="import" className="space-y-6 pt-6">
             <ImportDataGuide />
