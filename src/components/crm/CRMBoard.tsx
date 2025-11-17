@@ -9,6 +9,8 @@ import { DealDetailSheet } from "./DealDetailSheet";
 interface CRMBoardProps {
   pipelineId: string;
   onRefresh: () => void;
+  autoOpenDealId?: string | null;
+  onDealOpened?: () => void;
   filters?: {
     owner: string;
     search: string;
@@ -20,7 +22,7 @@ interface CRMBoardProps {
   };
 }
 
-export function CRMBoard({ pipelineId, onRefresh, filters }: CRMBoardProps) {
+export function CRMBoard({ pipelineId, onRefresh, autoOpenDealId, onDealOpened, filters }: CRMBoardProps) {
   const { toast } = useToast();
   const [stages, setStages] = useState<any[]>([]);
   const [deals, setDeals] = useState<any[]>([]);
@@ -73,6 +75,18 @@ export function CRMBoard({ pipelineId, onRefresh, filters }: CRMBoardProps) {
       supabase.removeChannel(tasksChannel);
     };
   }, [pipelineId, filters]);
+
+  // Efeito para abrir automaticamente um deal quando autoOpenDealId está definido
+  useEffect(() => {
+    if (autoOpenDealId && deals.length > 0) {
+      const dealToOpen = deals.find(d => d.id === autoOpenDealId);
+      if (dealToOpen) {
+        setSelectedDeal(dealToOpen);
+        setIsDetailOpen(true);
+        onDealOpened?.();
+      }
+    }
+  }, [autoOpenDealId, deals]);
 
   const fetchData = async () => {
     setLoading(true);
