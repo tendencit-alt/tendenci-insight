@@ -315,7 +315,7 @@ export function DealNotes({ dealId, currentNote, onNoteUpdate }: DealNotesProps)
     <Card className="p-6">
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <Label>Observações</Label>
+          <Label>Observações/Histórico</Label>
         </div>
 
         <div className="flex gap-2">
