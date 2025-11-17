@@ -5,11 +5,13 @@ import { useAuth } from '@/contexts/AuthContext';
 export type AppModule = 
   | 'dashboard'
   | 'prospeccao'
+  | 'arquitetos'
   | 'crm'
   | 'projetos'
   | 'metas'
   | 'leads'
   | 'dashboards_personalizados'
+  | 'configuracoes'
   | 'gestao_usuarios';
 
 export interface ModulePermission {
@@ -57,11 +59,13 @@ export function usePermissions() {
           const allModules: AppModule[] = [
             'dashboard',
             'prospeccao',
+            'arquitetos',
             'crm',
             'projetos',
             'metas',
             'leads',
             'dashboards_personalizados',
+            'configuracoes',
             'gestao_usuarios'
           ];
 
@@ -144,11 +148,13 @@ export function usePermissions() {
             const allModules: AppModule[] = [
               'dashboard',
               'prospeccao',
+              'arquitetos',
               'crm',
               'projetos',
               'metas',
               'leads',
               'dashboards_personalizados',
+              'configuracoes',
               'gestao_usuarios'
             ];
 

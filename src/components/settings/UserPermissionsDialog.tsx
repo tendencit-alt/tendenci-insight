@@ -29,22 +29,26 @@ interface ModulePermissions {
 const MODULE_LABELS: Record<AppModule, string> = {
   'dashboard': 'Dashboard',
   'prospeccao': 'Prospecção de Arquitetos',
+  'arquitetos': 'Arquitetos',
   'crm': 'CRM',
   'projetos': 'Projetos',
   'metas': 'Metas',
   'leads': 'Leads',
   'dashboards_personalizados': 'Dashboards Personalizados',
+  'configuracoes': 'Configurações',
   'gestao_usuarios': 'Gestão de Usuários'
 };
 
 const ALL_MODULES: AppModule[] = [
   'dashboard',
   'prospeccao',
+  'arquitetos',
   'crm',
   'projetos',
   'metas',
   'leads',
   'dashboards_personalizados',
+  'configuracoes',
   'gestao_usuarios'
 ];
 
