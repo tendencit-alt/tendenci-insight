@@ -20,6 +20,7 @@ export function CreateArchitectDialog({ open, onOpenChange, onSuccess }: CreateA
     name: "",
     company: "",
     phone: "",
+    email: "",
     birthday: "",
     categoria: "metropolitano",
     ja_contactado: false,
@@ -50,6 +51,7 @@ export function CreateArchitectDialog({ open, onOpenChange, onSuccess }: CreateA
           name: formData.name,
           company: formData.company || null,
           phone: formData.phone,
+          email: formData.email || null,
           birthday: formData.birthday || null,
           categoria: formData.categoria,
           active: true,
@@ -76,6 +78,7 @@ export function CreateArchitectDialog({ open, onOpenChange, onSuccess }: CreateA
         name: "",
         company: "",
         phone: "",
+        email: "",
         birthday: "",
         categoria: "metropolitano",
         ja_contactado: false,
@@ -128,6 +131,17 @@ export function CreateArchitectDialog({ open, onOpenChange, onSuccess }: CreateA
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 placeholder="(11) 99999-9999"
                 required
+              />
+            </div>
+
+            <div className="space-y-2 col-span-2">
+              <Label htmlFor="email">E-mail</Label>
+              <Input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                placeholder="email@exemplo.com"
               />
             </div>
 
