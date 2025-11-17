@@ -13,7 +13,7 @@ import { CRMBoard } from "@/components/crm/CRMBoard";
 import { CRMFilters } from "@/components/crm/CRMFilters";
 import { CreateDealDialog } from "@/components/crm/CreateDealDialog";
 import { ManagePipelineDialog } from "@/components/crm/ManagePipelineDialog";
-import { SellerDashboard } from "@/components/goals/seller/SellerDashboard";
+import { SellerPerformancePanel } from "@/components/crm/SellerPerformancePanel";
 import { TaskReminderAlert } from "@/components/crm/TaskReminderAlert";
 export default function CRM() {
   const {
@@ -29,9 +29,6 @@ export default function CRM() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isManageDialogOpen, setIsManageDialogOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
-  const [goalData, setGoalData] = useState<any>(null);
-  const [companyGoal, setCompanyGoal] = useState<any>(null);
-  const [teamAverage, setTeamAverage] = useState<number>(0);
   const [owners, setOwners] = useState<any[]>([]);
   const [selectedOwner, setSelectedOwner] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -49,11 +46,6 @@ export default function CRM() {
     fetchPipelines();
     fetchOwners();
     fetchCategories();
-    if (user && !isAdmin) {
-      fetchGoalData();
-      fetchCompanyGoal();
-      fetchTeamAverage();
-    }
     
     // Verificar se há parâmetro ?deal=ID na URL
     const dealId = searchParams.get('deal');
@@ -117,55 +109,10 @@ export default function CRM() {
       description: "Funcionalidade de exportação em desenvolvimento."
     });
   };
-  const fetchGoalData = async () => {
-    try {
-      const {
-        data,
-        error
-      } = await supabase.rpc("get_seller_goal_stats" as any, {
-        p_vendedor_id: user?.id
-      });
-      if (error) throw error;
-      setGoalData(data);
-    } catch (error) {
-      console.error("Erro ao buscar dados da meta:", error);
-    }
-  };
-  const fetchCompanyGoal = async () => {
-    try {
-      const {
-        data: goals,
-        error
-      } = await supabase.from("tendenci_company_goals" as any).select("*, tendenci_goal_progress(*)").eq("status", "ativa").gte("data_fim", new Date().toISOString()).order("created_at", {
-        ascending: false
-      }).limit(1);
-      if (error) throw error;
-      if (goals && goals.length > 0) {
-        setCompanyGoal(goals[0]);
-      }
-    } catch (error) {
-      console.error("Erro ao buscar meta da empresa:", error);
-    }
-  };
-  const fetchTeamAverage = async () => {
-    try {
-      const {
-        data,
-        error
-      } = await supabase.from("tendenci_seller_ranking" as any).select("percentual_meta_atualizado");
-      if (error) throw error;
-      if (data && data.length > 0) {
-        const avg = data.reduce((acc: number, curr: any) => acc + (curr.percentual_meta_atualizado || 0), 0) / data.length;
-        setTeamAverage(avg);
-      }
-    } catch (error) {
-      console.error("Erro ao buscar média da equipe:", error);
-    }
-  };
   return <DashboardLayout>
       <div className="flex flex-col gap-4">
-        {/* Metas do Vendedor */}
-        {!isAdmin && goalData && <SellerDashboard userName={profile?.full_name || user?.email || "Vendedor"} userAvatar={profile?.avatar_url} goalData={goalData} companyGoal={companyGoal} teamAverage={teamAverage} />}
+        {/* Painel de Desempenho do Vendedor */}
+        {!isAdmin && <SellerPerformancePanel />}
 
         {/* Header */}
         <div className="flex flex-col gap-1">
