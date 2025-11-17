@@ -3,11 +3,12 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Mic, Square, FileText, Paperclip, Trash2, Download, Loader2, Play, Pause } from "lucide-react";
+import { Mic, Square, FileText, Paperclip, Trash2, Download, Loader2, Play, Pause, AtSign } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
 
 interface DealNotesProps {
   dealId: string;
@@ -23,16 +24,55 @@ export function DealNotes({ dealId, currentNote, onNoteUpdate }: DealNotesProps)
   const [attachments, setAttachments] = useState<any[]>([]);
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
   const [noteHistory, setNoteHistory] = useState<any[]>([]);
+  const [showMentionDropdown, setShowMentionDropdown] = useState(false);
+  const [mentionSearch, setMentionSearch] = useState("");
+  const [availableUsers, setAvailableUsers] = useState<any[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<any[]>([]);
+  const [mentionStartPos, setMentionStartPos] = useState<number>(0);
+  const [selectedUserIndex, setSelectedUserIndex] = useState(0);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioRefs = useRef<Map<string, HTMLAudioElement>>(new Map());
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     setNote(currentNote);
     fetchAttachments();
     fetchNoteHistory();
+    fetchAvailableUsers();
   }, [currentNote, dealId]);
+
+  const fetchAvailableUsers = async () => {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id, username, full_name, email")
+      .order("full_name");
+
+    if (!error && data) {
+      setAvailableUsers(data);
+    }
+  };
+
+  const handleSelectUser = (user: any) => {
+    if (!textareaRef.current) return;
+
+    const beforeMention = note.substring(0, mentionStartPos);
+    const afterMention = note.substring(textareaRef.current.selectionStart);
+    const newNote = `${beforeMention}@${user.username} ${afterMention}`;
+    
+    setNote(newNote);
+    setShowMentionDropdown(false);
+    
+    // Focar textarea e posicionar cursor após a menção
+    setTimeout(() => {
+      if (textareaRef.current) {
+        const newCursorPos = mentionStartPos + user.username.length + 2;
+        textareaRef.current.focus();
+        textareaRef.current.setSelectionRange(newCursorPos, newCursorPos);
+      }
+    }, 0);
+  };
 
   const fetchAttachments = async () => {
     const { data, error } = await supabase
@@ -458,12 +498,93 @@ export function DealNotes({ dealId, currentNote, onNoteUpdate }: DealNotesProps)
           </div>
         )}
 
-        <Textarea
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          placeholder="Adicione observações sobre este negócio... (Use @ para mencionar usuários)"
-          className="min-h-[120px]"
-        />
+        <div className="relative">
+          <Textarea
+            ref={textareaRef}
+            value={note}
+            onChange={(e) => {
+              const newValue = e.target.value;
+              const cursorPos = e.target.selectionStart;
+              setNote(newValue);
+
+              // Detectar se @ foi digitado
+              const textBeforeCursor = newValue.substring(0, cursorPos);
+              const lastAtIndex = textBeforeCursor.lastIndexOf('@');
+              
+              if (lastAtIndex !== -1) {
+                const textAfterAt = textBeforeCursor.substring(lastAtIndex + 1);
+                // Verificar se não há espaço após o @
+                if (!textAfterAt.includes(' ')) {
+                  setMentionSearch(textAfterAt.toLowerCase());
+                  setMentionStartPos(lastAtIndex);
+                  setShowMentionDropdown(true);
+                  setSelectedUserIndex(0);
+                  
+                  // Filtrar usuários
+                  const filtered = availableUsers.filter(user => 
+                    user.username.toLowerCase().includes(textAfterAt.toLowerCase()) ||
+                    (user.full_name && user.full_name.toLowerCase().includes(textAfterAt.toLowerCase()))
+                  );
+                  setFilteredUsers(filtered);
+                } else {
+                  setShowMentionDropdown(false);
+                }
+              } else {
+                setShowMentionDropdown(false);
+              }
+            }}
+            onKeyDown={(e) => {
+              if (showMentionDropdown && filteredUsers.length > 0) {
+                if (e.key === 'ArrowDown') {
+                  e.preventDefault();
+                  setSelectedUserIndex(prev => 
+                    prev < filteredUsers.length - 1 ? prev + 1 : 0
+                  );
+                } else if (e.key === 'ArrowUp') {
+                  e.preventDefault();
+                  setSelectedUserIndex(prev => 
+                    prev > 0 ? prev - 1 : filteredUsers.length - 1
+                  );
+                } else if (e.key === 'Enter' || e.key === 'Tab') {
+                  e.preventDefault();
+                  handleSelectUser(filteredUsers[selectedUserIndex]);
+                } else if (e.key === 'Escape') {
+                  setShowMentionDropdown(false);
+                }
+              }
+            }}
+            placeholder="Adicione observações sobre este negócio... (Use @ para mencionar usuários)"
+            className="min-h-[120px]"
+          />
+
+          {/* Dropdown de menções */}
+          {showMentionDropdown && filteredUsers.length > 0 && (
+            <Card className="absolute bottom-full left-0 mb-2 w-full max-w-xs z-50 shadow-lg border bg-background">
+              <Command>
+                <CommandList className="max-h-[200px]">
+                  <CommandEmpty>Nenhum usuário encontrado</CommandEmpty>
+                  <CommandGroup>
+                    {filteredUsers.map((user, index) => (
+                      <CommandItem
+                        key={user.id}
+                        onSelect={() => handleSelectUser(user)}
+                        className={`cursor-pointer ${index === selectedUserIndex ? 'bg-accent' : ''}`}
+                      >
+                        <AtSign className="h-4 w-4 mr-2" />
+                        <div className="flex flex-col">
+                          <span className="font-medium">@{user.username}</span>
+                          {user.full_name && (
+                            <span className="text-xs text-muted-foreground">{user.full_name}</span>
+                          )}
+                        </div>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </Card>
+          )}
+        </div>
 
         <Button type="button" onClick={handleSaveNote}>
           Salvar Observação
