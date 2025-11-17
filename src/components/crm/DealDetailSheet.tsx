@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { EditDealDialog } from "./EditDealDialog";
-import { DealTimeline } from "./DealTimeline";
+
 import { DealHistory } from "./DealHistory";
 import { DealTasks } from "./DealTasks";
 import { ProjectDetailSheet } from "../projects/ProjectDetailSheet";
@@ -550,7 +550,7 @@ export function DealDetailSheet({
               </div>
             </Card>
 
-            {/* Observações com Áudio e Anexos */}
+            {/* Observações/Histórico */}
             <DealNotes
               dealId={deal.id}
               currentNote={deal.note || ""}
@@ -628,57 +628,6 @@ export function DealDetailSheet({
               </Card>
             )}
 
-            {/* Histórico com anexos */}
-            <Card className="p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <History className="h-5 w-5 text-primary" />
-                <h3 className="font-semibold text-lg">Histórico</h3>
-              </div>
-              
-              <DealTimeline dealId={deal.id} />
-              
-              {dealFiles.length > 0 && (
-                <div className="mt-4 pt-4 border-t">
-                  <Label className="text-sm font-medium mb-2 block">Documentos Anexados</Label>
-                  <div className="space-y-2">
-                    {dealFiles.map((file) => (
-                      <div
-                        key={file.id}
-                        className="flex items-center justify-between p-2 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
-                      >
-                        <div className="flex items-center gap-2 flex-1 min-w-0">
-                          <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm font-medium truncate">{file.file_name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {(file.file_size / 1024).toFixed(1)} KB
-                            </p>
-                          </div>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={async () => {
-                            const { data } = await supabase.storage
-                              .from("deal-files")
-                              .createSignedUrl(file.file_path, 60);
-                            if (data?.signedUrl) {
-                              window.open(data.signedUrl, "_blank");
-                            }
-                          }}
-                        >
-                          <ExternalLink className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              
-              <div className="mt-4">
-                <DealFileUpload dealId={deal.id} files={dealFiles} onFilesChange={fetchDealFiles} />
-              </div>
-            </Card>
           </TabsContent>
 
           {/* Tab: Histórico */}
