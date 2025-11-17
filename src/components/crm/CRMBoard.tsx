@@ -257,6 +257,16 @@ export function CRMBoard({ pipelineId, onRefresh, filters }: CRMBoardProps) {
     return deals.filter((deal) => deal.status === "lost");
   };
 
+  const calculateStageValue = (stageDeals: any[]) => {
+    const total = stageDeals.reduce((acc, deal) => acc + (deal.value || 0), 0);
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(total);
+  };
+
   const getTimeInStage = (deal: any) => {
     const hours = Math.floor(
       (new Date().getTime() - new Date(deal.stage_entered_at).getTime()) / (1000 * 60 * 60)
@@ -364,9 +374,14 @@ export function CRMBoard({ pipelineId, onRefresh, filters }: CRMBoardProps) {
               onDrop={handleDrop(stage.id)}
             >
               <CardHeader className="pb-3 px-5 pt-4">
-                <CardTitle className="flex items-center justify-between text-base gap-3">
-                  <span className="truncate font-semibold">{stage.name}</span>
-                  <Badge variant="secondary" className="flex-shrink-0 font-medium">{stageDeals.length}</Badge>
+                <CardTitle className="flex flex-col gap-2 text-base">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="truncate font-semibold">{stage.name}</span>
+                    <Badge variant="secondary" className="flex-shrink-0 font-medium">{stageDeals.length}</Badge>
+                  </div>
+                  <span className="text-sm font-semibold text-primary">
+                    {calculateStageValue(stageDeals)}
+                  </span>
                 </CardTitle>
               </CardHeader>
               <CardContent 
@@ -402,9 +417,14 @@ export function CRMBoard({ pipelineId, onRefresh, filters }: CRMBoardProps) {
           style={{ minWidth: '320px', width: '320px' }}
         >
           <CardHeader className="pb-3 px-5 pt-4">
-            <CardTitle className="flex items-center justify-between text-base text-green-700 dark:text-green-300 gap-3">
-              <span className="truncate font-semibold">✅ Ganho</span>
-              <Badge variant="default" className="bg-green-600 hover:bg-green-700 flex-shrink-0 font-medium">{getWonDeals().length}</Badge>
+            <CardTitle className="flex flex-col gap-2 text-base text-green-700 dark:text-green-300">
+              <div className="flex items-center justify-between gap-3">
+                <span className="truncate font-semibold">✅ Ganho</span>
+                <Badge variant="default" className="bg-green-600 hover:bg-green-700 flex-shrink-0 font-medium">{getWonDeals().length}</Badge>
+              </div>
+              <span className="text-sm font-semibold text-green-600 dark:text-green-400">
+                {calculateStageValue(getWonDeals())}
+              </span>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 px-5 pb-4" style={{ maxHeight: '600px', overflowY: 'auto' }}>
@@ -433,9 +453,14 @@ export function CRMBoard({ pipelineId, onRefresh, filters }: CRMBoardProps) {
           style={{ minWidth: '320px', width: '320px' }}
         >
           <CardHeader className="pb-3 px-5 pt-4">
-            <CardTitle className="flex items-center justify-between text-base text-red-700 dark:text-red-300 gap-3">
-              <span className="truncate font-semibold">❌ Perdido</span>
-              <Badge variant="destructive" className="hover:bg-destructive/90 flex-shrink-0 font-medium">{getLostDeals().length}</Badge>
+            <CardTitle className="flex flex-col gap-2 text-base text-red-700 dark:text-red-300">
+              <div className="flex items-center justify-between gap-3">
+                <span className="truncate font-semibold">❌ Perdido</span>
+                <Badge variant="destructive" className="hover:bg-destructive/90 flex-shrink-0 font-medium">{getLostDeals().length}</Badge>
+              </div>
+              <span className="text-sm font-semibold text-red-600 dark:text-red-400">
+                {calculateStageValue(getLostDeals())}
+              </span>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 px-5 pb-4" style={{ maxHeight: '600px', overflowY: 'auto' }}>
