@@ -211,15 +211,17 @@ export function SellerPerformancePanel() {
             </TabsList>
             
             <TabsContent value="day" className="mt-4">
-              <div className="flex flex-wrap gap-2">
-                {getTodayBadges().slice(0, 1).map((badge, i) => (
-                  <Badge key={i} variant="secondary" className="gap-1">
-                    <Award className="h-3 w-3" />
-                    Meta batida
-                  </Badge>
-                ))}
-                {getTodayBadges().length === 0 && (
-                  <p className="text-sm text-muted-foreground">Nenhuma insígnia hoje</p>
+              <div className="flex items-center gap-2">
+                {getTodayBadges().length > 0 ? (
+                  <div className="flex items-center gap-1 px-3 py-1.5 rounded-md bg-amber-500/20 border border-amber-500/50">
+                    <Award className="h-4 w-4 text-amber-500" />
+                    <span className="text-sm font-medium text-amber-700">Meta batida</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1 px-3 py-1.5 rounded-md bg-muted/50 border border-border">
+                    <Award className="h-4 w-4 text-muted-foreground/50" />
+                    <span className="text-sm text-muted-foreground/50">Meta batida</span>
+                  </div>
                 )}
               </div>
             </TabsContent>
@@ -227,25 +229,35 @@ export function SellerPerformancePanel() {
             <TabsContent value="week" className="mt-4">
               <div className="space-y-3">
                 <div className="flex flex-wrap gap-2">
-                  {getWeekBadges().slice(0, 5).map((badge, i) => (
-                    <Badge key={i} variant="secondary" className="gap-1">
-                      <Award className="h-3 w-3" />
-                      Dia {new Date(badge.earned_at).getDate()}
-                    </Badge>
-                  ))}
-                  {getWeekBadges().length === 0 && (
-                    <p className="text-sm text-muted-foreground">Nenhuma insígnia esta semana</p>
-                  )}
+                  {[0, 1, 2, 3, 4].map((dayIndex) => {
+                    const earned = getWeekBadges()[dayIndex];
+                    return earned ? (
+                      <div key={dayIndex} className="flex items-center gap-1 px-2 py-1 rounded-md bg-amber-500/20 border border-amber-500/50">
+                        <Award className="h-3 w-3 text-amber-500" />
+                        <span className="text-xs font-medium text-amber-700">Dia {new Date(earned.earned_at).getDate()}</span>
+                      </div>
+                    ) : (
+                      <div key={dayIndex} className="flex items-center gap-1 px-2 py-1 rounded-md bg-muted/50 border border-border">
+                        <Award className="h-3 w-3 text-muted-foreground/50" />
+                        <span className="text-xs text-muted-foreground/50">Dia {dayIndex + 1}</span>
+                      </div>
+                    );
+                  })}
                 </div>
                 
-                {getWeekBadges().length >= 5 && (
-                  <div className="pt-2 border-t">
-                    <Badge variant="default" className="gap-1">
-                      <Trophy className="h-4 w-4" />
-                      Troféu da Semana
-                    </Badge>
-                  </div>
-                )}
+                <div className="pt-2 border-t">
+                  {getWeekBadges().length >= 5 ? (
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-primary/20 border border-primary/50">
+                      <Trophy className="h-5 w-5 text-primary" />
+                      <span className="text-sm font-semibold text-primary">Troféu da Semana</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-muted/50 border border-border">
+                      <Trophy className="h-5 w-5 text-muted-foreground/50" />
+                      <span className="text-sm text-muted-foreground/50">Troféu da Semana</span>
+                    </div>
+                  )}
+                </div>
               </div>
             </TabsContent>
           </Tabs>
