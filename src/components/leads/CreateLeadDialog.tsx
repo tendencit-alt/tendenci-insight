@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 interface CreateLeadDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSuccess?: () => void;
+  onSuccess?: (lead?: any) => void;
 }
 
 export function CreateLeadDialog({ open, onOpenChange, onSuccess }: CreateLeadDialogProps) {
@@ -193,7 +193,7 @@ export function CreateLeadDialog({ open, onOpenChange, onSuccess }: CreateLeadDi
       console.log('=== LEAD CRIADO COM SUCESSO ===');
       toast.success("Lead criado com sucesso!");
       
-      onSuccess?.();
+      onSuccess?.(leadData);
       onOpenChange(false);
       
       // Reset form
