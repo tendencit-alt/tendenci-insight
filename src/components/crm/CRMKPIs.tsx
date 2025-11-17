@@ -158,9 +158,9 @@ export function CRMKPIs({ pipelineId }: CRMKPIsProps) {
     {
       icon: TrendingUp,
       label: "Em Negociação",
-      value: emNegociacao,
+      value: formatCurrency(valorEmNegociacao),
       color: "text-orange-500",
-      subtitle: formatCurrency(valorEmNegociacao)
+      subtitle: `${emNegociacao} oportunidade${emNegociacao !== 1 ? 's' : ''}`
     },
     {
       icon: TrendingUp,
