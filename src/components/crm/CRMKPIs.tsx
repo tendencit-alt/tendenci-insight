@@ -196,7 +196,11 @@ export function CRMKPIs({ pipelineId }: CRMKPIsProps) {
     return (
       <div className="flex gap-4 overflow-x-auto pb-2">
         {Array.from({ length: 6 }).map((_, i) => (
-          <Card key={i} className="flex-shrink-0" style={{ width: '280px' }}>
+          <Card 
+            key={i} 
+            className="flex-shrink-0 animate-fade-in" 
+            style={{ width: '280px', animationDelay: `${i * 100}ms` }}
+          >
             <CardContent className="p-6">
               <Skeleton className="h-24 w-full" />
             </CardContent>
@@ -209,7 +213,11 @@ export function CRMKPIs({ pipelineId }: CRMKPIsProps) {
   return (
     <div className="flex gap-4 overflow-x-auto pb-2">
       {kpis.map((kpi, index) => (
-        <Card key={index} className="flex-shrink-0 hover:shadow-md transition-shadow" style={{ width: '280px' }}>
+        <Card 
+          key={index} 
+          className="flex-shrink-0 hover:shadow-md transition-all duration-300 hover:scale-105 animate-fade-in" 
+          style={{ width: '280px', animationDelay: `${index * 100}ms` }}
+        >
           <CardContent className="p-6">
             <div className="flex flex-col gap-3">
               <kpi.icon className={`h-8 w-8 ${kpi.color}`} />
