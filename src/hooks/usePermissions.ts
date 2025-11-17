@@ -56,6 +56,8 @@ export function usePermissions() {
 
         // Se for admin, tem todas as permissões
         if (isAdmin) {
+          console.log('[usePermissions] Usuário é ADMIN - acesso total a todos os módulos');
+          
           const allModules: AppModule[] = [
             'dashboard',
             'prospeccao',
@@ -89,11 +91,36 @@ export function usePermissions() {
 
           if (permError) throw permError;
 
+          console.log('[usePermissions] Permissões carregadas para usuário não-admin:', {
+            userId: user.id,
+            email: user.email,
+            totalPermissions: userPermissions?.length,
+            permissions: userPermissions
+          });
+
           setPermissions({
             role: profile.role,
             permissions: userPermissions as ModulePermission[],
             active: true
           });
+          
+          // Log resumo final
+          console.log('╔════════════════════════════════════════════════════════════╗');
+          console.log('║          PERMISSÕES CARREGADAS COM SUCESSO                 ║');
+          console.log('╠════════════════════════════════════════════════════════════╣');
+          console.log(`║ Email: ${user.email?.padEnd(42)} ║`);
+          console.log(`║ Role: ${profile.role?.padEnd(43)} ║`);
+          console.log('╠════════════════════════════════════════════════════════════╣');
+          console.log('║ Módulos com VISUALIZAÇÃO permitida:                        ║');
+          userPermissions?.filter(p => p.can_view).forEach(p => {
+            console.log(`║   ✓ ${p.module.padEnd(50)} ║`);
+          });
+          console.log('╠════════════════════════════════════════════════════════════╣');
+          console.log('║ Módulos SEM visualização:                                  ║');
+          userPermissions?.filter(p => !p.can_view).forEach(p => {
+            console.log(`║   ✗ ${p.module.padEnd(50)} ║`);
+          });
+          console.log('╚════════════════════════════════════════════════════════════╝');
         }
       } catch (error) {
         console.error('Erro ao buscar permissões:', error);
@@ -107,24 +134,52 @@ export function usePermissions() {
   }, [user]);
 
   const hasModuleAccess = (module: AppModule, action: 'view' | 'create' | 'edit' | 'delete' = 'view') => {
-    if (!permissions) return false;
-    if (isMaster) return true;
+    if (!permissions) {
+      console.log('[hasModuleAccess] Sem permissões carregadas');
+      return false;
+    }
+    
+    if (isMaster) {
+      console.log('[hasModuleAccess] Usuário é master - acesso total');
+      return true;
+    }
 
     const modulePermission = permissions.permissions.find(p => p.module === module);
-    if (!modulePermission) return false;
+    
+    if (!modulePermission) {
+      console.log('[hasModuleAccess] Módulo não encontrado nas permissões:', {
+        module,
+        availableModules: permissions.permissions.map(p => p.module)
+      });
+      return false;
+    }
 
+    let hasAccess = false;
     switch (action) {
       case 'view':
-        return modulePermission.can_view;
+        hasAccess = modulePermission.can_view;
+        break;
       case 'create':
-        return modulePermission.can_create;
+        hasAccess = modulePermission.can_create;
+        break;
       case 'edit':
-        return modulePermission.can_edit;
+        hasAccess = modulePermission.can_edit;
+        break;
       case 'delete':
-        return modulePermission.can_delete;
+        hasAccess = modulePermission.can_delete;
+        break;
       default:
-        return false;
+        hasAccess = false;
     }
+
+    console.log('[hasModuleAccess] Verificação de acesso:', {
+      module,
+      action,
+      hasAccess,
+      permission: modulePermission
+    });
+
+    return hasAccess;
   };
 
   const refetch = async () => {
