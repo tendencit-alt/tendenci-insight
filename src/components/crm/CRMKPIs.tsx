@@ -76,10 +76,10 @@ export function CRMKPIs({ pipelineId }: CRMKPIsProps) {
       .eq("pipeline_id", pipelineId);
 
     if (allDeals) {
-      // Calcular Ticket Médio (média de todos os valores, independente de status)
-      const dealsComValor = allDeals.filter(d => d.value && d.value > 0);
-      const somaValores = dealsComValor.reduce((acc, d) => acc + (d.value || 0), 0);
-      const ticketMedioCalculado = dealsComValor.length > 0 ? somaValores / dealsComValor.length : 0;
+      // Calcular Ticket Médio (média apenas dos negócios ganhos)
+      const dealsGanhos = allDeals.filter(d => d.status === "won" && d.value && d.value > 0);
+      const somaValores = dealsGanhos.reduce((acc, d) => acc + (d.value || 0), 0);
+      const ticketMedioCalculado = dealsGanhos.length > 0 ? somaValores / dealsGanhos.length : 0;
       setTicketMedio(ticketMedioCalculado);
 
       // Calcular Taxa de Conversão por período
