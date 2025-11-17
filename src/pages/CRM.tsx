@@ -13,6 +13,7 @@ import { CRMFilters } from "@/components/crm/CRMFilters";
 import { CreateDealDialog } from "@/components/crm/CreateDealDialog";
 import { ManagePipelineDialog } from "@/components/crm/ManagePipelineDialog";
 import { SellerDashboard } from "@/components/goals/seller/SellerDashboard";
+import { TaskReminderAlert } from "@/components/crm/TaskReminderAlert";
 export default function CRM() {
   const {
     toast
@@ -225,8 +226,11 @@ export default function CRM() {
             {/* Tarefas Pendentes */}
             <CRMTasksPanel pipelineId={selectedPipeline} key={`tasks-${refreshKey}`} />
 
+            {/* Alerta de Tarefas Faltantes */}
+            <TaskReminderAlert pipelineId={selectedPipeline} />
+
             {/* Kanban Board */}
-            <CRMBoard 
+            <CRMBoard
               pipelineId={selectedPipeline} 
               key={`board-${refreshKey}`} 
               onRefresh={handleRefresh} 
