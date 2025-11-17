@@ -31,6 +31,7 @@ import { DealFileUpload } from "./DealFileUpload";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { logDealChange, logStageChange, getDisplayValue } from "@/utils/dealHistory";
+import { CreateLeadDialog } from "@/components/leads/CreateLeadDialog";
 
 interface EditDealDialogProps {
   deal: any;
@@ -56,6 +57,7 @@ export function EditDealDialog({
   const [dealFiles, setDealFiles] = useState<any[]>([]);
   const [isRecording, setIsRecording] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [showCreateLead, setShowCreateLead] = useState(false);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -571,7 +573,18 @@ export function EditDealDialog({
             <h3 className="text-sm font-semibold text-muted-foreground uppercase">Lead e Responsáveis</h3>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="lead_id">Cliente (Lead)</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="lead_id">Cliente (Lead)</Label>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowCreateLead(true)}
+                    className="h-7 text-xs"
+                  >
+                    + Novo Cliente
+                  </Button>
+                </div>
                 <Select
                   value={formData.lead_id || "none"}
                   onValueChange={(value) =>
@@ -826,6 +839,16 @@ export function EditDealDialog({
           </div>
         </form>
       </DialogContent>
+
+      <CreateLeadDialog
+        open={showCreateLead}
+        onOpenChange={setShowCreateLead}
+        onSuccess={(newLead) => {
+          setFormData({ ...formData, lead_id: newLead.id });
+          fetchOptions();
+          setShowCreateLead(false);
+        }}
+      />
     </Dialog>
   );
 }
