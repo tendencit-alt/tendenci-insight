@@ -7,14 +7,17 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { UserPermissionsDialog } from '@/components/settings/UserPermissionsDialog';
 import { CreateUserDialog } from '@/components/settings/CreateUserDialog';
 import { ResetPasswordDialog } from '@/components/settings/ResetPasswordDialog';
+import { EditUserDialog } from '@/components/settings/EditUserDialog';
+import { DeleteUserDialog } from '@/components/settings/DeleteUserDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Shield, User, Loader2, ArrowLeft, CheckCircle, UserPlus, Key } from 'lucide-react';
+import { Shield, User, Loader2, ArrowLeft, CheckCircle, UserPlus, Key, Edit2, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface UserProfile {
   id: string;
   email: string;
+  username: string;
   full_name?: string;
   role: 'admin' | 'vendedor' | 'arquiteto';
   created_at: string;
@@ -29,6 +32,8 @@ const UserManagement = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [resetPasswordDialogOpen, setResetPasswordDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   useEffect(() => {
     fetchUsers();
@@ -58,14 +63,24 @@ const UserManagement = () => {
     }
   };
 
-  const handleEditUser = (user: UserProfile) => {
+  const handleEditPermissions = (user: UserProfile) => {
     setSelectedUser(user);
     setDialogOpen(true);
+  };
+
+  const handleEditUser = (user: UserProfile) => {
+    setSelectedUser(user);
+    setEditDialogOpen(true);
   };
 
   const handleResetPassword = (user: UserProfile) => {
     setSelectedUser(user);
     setResetPasswordDialogOpen(true);
+  };
+
+  const handleDeleteUser = (user: UserProfile) => {
+    setSelectedUser(user);
+    setDeleteDialogOpen(true);
   };
 
   const getRoleBadge = (user: UserProfile) => {
@@ -182,14 +197,23 @@ const UserManagement = () => {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleEditPermissions(user)}
+                    >
+                      <Shield className="w-4 h-4 mr-2" />
+                      Permissões
+                    </Button>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleEditUser(user)}
+                      className="gap-2"
                     >
-                      <Shield className="w-4 h-4 mr-2" />
-                      Editar Perfil
+                      <Edit2 className="w-4 h-4" />
+                      Editar
                     </Button>
                     <Button
                       variant="outline"
@@ -199,6 +223,15 @@ const UserManagement = () => {
                     >
                       <Key className="w-4 h-4" />
                       Senha
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleDeleteUser(user)}
+                      className="gap-2"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Excluir
                     </Button>
                   </div>
                 </div>
@@ -223,6 +256,13 @@ const UserManagement = () => {
             userName={selectedUser.full_name}
             onSuccess={fetchUsers}
           />
+
+          <EditUserDialog
+            open={editDialogOpen}
+            onOpenChange={setEditDialogOpen}
+            user={selectedUser}
+            onSuccess={fetchUsers}
+          />
           
           <ResetPasswordDialog
             open={resetPasswordDialogOpen}
@@ -230,6 +270,13 @@ const UserManagement = () => {
             userId={selectedUser.id}
             userEmail={selectedUser.email}
             userName={selectedUser.full_name}
+          />
+
+          <DeleteUserDialog
+            open={deleteDialogOpen}
+            onOpenChange={setDeleteDialogOpen}
+            user={selectedUser}
+            onSuccess={fetchUsers}
           />
         </>
       )}
