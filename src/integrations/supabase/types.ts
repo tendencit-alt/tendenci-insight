@@ -2791,6 +2791,8 @@ export type Database = {
         | "leads"
         | "dashboards_personalizados"
         | "gestao_usuarios"
+        | "configuracoes"
+        | "arquitetos"
       user_role: "admin" | "vendedor" | "arquiteto"
     }
     CompositeTypes: {
@@ -2928,6 +2930,8 @@ export const Constants = {
         "leads",
         "dashboards_personalizados",
         "gestao_usuarios",
+        "configuracoes",
+        "arquitetos",
       ],
       user_role: ["admin", "vendedor", "arquiteto"],
     },
