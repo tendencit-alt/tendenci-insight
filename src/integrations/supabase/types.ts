@@ -1845,7 +1845,7 @@ export type Database = {
           {
             foreignKeyName: "tendenci_goal_progress_seller_goal_id_fkey"
             columns: ["seller_goal_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "tendenci_seller_goals"
             referencedColumns: ["id"]
           },
