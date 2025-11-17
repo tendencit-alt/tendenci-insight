@@ -51,6 +51,7 @@ export function EditDealDialog({
   const [architects, setArchitects] = useState<any[]>([]);
   const [sources, setSources] = useState<any[]>([]);
   const [owners, setOwners] = useState<any[]>([]);
+  const [clients, setClients] = useState<any[]>([]);
   const [scheduledCall, setScheduledCall] = useState<Date>();
   const [dealFiles, setDealFiles] = useState<any[]>([]);
   const [isRecording, setIsRecording] = useState(false);
@@ -71,6 +72,7 @@ export function EditDealDialog({
     conversation_history: "",
     owner_id: "",
     source_id: "",
+    lead_id: "",
   });
 
   useEffect(() => {
@@ -86,6 +88,7 @@ export function EditDealDialog({
         conversation_history: deal.conversation_history || "",
         owner_id: deal.owner_id || "",
         source_id: deal.lead?.source_id?.toString() || "",
+        lead_id: deal.lead_id || "",
       });
       
       if (deal.scheduled_call) {
@@ -122,6 +125,15 @@ export function EditDealDialog({
       .select("id, name")
       .order("name");
 
+    // Fetch clients
+    const { data: clientsData } = await supabase
+      .from("leads")
+      .select(`
+        id,
+        client:clients(id, name, phone)
+      `)
+      .order("created_at", { ascending: false });
+
     // Fetch owners (profiles)
     const { data: ownersData } = await supabase
       .from("profiles")
@@ -131,6 +143,7 @@ export function EditDealDialog({
     setStages(stagesData || []);
     setArchitects(architectsData || []);
     setSources(sourcesData || []);
+    setClients(clientsData || []);
     setOwners(ownersData || []);
   };
 
@@ -359,6 +372,16 @@ export function EditDealDialog({
         });
       }
       
+      if (formData.lead_id !== deal.lead_id) {
+        const oldValue = await getDisplayValue('lead_id', deal.lead_id);
+        const newValue = await getDisplayValue('lead_id', formData.lead_id);
+        changes.push({
+          field_name: 'lead_id',
+          old_value: oldValue,
+          new_value: newValue,
+        });
+      }
+      
       // Validação: Verificar se a nova etapa é "Qualificação" ou "Em Negociação" e se há valor
       if (formData.stage_id && formData.stage_id !== deal.stage_id) {
         const selectedStage = stages.find(s => s.id === formData.stage_id);
@@ -382,6 +405,7 @@ export function EditDealDialog({
         title: formData.title,
         architect_id: formData.architect_id || null,
         owner_id: formData.owner_id || null,
+        lead_id: formData.lead_id || null,
         value: formData.value ? Number(formData.value) : 0,
         note: formData.note || null,
         product_type: formData.product_type || null,
@@ -425,14 +449,14 @@ export function EditDealDialog({
       }
 
       // Atualizar temperatura e origem do lead se houver lead vinculado
-      if (deal.lead_id) {
+      if (formData.lead_id) {
         const { error: leadError } = await supabase
           .from("leads")
           .update({ 
             temperature: formData.temperature,
             source_id: formData.source_id ? Number(formData.source_id) : null
           })
-          .eq("id", deal.lead_id);
+          .eq("id", formData.lead_id);
 
         if (leadError) {
           console.error("Erro ao atualizar lead:", leadError);
@@ -546,6 +570,28 @@ export function EditDealDialog({
           <div className="space-y-4">
             <h3 className="text-sm font-semibold text-muted-foreground uppercase">Lead e Responsáveis</h3>
             <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="lead_id">Cliente (Lead)</Label>
+                <Select
+                  value={formData.lead_id || "none"}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, lead_id: value === "none" ? "" : value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o cliente" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Nenhum</SelectItem>
+                    {clients.map((lead: any) => (
+                      <SelectItem key={lead.id} value={lead.id}>
+                        {lead.client?.name || "Sem nome"} {lead.client?.phone && `- ${lead.client.phone}`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="temperature">Temperatura do Lead</Label>
                 <Select
