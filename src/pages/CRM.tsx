@@ -5,6 +5,7 @@ import { Plus, Settings, RefreshCcw, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSearchParams } from "react-router-dom";
 import { CRMKPIs } from "@/components/crm/CRMKPIs";
 import { CRMSLAAlerts } from "@/components/crm/CRMSLAAlerts";
 import { CRMTasksPanel } from "@/components/crm/CRMTasksPanel";
@@ -22,6 +23,7 @@ export default function CRM() {
     user,
     profile
   } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [pipelines, setPipelines] = useState<any[]>([]);
   const [selectedPipeline, setSelectedPipeline] = useState<string>("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -39,7 +41,10 @@ export default function CRM() {
   const [categories, setCategories] = useState<string[]>([]);
   const [dateFilter, setDateFilter] = useState<string>("all");
   const [customDateRange, setCustomDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({ from: undefined, to: undefined });
+  const [autoOpenDealId, setAutoOpenDealId] = useState<string | null>(null);
+  
   const isAdmin = profile?.role === 'admin';
+  
   useEffect(() => {
     fetchPipelines();
     fetchOwners();
@@ -48,6 +53,15 @@ export default function CRM() {
       fetchGoalData();
       fetchCompanyGoal();
       fetchTeamAverage();
+    }
+    
+    // Verificar se há parâmetro ?deal=ID na URL
+    const dealId = searchParams.get('deal');
+    if (dealId) {
+      setAutoOpenDealId(dealId);
+      // Remover o parâmetro da URL após capturar
+      searchParams.delete('deal');
+      setSearchParams(searchParams, { replace: true });
     }
   }, [user, isAdmin]);
   const fetchPipelines = async () => {
@@ -233,7 +247,9 @@ export default function CRM() {
             <CRMBoard
               pipelineId={selectedPipeline} 
               key={`board-${refreshKey}`} 
-              onRefresh={handleRefresh} 
+              onRefresh={handleRefresh}
+              autoOpenDealId={autoOpenDealId}
+              onDealOpened={() => setAutoOpenDealId(null)}
               filters={{
                 owner: selectedOwner,
                 search: searchQuery,

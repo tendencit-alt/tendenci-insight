@@ -74,6 +74,10 @@ export function DealNotes({ dealId, currentNote, onNoteUpdate }: DealNotesProps)
 
     const { data: { user } } = await supabase.auth.getUser();
     
+    // Detectar menções @username
+    const mentionRegex = /@(\w+)/g;
+    const mentions = [...note.matchAll(mentionRegex)].map(match => match[1]);
+    
     // Salvar na timeline
     const { error: timelineError } = await supabase
       .from("crm_timeline")
@@ -81,7 +85,8 @@ export function DealNotes({ dealId, currentNote, onNoteUpdate }: DealNotesProps)
         deal_id: dealId,
         message: note,
         update_type: "Observação",
-        author_id: user?.id
+        author_id: user?.id,
+        mentioned_users: mentions.length > 0 ? mentions : null
       });
 
     if (timelineError) {
@@ -93,6 +98,37 @@ export function DealNotes({ dealId, currentNote, onNoteUpdate }: DealNotesProps)
       return;
     }
 
+    // Se houver menções, buscar IDs dos usuários e criar notificações
+    if (mentions.length > 0) {
+      const { data: mentionedUsers } = await supabase
+        .from("profiles")
+        .select("id, username, full_name")
+        .in("username", mentions);
+
+      if (mentionedUsers && mentionedUsers.length > 0) {
+        // Buscar informações do deal para a notificação
+        const { data: deal } = await supabase
+          .from("crm_deals")
+          .select("title")
+          .eq("id", dealId)
+          .single();
+
+        // Criar notificações para cada usuário mencionado
+        const notifications = mentionedUsers.map(mentionedUser => ({
+          user_id: mentionedUser.id,
+          type: "mention",
+          title: "Você foi mencionado",
+          message: `${user?.email || 'Alguém'} mencionou você em uma observação do negócio "${deal?.title || 'sem título'}"`,
+          link: `/kanban?deal=${dealId}`,
+          read: false
+        }));
+
+        await supabase
+          .from("notifications")
+          .insert(notifications);
+      }
+    }
+
     // Atualizar o campo note do deal também
     await supabase
       .from("crm_deals")
@@ -101,7 +137,9 @@ export function DealNotes({ dealId, currentNote, onNoteUpdate }: DealNotesProps)
 
     toast({
       title: "Observação salva",
-      description: "A observação foi adicionada ao histórico.",
+      description: mentions.length > 0 
+        ? `Observação salva e ${mentions.length} usuário(s) notificado(s).`
+        : "A observação foi adicionada ao histórico.",
     });
     
     setNote(""); // Limpar campo após salvar
@@ -423,7 +461,7 @@ export function DealNotes({ dealId, currentNote, onNoteUpdate }: DealNotesProps)
         <Textarea
           value={note}
           onChange={(e) => setNote(e.target.value)}
-          placeholder="Adicione observações sobre este negócio..."
+          placeholder="Adicione observações sobre este negócio... (Use @ para mencionar usuários)"
           className="min-h-[120px]"
         />
 
