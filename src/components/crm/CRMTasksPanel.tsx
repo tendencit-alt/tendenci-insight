@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
-import { CheckCircle, Clock } from "lucide-react";
+import { CheckCircle, Clock, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface CRMTasksPanelProps {
@@ -12,6 +12,7 @@ interface CRMTasksPanelProps {
 export function CRMTasksPanel({ pipelineId }: CRMTasksPanelProps) {
   const [tasks, setTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showUpcoming, setShowUpcoming] = useState(false);
 
   useEffect(() => {
     fetchTasks();
@@ -292,10 +293,36 @@ export function CRMTasksPanel({ pipelineId }: CRMTasksPanelProps) {
               return diffDays > 1;
             }).length > 0 && (
               <div className="space-y-2">
-                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                  Próximas
-                </h4>
-                {tasks.filter(task => {
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    Próximas ({tasks.filter(task => {
+                      const dueDate = new Date(task.due_at);
+                      const now = new Date();
+                      const diffDays = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+                      return diffDays > 1;
+                    }).length})
+                  </h4>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setShowUpcoming(!showUpcoming)}
+                    className="h-7 px-2"
+                  >
+                    {showUpcoming ? (
+                      <>
+                        <ChevronUp className="h-4 w-4 mr-1" />
+                        Minimizar
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown className="h-4 w-4 mr-1" />
+                        Expandir
+                      </>
+                    )}
+                  </Button>
+                </div>
+                
+                {showUpcoming && tasks.filter(task => {
                   const dueDate = new Date(task.due_at);
                   const now = new Date();
                   const diffDays = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
