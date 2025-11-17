@@ -33,7 +33,7 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/auth" element={<Auth />} />
-            <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+            <Route path="/" element={<ProtectedRoute><PermissionGuard module="dashboard"><Index /></PermissionGuard></ProtectedRoute>} />
             <Route path="/leads" element={<ProtectedRoute><PermissionGuard module="leads"><Leads /></PermissionGuard></ProtectedRoute>} />
             <Route path="/kanban" element={<ProtectedRoute><PermissionGuard module="crm"><CRM /></PermissionGuard></ProtectedRoute>} />
             <Route path="/projects" element={<ProtectedRoute><PermissionGuard module="projetos"><Projects /></PermissionGuard></ProtectedRoute>} />

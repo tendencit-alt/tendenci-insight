@@ -25,7 +25,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { useAuth } from "@/contexts/AuthContext";
 
 const menuItems = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard, module: null },
+  { title: "Dashboard", url: "/", icon: LayoutDashboard, module: "dashboard" },
   { title: "Leads", url: "/leads", icon: TrendingUp, module: "leads" },
   { title: "Projetos", url: "/projects", icon: Package, module: "projetos" },
   { title: "Prospecção Arquitetos", url: "/prospeccao", icon: UserSearch, module: "arquitetos" },
@@ -45,12 +45,17 @@ export function AppSidebar() {
 
   const visibleMenuItems = menuItems.filter((item) => {
     if (loading) return true; // Show all while loading
-    if (!item.module) {
-      // Para itens sem módulo, verificar se é masterOnly
-      if (item.masterOnly) return isMaster;
-      return true; // Dashboard is always visible
+    
+    // Para itens masterOnly, verificar se é admin
+    if (item.masterOnly && !isMaster) return false;
+    
+    // Se tem módulo definido, verificar permissão
+    if (item.module) {
+      return hasModuleAccess(item.module);
     }
-    return hasModuleAccess(item.module);
+    
+    // Itens sem módulo e sem masterOnly são sempre visíveis
+    return true;
   });
 
   return (
