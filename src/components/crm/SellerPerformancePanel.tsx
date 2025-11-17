@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Target, TrendingUp, Trophy, Award } from "lucide-react";
+import { ComparisonCards } from "@/components/goals/seller/ComparisonCards";
 
 export function SellerPerformancePanel() {
   const { user } = useAuth();
@@ -14,6 +15,8 @@ export function SellerPerformancePanel() {
   const [dailyGoals, setDailyGoals] = useState<any>(null);
   const [monthlyProspecting, setMonthlyProspecting] = useState({ done: 0, target: 0 });
   const [badges, setBadges] = useState<any[]>([]);
+  const [ranking, setRanking] = useState<any>(null);
+  const [teamAverage, setTeamAverage] = useState<number>(0);
 
   useEffect(() => {
     if (user) {
@@ -27,7 +30,8 @@ export function SellerPerformancePanel() {
       fetchSalesGoal(),
       fetchDailyGoals(),
       fetchMonthlyProspecting(),
-      fetchBadges()
+      fetchBadges(),
+      fetchRanking()
     ]);
     setLoading(false);
   };
@@ -99,6 +103,45 @@ export function SellerPerformancePanel() {
     setBadges(data || []);
   };
 
+  const fetchRanking = async () => {
+    try {
+      // Buscar dados de todos os vendedores
+      const { data: allSellers } = await supabase
+        .from("tendenci_seller_goals")
+        .select(`
+          vendedor_id,
+          valor_meta,
+          tendenci_goal_progress(valor_vendido, percentual)
+        `)
+        .eq("status", "ativa");
+
+      if (allSellers && allSellers.length > 0) {
+        // Calcular média da equipe
+        const percentages = allSellers.map(s => s.tendenci_goal_progress?.[0]?.percentual || 0);
+        const avg = percentages.reduce((sum, p) => sum + p, 0) / percentages.length;
+        setTeamAverage(avg);
+
+        // Ordenar por percentual
+        const sorted = allSellers.sort((a, b) => 
+          (b.tendenci_goal_progress?.[0]?.percentual || 0) - (a.tendenci_goal_progress?.[0]?.percentual || 0)
+        );
+
+        // Encontrar posição do usuário
+        const position = sorted.findIndex(s => s.vendedor_id === user?.id) + 1;
+        const userPercentage = salesGoal?.percentage || 0;
+
+        setRanking({
+          position,
+          total: allSellers.length,
+          topPercentage: userPercentage,
+          teamAveragePercentage: avg
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao buscar ranking:", error);
+    }
+  };
+
   const getWeekBadges = () => {
     const weekStart = new Date();
     weekStart.setDate(weekStart.getDate() - weekStart.getDay());
@@ -120,6 +163,25 @@ export function SellerPerformancePanel() {
     );
   }
 
+  // Calcular dados para ComparisonCards
+  const today = new Date();
+  const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+  const currentDay = today.getDate();
+  const dailyAverage = salesGoal ? salesGoal.current / currentDay : 0;
+  const projectedMonth = dailyAverage * daysInMonth;
+
+  const trend = salesGoal ? {
+    currentSales: salesGoal.current,
+    projectedSales: projectedMonth,
+    goalAmount: salesGoal.target
+  } : undefined;
+
+  const pace = salesGoal ? {
+    dailyAverage: dailyAverage,
+    idealDaily: salesGoal.target / daysInMonth,
+    projectedMonth: projectedMonth
+  } : undefined;
+
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold flex items-center gap-2">
@@ -127,35 +189,15 @@ export function SellerPerformancePanel() {
         Meu Desempenho
       </h3>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        {/* Metas de Vendas */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-primary" />
-              Metas de Vendas
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {salesGoal ? (
-              <>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Meta</span>
-                  <span className="font-semibold">R$ {salesGoal.target.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Atingido</span>
-                  <span className="font-semibold text-primary">R$ {salesGoal.current.toLocaleString()}</span>
-                </div>
-                <Progress value={salesGoal.percentage} className="h-2" />
-                <p className="text-xs text-center text-muted-foreground">{salesGoal.percentage.toFixed(1)}%</p>
-              </>
-            ) : (
-              <p className="text-xs text-muted-foreground">Sem meta ativa</p>
-            )}
-          </CardContent>
-        </Card>
+      {/* Cards de Comparação */}
+      <ComparisonCards 
+        ranking={ranking}
+        trend={trend}
+        pace={pace}
+      />
 
+
+      <div className="grid gap-4 md:grid-cols-2">
         {/* Metas de Prospecção - Diária */}
         <Card>
           <CardHeader className="pb-3">
