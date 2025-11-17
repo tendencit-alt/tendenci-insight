@@ -197,7 +197,35 @@ export function SellerPerformancePanel() {
       />
 
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-3">
+        {/* Metas de Vendas */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-primary" />
+              Metas de Vendas
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {salesGoal ? (
+              <>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Meta</span>
+                  <span className="font-semibold">R$ {salesGoal.target.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Atingido</span>
+                  <span className="font-semibold text-primary">R$ {salesGoal.current.toLocaleString()}</span>
+                </div>
+                <Progress value={salesGoal.percentage} className="h-2" />
+                <p className="text-xs text-center text-muted-foreground">{salesGoal.percentage.toFixed(1)}%</p>
+              </>
+            ) : (
+              <p className="text-xs text-muted-foreground">Sem meta ativa</p>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Metas de Prospecção - Diária */}
         <Card>
           <CardHeader className="pb-3">
