@@ -359,6 +359,25 @@ export function EditDealDialog({
         });
       }
       
+      // Validação: Verificar se a nova etapa é "Qualificação" ou "Em Negociação" e se há valor
+      if (formData.stage_id && formData.stage_id !== deal.stage_id) {
+        const selectedStage = stages.find(s => s.id === formData.stage_id);
+        if (selectedStage) {
+          const stageName = selectedStage.name.toLowerCase();
+          const requiresValue = stageName.includes("qualif") || stageName.includes("negociação");
+          
+          if (requiresValue && (!formData.value || Number(formData.value) <= 0)) {
+            setLoading(false);
+            toast({
+              title: "Valor obrigatório",
+              description: "Para as etapas 'Qualificação' e 'Em Negociação', é obrigatório informar o valor (R$) do negócio.",
+              variant: "destructive",
+            });
+            return;
+          }
+        }
+      }
+
       const updateData: any = {
         title: formData.title,
         architect_id: formData.architect_id || null,

@@ -324,14 +324,17 @@ export function CreateDealDialog({
     setLoading(true);
 
     try {
-      // Validação: Verificar se a etapa é "Em Negociação" e se há valor
+      // Validação: Verificar se a etapa é "Qualificação" ou "Em Negociação" e se há valor
       const selectedStage = stages.find(s => s.id === formData.stage_id);
-      if (selectedStage && selectedStage.name.toLowerCase().includes("negociação")) {
-        if (!formData.value || Number(formData.value) <= 0) {
+      if (selectedStage) {
+        const stageName = selectedStage.name.toLowerCase();
+        const requiresValue = stageName.includes("qualif") || stageName.includes("negociação");
+        
+        if (requiresValue && (!formData.value || Number(formData.value) <= 0)) {
           setLoading(false);
           toast({
             title: "Valor obrigatório",
-            description: "Para a etapa 'Em Negociação', é obrigatório informar o valor (R$) do negócio.",
+            description: "Para as etapas 'Qualificação' e 'Em Negociação', é obrigatório informar o valor (R$) do negócio.",
             variant: "destructive",
           });
           return;
