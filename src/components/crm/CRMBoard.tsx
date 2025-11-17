@@ -366,7 +366,7 @@ export function CRMBoard({ pipelineId, onRefresh, autoOpenDealId, onDealOpened, 
   };
 
   if (loading) {
-    return <div className="text-center py-12">Carregando...</div>;
+    return <div className="text-center py-12 animate-fade-in">Carregando...</div>;
   }
 
   return (
@@ -379,7 +379,7 @@ export function CRMBoard({ pipelineId, onRefresh, autoOpenDealId, onDealOpened, 
           return (
             <Card 
               key={stage.id} 
-              className="flex-shrink-0 hover:shadow-md transition-all duration-200 border-border/50"
+              className="flex-shrink-0 hover:shadow-md transition-all duration-300 border-border/50 animate-fade-in"
               style={{ minWidth: '320px', width: '320px' }}
               onDragOver={handleDragOver}
               onDrop={handleDrop(stage.id)}
@@ -424,7 +424,7 @@ export function CRMBoard({ pipelineId, onRefresh, autoOpenDealId, onDealOpened, 
 
         {/* Fixed Won column */}
         <Card 
-          className="flex-shrink-0 bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800 hover:shadow-md transition-all duration-200"
+          className="flex-shrink-0 bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800 hover:shadow-md transition-all duration-300 animate-fade-in"
           style={{ minWidth: '320px', width: '320px' }}
         >
           <CardHeader className="pb-3 px-5 pt-4">
@@ -460,7 +460,7 @@ export function CRMBoard({ pipelineId, onRefresh, autoOpenDealId, onDealOpened, 
 
         {/* Fixed Lost column */}
         <Card 
-          className="flex-shrink-0 bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800 hover:shadow-md transition-all duration-200"
+          className="flex-shrink-0 bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800 hover:shadow-md transition-all duration-300 animate-fade-in"
           style={{ minWidth: '320px', width: '320px' }}
         >
           <CardHeader className="pb-3 px-5 pt-4">
