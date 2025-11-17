@@ -41,100 +41,51 @@ export const ImportArchitectsData = () => {
 
       console.log("Dados extraídos da planilha:", jsonData.length, "linhas");
 
-      let successCount = 0;
-      let errorCount = 0;
+      // Preparar dados para enviar ao Edge Function
+      const architects = jsonData.map((row) => {
+        const name = cleanText(row["Nome do Profissional"]) || cleanText(row["Empresa"]);
+        const phone = cleanPhone(row["Telefone"]);
+        const email = cleanEmail(row["E-mail"]);
+        const company = cleanText(row["Empresa"]);
+        const categoria = cleanText(row["Categoria"]) || "metropolitano";
 
-      // Processar em lotes de 10 para evitar sobrecarga
-      const batchSize = 10;
-      for (let i = 0; i < jsonData.length; i += batchSize) {
-        const batch = jsonData.slice(i, i + batchSize);
-        
-        const promises = batch.map(async (row) => {
-          try {
-            // Determinar o nome: usar "Nome do Profissional" se disponível, senão usar "Empresa"
-            const name = cleanText(row["Nome do Profissional"]) || cleanText(row["Empresa"]);
-            
-            if (!name) {
-              console.warn("Linha ignorada - sem nome válido:", row);
-              return { success: false };
-            }
+        return {
+          name,
+          company: company !== name ? company : null,
+          phone,
+          email,
+          categoria: categoria.toLowerCase(),
+        };
+      }).filter(arch => arch.name); // Remover linhas sem nome
 
-            const phone = cleanPhone(row["Telefone"]);
-            const email = cleanEmail(row["E-mail"]);
-            const company = cleanText(row["Empresa"]);
-            const categoria = cleanText(row["Categoria"]) || "metropolitano";
+      console.log(`Enviando ${architects.length} arquitetos para importação`);
 
-            // Verificar se já existe (por telefone ou email)
-            let existingArchitect = null;
-            if (phone || email) {
-              const { data: existing } = await supabase
-                .from("architects")
-                .select("id")
-                .or(phone ? `phone.eq.${phone}` : email ? `email.eq.${email}` : "id.is.null")
-                .limit(1)
-                .single();
-              
-              existingArchitect = existing;
-            }
+      // Enviar para Edge Function
+      const { data: result, error } = await supabase.functions.invoke('import-architects', {
+        body: { architects }
+      });
 
-            if (existingArchitect) {
-              console.log(`Arquiteto já existe: ${name}`);
-              return { success: true, skipped: true };
-            }
-
-            // Inserir novo arquiteto
-            const { error: insertError } = await supabase
-              .from("architects")
-              .insert({
-                name,
-                company: company !== name ? company : null,
-                phone,
-                email,
-                categoria: categoria.toLowerCase(),
-                created_by: user?.id,
-                status_funil: "novo_arquiteto",
-              });
-
-            if (insertError) {
-              console.error("Erro ao inserir arquiteto:", name, insertError);
-              return { success: false };
-            }
-
-            return { success: true };
-          } catch (error) {
-            console.error("Erro ao processar linha:", error);
-            return { success: false };
-          }
-        });
-
-        const batchResults = await Promise.all(promises);
-        batchResults.forEach((result) => {
-          if (result.success) {
-            successCount++;
-          } else {
-            errorCount++;
-          }
-        });
-
-        // Delay entre lotes para não sobrecarregar
-        await new Promise((resolve) => setTimeout(resolve, 500));
+      if (error) {
+        throw error;
       }
 
+      console.log("Resultado da importação:", result);
+
       setResults({
-        success: successCount,
-        errors: errorCount,
-        total: jsonData.length,
+        success: result.inserted,
+        errors: result.errors,
+        total: result.total,
       });
 
       toast({
         title: "Importação concluída!",
-        description: `${successCount} arquitetos importados, ${errorCount} erros.`,
+        description: `${result.inserted} arquitetos importados, ${result.skipped} duplicados ignorados, ${result.errors} erros.`,
       });
     } catch (error) {
       console.error("Erro ao processar arquivo:", error);
       toast({
         title: "Erro na importação",
-        description: "Não foi possível processar o arquivo Excel.",
+        description: error.message || "Não foi possível processar o arquivo Excel.",
         variant: "destructive",
       });
     } finally {
