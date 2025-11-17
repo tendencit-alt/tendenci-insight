@@ -22,6 +22,7 @@ export function DealNotes({ dealId, currentNote, onNoteUpdate }: DealNotesProps)
   const [isUploading, setIsUploading] = useState(false);
   const [attachments, setAttachments] = useState<any[]>([]);
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
+  const [noteHistory, setNoteHistory] = useState<any[]>([]);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -30,6 +31,7 @@ export function DealNotes({ dealId, currentNote, onNoteUpdate }: DealNotesProps)
   useEffect(() => {
     setNote(currentNote);
     fetchAttachments();
+    fetchNoteHistory();
   }, [currentNote, dealId]);
 
   const fetchAttachments = async () => {
@@ -44,25 +46,67 @@ export function DealNotes({ dealId, currentNote, onNoteUpdate }: DealNotesProps)
     }
   };
 
+  const fetchNoteHistory = async () => {
+    const { data, error } = await supabase
+      .from("crm_timeline")
+      .select(`
+        *,
+        author:profiles!crm_timeline_author_id_fkey(full_name, email)
+      `)
+      .eq("deal_id", dealId)
+      .eq("update_type", "Observação")
+      .order("created_at", { ascending: false });
+
+    if (!error && data) {
+      setNoteHistory(data);
+    }
+  };
+
   const handleSaveNote = async () => {
-    const { error } = await supabase
+    if (!note.trim()) {
+      toast({
+        title: "Observação vazia",
+        description: "Por favor, adicione uma observação antes de salvar.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    // Salvar na timeline
+    const { error: timelineError } = await supabase
+      .from("crm_timeline")
+      .insert({
+        deal_id: dealId,
+        message: note,
+        update_type: "Observação",
+        author_id: user?.id
+      });
+
+    if (timelineError) {
+      toast({
+        title: "Erro ao salvar observação",
+        description: timelineError.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Atualizar o campo note do deal também
+    await supabase
       .from("crm_deals")
       .update({ note })
       .eq("id", dealId);
 
-    if (error) {
-      toast({
-        title: "Erro ao salvar observação",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
-      toast({
-        title: "Observação salva",
-        description: "A observação foi atualizada com sucesso.",
-      });
-      onNoteUpdate(note);
-    }
+    toast({
+      title: "Observação salva",
+      description: "A observação foi adicionada ao histórico.",
+    });
+    
+    setNote(""); // Limpar campo após salvar
+    onNoteUpdate(note);
+    fetchNoteHistory(); // Atualizar histórico
   };
 
   const startRecording = async () => {
@@ -386,6 +430,31 @@ export function DealNotes({ dealId, currentNote, onNoteUpdate }: DealNotesProps)
         <Button type="button" onClick={handleSaveNote}>
           Salvar Observação
         </Button>
+
+        {/* Histórico de Observações */}
+        {noteHistory.length > 0 && (
+          <div className="space-y-3 pt-4 border-t">
+            <Label className="text-sm font-medium">Histórico de Observações</Label>
+            <div className="space-y-3 max-h-[400px] overflow-y-auto">
+              {noteHistory.map((entry) => (
+                <div key={entry.id} className="p-3 rounded-lg bg-muted/50 space-y-2">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span className="font-medium">
+                      {entry.author?.full_name || entry.author?.email || "Usuário"}
+                    </span>
+                    <span>
+                      {formatDistanceToNow(new Date(entry.created_at), {
+                        addSuffix: true,
+                        locale: ptBR,
+                      })}
+                    </span>
+                  </div>
+                  <p className="text-sm whitespace-pre-wrap">{entry.message}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {attachments.length > 0 && (
           <div className="space-y-2">
