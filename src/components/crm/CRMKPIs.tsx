@@ -26,6 +26,7 @@ export function CRMKPIs({ pipelineId }: CRMKPIsProps) {
   });
   const [ticketMedio, setTicketMedio] = useState(0);
   const [emNegociacao, setEmNegociacao] = useState(0);
+  const [valorEmNegociacao, setValorEmNegociacao] = useState(0);
 
   useEffect(() => {
     if (!pipelineId) return;
@@ -52,16 +53,20 @@ export function CRMKPIs({ pipelineId }: CRMKPIsProps) {
       .ilike("name", "%negociação%")
       .single();
 
-    // Contar deals em negociação
+    // Contar deals em negociação e calcular valor total
     if (negociacaoStage) {
-      const { count } = await supabase
+      const { data: negociacaoDeals } = await supabase
         .from("crm_deals")
-        .select("*", { count: "exact", head: true })
+        .select("value")
         .eq("pipeline_id", pipelineId)
         .eq("stage_id", negociacaoStage.id)
         .eq("status", "aberto");
       
-      setEmNegociacao(count || 0);
+      const count = negociacaoDeals?.length || 0;
+      const totalValue = negociacaoDeals?.reduce((sum, deal) => sum + (deal.value || 0), 0) || 0;
+      
+      setEmNegociacao(count);
+      setValorEmNegociacao(totalValue);
     }
 
     // Buscar todos os deals do pipeline para cálculos customizados
@@ -155,7 +160,7 @@ export function CRMKPIs({ pipelineId }: CRMKPIsProps) {
       label: "Em Negociação",
       value: emNegociacao,
       color: "text-orange-500",
-      subtitle: null
+      subtitle: formatCurrency(valorEmNegociacao)
     },
     {
       icon: TrendingUp,
