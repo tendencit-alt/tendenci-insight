@@ -25,6 +25,7 @@ export function CRMKPIs({ pipelineId }: CRMKPIsProps) {
     bestMonthDate: ""
   });
   const [ticketMedio, setTicketMedio] = useState(0);
+  const [emNegociacao, setEmNegociacao] = useState(0);
 
   useEffect(() => {
     if (!pipelineId) return;
@@ -41,6 +42,26 @@ export function CRMKPIs({ pipelineId }: CRMKPIsProps) {
 
     if (!error && data) {
       setMetrics(data);
+    }
+
+    // Buscar stage "Em negociação"
+    const { data: negociacaoStage } = await supabase
+      .from("crm_stages")
+      .select("id")
+      .eq("pipeline_id", pipelineId)
+      .ilike("name", "%negociação%")
+      .single();
+
+    // Contar deals em negociação
+    if (negociacaoStage) {
+      const { count } = await supabase
+        .from("crm_deals")
+        .select("*", { count: "exact", head: true })
+        .eq("pipeline_id", pipelineId)
+        .eq("stage_id", negociacaoStage.id)
+        .eq("status", "aberto");
+      
+      setEmNegociacao(count || 0);
     }
 
     // Buscar todos os deals do pipeline para cálculos customizados
@@ -131,6 +152,13 @@ export function CRMKPIs({ pipelineId }: CRMKPIsProps) {
     },
     {
       icon: TrendingUp,
+      label: "Em Negociação",
+      value: emNegociacao,
+      color: "text-orange-500",
+      subtitle: null
+    },
+    {
+      icon: TrendingUp,
       label: "Taxa de Conversão",
       value: `${conversionMetrics.currentMonth.toFixed(1)}%`,
       color: "text-green-500",
@@ -162,7 +190,7 @@ export function CRMKPIs({ pipelineId }: CRMKPIsProps) {
   if (loading) {
     return (
       <div className="flex gap-4 overflow-x-auto pb-2">
-        {Array.from({ length: 5 }).map((_, i) => (
+        {Array.from({ length: 6 }).map((_, i) => (
           <Card key={i} className="flex-shrink-0" style={{ width: '280px' }}>
             <CardContent className="p-6">
               <Skeleton className="h-24 w-full" />
