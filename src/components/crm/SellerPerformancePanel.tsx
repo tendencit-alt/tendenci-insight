@@ -101,8 +101,10 @@ export function SellerPerformancePanel() {
 
   const fetchAllData = async () => {
     setLoading(true);
+    // Buscar sales goal primeiro, pois ranking depende dele
+    await fetchSalesGoal();
+    // Depois buscar o resto em paralelo
     await Promise.all([
-      fetchSalesGoal(),
       fetchDailyGoals(),
       fetchMonthlyProspecting(),
       fetchBadges(),
@@ -112,38 +114,71 @@ export function SellerPerformancePanel() {
   };
 
   const fetchSalesGoal = async () => {
-    const { data } = await supabase
-      .from("tendenci_seller_goals")
-      .select(`
-        *,
-        tendenci_goal_progress(valor_vendido, percentual)
-      `)
-      .eq("vendedor_id", user?.id)
-      .eq("status", "ativa")
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from("tendenci_seller_goals")
+        .select(`
+          *,
+          tendenci_goal_progress(valor_vendido, percentual)
+        `)
+        .eq("vendedor_id", user?.id)
+        .eq("status", "ativa")
+        .single();
 
-    if (data) {
-      setSalesGoal({
-        target: data.valor_meta,
-        current: data.tendenci_goal_progress?.[0]?.valor_vendido || 0,
-        percentage: data.tendenci_goal_progress?.[0]?.percentual || 0
-      });
+      if (error) {
+        console.error("Erro ao buscar meta de vendas:", error);
+        return;
+      }
+
+      if (data) {
+        // O relacionamento one-to-one retorna objeto, não array
+        const progress = Array.isArray(data.tendenci_goal_progress) 
+          ? data.tendenci_goal_progress[0] 
+          : data.tendenci_goal_progress;
+
+        console.log("Sales Goal Data:", { 
+          rawData: data, 
+          progress,
+          valorMeta: data.valor_meta,
+          valorVendido: progress?.valor_vendido,
+          percentual: progress?.percentual
+        });
+
+        const goalData = {
+          target: Number(data.valor_meta) || 0,
+          current: Number(progress?.valor_vendido) || 0,
+          percentage: Number(progress?.percentual) || 0
+        };
+
+        console.log("Setting Sales Goal:", goalData);
+        setSalesGoal(goalData);
+      }
+    } catch (error) {
+      console.error("Erro fatal ao buscar meta de vendas:", error);
     }
   };
 
   const fetchDailyGoals = async () => {
     const today = new Date().toISOString().split('T')[0];
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("tendenci_daily_architect_goals")
       .select("*")
       .eq("vendedor_id", user?.id)
       .eq("data", today)
-      .single();
+      .maybeSingle();
+
+    console.log("Daily Goals Data:", { data, error, today, userId: user?.id });
 
     if (data) {
       setDailyGoals({
         target: data.meta_captacoes,
         done: data.captacoes_realizadas
+      });
+    } else {
+      // Se não existe meta para hoje, criar uma padrão
+      setDailyGoals({
+        target: 30,
+        done: 0
       });
     }
   };
@@ -153,17 +188,22 @@ export function SellerPerformancePanel() {
     const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
     const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("tendenci_daily_architect_goals")
       .select("meta_captacoes, captacoes_realizadas")
       .eq("vendedor_id", user?.id)
       .gte("data", firstDay)
       .lte("data", lastDay);
 
-    if (data) {
+    console.log("Monthly Prospecting Data:", { data, error, firstDay, lastDay });
+
+    if (data && data.length > 0) {
       const target = data.reduce((sum, d) => sum + (d.meta_captacoes || 0), 0);
       const done = data.reduce((sum, d) => sum + (d.captacoes_realizadas || 0), 0);
       setMonthlyProspecting({ target, done });
+    } else {
+      // Valores padrão se não houver dados
+      setMonthlyProspecting({ target: 0, done: 0 });
     }
   };
 
@@ -181,7 +221,7 @@ export function SellerPerformancePanel() {
   const fetchRanking = async () => {
     try {
       // Buscar dados de todos os vendedores
-      const { data: allSellers } = await supabase
+      const { data: allSellers, error } = await supabase
         .from("tendenci_seller_goals")
         .select(`
           vendedor_id,
@@ -190,20 +230,48 @@ export function SellerPerformancePanel() {
         `)
         .eq("status", "ativa");
 
+      if (error) {
+        console.error("Erro ao buscar ranking:", error);
+        return;
+      }
+
       if (allSellers && allSellers.length > 0) {
         // Calcular média da equipe
-        const percentages = allSellers.map(s => s.tendenci_goal_progress?.[0]?.percentual || 0);
+        const percentages = allSellers.map(s => {
+          const progress = Array.isArray(s.tendenci_goal_progress) 
+            ? s.tendenci_goal_progress[0] 
+            : s.tendenci_goal_progress;
+          return progress?.percentual || 0;
+        });
+        
         const avg = percentages.reduce((sum, p) => sum + p, 0) / percentages.length;
         setTeamAverage(avg);
 
         // Ordenar por percentual
-        const sorted = allSellers.sort((a, b) => 
-          (b.tendenci_goal_progress?.[0]?.percentual || 0) - (a.tendenci_goal_progress?.[0]?.percentual || 0)
-        );
+        const sorted = allSellers.sort((a, b) => {
+          const aProgress = Array.isArray(a.tendenci_goal_progress) 
+            ? a.tendenci_goal_progress[0] 
+            : a.tendenci_goal_progress;
+          const bProgress = Array.isArray(b.tendenci_goal_progress) 
+            ? b.tendenci_goal_progress[0] 
+            : b.tendenci_goal_progress;
+          
+          return (bProgress?.percentual || 0) - (aProgress?.percentual || 0);
+        });
 
         // Encontrar posição do usuário
         const position = sorted.findIndex(s => s.vendedor_id === user?.id) + 1;
-        const userPercentage = salesGoal?.percentage || 0;
+        
+        // Buscar percentual do usuário atual
+        const userSeller = sorted.find(s => s.vendedor_id === user?.id);
+        const userProgress = userSeller 
+          ? (Array.isArray(userSeller.tendenci_goal_progress) 
+              ? userSeller.tendenci_goal_progress[0] 
+              : userSeller.tendenci_goal_progress)
+          : null;
+        const userPercentage = userProgress?.percentual || 0;
+
+        console.log("Ranking Data:", { position, total: allSellers.length, userPercentage, avg });
 
         setRanking({
           position,
@@ -256,6 +324,17 @@ export function SellerPerformancePanel() {
     idealDaily: salesGoal.target / daysInMonth,
     projectedMonth: projectedMonth
   } : undefined;
+
+  console.log("Render State:", { 
+    salesGoal, 
+    dailyGoals, 
+    monthlyProspecting, 
+    ranking, 
+    trend, 
+    pace,
+    loading,
+    userId: user?.id
+  });
 
   return (
     <div className="space-y-4">
