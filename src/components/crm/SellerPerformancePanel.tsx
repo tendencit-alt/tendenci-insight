@@ -21,6 +21,81 @@ export function SellerPerformancePanel() {
   useEffect(() => {
     if (user) {
       fetchAllData();
+      
+      // Realtime subscriptions para atualização automática
+      const goalsChannel = supabase
+        .channel('seller-performance-updates')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'tendenci_seller_goals',
+            filter: `vendedor_id=eq.${user.id}`
+          },
+          () => {
+            fetchSalesGoal();
+            fetchRanking();
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'tendenci_goal_progress'
+          },
+          () => {
+            fetchSalesGoal();
+            fetchRanking();
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'tendenci_daily_architect_goals',
+            filter: `vendedor_id=eq.${user.id}`
+          },
+          () => {
+            fetchDailyGoals();
+            fetchMonthlyProspecting();
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'tendenci_badges',
+            filter: `vendedor_id=eq.${user.id}`
+          },
+          () => {
+            fetchBadges();
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'crm_deals',
+            filter: `owner_id=eq.${user.id}`
+          },
+          (payload) => {
+            // Atualizar quando deal mudar de status (ganho/perdido)
+            if (payload.new.status === 'won' || payload.new.status === 'lost') {
+              fetchSalesGoal();
+              fetchRanking();
+            }
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(goalsChannel);
+      };
     }
   }, [user]);
 
