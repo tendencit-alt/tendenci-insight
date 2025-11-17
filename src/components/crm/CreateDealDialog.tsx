@@ -24,6 +24,7 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import { Plus, Calendar as CalendarIcon, Clock, Trash2, Mic, Square, Paperclip, Loader2 } from "lucide-react";
 import { CreateClientDialog } from "./CreateClientDialog";
 import { CreateArchitectDialog } from "../architects/CreateArchitectDialog";
@@ -46,6 +47,7 @@ export function CreateDealDialog({
   onSuccess,
 }: CreateDealDialogProps) {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [stages, setStages] = useState<any[]>([]);
   const [leads, setLeads] = useState<any[]>([]);
@@ -322,6 +324,20 @@ export function CreateDealDialog({
     setLoading(true);
 
     try {
+      // Validação: Verificar se a etapa é "Em Negociação" e se há valor
+      const selectedStage = stages.find(s => s.id === formData.stage_id);
+      if (selectedStage && selectedStage.name.toLowerCase().includes("negociação")) {
+        if (!formData.value || Number(formData.value) <= 0) {
+          setLoading(false);
+          toast({
+            title: "Valor obrigatório",
+            description: "Para a etapa 'Em Negociação', é obrigatório informar o valor (R$) do negócio.",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+
       // Update lead temperature if lead is selected
       if (formData.lead_id) {
         await supabase
@@ -338,14 +354,14 @@ export function CreateDealDialog({
       const produtosTxt = formData.tipos_produto.join(", ") || "Sem produto";
       const autoTitle = `${categoriasTxt} - ${produtosTxt}`;
 
-      // Insert deal
+      // Insert deal - owner_id é automaticamente o usuário logado
       const { data: dealData, error } = await supabase.from("crm_deals").insert({
         pipeline_id: pipelineId,
         title: autoTitle,
         stage_id: formData.stage_id,
         lead_id: formData.lead_id || null,
         architect_id: formData.architect_id && formData.architect_id !== "sem-arquiteto" ? formData.architect_id : null,
-        owner_id: formData.owner_id || null,
+        owner_id: user?.id || null,
         value: formData.value ? Number(formData.value) : null,
         note: `${formData.observations ? formData.observations + '\n\n' : ''}${formData.note || ''}`.trim() || null,
         categoria: formData.categorias.join(", ") || null,
