@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { Loader2, Lock } from 'lucide-react';
 import tendenciLogo from '@/assets/tendenci-logo-new.png';
+import { supabase } from '@/integrations/supabase/client';
 
 const motivationalMessages = [
   "Bom dia! Vamos conquistar mais um dia de sucesso!",
@@ -34,9 +35,22 @@ const Auth = () => {
   });
   const {
     signIn,
-    signUp
+    signUp,
+    user,
+    profile
   } = useAuth();
   const navigate = useNavigate();
+
+  // Redirecionar usuários já autenticados
+  useEffect(() => {
+    if (user && profile) {
+      if (profile.role !== 'admin') {
+        navigate('/kanban');
+      } else {
+        navigate('/');
+      }
+    }
+  }, [user, profile, navigate]);
 
   useEffect(() => {
     // Reproduz mensagem motivacional aleatória ao carregar a página
@@ -74,7 +88,25 @@ const Auth = () => {
       }
     } else {
       toast.success('Login realizado com sucesso!');
-      navigate('/');
+      
+      // Buscar profile do usuário para determinar redirecionamento
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+        
+        // Vendedores (não-admin) vão para /kanban
+        if (profile?.role !== 'admin') {
+          navigate('/kanban');
+        } else {
+          navigate('/');
+        }
+      } else {
+        navigate('/');
+      }
     }
     setLoading(false);
   };
