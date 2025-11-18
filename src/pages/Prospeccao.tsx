@@ -5,7 +5,9 @@ import { ProspeccaoOverview } from "@/components/prospeccao/ProspeccaoOverview";
 import { ProspeccaoCRM } from "@/components/prospeccao/ProspeccaoCRM";
 import { ManageStagesDialog } from "@/components/prospeccao/ManageStagesDialog";
 import { ProspeccaoTasksManager } from "@/components/prospeccao/ProspeccaoTasksManager";
-import { UserSearch, LayoutGrid, CheckSquare } from "lucide-react";
+import { WhatsAppConnectionManager } from "@/components/prospeccao/WhatsAppConnectionManager";
+import { CampanhasManager } from "@/components/prospeccao/CampanhasManager";
+import { UserSearch, LayoutGrid, CheckSquare, MessageSquare, Megaphone } from "lucide-react";
 
 export default function Prospeccao() {
   const [activeTab, setActiveTab] = useState("overview");
@@ -35,6 +37,14 @@ export default function Prospeccao() {
             <TabsTrigger value="crm" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <UserSearch className="h-4 w-4" />
               CRM de Arquitetos
+            </TabsTrigger>
+            <TabsTrigger value="whatsapp" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <MessageSquare className="h-4 w-4" />
+              WhatsApp API
+            </TabsTrigger>
+            <TabsTrigger value="campanhas" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <Megaphone className="h-4 w-4" />
+              Campanhas
             </TabsTrigger>
             {/* Tabs ocultas temporariamente */}
             {/* <TabsTrigger value="campanhas" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
@@ -73,6 +83,14 @@ export default function Prospeccao() {
 
           <TabsContent value="crm" className="space-y-6">
             <ProspeccaoCRM onManageStages={() => setManageStagesOpen(true)} />
+          </TabsContent>
+
+          <TabsContent value="whatsapp" className="space-y-6">
+            <WhatsAppConnectionManager />
+          </TabsContent>
+
+          <TabsContent value="campanhas" className="space-y-6">
+            <CampanhasManager />
           </TabsContent>
 
           {/* Tabs ocultas temporariamente */}
