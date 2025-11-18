@@ -160,10 +160,20 @@ export function ArchitectProspeccaoSheet({
 
             {/* Dados de Prospecção */}
             <Card className="p-4">
-              <h3 className="font-semibold mb-4 flex items-center gap-2">
-                <TrendingUp className="h-4 w-4" />
-                Dados de Prospecção
-              </h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4" />
+                  Dados de Prospecção
+                </h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsEditArchitectOpen(true)}
+                >
+                  <Pencil className="h-3 w-3 mr-1" />
+                  Editar
+                </Button>
+              </div>
               <div className="space-y-3 text-sm">
                 <div>
                   <span className="text-muted-foreground">Status no Funil:</span>
