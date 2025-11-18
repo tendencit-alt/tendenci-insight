@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { CreateProjectDialog } from "@/components/projects/CreateProjectDialog";
+import { CreateClientFromArchitectDialog } from "./CreateClientFromArchitectDialog";
 import { ArchitectTasks } from "./ArchitectTasks";
 import { ArchitectHistory } from "./ArchitectHistory";
 import { ArchitectTimeline } from "./ArchitectTimeline";
@@ -41,6 +42,7 @@ export function ArchitectProspeccaoSheet({
   const { toast } = useToast();
   const [architect, setArchitect] = useState<any>(null);
   const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
+  const [isCreateClientOpen, setIsCreateClientOpen] = useState(false);
   const queryClient = useQueryClient();
 
   // Buscar dados do arquiteto
@@ -254,14 +256,25 @@ export function ArchitectProspeccaoSheet({
                   <Package className="h-4 w-4" />
                   Projetos Enviados
                 </h3>
-                <Button 
-                  size="sm" 
-                  onClick={() => setIsCreateProjectOpen(true)}
-                  className="gap-2"
-                >
-                  <Plus className="h-4 w-4" />
-                  Novo Projeto
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    size="sm" 
+                    onClick={() => setIsCreateClientOpen(true)}
+                    variant="outline"
+                    className="gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Novo Cliente
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    onClick={() => setIsCreateProjectOpen(true)}
+                    className="gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Novo Projeto
+                  </Button>
+                </div>
               </div>
               
               {projects && projects.length > 0 ? (
@@ -323,6 +336,22 @@ export function ArchitectProspeccaoSheet({
               description: "Projeto criado com sucesso!",
             });
             setIsCreateProjectOpen(false);
+          }}
+        />
+
+        <CreateClientFromArchitectDialog
+          open={isCreateClientOpen}
+          onOpenChange={setIsCreateClientOpen}
+          architectId={architectId}
+          architectName={architect?.name || ""}
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ["architect-projects", architectId] });
+            queryClient.invalidateQueries({ queryKey: ["prospeccao-architects"] });
+            toast({
+              title: "Sucesso",
+              description: "Cliente cadastrado com sucesso!",
+            });
+            setIsCreateClientOpen(false);
           }}
         />
       </SheetContent>

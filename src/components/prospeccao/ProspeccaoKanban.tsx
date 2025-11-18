@@ -51,7 +51,7 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
           *,
           vendedor:profiles!architects_vendedor_responsavel_fkey(full_name, email),
           projects:projects(id),
-          architect_projects:architect_projects(id)
+          architect_projects:architect_projects(id, data_projeto)
         `)
         .eq("active", true);
 
@@ -96,6 +96,13 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
         .eq("id", architectId);
 
       if (error) throw error;
+
+      // Registrar no histórico
+      await supabase.from("architect_history").insert({
+        architect_id: architectId,
+        event_type: "status_change",
+        description: `Status alterado para: ${newStatus}`,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["prospeccao-architects"] });
@@ -207,6 +214,11 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
                             Último contato: {format(new Date(architect.data_ultimo_contato), "dd/MM/yyyy")}
                           </p>
                         )}
+                        {architect.ultimo_projeto_data && (
+                          <p className="text-xs text-purple-600">
+                            Último projeto: {format(new Date(architect.ultimo_projeto_data), "dd/MM/yyyy")}
+                          </p>
+                        )}
                         {!architect.data_ultimo_contato && (
                           <p className="text-xs text-red-500 italic">
                             Sem contato registrado
@@ -294,15 +306,24 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
                     })()}
 
                     {/* PROJETOS ENVIADOS */}
-                    {architect.architect_projects && architect.architect_projects.length > 0 ? (
-                      <Badge className="text-xs bg-green-600 hover:bg-green-700">
-                        📦 {architect.architect_projects.length} {architect.architect_projects.length === 1 ? 'projeto' : 'projetos'}
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-xs bg-orange-50 dark:bg-orange-950 border-orange-200 dark:border-orange-800 text-orange-700 dark:text-orange-300">
-                        0 projetos
-                      </Badge>
-                    )}
+                    {(() => {
+                      // Combinar projetos de ambas as tabelas
+                      const allProjects = [
+                        ...(architect.projects || []),
+                        ...(architect.architect_projects || [])
+                      ];
+                      const totalProjects = allProjects.length;
+                      
+                      return totalProjects > 0 ? (
+                        <Badge className="text-xs bg-green-600 hover:bg-green-700">
+                          📦 {totalProjects} {totalProjects === 1 ? 'projeto' : 'projetos'}
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-xs bg-orange-50 dark:bg-orange-950 border-orange-200 dark:border-orange-800 text-orange-700 dark:text-orange-300">
+                          0 projetos
+                        </Badge>
+                      );
+                    })()}
                   </div>
                 </div>
               </Card>
