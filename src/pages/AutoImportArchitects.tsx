@@ -21,7 +21,7 @@ export default function AutoImportArchitects() {
       setStatus('processing');
       
       // Carregar a planilha
-      const response = await fetch('/data/aniversariantes.xlsx');
+      const response = await fetch('/data/Metropolitano_01.xlsx');
       const arrayBuffer = await response.arrayBuffer();
       const workbook = XLSX.read(arrayBuffer);
       const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
