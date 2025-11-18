@@ -112,12 +112,22 @@ export function ArchitectProspeccaoSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="sm:max-w-2xl overflow-y-auto">
         <SheetHeader>
-          <SheetTitle className="flex items-center gap-3">
-            {architect.name}
-            <Badge className={architect.status_funil ? "bg-primary" : "bg-muted"}>
-              {architect.tier || "B"}
-            </Badge>
-          </SheetTitle>
+          <div className="flex items-center justify-between">
+            <SheetTitle className="flex items-center gap-3">
+              {architect.name}
+              <Badge className={architect.status_funil ? "bg-primary" : "bg-muted"}>
+                {architect.tier || "B"}
+              </Badge>
+            </SheetTitle>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsEditArchitectOpen(true)}
+            >
+              <Pencil className="h-4 w-4 mr-2" />
+              Editar
+            </Button>
+          </div>
         </SheetHeader>
 
         <Tabs defaultValue="info" className="mt-6">
