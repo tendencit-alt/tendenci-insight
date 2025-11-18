@@ -11,6 +11,8 @@ import { EditArchitectDialog } from "@/components/architects/EditArchitectDialog
 import { ArchitectDetailSheet } from "@/components/architects/ArchitectDetailSheet";
 import { ProjectTypesDashboard } from "@/components/architects/ProjectTypesDashboard";
 import { DailyArchitectGoals } from "@/components/goals/DailyArchitectGoals";
+import { WhatsAppConnectionManager } from "@/components/prospeccao/WhatsAppConnectionManager";
+import { CampanhasManager } from "@/components/prospeccao/CampanhasManager";
 
 export function ProspeccaoOverview() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -76,9 +78,11 @@ export function ProspeccaoOverview() {
 
       {/* Tabs - Tabela de Arquitetos e Análises */}
       <Tabs defaultValue="table" className="w-full">
-        <TabsList className="grid w-full max-w-md grid-cols-2">
+        <TabsList className="grid w-full max-w-2xl grid-cols-4">
           <TabsTrigger value="table">Tabela de Arquitetos</TabsTrigger>
           <TabsTrigger value="analytics">Análises de Projetos</TabsTrigger>
+          <TabsTrigger value="whatsapp">WhatsApp API</TabsTrigger>
+          <TabsTrigger value="campanhas">Campanhas</TabsTrigger>
         </TabsList>
         
         <TabsContent value="table" className="mt-6">
@@ -93,6 +97,14 @@ export function ProspeccaoOverview() {
         
         <TabsContent value="analytics" className="mt-6">
           <ProjectTypesDashboard key={refreshKey} />
+        </TabsContent>
+
+        <TabsContent value="whatsapp" className="mt-6">
+          <WhatsAppConnectionManager />
+        </TabsContent>
+
+        <TabsContent value="campanhas" className="mt-6">
+          <CampanhasManager />
         </TabsContent>
       </Tabs>
 
