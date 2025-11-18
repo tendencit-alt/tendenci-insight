@@ -21,6 +21,7 @@ import DashboardEditor from "@/pages/DashboardEditor";
 import DashboardView from "@/pages/DashboardView";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import ImportTempArchitects from "./pages/ImportTempArchitects";
 
 const queryClient = new QueryClient();
 
@@ -47,6 +48,7 @@ const App = () => (
         <Route path="/dashboards" element={<ProtectedRoute><DashboardsPersonalizados /></ProtectedRoute>} />
         <Route path="/dashboards/editar/:id" element={<ProtectedRoute><DashboardEditor /></ProtectedRoute>} />
         <Route path="/dashboards/view/:id" element={<ProtectedRoute><DashboardView /></ProtectedRoute>} />
+            <Route path="/import-temp" element={<ImportTempArchitects />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
