@@ -87,11 +87,14 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
   // Atualizar status do arquiteto
   const updateStatusMutation = useMutation({
     mutationFn: async ({ architectId, newStatus }: { architectId: string; newStatus: string }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      
       const { error } = await supabase
         .from("architects")
         .update({ 
           status_funil: newStatus,
           data_ultimo_contato: new Date().toISOString(),
+          vendedor_responsavel: user?.id, // Atribui automaticamente o vendedor que moveu o card
         })
         .eq("id", architectId);
 
@@ -283,9 +286,13 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
                     )}
 
                     {/* VENDEDOR RESPONSÁVEL */}
-                    {architect.vendedor?.username && (
+                    {architect.vendedor?.username ? (
                       <Badge variant="outline" className="text-xs bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
                         👤 @{architect.vendedor.username}
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-xs bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-muted-foreground">
+                        👤 Sem vendedor
                       </Badge>
                     )}
 
