@@ -55,9 +55,7 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
           architect_projects:architect_projects(id, data_projeto),
           architect_history(created_by, created_at, history_profile:profiles!architect_history_created_by_fkey(username))
         `)
-        .eq("active", true)
-        .order("created_at", { foreignTable: "architect_history", ascending: false })
-        .limit(1, { foreignTable: "architect_history" });
+        .eq("active", true);
 
       // Aplicar filtro de não contactados
       if (showNaoContactados) {
@@ -292,9 +290,13 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
                     {/* VENDEDOR RESPONSÁVEL - Último contato */}
                     {(() => {
                       // Prioridade: vendedor_responsavel > último do histórico > created_by
+                      const lastHistory = architect.architect_history?.sort((a, b) => 
+                        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+                      )?.[0];
+                      
                       const vendedorUsername = 
                         architect.vendedor?.username || 
-                        architect.architect_history?.[0]?.history_profile?.username ||
+                        lastHistory?.history_profile?.username ||
                         architect.created_by_profile?.username;
                       
                       return vendedorUsername ? (
