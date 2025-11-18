@@ -92,66 +92,57 @@ export default function AutoImportArchitects() {
       
       setProgress({ current: 0, total: architects.length, success: 0, errors: 0 });
 
-      // Inserir em lotes de 100
-      const batchSize = 100;
       let successCount = 0;
       let errorCount = 0;
       
-      for (let i = 0; i < architects.length; i += batchSize) {
-        const batch = architects.slice(i, i + batchSize);
+      // Processar um por um para evitar conflitos e duplicatas
+      for (let i = 0; i < architects.length; i++) {
+        const arch = architects[i];
         
         try {
-          // Tentar inserir cada arquiteto individualmente para evitar falhas em lote
-          for (const arch of batch) {
-            try {
-              // Verificar se já existe arquiteto com este telefone
-              const { data: existing } = await supabase
-                .from('architects')
-                .select('id')
-                .eq('phone', arch.phone)
-                .maybeSingle();
-              
-              if (!existing) {
-                const { error } = await supabase
-                  .from('architects')
-                  .insert({
-                    name: arch.name,
-                    email: arch.email,
-                    phone: arch.phone,
-                    birthday: arch.birthday,
-                    categoria: arch.categoria,
-                    status_funil: 'novo_arquiteto',
-                  });
-                
-                if (error) {
-                  console.error('Erro ao inserir arquiteto:', arch.name, error);
-                  errorCount++;
-                } else {
-                  successCount++;
-                }
-              } else {
-                console.log('Arquiteto já existe (telefone duplicado):', arch.name);
-                errorCount++;
-              }
-            } catch (err) {
-              console.error('Erro ao processar arquiteto:', arch.name, err);
+          // Verificar se já existe
+          const { data: existing } = await supabase
+            .from('architects')
+            .select('id')
+            .eq('phone', arch.phone)
+            .maybeSingle();
+          
+          if (!existing) {
+            const { error } = await supabase
+              .from('architects')
+              .insert({
+                name: arch.name,
+                email: arch.email,
+                phone: arch.phone,
+                birthday: arch.birthday,
+                categoria: arch.categoria,
+                status_funil: 'novo_arquiteto',
+              });
+            
+            if (error) {
+              console.error(`Erro ao inserir ${arch.name}:`, error.message);
               errorCount++;
+            } else {
+              successCount++;
             }
+          } else {
+            console.log(`Arquiteto já existe: ${arch.name}`);
+            errorCount++;
           }
-        } catch (err) {
-          console.error('Erro no lote:', err);
-          errorCount += batch.length;
+        } catch (err: any) {
+          console.error(`Erro ao processar ${arch.name}:`, err.message);
+          errorCount++;
         }
         
-        setProgress({
-          current: Math.min(i + batchSize, architects.length),
-          total: architects.length,
-          success: successCount,
-          errors: errorCount
-        });
-        
-        // Pequeno delay entre lotes
-        await new Promise(resolve => setTimeout(resolve, 200));
+        // Atualizar progresso a cada 10 registros
+        if (i % 10 === 0 || i === architects.length - 1) {
+          setProgress({
+            current: i + 1,
+            total: architects.length,
+            success: successCount,
+            errors: errorCount
+          });
+        }
       }
       
       setStatus('success');
