@@ -29,8 +29,8 @@ export default function AutoImportArchitects() {
       
       console.log(`Total de registros na planilha: ${data.length}`);
       
-      // Processar cada linha
-      const architects = data.map((row) => {
+      // Processar cada linha com validação mais robusta
+      const architects = data.map((row, index) => {
         // Processar data de nascimento
         let birthday = null;
         if (row['Data de Nascimento']) {
@@ -38,40 +38,62 @@ export default function AutoImportArchitects() {
             const dateStr = String(row['Data de Nascimento']);
             if (dateStr.includes('/')) {
               const [day, month, year] = dateStr.split('/');
-              // Corrigir anos com 3 dígitos (0995 -> 1995)
-              const fullYear = year.length === 4 ? year : (year.length === 3 ? `1${year}` : `19${year}`);
+              // Corrigir anos com diferentes formatos
+              let fullYear = year;
+              if (year.length === 2) fullYear = `19${year}`;
+              if (year.length === 3) fullYear = `1${year}`;
+              if (year.length === 4) fullYear = year;
+              
               birthday = `${fullYear}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
             }
           } catch (e) {
-            console.log('Erro ao processar data:', row['Data de Nascimento']);
+            console.log(`Erro ao processar data na linha ${index + 1}:`, row['Data de Nascimento']);
           }
         }
 
-        // Limpar email (remover truncamentos)
+        // Limpar e processar email
         let email = String(row['Email'] || '').trim();
-        if (email.endsWith('.')) {
-          // Email truncado, tentar completar domínios comuns
+        if (email && email.endsWith('.')) {
+          // Completar domínios truncados
           if (email.includes('@gmail.')) email = email.replace('@gmail.', '@gmail.com');
           if (email.includes('@hotmail.')) email = email.replace('@hotmail.', '@hotmail.com');
           if (email.includes('@outlook.')) email = email.replace('@outlook.', '@outlook.com');
           if (email.includes('@yahoo.')) email = email.replace('@yahoo.', '@yahoo.com.br');
         }
+        
+        // Se email ainda estiver com ponto no final, remover
+        if (email && email.endsWith('.')) {
+          email = email.slice(0, -1);
+        }
+
+        // Processar telefone
+        const phone = String(row['Telefone'] || '').replace(/\D/g, '');
+        
+        // Nome do arquiteto
+        const name = String(row['Arquiteto'] || '').trim();
 
         return {
-          name: String(row['Arquiteto'] || '').trim(),
-          email: email,
-          phone: String(row['Telefone'] || '').replace(/\D/g, ''),
+          name,
+          email: email || null,
+          phone,
           birthday,
           categoria: 'metropolitano',
         };
-      }).filter(a => a.name && a.phone && a.phone.length >= 8);
+      }).filter(a => {
+        // Filtrar apenas se tiver nome E telefone com pelo menos 8 dígitos
+        const isValid = a.name && a.phone && a.phone.length >= 8;
+        if (!isValid) {
+          console.log('Registro inválido filtrado:', { name: a.name, phone: a.phone });
+        }
+        return isValid;
+      });
 
       console.log(`Total de arquitetos válidos: ${architects.length}`);
       
       setProgress({ current: 0, total: architects.length, success: 0, errors: 0 });
 
-      // Inserir em lotes de 50
-      const batchSize = 50;
+      // Inserir em lotes de 100
+      const batchSize = 100;
       let successCount = 0;
       let errorCount = 0;
       
@@ -79,28 +101,45 @@ export default function AutoImportArchitects() {
         const batch = architects.slice(i, i + batchSize);
         
         try {
-          const { data, error } = await supabase
-            .from('architects')
-            .insert(
-              batch.map(arch => ({
-                name: arch.name,
-                email: arch.email,
-                phone: arch.phone,
-                birthday: arch.birthday,
-                categoria: arch.categoria,
-                status_funil: 'novo_arquiteto',
-              }))
-            )
-            .select();
-          
-          if (error) {
-            console.error(`Erro no lote ${Math.floor(i / batchSize) + 1}:`, error);
-            errorCount += batch.length;
-          } else {
-            successCount += (data?.length || batch.length);
+          // Tentar inserir cada arquiteto individualmente para evitar falhas em lote
+          for (const arch of batch) {
+            try {
+              // Verificar se já existe arquiteto com este telefone
+              const { data: existing } = await supabase
+                .from('architects')
+                .select('id')
+                .eq('phone', arch.phone)
+                .maybeSingle();
+              
+              if (!existing) {
+                const { error } = await supabase
+                  .from('architects')
+                  .insert({
+                    name: arch.name,
+                    email: arch.email,
+                    phone: arch.phone,
+                    birthday: arch.birthday,
+                    categoria: arch.categoria,
+                    status_funil: 'novo_arquiteto',
+                  });
+                
+                if (error) {
+                  console.error('Erro ao inserir arquiteto:', arch.name, error);
+                  errorCount++;
+                } else {
+                  successCount++;
+                }
+              } else {
+                console.log('Arquiteto já existe (telefone duplicado):', arch.name);
+                errorCount++;
+              }
+            } catch (err) {
+              console.error('Erro ao processar arquiteto:', arch.name, err);
+              errorCount++;
+            }
           }
         } catch (err) {
-          console.error('Erro ao inserir lote:', err);
+          console.error('Erro no lote:', err);
           errorCount += batch.length;
         }
         
@@ -112,7 +151,7 @@ export default function AutoImportArchitects() {
         });
         
         // Pequeno delay entre lotes
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 200));
       }
       
       setStatus('success');
