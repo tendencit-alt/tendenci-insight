@@ -50,7 +50,6 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
         .select(`
           *,
           vendedor:profiles!architects_vendedor_responsavel_fkey(full_name, email, username),
-          created_by_profile:profiles!architects_created_by_fkey(username, full_name),
           projects:projects(id),
           architect_projects:architect_projects(id, data_projeto)
         `)
@@ -286,23 +285,16 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
                       </Badge>
                     )}
 
-                    {/* VENDEDOR RESPONSÁVEL - Último contato */}
-                    {(() => {
-                      // Prioridade: vendedor_responsavel > created_by
-                      const vendedorUsername = 
-                        architect.vendedor?.username || 
-                        architect.created_by_profile?.username;
-                      
-                      return vendedorUsername ? (
-                        <Badge variant="outline" className="text-xs bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
-                          👤 @{vendedorUsername}
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-xs bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-muted-foreground">
-                          👤 Sem vendedor
-                        </Badge>
-                      );
-                    })()}
+                    {/* VENDEDOR RESPONSÁVEL */}
+                    {architect.vendedor?.username ? (
+                      <Badge variant="outline" className="text-xs bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+                        👤 @{architect.vendedor.username}
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-xs bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-muted-foreground">
+                        👤 Sem vendedor
+                      </Badge>
+                    )}
 
                     {/* DIAS SEM ENVIAR PROJETO */}
                     {(() => {
