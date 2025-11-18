@@ -23,6 +23,7 @@ import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import ImportTempArchitects from "./pages/ImportTempArchitects";
 import AutoImportArchitects from "./pages/AutoImportArchitects";
+import BulkImportFinal from "./pages/BulkImportFinal";
 
 const queryClient = new QueryClient();
 
@@ -51,6 +52,7 @@ const App = () => (
         <Route path="/dashboards/view/:id" element={<ProtectedRoute><DashboardView /></ProtectedRoute>} />
             <Route path="/import-temp" element={<ImportTempArchitects />} />
             <Route path="/auto-import" element={<AutoImportArchitects />} />
+            <Route path="/bulk-import-final" element={<BulkImportFinal />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
