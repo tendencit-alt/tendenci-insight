@@ -10,7 +10,6 @@ import { CreateArchitectDialog } from "@/components/architects/CreateArchitectDi
 import { EditArchitectDialog } from "@/components/architects/EditArchitectDialog";
 import { ArchitectDetailSheet } from "@/components/architects/ArchitectDetailSheet";
 import { ProjectTypesDashboard } from "@/components/architects/ProjectTypesDashboard";
-import { DailyArchitectGoals } from "@/components/goals/DailyArchitectGoals";
 
 export function ProspeccaoOverview() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -64,9 +63,6 @@ export function ProspeccaoOverview() {
 
       {/* KPIs */}
       <ArchitectKPIs refreshKey={refreshKey} />
-
-      {/* Meta Diária de Captação */}
-      <DailyArchitectGoals />
 
       {/* Alerts Grid - Próximos Aniversários e Arquitetos Inativos */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

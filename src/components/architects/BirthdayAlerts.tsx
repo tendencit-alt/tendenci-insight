@@ -69,7 +69,7 @@ export function BirthdayAlerts({ refreshKey }: BirthdayAlertsProps) {
           <div className="flex items-center gap-3">
             <Cake className="w-6 h-6 text-primary" />
             <div>
-              <h3 className="text-lg font-semibold">🎂 Próximos Aniversários (30 dias)</h3>
+              <h3 className="text-lg font-semibold">🎂 Aniversariantes do Mês</h3>
               <p className="text-sm text-muted-foreground">
                 {birthdays.length} arquitetos aniversariantes
               </p>
@@ -94,7 +94,7 @@ export function BirthdayAlerts({ refreshKey }: BirthdayAlertsProps) {
                   <h4 className="font-semibold text-base">{birthday.name}</h4>
                   <div className="text-sm text-muted-foreground space-y-1 mt-1">
                     <p>Aniversário: <span className="font-medium">
-                      {format(new Date(birthday.birthday), "dd 'de' MMMM", { locale: ptBR })}
+                      {format(new Date(birthday.birthday + 'T00:00:00'), "dd 'de' MMMM", { locale: ptBR })}
                     </span></p>
                     <p>Cidade: <span className="font-medium">{birthday.city || 'Não informado'}</span></p>
                     <div className="flex items-center gap-2">

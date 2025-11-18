@@ -63,7 +63,7 @@ export function ArchitectKPIs({ refreshKey }: ArchitectKPIsProps) {
 
         <Card className="p-6 space-y-2 hover:shadow-xl transition-all duration-300 border-l-4 border-l-pink-500">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-muted-foreground">Aniversários (30d)</span>
+            <span className="text-sm font-medium text-muted-foreground">Aniversariantes do Mês</span>
             <Gift className="w-5 h-5 text-pink-600" />
           </div>
           <p className="text-3xl font-bold text-pink-600">{metrics.birthdays_30d}</p>
