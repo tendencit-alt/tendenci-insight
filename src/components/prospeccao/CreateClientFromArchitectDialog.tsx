@@ -69,35 +69,39 @@ export function CreateClientFromArchitectDialog({
 
       if (leadError) throw leadError;
 
-      // 3. Buscar o primeiro pipeline e sua primeira stage
+      // 3. Buscar todos os pipelines e suas stages "Lead"
       const { data: pipelines } = await supabase
         .from("crm_pipelines")
-        .select("id, crm_stages(id, position)")
-        .order("created_at")
-        .limit(1)
-        .single();
+        .select("id, crm_stages!inner(id, name, position)")
+        .order("created_at");
 
-      if (pipelines && pipelines.crm_stages && pipelines.crm_stages.length > 0) {
-        const firstStage = pipelines.crm_stages.sort((a: any, b: any) => a.position - b.position)[0];
-
-        // 4. Criar deal no CRM
+      if (pipelines && pipelines.length > 0) {
         const { data: user } = await supabase.auth.getUser();
         
-        const { error: dealError } = await supabase
-          .from("crm_deals")
-          .insert({
-            title: `${formData.name} - ${architectName}`,
-            lead_id: lead.id,
-            architect_id: architectId,
-            pipeline_id: pipelines.id,
-            stage_id: firstStage.id,
-            owner_id: user.user?.id,
-            value: 0,
-            status: "aberto",
-            note: formData.notes,
-          });
+        // 4. Criar deal em todos os pipelines na etapa "Lead"
+        for (const pipeline of pipelines) {
+          const leadStage = (pipeline.crm_stages as any[]).find(
+            (stage: any) => stage.name.toLowerCase() === "lead"
+          );
 
-        if (dealError) throw dealError;
+          if (leadStage) {
+            const { error: dealError } = await supabase
+              .from("crm_deals")
+              .insert({
+                title: `${formData.name} - ${architectName}`,
+                lead_id: lead.id,
+                architect_id: architectId,
+                pipeline_id: pipeline.id,
+                stage_id: leadStage.id,
+                owner_id: user.user?.id,
+                value: 0,
+                status: "aberto",
+                note: formData.notes,
+              });
+
+            if (dealError) throw dealError;
+          }
+        }
       }
 
       // 5. Registrar no histórico do arquiteto
