@@ -1988,9 +1988,61 @@ export type Database = {
           },
         ]
       }
+      tendenci_prospec_arq_campaign_dispatches: {
+        Row: {
+          architect_id: string
+          campanha_id: string
+          created_at: string | null
+          enviado_em: string | null
+          id: string
+          mensagem_erro: string | null
+          status: string
+          tentativas: number | null
+        }
+        Insert: {
+          architect_id: string
+          campanha_id: string
+          created_at?: string | null
+          enviado_em?: string | null
+          id?: string
+          mensagem_erro?: string | null
+          status: string
+          tentativas?: number | null
+        }
+        Update: {
+          architect_id?: string
+          campanha_id?: string
+          created_at?: string | null
+          enviado_em?: string | null
+          id?: string
+          mensagem_erro?: string | null
+          status?: string
+          tentativas?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tendenci_prospec_arq_campaign_dispatches_architect_id_fkey"
+            columns: ["architect_id"]
+            isOneToOne: false
+            referencedRelation: "architects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tendenci_prospec_arq_campaign_dispatches_campanha_id_fkey"
+            columns: ["campanha_id"]
+            isOneToOne: false
+            referencedRelation: "tendenci_prospec_arq_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tendenci_prospec_arq_campaigns: {
         Row: {
           agendar_automatico: boolean | null
+          arquitetos_selecionados: string[] | null
+          conteudo_audio_url: string | null
+          conteudo_imagem_url: string | null
+          conteudo_texto: string | null
           created_at: string | null
           created_by: string | null
           criterio_interesse: Json | null
@@ -2005,6 +2057,7 @@ export type Database = {
           segmento_id: string | null
           sequencia_id: string | null
           status: string | null
+          tipo_envio: string | null
           updated_at: string | null
           vendedor_id: string | null
           webhook_n8n: string | null
@@ -2012,6 +2065,10 @@ export type Database = {
         }
         Insert: {
           agendar_automatico?: boolean | null
+          arquitetos_selecionados?: string[] | null
+          conteudo_audio_url?: string | null
+          conteudo_imagem_url?: string | null
+          conteudo_texto?: string | null
           created_at?: string | null
           created_by?: string | null
           criterio_interesse?: Json | null
@@ -2026,6 +2083,7 @@ export type Database = {
           segmento_id?: string | null
           sequencia_id?: string | null
           status?: string | null
+          tipo_envio?: string | null
           updated_at?: string | null
           vendedor_id?: string | null
           webhook_n8n?: string | null
@@ -2033,6 +2091,10 @@ export type Database = {
         }
         Update: {
           agendar_automatico?: boolean | null
+          arquitetos_selecionados?: string[] | null
+          conteudo_audio_url?: string | null
+          conteudo_imagem_url?: string | null
+          conteudo_texto?: string | null
           created_at?: string | null
           created_by?: string | null
           criterio_interesse?: Json | null
@@ -2047,6 +2109,7 @@ export type Database = {
           segmento_id?: string | null
           sequencia_id?: string | null
           status?: string | null
+          tipo_envio?: string | null
           updated_at?: string | null
           vendedor_id?: string | null
           webhook_n8n?: string | null
