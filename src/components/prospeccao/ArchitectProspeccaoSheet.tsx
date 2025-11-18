@@ -115,8 +115,8 @@ export function ArchitectProspeccaoSheet({
           <div className="flex items-center justify-between">
             <SheetTitle className="flex items-center gap-3">
               {architect.name}
-              <Badge className={architect.status_funil ? "bg-primary" : "bg-muted"}>
-                {architect.tier || "B"}
+              <Badge variant="secondary" className="text-xs">
+                @{architect.vendedor?.full_name || architect.vendedor?.email || "Sem vendedor"}
               </Badge>
             </SheetTitle>
             <Button
