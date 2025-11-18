@@ -18,11 +18,13 @@ import {
   User,
   TrendingUp,
   ExternalLink,
-  Plus
+  Plus,
+  Pencil
 } from "lucide-react";
 import { format } from "date-fns";
 import { CreateProjectDialog } from "@/components/projects/CreateProjectDialog";
 import { CreateClientFromArchitectDialog } from "./CreateClientFromArchitectDialog";
+import { EditArchitectDialog } from "@/components/architects/EditArchitectDialog";
 import { ArchitectTasks } from "./ArchitectTasks";
 import { ArchitectHistory } from "./ArchitectHistory";
 import { ArchitectTimeline } from "./ArchitectTimeline";
@@ -43,6 +45,7 @@ export function ArchitectProspeccaoSheet({
   const [architect, setArchitect] = useState<any>(null);
   const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
   const [isCreateClientOpen, setIsCreateClientOpen] = useState(false);
+  const [isEditArchitectOpen, setIsEditArchitectOpen] = useState(false);
   const queryClient = useQueryClient();
 
   // Buscar dados do arquiteto
@@ -352,6 +355,36 @@ export function ArchitectProspeccaoSheet({
               description: "Cliente cadastrado com sucesso!",
             });
             setIsCreateClientOpen(false);
+          }}
+        />
+
+        <EditArchitectDialog
+          open={isEditArchitectOpen}
+          onOpenChange={setIsEditArchitectOpen}
+          architect={architect}
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ["architect-projects", architectId] });
+            queryClient.invalidateQueries({ queryKey: ["prospeccao-architects"] });
+            // Atualizar o estado local do arquiteto
+            const fetchArchitect = async () => {
+              const { data, error } = await supabase
+                .from("architects")
+                .select(`
+                  *,
+                  vendedor:profiles!architects_vendedor_responsavel_fkey(full_name, email, avatar_url)
+                `)
+                .eq("id", architectId)
+                .maybeSingle();
+
+              if (!error && data) {
+                setArchitect(data);
+              }
+            };
+            fetchArchitect();
+            toast({
+              title: "Sucesso",
+              description: "Arquiteto atualizado com sucesso!",
+            });
           }}
         />
       </SheetContent>
