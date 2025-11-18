@@ -49,7 +49,7 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
         .from("architects")
         .select(`
           *,
-          vendedor:profiles!architects_vendedor_responsavel_fkey(full_name, email),
+          vendedor:profiles!architects_vendedor_responsavel_fkey(full_name, email, username),
           projects:projects(id),
           architect_projects:architect_projects(id, data_projeto)
         `)
@@ -282,10 +282,10 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
                       </Badge>
                     )}
 
-                    {/* TIER */}
-                    {architect.tier && (
-                      <Badge variant="outline" className="text-xs">
-                        Tier {architect.tier}
+                    {/* VENDEDOR RESPONSÁVEL */}
+                    {architect.vendedor?.username && (
+                      <Badge variant="outline" className="text-xs bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+                        👤 @{architect.vendedor.username}
                       </Badge>
                     )}
 
