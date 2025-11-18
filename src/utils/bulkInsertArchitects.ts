@@ -4,7 +4,7 @@ import { processArchitectsFromFile } from './processArchitectsFile';
 export async function bulkInsertArchitects() {
   try {
     // Processar planilha
-    const architects = await processArchitectsFromFile('/data/aniversariantes.xlsx');
+    const architects = await processArchitectsFromFile('/data/Metropolitano_01.xlsx');
     
     console.log(`Processando ${architects.length} arquitetos...`);
     
