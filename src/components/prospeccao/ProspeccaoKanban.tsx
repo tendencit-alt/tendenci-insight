@@ -51,7 +51,8 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
           *,
           vendedor:profiles!architects_vendedor_responsavel_fkey(full_name, email, username),
           projects:projects(id),
-          architect_projects:architect_projects(id, data_projeto)
+          architect_projects:architect_projects(id, data_projeto),
+          tendenci_prospec_arq_logs!inner(enviado_por, created_at, profiles!tendenci_prospec_arq_logs_enviado_por_fkey(username, full_name))
         `)
         .eq("active", true);
 
@@ -80,7 +81,24 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
       const { data, error } = await query.order("created_at", { ascending: false });
 
       if (error) throw error;
-      return data;
+      
+      // Processar dados para encontrar o último vendedor que fez contato
+      const processedData = data?.map(architect => {
+        // Ordenar logs por data mais recente
+        const sortedLogs = architect.tendenci_prospec_arq_logs?.sort((a: any, b: any) => 
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+        
+        // Pegar o vendedor do último log
+        const lastVendor = sortedLogs?.[0]?.profiles;
+        
+        return {
+          ...architect,
+          ultimo_vendedor: lastVendor
+        };
+      });
+      
+      return processedData;
     },
   });
 
@@ -285,16 +303,23 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
                       </Badge>
                     )}
 
-                    {/* VENDEDOR RESPONSÁVEL */}
-                    {architect.vendedor?.username ? (
-                      <Badge variant="outline" className="text-xs bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
-                        👤 @{architect.vendedor.username}
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-xs bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-muted-foreground">
-                        👤 Sem vendedor
-                      </Badge>
-                    )}
+                    {/* VENDEDOR RESPONSÁVEL - Último contato */}
+                    {(() => {
+                      // Prioridade: último vendedor que fez contato > vendedor_responsavel
+                      const vendedorUsername = 
+                        architect.ultimo_vendedor?.username || 
+                        architect.vendedor?.username;
+                      
+                      return vendedorUsername ? (
+                        <Badge variant="outline" className="text-xs bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+                          👤 @{vendedorUsername}
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-xs bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-muted-foreground">
+                          👤 Sem vendedor
+                        </Badge>
+                      );
+                    })()}
 
                     {/* DIAS SEM ENVIAR PROJETO */}
                     {(() => {
