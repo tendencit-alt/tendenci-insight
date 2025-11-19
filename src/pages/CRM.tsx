@@ -114,32 +114,36 @@ export default function CRM() {
         {/* Painel de Desempenho do Vendedor */}
         {!isAdmin && <SellerPerformancePanel />}
 
-        {/* Header */}
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl lg:text-3xl font-bold tracking-tight">🗂️ CRM Kanban</h1>
-          <p className="text-xs lg:text-sm text-muted-foreground">
-            Funis e cadências personalizadas, com métricas, SLA e integrações
-          </p>
-        </div>
+        {/* Header com botões responsivos */}
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div className="flex flex-col gap-1">
+            <h1 className="text-2xl lg:text-3xl font-bold tracking-tight">🗂️ CRM Kanban</h1>
+            <p className="text-xs lg:text-sm text-muted-foreground">
+              Funis e cadências personalizadas, com métricas, SLA e integrações
+            </p>
+          </div>
 
-        {/* Botões de Ação */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <Button onClick={() => setIsCreateDialogOpen(true)} size="sm">
-            <Plus className="mr-2 h-4 w-4" />
-            Novo Negócio
-          </Button>
-          <Button variant="outline" onClick={() => setIsManageDialogOpen(true)} size="sm">
-            <Settings className="mr-2 h-4 w-4" />
-            Funis/Etapas
-          </Button>
-          <Button variant="outline" onClick={handleRefresh} size="sm">
-            <RefreshCcw className="mr-2 h-4 w-4" />
-            Atualizar
-          </Button>
-          <Button variant="outline" onClick={handleExport} size="sm">
-            <Download className="mr-2 h-4 w-4" />
-            Exportar
-          </Button>
+          {/* Botões de Ação - Responsivos */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button onClick={() => setIsCreateDialogOpen(true)} size="sm" className="hover:scale-105 transition-transform">
+              <Plus className="mr-2 h-4 w-4" />
+              <span className="hidden sm:inline">Novo Negócio</span>
+              <span className="sm:hidden">Novo</span>
+            </Button>
+            <Button variant="outline" onClick={() => setIsManageDialogOpen(true)} size="sm" className="hover:scale-105 transition-transform">
+              <Settings className="mr-2 h-4 w-4" />
+              <span className="hidden md:inline">Funis/Etapas</span>
+              <span className="md:hidden">Funis</span>
+            </Button>
+            <Button variant="outline" onClick={handleRefresh} size="sm" className="hover:scale-105 transition-transform">
+              <RefreshCcw className="mr-2 h-4 w-4" />
+              <span className="sr-only">Atualizar</span>
+            </Button>
+            <Button variant="outline" onClick={handleExport} size="sm" className="hover:scale-105 transition-transform">
+              <Download className="mr-2 h-4 w-4" />
+              <span className="sr-only">Exportar</span>
+            </Button>
+          </div>
         </div>
 
         {/* Filters */}
