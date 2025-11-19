@@ -309,16 +309,16 @@ export function CRMBoard({ pipelineId, onRefresh, autoOpenDealId, onDealOpened, 
     const sourceStage = stages.find(s => s.id === draggedDeal.stage_id);
     const targetStage = stages.find(s => s.id === stageId);
     
-    // Verificar se a etapa de destino exige valor (Qualificação ou Negociação)
+    // Verificar se a etapa de destino exige valor (APENAS Negociação)
     if (targetStage) {
       const targetName = targetStage.name.toLowerCase();
-      const requiresValue = targetName.includes('qualif') || targetName.includes('negociação');
+      const requiresValue = targetName.includes('negociação');
       
-      // Só exige valor se for Qualificação ou Negociação
+      // Só exige valor se for Negociação
       if (requiresValue && (!draggedDeal.value || draggedDeal.value <= 0)) {
         toast({
           title: "Valor obrigatório",
-          description: "Para mover para as etapas 'Qualificação' ou 'Em Negociação', o negócio precisa ter um valor (R$) definido. Edite o negócio e adicione o valor antes de avançar.",
+          description: "Para mover para a etapa 'Negociação', o negócio precisa ter um valor (R$) definido. Edite o negócio e adicione o valor antes de avançar.",
           variant: "destructive",
         });
         setDraggedDeal(null);
