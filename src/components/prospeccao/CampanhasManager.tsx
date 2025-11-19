@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Send, Save, Trash2, Image, FileAudio, MessageSquare, Loader2, CheckCircle, XCircle, Upload, Mic, X } from "lucide-react";
+import { Plus, Send, Save, Trash2, Image, FileAudio, MessageSquare, Loader2, CheckCircle, XCircle, Upload, Mic, X, BookOpen } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -636,10 +636,18 @@ export function CampanhasManager() {
             Crie e gerencie campanhas de WhatsApp para arquitetos
           </p>
         </div>
-        <Button onClick={() => handleOpenDialog()} className="gap-2">
-          <Plus className="w-4 h-4" />
-          Nova Campanha
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" asChild>
+            <a href="/whatsapp-integration-docs" target="_blank" className="flex items-center gap-2">
+              <BookOpen className="h-4 w-4" />
+              Documentação
+            </a>
+          </Button>
+          <Button onClick={() => handleOpenDialog()} className="gap-2">
+            <Plus className="w-4 h-4" />
+            Nova Campanha
+          </Button>
+        </div>
       </div>
 
       {arquitetosDisponiveis.length === 0 && (
