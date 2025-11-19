@@ -437,7 +437,7 @@ export function CampanhasManager() {
 
     const arquitetos = await supabase
       .from('architects')
-      .select('id, name, phone')
+      .select('id, name, phone, data_primeiro_contato, data_ultimo_contato')
       .in('id', campanha.arquitetos_selecionados);
 
     if (!arquitetos.data || arquitetos.data.length === 0) {
@@ -500,6 +500,17 @@ export function CampanhasManager() {
               : s
           ));
 
+          // Atualizar status do arquiteto para "contato_iniciado" e registrar data do contato
+          const agora = new Date().toISOString();
+          await supabase
+            .from('architects')
+            .update({
+              status_funil: 'contato_iniciado',
+              data_primeiro_contato: arquiteto.data_primeiro_contato || agora,
+              data_ultimo_contato: agora,
+            })
+            .eq('id', arquiteto.id);
+
           // Registrar no histórico do arquiteto
           await supabase.from('tendenci_prospec_arq_logs').insert({
             architect_id: arquiteto.id,
@@ -514,7 +525,7 @@ export function CampanhasManager() {
             campanha_id: campanha.id,
             architect_id: arquiteto.id,
             status: 'sucesso',
-            enviado_em: new Date().toISOString(),
+            enviado_em: agora,
           });
 
         } else {
