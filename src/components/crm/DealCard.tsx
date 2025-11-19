@@ -65,7 +65,7 @@ export function DealCard({ deal, timeInStage, onClick, onDragStart, onDelete }: 
 
   return (
     <Card
-      className="cursor-move hover:shadow-md hover:border-primary/20 transition-all duration-300 hover:scale-[1.02] animate-fade-in relative group border-border/50"
+      className="cursor-move hover:shadow-xl hover:border-primary/40 transition-all duration-300 hover:scale-[1.03] animate-fade-in relative group border-border/50 hover:bg-accent/5"
       onClick={onClick}
       draggable={true}
       onDragStart={onDragStart}

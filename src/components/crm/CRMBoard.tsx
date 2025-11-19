@@ -371,10 +371,9 @@ export function CRMBoard({ pipelineId, onRefresh, autoOpenDealId, onDealOpened, 
 
   return (
     <>
-      <div className="w-full overflow-x-auto" style={{ scrollbarWidth: 'thin' }}>
-        <div className="flex gap-6 pb-4" style={{ minWidth: 'max-content' }}>
-          {/* Regular pipeline stages */}
-          {stages.map((stage) => {
+      {/* Render board: container with horizontal scroll */}
+      <div className="flex gap-4 overflow-x-auto pb-4 px-1">
+        {stages.map((stage) => {
           const stageDeals = getDealsByStage(stage.id);
           return (
             <Card 
@@ -424,25 +423,29 @@ export function CRMBoard({ pipelineId, onRefresh, autoOpenDealId, onDealOpened, 
 
         {/* Fixed Won column */}
         <Card 
-          className="flex-shrink-0 bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800 hover:shadow-md transition-all duration-300 animate-fade-in"
-          style={{ minWidth: '320px', width: '320px' }}
+          className="flex-shrink-0 bg-gradient-to-br from-success/5 to-success/10 border-success/30 hover:shadow-lg hover:border-success/50 transition-all duration-300 animate-fade-in"
+          style={{ minWidth: '340px', width: '340px' }}
         >
-          <CardHeader className="pb-3 px-5 pt-4">
-            <CardTitle className="flex flex-col gap-2 text-base text-green-700 dark:text-green-300">
+          <CardHeader className="pb-3 px-5 pt-4 space-y-0">
+            <CardTitle className="flex flex-col gap-2">
               <div className="flex items-center justify-between gap-3">
-                <span className="truncate font-semibold">✅ Ganho</span>
-                <Badge variant="default" className="bg-green-600 hover:bg-green-700 flex-shrink-0 font-medium">{getWonDeals().length}</Badge>
+                <span className="truncate font-semibold text-base text-success">✅ Ganho</span>
+                <Badge className="bg-success hover:bg-success/90 flex-shrink-0 font-bold text-sm px-3 py-1">
+                  {getWonDeals().length}
+                </Badge>
               </div>
-              <span className="text-sm font-semibold text-green-600 dark:text-green-400">
-                {calculateStageValue(getWonDeals())}
-              </span>
+              {getWonDeals().length > 0 && (
+                <span className="text-sm font-bold text-success">
+                  💰 {calculateStageValue(getWonDeals())}
+                </span>
+              )}
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3 px-5 pb-4" style={{ maxHeight: '600px', overflowY: 'auto' }}>
+          <CardContent className="space-y-3 px-5 pb-4" style={{ maxHeight: '650px', overflowY: 'auto' }}>
             {getWonDeals().length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-8">
-                Nenhum negócio ganho ainda
-              </p>
+              <div className="text-sm text-muted-foreground text-center py-12 px-4 border-2 border-dashed border-success/20 rounded-lg">
+                <p>Nenhum negócio ganho</p>
+              </div>
             ) : (
               getWonDeals().map((deal) => (
                 <DealCard
@@ -460,25 +463,29 @@ export function CRMBoard({ pipelineId, onRefresh, autoOpenDealId, onDealOpened, 
 
         {/* Fixed Lost column */}
         <Card 
-          className="flex-shrink-0 bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800 hover:shadow-md transition-all duration-300 animate-fade-in"
-          style={{ minWidth: '320px', width: '320px' }}
+          className="flex-shrink-0 bg-gradient-to-br from-destructive/5 to-destructive/10 border-destructive/30 hover:shadow-lg hover:border-destructive/50 transition-all duration-300 animate-fade-in"
+          style={{ minWidth: '340px', width: '340px' }}
         >
-          <CardHeader className="pb-3 px-5 pt-4">
-            <CardTitle className="flex flex-col gap-2 text-base text-red-700 dark:text-red-300">
+          <CardHeader className="pb-3 px-5 pt-4 space-y-0">
+            <CardTitle className="flex flex-col gap-2">
               <div className="flex items-center justify-between gap-3">
-                <span className="truncate font-semibold">❌ Perdido</span>
-                <Badge variant="destructive" className="hover:bg-destructive/90 flex-shrink-0 font-medium">{getLostDeals().length}</Badge>
+                <span className="truncate font-semibold text-base text-destructive">❌ Perdido</span>
+                <Badge className="bg-destructive hover:bg-destructive/90 flex-shrink-0 font-bold text-sm px-3 py-1">
+                  {getLostDeals().length}
+                </Badge>
               </div>
-              <span className="text-sm font-semibold text-red-600 dark:text-red-400">
-                {calculateStageValue(getLostDeals())}
-              </span>
+              {getLostDeals().length > 0 && (
+                <span className="text-sm font-bold text-destructive">
+                  💸 {calculateStageValue(getLostDeals())}
+                </span>
+              )}
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3 px-5 pb-4" style={{ maxHeight: '600px', overflowY: 'auto' }}>
+          <CardContent className="space-y-3 px-5 pb-4" style={{ maxHeight: '650px', overflowY: 'auto' }}>
             {getLostDeals().length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-8">
-                Nenhum negócio perdido
-              </p>
+              <div className="text-sm text-muted-foreground text-center py-12 px-4 border-2 border-dashed border-destructive/20 rounded-lg">
+                <p>Nenhum negócio perdido</p>
+              </div>
             ) : (
               getLostDeals().map((deal) => (
                 <DealCard
@@ -493,7 +500,6 @@ export function CRMBoard({ pipelineId, onRefresh, autoOpenDealId, onDealOpened, 
             )}
           </CardContent>
         </Card>
-        </div>
       </div>
 
       <DealDetailSheet
