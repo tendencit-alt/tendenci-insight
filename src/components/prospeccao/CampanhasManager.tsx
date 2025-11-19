@@ -783,6 +783,19 @@ export function CampanhasManager() {
                       
                       <Button
                         size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setViewingCampanha(campanha);
+                          setDetailsOpen(true);
+                        }}
+                        className="gap-2"
+                      >
+                        <Eye className="h-4 w-4" />
+                        Ver Detalhes
+                      </Button>
+                      
+                      <Button
+                        size="sm"
                         variant="destructive"
                         onClick={() => handleDeleteCampanha(campanha.id)}
                       >
@@ -835,6 +848,18 @@ export function CampanhasManager() {
                     >
                       <Send className="w-4 h-4" />
                       Disparar
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setViewingCampanha(campanha);
+                        setDetailsOpen(true);
+                      }}
+                      className="gap-2"
+                    >
+                      <Eye className="h-4 w-4" />
+                      Ver Detalhes
                     </Button>
                   </div>
                 </CardContent>
