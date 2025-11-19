@@ -33,7 +33,6 @@ export function DealNotes({ dealId, currentNote, onNoteUpdate }: DealNotesProps)
   const [selectedUserIndex, setSelectedUserIndex] = useState(0);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editingNoteText, setEditingNoteText] = useState("");
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const audioRefs = useRef<Map<string, HTMLAudioElement>>(new Map());
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -277,8 +276,10 @@ export function DealNotes({ dealId, currentNote, onNoteUpdate }: DealNotesProps)
       });
 
       fetchAttachments();
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
+      // Limpar o input após o upload
+      const fileInput = document.getElementById('file-upload') as HTMLInputElement;
+      if (fileInput) {
+        fileInput.value = "";
       }
     } catch (error: any) {
       toast({
@@ -483,33 +484,38 @@ export function DealNotes({ dealId, currentNote, onNoteUpdate }: DealNotesProps)
             Gravar Áudio
           </Button>
 
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isUploading}
-          >
-            {isUploading ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Enviando...
-              </>
-            ) : (
-              <>
-                <Paperclip className="h-4 w-4 mr-2" />
-                Anexar Arquivo
-              </>
-            )}
-          </Button>
+          <label htmlFor="file-upload">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={isUploading}
+              asChild
+            >
+              <span className="cursor-pointer">
+                {isUploading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Enviando...
+                  </>
+                ) : (
+                  <>
+                    <Paperclip className="h-4 w-4 mr-2" />
+                    Anexar Arquivo
+                  </>
+                )}
+              </span>
+            </Button>
+          </label>
 
           <input
-            ref={fileInputRef}
+            id="file-upload"
             type="file"
             className="hidden"
             multiple
             onChange={handleFileUpload}
             accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.webp,.mp3,.wav,.m4a,.webm,.ogg"
+            disabled={isUploading}
           />
         </div>
 
