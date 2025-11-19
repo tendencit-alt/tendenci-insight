@@ -86,10 +86,17 @@ const Index = () => {
         setMetaAdSpend(adSpendData);
       }
 
-      // 4. Mensagens Iniciadas Meta (API futura)
-      const { data: initiatedMsgData, error: initiatedError } = await supabase.rpc('dashboard_meta_initiated_messages');
-      if (!initiatedError && initiatedMsgData) {
-        setMetaInitiatedMessages(initiatedMsgData);
+      // 4. Mensagens Iniciadas Meta - Leads com tag de IA do CRM Kanban
+      const { count: aiLeadsCount, error: aiLeadsError } = await supabase
+        .from('crm_deals')
+        .select('*', { count: 'exact', head: true })
+        .eq('from_ai', true);
+      
+      if (!aiLeadsError) {
+        setMetaInitiatedMessages({ 
+          count: aiLeadsCount || 0,
+          api_connected: true 
+        });
       }
 
       // 5. Origem dos leads
@@ -259,7 +266,7 @@ const Index = () => {
               Dados Meta Ads
               <span className="text-sm font-normal text-muted-foreground">(via API)</span>
             </h2>
-            {(!metaAdSpend?.api_connected || !metaMessageCost?.api_connected || !metaInitiatedMessages?.api_connected) && (
+            {(!metaAdSpend?.api_connected || !metaMessageCost?.api_connected) && (
               <Badge variant="destructive" className="flex items-center gap-2">
                 <WifiOff className="h-3 w-3" />
                 API não conectada
@@ -300,18 +307,10 @@ const Index = () => {
             />
             <StatCard
               title="Mensagens Iniciadas"
-              value={
-                metaInitiatedMessages?.api_connected 
-                  ? `${metaInitiatedMessages.total_initiated}`
-                  : "Aguardando API"
-              }
-              subtitle={
-                metaInitiatedMessages?.api_connected 
-                  ? `Últimos 30 dias`
-                  : "Configure a integração Meta"
-              }
-              icon={metaInitiatedMessages?.api_connected ? MessageSquare : WifiOff}
-              variant={metaInitiatedMessages?.api_connected ? "default" : "destructive"}
+              value={`${metaInitiatedMessages?.count || 0}`}
+              subtitle="Leads com tag de IA (CRM Kanban)"
+              icon={MessageSquare}
+              variant="default"
             />
           </div>
 
