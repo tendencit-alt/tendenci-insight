@@ -110,12 +110,12 @@ export default function CRM() {
     });
   };
   return <DashboardLayout>
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-3">
         {/* Painel de Desempenho do Vendedor */}
         {!isAdmin && <SellerPerformancePanel />}
 
         {/* Header com botões responsivos */}
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2">
           <div className="flex flex-col gap-1">
             <h1 className="text-2xl lg:text-3xl font-bold tracking-tight">🗂️ CRM Kanban</h1>
             <p className="text-xs lg:text-sm text-muted-foreground">
@@ -194,24 +194,26 @@ export default function CRM() {
             {/* Alerta de Tarefas Faltantes */}
             <TaskReminderAlert pipelineId={selectedPipeline} />
 
-            {/* Kanban Board - Container com overflow controlado */}
-            <div className="w-full -mx-6 px-6 overflow-x-auto">
-              <CRMBoard
-                pipelineId={selectedPipeline} 
-                key={`board-${refreshKey}`} 
-                onRefresh={handleRefresh}
-                autoOpenDealId={autoOpenDealId}
-                onDealOpened={() => setAutoOpenDealId(null)}
-                filters={{
-                  owner: selectedOwner,
-                  search: searchQuery,
-                  status: selectedStatus,
-                  category: selectedCategory,
-                  showPlanned: showPlanned,
-                  dateFilter,
-                  customDateRange
-                }} 
-              />
+            {/* Kanban Board - Escapa do padding do container */}
+            <div className="-mx-4 lg:-mx-6">
+              <div className="overflow-x-auto px-4 lg:px-6">
+                <CRMBoard
+                  pipelineId={selectedPipeline} 
+                  key={`board-${refreshKey}`} 
+                  onRefresh={handleRefresh}
+                  autoOpenDealId={autoOpenDealId}
+                  onDealOpened={() => setAutoOpenDealId(null)}
+                  filters={{
+                    owner: selectedOwner,
+                    search: searchQuery,
+                    status: selectedStatus,
+                    category: selectedCategory,
+                    showPlanned: showPlanned,
+                    dateFilter,
+                    customDateRange
+                  }} 
+                />
+              </div>
             </div>
           </>}
         
