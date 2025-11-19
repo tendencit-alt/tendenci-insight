@@ -122,10 +122,12 @@ export function CampanhaExecutor({ campaignId, campaignName, onComplete }: Execu
 
       setStatus(prev => ({ ...prev, total: arquitetos.length }));
 
-      // 6. Pegar primeira mensagem da sequência
-      const primeiraMensagem = mensagens.sort((a, b) => a.ordem - b.ordem)[0];
+      // 6. Verificar se tem webhook configurado
+      if (!campanha.webhook_n8n) {
+        throw new Error('Webhook N8N não configurado para esta campanha');
+      }
 
-      // 4. Enviar mensagens
+      // 7. Enviar mensagens
       let sent = 0;
       let failed = 0;
 
@@ -138,26 +140,36 @@ export function CampanhaExecutor({ campaignId, campaignName, onComplete }: Execu
         setStatus(prev => ({ ...prev, current: arq.name }));
 
         try {
-          // Personalizar mensagem
-          let mensagem = primeiraMensagem.template
-            .replace(/\{\{nome\}\}/g, arq.name)
-            .replace(/\{\{empresa\}\}/g, arq.company || '')
-            .replace(/\{\{cidade\}\}/g, arq.city || '');
+          // Preparar payload para webhook n8n
+          const payload = {
+            campanha_id: campanha.id,
+            arquiteto_id: arq.id,
+            nome: arq.name,
+            telefone: arq.phone,
+            tipo_envio: campanha.tipo_envio,
+            conteudo_texto: campanha.conteudo_texto || null,
+            conteudo_imagem_url: campanha.conteudo_imagem_url || null,
+            conteudo_audio_url: campanha.conteudo_audio_url || null,
+            instance_name: whatsappConn.instance_name,
+            whatsapp_connection_id: campanha.whatsapp_connection_id
+          };
 
-          // Enviar via edge function
-          const { data, error } = await supabase.functions.invoke('whatsapp-send-message', {
-            body: {
-              instanceName: whatsappConn.instance_name,
-              phoneNumber: arq.phone,
-              message: mensagem,
-              campaignId: campanha.id,
-              architectId: arq.id
-            }
+          // Enviar via webhook n8n
+          const response = await fetch(campanha.webhook_n8n, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload)
           });
 
-          if (error) throw error;
+          if (!response.ok) {
+            throw new Error(`Webhook retornou status ${response.status}`);
+          }
 
-          if (data?.success) {
+          const result = await response.json();
+
+          if (result.status === 'success' || response.status === 200) {
             sent++;
             
             // Registrar no relacionamento campanha-arquiteto
@@ -172,7 +184,7 @@ export function CampanhaExecutor({ campaignId, campaignName, onComplete }: Execu
 
           } else {
             failed++;
-            console.error('Falha ao enviar para', arq.name, data);
+            console.error('Falha ao enviar para', arq.name, result);
           }
 
         } catch (error) {
