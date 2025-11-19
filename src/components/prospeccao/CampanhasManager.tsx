@@ -466,6 +466,35 @@ export function CampanhasManager() {
     setDispatching(true);
     setDispatchProgress(0);
     
+    // 🔥 BUSCAR DADOS DA CONEXÃO WHATSAPP
+    const { data: whatsappConn, error: whatsappError } = await supabase
+      .from('tendenci_whatsapp_connections')
+      .select('instance_name, instance_id')
+      .eq('id', campanha.whatsapp_connection_id)
+      .maybeSingle();
+
+    if (whatsappError || !whatsappConn) {
+      toast({
+        title: "Erro",
+        description: "Conexão WhatsApp não encontrada",
+        variant: "destructive",
+      });
+      setDispatching(false);
+      return;
+    }
+
+    if (!whatsappConn.instance_name || !whatsappConn.instance_id) {
+      toast({
+        title: "Erro Crítico",
+        description: "Dados da instância WhatsApp ausentes. Delete e recrie esta campanha.",
+        variant: "destructive",
+      });
+      setDispatching(false);
+      return;
+    }
+
+    console.log('✅ Conexão WhatsApp carregada:', whatsappConn);
+    
     // Atualizar status para "enviando"
     await supabase
       .from('tendenci_prospec_arq_campaigns')
@@ -518,7 +547,11 @@ export function CampanhasManager() {
           conteudo_imagem_url: campanha.conteudo_imagem_url,
           conteudo_audio_url: campanha.conteudo_audio_url,
           whatsapp_connection_id: campanha.whatsapp_connection_id,
+          instance_name: whatsappConn.instance_name,
+          instance_id: whatsappConn.instance_id,
         };
+
+        console.log('📤 Enviando para n8n:', payload);
 
         const response = await fetch(campanha.webhook_n8n, {
           method: 'POST',
@@ -527,6 +560,8 @@ export function CampanhasManager() {
           },
           body: JSON.stringify(payload),
         });
+        
+        console.log('📬 Resposta n8n:', response.status);
 
         if (response.ok) {
           successCount++;
