@@ -21,6 +21,7 @@ interface UserProfile {
   full_name?: string;
   role: 'admin' | 'vendedor' | 'arquiteto';
   created_at: string;
+  especializacao?: string | null;
 }
 
 const UserManagement = () => {
@@ -101,6 +102,20 @@ const UserManagement = () => {
         Vendedor
       </Badge>
     );
+  };
+
+  const getEspecializacaoBadge = (especializacao: string | null | undefined) => {
+    if (!especializacao || especializacao === 'todos') {
+      return <Badge variant="secondary" className="text-xs">Todos</Badge>;
+    }
+    switch (especializacao) {
+      case "moveis_soltos":
+        return <Badge className="bg-blue-500 text-xs">Móveis Soltos</Badge>;
+      case "moveis_planejados":
+        return <Badge className="bg-purple-500 text-xs">Móveis Planejados</Badge>;
+      default:
+        return <Badge variant="secondary" className="text-xs">{especializacao}</Badge>;
+    }
   };
 
   const getStatusBadge = () => {
@@ -189,6 +204,7 @@ const UserManagement = () => {
                           {user.full_name || 'Sem nome'}
                         </h3>
                         {getRoleBadge(user)}
+                        {user.role === 'vendedor' && getEspecializacaoBadge(user.especializacao)}
                         {getStatusBadge()}
                       </div>
                       <p className="text-sm text-muted-foreground truncate">

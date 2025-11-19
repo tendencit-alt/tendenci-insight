@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
@@ -15,6 +16,8 @@ interface EditUserDialogProps {
     email: string;
     username: string;
     full_name?: string;
+    role?: string;
+    especializacao?: string | null;
   } | null;
   onSuccess: () => void;
 }
@@ -25,6 +28,7 @@ export function EditUserDialog({ open, onOpenChange, user, onSuccess }: EditUser
   const [formData, setFormData] = useState({
     email: user?.email || '',
     username: user?.username || '',
+    especializacao: user?.especializacao || 'todos',
   });
 
   // Atualizar formData quando user mudar
@@ -33,6 +37,7 @@ export function EditUserDialog({ open, onOpenChange, user, onSuccess }: EditUser
       setFormData({
         email: user.email,
         username: user.username,
+        especializacao: user.especializacao || 'todos',
       });
     }
   }, [user]);
@@ -82,6 +87,7 @@ export function EditUserDialog({ open, onOpenChange, user, onSuccess }: EditUser
         .update({
           email: formData.email,
           username: formData.username,
+          especializacao: formData.especializacao,
         })
         .eq('id', user.id);
 
@@ -165,6 +171,28 @@ export function EditUserDialog({ open, onOpenChange, user, onSuccess }: EditUser
               Apenas letras, números e underscores
             </p>
           </div>
+
+          {user?.role === 'vendedor' && (
+            <div className="space-y-2">
+              <Label htmlFor="especializacao">Especialização</Label>
+              <Select 
+                value={formData.especializacao} 
+                onValueChange={(value) => setFormData({ ...formData, especializacao: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a especialização" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos (Acesso Completo)</SelectItem>
+                  <SelectItem value="moveis_soltos">Móveis Soltos</SelectItem>
+                  <SelectItem value="moveis_planejados">Móveis Planejados</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Define quais categorias de negócios o vendedor pode visualizar no CRM Kanban
+              </p>
+            </div>
+          )}
 
           <DialogFooter>
             <Button
