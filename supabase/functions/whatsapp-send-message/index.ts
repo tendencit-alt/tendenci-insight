@@ -64,9 +64,15 @@ Deno.serve(async (req) => {
       throw new Error('Instância não está conectada')
     }
 
-    // Formatar número (remover caracteres não numéricos e adicionar @s.whatsapp.net)
-    const cleanNumber = phoneNumber.replace(/\D/g, '')
-    const formattedNumber = cleanNumber.includes('@') ? cleanNumber : `${cleanNumber}@s.whatsapp.net`
+    // Formatar número (remover caracteres não numéricos e adicionar @s.whatsapp.net se necessário)
+    let formattedNumber = phoneNumber
+    
+    // Se já tem @s.whatsapp.net, usar como está
+    if (!phoneNumber.includes('@s.whatsapp.net')) {
+      // Remover caracteres não numéricos e adicionar sufixo
+      const cleanNumber = phoneNumber.replace(/\D/g, '')
+      formattedNumber = `${cleanNumber}@s.whatsapp.net`
+    }
 
     console.log(`📱 Enviando mensagem para ${formattedNumber} via ${instanceName}`)
 
