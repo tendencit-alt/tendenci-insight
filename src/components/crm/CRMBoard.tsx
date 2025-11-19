@@ -379,24 +379,24 @@ export function CRMBoard({ pipelineId, onRefresh, autoOpenDealId, onDealOpened, 
             <Card 
               key={stage.id} 
               className="flex-shrink-0 hover:shadow-md transition-all duration-300 border-border/50 animate-fade-in"
-              style={{ minWidth: '320px', width: '320px' }}
+              style={{ minWidth: '300px', width: '300px' }}
               onDragOver={handleDragOver}
               onDrop={handleDrop(stage.id)}
             >
-              <CardHeader className="pb-3 px-5 pt-4">
-                <CardTitle className="flex flex-col gap-2 text-base">
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="truncate font-semibold">{stage.name}</span>
-                    <Badge variant="secondary" className="flex-shrink-0 font-medium">{stageDeals.length}</Badge>
+              <CardHeader className="pb-2 px-4 pt-3">
+                <CardTitle className="flex flex-col gap-1.5 text-sm">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="truncate font-semibold text-sm">{stage.name}</span>
+                    <Badge variant="secondary" className="flex-shrink-0 font-medium text-xs h-5">{stageDeals.length}</Badge>
                   </div>
-                  <span className="text-sm font-semibold text-primary">
+                  <span className="text-xs font-semibold text-primary">
                     {calculateStageValue(stageDeals)}
                   </span>
                 </CardTitle>
               </CardHeader>
               <CardContent 
-                className="space-y-3 px-5 pb-4"
-                style={{ maxHeight: '600px', overflowY: 'auto' }}
+                className="space-y-2 px-4 pb-3"
+                style={{ maxHeight: '500px', overflowY: 'auto' }}
                 onDragOver={handleDragOver}
                 onDrop={handleDrop(stage.id)}
               >
@@ -421,27 +421,27 @@ export function CRMBoard({ pipelineId, onRefresh, autoOpenDealId, onDealOpened, 
           );
         })}
 
-        {/* Fixed Won column */}
+        {/* Fixed Won column - COMPACTO */}
         <Card 
           className="flex-shrink-0 bg-gradient-to-br from-success/5 to-success/10 border-success/30 hover:shadow-lg hover:border-success/50 transition-all duration-300 animate-fade-in"
-          style={{ minWidth: '340px', width: '340px' }}
+          style={{ minWidth: '300px', width: '300px' }}
         >
-          <CardHeader className="pb-3 px-5 pt-4 space-y-0">
-            <CardTitle className="flex flex-col gap-2">
-              <div className="flex items-center justify-between gap-3">
-                <span className="truncate font-semibold text-base text-success">✅ Ganho</span>
-                <Badge className="bg-success hover:bg-success/90 flex-shrink-0 font-bold text-sm px-3 py-1">
+          <CardHeader className="pb-2 px-4 pt-3 space-y-0">
+            <CardTitle className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="truncate font-semibold text-sm text-success">✅ Ganho</span>
+                <Badge className="bg-success hover:bg-success/90 flex-shrink-0 font-bold text-xs h-5 px-2">
                   {getWonDeals().length}
                 </Badge>
               </div>
               {getWonDeals().length > 0 && (
-                <span className="text-sm font-bold text-success">
+                <span className="text-xs font-bold text-success">
                   💰 {calculateStageValue(getWonDeals())}
                 </span>
               )}
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3 px-5 pb-4" style={{ maxHeight: '650px', overflowY: 'auto' }}>
+          <CardContent className="space-y-2 px-4 pb-3" style={{ maxHeight: '500px', overflowY: 'auto' }}>
             {getWonDeals().length === 0 ? (
               <div className="text-sm text-muted-foreground text-center py-12 px-4 border-2 border-dashed border-success/20 rounded-lg">
                 <p>Nenhum negócio ganho</p>
@@ -461,27 +461,27 @@ export function CRMBoard({ pipelineId, onRefresh, autoOpenDealId, onDealOpened, 
           </CardContent>
         </Card>
 
-        {/* Fixed Lost column */}
+        {/* Fixed Lost column - COMPACTO */}
         <Card 
           className="flex-shrink-0 bg-gradient-to-br from-destructive/5 to-destructive/10 border-destructive/30 hover:shadow-lg hover:border-destructive/50 transition-all duration-300 animate-fade-in"
-          style={{ minWidth: '340px', width: '340px' }}
+          style={{ minWidth: '300px', width: '300px' }}
         >
-          <CardHeader className="pb-3 px-5 pt-4 space-y-0">
-            <CardTitle className="flex flex-col gap-2">
-              <div className="flex items-center justify-between gap-3">
-                <span className="truncate font-semibold text-base text-destructive">❌ Perdido</span>
-                <Badge className="bg-destructive hover:bg-destructive/90 flex-shrink-0 font-bold text-sm px-3 py-1">
+          <CardHeader className="pb-2 px-4 pt-3 space-y-0">
+            <CardTitle className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="truncate font-semibold text-sm text-destructive">❌ Perdido</span>
+                <Badge className="bg-destructive hover:bg-destructive/90 flex-shrink-0 font-bold text-xs h-5 px-2">
                   {getLostDeals().length}
                 </Badge>
               </div>
               {getLostDeals().length > 0 && (
-                <span className="text-sm font-bold text-destructive">
+                <span className="text-xs font-bold text-destructive">
                   💸 {calculateStageValue(getLostDeals())}
                 </span>
               )}
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3 px-5 pb-4" style={{ maxHeight: '650px', overflowY: 'auto' }}>
+          <CardContent className="space-y-2 px-4 pb-3" style={{ maxHeight: '500px', overflowY: 'auto' }}>
             {getLostDeals().length === 0 ? (
               <div className="text-sm text-muted-foreground text-center py-12 px-4 border-2 border-dashed border-destructive/20 rounded-lg">
                 <p>Nenhum negócio perdido</p>

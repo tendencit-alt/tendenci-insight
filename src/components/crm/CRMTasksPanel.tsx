@@ -145,9 +145,9 @@ export function CRMTasksPanel({ pipelineId }: CRMTasksPanelProps) {
 
   return (
     <Card className="border-border/50">
-      <CardHeader>
-        <CardTitle className="text-lg font-semibold flex items-center gap-2">
-          <span className="text-xl">✅</span>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-semibold flex items-center gap-1.5">
+          <span className="text-base">✅</span>
           <span className="truncate">Tarefas Pendentes ({tasks.length})</span>
         </CardTitle>
       </CardHeader>
@@ -178,31 +178,31 @@ export function CRMTasksPanel({ pipelineId }: CRMTasksPanelProps) {
                   return (
                     <div
                       key={task.id}
-                      className="p-4 border border-destructive/30 rounded-lg bg-destructive/5 hover:bg-destructive/10 transition-colors space-y-3"
+                      className="p-2.5 border border-destructive/30 rounded-lg bg-destructive/5 hover:bg-destructive/10 transition-colors space-y-2"
                     >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex-1 space-y-1 min-w-0">
-                          <p className="font-medium text-sm line-clamp-1">{task.title}</p>
-                          <p className="text-xs text-muted-foreground line-clamp-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 space-y-0.5 min-w-0">
+                          <p className="font-medium text-xs line-clamp-1">{task.title}</p>
+                          <p className="text-[10px] text-muted-foreground line-clamp-1">
                             {task.deal?.title} • {clientName}
                           </p>
                         </div>
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-7 w-7 p-0 flex-shrink-0 hover:bg-primary/10"
+                          className="h-6 w-6 p-0 flex-shrink-0 hover:bg-primary/10"
                           onClick={() => handleMarkDone(task.id)}
                         >
-                          <CheckCircle className="h-4 w-4" />
+                          <CheckCircle className="h-3.5 w-3.5" />
                         </Button>
                       </div>
 
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <Badge variant={dueInfo.variant} className="text-xs flex-shrink-0 font-medium">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <Badge variant={dueInfo.variant} className="text-[10px] flex-shrink-0 font-medium h-4">
                           {dueInfo.icon} {dueInfo.text}
                         </Badge>
                         {task.origem_modulo === "prospeccao" && (
-                          <Badge variant="outline" className="text-xs flex-shrink-0">
+                          <Badge variant="outline" className="text-[10px] flex-shrink-0 h-4">
                             📋 Prospecção
                           </Badge>
                         )}
@@ -243,31 +243,31 @@ export function CRMTasksPanel({ pipelineId }: CRMTasksPanelProps) {
                   return (
                     <div
                       key={task.id}
-                      className="p-4 border border-primary/30 rounded-lg bg-primary/5 hover:bg-primary/10 transition-colors space-y-3"
+                      className="p-2.5 border border-primary/30 rounded-lg bg-primary/5 hover:bg-primary/10 transition-colors space-y-2"
                     >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex-1 space-y-1 min-w-0">
-                          <p className="font-medium text-sm line-clamp-1">{task.title}</p>
-                          <p className="text-xs text-muted-foreground line-clamp-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 space-y-0.5 min-w-0">
+                          <p className="font-medium text-xs line-clamp-1">{task.title}</p>
+                          <p className="text-[10px] text-muted-foreground line-clamp-1">
                             {task.deal?.title} • {clientName}
                           </p>
                         </div>
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-7 w-7 p-0 flex-shrink-0 hover:bg-primary/10"
+                          className="h-6 w-6 p-0 flex-shrink-0 hover:bg-primary/10"
                           onClick={() => handleMarkDone(task.id)}
                         >
-                          <CheckCircle className="h-4 w-4" />
+                          <CheckCircle className="h-3.5 w-3.5" />
                         </Button>
                       </div>
 
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <Badge variant={dueInfo.variant} className="text-xs flex-shrink-0 font-medium">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <Badge variant={dueInfo.variant} className="text-[10px] flex-shrink-0 font-medium h-4">
                           {dueInfo.icon} {dueInfo.text}
                         </Badge>
                         {task.origem_modulo === "prospeccao" && (
-                          <Badge variant="outline" className="text-xs flex-shrink-0">
+                          <Badge variant="outline" className="text-[10px] flex-shrink-0 h-4">
                             📋 Prospecção
                           </Badge>
                         )}

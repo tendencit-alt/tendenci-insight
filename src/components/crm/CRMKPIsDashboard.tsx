@@ -329,11 +329,11 @@ export function CRMKPIsDashboard({
 
   if (loading) {
     return (
-      <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
         {Array.from({ length: 6 }).map((_, i) => (
           <Card key={i} className="border-border/50">
-            <CardContent className="p-4">
-              <Skeleton className="h-16 w-full" />
+            <CardContent className="p-3">
+              <Skeleton className="h-12 w-full" />
             </CardContent>
           </Card>
         ))}
@@ -342,34 +342,34 @@ export function CRMKPIsDashboard({
   }
 
   return (
-    <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
+    <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
       {kpiCards.map((kpi, index) => (
         <Card 
           key={index} 
           className="hover:shadow-md transition-all hover:scale-[1.02] border-border/50 bg-card/50 backdrop-blur-sm"
         >
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4">
-            <div className="flex flex-col gap-1 flex-1 min-w-0">
-              <CardTitle className="text-xs font-medium text-muted-foreground truncate">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1.5 p-3">
+            <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+              <CardTitle className="text-[10px] font-medium text-muted-foreground truncate leading-tight">
                 {kpi.title}
               </CardTitle>
-              <div className="text-2xl font-bold tabular-nums">{kpi.value}</div>
+              <div className="text-xl font-bold tabular-nums">{kpi.value}</div>
             </div>
-            <div className={`p-2 rounded-lg ${kpi.bgClass} shrink-0`}>
-              <kpi.icon className={`h-4 w-4 ${kpi.colorClass}`} />
+            <div className={`p-1.5 rounded-lg ${kpi.bgClass} shrink-0`}>
+              <kpi.icon className={`h-3.5 w-3.5 ${kpi.colorClass}`} />
             </div>
           </CardHeader>
-          <CardContent className="p-4 pt-0 space-y-1">
+          <CardContent className="p-3 pt-0 space-y-0.5">
             {kpi.subtitle && (
-              <p className="text-xs font-medium text-muted-foreground truncate">
+              <p className="text-[10px] font-medium text-muted-foreground truncate leading-tight">
                 {kpi.subtitle}
               </p>
             )}
             {kpi.breakdown && kpi.breakdown.length > 0 && (
-              <div className="space-y-0.5 mt-2 pt-2 border-t border-border/50">
+              <div className="space-y-0.5 mt-1 pt-1 border-t border-border/50">
                 {kpi.breakdown.map((seller, idx) => (
-                  <div key={idx} className="flex justify-between items-center text-xs">
-                    <span className="text-muted-foreground truncate flex-1 mr-2">
+                  <div key={idx} className="flex justify-between items-center text-[10px]">
+                    <span className="text-muted-foreground truncate flex-1 mr-1">
                       {seller.seller_name}
                     </span>
                     <span className="font-semibold text-foreground tabular-nums shrink-0">
