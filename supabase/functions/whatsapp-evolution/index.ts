@@ -114,6 +114,44 @@ Deno.serve(async (req) => {
       const connectData = await connectResponse.json()
       console.log('📱 QR Code generated:', connectData)
 
+      // Configurar webhook automaticamente na Evolution API
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')
+      const webhookUrl = `${supabaseUrl}/functions/v1/whatsapp-webhook`
+      
+      console.log('🔗 Configuring webhook:', webhookUrl)
+      
+      const webhookResponse = await fetch(`${evolutionUrl}/webhook/set/${instanceName}`, {
+        method: 'POST',
+        headers: {
+          'apikey': evolutionApiKey,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          url: webhookUrl,
+          webhook_by_events: false,
+          webhook_base64: true,
+          events: [
+            'APPLICATION_STARTUP',
+            'QRCODE_UPDATED',
+            'MESSAGES_SET',
+            'MESSAGES_UPSERT',
+            'MESSAGES_UPDATE',
+            'MESSAGES_DELETE',
+            'SEND_MESSAGE',
+            'CONNECTION_UPDATE',
+            'CALL',
+            'NEW_JWT_TOKEN'
+          ]
+        })
+      })
+
+      if (webhookResponse.ok) {
+        console.log('✅ Webhook configured successfully')
+      } else {
+        const webhookError = await webhookResponse.text()
+        console.error('⚠️ Webhook configuration failed:', webhookError)
+      }
+
       // Salvar no banco
       const { data: dbConnection, error: dbError } = await supabase
         .from('tendenci_whatsapp_connections')
