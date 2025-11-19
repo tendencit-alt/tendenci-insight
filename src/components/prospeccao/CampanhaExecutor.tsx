@@ -151,6 +151,7 @@ export function CampanhaExecutor({ campaignId, campaignName, onComplete }: Execu
             conteudo_imagem_url: campanha.conteudo_imagem_url || null,
             conteudo_audio_url: campanha.conteudo_audio_url || null,
             instance_name: whatsappConn.instance_name,
+            instance_id: whatsappConn.instance_id,
             whatsapp_connection_id: campanha.whatsapp_connection_id
           };
 
