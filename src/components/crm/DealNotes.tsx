@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Mic, Square, FileText, Paperclip, Trash2, Download, Loader2, Play, Pause, AtSign } from "lucide-react";
+import { Mic, Square, FileText, Paperclip, Trash2, Download, Loader2, Play, Pause, AtSign, Edit2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
@@ -30,6 +30,8 @@ export function DealNotes({ dealId, currentNote, onNoteUpdate }: DealNotesProps)
   const [filteredUsers, setFilteredUsers] = useState<any[]>([]);
   const [mentionStartPos, setMentionStartPos] = useState<number>(0);
   const [selectedUserIndex, setSelectedUserIndex] = useState(0);
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [editingNoteText, setEditingNoteText] = useState("");
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -433,6 +435,73 @@ export function DealNotes({ dealId, currentNote, onNoteUpdate }: DealNotesProps)
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + " " + sizes[i];
   };
 
+  const handleDeleteNote = async (noteId: string) => {
+    const { error } = await supabase
+      .from("crm_timeline")
+      .delete()
+      .eq("id", noteId);
+
+    if (error) {
+      toast({
+        title: "Erro ao excluir observação",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "Observação excluída",
+      description: "A observação foi removida do histórico.",
+    });
+
+    fetchNoteHistory();
+  };
+
+  const handleStartEdit = (entry: any) => {
+    setEditingNoteId(entry.id);
+    setEditingNoteText(entry.message);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingNoteId(null);
+    setEditingNoteText("");
+  };
+
+  const handleSaveEdit = async (noteId: string) => {
+    if (!editingNoteText.trim()) {
+      toast({
+        title: "Observação vazia",
+        description: "A observação não pode estar vazia.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const { error } = await supabase
+      .from("crm_timeline")
+      .update({ message: editingNoteText })
+      .eq("id", noteId);
+
+    if (error) {
+      toast({
+        title: "Erro ao atualizar observação",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "Observação atualizada",
+      description: "As alterações foram salvas.",
+    });
+
+    setEditingNoteId(null);
+    setEditingNoteText("");
+    fetchNoteHistory();
+  };
+
   return (
     <Card className="p-6">
       <div className="space-y-4">
@@ -601,14 +670,59 @@ export function DealNotes({ dealId, currentNote, onNoteUpdate }: DealNotesProps)
                     <span className="font-medium">
                       {entry.author?.full_name || entry.author?.email || "Usuário"}
                     </span>
-                    <span>
-                      {formatDistanceToNow(new Date(entry.created_at), {
-                        addSuffix: true,
-                        locale: ptBR,
-                      })}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span>
+                        {formatDistanceToNow(new Date(entry.created_at), {
+                          addSuffix: true,
+                          locale: ptBR,
+                        })}
+                      </span>
+                      <div className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0"
+                          onClick={() => handleStartEdit(entry)}
+                        >
+                          <Edit2 className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                          onClick={() => handleDeleteNote(entry.id)}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
                   </div>
-                  <p className="text-sm whitespace-pre-wrap">{entry.message}</p>
+                  {editingNoteId === entry.id ? (
+                    <div className="space-y-2">
+                      <Textarea
+                        value={editingNoteText}
+                        onChange={(e) => setEditingNoteText(e.target.value)}
+                        className="min-h-[80px]"
+                      />
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => handleSaveEdit(entry.id)}
+                        >
+                          Salvar
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={handleCancelEdit}
+                        >
+                          Cancelar
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm whitespace-pre-wrap">{entry.message}</p>
+                  )}
                 </div>
               ))}
             </div>
