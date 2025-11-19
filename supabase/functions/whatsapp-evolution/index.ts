@@ -127,22 +127,23 @@ Deno.serve(async (req) => {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          enabled: true,
-          url: webhookUrl,
-          webhook_by_events: false,
-          webhook_base64: true,
-          events: [
-            'APPLICATION_STARTUP',
-            'QRCODE_UPDATED',
-            'MESSAGES_SET',
-            'MESSAGES_UPSERT',
-            'MESSAGES_UPDATE',
-            'MESSAGES_DELETE',
-            'SEND_MESSAGE',
-            'CONNECTION_UPDATE',
-            'CALL',
-            'NEW_JWT_TOKEN'
-          ]
+          webhook: {
+            enabled: true,
+            url: webhookUrl,
+            webhookByEvents: false,
+            events: [
+              'APPLICATION_STARTUP',
+              'QRCODE_UPDATED',
+              'MESSAGES_SET',
+              'MESSAGES_UPSERT',
+              'MESSAGES_UPDATE',
+              'MESSAGES_DELETE',
+              'SEND_MESSAGE',
+              'CONNECTION_UPDATE',
+              'CALL',
+              'NEW_JWT_TOKEN'
+            ]
+          }
         })
       })
 
