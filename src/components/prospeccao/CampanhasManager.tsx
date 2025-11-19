@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Send, Save, Trash2, Image, FileAudio, MessageSquare, Loader2, CheckCircle, XCircle, Upload, Mic, X, BookOpen } from "lucide-react";
+import { Plus, Send, Save, Trash2, Image, FileAudio, MessageSquare, Loader2, CheckCircle, XCircle, Upload, Mic, X, BookOpen, Eye } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -90,6 +90,8 @@ export function CampanhasManager() {
   const [arquitetosSelecionados, setArquitetosSelecionados] = useState<string[]>([]);
   const [webhookN8n, setWebhookN8n] = useState("");
   const [whatsappConnectionId, setWhatsappConnectionId] = useState("");
+  const [viewingCampanha, setViewingCampanha] = useState<Campanha | null>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   useEffect(() => {
     fetchCampanhas();
@@ -853,7 +855,7 @@ export function CampanhasManager() {
               <Card key={campanha.id}>
                 <CardHeader>
                   <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 flex-1">
                       {getTipoIcon(campanha.tipo_envio)}
                       <div>
                         <CardTitle>{campanha.nome}</CardTitle>
@@ -862,7 +864,21 @@ export function CampanhasManager() {
                         </p>
                       </div>
                     </div>
-                    {getStatusBadge(campanha.status)}
+                    <div className="flex items-center gap-2">
+                      {getStatusBadge(campanha.status)}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setViewingCampanha(campanha);
+                          setDetailsOpen(true);
+                        }}
+                        className="gap-2"
+                      >
+                        <Eye className="h-4 w-4" />
+                        Ver Detalhes
+                      </Button>
+                    </div>
                   </div>
                 </CardHeader>
               </Card>
@@ -1256,6 +1272,113 @@ export function CampanhasManager() {
         onClose={() => setIsRecorderOpen(false)}
         onSave={handleSaveRecording}
       />
+
+      {/* Dialog de Detalhes da Campanha */}
+      <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Informações da Campanha</DialogTitle>
+          </DialogHeader>
+          
+          {viewingCampanha && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Nome da Campanha</Label>
+                  <p className="font-medium">{viewingCampanha.nome}</p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Status</Label>
+                  <div className="mt-1">
+                    <Badge variant={viewingCampanha.status === 'enviado' ? 'default' : 'secondary'}>
+                      {viewingCampanha.status}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Tipo de Envio</Label>
+                  <p className="font-medium capitalize">{viewingCampanha.tipo_envio}</p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Data de Criação</Label>
+                  <p className="font-medium">
+                    {new Date(viewingCampanha.created_at).toLocaleDateString('pt-BR', {
+                      day: '2-digit',
+                      month: '2-digit',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-xs text-muted-foreground">Instância WhatsApp</Label>
+                <p className="font-medium">
+                  {whatsappConnections.find(c => c.id === viewingCampanha.whatsapp_connection_id)?.instance_name || 'N/A'}
+                  {whatsappConnections.find(c => c.id === viewingCampanha.whatsapp_connection_id)?.phone_number && 
+                    ` (${whatsappConnections.find(c => c.id === viewingCampanha.whatsapp_connection_id)?.phone_number})`
+                  }
+                </p>
+              </div>
+
+              {viewingCampanha.webhook_n8n && (
+                <div>
+                  <Label className="text-xs text-muted-foreground">Webhook n8n</Label>
+                  <p className="font-mono text-xs break-all bg-muted p-2 rounded mt-1">
+                    {viewingCampanha.webhook_n8n}
+                  </p>
+                </div>
+              )}
+
+              <div>
+                <Label className="text-xs text-muted-foreground">Conteúdo</Label>
+                {viewingCampanha.tipo_envio === 'texto' && viewingCampanha.conteudo_texto && (
+                  <div className="bg-muted p-3 rounded mt-1">
+                    <p className="text-sm whitespace-pre-wrap">{viewingCampanha.conteudo_texto}</p>
+                  </div>
+                )}
+                {viewingCampanha.tipo_envio === 'imagem' && viewingCampanha.conteudo_imagem_url && (
+                  <div className="mt-1">
+                    <img 
+                      src={viewingCampanha.conteudo_imagem_url} 
+                      alt="Imagem da campanha"
+                      className="max-h-64 rounded border"
+                    />
+                  </div>
+                )}
+                {viewingCampanha.tipo_envio === 'audio' && viewingCampanha.conteudo_audio_url && (
+                  <div className="mt-1">
+                    <audio controls className="w-full">
+                      <source src={viewingCampanha.conteudo_audio_url} type="audio/mpeg" />
+                    </audio>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <Label className="text-xs text-muted-foreground">
+                  Arquitetos Selecionados ({viewingCampanha.arquitetos_selecionados?.length || 0})
+                </Label>
+                <div className="mt-2 max-h-40 overflow-y-auto border rounded p-2">
+                  {viewingCampanha.arquitetos_selecionados?.map((id) => {
+                    const arq = arquitetosDisponiveis.find(a => a.id === id);
+                    return arq ? (
+                      <div key={id} className="text-sm py-1 border-b last:border-b-0">
+                        {arq.name} - {arq.phone}
+                      </div>
+                    ) : null;
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
