@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
+import { AudioRecorder } from "@/components/prospeccao/AudioRecorder";
 
 interface DealNotesProps {
   dealId: string;
@@ -19,7 +20,7 @@ interface DealNotesProps {
 export function DealNotes({ dealId, currentNote, onNoteUpdate }: DealNotesProps) {
   const { toast } = useToast();
   const [note, setNote] = useState(currentNote);
-  const [isRecording, setIsRecording] = useState(false);
+  const [showAudioRecorder, setShowAudioRecorder] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [attachments, setAttachments] = useState<any[]>([]);
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
@@ -32,8 +33,6 @@ export function DealNotes({ dealId, currentNote, onNoteUpdate }: DealNotesProps)
   const [selectedUserIndex, setSelectedUserIndex] = useState(0);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editingNoteText, setEditingNoteText] = useState("");
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioRefs = useRef<Map<string, HTMLAudioElement>>(new Map());
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -189,44 +188,7 @@ export function DealNotes({ dealId, currentNote, onNoteUpdate }: DealNotesProps)
     fetchNoteHistory(); // Atualizar histórico
   };
 
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-      audioChunksRef.current = [];
-
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
-      };
-
-      mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
-        await saveAudioFile(audioBlob);
-        stream.getTracks().forEach((track) => track.stop());
-      };
-
-      mediaRecorder.start();
-      setIsRecording(true);
-    } catch (error) {
-      toast({
-        title: "Erro ao iniciar gravação",
-        description: "Verifique as permissões do microfone.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-    }
-  };
-
-  const saveAudioFile = async (audioBlob: Blob) => {
+  const handleSaveAudio = async (audioBlob: Blob) => {
     setIsUploading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -512,22 +474,13 @@ export function DealNotes({ dealId, currentNote, onNoteUpdate }: DealNotesProps)
         <div className="flex gap-2">
           <Button
             type="button"
-            variant={isRecording ? "destructive" : "outline"}
+            variant="outline"
             size="sm"
-            onClick={isRecording ? stopRecording : startRecording}
+            onClick={() => setShowAudioRecorder(true)}
             disabled={isUploading}
           >
-            {isRecording ? (
-              <>
-                <Square className="h-4 w-4 mr-2" />
-                Parar Gravação
-              </>
-            ) : (
-              <>
-                <Mic className="h-4 w-4 mr-2" />
-                Gravar Áudio
-              </>
-            )}
+            <Mic className="h-4 w-4 mr-2" />
+            Gravar Áudio
           </Button>
 
           <Button
@@ -556,7 +509,7 @@ export function DealNotes({ dealId, currentNote, onNoteUpdate }: DealNotesProps)
             className="hidden"
             multiple
             onChange={handleFileUpload}
-            accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.webp"
+            accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.webp,.mp3,.wav,.m4a,.webm,.ogg"
           />
         </div>
 
@@ -791,6 +744,12 @@ export function DealNotes({ dealId, currentNote, onNoteUpdate }: DealNotesProps)
           </div>
         )}
       </div>
+
+      <AudioRecorder
+        isOpen={showAudioRecorder}
+        onClose={() => setShowAudioRecorder(false)}
+        onSave={handleSaveAudio}
+      />
     </Card>
   );
 }
