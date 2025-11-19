@@ -38,7 +38,15 @@ interface Campanha {
   arquitetos_selecionados: string[] | null;
   status: string;
   webhook_n8n: string | null;
+  whatsapp_connection_id: string | null;
   created_at: string;
+}
+
+interface WhatsAppConnection {
+  id: string;
+  instance_name: string;
+  status: string;
+  phone_number: string | null;
 }
 
 interface Arquiteto {
@@ -60,6 +68,7 @@ export function CampanhasManager() {
   const { toast } = useToast();
   const [campanhas, setCampanhas] = useState<Campanha[]>([]);
   const [arquitetosDisponiveis, setArquitetosDisponiveis] = useState<Arquiteto[]>([]);
+  const [whatsappConnections, setWhatsappConnections] = useState<WhatsAppConnection[]>([]);
   const [loading, setLoading] = useState(false);
   const [dispatching, setDispatching] = useState(false);
   const [dispatchProgress, setDispatchProgress] = useState(0);
@@ -80,10 +89,12 @@ export function CampanhasManager() {
   const [uploadingAudio, setUploadingAudio] = useState(false);
   const [arquitetosSelecionados, setArquitetosSelecionados] = useState<string[]>([]);
   const [webhookN8n, setWebhookN8n] = useState("");
+  const [whatsappConnectionId, setWhatsappConnectionId] = useState("");
 
   useEffect(() => {
     fetchCampanhas();
     fetchArquitetosDisponiveis();
+    fetchWhatsAppConnections();
   }, []);
 
   const fetchCampanhas = async () => {
@@ -94,6 +105,18 @@ export function CampanhasManager() {
 
     if (!error && data) {
       setCampanhas(data as Campanha[]);
+    }
+  };
+
+  const fetchWhatsAppConnections = async () => {
+    const { data, error } = await supabase
+      .from('tendenci_whatsapp_connections')
+      .select('*')
+      .eq('status', 'connected')
+      .order('created_at', { ascending: false });
+
+    if (!error && data) {
+      setWhatsappConnections(data as WhatsAppConnection[]);
     }
   };
 
@@ -122,6 +145,7 @@ export function CampanhasManager() {
     setAudioFile(null);
     setArquitetosSelecionados([]);
     setWebhookN8n("");
+    setWhatsappConnectionId("");
     setEditingCampanha(null);
   };
 
@@ -135,6 +159,7 @@ export function CampanhasManager() {
       setConteudoAudioUrl(campanha.conteudo_audio_url || "");
       setArquitetosSelecionados(campanha.arquitetos_selecionados || []);
       setWebhookN8n(campanha.webhook_n8n || "");
+      setWhatsappConnectionId(campanha.whatsapp_connection_id || "");
     } else {
       resetForm();
     }
@@ -290,6 +315,15 @@ export function CampanhasManager() {
       return;
     }
 
+    if (!whatsappConnectionId) {
+      toast({
+        title: "Erro",
+        description: "Selecione uma instância WhatsApp conectada",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (arquitetosSelecionados.length === 0) {
       toast({
         title: "Erro",
@@ -336,6 +370,7 @@ export function CampanhasManager() {
       conteudo_audio_url: tipoEnvio === 'audio' ? conteudoAudioUrl : null,
       arquitetos_selecionados: arquitetosSelecionados,
       webhook_n8n: webhookN8n.trim() || null,
+      whatsapp_connection_id: whatsappConnectionId,
       status: 'rascunho',
       updated_at: new Date().toISOString(),
     };
@@ -480,6 +515,7 @@ export function CampanhasManager() {
           conteudo_texto: campanha.conteudo_texto,
           conteudo_imagem_url: campanha.conteudo_imagem_url,
           conteudo_audio_url: campanha.conteudo_audio_url,
+          whatsapp_connection_id: campanha.whatsapp_connection_id,
         };
 
         const response = await fetch(campanha.webhook_n8n, {
@@ -853,6 +889,31 @@ export function CampanhasManager() {
                 onChange={(e) => setNome(e.target.value)}
                 placeholder="Ex: Campanha de Boas-vindas"
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Instância WhatsApp *</Label>
+              <Select value={whatsappConnectionId} onValueChange={setWhatsappConnectionId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione uma instância conectada" />
+                </SelectTrigger>
+                <SelectContent>
+                  {whatsappConnections.length === 0 ? (
+                    <div className="p-2 text-sm text-muted-foreground text-center">
+                      Nenhuma instância conectada
+                    </div>
+                  ) : (
+                    whatsappConnections.map((conn) => (
+                      <SelectItem key={conn.id} value={conn.id}>
+                        {conn.instance_name} {conn.phone_number && `(${conn.phone_number})`}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Configure instâncias WhatsApp na aba "WhatsApp API"
+              </p>
             </div>
 
             <div className="space-y-2">
