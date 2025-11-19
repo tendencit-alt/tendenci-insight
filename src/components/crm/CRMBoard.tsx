@@ -371,8 +371,8 @@ export function CRMBoard({ pipelineId, onRefresh, autoOpenDealId, onDealOpened, 
 
   return (
     <>
-      {/* Render board: container with horizontal scroll */}
-      <div className="flex gap-4 overflow-x-auto pb-4">
+      {/* Render board: container com colunas do kanban */}
+      <div className="flex gap-4">
         {stages.map((stage) => {
           const stageDeals = getDealsByStage(stage.id);
           return (

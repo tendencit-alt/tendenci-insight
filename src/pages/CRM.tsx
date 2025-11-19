@@ -110,7 +110,7 @@ export default function CRM() {
     });
   };
   return <DashboardLayout>
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-2">
         {/* Painel de Desempenho do Vendedor */}
         {!isAdmin && <SellerPerformancePanel />}
 
@@ -194,27 +194,29 @@ export default function CRM() {
             {/* Alerta de Tarefas Faltantes */}
             <TaskReminderAlert pipelineId={selectedPipeline} />
 
-            {/* Kanban Board - Escapa do padding do container */}
-            <div className="-mx-4 lg:-mx-6">
-              <div className="overflow-x-auto px-4 lg:px-6">
-                <CRMBoard
-                  pipelineId={selectedPipeline} 
-                  key={`board-${refreshKey}`} 
-                  onRefresh={handleRefresh}
-                  autoOpenDealId={autoOpenDealId}
-                  onDealOpened={() => setAutoOpenDealId(null)}
-                  filters={{
-                    owner: selectedOwner,
-                    search: searchQuery,
-                    status: selectedStatus,
-                    category: selectedCategory,
-                    showPlanned: showPlanned,
-                    dateFilter,
-                    customDateRange
-                  }} 
-                />
-              </div>
+      {/* Kanban Board - Fora do container principal para controlar scroll */}
+      {selectedPipeline && <div className="relative -mt-2">
+          <div className="w-full overflow-x-auto">
+            <div className="min-w-max px-4 lg:px-6 pb-4">
+              <CRMBoard
+                pipelineId={selectedPipeline} 
+                key={`board-${refreshKey}`} 
+                onRefresh={handleRefresh}
+                autoOpenDealId={autoOpenDealId}
+                onDealOpened={() => setAutoOpenDealId(null)}
+                filters={{
+                  owner: selectedOwner,
+                  search: searchQuery,
+                  status: selectedStatus,
+                  category: selectedCategory,
+                  showPlanned: showPlanned,
+                  dateFilter,
+                  customDateRange
+                }} 
+              />
             </div>
+          </div>
+        </div>}
           </>}
         
         {!selectedPipeline && pipelines.length === 0 && <div className="flex items-center justify-center py-12">
