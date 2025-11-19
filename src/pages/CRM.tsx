@@ -110,37 +110,37 @@ export default function CRM() {
     });
   };
   return <DashboardLayout>
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-1.5">
         {/* Painel de Desempenho do Vendedor */}
         {!isAdmin && <SellerPerformancePanel />}
 
-        {/* Header com botões responsivos */}
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2">
-          <div className="flex flex-col gap-1">
-            <h1 className="text-2xl lg:text-3xl font-bold tracking-tight">🗂️ CRM Kanban</h1>
-            <p className="text-xs lg:text-sm text-muted-foreground">
+        {/* Header com botões responsivos - COMPACTO */}
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-1.5">
+          <div className="flex flex-col gap-0.5">
+            <h1 className="text-xl lg:text-2xl font-bold tracking-tight">🗂️ CRM Kanban</h1>
+            <p className="text-xs text-muted-foreground">
               Funis e cadências personalizadas, com métricas, SLA e integrações
             </p>
           </div>
 
-          {/* Botões de Ação - Responsivos */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <Button onClick={() => setIsCreateDialogOpen(true)} size="sm" className="hover:scale-105 transition-transform">
-              <Plus className="mr-2 h-4 w-4" />
+          {/* Botões de Ação - COMPACTO */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+            <Button onClick={() => setIsCreateDialogOpen(true)} size="sm" className="h-8 text-xs">
+              <Plus className="mr-1.5 h-3.5 w-3.5" />
               <span className="hidden sm:inline">Novo Negócio</span>
               <span className="sm:hidden">Novo</span>
             </Button>
-            <Button variant="outline" onClick={() => setIsManageDialogOpen(true)} size="sm" className="hover:scale-105 transition-transform">
-              <Settings className="mr-2 h-4 w-4" />
+            <Button variant="outline" onClick={() => setIsManageDialogOpen(true)} size="sm" className="h-8 text-xs">
+              <Settings className="mr-1.5 h-3.5 w-3.5" />
               <span className="hidden md:inline">Funis/Etapas</span>
               <span className="md:hidden">Funis</span>
             </Button>
-            <Button variant="outline" onClick={handleRefresh} size="sm" className="hover:scale-105 transition-transform">
-              <RefreshCcw className="mr-2 h-4 w-4" />
+            <Button variant="outline" onClick={handleRefresh} size="sm" className="h-8 w-8 p-0">
+              <RefreshCcw className="h-3.5 w-3.5" />
               <span className="sr-only">Atualizar</span>
             </Button>
-            <Button variant="outline" onClick={handleExport} size="sm" className="hover:scale-105 transition-transform">
-              <Download className="mr-2 h-4 w-4" />
+            <Button variant="outline" onClick={handleExport} size="sm" className="h-8 w-8 p-0">
+              <Download className="h-3.5 w-3.5" />
               <span className="sr-only">Exportar</span>
             </Button>
           </div>
@@ -165,21 +165,34 @@ export default function CRM() {
             />
 
         {selectedPipeline && <>
-            {/* Tabs de Categorias e Planejados */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-2">
-              <Button variant={!showPlanned && selectedCategory === "all" ? "default" : "outline"} size="sm" onClick={() => {
-            setShowPlanned(false);
-            setSelectedCategory("all");
-          }} className="shrink-0">
+            {/* Tabs de Categorias - COMPACTO */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+              <Button 
+                variant={!showPlanned && selectedCategory === "all" ? "default" : "outline"} 
+                size="sm" 
+                className="h-7 text-xs shrink-0" 
+                onClick={() => {
+                  setShowPlanned(false);
+                  setSelectedCategory("all");
+                }}
+              >
                 Todas as Categorias
               </Button>
               
-              {categories.map(category => <Button key={category} variant={!showPlanned && selectedCategory === category ? "default" : "outline"} size="sm" onClick={() => {
-            setShowPlanned(false);
-            setSelectedCategory(category);
-          }} className="shrink-0">
+              {categories.map(category => (
+                <Button 
+                  key={category} 
+                  variant={!showPlanned && selectedCategory === category ? "default" : "outline"} 
+                  size="sm" 
+                  className="h-7 text-xs shrink-0" 
+                  onClick={() => {
+                    setShowPlanned(false);
+                    setSelectedCategory(category);
+                  }}
+                >
                   {category}
-                </Button>)}
+                </Button>
+              ))}
             </div>
 
             {/* KPIs do CRM */}
