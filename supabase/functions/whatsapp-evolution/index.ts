@@ -137,11 +137,9 @@ Deno.serve(async (req) => {
               'MESSAGES_SET',
               'MESSAGES_UPSERT',
               'MESSAGES_UPDATE',
-              'MESSAGES_DELETE',
               'SEND_MESSAGE',
               'CONNECTION_UPDATE',
-              'CALL',
-              'NEW_JWT_TOKEN'
+              'CALL'
             ]
           }
         })
