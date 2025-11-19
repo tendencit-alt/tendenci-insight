@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Send, Save, Trash2, Image, FileAudio, MessageSquare, Loader2, CheckCircle, XCircle } from "lucide-react";
+import { Plus, Send, Save, Trash2, Image, FileAudio, MessageSquare, Loader2, CheckCircle, XCircle, Upload, Mic, X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { AudioRecorder } from "./AudioRecorder";
 
 interface Campanha {
   id: string;
@@ -66,12 +67,17 @@ export function CampanhasManager() {
   
   // Form state
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isRecorderOpen, setIsRecorderOpen] = useState(false);
   const [editingCampanha, setEditingCampanha] = useState<Campanha | null>(null);
   const [nome, setNome] = useState("");
   const [tipoEnvio, setTipoEnvio] = useState<'texto' | 'imagem' | 'audio'>('texto');
   const [conteudoTexto, setConteudoTexto] = useState("");
   const [conteudoImagemUrl, setConteudoImagemUrl] = useState("");
   const [conteudoAudioUrl, setConteudoAudioUrl] = useState("");
+  const [imagemFile, setImagemFile] = useState<File | null>(null);
+  const [audioFile, setAudioFile] = useState<File | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingAudio, setUploadingAudio] = useState(false);
   const [arquitetosSelecionados, setArquitetosSelecionados] = useState<string[]>([]);
   const [webhookN8n, setWebhookN8n] = useState("");
 
@@ -111,6 +117,8 @@ export function CampanhasManager() {
     setConteudoTexto("");
     setConteudoImagemUrl("");
     setConteudoAudioUrl("");
+    setImagemFile(null);
+    setAudioFile(null);
     setArquitetosSelecionados([]);
     setWebhookN8n("");
     setEditingCampanha(null);
@@ -135,6 +143,140 @@ export function CampanhasManager() {
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
     resetForm();
+  };
+
+  const uploadImageToStorage = async (file: File): Promise<string> => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
+    const filePath = `campanhas/imagens/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('campaign_media')
+      .upload(filePath, file);
+
+    if (uploadError) throw uploadError;
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('campaign_media')
+      .getPublicUrl(filePath);
+
+    return publicUrl;
+  };
+
+  const uploadAudioToStorage = async (file: File): Promise<string> => {
+    const fileExt = file.name.split('.').pop() || 'webm';
+    const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
+    const filePath = `campanhas/audios/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('campaign_media')
+      .upload(filePath, file);
+
+    if (uploadError) throw uploadError;
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('campaign_media')
+      .getPublicUrl(filePath);
+
+    return publicUrl;
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+    if (!validTypes.includes(file.type)) {
+      toast({
+        title: "Formato inválido",
+        description: "Apenas JPG, JPEG e PNG são aceitos",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      const url = await uploadImageToStorage(file);
+      setConteudoImagemUrl(url);
+      setImagemFile(file);
+      toast({
+        title: "Imagem enviada com sucesso!",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro ao enviar imagem",
+        description: error instanceof Error ? error.message : "Erro desconhecido",
+        variant: "destructive",
+      });
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleAudioUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const validTypes = ['audio/mpeg', 'audio/mp3', 'audio/wav'];
+    if (!validTypes.includes(file.type)) {
+      toast({
+        title: "Formato inválido",
+        description: "Apenas MP3 e WAV são aceitos",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setUploadingAudio(true);
+    try {
+      const url = await uploadAudioToStorage(file);
+      setConteudoAudioUrl(url);
+      setAudioFile(file);
+      toast({
+        title: "Áudio enviado com sucesso!",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro ao enviar áudio",
+        description: error instanceof Error ? error.message : "Erro desconhecido",
+        variant: "destructive",
+      });
+    } finally {
+      setUploadingAudio(false);
+    }
+  };
+
+  const handleSaveRecording = async (audioBlob: Blob) => {
+    setUploadingAudio(true);
+    try {
+      const file = new File([audioBlob], `gravacao_${Date.now()}.webm`, { type: 'audio/webm' });
+      const url = await uploadAudioToStorage(file);
+      setConteudoAudioUrl(url);
+      setAudioFile(file);
+      toast({
+        title: "Gravação salva com sucesso!",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro ao salvar gravação",
+        description: error instanceof Error ? error.message : "Erro desconhecido",
+        variant: "destructive",
+      });
+      throw error;
+    } finally {
+      setUploadingAudio(false);
+    }
+  };
+
+  const removeImage = () => {
+    setConteudoImagemUrl("");
+    setImagemFile(null);
+  };
+
+  const removeAudio = () => {
+    setConteudoAudioUrl("");
+    setAudioFile(null);
   };
 
   const handleSaveCampanha = async () => {
@@ -168,7 +310,7 @@ export function CampanhasManager() {
     if (tipoEnvio === 'imagem' && !conteudoImagemUrl.trim()) {
       toast({
         title: "Erro",
-        description: "URL da imagem é obrigatória",
+        description: "Imagem é obrigatória",
         variant: "destructive",
       });
       return;
@@ -177,7 +319,7 @@ export function CampanhasManager() {
     if (tipoEnvio === 'audio' && !conteudoAudioUrl.trim()) {
       toast({
         title: "Erro",
-        description: "URL do áudio é obrigatória",
+        description: "Áudio é obrigatório",
         variant: "destructive",
       });
       return;
@@ -740,43 +882,119 @@ export function CampanhasManager() {
 
             {tipoEnvio === 'imagem' && (
               <div className="space-y-2">
-                <Label htmlFor="conteudo_imagem">URL da Imagem *</Label>
-                <Input
-                  id="conteudo_imagem"
-                  value={conteudoImagemUrl}
-                  onChange={(e) => setConteudoImagemUrl(e.target.value)}
-                  placeholder="https://exemplo.com/imagem.jpg"
-                />
-                {conteudoImagemUrl && (
-                  <div className="mt-2 p-2 border rounded">
-                    <img
-                      src={conteudoImagemUrl}
-                      alt="Preview"
-                      className="max-h-48 mx-auto rounded"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = 'none';
-                      }}
+                <Label>Upload de Imagem *</Label>
+                {!conteudoImagemUrl ? (
+                  <div className="space-y-2">
+                    <Input
+                      type="file"
+                      accept=".jpg,.jpeg,.png"
+                      onChange={handleImageUpload}
+                      disabled={uploadingImage}
+                      className="cursor-pointer"
                     />
+                    {uploadingImage && (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Enviando imagem...
+                      </div>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      Formatos aceitos: JPG, JPEG, PNG
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="relative p-2 border rounded">
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        className="absolute top-2 right-2 z-10"
+                        onClick={removeImage}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                      <img
+                        src={conteudoImagemUrl}
+                        alt="Preview"
+                        className="max-h-64 mx-auto rounded"
+                      />
+                    </div>
+                    <p className="text-xs text-green-600 dark:text-green-400">
+                      ✓ Imagem anexada
+                    </p>
                   </div>
                 )}
               </div>
             )}
 
             {tipoEnvio === 'audio' && (
-              <div className="space-y-2">
-                <Label htmlFor="conteudo_audio">URL do Áudio *</Label>
-                <Input
-                  id="conteudo_audio"
-                  value={conteudoAudioUrl}
-                  onChange={(e) => setConteudoAudioUrl(e.target.value)}
-                  placeholder="https://exemplo.com/audio.mp3"
-                />
-                {conteudoAudioUrl && (
-                  <div className="mt-2">
-                    <audio controls className="w-full">
-                      <source src={conteudoAudioUrl} />
-                      Seu navegador não suporta o elemento de áudio.
-                    </audio>
+              <div className="space-y-4">
+                <Label>Áudio *</Label>
+                
+                {!conteudoAudioUrl ? (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label className="text-sm text-muted-foreground">Enviar Áudio</Label>
+                      <Input
+                        type="file"
+                        accept=".mp3,.wav"
+                        onChange={handleAudioUpload}
+                        disabled={uploadingAudio}
+                        className="cursor-pointer"
+                      />
+                      {uploadingAudio && (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Enviando áudio...
+                        </div>
+                      )}
+                      <p className="text-xs text-muted-foreground">
+                        Formatos aceitos: MP3, WAV
+                      </p>
+                    </div>
+
+                    <div className="relative">
+                      <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t" />
+                      </div>
+                      <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-background px-2 text-muted-foreground">
+                          ou
+                        </span>
+                      </div>
+                    </div>
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full gap-2"
+                      onClick={() => setIsRecorderOpen(true)}
+                    >
+                      <Mic className="w-4 h-4" />
+                      Gravar Áudio
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="p-4 border rounded space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">Áudio anexado</span>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={removeAudio}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      <audio controls className="w-full">
+                        <source src={conteudoAudioUrl} />
+                        Seu navegador não suporta o elemento de áudio.
+                      </audio>
+                    </div>
+                    <p className="text-xs text-green-600 dark:text-green-400">
+                      ✓ Áudio anexado
+                    </p>
                   </div>
                 )}
               </div>
@@ -950,6 +1168,13 @@ export function CampanhasManager() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Dialog de Gravação de Áudio */}
+      <AudioRecorder
+        isOpen={isRecorderOpen}
+        onClose={() => setIsRecorderOpen(false)}
+        onSave={handleSaveRecording}
+      />
     </div>
   );
 }
