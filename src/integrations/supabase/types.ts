@@ -2738,7 +2738,9 @@ export type Database = {
           phone: string
         }[]
       }
-      dashboard_crm_metrics: { Args: never; Returns: Json }
+      dashboard_crm_metrics:
+        | { Args: never; Returns: Json }
+        | { Args: { p_end?: string; p_start?: string }; Returns: Json }
       dashboard_lead_origins: {
         Args: never
         Returns: {
