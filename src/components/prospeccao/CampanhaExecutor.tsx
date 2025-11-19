@@ -53,12 +53,24 @@ export function CampanhaExecutor({ campaignId, campaignName, onComplete }: Execu
         .eq('id', campanha.whatsapp_connection_id)
         .maybeSingle();
 
+      console.log('🔍 WhatsApp Connection Data:', whatsappConn);
+      console.log('📌 Instance ID:', whatsappConn?.instance_id);
+      console.log('📌 Instance Name:', whatsappConn?.instance_name);
+
       if (whatsappError || !whatsappConn) {
         throw new Error('Nenhuma conexão WhatsApp configurada');
       }
 
       if (whatsappConn.status !== 'connected') {
         throw new Error('Conexão WhatsApp não está ativa');
+      }
+
+      // VALIDAÇÃO CRÍTICA: verificar se instance_id e instance_name existem
+      if (!whatsappConn.instance_id || !whatsappConn.instance_name) {
+        console.error('❌ ERRO: Dados de instância ausentes!', whatsappConn);
+        throw new Error(
+          'Dados da instância WhatsApp ausentes. Por favor, delete e recrie esta campanha para incluir as informações da instância.'
+        );
       }
 
       // 3. Buscar sequência
@@ -150,10 +162,12 @@ export function CampanhaExecutor({ campaignId, campaignName, onComplete }: Execu
             conteudo_texto: campanha.conteudo_texto || null,
             conteudo_imagem_url: campanha.conteudo_imagem_url || null,
             conteudo_audio_url: campanha.conteudo_audio_url || null,
-            instance_name: whatsappConn.instance_name,
-            instance_id: whatsappConn.instance_id,
-            whatsapp_connection_id: campanha.whatsapp_connection_id
+            instance_name: whatsappConn.instance_name || '',
+            instance_id: whatsappConn.instance_id || '',
+            whatsapp_connection_id: campanha.whatsapp_connection_id || ''
           };
+
+          console.log('📤 Enviando payload para n8n:', JSON.stringify(payload, null, 2));
 
           // Enviar via webhook n8n
           const response = await fetch(campanha.webhook_n8n, {
@@ -163,6 +177,8 @@ export function CampanhaExecutor({ campaignId, campaignName, onComplete }: Execu
             },
             body: JSON.stringify(payload)
           });
+
+          console.log('✅ Response status:', response.status);
 
           if (!response.ok) {
             throw new Error(`Webhook retornou status ${response.status}`);
