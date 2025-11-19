@@ -98,11 +98,12 @@ export function CampanhasManager() {
   };
 
   const fetchArquitetosDisponiveis = async () => {
-    // Buscar apenas arquitetos com tag "Nunca Contactado"
+    // Buscar arquitetos que nunca foram contactados (sem data_primeiro_contato e sem data_ultimo_contato)
     const { data, error } = await supabase
       .from('architects')
       .select('id, name, phone, tier, tag_prospeccao')
-      .ilike('tag_prospeccao', '%nunca contactado%')
+      .is('data_primeiro_contato', null)
+      .is('data_ultimo_contato', null)
       .eq('active', true)
       .order('name');
 
