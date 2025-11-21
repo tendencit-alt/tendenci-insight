@@ -142,6 +142,7 @@ export function WhatsAppConnectionManager() {
     onSuccess: (connection) => {
       setQrCodeDialog(connection);
       queryClient.invalidateQueries({ queryKey: ["whatsapp-connections"] });
+      toast.success("QR Code atualizado!");
     },
     onError: (error: any) => {
       toast.error(error.message || "Erro ao obter QR Code");
@@ -276,7 +277,8 @@ export function WhatsAppConnectionManager() {
             <Alert>
               <QrCode className="h-4 w-4" />
               <AlertDescription>
-                Abra o WhatsApp no seu celular e escaneie este código
+                Abra o WhatsApp no seu celular, vá em <strong>Dispositivos Conectados</strong> e escaneie este código. 
+                O QR Code expira a cada 60 segundos.
               </AlertDescription>
             </Alert>
 
@@ -289,19 +291,30 @@ export function WhatsAppConnectionManager() {
                 />
               </div>
             ) : (
-              <div className="flex justify-center items-center h-64 bg-muted rounded-lg">
+              <div className="flex flex-col justify-center items-center h-64 bg-muted rounded-lg gap-2">
                 <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">Gerando QR Code...</p>
               </div>
             )}
 
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => qrCodeDialog && getQrCodeMutation.mutate(qrCodeDialog)}
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Atualizar QR Code
-            </Button>
+            <div className="space-y-2">
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => qrCodeDialog && getQrCodeMutation.mutate(qrCodeDialog)}
+                disabled={getQrCodeMutation.isPending}
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                {getQrCodeMutation.isPending ? "Atualizando..." : "Gerar Novo QR Code"}
+              </Button>
+              
+              <Alert variant="default" className="bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
+                <AlertCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                <AlertDescription className="text-blue-800 dark:text-blue-200">
+                  Se o QR Code não aparecer ou expirar, clique em "Gerar Novo QR Code"
+                </AlertDescription>
+              </Alert>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
