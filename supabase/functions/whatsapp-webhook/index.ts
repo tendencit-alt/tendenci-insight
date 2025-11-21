@@ -22,7 +22,10 @@ Deno.serve(async (req) => {
   }
 
   try {
-    console.log('🔔 Evolution API webhook received')
+    console.log('🔔 🔔 🔔 WEBHOOK EVOLUTION API RECEBIDO! 🔔 🔔 🔔')
+    console.log('⏰ Timestamp:', new Date().toISOString())
+    console.log('📍 Request method:', req.method)
+    console.log('📍 Request headers:', JSON.stringify(Object.fromEntries(req.headers)))
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -36,7 +39,7 @@ Deno.serve(async (req) => {
     )
 
     const body: EvolutionWebhook = await req.json()
-    console.log('📋 Webhook data:', JSON.stringify(body, null, 2))
+    console.log('📦 Webhook BODY completo:', JSON.stringify(body, null, 2))
 
     const { event, instance, data } = body
 
