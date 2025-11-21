@@ -313,8 +313,10 @@ Deno.serve(async (req) => {
       const existsInDatabase = !!existingConnection
       console.log(`📊 Exists in database: ${existsInDatabase}`)
       
-      // Tentar deletar da Evolution API (mesmo se não existir no banco)
+      // Tentar deletar da Evolution API (sempre, mesmo se não existir)
+      let evolutionSuccess = false
       try {
+        console.log('🔥 Attempting to delete from Evolution API...')
         const evolutionResponse = await fetch(`${evolutionUrl}/instance/delete/${instanceName}`, {
           method: 'DELETE',
           headers: {
@@ -322,18 +324,30 @@ Deno.serve(async (req) => {
           }
         })
         
-        const evolutionResult = await evolutionResponse.json()
-        console.log('🔥 Evolution API delete response:', evolutionResult)
-        
-        if (!evolutionResponse.ok) {
-          console.warn('⚠️ Evolution API delete failed, but continuing...')
+        if (evolutionResponse.ok) {
+          evolutionSuccess = true
+          console.log('✅ Deleted from Evolution API successfully')
+        } else {
+          const errorText = await evolutionResponse.text()
+          console.log('⚠️ Evolution API response:', evolutionResponse.status, errorText)
+          
+          // Se retornou 404 ou mensagem de "not found", considerar sucesso
+          if (evolutionResponse.status === 404 || errorText.toLowerCase().includes('not found') || errorText.toLowerCase().includes('instance not exists')) {
+            evolutionSuccess = true
+            console.log('✅ Instance not found in Evolution API (already deleted or never existed)')
+          } else {
+            console.warn('⚠️ Evolution API delete failed but continuing...', errorText)
+            evolutionSuccess = true // Continuar mesmo assim para limpar o banco
+          }
         }
       } catch (evolutionError) {
         console.warn('⚠️ Evolution API error (continuing):', evolutionError)
+        evolutionSuccess = true // Continuar para limpar o banco
       }
 
       // Deletar do banco se existir
       if (existsInDatabase) {
+        console.log('🗑️ Deleting from database...')
         const { error: deleteError } = await supabase
           .from('tendenci_whatsapp_connections')
           .delete()
@@ -344,16 +358,14 @@ Deno.serve(async (req) => {
           throw new Error('Erro ao deletar do banco de dados')
         }
         console.log('✅ Deleted from database')
-      } else {
-        console.log('ℹ️ Not in database, only deleted from Evolution API')
       }
 
       return new Response(
         JSON.stringify({ 
           success: true,
           message: existsInDatabase 
-            ? 'Instância removida do sistema e Evolution API' 
-            : 'Instância removida apenas da Evolution API (não estava no sistema)'
+            ? 'Instância removida com sucesso' 
+            : 'Instância removida (não estava no sistema)'
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
