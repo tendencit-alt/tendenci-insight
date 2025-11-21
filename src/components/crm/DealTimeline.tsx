@@ -554,7 +554,7 @@ export function DealTimeline({ dealId }: DealTimelineProps) {
                 type="file"
                 multiple
                 onChange={(e) => setFiles(e.target.files)}
-                accept="image/*,.pdf,.doc,.docx"
+                accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.dwg"
               />
               {files && files.length > 0 && (
                 <p className="text-sm text-muted-foreground mt-1">

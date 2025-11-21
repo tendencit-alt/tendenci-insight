@@ -514,7 +514,7 @@ export function DealNotes({ dealId, currentNote, onNoteUpdate }: DealNotesProps)
             className="hidden"
             multiple
             onChange={handleFileUpload}
-            accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.webp,.mp3,.wav,.m4a,.webm,.ogg"
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.dwg,.txt,.jpg,.jpeg,.png,.webp,.mp3,.wav,.m4a,.webm,.ogg"
             disabled={isUploading}
           />
         </div>

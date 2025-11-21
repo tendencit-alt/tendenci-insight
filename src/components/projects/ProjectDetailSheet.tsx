@@ -321,7 +321,7 @@ export function ProjectDetailSheet({ project, open, onOpenChange, onSuccess }: P
               <input
                 ref={fileInputRef}
                 type="file"
-                accept=".pdf,.png,.jpg,.jpeg"
+                accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.dwg"
                 onChange={handleFileUpload}
                 className="hidden"
               />

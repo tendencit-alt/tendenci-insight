@@ -368,7 +368,7 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess, preSelected
                     id="file-upload"
                     type="file"
                     multiple
-                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.dwg"
                     onChange={handleFileSelect}
                     className="hidden"
                   />

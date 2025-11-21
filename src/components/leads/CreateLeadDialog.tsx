@@ -337,7 +337,7 @@ export function CreateLeadDialog({ open, onOpenChange, onSuccess }: CreateLeadDi
                 ref={fileInputRef}
                 type="file"
                 multiple
-                accept="image/png,image/jpeg,image/jpg,application/pdf"
+                accept="image/png,image/jpeg,image/jpg,application/pdf,.doc,.docx,.xls,.xlsx,.dwg"
                 onChange={handleFileSelect}
                 className="hidden"
               />
