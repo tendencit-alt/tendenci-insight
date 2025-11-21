@@ -26,6 +26,7 @@ export function DealTasks({ dealId }: DealTasksProps) {
   const { toast } = useToast();
   const [tasks, setTasks] = useState<any[]>([]);
   const [isAdding, setIsAdding] = useState(false);
+  const [dealInfo, setDealInfo] = useState<any>(null);
   const [newTask, setNewTask] = useState({
     title: "",
     note: "",
@@ -36,6 +37,7 @@ export function DealTasks({ dealId }: DealTasksProps) {
 
   useEffect(() => {
     fetchTasks();
+    fetchDealInfo();
 
     // Realtime subscription
     const channel = supabase
@@ -58,6 +60,33 @@ export function DealTasks({ dealId }: DealTasksProps) {
       supabase.removeChannel(channel);
     };
   }, [dealId]);
+
+  const fetchDealInfo = async () => {
+    const { data, error } = await supabase
+      .from("crm_deals")
+      .select(`
+        *,
+        lead:leads(
+          client:clients(
+            name,
+            phone
+          )
+        ),
+        architect:architects(
+          name,
+          phone
+        )
+      `)
+      .eq("id", dealId)
+      .single();
+
+    if (error) {
+      console.error("Erro ao buscar informações do deal:", error);
+      return;
+    }
+
+    setDealInfo(data);
+  };
 
   const fetchTasks = async () => {
     const { data, error } = await supabase
@@ -226,9 +255,18 @@ export function DealTasks({ dealId }: DealTasksProps) {
               <Label htmlFor="task-tipo">Tipo de Tarefa *</Label>
               <Select
                 value={newTask.tipo_tarefa}
-                onValueChange={(value: "interna" | "automatizada") =>
-                  setNewTask({ ...newTask, tipo_tarefa: value })
-                }
+                onValueChange={(value: "interna" | "automatizada") => {
+                  const updates: any = { tipo_tarefa: value };
+                  
+                  // Auto-preencher WhatsApp quando selecionar "automatizada"
+                  if (value === "automatizada" && dealInfo) {
+                    const clientPhone = dealInfo.lead?.client?.phone;
+                    const architectPhone = dealInfo.architect?.phone;
+                    updates.whatsapp_number = clientPhone || architectPhone || "";
+                  }
+                  
+                  setNewTask({ ...newTask, ...updates });
+                }}
               >
                 <SelectTrigger id="task-tipo">
                   <SelectValue placeholder="Selecione o tipo" />
@@ -274,7 +312,7 @@ export function DealTasks({ dealId }: DealTasksProps) {
                 <Label htmlFor="task-whatsapp">
                   Número de WhatsApp * 
                   <span className="text-xs text-muted-foreground ml-2">
-                    (Ex: 5511999999999)
+                    (Preenchido automaticamente do cliente)
                   </span>
                 </Label>
                 <Input
@@ -283,8 +321,13 @@ export function DealTasks({ dealId }: DealTasksProps) {
                   onChange={(e) =>
                     setNewTask({ ...newTask, whatsapp_number: e.target.value })
                   }
-                  placeholder="Digite o número com DDD"
+                  placeholder="Ex: 5511999999999"
                 />
+                {dealInfo?.lead?.client?.name && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    📱 Cliente: {dealInfo.lead.client.name}
+                  </p>
+                )}
               </div>
             )}
 

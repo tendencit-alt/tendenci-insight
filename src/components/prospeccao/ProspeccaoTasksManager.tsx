@@ -60,14 +60,21 @@ export function ProspeccaoTasksManager() {
   const fetchData = async () => {
     setLoading(true);
 
-    // Buscar todos os deals ativos
+    // Buscar todos os deals ativos com informações de contato
     const { data: dealsData, error: dealsError } = await supabase
       .from("crm_deals")
       .select(`
         id,
         title,
         lead:leads(
-          client:clients(name)
+          client:clients(
+            name,
+            phone
+          )
+        ),
+        architect:architects(
+          name,
+          phone
         )
       `)
       .eq("status", "aberto")
@@ -286,9 +293,19 @@ export function ProspeccaoTasksManager() {
               <Label htmlFor="deal">Negócio *</Label>
               <Select
                 value={newTask.deal_id}
-                onValueChange={(value) =>
-                  setNewTask({ ...newTask, deal_id: value })
-                }
+                onValueChange={(value) => {
+                  const selectedDeal = deals.find((d) => d.id === value);
+                  const updates: any = { deal_id: value };
+                  
+                  // Auto-preencher WhatsApp quando selecionar negócio e tipo for automatizada
+                  if (newTask.tipo_tarefa === "automatizada" && selectedDeal) {
+                    const clientPhone = selectedDeal.lead?.client?.phone;
+                    const architectPhone = selectedDeal.architect?.phone;
+                    updates.whatsapp_number = clientPhone || architectPhone || "";
+                  }
+                  
+                  setNewTask({ ...newTask, ...updates });
+                }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione um negócio" />
@@ -332,7 +349,7 @@ export function ProspeccaoTasksManager() {
                 <Label htmlFor="task-whatsapp">
                   Número de WhatsApp * 
                   <span className="text-xs text-muted-foreground ml-2">
-                    (Ex: 5511999999999)
+                    (Preenchido automaticamente do negócio)
                   </span>
                 </Label>
                 <Input
@@ -341,8 +358,13 @@ export function ProspeccaoTasksManager() {
                   onChange={(e) =>
                     setNewTask({ ...newTask, whatsapp_number: e.target.value })
                   }
-                  placeholder="Digite o número com DDD"
+                  placeholder="Ex: 5511999999999"
                 />
+                {newTask.deal_id && deals.find(d => d.id === newTask.deal_id)?.lead?.client?.name && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    📱 Cliente: {deals.find(d => d.id === newTask.deal_id)?.lead?.client?.name}
+                  </p>
+                )}
               </div>
             )}
 
