@@ -131,12 +131,11 @@ export function ArchitectProspeccaoSheet({
         </SheetHeader>
 
         <Tabs defaultValue="info" className="mt-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="info">Informações</TabsTrigger>
             <TabsTrigger value="history">Histórico</TabsTrigger>
             <TabsTrigger value="projects">Projetos</TabsTrigger>
             <TabsTrigger value="tasks">Tarefas</TabsTrigger>
-            <TabsTrigger value="timeline">Timeline</TabsTrigger>
           </TabsList>
 
           <TabsContent value="info" className="space-y-6">
@@ -338,10 +337,8 @@ export function ArchitectProspeccaoSheet({
             <Card className="p-4">
               <ArchitectTasks architectId={architectId} />
             </Card>
-          </TabsContent>
-
-          <TabsContent value="timeline" className="space-y-4">
-            <Card className="p-4">
+            
+            <Card className="p-4 mt-4">
               <ArchitectTimeline architectId={architectId} />
             </Card>
           </TabsContent>
