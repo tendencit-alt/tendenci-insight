@@ -473,6 +473,7 @@ export function ArchitectTimeline({ architectId }: ArchitectTimelineProps) {
               id="architect-file-input"
               type="file"
               multiple
+              accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.webp,.xls,.xlsx,.dwg"
               onChange={(e) => setFiles(e.target.files)}
               className="mt-1"
             />
