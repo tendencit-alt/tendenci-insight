@@ -136,32 +136,39 @@ export default function N8nTarefasGuide() {
                 <div className="bg-muted p-4 rounded-lg space-y-3">
                   <p className="text-sm font-medium">Configuração:</p>
                   <div className="bg-background p-3 rounded text-xs font-mono space-y-1">
-                    <div><span className="text-muted-foreground">Operation:</span> Select Rows</div>
-                    <div><span className="text-muted-foreground">Table:</span> crm_tasks</div>
+                    <div><span className="text-muted-foreground">Operation:</span> Execute Query</div>
+                    <div><span className="text-muted-foreground">Query Type:</span> Custom SQL</div>
                   </div>
                   
                   <p className="text-sm font-medium mt-3">Query SQL:</p>
                   <pre className="bg-background p-3 rounded text-xs overflow-x-auto">
 {`SELECT 
-  id,
-  deal_id,
-  title,
-  note,
-  due_at,
-  whatsapp_number,
-  tipo_tarefa,
-  origem_modulo
-FROM crm_tasks
-WHERE tipo_tarefa = 'automatizada'
-  AND status = 'open'
-  AND due_at <= NOW()
-ORDER BY due_at ASC`}
+  t.id,
+  t.deal_id,
+  t.title,
+  t.note as mensagem,
+  t.whatsapp_number,
+  t.due_at,
+  t.created_by,
+  t.origem_modulo,
+  wc.instance_name,
+  wc.instance_id,
+  wc.id as whatsapp_connection_id
+FROM crm_tasks t
+INNER JOIN profiles p ON t.created_by = p.id
+INNER JOIN tendenci_whatsapp_connections wc 
+  ON wc.user_id = p.id 
+  AND wc.status = 'connected'
+WHERE t.tipo_tarefa = 'automatizada'
+  AND t.status = 'open'
+  AND t.due_at <= NOW()
+ORDER BY t.due_at ASC`}
                   </pre>
                   
                   <Alert className="mt-3">
                     <CheckCircle className="h-4 w-4" />
                     <AlertDescription className="text-xs">
-                      Esta query busca apenas tarefas automatizadas com status "open" cuja data/hora já passou ou é agora
+                      <strong>✨ Isolamento por Vendedor:</strong> O JOIN garante que apenas tarefas de vendedores com instância WhatsApp conectada sejam processadas. Cada tarefa usa automaticamente a instância específica do vendedor que a criou, evitando duplicidade.
                     </AlertDescription>
                   </Alert>
                 </div>
@@ -210,7 +217,7 @@ ORDER BY due_at ASC`}
                   <p className="text-sm font-medium">Configuração da Requisição:</p>
                   <div className="bg-background p-3 rounded text-xs font-mono space-y-1">
                     <div><span className="text-muted-foreground">Method:</span> POST</div>
-                    <div><span className="text-muted-foreground">URL:</span> {'{{ $env.EVOLUTION_API_URL }}/message/sendText/{{ $env.EVOLUTION_INSTANCE }}'}</div>
+                    <div><span className="text-muted-foreground">URL:</span> {'{{ $env.EVOLUTION_API_URL }}/message/sendText/{{ $json.instance_name }}'}</div>
                     <div><span className="text-muted-foreground">Authentication:</span> Header Auth</div>
                     <div><span className="text-muted-foreground">Header Name:</span> apikey</div>
                     <div><span className="text-muted-foreground">Header Value:</span> {'{{ $env.EVOLUTION_API_KEY }}'}</div>
@@ -220,19 +227,19 @@ ORDER BY due_at ASC`}
                   <pre className="bg-background p-3 rounded text-xs overflow-x-auto">
 {`{
   "number": "{{ $json.whatsapp_number }}",
-  "text": "{{ $json.note }}"
+  "text": "{{ $json.mensagem }}"
 }`}
                   </pre>
 
                   <Alert className="mt-3">
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription className="text-xs">
-                      <strong>Importante:</strong> Configure as variáveis de ambiente no n8n:
+                      <strong>✨ Instância Dinâmica:</strong> A URL usa <code>instance_name</code> da query, garantindo que cada mensagem seja enviada pela instância WhatsApp do vendedor que criou a tarefa. Configure no n8n:
                       <ul className="list-disc ml-4 mt-2 space-y-1">
                         <li>EVOLUTION_API_URL - URL da sua Evolution API</li>
-                        <li>EVOLUTION_INSTANCE - Nome da instância WhatsApp</li>
                         <li>EVOLUTION_API_KEY - Chave de API da Evolution</li>
                       </ul>
+                      ⚠️ Não precisa mais de EVOLUTION_INSTANCE fixo!
                     </AlertDescription>
                   </Alert>
                 </div>
@@ -342,11 +349,14 @@ ORDER BY due_at ASC`}
   "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
   "deal_id": "d4e5f6g7-h8i9-0123-4567-89abcdef0123",
   "title": "Follow-up Cliente João",
-  "note": "Olá João! Tudo bem? Passando para saber se você já teve tempo de avaliar nossa proposta. Estou à disposição para esclarecer dúvidas. Abraço!",
+  "mensagem": "Olá João! Tudo bem? Passando para saber se você já teve tempo de avaliar nossa proposta. Estou à disposição para esclarecer dúvidas. Abraço!",
   "due_at": "2025-01-21T14:30:00Z",
   "whatsapp_number": "5511999999999",
-  "tipo_tarefa": "automatizada",
-  "origem_modulo": "crm"
+  "created_by": "f9e8d7c6-b5a4-3210-9876-543210fedcba",
+  "origem_modulo": "crm",
+  "instance_name": "vendedor_maira",
+  "instance_id": "12AB34CD56EF",
+  "whatsapp_connection_id": "c6d7e8f9-a0b1-2345-6789-0abcdef12345"
 }`}
               </pre>
             </div>
@@ -385,7 +395,8 @@ ORDER BY due_at ASC`}
                 <input type="checkbox" className="mt-1" />
                 <div>
                   <p className="font-medium text-sm">Variáveis de ambiente da Evolution API configuradas</p>
-                  <p className="text-xs text-muted-foreground">EVOLUTION_API_URL, EVOLUTION_INSTANCE, EVOLUTION_API_KEY</p>
+                  <p className="text-xs text-muted-foreground">EVOLUTION_API_URL, EVOLUTION_API_KEY</p>
+                  <p className="text-xs font-semibold text-muted-foreground mt-1">⚠️ Não precisa de EVOLUTION_INSTANCE fixo - cada tarefa usa a instância do vendedor automaticamente</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
@@ -573,7 +584,59 @@ ORDER BY due_at ASC`}
                   <p className="text-xs text-muted-foreground">Use variáveis de ambiente, nunca hardcode tokens</p>
                 </div>
               </div>
+              <div className="flex items-start gap-3">
+                <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
+                <div>
+                  <p className="font-medium text-sm">✨ Isolamento automático por vendedor</p>
+                  <p className="text-xs text-muted-foreground">Cada vendedor usa sua própria instância WhatsApp - sem risco de duplicidade de mensagens</p>
+                </div>
+              </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Seção de Isolamento por Vendedor */}
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              🔒 Isolamento por Vendedor
+            </CardTitle>
+            <CardDescription>Como funciona a separação de instâncias</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              O sistema garante que cada vendedor use apenas sua própria instância WhatsApp conectada, evitando completamente duplicidade de mensagens.
+            </p>
+            
+            <div className="bg-muted p-4 rounded-lg space-y-3">
+              <div className="flex items-start gap-3">
+                <div className="bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 text-xs font-bold">1</div>
+                <p className="text-sm">Vendedor conecta sua instância WhatsApp no sistema (cada vendedor tem sua própria conexão)</p>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 text-xs font-bold">2</div>
+                <p className="text-sm">Vendedor cria tarefa automatizada no CRM - sistema registra <code className="text-xs bg-background px-1 py-0.5 rounded">created_by</code> com o ID do vendedor</p>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 text-xs font-bold">3</div>
+                <p className="text-sm">n8n busca tarefas com <strong>JOIN automático</strong> para pegar a instância WhatsApp do vendedor que criou a tarefa</p>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 text-xs font-bold">4</div>
+                <p className="text-sm">Mensagem é enviada via <strong>instância específica do vendedor</strong> - nunca por outra instância</p>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 text-xs font-bold">5</div>
+                <p className="text-sm"><strong>Zero duplicidade:</strong> Cliente recebe apenas 1 mensagem, da instância correta</p>
+              </div>
+            </div>
+
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription className="text-sm">
+                <strong>Importante:</strong> Não é necessário adicionar campos extras nas tarefas. O sistema identifica automaticamente qual instância usar através do relacionamento <code className="text-xs bg-muted px-1 py-0.5 rounded">created_by → profiles → whatsapp_connections</code>.
+              </AlertDescription>
+            </Alert>
           </CardContent>
         </Card>
       </div>
