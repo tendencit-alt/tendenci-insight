@@ -58,22 +58,35 @@ export function WhatsAppConnectionManager() {
             );
 
             if (evolutionInstance) {
-              // Evolution API retorna connectionStatus diretamente no objeto raiz
+              // Evolution API retorna connectionStatus e ownerJid
               const connectionStatus = evolutionInstance.connectionStatus || "close";
-              const phoneNumber = evolutionInstance.ownerJid?.split('@')[0] || conn.phone_number;
+              const ownerJid = evolutionInstance.ownerJid;
+              const phoneNumber = ownerJid?.split('@')[0] || null;
               
+              // Considera conectado SOMENTE se status é "open" E tem ownerJid válido
               let newStatus = "disconnected";
-              if (connectionStatus === "open") newStatus = "connected";
-              else if (connectionStatus === "connecting") newStatus = "connecting";
-              else if (connectionStatus === "close") newStatus = "disconnected";
+              if (connectionStatus === "open" && ownerJid && phoneNumber) {
+                newStatus = "connected";
+              } else if (connectionStatus === "connecting" || connectionStatus === "open") {
+                newStatus = "connecting";
+              } else {
+                newStatus = "disconnected";
+              }
               
-              console.log(`📱 ${conn.instance_name}: ${connectionStatus} -> ${newStatus}, phone: ${phoneNumber}`);
+              console.log(`📱 ${conn.instance_name}: status=${connectionStatus}, ownerJid=${ownerJid}, newStatus=${newStatus}`);
               
-              if (conn.status !== newStatus || (phoneNumber && conn.phone_number !== phoneNumber)) {
+              // Atualiza SOMENTE se mudou o status OU se ficou realmente conectado
+              const shouldUpdate = conn.status !== newStatus || 
+                                 (newStatus === "connected" && phoneNumber && conn.phone_number !== phoneNumber);
+              
+              if (shouldUpdate) {
                 const updateData: any = { status: newStatus };
-                if (phoneNumber && phoneNumber !== conn.phone_number) {
+                
+                // Se conectou de verdade, salva phone e data de conexão
+                if (newStatus === "connected" && phoneNumber) {
                   updateData.phone_number = phoneNumber;
                   updateData.connected_at = new Date().toISOString();
+                  console.log(`✅ Instância ${conn.instance_name} conectada! Phone: ${phoneNumber}`);
                 }
                 
                 await supabase
@@ -224,9 +237,11 @@ export function WhatsAppConnectionManager() {
               <li>Aguarde o QR Code aparecer (pode levar até 10 segundos)</li>
               <li>No seu celular, abra WhatsApp → Menu (⋮) → Dispositivos conectados</li>
               <li>Toque em "Conectar um dispositivo" e escaneie o QR Code</li>
-              <li>Aguarde a confirmação de "Conectado" (fica verde)</li>
+              <li><strong>Aguarde o status mudar para "Conectado" (verde) com seu número de telefone</strong></li>
+              <li><strong>Somente instâncias "Conectadas" podem ser usadas em campanhas</strong></li>
             </ol>
-            <p className="text-sm font-medium mt-2">⚠️ O QR Code expira em 60 segundos. Se expirar, clique em "Gerar Novo QR Code".</p>
+            <p className="text-sm font-medium mt-2 text-yellow-700 dark:text-yellow-400">⚠️ O QR Code expira em 60 segundos. Se expirar, clique em "Gerar Novo QR Code".</p>
+            <p className="text-sm font-semibold mt-2 text-red-600 dark:text-red-400">🔴 Se ficar muito tempo em "Conectando..." sem mostrar número, delete a instância e crie uma nova.</p>
           </div>
         </AlertDescription>
       </Alert>
@@ -379,6 +394,16 @@ export function WhatsAppConnectionManager() {
                       <AlertCircle className="h-4 w-4" />
                       <AlertDescription className="text-xs">
                         QR Code expirado ou conexão travada. Clique em "Gerar Novo QR Code" abaixo.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                  
+                  {/* Alerta de instância não utilizável em campanhas */}
+                  {connection.status === 'connecting' && !connection.phone_number && (
+                    <Alert className="py-2 bg-yellow-50 border-yellow-200 dark:bg-yellow-950 dark:border-yellow-800">
+                      <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                      <AlertDescription className="text-xs text-yellow-800 dark:text-yellow-200">
+                        Esta instância não pode ser usada em campanhas até estar "Conectada" com número de telefone.
                       </AlertDescription>
                     </Alert>
                   )}
