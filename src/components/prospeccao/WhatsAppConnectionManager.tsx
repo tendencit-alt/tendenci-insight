@@ -203,10 +203,11 @@ export function WhatsAppConnectionManager() {
 
       if (error) throw error;
       if (!data.success) throw new Error(data.error);
+      return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["whatsapp-connections"] });
-      toast.success("Instância removida");
+      toast.success(data.message || "Instância removida");
     },
     onError: (error: any) => {
       toast.error(error.message || "Erro ao deletar");
