@@ -290,65 +290,71 @@ Deno.serve(async (req) => {
     if (action === 'delete') {
       console.log('🗑️ Deleting:', instanceName)
       
-      // Verificar banco
-      const { data: existingConnection } = await supabase
-        .from('tendenci_whatsapp_connections')
-        .select('*')
-        .eq('instance_name', instanceName)
-        .maybeSingle()
-
-      const existsInDatabase = !!existingConnection
-      console.log(`📊 Exists in database: ${existsInDatabase}`)
+      let deletedFromEvolution = false
+      let deletedFromDatabase = false
       
-      // Deletar da Evolution API
-      let evolutionSuccess = false
+      // PASSO 1: Deletar da Evolution API (SEMPRE tentar primeiro)
       try {
-        console.log('🔥 Deleting from Evolution API...')
+        console.log('🔥 Attempting to delete from Evolution API...')
         const evolutionResponse = await fetch(`${evolutionUrl}/instance/delete/${instanceName}`, {
           method: 'DELETE',
           headers: { 'apikey': evolutionApiKey }
         })
         
         if (evolutionResponse.ok) {
-          evolutionSuccess = true
+          deletedFromEvolution = true
           console.log('✅ Deleted from Evolution API')
         } else {
           const errorText = await evolutionResponse.text()
-          console.log('⚠️ Evolution response:', evolutionResponse.status, errorText)
+          console.log(`⚠️ Evolution API response (${evolutionResponse.status}):`, errorText)
           
-          // 404 = já foi deletado ou nunca existiu
+          // Se retornou 404 ou "not found", considerar como sucesso (já estava deletado)
           if (evolutionResponse.status === 404 || errorText.toLowerCase().includes('not found')) {
-            evolutionSuccess = true
-            console.log('✅ Instance not found (already deleted)')
-          } else {
-            evolutionSuccess = true // Continuar mesmo assim
-            console.warn('⚠️ Evolution delete failed but continuing')
+            deletedFromEvolution = true
+            console.log('✅ Instance not found in Evolution (already deleted or never existed)')
           }
         }
       } catch (error) {
-        console.warn('⚠️ Evolution error (continuing):', error)
-        evolutionSuccess = true
+        console.warn('⚠️ Evolution API error (continuing):', error)
+        // Continuar mesmo com erro - tentar deletar do banco
       }
 
-      // Deletar do banco
-      if (existsInDatabase) {
-        console.log('🗑️ Deleting from database...')
+      // PASSO 2: Deletar do banco Lovable
+      try {
+        console.log('🗑️ Attempting to delete from database...')
         const { error: deleteError } = await supabase
           .from('tendenci_whatsapp_connections')
           .delete()
           .eq('instance_name', instanceName)
         
         if (deleteError) {
-          console.error('❌ Database delete error:', deleteError)
-          throw new Error('Erro ao deletar do banco')
+          console.warn('⚠️ Database delete error:', deleteError)
+        } else {
+          deletedFromDatabase = true
+          console.log('✅ Deleted from database')
         }
-        console.log('✅ Deleted from database')
+      } catch (error) {
+        console.warn('⚠️ Database error:', error)
+      }
+
+      // Mensagem de sucesso baseada no que foi deletado
+      let message = 'Instância removida com sucesso'
+      if (deletedFromEvolution && deletedFromDatabase) {
+        message = 'Instância removida completamente (Evolution + Sistema)'
+      } else if (deletedFromEvolution && !deletedFromDatabase) {
+        message = 'Instância removida da Evolution API (não estava no sistema)'
+      } else if (!deletedFromEvolution && deletedFromDatabase) {
+        message = 'Instância removida do sistema (não estava na Evolution API)'
+      } else {
+        message = 'Instância não encontrada em nenhum lugar (já foi removida)'
       }
 
       return new Response(
         JSON.stringify({ 
           success: true,
-          message: existsInDatabase ? 'Instância removida' : 'Instância removida (não estava no sistema)'
+          message,
+          deleted_from_evolution: deletedFromEvolution,
+          deleted_from_database: deletedFromDatabase
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
