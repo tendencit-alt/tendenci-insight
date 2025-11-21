@@ -35,10 +35,11 @@ const ProjectSettings = () => {
 
         {/* Settings Sections */}
         <Tabs defaultValue="architects" className="w-full">
-          <TabsList className={`grid w-full ${isMaster ? 'grid-cols-5' : 'grid-cols-4'}`}>
+          <TabsList className={`grid w-full ${isMaster ? 'grid-cols-6' : 'grid-cols-5'}`}>
             <TabsTrigger value="architects">👥 Arquitetos</TabsTrigger>
             <TabsTrigger value="import">📥 Importar Dados</TabsTrigger>
             <TabsTrigger value="n8n">🤖 Integração n8n</TabsTrigger>
+            <TabsTrigger value="n8n-tasks">⚡ n8n Tarefas</TabsTrigger>
             <TabsTrigger value="webhooks">🔗 Webhooks</TabsTrigger>
             {isMaster && <TabsTrigger value="users">🔐 Acessos</TabsTrigger>}
           </TabsList>
@@ -53,6 +54,27 @@ const ProjectSettings = () => {
 
           <TabsContent value="n8n" className="space-y-6 pt-6">
             <N8nIntegrationGuide />
+          </TabsContent>
+
+          <TabsContent value="n8n-tasks" className="space-y-6 pt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  ⚡ Automação de Tarefas via n8n
+                </CardTitle>
+                <CardDescription>
+                  Configure o fluxo n8n para envio automático de mensagens WhatsApp baseado em tarefas agendadas
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button 
+                  onClick={() => window.open('/n8n-tarefas', '_blank')}
+                  className="w-full sm:w-auto gap-2"
+                >
+                  📖 Abrir Documentação Completa
+                </Button>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="webhooks" className="space-y-6 pt-6">

@@ -25,6 +25,7 @@ import ImportTempArchitects from "./pages/ImportTempArchitects";
 import AutoImportArchitects from "./pages/AutoImportArchitects";
 import FinalBulkImport from "./pages/FinalBulkImport";
 import WhatsAppIntegrationDocs from "./pages/WhatsAppIntegrationDocs";
+import N8nTarefasGuide from "./pages/N8nTarefasGuide";
 
 const queryClient = new QueryClient();
 
@@ -55,6 +56,7 @@ const App = () => (
             <Route path="/auto-import" element={<AutoImportArchitects />} />
             <Route path="/final-bulk-import" element={<FinalBulkImport />} />
             <Route path="/whatsapp-integration-docs" element={<ProtectedRoute><WhatsAppIntegrationDocs /></ProtectedRoute>} />
+            <Route path="/n8n-tarefas" element={<ProtectedRoute><N8nTarefasGuide /></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
