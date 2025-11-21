@@ -8,6 +8,13 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, CheckCircle, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -23,6 +30,8 @@ export function DealTasks({ dealId }: DealTasksProps) {
     title: "",
     note: "",
     due_at: "",
+    tipo_tarefa: "interna" as "interna" | "automatizada",
+    whatsapp_number: "",
   });
 
   useEffect(() => {
@@ -75,6 +84,18 @@ export function DealTasks({ dealId }: DealTasksProps) {
       return;
     }
 
+    // Validação para tarefas automatizadas
+    if (newTask.tipo_tarefa === "automatizada") {
+      if (!newTask.whatsapp_number || !newTask.note) {
+        toast({
+          title: "Campos obrigatórios para Tarefa Automatizada",
+          description: "Preencha o Número de WhatsApp e a Mensagem (Observações) para tarefas automatizadas.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     console.log("Criando tarefa:", { dealId, newTask });
 
     const { data, error } = await supabase.from("crm_tasks").insert({
@@ -84,6 +105,8 @@ export function DealTasks({ dealId }: DealTasksProps) {
       due_at: newTask.due_at,
       status: "open",
       origem_modulo: "crm",
+      tipo_tarefa: newTask.tipo_tarefa,
+      whatsapp_number: newTask.whatsapp_number || null,
     }).select();
 
     if (error) {
@@ -103,7 +126,13 @@ export function DealTasks({ dealId }: DealTasksProps) {
       description: "A tarefa foi adicionada com sucesso.",
     });
 
-    setNewTask({ title: "", note: "", due_at: "" });
+    setNewTask({ 
+      title: "", 
+      note: "", 
+      due_at: "", 
+      tipo_tarefa: "interna",
+      whatsapp_number: "",
+    });
     setIsAdding(false);
     fetchTasks();
   };
@@ -194,6 +223,29 @@ export function DealTasks({ dealId }: DealTasksProps) {
         {isAdding && (
           <div className="p-4 border rounded-md bg-muted/30 space-y-3">
             <div>
+              <Label htmlFor="task-tipo">Tipo de Tarefa *</Label>
+              <Select
+                value={newTask.tipo_tarefa}
+                onValueChange={(value: "interna" | "automatizada") =>
+                  setNewTask({ ...newTask, tipo_tarefa: value })
+                }
+              >
+                <SelectTrigger id="task-tipo">
+                  <SelectValue placeholder="Selecione o tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="interna">Tarefa Interna</SelectItem>
+                  <SelectItem value="automatizada">Tarefa Automatizada</SelectItem>
+                </SelectContent>
+              </Select>
+              {newTask.tipo_tarefa === "automatizada" && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  ⚡ Esta tarefa será processada pelo n8n para disparo automático via WhatsApp
+                </p>
+              )}
+            </div>
+
+            <div>
               <Label htmlFor="task-title">Título da Tarefa *</Label>
               <Input
                 id="task-title"
@@ -217,16 +269,41 @@ export function DealTasks({ dealId }: DealTasksProps) {
               />
             </div>
 
+            {newTask.tipo_tarefa === "automatizada" && (
+              <div>
+                <Label htmlFor="task-whatsapp">
+                  Número de WhatsApp * 
+                  <span className="text-xs text-muted-foreground ml-2">
+                    (Ex: 5511999999999)
+                  </span>
+                </Label>
+                <Input
+                  id="task-whatsapp"
+                  value={newTask.whatsapp_number}
+                  onChange={(e) =>
+                    setNewTask({ ...newTask, whatsapp_number: e.target.value })
+                  }
+                  placeholder="Digite o número com DDD"
+                />
+              </div>
+            )}
+
             <div>
-              <Label htmlFor="task-note">Observações</Label>
+              <Label htmlFor="task-note">
+                {newTask.tipo_tarefa === "automatizada" ? "Mensagem *" : "Observações"}
+              </Label>
               <Textarea
                 id="task-note"
                 value={newTask.note}
                 onChange={(e) =>
                   setNewTask({ ...newTask, note: e.target.value })
                 }
-                placeholder="Detalhes adicionais sobre a tarefa..."
-                rows={2}
+                placeholder={
+                  newTask.tipo_tarefa === "automatizada"
+                    ? "Mensagem que será enviada automaticamente via WhatsApp..."
+                    : "Detalhes adicionais sobre a tarefa..."
+                }
+                rows={3}
               />
             </div>
 
@@ -305,6 +382,11 @@ export function DealTasks({ dealId }: DealTasksProps) {
                         <Badge variant={dueInfo.variant}>
                           {dueInfo.icon} {dueInfo.text}
                         </Badge>
+                        {task.tipo_tarefa === "automatizada" && (
+                          <Badge variant="outline" className="bg-purple-50 dark:bg-purple-950">
+                            ⚡ Automatizada
+                          </Badge>
+                        )}
                         <span className="text-xs text-muted-foreground">
                           {dueDate.toLocaleString("pt-BR", {
                             dateStyle: "short",
@@ -317,6 +399,12 @@ export function DealTasks({ dealId }: DealTasksProps) {
                           </Badge>
                         )}
                       </div>
+
+                      {task.tipo_tarefa === "automatizada" && task.whatsapp_number && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          📱 WhatsApp: {task.whatsapp_number}
+                        </p>
+                      )}
 
                       {task.note && (
                         <p className="text-sm text-muted-foreground mt-2">

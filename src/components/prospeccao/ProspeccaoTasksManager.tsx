@@ -29,6 +29,8 @@ export function ProspeccaoTasksManager() {
     title: "",
     note: "",
     due_at: "",
+    tipo_tarefa: "interna" as "interna" | "automatizada",
+    whatsapp_number: "",
   });
 
   useEffect(() => {
@@ -110,6 +112,18 @@ export function ProspeccaoTasksManager() {
       return;
     }
 
+    // Validação para tarefas automatizadas
+    if (newTask.tipo_tarefa === "automatizada") {
+      if (!newTask.whatsapp_number || !newTask.note) {
+        toast({
+          title: "Campos obrigatórios para Tarefa Automatizada",
+          description: "Preencha o Número de WhatsApp e a Mensagem (Observações) para tarefas automatizadas.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     const { error } = await supabase.from("crm_tasks").insert({
       deal_id: newTask.deal_id,
       title: newTask.title,
@@ -117,6 +131,8 @@ export function ProspeccaoTasksManager() {
       due_at: newTask.due_at,
       status: "open",
       origem_modulo: "prospeccao",
+      tipo_tarefa: newTask.tipo_tarefa,
+      whatsapp_number: newTask.whatsapp_number || null,
     });
 
     if (error) {
@@ -133,7 +149,14 @@ export function ProspeccaoTasksManager() {
       description: "A tarefa foi adicionada e aparecerá no CRM Kanban.",
     });
 
-    setNewTask({ deal_id: "", title: "", note: "", due_at: "" });
+    setNewTask({ 
+      deal_id: "", 
+      title: "", 
+      note: "", 
+      due_at: "",
+      tipo_tarefa: "interna",
+      whatsapp_number: "",
+    });
     setIsAdding(false);
     fetchData();
   };
@@ -237,6 +260,29 @@ export function ProspeccaoTasksManager() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
+              <Label htmlFor="task-tipo">Tipo de Tarefa *</Label>
+              <Select
+                value={newTask.tipo_tarefa}
+                onValueChange={(value: "interna" | "automatizada") =>
+                  setNewTask({ ...newTask, tipo_tarefa: value })
+                }
+              >
+                <SelectTrigger id="task-tipo">
+                  <SelectValue placeholder="Selecione o tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="interna">Tarefa Interna</SelectItem>
+                  <SelectItem value="automatizada">Tarefa Automatizada</SelectItem>
+                </SelectContent>
+              </Select>
+              {newTask.tipo_tarefa === "automatizada" && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  ⚡ Esta tarefa será processada pelo n8n para disparo automático via WhatsApp
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="deal">Negócio *</Label>
               <Select
                 value={newTask.deal_id}
@@ -270,19 +316,6 @@ export function ProspeccaoTasksManager() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="note">Observações</Label>
-              <Textarea
-                id="note"
-                value={newTask.note}
-                onChange={(e) =>
-                  setNewTask({ ...newTask, note: e.target.value })
-                }
-                placeholder="Detalhes adicionais da tarefa..."
-                rows={3}
-              />
-            </div>
-
-            <div className="space-y-2">
               <Label htmlFor="due_at">Data/Hora *</Label>
               <Input
                 id="due_at"
@@ -291,6 +324,44 @@ export function ProspeccaoTasksManager() {
                 onChange={(e) =>
                   setNewTask({ ...newTask, due_at: e.target.value })
                 }
+              />
+            </div>
+
+            {newTask.tipo_tarefa === "automatizada" && (
+              <div className="space-y-2">
+                <Label htmlFor="task-whatsapp">
+                  Número de WhatsApp * 
+                  <span className="text-xs text-muted-foreground ml-2">
+                    (Ex: 5511999999999)
+                  </span>
+                </Label>
+                <Input
+                  id="task-whatsapp"
+                  value={newTask.whatsapp_number}
+                  onChange={(e) =>
+                    setNewTask({ ...newTask, whatsapp_number: e.target.value })
+                  }
+                  placeholder="Digite o número com DDD"
+                />
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="note">
+                {newTask.tipo_tarefa === "automatizada" ? "Mensagem *" : "Observações"}
+              </Label>
+              <Textarea
+                id="note"
+                value={newTask.note}
+                onChange={(e) =>
+                  setNewTask({ ...newTask, note: e.target.value })
+                }
+                placeholder={
+                  newTask.tipo_tarefa === "automatizada"
+                    ? "Mensagem que será enviada automaticamente via WhatsApp..."
+                    : "Detalhes adicionais da tarefa..."
+                }
+                rows={3}
               />
             </div>
 
@@ -334,6 +405,11 @@ export function ProspeccaoTasksManager() {
                           <Badge variant={dueInfo.variant}>
                             {dueInfo.text}
                           </Badge>
+                          {task.tipo_tarefa === "automatizada" && (
+                            <Badge variant="outline" className="bg-purple-50 dark:bg-purple-950">
+                              ⚡ Automatizada
+                            </Badge>
+                          )}
                           {task.origem_modulo === "prospeccao" && (
                             <Badge variant="outline" className="text-xs">
                               Prospecção
@@ -348,6 +424,11 @@ export function ProspeccaoTasksManager() {
                         {task.note && (
                           <p className="text-sm text-muted-foreground">
                             {task.note}
+                          </p>
+                        )}
+                        {task.tipo_tarefa === "automatizada" && task.whatsapp_number && (
+                          <p className="text-xs text-muted-foreground">
+                            📱 WhatsApp: {task.whatsapp_number}
                           </p>
                         )}
                         <p className="text-xs text-muted-foreground">
