@@ -131,6 +131,17 @@ export function ProspeccaoTasksManager() {
       }
     }
 
+    // Obter ID do usuário autenticado
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast({
+        title: "Erro de autenticação",
+        description: "Usuário não autenticado.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const { error } = await supabase.from("crm_tasks").insert({
       deal_id: newTask.deal_id,
       title: newTask.title,
@@ -140,6 +151,7 @@ export function ProspeccaoTasksManager() {
       origem_modulo: "prospeccao",
       tipo_tarefa: newTask.tipo_tarefa,
       whatsapp_number: newTask.whatsapp_number || null,
+      created_by: user.id,
     });
 
     if (error) {
