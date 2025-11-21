@@ -550,15 +550,6 @@ export function DealDetailSheet({
               </div>
             </Card>
 
-            {/* Observações/Histórico */}
-            <DealNotes
-              dealId={deal.id}
-              currentNote={deal.note || ""}
-              onNoteUpdate={(newNote) => {
-                deal.note = newNote;
-              }}
-            />
-
             {/* Responsáveis - Visível apenas para o vendedor responsável ou admin */}
             {(isMaster || deal.owner_id === user?.id) && (
               <Card className="p-4">
@@ -638,6 +629,15 @@ export function DealDetailSheet({
           {/* Tab: Tarefas */}
           <TabsContent value="tasks" className="space-y-4">
             <DealTasks dealId={deal.id} />
+            
+            {/* Observações/Histórico */}
+            <DealNotes
+              dealId={deal.id}
+              currentNote={deal.note || ""}
+              onNoteUpdate={(newNote) => {
+                deal.note = newNote;
+              }}
+            />
           </TabsContent>
 
           {/* Tab: WhatsApp IA */}
