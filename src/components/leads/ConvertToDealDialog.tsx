@@ -75,7 +75,15 @@ export function ConvertToDealDialog({ lead, open, onOpenChange, onSuccess }: Con
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl">
+      <DialogContent 
+        className="max-w-xl"
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onInteractOutside={(e) => {
+          if (e.target instanceof Element && e.target.closest('[role="listbox"]')) {
+            e.preventDefault();
+          }
+        }}
+      >
         <DialogHeader>
           <DialogTitle className="text-2xl">Converter Lead em Negócio</DialogTitle>
         </DialogHeader>

@@ -101,7 +101,15 @@ export function ArchitectDetailSheet({ open, onOpenChange, architectId }: Archit
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
+      <SheetContent 
+        className="w-full sm:max-w-2xl overflow-y-auto"
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onInteractOutside={(e) => {
+          if (e.target instanceof Element && e.target.closest('[role="dialog"]')) {
+            e.preventDefault();
+          }
+        }}
+      >
         <SheetHeader>
           <div className="flex items-center justify-between">
             <SheetTitle className="text-2xl">{architect.name}</SheetTitle>

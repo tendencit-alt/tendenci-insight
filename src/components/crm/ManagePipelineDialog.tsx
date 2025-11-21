@@ -328,7 +328,18 @@ export function ManagePipelineDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+        <DialogContent 
+          className="max-w-5xl max-h-[90vh] overflow-y-auto"
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onInteractOutside={(e) => {
+            if (e.target instanceof Element && (
+              e.target.closest('[role="dialog"]') || 
+              e.target.closest('[role="listbox"]')
+            )) {
+              e.preventDefault();
+            }
+          }}
+        >
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Settings className="h-5 w-5" />

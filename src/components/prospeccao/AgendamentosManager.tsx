@@ -266,7 +266,18 @@ export function AgendamentosManager() {
               Novo Agendamento
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent 
+            className="max-w-2xl"
+            onPointerDownOutside={(e) => e.preventDefault()}
+            onInteractOutside={(e) => {
+              if (e.target instanceof Element && (
+                e.target.closest('[role="listbox"]') ||
+                e.target.closest('.react-day-picker')
+              )) {
+                e.preventDefault();
+              }
+            }}
+          >
             <DialogHeader>
               <DialogTitle>{editingAgendamento ? "Editar Agendamento" : "Novo Agendamento"}</DialogTitle>
             </DialogHeader>
