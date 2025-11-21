@@ -127,51 +127,57 @@ Deno.serve(async (req) => {
       const connectData = await connectResponse.json()
       console.log('✅ QR Code generated successfully')
 
-      // PASSO 4: Configurar webhook CRÍTICO para receber atualizações
+      // PASSO 4: Configurar webhook OBRIGATÓRIO para receber atualizações
       const supabaseUrl = Deno.env.get('SUPABASE_URL')
       const webhookUrl = `${supabaseUrl}/functions/v1/whatsapp-webhook`
       
-      console.log('🔗 Configuring webhook:', webhookUrl)
-      console.log('📝 Webhook payload:', JSON.stringify({
+      console.log('🔗 Configurando webhook (CRÍTICO)')
+      console.log('📍 Evolution URL:', evolutionUrl)
+      console.log('📍 Webhook endpoint:', webhookUrl)
+      console.log('📍 Instance name:', instanceName)
+      
+      // VALIDAÇÃO: Verificar se URL está correta
+      if (!supabaseUrl || !supabaseUrl.includes('supabase.co')) {
+        throw new Error(`URL Supabase inválida: ${supabaseUrl}`)
+      }
+      
+      const webhookPayload = {
         url: webhookUrl,
         enabled: true,
         webhookByEvents: false,
         events: ['CONNECTION_UPDATE', 'QRCODE_UPDATED', 'MESSAGES_UPSERT']
-      }, null, 2))
-      
-      try {
-        const webhookResponse = await fetch(`${evolutionUrl}/webhook/set/${instanceName}`, {
-          method: 'POST',
-          headers: {
-            'apikey': evolutionApiKey,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            url: webhookUrl,
-            enabled: true,
-            webhookByEvents: false,
-            events: [
-              'CONNECTION_UPDATE',
-              'QRCODE_UPDATED',
-              'MESSAGES_UPSERT',
-              'MESSAGES_UPDATE'
-            ]
-          })
-        })
-
-        const webhookResult = await webhookResponse.text()
-        console.log('🔗 Webhook response status:', webhookResponse.status)
-        console.log('🔗 Webhook response:', webhookResult)
-
-        if (webhookResponse.ok) {
-          console.log('✅ Webhook configured successfully')
-        } else {
-          console.error('⚠️ Webhook configuration failed but continuing:', webhookResult)
-          // NÃO bloquear criação se webhook falhar - pode ser configurado depois
-        }
-      } catch (webhookError) {
-        console.error('⚠️ Webhook error (non-blocking):', webhookError)
       }
+      
+      console.log('📦 Webhook payload:', JSON.stringify(webhookPayload, null, 2))
+      
+      const webhookResponse = await fetch(`${evolutionUrl}/webhook/set/${instanceName}`, {
+        method: 'POST',
+        headers: {
+          'apikey': evolutionApiKey,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(webhookPayload)
+      })
+
+      console.log('📊 Webhook HTTP status:', webhookResponse.status)
+      
+      let webhookResult: any
+      try {
+        webhookResult = await webhookResponse.json()
+      } catch {
+        webhookResult = await webhookResponse.text()
+      }
+      
+      console.log('📨 Webhook response:', JSON.stringify(webhookResult, null, 2))
+
+      if (!webhookResponse.ok) {
+        console.error('❌ FALHA CRÍTICA: Webhook não foi configurado!')
+        console.error('Status:', webhookResponse.status)
+        console.error('Response:', webhookResult)
+        throw new Error(`Webhook configuration failed: ${JSON.stringify(webhookResult)}`)
+      }
+      
+      console.log('✅ Webhook configurado com sucesso!')
 
       // PASSO 5: Salvar no banco de dados
       console.log('💾 Saving to database...')
