@@ -159,7 +159,7 @@ export function DealFileUpload({ dealId, files, onFilesChange }: DealFileUploadP
             type="file"
             onChange={handleFileUpload}
             disabled={uploading}
-            accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.webp,.txt"
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.dwg,.jpg,.jpeg,.png,.webp,.txt"
           />
           {uploading && (
             <Button disabled size="sm">
@@ -168,7 +168,7 @@ export function DealFileUpload({ dealId, files, onFilesChange }: DealFileUploadP
           )}
         </div>
         <p className="text-xs text-muted-foreground mt-1">
-          Formatos aceitos: PDF, DOC, DOCX, XLS, XLSX, JPG, PNG, WEBP, TXT (máx. 10MB)
+          Formatos aceitos: PDF, DOC, DOCX, XLS, XLSX, DWG, JPG, PNG, WEBP, TXT (máx. 10MB)
         </p>
       </div>
 

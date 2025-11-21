@@ -763,7 +763,7 @@ export function CreateDealDialog({
                   className="hidden"
                   multiple
                   onChange={handleFileSelect}
-                  accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.webp"
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.dwg,.txt,.jpg,.jpeg,.png,.webp"
                 />
               </div>
 
