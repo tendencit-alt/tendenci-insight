@@ -126,6 +126,17 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
       }
     }
 
+    // Obter ID do usuário autenticado
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast({
+        title: "Erro de autenticação",
+        description: "Usuário não autenticado.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const { error } = await supabase
       .from("tendenci_prospec_arq_agendamentos")
       .insert({
@@ -136,6 +147,7 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
         status: "pendente",
         tipo_tarefa: newTask.tipo_tarefa,
         whatsapp_number: newTask.whatsapp_number || null,
+        vendedor_id: user.id,
       });
 
     if (error) {

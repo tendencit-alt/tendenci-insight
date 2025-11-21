@@ -127,6 +127,17 @@ export function DealTasks({ dealId }: DealTasksProps) {
 
     console.log("Criando tarefa:", { dealId, newTask });
 
+    // Obter ID do usuário autenticado
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast({
+        title: "Erro de autenticação",
+        description: "Usuário não autenticado.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const { data, error } = await supabase.from("crm_tasks").insert({
       deal_id: dealId,
       title: newTask.title,
@@ -136,6 +147,7 @@ export function DealTasks({ dealId }: DealTasksProps) {
       origem_modulo: "crm",
       tipo_tarefa: newTask.tipo_tarefa,
       whatsapp_number: newTask.whatsapp_number || null,
+      created_by: user.id,
     }).select();
 
     if (error) {
