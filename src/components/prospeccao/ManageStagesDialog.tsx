@@ -171,7 +171,18 @@ export function ManageStagesDialog({ open, onOpenChange }: ManageStagesDialogPro
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent 
+        className="max-w-3xl max-h-[90vh] overflow-y-auto"
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onInteractOutside={(e) => {
+          if (e.target instanceof Element && (
+            e.target.closest('[role="dialog"]') || 
+            e.target.closest('[role="listbox"]')
+          )) {
+            e.preventDefault();
+          }
+        }}
+      >
         <DialogHeader>
           <DialogTitle>Gerenciar Etapas do Funil</DialogTitle>
         </DialogHeader>

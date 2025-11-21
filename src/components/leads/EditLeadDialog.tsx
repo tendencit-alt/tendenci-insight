@@ -97,7 +97,15 @@ export function EditLeadDialog({ lead, open, onOpenChange, onSuccess }: EditLead
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent 
+        className="max-w-2xl"
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onInteractOutside={(e) => {
+          if (e.target instanceof Element && e.target.closest('[role="listbox"]')) {
+            e.preventDefault();
+          }
+        }}
+      >
         <DialogHeader>
           <DialogTitle className="text-2xl">Editar Lead</DialogTitle>
         </DialogHeader>

@@ -77,7 +77,11 @@ export function TendenciAssistant() {
       <SheetTrigger asChild>
         
       </SheetTrigger>
-      <SheetContent className="w-full sm:max-w-xl flex flex-col">
+      <SheetContent 
+        className="w-full sm:max-w-xl flex flex-col"
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
             <Bot className="h-5 w-5" />

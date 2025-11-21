@@ -82,7 +82,18 @@ export function CreateProjectDialog({ open, onOpenChange, architectId, onSuccess
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent 
+        className="max-w-md"
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onInteractOutside={(e) => {
+          if (e.target instanceof Element && (
+            e.target.closest('[role="listbox"]') ||
+            e.target.closest('.react-day-picker')
+          )) {
+            e.preventDefault();
+          }
+        }}
+      >
         <DialogHeader>
           <DialogTitle>Cadastrar Novo Projeto</DialogTitle>
         </DialogHeader>

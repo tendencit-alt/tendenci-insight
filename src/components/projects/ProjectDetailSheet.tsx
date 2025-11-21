@@ -214,7 +214,15 @@ export function ProjectDetailSheet({ project, open, onOpenChange, onSuccess }: P
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-3xl overflow-y-auto">
+      <SheetContent 
+        className="w-full sm:max-w-3xl overflow-y-auto"
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onInteractOutside={(e) => {
+          if (e.target instanceof Element && e.target.closest('[role="dialog"]')) {
+            e.preventDefault();
+          }
+        }}
+      >
         <SheetHeader>
           <SheetTitle className="text-2xl">Detalhes do Projeto</SheetTitle>
         </SheetHeader>

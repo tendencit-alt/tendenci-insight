@@ -309,7 +309,11 @@ export function WhatsAppConnectionManager() {
 
       {/* QR Code Dialog */}
       <Dialog open={!!qrCodeDialog} onOpenChange={(open) => !open && setQrCodeDialog(null)}>
-        <DialogContent className="max-w-md">
+        <DialogContent 
+          className="max-w-md"
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onInteractOutside={(e) => e.preventDefault()}
+        >
           <DialogHeader>
             <DialogTitle>Escaneie o QR Code</DialogTitle>
           </DialogHeader>
