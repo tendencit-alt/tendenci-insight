@@ -77,10 +77,12 @@ Deno.serve(async (req) => {
         .single()
 
       if (existing) {
-        throw new Error('Instância já existe')
+        console.error('❌ Instance already exists:', instanceName)
+        throw new Error('Instância já existe. Use outro nome ou delete a existente.')
       }
 
-      // Criar instância na Evolution API
+      // PASSO 1: Criar instância na Evolution API
+      console.log('📡 Calling Evolution API to create instance...')
       const createResponse = await fetch(`${evolutionUrl}/instance/create`, {
         method: 'POST',
         headers: {
@@ -95,15 +97,20 @@ Deno.serve(async (req) => {
       })
 
       if (!createResponse.ok) {
-        const error = await createResponse.text()
-        console.error('❌ Error creating instance:', error)
-        throw new Error('Erro ao criar instância no Evolution API')
+        const errorText = await createResponse.text()
+        console.error('❌ Evolution API error:', errorText)
+        throw new Error(`Evolution API falhou: ${errorText}`)
       }
 
       const instanceData = await createResponse.json()
-      console.log('✅ Instance created:', instanceData)
+      console.log('✅ Instance created in Evolution:', instanceData)
 
-      // Conectar (gerar QR Code)
+      // PASSO 2: Aguardar 3 segundos para Evolution processar
+      console.log('⏳ Waiting 3 seconds for Evolution to initialize...')
+      await new Promise(resolve => setTimeout(resolve, 3000))
+
+      // PASSO 3: Conectar e gerar QR Code
+      console.log('📱 Generating QR Code...')
       const connectResponse = await fetch(`${evolutionUrl}/instance/connect/${instanceName}`, {
         method: 'GET',
         headers: {
@@ -111,69 +118,89 @@ Deno.serve(async (req) => {
         }
       })
 
-      const connectData = await connectResponse.json()
-      console.log('📱 QR Code generated:', connectData)
+      if (!connectResponse.ok) {
+        const errorText = await connectResponse.text()
+        console.error('❌ Failed to generate QR Code:', errorText)
+        throw new Error(`Falha ao gerar QR Code: ${errorText}`)
+      }
 
-      // Configurar webhook automaticamente na Evolution API
+      const connectData = await connectResponse.json()
+      console.log('✅ QR Code generated successfully')
+
+      // PASSO 4: Configurar webhook CRÍTICO para receber atualizações
       const supabaseUrl = Deno.env.get('SUPABASE_URL')
       const webhookUrl = `${supabaseUrl}/functions/v1/whatsapp-webhook`
       
       console.log('🔗 Configuring webhook:', webhookUrl)
+      console.log('📝 Webhook payload:', JSON.stringify({
+        url: webhookUrl,
+        enabled: true,
+        webhookByEvents: false,
+        events: ['CONNECTION_UPDATE', 'QRCODE_UPDATED', 'MESSAGES_UPSERT']
+      }, null, 2))
       
-      const webhookResponse = await fetch(`${evolutionUrl}/webhook/set/${instanceName}`, {
-        method: 'POST',
-        headers: {
-          'apikey': evolutionApiKey,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          webhook: {
-            enabled: true,
+      try {
+        const webhookResponse = await fetch(`${evolutionUrl}/webhook/set/${instanceName}`, {
+          method: 'POST',
+          headers: {
+            'apikey': evolutionApiKey,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
             url: webhookUrl,
+            enabled: true,
             webhookByEvents: false,
             events: [
-              'APPLICATION_STARTUP',
-              'QRCODE_UPDATED',
-              'MESSAGES_SET',
-              'MESSAGES_UPSERT',
-              'MESSAGES_UPDATE',
-              'SEND_MESSAGE',
               'CONNECTION_UPDATE',
-              'CALL'
+              'QRCODE_UPDATED',
+              'MESSAGES_UPSERT',
+              'MESSAGES_UPDATE'
             ]
-          }
+          })
         })
-      })
 
-      if (webhookResponse.ok) {
-        console.log('✅ Webhook configured successfully')
-      } else {
-        const webhookError = await webhookResponse.text()
-        console.error('⚠️ Webhook configuration failed:', webhookError)
+        const webhookResult = await webhookResponse.text()
+        console.log('🔗 Webhook response status:', webhookResponse.status)
+        console.log('🔗 Webhook response:', webhookResult)
+
+        if (webhookResponse.ok) {
+          console.log('✅ Webhook configured successfully')
+        } else {
+          console.error('⚠️ Webhook configuration failed but continuing:', webhookResult)
+          // NÃO bloquear criação se webhook falhar - pode ser configurado depois
+        }
+      } catch (webhookError) {
+        console.error('⚠️ Webhook error (non-blocking):', webhookError)
       }
 
-      // Salvar no banco
+      // PASSO 5: Salvar no banco de dados
+      console.log('💾 Saving to database...')
       const { data: dbConnection, error: dbError } = await supabase
         .from('tendenci_whatsapp_connections')
         .insert({
           instance_name: instanceName,
-          instance_id: instanceData.instance?.instanceId || null,
+          instance_id: instanceData.instance?.instanceId || instanceData.instance?.id || null,
           status: 'connecting',
-          qr_code: connectData.base64 || null,
-          qr_code_base64: connectData.base64 || null,
-          created_by: null, // Será preenchido pelo frontend via RLS
+          qr_code: connectData.base64 || connectData.qrcode?.base64 || null,
+          qr_code_base64: connectData.base64 || connectData.qrcode?.base64 || null,
+          created_by: null,
           metadata: instanceData
         })
         .select()
         .single()
 
-      if (dbError) throw dbError
+      if (dbError) {
+        console.error('❌ Database error:', dbError)
+        throw new Error(`Erro no banco de dados: ${dbError.message}`)
+      }
+
+      console.log('✅ Instance saved to database:', dbConnection.id)
 
       return new Response(
         JSON.stringify({ 
           success: true, 
           connection: dbConnection,
-          qrCode: connectData.base64
+          qrCode: connectData.base64 || connectData.qrcode?.base64
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
@@ -181,31 +208,67 @@ Deno.serve(async (req) => {
 
     // GET QR CODE de instância específica
     if (action === 'qrcode') {
-      console.log('📱 Getting QR Code for:', instanceName)
+      console.log('📱 Getting NEW QR Code for:', instanceName)
       
-      const response = await fetch(`${evolutionUrl}/instance/connect/${instanceName}`, {
-        method: 'GET',
-        headers: {
-          'apikey': evolutionApiKey
-        }
-      })
+      try {
+        // Primeiro desconectar se estiver preso
+        console.log('🔄 Disconnecting stuck instance...')
+        await fetch(`${evolutionUrl}/instance/logout/${instanceName}`, {
+          method: 'DELETE',
+          headers: {
+            'apikey': evolutionApiKey
+          }
+        }).catch(e => console.log('Logout attempt (may fail if not connected):', e))
 
-      const data = await response.json()
+        // Aguardar 2 segundos
+        await new Promise(resolve => setTimeout(resolve, 2000))
 
-      // Atualizar QR code no banco
-      await supabase
-        .from('tendenci_whatsapp_connections')
-        .update({
-          qr_code: data.base64 || null,
-          qr_code_base64: data.base64 || null,
-          status: 'connecting'
+        // Reconectar para gerar novo QR
+        console.log('🔄 Reconnecting to generate fresh QR Code...')
+        const response = await fetch(`${evolutionUrl}/instance/connect/${instanceName}`, {
+          method: 'GET',
+          headers: {
+            'apikey': evolutionApiKey
+          }
         })
-        .eq('instance_name', instanceName)
 
-      return new Response(
-        JSON.stringify({ success: true, qrCode: data.base64 }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+        if (!response.ok) {
+          const errorText = await response.text()
+          console.error('❌ Failed to generate QR Code:', errorText)
+          throw new Error(`Falha ao gerar QR Code: ${errorText}`)
+        }
+
+        const data = await response.json()
+        console.log('✅ Fresh QR Code generated')
+
+        // Atualizar QR code no banco
+        const { error: updateError } = await supabase
+          .from('tendenci_whatsapp_connections')
+          .update({
+            qr_code: data.base64 || data.qrcode?.base64 || null,
+            qr_code_base64: data.base64 || data.qrcode?.base64 || null,
+            status: 'connecting',
+            last_sync: new Date().toISOString()
+          })
+          .eq('instance_name', instanceName)
+
+        if (updateError) {
+          console.error('❌ Database update error:', updateError)
+          throw updateError
+        }
+
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            qrCode: data.base64 || data.qrcode?.base64,
+            message: 'QR Code renovado com sucesso'
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      } catch (error) {
+        console.error('💥 Error in qrcode action:', error)
+        throw error
+      }
     }
 
     // DISCONNECT instância

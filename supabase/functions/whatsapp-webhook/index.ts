@@ -51,10 +51,13 @@ Deno.serve(async (req) => {
       if (state === 'open' || state === 'connected') {
         status = 'connected'
         phoneNumber = data?.remoteJid?.split('@')[0] || null
+        console.log('✅ Connection established! Phone:', phoneNumber)
       } else if (state === 'close' || state === 'disconnected') {
         status = 'disconnected'
+        console.log('❌ Connection closed')
       } else if (state === 'connecting') {
         status = 'connecting'
+        console.log('⏳ Still connecting...')
       }
 
       console.log(`📱 Instance ${instance} - state: ${state} -> status: ${status}`)
@@ -68,37 +71,48 @@ Deno.serve(async (req) => {
       if (phoneNumber) {
         updateData.phone_number = phoneNumber
         updateData.connected_at = new Date().toISOString()
+        console.log('📞 Phone number saved:', phoneNumber)
       }
 
       if (status === 'disconnected') {
         updateData.phone_number = null
         updateData.qr_code = null
         updateData.qr_code_base64 = null
+        console.log('🧹 Cleared connection data')
       }
 
-      const { error } = await supabase
+      const { error: updateError } = await supabase
         .from('tendenci_whatsapp_connections')
         .update(updateData)
         .eq('instance_name', instance)
 
-      if (error) {
-        console.error('❌ Erro ao atualizar status:', error)
+      if (updateError) {
+        console.error('❌ Erro ao atualizar status:', updateError)
+        throw updateError
       } else {
-        console.log('✅ Status atualizado com sucesso')
+        console.log('✅ Status atualizado com sucesso no banco')
       }
     }
 
     // Processar QR Code
     if (event === 'qrcode.updated' && data?.qrcode) {
-      console.log('📱 Atualizando QR Code')
+      console.log('📱 Atualizando QR Code no banco via webhook')
       
-      await supabase
+      const { error: qrError } = await supabase
         .from('tendenci_whatsapp_connections')
         .update({
           qr_code_base64: data.qrcode,
-          qr_code: data.qrcode
+          qr_code: data.qrcode,
+          status: 'connecting',
+          last_sync: new Date().toISOString()
         })
         .eq('instance_name', instance)
+
+      if (qrError) {
+        console.error('❌ Erro ao atualizar QR Code:', qrError)
+      } else {
+        console.log('✅ QR Code atualizado com sucesso')
+      }
     }
 
     // Log do evento
