@@ -99,15 +99,18 @@ export function WhatsAppConnectionManager() {
   // Criar nova conexão
   const createMutation = useMutation({
     mutationFn: async (name: string) => {
+      // Limpar nome da instância (remover espaços)
+      const cleanName = name.trim().replace(/\s+/g, '-');
+      
       const { data, error } = await supabase.functions.invoke("whatsapp-evolution", {
         body: {
           action: "create",
-          instanceName: name,
+          instanceName: cleanName,
         },
       });
 
       if (error) throw error;
-      if (!data.success) throw new Error(data.error);
+      if (!data.success) throw new Error(data.error || "Erro ao criar instância");
       return data;
     },
     onSuccess: (data) => {
@@ -116,12 +119,16 @@ export function WhatsAppConnectionManager() {
       setInstanceName("");
       
       if (data.connection) {
-        setQrCodeDialog(data.connection);
+        // Esperar 2 segundos antes de buscar QR code para garantir que foi gerado
+        setTimeout(() => {
+          setQrCodeDialog(data.connection);
+        }, 2000);
       }
-      toast.success("Instância criada! Escaneie o QR Code.");
+      toast.success("Instância criada! Aguarde o QR Code...");
     },
     onError: (error: any) => {
-      toast.error(error.message || "Erro ao criar instância");
+      console.error("Erro ao criar instância:", error);
+      toast.error(error.message || "Erro ao criar instância. Verifique se o Evolution API está configurado.");
     },
   });
 
@@ -206,6 +213,24 @@ export function WhatsAppConnectionManager() {
 
   return (
     <div className="space-y-6">
+      {/* Instruções de Uso */}
+      <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
+        <QrCode className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+        <AlertDescription className="text-blue-800 dark:text-blue-200">
+          <div className="space-y-2">
+            <p className="font-semibold">Como conectar sua instância WhatsApp:</p>
+            <ol className="list-decimal list-inside text-sm space-y-1 ml-2">
+              <li>Clique em "Nova Conexão" e escolha um nome único</li>
+              <li>Aguarde o QR Code aparecer (pode levar até 10 segundos)</li>
+              <li>No seu celular, abra WhatsApp → Menu (⋮) → Dispositivos conectados</li>
+              <li>Toque em "Conectar um dispositivo" e escaneie o QR Code</li>
+              <li>Aguarde a confirmação de "Conectado" (fica verde)</li>
+            </ol>
+            <p className="text-sm font-medium mt-2">⚠️ O QR Code expira em 60 segundos. Se expirar, clique em "Gerar Novo QR Code".</p>
+          </div>
+        </AlertDescription>
+      </Alert>
+
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold">Conexões WhatsApp</h2>
@@ -324,65 +349,98 @@ export function WhatsAppConnectionManager() {
         <div className="text-center py-8">Carregando conexões...</div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {connections?.map((connection) => (
-            <Card key={connection.id} className="p-4">
-              <div className="space-y-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <Smartphone className="h-5 w-5 text-muted-foreground" />
-                      <h3 className="font-semibold">{connection.instance_name}</h3>
-                    </div>
-                    {connection.phone_number && (
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {connection.phone_number}
-                      </p>
-                    )}
-                  </div>
-                  {getStatusBadge(connection.status)}
-                </div>
+          {connections?.map((connection) => {
+            // Verificar se está preso em connecting por muito tempo (> 5 minutos)
+            const createdAt = new Date(connection.created_at);
+            const minutesSinceCreation = (Date.now() - createdAt.getTime()) / 1000 / 60;
+            const isStuckConnecting = connection.status === 'connecting' && minutesSinceCreation > 5;
 
-                <div className="flex gap-2">
-                  {connection.status === 'disconnected' || connection.status === 'connecting' ? (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1"
-                      onClick={() => getQrCodeMutation.mutate(connection)}
-                      disabled={getQrCodeMutation.isPending}
-                    >
-                      <QrCode className="h-4 w-4 mr-2" />
-                      Conectar
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1"
-                      onClick={() => disconnectMutation.mutate(connection.instance_name)}
-                      disabled={disconnectMutation.isPending}
-                    >
-                      <Power className="h-4 w-4 mr-2" />
-                      Desconectar
-                    </Button>
+            return (
+              <Card key={connection.id} className="p-4">
+                <div className="space-y-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <Smartphone className="h-5 w-5 text-muted-foreground" />
+                        <h3 className="font-semibold">{connection.instance_name}</h3>
+                      </div>
+                      {connection.phone_number && (
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {connection.phone_number}
+                        </p>
+                      )}
+                    </div>
+                    {getStatusBadge(connection.status)}
+                  </div>
+
+                  {/* Alerta de QR Code expirado */}
+                  {isStuckConnecting && (
+                    <Alert variant="destructive" className="py-2">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription className="text-xs">
+                        QR Code expirado ou conexão travada. Clique em "Gerar Novo QR Code" abaixo.
+                      </AlertDescription>
+                    </Alert>
                   )}
-                  
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      if (confirm(`Tem certeza que deseja remover "${connection.instance_name}"?`)) {
-                        deleteMutation.mutate(connection.instance_name);
-                      }
-                    }}
-                    disabled={deleteMutation.isPending}
-                  >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
+
+                  <div className="flex gap-2">
+                    {connection.status === 'disconnected' || connection.status === 'connecting' ? (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1"
+                          onClick={() => getQrCodeMutation.mutate(connection)}
+                          disabled={getQrCodeMutation.isPending}
+                        >
+                          <QrCode className="h-4 w-4 mr-2" />
+                          {isStuckConnecting ? "Gerar Novo QR Code" : "Conectar"}
+                        </Button>
+                        
+                        {isStuckConnecting && (
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => {
+                              toast.info("Regenerando QR Code...");
+                              getQrCodeMutation.mutate(connection);
+                            }}
+                            disabled={getQrCodeMutation.isPending}
+                          >
+                            🔄 Forçar Reconexão
+                          </Button>
+                        )}
+                      </>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => disconnectMutation.mutate(connection.instance_name)}
+                        disabled={disconnectMutation.isPending}
+                      >
+                        <Power className="h-4 w-4 mr-2" />
+                        Desconectar
+                      </Button>
+                    )}
+                    
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        if (confirm(`Tem certeza que deseja remover "${connection.instance_name}"?`)) {
+                          deleteMutation.mutate(connection.instance_name);
+                        }
+                      }}
+                      disabled={deleteMutation.isPending}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            </Card>
-          ))}
+              </Card>
+            );
+          })}
 
           {connections?.length === 0 && (
             <div className="col-span-full text-center py-12 text-muted-foreground">
