@@ -10,6 +10,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface ArchitectTasksProps {
   architectId: string;
@@ -20,15 +27,19 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
   const [tasks, setTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
+  const [architectInfo, setArchitectInfo] = useState<any>(null);
   const [newTask, setNewTask] = useState({
     title: "",
     note: "",
     due_at: "",
+    tipo_tarefa: "interna" as "interna" | "automatizada",
+    whatsapp_number: "",
   });
 
   useEffect(() => {
     if (!architectId) return;
     fetchTasks();
+    fetchArchitectInfo();
 
     // Realtime subscription
     const channel = supabase
@@ -51,6 +62,21 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
       supabase.removeChannel(channel);
     };
   }, [architectId]);
+
+  const fetchArchitectInfo = async () => {
+    const { data, error } = await supabase
+      .from("architects")
+      .select("name, phone")
+      .eq("id", architectId)
+      .single();
+
+    if (error) {
+      console.error("Erro ao buscar informações do arquiteto:", error);
+      return;
+    }
+
+    setArchitectInfo(data);
+  };
 
   const fetchTasks = async () => {
     setLoading(true);
@@ -81,11 +107,23 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
   const handleAddTask = async () => {
     if (!newTask.title || !newTask.due_at) {
       toast({
-        title: "Atenção",
-        description: "Preencha o título e a data da tarefa",
+        title: "Campos obrigatórios",
+        description: "Preencha o título e a data/hora da tarefa.",
         variant: "destructive",
       });
       return;
+    }
+
+    // Validação para tarefas automatizadas
+    if (newTask.tipo_tarefa === "automatizada") {
+      if (!newTask.whatsapp_number || !newTask.note) {
+        toast({
+          title: "Campos obrigatórios para Tarefa Automatizada",
+          description: "Preencha o Número de WhatsApp e a Mensagem (Observações) para tarefas automatizadas.",
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     const { error } = await supabase
@@ -96,6 +134,8 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
         observacoes: `${newTask.title}${newTask.note ? '\n\n' + newTask.note : ''}`,
         canal: "tarefa",
         status: "pendente",
+        tipo_tarefa: newTask.tipo_tarefa,
+        whatsapp_number: newTask.whatsapp_number || null,
       });
 
     if (error) {
@@ -110,7 +150,13 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
         title: "Sucesso",
         description: "Tarefa criada com sucesso!",
       });
-      setNewTask({ title: "", note: "", due_at: "" });
+      setNewTask({ 
+        title: "", 
+        note: "", 
+        due_at: "", 
+        tipo_tarefa: "interna",
+        whatsapp_number: "",
+      });
       setIsAdding(false);
       fetchTasks();
     }
@@ -174,7 +220,37 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
         <Card className="p-4">
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="task-title">Título da Tarefa</Label>
+              <Label htmlFor="task-tipo">Tipo de Tarefa *</Label>
+              <Select
+                value={newTask.tipo_tarefa}
+                onValueChange={(value: "interna" | "automatizada") => {
+                  const updates: any = { tipo_tarefa: value };
+                  
+                  // Auto-preencher WhatsApp quando selecionar "automatizada"
+                  if (value === "automatizada" && architectInfo?.phone) {
+                    updates.whatsapp_number = architectInfo.phone;
+                  }
+                  
+                  setNewTask({ ...newTask, ...updates });
+                }}
+              >
+                <SelectTrigger id="task-tipo">
+                  <SelectValue placeholder="Selecione o tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="interna">Tarefa Interna</SelectItem>
+                  <SelectItem value="automatizada">Tarefa Automatizada</SelectItem>
+                </SelectContent>
+              </Select>
+              {newTask.tipo_tarefa === "automatizada" && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  ⚡ Esta tarefa será processada pelo n8n para disparo automático via WhatsApp
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="task-title">Título da Tarefa *</Label>
               <Input
                 id="task-title"
                 placeholder="Ex: Ligar para seguir projeto..."
@@ -186,7 +262,7 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="task-due">Data/Hora</Label>
+              <Label htmlFor="task-due">Data e Hora *</Label>
               <Input
                 id="task-due"
                 type="datetime-local"
@@ -197,11 +273,41 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
               />
             </div>
 
+            {newTask.tipo_tarefa === "automatizada" && (
+              <div className="space-y-2">
+                <Label htmlFor="task-whatsapp">
+                  Número de WhatsApp * 
+                  <span className="text-xs text-muted-foreground ml-2">
+                    (Preenchido automaticamente do arquiteto)
+                  </span>
+                </Label>
+                <Input
+                  id="task-whatsapp"
+                  value={newTask.whatsapp_number}
+                  onChange={(e) =>
+                    setNewTask({ ...newTask, whatsapp_number: e.target.value })
+                  }
+                  placeholder="Ex: 5511999999999"
+                />
+                {architectInfo?.name && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    📱 Arquiteto: {architectInfo.name}
+                  </p>
+                )}
+              </div>
+            )}
+
             <div className="space-y-2">
-              <Label htmlFor="task-note">Observações (opcional)</Label>
+              <Label htmlFor="task-note">
+                {newTask.tipo_tarefa === "automatizada" ? "Mensagem *" : "Observações"}
+              </Label>
               <Textarea
                 id="task-note"
-                placeholder="Detalhes adicionais..."
+                placeholder={
+                  newTask.tipo_tarefa === "automatizada"
+                    ? "Mensagem que será enviada automaticamente via WhatsApp..."
+                    : "Detalhes adicionais..."
+                }
                 value={newTask.note}
                 onChange={(e) =>
                   setNewTask({ ...newTask, note: e.target.value })
@@ -215,12 +321,18 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
                 onClick={handleAddTask}
                 className="flex-1"
               >
-                Criar Tarefa
+                Salvar Tarefa
               </Button>
               <Button
                 onClick={() => {
                   setIsAdding(false);
-                  setNewTask({ title: "", note: "", due_at: "" });
+                  setNewTask({ 
+                    title: "", 
+                    note: "", 
+                    due_at: "", 
+                    tipo_tarefa: "interna",
+                    whatsapp_number: "",
+                  });
                 }}
                 variant="outline"
                 className="flex-1"
@@ -284,7 +396,7 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
                             {task.observacoes.split('\n\n')[1]}
                           </p>
                         )}
-                        <div className="flex items-center gap-2 mt-1">
+                        <div className="flex items-center gap-2 flex-wrap mt-1">
                           <Badge
                             variant={
                               isCompleted
@@ -301,6 +413,11 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
                               ? "⚠ Atrasada"
                               : "⏳ Pendente"}
                           </Badge>
+                          {task.tipo_tarefa === "automatizada" && (
+                            <Badge variant="outline" className="bg-purple-50 dark:bg-purple-950 text-xs">
+                              ⚡ Automatizada
+                            </Badge>
+                          )}
                           <span className="text-xs text-muted-foreground">
                             {formatDistanceToNow(new Date(task.data_agendamento), {
                               addSuffix: true,
@@ -308,6 +425,11 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
                             })}
                           </span>
                         </div>
+                        {task.tipo_tarefa === "automatizada" && task.whatsapp_number && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            📱 WhatsApp: {task.whatsapp_number}
+                          </p>
+                        )}
                         {task.vendedor && (
                           <p className="text-xs text-muted-foreground mt-1">
                             Por: {task.vendedor.full_name || task.vendedor.email}

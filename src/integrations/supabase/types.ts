@@ -1873,8 +1873,10 @@ export type Database = {
           metadata: Json | null
           observacoes: string | null
           status: string | null
+          tipo_tarefa: string
           updated_at: string | null
           vendedor_id: string | null
+          whatsapp_number: string | null
         }
         Insert: {
           architect_id: string
@@ -1888,8 +1890,10 @@ export type Database = {
           metadata?: Json | null
           observacoes?: string | null
           status?: string | null
+          tipo_tarefa?: string
           updated_at?: string | null
           vendedor_id?: string | null
+          whatsapp_number?: string | null
         }
         Update: {
           architect_id?: string
@@ -1903,8 +1907,10 @@ export type Database = {
           metadata?: Json | null
           observacoes?: string | null
           status?: string | null
+          tipo_tarefa?: string
           updated_at?: string | null
           vendedor_id?: string | null
+          whatsapp_number?: string | null
         }
         Relationships: [
           {
