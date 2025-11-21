@@ -217,7 +217,7 @@ ORDER BY t.due_at ASC`}
                   <p className="text-sm font-medium">Configuração da Requisição:</p>
                   <div className="bg-background p-3 rounded text-xs font-mono space-y-1">
                     <div><span className="text-muted-foreground">Method:</span> POST</div>
-                    <div><span className="text-muted-foreground">URL:</span> {'{{ $env.EVOLUTION_API_URL }}/message/sendText/{{ $json.instance_name }}'}</div>
+                    <div><span className="text-muted-foreground">URL:</span> {'{{ $env.EVOLUTION_API_URL }}/message/sendText/{{ $("Loop Over Items").item.json.instance_name }}'}</div>
                     <div><span className="text-muted-foreground">Authentication:</span> Header Auth</div>
                     <div><span className="text-muted-foreground">Header Name:</span> apikey</div>
                     <div><span className="text-muted-foreground">Header Value:</span> {'{{ $env.EVOLUTION_API_KEY }}'}</div>
@@ -226,20 +226,20 @@ ORDER BY t.due_at ASC`}
                   <p className="text-sm font-medium mt-3">Body (JSON):</p>
                   <pre className="bg-background p-3 rounded text-xs overflow-x-auto">
 {`{
-  "number": "{{ $json.whatsapp_number }}",
-  "text": "{{ $json.mensagem }}"
+  "number": "{{ $("Loop Over Items").item.json.whatsapp_number }}",
+  "text": "{{ $("Loop Over Items").item.json.mensagem }}"
 }`}
                   </pre>
 
                   <Alert className="mt-3">
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription className="text-xs">
-                      <strong>✨ Instância Dinâmica:</strong> A URL usa <code>instance_name</code> da query, garantindo que cada mensagem seja enviada pela instância WhatsApp do vendedor que criou a tarefa. Configure no n8n:
+                      <strong>✨ Instância Dinâmica:</strong> A URL usa <code>instance_name</code> da query através do loop, garantindo que cada mensagem seja enviada pela instância WhatsApp do vendedor que criou a tarefa. Configure no n8n:
                       <ul className="list-disc ml-4 mt-2 space-y-1">
-                        <li>EVOLUTION_API_URL - URL da sua Evolution API</li>
-                        <li>EVOLUTION_API_KEY - Chave de API da Evolution</li>
+                        <li><strong>EVOLUTION_API_URL</strong> - URL base da sua Evolution API (ex: https://evolution.seudominio.com)</li>
+                        <li><strong>EVOLUTION_API_KEY</strong> - Chave de API global da Evolution</li>
                       </ul>
-                      ⚠️ Não precisa mais de EVOLUTION_INSTANCE fixo!
+                      ⚠️ <strong>Importante:</strong> Não use instância fixa - o sistema identifica automaticamente a instância do vendedor!
                     </AlertDescription>
                   </Alert>
                 </div>
