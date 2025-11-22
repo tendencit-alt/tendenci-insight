@@ -580,8 +580,8 @@ export function DealTasks({ dealId }: DealTasksProps) {
                           {task.title}
                         </p>
                         <div className="flex gap-1">
-                          {/* Botão de editar - apenas para tarefas próprias */}
-                          {task.created_by === user?.id && (
+                          {/* Botão de editar - proprietário ou admin */}
+                          {(task.created_by === user?.id || isMaster) && (
                             <Button
                               size="sm"
                               variant="ghost"
