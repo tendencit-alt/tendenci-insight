@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { validateFileType, validateFileSize, ALLOWED_FILE_TYPES_ACCEPT, MAX_FILE_SIZE_MB, formatFileSize } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
 import { Mic, Square, FileText, Paperclip, Trash2, Download, Loader2, Play, Pause, AtSign, Edit2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -233,10 +234,21 @@ export function DealNotes({ dealId, currentNote, onNoteUpdate }: DealNotesProps)
   };
 
   const uploadWithRetry = async (file: File, maxRetries = 3): Promise<boolean> => {
-    if (file.size > 20 * 1024 * 1024) {
+    // Validar tipo de arquivo
+    if (!validateFileType(file.name)) {
+      toast({
+        title: "Tipo de arquivo não permitido",
+        description: `O arquivo ${file.name} não é um formato aceito.`,
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    // Validar tamanho
+    if (!validateFileSize(file.size)) {
       toast({
         title: "Arquivo muito grande",
-        description: `${file.name} excede o limite de 20MB`,
+        description: `${file.name} excede o limite de ${MAX_FILE_SIZE_MB}MB`,
         variant: "destructive",
       });
       return false;
@@ -562,7 +574,7 @@ export function DealNotes({ dealId, currentNote, onNoteUpdate }: DealNotesProps)
             className="hidden"
             multiple
             onChange={handleFileUpload}
-            accept=".pdf,.doc,.docx,.xls,.xlsx,.dwg,.txt,.jpg,.jpeg,.png,.webp,.mp3,.wav,.m4a,.webm,.ogg"
+            accept={ALLOWED_FILE_TYPES_ACCEPT}
             disabled={isUploading}
           />
         </div>
