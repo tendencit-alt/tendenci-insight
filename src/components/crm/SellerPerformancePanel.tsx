@@ -125,10 +125,7 @@ export function SellerPerformancePanel() {
         .eq("status", "ativa")
         .single();
 
-      if (error) {
-        console.error("Erro ao buscar meta de vendas:", error);
-        return;
-      }
+      if (error) return;
 
       if (data) {
         // O relacionamento one-to-one retorna objeto, não array
@@ -136,25 +133,15 @@ export function SellerPerformancePanel() {
           ? data.tendenci_goal_progress[0] 
           : data.tendenci_goal_progress;
 
-        console.log("Sales Goal Data:", { 
-          rawData: data, 
-          progress,
-          valorMeta: data.valor_meta,
-          valorVendido: progress?.valor_vendido,
-          percentual: progress?.percentual
-        });
-
         const goalData = {
           target: Number(data.valor_meta) || 0,
           current: Number(progress?.valor_vendido) || 0,
           percentage: Number(progress?.percentual) || 0
         };
-
-        console.log("Setting Sales Goal:", goalData);
         setSalesGoal(goalData);
       }
     } catch (error) {
-      console.error("Erro fatal ao buscar meta de vendas:", error);
+      // Silenciar erro
     }
   };
 
@@ -195,8 +182,6 @@ export function SellerPerformancePanel() {
       .gte("data", firstDay)
       .lte("data", lastDay);
 
-    console.log("Monthly Prospecting Data:", { data, error, firstDay, lastDay });
-
     if (data && data.length > 0) {
       const target = data.reduce((sum, d) => sum + (d.meta_captacoes || 0), 0);
       const done = data.reduce((sum, d) => sum + (d.captacoes_realizadas || 0), 0);
@@ -230,10 +215,7 @@ export function SellerPerformancePanel() {
         `)
         .eq("status", "ativa");
 
-      if (error) {
-        console.error("Erro ao buscar ranking:", error);
-        return;
-      }
+      if (error) return;
 
       if (allSellers && allSellers.length > 0) {
         // Calcular média da equipe
@@ -281,7 +263,7 @@ export function SellerPerformancePanel() {
         });
       }
     } catch (error) {
-      console.error("Erro ao buscar ranking:", error);
+      // Silenciar erro
     }
   };
 
@@ -324,17 +306,6 @@ export function SellerPerformancePanel() {
     idealDaily: salesGoal.target / daysInMonth,
     projectedMonth: projectedMonth
   } : undefined;
-
-  console.log("Render State:", { 
-    salesGoal, 
-    dailyGoals, 
-    monthlyProspecting, 
-    ranking, 
-    trend, 
-    pace,
-    loading,
-    userId: user?.id
-  });
 
   return (
     <div className="space-y-4">

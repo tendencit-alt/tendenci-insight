@@ -47,8 +47,7 @@ export function CRMBoard({ pipelineId, onRefresh, autoOpenDealId, onDealOpened, 
           filter: `pipeline_id=eq.${pipelineId}`
         },
         (payload) => {
-          console.log('Deal change detected:', payload);
-          fetchData(); // Refresh all deals when any deal changes
+          fetchData();
         }
       )
       .subscribe();
@@ -64,8 +63,7 @@ export function CRMBoard({ pipelineId, onRefresh, autoOpenDealId, onDealOpened, 
           table: 'crm_tasks'
         },
         (payload) => {
-          console.log('Task change detected:', payload);
-          fetchData(); // Refresh all deals when tasks change
+          fetchData();
         }
       )
       .subscribe();

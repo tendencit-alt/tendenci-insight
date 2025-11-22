@@ -128,7 +128,6 @@ export function CreateClientFromArchitectDialog({
       onOpenChange(false);
       onSuccess?.();
     } catch (error: any) {
-      console.error("Erro ao cadastrar cliente:", error);
       toast({
         title: "Erro ao cadastrar cliente",
         description: error.message,

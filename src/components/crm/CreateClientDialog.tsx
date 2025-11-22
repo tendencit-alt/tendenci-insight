@@ -75,7 +75,6 @@ export function CreateClientDialog({
       setLoading(false);
 
       if (error) {
-        console.error("Erro ao criar cliente:", error);
         toast({
           title: "Erro ao criar cliente",
           description: error.message,
@@ -104,7 +103,6 @@ export function CreateClientDialog({
       }
     } catch (error: any) {
       setLoading(false);
-      console.error("Erro geral:", error);
       toast({
         title: "Erro",
         description: error.message || "Erro ao criar cliente",

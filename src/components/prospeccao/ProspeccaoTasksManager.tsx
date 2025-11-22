@@ -80,9 +80,7 @@ export function ProspeccaoTasksManager() {
       .eq("status", "aberto")
       .order("created_at", { ascending: false });
 
-    if (dealsError) {
-      console.error("Erro ao buscar deals:", dealsError);
-    } else {
+    if (!dealsError) {
       setDeals(dealsData || []);
     }
 
@@ -100,9 +98,7 @@ export function ProspeccaoTasksManager() {
       `)
       .order("due_at", { ascending: true });
 
-    if (tasksError) {
-      console.error("Erro ao buscar tarefas:", tasksError);
-    } else {
+    if (!tasksError) {
       setTasks(tasksData || []);
     }
 

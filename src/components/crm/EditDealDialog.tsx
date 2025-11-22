@@ -421,16 +421,12 @@ export function EditDealDialog({
         updateData.stage_id = formData.stage_id;
         updateData.stage_entered_at = new Date().toISOString();
       }
-
-      console.log("Atualizando negócio:", deal.id, updateData);
-
       const { error: dealError } = await supabase
         .from("crm_deals")
         .update(updateData)
         .eq("id", deal.id);
 
       if (dealError) {
-        console.error("Erro ao atualizar negócio:", dealError);
         setLoading(false);
         toast({
           title: "Erro ao atualizar negócio",
@@ -461,12 +457,9 @@ export function EditDealDialog({
           .eq("id", formData.lead_id);
 
         if (leadError) {
-          console.error("Erro ao atualizar lead:", leadError);
+          // Silenciar erro de atualização de lead
         }
       }
-
-      console.log("Negócio atualizado com sucesso!");
-
       toast({
         title: "Sucesso",
         description: "Negócio atualizado com sucesso!",
@@ -476,7 +469,6 @@ export function EditDealDialog({
       onOpenChange(false);
       onSuccess();
     } catch (error: any) {
-      console.error("Erro no submit:", error);
       setLoading(false);
       toast({
         title: "Erro",

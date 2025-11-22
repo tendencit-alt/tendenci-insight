@@ -72,7 +72,6 @@ export function CRMTasksPanel({ pipelineId }: CRMTasksPanelProps) {
       .limit(20);
 
     if (error) {
-      console.error("Erro ao buscar tarefas:", error);
       setLoading(false);
       return;
     }

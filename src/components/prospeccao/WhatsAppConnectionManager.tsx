@@ -49,8 +49,6 @@ export function WhatsAppConnectionManager() {
         });
 
         if (statusData?.success && statusData.instances) {
-          console.log("📱 Evolution instances:", statusData.instances);
-          
           // Atualiza status no banco para cada instância
           for (const conn of data) {
             const evolutionInstance = statusData.instances.find(
@@ -72,9 +70,6 @@ export function WhatsAppConnectionManager() {
               } else {
                 newStatus = "disconnected";
               }
-              
-              console.log(`📱 ${conn.instance_name}: status=${connectionStatus}, ownerJid=${ownerJid}, newStatus=${newStatus}`);
-              
               // Atualiza SOMENTE se mudou o status OU se ficou realmente conectado
               const shouldUpdate = conn.status !== newStatus || 
                                  (newStatus === "connected" && phoneNumber && conn.phone_number !== phoneNumber);
@@ -86,7 +81,6 @@ export function WhatsAppConnectionManager() {
                 if (newStatus === "connected" && phoneNumber) {
                   updateData.phone_number = phoneNumber;
                   updateData.connected_at = new Date().toISOString();
-                  console.log(`✅ Instância ${conn.instance_name} conectada! Phone: ${phoneNumber}`);
                 }
                 
                 await supabase
@@ -101,7 +95,7 @@ export function WhatsAppConnectionManager() {
           }
         }
       } catch (error) {
-        console.error("Erro ao verificar status:", error);
+        // Silenciar erro de verificação de status
       }
 
       return data as WhatsAppConnection[];
@@ -140,7 +134,6 @@ export function WhatsAppConnectionManager() {
       toast.success("Instância criada! Aguarde o QR Code...");
     },
     onError: (error: any) => {
-      console.error("Erro ao criar instância:", error);
       toast.error(error.message || "Erro ao criar instância. Verifique se o Evolution API está configurado.");
     },
   });

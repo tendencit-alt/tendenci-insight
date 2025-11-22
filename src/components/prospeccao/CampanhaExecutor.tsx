@@ -52,11 +52,6 @@ export function CampanhaExecutor({ campaignId, campaignName, onComplete }: Execu
         .select('*')
         .eq('id', campanha.whatsapp_connection_id)
         .maybeSingle();
-
-      console.log('🔍 WhatsApp Connection Data:', whatsappConn);
-      console.log('📌 Instance ID:', whatsappConn?.instance_id);
-      console.log('📌 Instance Name:', whatsappConn?.instance_name);
-
       if (whatsappError || !whatsappConn) {
         throw new Error('Nenhuma conexão WhatsApp configurada');
       }
@@ -67,7 +62,6 @@ export function CampanhaExecutor({ campaignId, campaignName, onComplete }: Execu
 
       // VALIDAÇÃO CRÍTICA: verificar se instance_id e instance_name existem
       if (!whatsappConn.instance_id || !whatsappConn.instance_name) {
-        console.error('❌ ERRO: Dados de instância ausentes!', whatsappConn);
         throw new Error(
           'Dados da instância WhatsApp ausentes. Por favor, delete e recrie esta campanha para incluir as informações da instância.'
         );
@@ -177,9 +171,6 @@ export function CampanhaExecutor({ campaignId, campaignName, onComplete }: Execu
             },
             body: JSON.stringify(payload)
           });
-
-          console.log('✅ Response status:', response.status);
-
           if (!response.ok) {
             throw new Error(`Webhook retornou status ${response.status}`);
           }
@@ -201,12 +192,10 @@ export function CampanhaExecutor({ campaignId, campaignName, onComplete }: Execu
 
           } else {
             failed++;
-            console.error('Falha ao enviar para', arq.name, result);
           }
 
         } catch (error) {
           failed++;
-          console.error('Erro ao enviar para', arq.name, error);
         }
 
         setStatus(prev => ({ ...prev, sent, failed }));
