@@ -236,8 +236,6 @@ export function DealTasks({ dealId }: DealTasksProps) {
   const handleToggleStatus = async (taskId: string, currentStatus: string) => {
     const newStatus = currentStatus === "open" ? "done" : "open";
 
-    console.log("Alterando status da tarefa:", taskId, "de", currentStatus, "para", newStatus);
-
     const { error } = await supabase
       .from("crm_tasks")
       .update({ status: newStatus, updated_at: new Date().toISOString() })
