@@ -27,6 +27,13 @@ export function ArchitectHistory({ architectId }: ArchitectHistoryProps) {
   useEffect(() => {
     fetchHistory();
     
+    // Debounce para evitar múltiplos refetches
+    let debounceTimer: NodeJS.Timeout;
+    const debouncedFetch = () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => fetchHistory(), 500);
+    };
+    
     // Realtime subscription
     const channel = supabase
       .channel(`architect-history-${architectId}`)
@@ -39,12 +46,13 @@ export function ArchitectHistory({ architectId }: ArchitectHistoryProps) {
           filter: `architect_id=eq.${architectId}`,
         },
         () => {
-          fetchHistory();
+          debouncedFetch();
         }
       )
       .subscribe();
 
     return () => {
+      clearTimeout(debounceTimer);
       supabase.removeChannel(channel);
     };
   }, [architectId]);
