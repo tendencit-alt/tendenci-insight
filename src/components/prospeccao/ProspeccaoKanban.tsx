@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Building, MapPin, Phone, Package, Plus, User } from "lucide-react";
+import { Building, MapPin, Phone, Package, Plus, User, Target } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format, differenceInDays } from "date-fns";
 import { ArchitectProspeccaoSheet } from "./ArchitectProspeccaoSheet";
@@ -25,6 +25,7 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
   const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
   const [projectArchitectId, setProjectArchitectId] = useState<string | null>(null);
   const [isCreateArchitectOpen, setIsCreateArchitectOpen] = useState(false);
+  const [architectStats, setArchitectStats] = useState<Record<string, any>>({});
 
   // Buscar stages dinâmicos
   const { data: stages } = useQuery({
@@ -71,6 +72,30 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
       }));
     },
   });
+
+  // Buscar estatísticas de indicações para cada arquiteto
+  useEffect(() => {
+    const fetchArchitectStats = async () => {
+      if (!architects || architects.length === 0) return;
+
+      const statsPromises = architects.map(async (architect) => {
+        const { data } = await supabase.rpc('get_architect_indication_stats', {
+          p_architect_id: architect.id
+        });
+        return { id: architect.id, stats: data };
+      });
+
+      const results = await Promise.all(statsPromises);
+      const statsMap = results.reduce((acc, { id, stats }) => {
+        acc[id] = stats;
+        return acc;
+      }, {} as Record<string, any>);
+
+      setArchitectStats(statsMap);
+    };
+
+    fetchArchitectStats();
+  }, [architects]);
 
   // Atualizar status do arquiteto
   const updateStatusMutation = useMutation({
@@ -270,7 +295,7 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
                     )}
                   </div>
 
-                  {/* Badges - Apenas 3 principais */}
+                  {/* Badges - Indicações, Produtos e Projetos */}
                   <div className="flex gap-1.5 flex-wrap">
                     {/* Badge 1: Status de Contato */}
                     {!architect.data_primeiro_contato && !architect.data_ultimo_contato ? (
@@ -306,13 +331,39 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
                       
                       return totalProjects > 0 ? (
                         <Badge className="text-xs bg-green-600 hover:bg-green-700">
-                          📦 {totalProjects}
+                          📦 {totalProjects} projeto{totalProjects > 1 ? 's' : ''}
                         </Badge>
                       ) : (
                         <Badge variant="outline" className="text-xs bg-orange-50 dark:bg-orange-950 border-orange-200 dark:border-orange-800 text-orange-700 dark:text-orange-300">
                           0 projetos
                         </Badge>
                       );
+                    })()}
+
+                    {/* Badge 4: Indicações */}
+                    {(() => {
+                      const stats = architectStats[architect.id];
+                      const totalIndicacoes = stats?.total_indicacoes || 0;
+                      
+                      return totalIndicacoes > 0 ? (
+                        <Badge className="text-xs bg-purple-600 hover:bg-purple-700">
+                          🎯 {totalIndicacoes} indicaç{totalIndicacoes > 1 ? 'ões' : 'ão'}
+                        </Badge>
+                      ) : null;
+                    })()}
+
+                    {/* Badge 5: Produtos Indicados */}
+                    {(() => {
+                      const stats = architectStats[architect.id];
+                      const produtos = stats?.produtos_indicados || [];
+                      
+                      return produtos.length > 0 ? (
+                        produtos.slice(0, 3).map((produto: string, idx: number) => (
+                          <Badge key={idx} variant="outline" className="text-xs bg-amber-50 dark:bg-amber-950 border-amber-300 dark:border-amber-800 text-amber-700 dark:text-amber-300">
+                            {produto}
+                          </Badge>
+                        ))
+                      ) : null;
                     })()}
                   </div>
                 </div>

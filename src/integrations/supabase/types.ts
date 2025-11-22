@@ -177,6 +177,60 @@ export type Database = {
           },
         ]
       }
+      architect_indications: {
+        Row: {
+          architect_id: string
+          categoria: string | null
+          centro_custo: string | null
+          created_at: string | null
+          created_by: string | null
+          deal_id: string
+          id: string
+          notes: string | null
+          product_type: string
+          value: number | null
+        }
+        Insert: {
+          architect_id: string
+          categoria?: string | null
+          centro_custo?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          deal_id: string
+          id?: string
+          notes?: string | null
+          product_type: string
+          value?: number | null
+        }
+        Update: {
+          architect_id?: string
+          categoria?: string | null
+          centro_custo?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          deal_id?: string
+          id?: string
+          notes?: string | null
+          product_type?: string
+          value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "architect_indications_architect_id_fkey"
+            columns: ["architect_id"]
+            isOneToOne: false
+            referencedRelation: "architects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "architect_indications_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "crm_deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       architect_projects: {
         Row: {
           architect_id: string
@@ -2774,6 +2828,10 @@ export type Database = {
       generate_username_from_email: {
         Args: { email_input: string }
         Returns: string
+      }
+      get_architect_indication_stats: {
+        Args: { p_architect_id: string }
+        Returns: Json
       }
       get_architect_ranking_by_type: {
         Args: { p_tipo?: string }

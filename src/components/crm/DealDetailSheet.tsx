@@ -18,6 +18,7 @@ import { CreateArchitectDialog } from "@/components/architects/CreateArchitectDi
 
 import { DealHistory } from "./DealHistory";
 import { DealTasks } from "./DealTasks";
+import { DealArchitectIndication } from "./DealArchitectIndication";
 import { ProjectDetailSheet } from "../projects/ProjectDetailSheet";
 import { CreateProjectDialog } from "../projects/CreateProjectDialog";
 import { supabase } from "@/integrations/supabase/client";
@@ -894,6 +895,14 @@ export function DealDetailSheet({
                 </Button>
               </Card>
             )}
+
+            {/* Indicação de Arquiteto */}
+            <DealArchitectIndication
+              dealId={deal.id}
+              dealCategoria={deal.categoria || undefined}
+              dealCentroCusto={deal.centro_custo || undefined}
+              dealTipoProduto={deal.product_type || undefined}
+            />
 
             {/* Ações */}
             <Card className="p-4">
