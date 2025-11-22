@@ -241,8 +241,8 @@ export function DealTasks({ dealId }: DealTasksProps) {
           whatsapp_number: newTask.whatsapp_number || null,
           updated_at: new Date().toISOString(),
         })
-        .eq("id", editingTaskId)
-        .eq("created_by", user.id); // Garantir que só edita próprias tarefas
+        .eq("id", editingTaskId);
+        // RLS policy já garante que vendedores só editam próprias tarefas e admins editam todas
 
       setIsSubmitting(false);
 
@@ -256,9 +256,24 @@ export function DealTasks({ dealId }: DealTasksProps) {
       }
 
       toast({
-        title: "Tarefa atualizada",
-        description: "A tarefa foi atualizada com sucesso.",
+        title: "✅ Tarefa atualizada com sucesso",
+        description: `"${newTask.title}" foi atualizada.`,
       });
+      
+      // Forçar refetch imediato para sincronizar dados
+      await fetchTasks();
+      
+      // Limpar formulário e estado de edição
+      setNewTask({
+        title: "",
+        due_at: "",
+        note: "",
+        tipo_tarefa: "interna",
+        whatsapp_number: "",
+      });
+      setEditingTaskId(null);
+      setIsAdding(false);
+      return;
     } else {
       // INSERT: Criar nova tarefa
       const { error } = await supabase.from("crm_tasks").insert({
@@ -516,7 +531,7 @@ export function DealTasks({ dealId }: DealTasksProps) {
                 {isSubmitting ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Salvando...
+                    {editingTaskId ? "Atualizando..." : "Salvando..."}
                   </>
                 ) : (
                   editingTaskId ? "Atualizar Tarefa" : "Salvar Tarefa"
