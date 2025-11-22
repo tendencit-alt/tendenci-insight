@@ -82,7 +82,20 @@ export function ArchitectProspeccaoSheet({
     enabled: !!architectId && open,
   });
 
-  if (!architect) return null;
+  if (!architect) {
+    return (
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent className="sm:max-w-2xl">
+          <div className="space-y-4 animate-pulse">
+            <div className="h-8 bg-muted rounded w-1/2" />
+            <div className="h-20 bg-muted/50 rounded" />
+            <div className="h-40 bg-muted/30 rounded" />
+            <div className="h-40 bg-muted/30 rounded" />
+          </div>
+        </SheetContent>
+      </Sheet>
+    );
+  }
 
   // Gerar tags automáticas
   const tags: string[] = [];

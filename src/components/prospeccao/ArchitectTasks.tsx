@@ -94,32 +94,16 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
       return;
     }
 
-    // Buscar IDs de arquitetos gerenciados pelo vendedor
-    const { data: managedArchitects } = await supabase
-      .from("architects")
-      .select("id")
-      .eq("vendedor_responsavel", user.id);
-
-    const managedIds = managedArchitects?.map(a => a.id) || [];
-
-    // Query segura usando .in() ao invés de interpolação
-    let query = supabase
+    // Query simplificada - buscar apenas tarefas do arquiteto criadas pelo usuário
+    const { data, error } = await supabase
       .from("tendenci_prospec_arq_agendamentos")
       .select(`
         *,
         vendedor:profiles!tendenci_prospec_arq_agendamentos_vendedor_id_fkey(full_name, email)
       `)
       .eq("architect_id", architectId)
+      .eq("vendedor_id", user.id)
       .order("data_agendamento", { ascending: true });
-
-    // Filtrar por vendedor_id OU arquitetos gerenciados
-    if (managedIds.length > 0) {
-      query = query.or(`vendedor_id.eq.${user.id},architect_id.in.(${managedIds.join(',')})`);
-    } else {
-      query = query.eq("vendedor_id", user.id);
-    }
-
-    const { data, error } = await query;
 
     if (error) {
       toast({
