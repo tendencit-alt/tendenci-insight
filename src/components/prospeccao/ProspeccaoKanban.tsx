@@ -25,7 +25,6 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
   const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
   const [projectArchitectId, setProjectArchitectId] = useState<string | null>(null);
   const [isCreateArchitectOpen, setIsCreateArchitectOpen] = useState(false);
-  const [architectStats, setArchitectStats] = useState<Record<string, any>>({});
 
   // Buscar stages dinâmicos
   const { data: stages } = useQuery({
@@ -72,30 +71,6 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
       }));
     },
   });
-
-  // Buscar estatísticas de indicações para cada arquiteto
-  useEffect(() => {
-    const fetchArchitectStats = async () => {
-      if (!architects || architects.length === 0) return;
-
-      const statsPromises = architects.map(async (architect) => {
-        const { data } = await supabase.rpc('get_architect_indication_stats', {
-          p_architect_id: architect.id
-        });
-        return { id: architect.id, stats: data };
-      });
-
-      const results = await Promise.all(statsPromises);
-      const statsMap = results.reduce((acc, { id, stats }) => {
-        acc[id] = stats;
-        return acc;
-      }, {} as Record<string, any>);
-
-      setArchitectStats(statsMap);
-    };
-
-    fetchArchitectStats();
-  }, [architects]);
 
   // Atualizar status do arquiteto
   const updateStatusMutation = useMutation({
@@ -342,22 +317,21 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
 
                     {/* Badge 4: Indicações */}
                     {(() => {
-                      const stats = architectStats[architect.id];
-                      const totalIndicacoes = stats?.total_indicacoes || 0;
+                      const totalIndicacoes = architect.total_indicacoes || 0;
                       
                       return totalIndicacoes > 0 ? (
-                        <Badge className="text-xs bg-purple-600 hover:bg-purple-700">
-                          🎯 {totalIndicacoes} indicaç{totalIndicacoes > 1 ? 'ões' : 'ão'}
+                        <Badge className="text-xs bg-purple-600 hover:bg-purple-700 flex items-center gap-1">
+                          <Target className="h-3 w-3" />
+                          {totalIndicacoes} indicaç{totalIndicacoes > 1 ? 'ões' : 'ão'}
                         </Badge>
                       ) : null;
                     })()}
 
                     {/* Badge 5: Produtos Indicados */}
                     {(() => {
-                      const stats = architectStats[architect.id];
-                      const produtos = stats?.produtos_indicados || [];
+                      const produtos = architect.produtos_indicados || [];
                       
-                      return produtos.length > 0 ? (
+                      return Array.isArray(produtos) && produtos.length > 0 ? (
                         produtos.slice(0, 3).map((produto: string, idx: number) => (
                           <Badge key={idx} variant="outline" className="text-xs bg-amber-50 dark:bg-amber-950 border-amber-300 dark:border-amber-800 text-amber-700 dark:text-amber-300">
                             {produto}

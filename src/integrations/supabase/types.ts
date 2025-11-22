@@ -2876,8 +2876,10 @@ export type Database = {
           instagram: string
           name: string
           phone: string
+          produtos_indicados: Json
           status_funil: string
           tier: string
+          total_indicacoes: number
           total_projects: number
           ultimo_projeto_data: string
           ultimo_vendedor_full_name: string
