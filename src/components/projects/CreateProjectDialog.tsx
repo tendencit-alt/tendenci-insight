@@ -143,11 +143,6 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess, preSelected
       return;
     }
 
-    if (!formData.architect_id) {
-      toast.error("Arquiteto é obrigatório");
-      return;
-    }
-
     if (files.length === 0) {
       toast.error("É obrigatório anexar pelo menos um arquivo");
       return;
@@ -186,7 +181,7 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess, preSelected
         .insert({
           name: formData.name,
           client_id: formData.client_id && formData.client_id !== 'none' ? formData.client_id : null,
-          architect_id: formData.architect_id || null,
+          architect_id: formData.architect_id && formData.architect_id !== 'sem-arquiteto' ? formData.architect_id : null,
           stage: formData.stage,
           value: formData.value ? parseFloat(formData.value) : 0,
           deadline: formData.deadline || null
@@ -289,13 +284,14 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess, preSelected
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="architect">Arquiteto *</Label>
+              <Label htmlFor="architect">Arquiteto</Label>
               <div className="flex gap-2">
                 <Select value={formData.architect_id} onValueChange={(v) => setFormData({ ...formData, architect_id: v })}>
                   <SelectTrigger className="bg-background">
                     <SelectValue placeholder="Selecione o arquiteto" />
                   </SelectTrigger>
                   <SelectContent className="bg-popover z-50">
+                    <SelectItem value="sem-arquiteto">Cliente sem arquiteto</SelectItem>
                     {architects.map((arch) => (
                       <SelectItem key={arch.id} value={arch.id}>
                         {arch.name}
