@@ -16,6 +16,7 @@ interface DealFileUploadProps {
 export function DealFileUpload({ dealId, files, onFilesChange }: DealFileUploadProps) {
   const { toast } = useToast();
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -32,21 +33,38 @@ export function DealFileUpload({ dealId, files, onFilesChange }: DealFileUploadP
     }
 
     setUploading(true);
+    setUploadProgress(0);
+
+    const showProgress = file.size > 5 * 1024 * 1024; // >5MB
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
-      // Upload para o storage
       const fileExt = file.name.split('.').pop();
       const fileName = `${dealId}/${Date.now()}.${fileExt}`;
-      const { error: uploadError } = await supabase.storage
-        .from("deal-files")
-        .upload(fileName, file);
+      
+      if (showProgress) setUploadProgress(30);
+
+      // Retry lógica: até 3 tentativas
+      let uploadError;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const { error } = await supabase.storage
+          .from("deal-files")
+          .upload(fileName, file);
+        
+        uploadError = error;
+        if (!error) break;
+        
+        if (attempt < 2) {
+          await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+        }
+      }
 
       if (uploadError) throw uploadError;
+      
+      if (showProgress) setUploadProgress(70);
 
-      // Registrar no banco
       const { error: dbError } = await supabase
         .from("crm_deal_files")
         .insert({
@@ -59,6 +77,8 @@ export function DealFileUpload({ dealId, files, onFilesChange }: DealFileUploadP
         });
 
       if (dbError) throw dbError;
+      
+      if (showProgress) setUploadProgress(100);
 
       toast({
         title: "Arquivo enviado",
@@ -68,14 +88,14 @@ export function DealFileUpload({ dealId, files, onFilesChange }: DealFileUploadP
       onFilesChange();
       e.target.value = "";
     } catch (error) {
-      console.error("Erro ao fazer upload:", error);
       toast({
         title: "Erro ao enviar arquivo",
-        description: "Não foi possível anexar o arquivo",
+        description: "Não foi possível anexar o arquivo. Tente novamente.",
         variant: "destructive",
       });
     } finally {
       setUploading(false);
+      setTimeout(() => setUploadProgress(0), 500);
     }
   };
 
@@ -96,7 +116,6 @@ export function DealFileUpload({ dealId, files, onFilesChange }: DealFileUploadP
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (error) {
-      console.error("Erro ao baixar arquivo:", error);
       toast({
         title: "Erro ao baixar arquivo",
         description: "Não foi possível baixar o arquivo",
@@ -129,7 +148,6 @@ export function DealFileUpload({ dealId, files, onFilesChange }: DealFileUploadP
 
       onFilesChange();
     } catch (error) {
-      console.error("Erro ao deletar arquivo:", error);
       toast({
         title: "Erro ao remover arquivo",
         description: "Não foi possível remover o arquivo",
@@ -167,6 +185,19 @@ export function DealFileUpload({ dealId, files, onFilesChange }: DealFileUploadP
             </Button>
           )}
         </div>
+        {uploading && uploadProgress > 0 && (
+          <div className="mt-2">
+            <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-primary transition-all duration-300"
+                style={{ width: `${uploadProgress}%` }}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Enviando... {uploadProgress}%
+            </p>
+          </div>
+        )}
         <p className="text-xs text-muted-foreground mt-1">
           Formatos aceitos: PDF, DOC, DOCX, XLS, XLSX, DWG, JPG, PNG, WEBP, TXT (máx. 20MB)
         </p>

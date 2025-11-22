@@ -280,7 +280,6 @@ export function ArchitectTimeline({ architectId }: ArchitectTimelineProps) {
       setAudioBlob(null);
       fetchTimeline();
     } catch (error: any) {
-      console.error("Error submitting timeline update:", error);
       toast({
         title: "Erro",
         description: error.message || "Erro ao adicionar atualização",
@@ -389,7 +388,6 @@ export function ArchitectTimeline({ architectId }: ArchitectTimelineProps) {
         description: "Clique em 'Parar' quando terminar",
       });
     } catch (error: any) {
-      console.error("Erro ao iniciar gravação:", error);
       let errorMessage = "Não foi possível acessar o microfone";
       
       if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
@@ -463,7 +461,6 @@ export function ArchitectTimeline({ architectId }: ArchitectTimelineProps) {
       audio.play();
       setPlayingAudioId(audioId);
     } catch (error) {
-      console.error("Erro ao reproduzir áudio:", error);
       toast({
         title: "Erro",
         description: "Não foi possível reproduzir o áudio",

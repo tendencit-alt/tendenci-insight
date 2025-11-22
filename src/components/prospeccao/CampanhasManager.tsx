@@ -492,9 +492,6 @@ export function CampanhasManager() {
       setDispatching(false);
       return;
     }
-
-    console.log('✅ Conexão WhatsApp carregada:', whatsappConn);
-    
     // Atualizar status para "enviando"
     await supabase
       .from('tendenci_prospec_arq_campaigns')
@@ -550,9 +547,6 @@ export function CampanhasManager() {
           instance_name: whatsappConn.instance_name,
           instance_id: whatsappConn.instance_id,
         };
-
-        console.log('📤 Enviando para n8n:', payload);
-
         const response = await fetch(campanha.webhook_n8n, {
           method: 'POST',
           headers: {
@@ -560,9 +554,6 @@ export function CampanhasManager() {
           },
           body: JSON.stringify(payload),
         });
-        
-        console.log('📬 Resposta n8n:', response.status);
-
         if (response.ok) {
           successCount++;
           

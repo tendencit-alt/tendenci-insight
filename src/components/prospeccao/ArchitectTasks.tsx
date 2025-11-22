@@ -79,10 +79,7 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
       .eq("id", architectId)
       .single();
 
-    if (error) {
-      console.error("Erro ao buscar informações do arquiteto:", error);
-      return;
-    }
+    if (error) return;
 
     setArchitectInfo(data);
   };
@@ -97,18 +94,34 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
       return;
     }
 
-    const { data, error } = await supabase
+    // Buscar IDs de arquitetos gerenciados pelo vendedor
+    const { data: managedArchitects } = await supabase
+      .from("architects")
+      .select("id")
+      .eq("vendedor_responsavel", user.id);
+
+    const managedIds = managedArchitects?.map(a => a.id) || [];
+
+    // Query segura usando .in() ao invés de interpolação
+    let query = supabase
       .from("tendenci_prospec_arq_agendamentos")
       .select(`
         *,
         vendedor:profiles!tendenci_prospec_arq_agendamentos_vendedor_id_fkey(full_name, email)
       `)
       .eq("architect_id", architectId)
-      .or(`vendedor_id.eq.${user.id},architect_id.in.(select id from architects where vendedor_responsavel = '${user.id}')`)
       .order("data_agendamento", { ascending: true });
 
+    // Filtrar por vendedor_id OU arquitetos gerenciados
+    if (managedIds.length > 0) {
+      query = query.or(`vendedor_id.eq.${user.id},architect_id.in.(${managedIds.join(',')})`);
+    } else {
+      query = query.eq("vendedor_id", user.id);
+    }
+
+    const { data, error } = await query;
+
     if (error) {
-      console.error("Erro ao buscar tarefas:", error);
       toast({
         title: "Erro",
         description: "Erro ao carregar tarefas",
@@ -224,7 +237,6 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
         });
 
       if (error) {
-        console.error("Erro ao criar tarefa:", error);
         toast({
           title: "Erro",
           description: "Erro ao criar tarefa",
@@ -259,7 +271,6 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
       .eq("id", taskId);
 
     if (error) {
-      console.error("Erro ao atualizar status:", error);
       toast({
         title: "Erro",
         description: "Erro ao atualizar status da tarefa",
@@ -277,7 +288,6 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
       .eq("id", taskId);
 
     if (error) {
-      console.error("Erro ao deletar tarefa:", error);
       toast({
         title: "Erro",
         description: "Erro ao deletar tarefa",

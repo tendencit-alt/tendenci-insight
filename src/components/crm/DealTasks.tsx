@@ -80,10 +80,7 @@ export function DealTasks({ dealId }: DealTasksProps) {
       .eq("id", dealId)
       .single();
 
-    if (error) {
-      console.error("Erro ao buscar informações do deal:", error);
-      return;
-    }
+    if (error) return;
 
     setDealInfo(data);
   };
@@ -95,10 +92,7 @@ export function DealTasks({ dealId }: DealTasksProps) {
       .eq("deal_id", dealId)
       .order("due_at", { ascending: true });
 
-    if (error) {
-      console.error("Erro ao buscar tarefas:", error);
-      return;
-    }
+    if (error) return;
 
     setTasks(data || []);
   };
@@ -151,7 +145,6 @@ export function DealTasks({ dealId }: DealTasksProps) {
     }).select();
 
     if (error) {
-      console.error("Erro ao criar tarefa:", error);
       toast({
         title: "Erro ao criar tarefa",
         description: error.message,
@@ -189,7 +182,6 @@ export function DealTasks({ dealId }: DealTasksProps) {
       .eq("id", taskId);
 
     if (error) {
-      console.error("Erro ao atualizar tarefa:", error);
       toast({
         title: "Erro ao atualizar tarefa",
         description: error.message,
@@ -197,8 +189,6 @@ export function DealTasks({ dealId }: DealTasksProps) {
       });
       return;
     }
-
-    console.log("Status da tarefa atualizado com sucesso!");
     fetchTasks();
   };
 

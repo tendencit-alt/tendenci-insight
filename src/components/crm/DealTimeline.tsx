@@ -413,7 +413,6 @@ export function DealTimeline({ dealId }: DealTimelineProps) {
         description: "Clique em 'Parar' quando terminar",
       });
     } catch (error: any) {
-      console.error("Erro ao iniciar gravação:", error);
       let errorMessage = "Não foi possível acessar o microfone";
       
       if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {

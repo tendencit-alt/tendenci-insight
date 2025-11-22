@@ -106,7 +106,7 @@ export function TaskReminderAlert({ pipelineId }: TaskReminderAlertProps) {
         setShowAlert(false);
       }
     } catch (error) {
-      console.error("Erro ao verificar deals sem tarefas:", error);
+      // Silenciar erro
     }
   };
 

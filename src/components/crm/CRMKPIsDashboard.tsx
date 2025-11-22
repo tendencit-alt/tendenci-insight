@@ -86,7 +86,6 @@ export function CRMKPIsDashboard({
           filter: `pipeline_id=eq.${pipelineId}`
         },
         (payload) => {
-          console.log('Deal changed, updating KPIs:', payload);
           fetchKPIs();
         }
       )
