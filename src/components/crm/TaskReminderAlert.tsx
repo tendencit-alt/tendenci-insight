@@ -41,10 +41,10 @@ export function TaskReminderAlert({ pipelineId }: TaskReminderAlertProps) {
     // Verificação inicial
     checkDealsWithoutTasks();
 
-    // Verificar a cada 10 minutos (600000ms)
+    // Verificar a cada 26 horas (93600000ms)
     const interval = setInterval(() => {
       checkDealsWithoutTasks();
-    }, 600000);
+    }, 93600000);
 
     return () => clearInterval(interval);
   }, [pipelineId]);
@@ -153,12 +153,12 @@ export function TaskReminderAlert({ pipelineId }: TaskReminderAlertProps) {
 
   const handleDismiss = () => {
     setShowAlert(false);
-    // Mostrar novamente após 10 minutos se ainda houver deals sem tarefas
+    // Mostrar novamente após 26 horas se ainda houver deals sem tarefas
     setTimeout(() => {
       if (dealsWithoutTasks.length > 0) {
         setShowAlert(true);
       }
-    }, 600000);
+    }, 93600000);
   };
 
   if (dealsWithoutTasks.length === 0) return null;
@@ -260,7 +260,7 @@ export function TaskReminderAlert({ pipelineId }: TaskReminderAlertProps) {
         <div className="flex justify-end gap-3 pt-4 border-t">
           <Button variant="outline" onClick={handleDismiss}>
             <X className="h-4 w-4 mr-2" />
-            Lembrar depois (10 min)
+            Lembrar depois (26h)
           </Button>
           <Button onClick={() => setShowAlert(false)}>
             Fechar

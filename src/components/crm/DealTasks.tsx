@@ -5,9 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, CheckCircle, Clock } from "lucide-react";
+import { Plus, Trash2, CheckCircle, Clock, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { usePermissions } from "@/hooks/usePermissions";
 import {
   Select,
   SelectContent,
@@ -15,6 +16,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -24,9 +35,13 @@ interface DealTasksProps {
 
 export function DealTasks({ dealId }: DealTasksProps) {
   const { toast } = useToast();
+  const { isMaster } = usePermissions();
   const [tasks, setTasks] = useState<any[]>([]);
   const [isAdding, setIsAdding] = useState(false);
   const [dealInfo, setDealInfo] = useState<any>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
+  const [errors, setErrors] = useState({ title: "", due_at: "" });
   const [newTask, setNewTask] = useState({
     title: "",
     note: "",
@@ -97,6 +112,35 @@ export function DealTasks({ dealId }: DealTasksProps) {
     setTasks(data || []);
   };
 
+  const checkRecentObservations = async () => {
+    const { data: recentNotes } = await supabase
+      .from('crm_timeline')
+      .select('created_at')
+      .eq('deal_id', dealId)
+      .eq('update_type', 'Observação')
+      .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+      .limit(1);
+    
+    return (recentNotes && recentNotes.length > 0);
+  };
+
+  const validateField = (field: string, value: string) => {
+    if (field === 'title') {
+      if (!value.trim()) {
+        setErrors(prev => ({ ...prev, title: "Título é obrigatório" }));
+      } else {
+        setErrors(prev => ({ ...prev, title: "" }));
+      }
+    }
+    if (field === 'due_at') {
+      if (!value) {
+        setErrors(prev => ({ ...prev, due_at: "Data e hora são obrigatórias" }));
+      } else {
+        setErrors(prev => ({ ...prev, due_at: "" }));
+      }
+    }
+  };
+
   const handleAddTask = async () => {
     if (!newTask.title || !newTask.due_at) {
       toast({
@@ -119,7 +163,18 @@ export function DealTasks({ dealId }: DealTasksProps) {
       }
     }
 
-    console.log("Criando tarefa:", { dealId, newTask });
+    // VALIDAÇÃO: Verificar observação nas últimas 24h
+    const hasRecentObservation = await checkRecentObservations();
+    if (!hasRecentObservation) {
+      toast({
+        title: "Atualização obrigatória",
+        description: "Você precisa adicionar uma observação nas últimas 24 horas antes de criar uma tarefa. Vá até a aba 'Observações' e registre uma atualização do status do negócio.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
 
     // Obter ID do usuário autenticado
     const { data: { user } } = await supabase.auth.getUser();
@@ -129,20 +184,28 @@ export function DealTasks({ dealId }: DealTasksProps) {
         description: "Usuário não autenticado.",
         variant: "destructive",
       });
+      setIsSubmitting(false);
       return;
     }
+
+    // Corrigir timezone local
+    const localDate = new Date(newTask.due_at);
+    const offsetMs = localDate.getTimezoneOffset() * 60000;
+    const localISOTime = new Date(localDate.getTime() - offsetMs).toISOString().slice(0, -1);
 
     const { data, error } = await supabase.from("crm_tasks").insert({
       deal_id: dealId,
       title: newTask.title,
       note: newTask.note || null,
-      due_at: newTask.due_at,
+      due_at: localISOTime,
       status: "open",
       origem_modulo: "crm",
       tipo_tarefa: newTask.tipo_tarefa,
       whatsapp_number: newTask.whatsapp_number || null,
       created_by: user.id,
     }).select();
+
+    setIsSubmitting(false);
 
     if (error) {
       toast({
@@ -152,8 +215,6 @@ export function DealTasks({ dealId }: DealTasksProps) {
       });
       return;
     }
-
-    console.log("Tarefa criada com sucesso:", data);
 
     toast({
       title: "Tarefa criada",
@@ -167,6 +228,7 @@ export function DealTasks({ dealId }: DealTasksProps) {
       tipo_tarefa: "interna",
       whatsapp_number: "",
     });
+    setErrors({ title: "", due_at: "" });
     setIsAdding(false);
     fetchTasks();
   };
@@ -192,11 +254,23 @@ export function DealTasks({ dealId }: DealTasksProps) {
     fetchTasks();
   };
 
-  const handleDeleteTask = async (taskId: string) => {
+  const handleDeleteTask = async () => {
+    if (!taskToDelete) return;
+
+    if (!isMaster) {
+      toast({
+        title: "Permissão negada",
+        description: "Apenas usuários MASTER podem excluir tarefas. Entre em contato com o administrador se necessário.",
+        variant: "destructive",
+      });
+      setTaskToDelete(null);
+      return;
+    }
+
     const { error } = await supabase
       .from("crm_tasks")
       .delete()
-      .eq("id", taskId);
+      .eq("id", taskToDelete);
 
     if (error) {
       toast({
@@ -204,6 +278,7 @@ export function DealTasks({ dealId }: DealTasksProps) {
         description: error.message,
         variant: "destructive",
       });
+      setTaskToDelete(null);
       return;
     }
 
@@ -211,6 +286,9 @@ export function DealTasks({ dealId }: DealTasksProps) {
       title: "Tarefa excluída",
       description: "A tarefa foi removida com sucesso.",
     });
+
+    setTaskToDelete(null);
+    fetchTasks();
   };
 
   const getDaysUntilDue = (dueAt: string) => {
@@ -290,11 +368,16 @@ export function DealTasks({ dealId }: DealTasksProps) {
               <Input
                 id="task-title"
                 value={newTask.title}
-                onChange={(e) =>
-                  setNewTask({ ...newTask, title: e.target.value })
-                }
+                onChange={(e) => {
+                  setNewTask({ ...newTask, title: e.target.value });
+                  validateField('title', e.target.value);
+                }}
                 placeholder="Ex: Enviar proposta por email"
+                className={errors.title ? "border-destructive" : ""}
               />
+              {errors.title && (
+                <p className="text-xs text-destructive mt-1">{errors.title}</p>
+              )}
             </div>
 
             <div>
@@ -303,10 +386,15 @@ export function DealTasks({ dealId }: DealTasksProps) {
                 id="task-due"
                 type="datetime-local"
                 value={newTask.due_at}
-                onChange={(e) =>
-                  setNewTask({ ...newTask, due_at: e.target.value })
-                }
+                onChange={(e) => {
+                  setNewTask({ ...newTask, due_at: e.target.value });
+                  validateField('due_at', e.target.value);
+                }}
+                className={errors.due_at ? "border-destructive" : ""}
               />
+              {errors.due_at && (
+                <p className="text-xs text-destructive mt-1">{errors.due_at}</p>
+              )}
             </div>
 
             {newTask.tipo_tarefa === "automatizada" && (
@@ -353,11 +441,21 @@ export function DealTasks({ dealId }: DealTasksProps) {
             </div>
 
             <div className="flex gap-2">
-              <Button onClick={handleAddTask} size="sm">
-                Salvar Tarefa
+              <Button onClick={handleAddTask} size="sm" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  "Salvar Tarefa"
+                )}
               </Button>
               <Button
-                onClick={() => setIsAdding(false)}
+                onClick={() => {
+                  setIsAdding(false);
+                  setErrors({ title: "", due_at: "" });
+                }}
                 size="sm"
                 variant="ghost"
               >
@@ -413,14 +511,17 @@ export function DealTasks({ dealId }: DealTasksProps) {
                         >
                           {task.title}
                         </p>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 w-6 p-0"
-                          onClick={() => handleDeleteTask(task.id)}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
+                        {isMaster && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 w-6 p-0"
+                            onClick={() => setTaskToDelete(task.id)}
+                            title="Excluir tarefa (somente MASTER)"
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        )}
                       </div>
 
                       <div className="flex items-center gap-2 flex-wrap">
@@ -464,6 +565,27 @@ export function DealTasks({ dealId }: DealTasksProps) {
           </div>
         )}
       </CardContent>
+
+      {/* AlertDialog para confirmar exclusão */}
+      <AlertDialog open={!!taskToDelete} onOpenChange={(open) => !open && setTaskToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir tarefa?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. A tarefa será permanentemente removida do negócio.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteTask}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }
