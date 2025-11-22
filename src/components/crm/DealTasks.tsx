@@ -595,18 +595,16 @@ export function DealTasks({ dealId }: DealTasksProps) {
                           {task.title}
                         </p>
                         <div className="flex gap-1">
-                          {/* Botão de editar - proprietário ou admin */}
-                          {(task.created_by === user?.id || isMaster) && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-6 w-6 p-0"
-                              onClick={() => handleStartEdit(task)}
-                              title="Editar tarefa"
-                            >
-                              <Edit className="h-4 w-4 text-muted-foreground hover:text-primary" />
-                            </Button>
-                          )}
+                          {/* Todos vendedores autenticados podem editar */}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 w-6 p-0"
+                            onClick={() => handleStartEdit(task)}
+                            title="Editar tarefa"
+                          >
+                            <Edit className="h-4 w-4 text-muted-foreground hover:text-primary" />
+                          </Button>
                           {/* Botão de excluir - apenas MASTER */}
                           {isMaster && (
                             <Button
