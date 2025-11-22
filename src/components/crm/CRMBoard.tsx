@@ -1,10 +1,22 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { DealCard } from "./DealCard";
 import { DealDetailSheet } from "./DealDetailSheet";
+
+// Debounce helper function
+function debounce<T extends (...args: any[]) => any>(
+  func: T,
+  wait: number
+): (...args: Parameters<T>) => void {
+  let timeout: NodeJS.Timeout | null = null;
+  return function (...args: Parameters<T>) {
+    if (timeout) clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), wait);
+  };
+}
 
 interface CRMBoardProps {
   pipelineId: string;
@@ -35,6 +47,11 @@ export function CRMBoard({ pipelineId, onRefresh, autoOpenDealId, onDealOpened, 
     if (!pipelineId) return;
     fetchData();
 
+    // Debounced fetchData para evitar múltiplos refetches
+    const debouncedFetchData = debounce(() => {
+      fetchData();
+    }, 1000);
+
     // Setup realtime subscription for deals updates
     const dealsChannel = supabase
       .channel('crm-deals-changes')
@@ -46,8 +63,8 @@ export function CRMBoard({ pipelineId, onRefresh, autoOpenDealId, onDealOpened, 
           table: 'crm_deals',
           filter: `pipeline_id=eq.${pipelineId}`
         },
-        (payload) => {
-          fetchData();
+        () => {
+          debouncedFetchData();
         }
       )
       .subscribe();
@@ -62,8 +79,8 @@ export function CRMBoard({ pipelineId, onRefresh, autoOpenDealId, onDealOpened, 
           schema: 'public',
           table: 'crm_tasks'
         },
-        (payload) => {
-          fetchData();
+        () => {
+          debouncedFetchData();
         }
       )
       .subscribe();
