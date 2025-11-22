@@ -21,11 +21,11 @@ export function DealFileUpload({ dealId, files, onFilesChange }: DealFileUploadP
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validar tamanho (10MB)
-    if (file.size > 10 * 1024 * 1024) {
+    // Validar tamanho (20MB)
+    if (file.size > 20 * 1024 * 1024) {
       toast({
         title: "Arquivo muito grande",
-        description: "O arquivo deve ter no máximo 10MB",
+        description: "O arquivo deve ter no máximo 20MB",
         variant: "destructive",
       });
       return;
@@ -168,7 +168,7 @@ export function DealFileUpload({ dealId, files, onFilesChange }: DealFileUploadP
           )}
         </div>
         <p className="text-xs text-muted-foreground mt-1">
-          Formatos aceitos: PDF, DOC, DOCX, XLS, XLSX, DWG, JPG, PNG, WEBP, TXT (máx. 10MB)
+          Formatos aceitos: PDF, DOC, DOCX, XLS, XLSX, DWG, JPG, PNG, WEBP, TXT (máx. 20MB)
         </p>
       </div>
 

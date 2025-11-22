@@ -240,10 +240,10 @@ export function DealNotes({ dealId, currentNote, onNoteUpdate }: DealNotesProps)
       if (!user) throw new Error("Usuário não autenticado");
 
       for (const file of Array.from(files)) {
-        if (file.size > 10 * 1024 * 1024) {
+        if (file.size > 20 * 1024 * 1024) {
           toast({
             title: "Arquivo muito grande",
-            description: `${file.name} excede o limite de 10MB`,
+            description: `${file.name} excede o limite de 20MB`,
             variant: "destructive",
           });
           continue;

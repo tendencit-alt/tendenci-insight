@@ -81,6 +81,13 @@ export function ArchitectTimeline({ architectId }: ArchitectTimelineProps) {
     fetchTimeline();
     fetchUsers();
     
+    // Debounce para evitar múltiplos refetches
+    let debounceTimer: NodeJS.Timeout;
+    const debouncedFetch = () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => fetchTimeline(), 500);
+    };
+    
     // Realtime subscription
     const channel = supabase
       .channel(`architect-timeline-${architectId}`)
@@ -93,12 +100,13 @@ export function ArchitectTimeline({ architectId }: ArchitectTimelineProps) {
           filter: `architect_id=eq.${architectId}`,
         },
         () => {
-          fetchTimeline();
+          debouncedFetch();
         }
       )
       .subscribe();
 
     return () => {
+      clearTimeout(debounceTimer);
       supabase.removeChannel(channel);
     };
   }, [architectId]);
@@ -133,7 +141,7 @@ export function ArchitectTimeline({ architectId }: ArchitectTimelineProps) {
   };
 
   const handleSubmit = async () => {
-    if (!message.trim() && !files) return;
+    if (!message.trim() && !files && !audioFiles && !audioBlob) return;
 
     setSubmitting(true);
 
@@ -165,6 +173,17 @@ export function ArchitectTimeline({ architectId }: ArchitectTimelineProps) {
       if (files && files.length > 0) {
         for (let i = 0; i < files.length; i++) {
           const file = files[i];
+          
+          // Validar tamanho (20MB)
+          if (file.size > 20 * 1024 * 1024) {
+            toast({
+              title: "Arquivo muito grande",
+              description: `${file.name} excede o limite de 20MB`,
+              variant: "destructive",
+            });
+            continue;
+          }
+          
           const fileName = `${architectId}/${Date.now()}-${file.name}`;
           
           const { error: uploadError } = await supabase.storage
@@ -185,6 +204,71 @@ export function ArchitectTimeline({ architectId }: ArchitectTimelineProps) {
         }
       }
 
+      // Upload audio files if any
+      if (audioFiles && audioFiles.length > 0) {
+        for (let i = 0; i < audioFiles.length; i++) {
+          const audioFile = audioFiles[i];
+          
+          // Validar tamanho (20MB)
+          if (audioFile.size > 20 * 1024 * 1024) {
+            toast({
+              title: "Áudio muito grande",
+              description: `${audioFile.name} excede o limite de 20MB`,
+              variant: "destructive",
+            });
+            continue;
+          }
+          
+          const fileName = `${architectId}/${Date.now()}-${audioFile.name}`;
+          
+          const { error: uploadError } = await supabase.storage
+            .from('architect-files')
+            .upload(fileName, audioFile);
+
+          if (!uploadError) {
+            await supabase
+              .from("architect_timeline_attachments")
+              .insert({
+                timeline_id: timelineEntry.id,
+                file_name: audioFile.name,
+                file_path: fileName,
+                file_type: audioFile.type,
+                file_size: audioFile.size,
+              });
+          }
+        }
+      }
+
+      // Upload recorded audio blob if any
+      if (audioBlob) {
+        // Validar tamanho (20MB)
+        if (audioBlob.size > 20 * 1024 * 1024) {
+          toast({
+            title: "Áudio muito grande",
+            description: "O áudio gravado excede o limite de 20MB",
+            variant: "destructive",
+          });
+        } else {
+          const fileName = `${architectId}/${Date.now()}-recording.webm`;
+          
+          const { error: uploadError } = await supabase.storage
+            .from('architect-files')
+            .upload(fileName, audioBlob);
+
+          if (!uploadError) {
+            await supabase
+              .from("architect_timeline_attachments")
+              .insert({
+                timeline_id: timelineEntry.id,
+                file_name: "recording.webm",
+                file_path: fileName,
+                file_type: "audio/webm",
+                file_size: audioBlob.size,
+              });
+          }
+        }
+      }
+
       toast({
         title: "Sucesso",
         description: "Atualização adicionada à timeline!",
@@ -192,6 +276,8 @@ export function ArchitectTimeline({ architectId }: ArchitectTimelineProps) {
 
       setMessage("");
       setFiles(null);
+      setAudioFiles(null);
+      setAudioBlob(null);
       fetchTimeline();
     } catch (error: any) {
       console.error("Error submitting timeline update:", error);

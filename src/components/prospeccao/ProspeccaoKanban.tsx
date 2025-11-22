@@ -41,64 +41,34 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
     },
   });
 
-  // Buscar arquitetos com filtros aplicados
+  // Buscar arquitetos usando RPC otimizado
   const { data: architects, isLoading } = useQuery({
     queryKey: ["prospeccao-architects", filters, showNaoContactados],
     queryFn: async () => {
-      let query = supabase
-        .from("architects")
-        .select(`
-          *,
-          vendedor:profiles!architects_vendedor_responsavel_fkey(full_name, email, username),
-          projects:projects(id),
-          architect_projects:architect_projects(id, data_projeto),
-          tendenci_prospec_arq_logs!inner(enviado_por, created_at, profiles!tendenci_prospec_arq_logs_enviado_por_fkey(username, full_name))
-        `)
-        .eq("active", true);
-
-      // Aplicar filtro de não contactados
-      if (showNaoContactados) {
-        query = query.is("data_primeiro_contato", null);
-      }
-
-      // Aplicar filtros
-      if (filters.vendedor && filters.vendedor !== "todos") {
-        query = query.eq("vendedor_responsavel", filters.vendedor);
-      }
-      if (filters.status && filters.status !== "todos") {
-        query = query.eq("status_funil", filters.status);
-      }
-      if (filters.cidade && filters.cidade !== "todas") {
-        query = query.eq("city", filters.cidade);
-      }
-      if (filters.tier && filters.tier !== "todos") {
-        query = query.eq("tier", filters.tier);
-      }
-      if (filters.search) {
-        query = query.or(`name.ilike.%${filters.search}%,company.ilike.%${filters.search}%,city.ilike.%${filters.search}%`);
-      }
-
-      const { data, error } = await query.order("created_at", { ascending: false });
+      const { data, error } = await supabase.rpc('get_prospeccao_architects_optimized', {
+        p_show_nao_contactados: showNaoContactados,
+        p_vendedor_id: filters.vendedor && filters.vendedor !== "todos" ? filters.vendedor : null,
+        p_status_funil: filters.status && filters.status !== "todos" ? filters.status : null,
+        p_cidade: filters.cidade && filters.cidade !== "todas" ? filters.cidade : null,
+        p_tier: filters.tier && filters.tier !== "todos" ? filters.tier : null,
+        p_search: filters.search || null,
+      });
 
       if (error) throw error;
       
-      // Processar dados para encontrar o último vendedor que fez contato
-      const processedData = data?.map(architect => {
-        // Ordenar logs por data mais recente
-        const sortedLogs = architect.tendenci_prospec_arq_logs?.sort((a: any, b: any) => 
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        );
-        
-        // Pegar o vendedor do último log
-        const lastVendor = sortedLogs?.[0]?.profiles;
-        
-        return {
-          ...architect,
-          ultimo_vendedor: lastVendor
-        };
-      });
-      
-      return processedData;
+      // Mapear dados do RPC para estrutura esperada
+      return data?.map((architect: any) => ({
+        ...architect,
+        vendedor: {
+          full_name: architect.vendedor_full_name,
+          email: architect.vendedor_email,
+          username: architect.vendedor_username,
+        },
+        ultimo_vendedor: architect.ultimo_vendedor_username ? {
+          username: architect.ultimo_vendedor_username,
+          full_name: architect.ultimo_vendedor_full_name,
+        } : null,
+      }));
     },
   });
 

@@ -1,0 +1,79 @@
+-- Criar RPC otimizado para ProspeccaoKanban
+CREATE OR REPLACE FUNCTION get_prospeccao_architects_optimized(
+  p_show_nao_contactados boolean DEFAULT false,
+  p_vendedor_id uuid DEFAULT null,
+  p_status_funil text DEFAULT null,
+  p_cidade text DEFAULT null,
+  p_tier text DEFAULT null,
+  p_search text DEFAULT null
+)
+RETURNS TABLE (
+  id uuid,
+  name text,
+  company text,
+  phone text,
+  city text,
+  email text,
+  instagram text,
+  birthday date,
+  tier text,
+  status_funil text,
+  data_primeiro_contato timestamptz,
+  data_ultimo_contato timestamptz,
+  ultimo_projeto_data timestamptz,
+  vendedor_responsavel uuid,
+  vendedor_full_name text,
+  vendedor_email text,
+  vendedor_username text,
+  ultimo_vendedor_username text,
+  ultimo_vendedor_full_name text,
+  total_projects bigint
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  RETURN QUERY
+  SELECT 
+    a.id,
+    a.name,
+    a.company,
+    a.phone,
+    a.city,
+    a.email,
+    a.instagram,
+    a.birthday,
+    a.tier,
+    a.status_funil,
+    a.data_primeiro_contato,
+    a.data_ultimo_contato,
+    a.ultimo_projeto_data,
+    a.vendedor_responsavel,
+    p.full_name as vendedor_full_name,
+    p.email as vendedor_email,
+    p.username as vendedor_username,
+    (SELECT lp.username FROM tendenci_prospec_arq_logs logs
+     INNER JOIN profiles lp ON logs.enviado_por = lp.id
+     WHERE logs.architect_id = a.id
+     ORDER BY logs.created_at DESC LIMIT 1) as ultimo_vendedor_username,
+    (SELECT lp.full_name FROM tendenci_prospec_arq_logs logs
+     INNER JOIN profiles lp ON logs.enviado_por = lp.id
+     WHERE logs.architect_id = a.id
+     ORDER BY logs.created_at DESC LIMIT 1) as ultimo_vendedor_full_name,
+    (SELECT COUNT(*)::bigint FROM projects pr WHERE pr.architect_id = a.id) + 
+    (SELECT COUNT(*)::bigint FROM architect_projects ap WHERE ap.architect_id = a.id) as total_projects
+  FROM architects a
+  LEFT JOIN profiles p ON a.vendedor_responsavel = p.id
+  WHERE a.active = true
+    AND (NOT p_show_nao_contactados OR a.data_primeiro_contato IS NULL)
+    AND (p_vendedor_id IS NULL OR a.vendedor_responsavel = p_vendedor_id)
+    AND (p_status_funil IS NULL OR a.status_funil = p_status_funil)
+    AND (p_cidade IS NULL OR a.city = p_cidade)
+    AND (p_tier IS NULL OR a.tier = p_tier)
+    AND (p_search IS NULL OR 
+         a.name ILIKE '%' || p_search || '%' OR
+         a.company ILIKE '%' || p_search || '%' OR
+         a.city ILIKE '%' || p_search || '%')
+  ORDER BY a.created_at DESC;
+END;
+$$;

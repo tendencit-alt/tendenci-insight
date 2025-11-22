@@ -42,17 +42,15 @@ export function ArchitectProspeccaoSheet({
   onOpenChange 
 }: ArchitectProspeccaoSheetProps) {
   const { toast } = useToast();
-  const [architect, setArchitect] = useState<any>(null);
   const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
   const [isCreateClientOpen, setIsCreateClientOpen] = useState(false);
   const [isEditArchitectOpen, setIsEditArchitectOpen] = useState(false);
   const queryClient = useQueryClient();
 
-  // Buscar dados do arquiteto
-  useEffect(() => {
-    if (!architectId || !open) return;
-
-    const fetchArchitect = async () => {
+  // Buscar dados do arquiteto usando React Query
+  const { data: architect } = useQuery({
+    queryKey: ["architect-detail", architectId],
+    queryFn: async () => {
       const { data, error } = await supabase
         .from("architects")
         .select(`
@@ -62,13 +60,11 @@ export function ArchitectProspeccaoSheet({
         .eq("id", architectId)
         .maybeSingle();
 
-      if (!error && data) {
-        setArchitect(data);
-      }
-    };
-
-    fetchArchitect();
-  }, [architectId, open]);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!architectId && open,
+  });
 
   // Buscar projetos do arquiteto
   const { data: projects } = useQuery({
@@ -114,7 +110,11 @@ export function ArchitectProspeccaoSheet({
         className="sm:max-w-2xl overflow-y-auto"
         onPointerDownOutside={(e) => e.preventDefault()}
         onInteractOutside={(e) => {
-          if (e.target instanceof Element && e.target.closest('[role="dialog"]')) {
+          if (e.target instanceof Element && (
+            e.target.closest('[role="dialog"]') ||
+            e.target.closest('[role="listbox"]') ||
+            e.target.closest('.react-day-picker')
+          )) {
             e.preventDefault();
           }
         }}
@@ -388,24 +388,9 @@ export function ArchitectProspeccaoSheet({
           onOpenChange={setIsEditArchitectOpen}
           architect={architect}
           onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ["architect-detail", architectId] });
             queryClient.invalidateQueries({ queryKey: ["architect-projects", architectId] });
             queryClient.invalidateQueries({ queryKey: ["prospeccao-architects"] });
-            // Atualizar o estado local do arquiteto
-            const fetchArchitect = async () => {
-              const { data, error } = await supabase
-                .from("architects")
-                .select(`
-                  *,
-                  vendedor:profiles!architects_vendedor_responsavel_fkey(full_name, email, avatar_url)
-                `)
-                .eq("id", architectId)
-                .maybeSingle();
-
-              if (!error && data) {
-                setArchitect(data);
-              }
-            };
-            fetchArchitect();
             toast({
               title: "Sucesso",
               description: "Arquiteto atualizado com sucesso!",

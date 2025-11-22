@@ -42,6 +42,13 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
     fetchTasks();
     fetchArchitectInfo();
 
+    // Debounce para evitar múltiplos refetches
+    let debounceTimer: NodeJS.Timeout;
+    const debouncedFetch = () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => fetchTasks(), 500);
+    };
+
     // Realtime subscription
     const channel = supabase
       .channel(`architect-tasks-${architectId}`)
@@ -54,12 +61,13 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
           filter: `architect_id=eq.${architectId}`,
         },
         () => {
-          fetchTasks();
+          debouncedFetch();
         }
       )
       .subscribe();
 
     return () => {
+      clearTimeout(debounceTimer);
       supabase.removeChannel(channel);
     };
   }, [architectId]);
@@ -191,8 +199,10 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
         return;
       }
 
-      // Converter para formato ISO timestamp
-      const dueISO = dueDate.toISOString();
+      // Converter datetime-local para ISO preservando timezone local
+      const localDate = new Date(newTask.due_at);
+      const offsetMs = localDate.getTimezoneOffset() * 60000;
+      const localISOTime = new Date(localDate.getTime() - offsetMs).toISOString();
 
       // Estruturar observações como JSON
       const observacoesJSON = JSON.stringify({
@@ -204,7 +214,7 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
         .from("tendenci_prospec_arq_agendamentos")
         .insert({
           architect_id: architectId,
-          data_agendamento: dueISO,
+          data_agendamento: localISOTime,
           observacoes: observacoesJSON,
           canal: "tarefa",
           status: "pendente",
