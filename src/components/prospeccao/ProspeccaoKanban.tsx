@@ -126,7 +126,17 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
   };
 
   if (isLoading || !stages) {
-    return <div className="text-center py-8">Carregando...</div>;
+    return (
+      <div className="flex gap-4 overflow-x-auto pb-4">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="flex-shrink-0 w-80 space-y-3">
+            <div className="h-20 bg-muted/50 rounded-lg animate-pulse" />
+            <div className="h-32 bg-muted/30 rounded-lg animate-pulse" />
+            <div className="h-32 bg-muted/30 rounded-lg animate-pulse" />
+          </div>
+        ))}
+      </div>
+    );
   }
 
   // Agrupar arquitetos por status
@@ -260,65 +270,43 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
                     )}
                   </div>
 
-                  {/* Badges */}
+                  {/* Badges - Apenas 3 principais */}
                   <div className="flex gap-1.5 flex-wrap">
-                    {/* STATUS: Primeiro Contato */}
+                    {/* Badge 1: Status de Contato */}
                     {!architect.data_primeiro_contato && !architect.data_ultimo_contato ? (
                       <Badge variant="outline" className="text-xs bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800 text-red-700 dark:text-red-300">
                         ⚠️ Nunca Contactado
                       </Badge>
                     ) : (
-                      <Badge variant="outline" className="text-xs bg-yellow-50 dark:bg-yellow-950 border-yellow-200 dark:border-yellow-800">
-                        📞 Contactado
+                      <Badge variant="outline" className="text-xs bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
+                        ✅ Contactado
                       </Badge>
                     )}
 
-                    {/* VENDEDOR RESPONSÁVEL - Último contato */}
+                    {/* Badge 2: Vendedor Responsável */}
                     {(() => {
-                      // Prioridade: último vendedor que fez contato > vendedor_responsavel
                       const vendedorUsername = 
                         architect.ultimo_vendedor?.username || 
                         architect.vendedor?.username;
                       
                       return vendedorUsername ? (
                         <Badge variant="outline" className="text-xs bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
-                          👤 @{vendedorUsername}
+                          @{vendedorUsername}
                         </Badge>
                       ) : (
                         <Badge variant="outline" className="text-xs bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-muted-foreground">
-                          👤 Sem vendedor
+                          Sem vendedor
                         </Badge>
                       );
                     })()}
 
-                    {/* DIAS SEM ENVIAR PROJETO */}
+                    {/* Badge 3: Total de Projetos */}
                     {(() => {
-                      const referenceDate = architect.ultimo_projeto_data 
-                        ? new Date(architect.ultimo_projeto_data)
-                        : architect.data_primeiro_contato 
-                          ? new Date(architect.data_primeiro_contato)
-                          : new Date(architect.created_at);
-                      const days = differenceInDays(new Date(), referenceDate);
-                      
-                      return (
-                        <Badge variant="outline" className="text-xs bg-purple-50 dark:bg-purple-950 border-purple-200 dark:border-purple-800">
-                          ⏱️ {days} {days === 1 ? 'dia' : 'dias'} sem projeto
-                        </Badge>
-                      );
-                    })()}
-
-                    {/* PROJETOS ENVIADOS */}
-                    {(() => {
-                      // Combinar projetos de ambas as tabelas
-                      const allProjects = [
-                        ...(architect.projects || []),
-                        ...(architect.architect_projects || [])
-                      ];
-                      const totalProjects = allProjects.length;
+                      const totalProjects = architect.total_projects || 0;
                       
                       return totalProjects > 0 ? (
                         <Badge className="text-xs bg-green-600 hover:bg-green-700">
-                          📦 {totalProjects} {totalProjects === 1 ? 'projeto' : 'projetos'}
+                          📦 {totalProjects}
                         </Badge>
                       ) : (
                         <Badge variant="outline" className="text-xs bg-orange-50 dark:bg-orange-950 border-orange-200 dark:border-orange-800 text-orange-700 dark:text-orange-300">
