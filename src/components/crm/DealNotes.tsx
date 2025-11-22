@@ -10,6 +10,7 @@ import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
 import { AudioRecorder } from "@/components/prospeccao/AudioRecorder";
+import { Progress } from "@/components/ui/progress";
 
 interface DealNotesProps {
   dealId: string;
@@ -22,6 +23,7 @@ export function DealNotes({ dealId, currentNote, onNoteUpdate }: DealNotesProps)
   const [note, setNote] = useState(currentNote);
   const [showAudioRecorder, setShowAudioRecorder] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [attachments, setAttachments] = useState<any[]>([]);
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
   const [noteHistory, setNoteHistory] = useState<any[]>([]);
@@ -230,33 +232,48 @@ export function DealNotes({ dealId, currentNote, onNoteUpdate }: DealNotesProps)
     }
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
+  const uploadWithRetry = async (file: File, maxRetries = 3): Promise<boolean> => {
+    if (file.size > 20 * 1024 * 1024) {
+      toast({
+        title: "Arquivo muito grande",
+        description: `${file.name} excede o limite de 20MB`,
+        variant: "destructive",
+      });
+      return false;
+    }
 
-    setIsUploading(true);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuário não autenticado");
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("Usuário não autenticado");
 
-      for (const file of Array.from(files)) {
-        if (file.size > 20 * 1024 * 1024) {
-          toast({
-            title: "Arquivo muito grande",
-            description: `${file.name} excede o limite de 20MB`,
-            variant: "destructive",
-          });
-          continue;
+    const fileName = `${Date.now()}_${file.name}`;
+    const filePath = `${dealId}/${fileName}`;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        setUploadProgress(0);
+
+        // Simular progresso para arquivos grandes
+        if (file.size > 5 * 1024 * 1024) {
+          const progressInterval = setInterval(() => {
+            setUploadProgress(prev => Math.min(prev + 10, 90));
+          }, 200);
+
+          const { error: uploadError } = await supabase.storage
+            .from("crm-files")
+            .upload(filePath, file);
+
+          clearInterval(progressInterval);
+          setUploadProgress(100);
+
+          if (uploadError) throw uploadError;
+        } else {
+          const { error: uploadError } = await supabase.storage
+            .from("crm-files")
+            .upload(filePath, file);
+
+          if (uploadError) throw uploadError;
+          setUploadProgress(100);
         }
-
-        const fileName = `${Date.now()}_${file.name}`;
-        const filePath = `${dealId}/${fileName}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from("crm-files")
-          .upload(filePath, file);
-
-        if (uploadError) throw uploadError;
 
         const { error: dbError } = await supabase.from("crm_deal_files").insert({
           deal_id: dealId,
@@ -268,14 +285,45 @@ export function DealNotes({ dealId, currentNote, onNoteUpdate }: DealNotesProps)
         });
 
         if (dbError) throw dbError;
+
+        setTimeout(() => setUploadProgress(0), 2000);
+        return true;
+      } catch (error) {
+        if (attempt === maxRetries) {
+          toast({
+            title: "Erro no upload",
+            description: `Falha após ${maxRetries} tentativas. Tente novamente.`,
+            variant: "destructive",
+          });
+          return false;
+        }
+        // Aguardar antes de tentar novamente
+        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+      }
+    }
+    return false;
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setIsUploading(true);
+    try {
+      let successCount = 0;
+      for (const file of Array.from(files)) {
+        const success = await uploadWithRetry(file);
+        if (success) successCount++;
       }
 
-      toast({
-        title: "Arquivos enviados",
-        description: "Os arquivos foram enviados com sucesso.",
-      });
+      if (successCount > 0) {
+        toast({
+          title: "Arquivos enviados",
+          description: `${successCount} arquivo(s) enviado(s) com sucesso.`,
+        });
+        fetchAttachments();
+      }
 
-      fetchAttachments();
       // Limpar o input após o upload
       const fileInput = document.getElementById('file-upload') as HTMLInputElement;
       if (fileInput) {
@@ -519,10 +567,12 @@ export function DealNotes({ dealId, currentNote, onNoteUpdate }: DealNotesProps)
           />
         </div>
 
-        {isUploading && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Salvando arquivo...
+        {isUploading && uploadProgress > 0 && (
+          <div className="space-y-2">
+            <Progress value={uploadProgress} className="h-2" />
+            <p className="text-xs text-muted-foreground text-center">
+              Enviando arquivo... {uploadProgress}%
+            </p>
           </div>
         )}
 

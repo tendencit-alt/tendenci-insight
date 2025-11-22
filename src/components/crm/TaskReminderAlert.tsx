@@ -120,13 +120,36 @@ export function TaskReminderAlert({ pipelineId }: TaskReminderAlertProps) {
       return;
     }
 
+    // Validar observação nas últimas 24 horas
+    const { data: recentNotes } = await supabase
+      .from('crm_timeline')
+      .select('created_at')
+      .eq('deal_id', dealId)
+      .eq('update_type', 'Observação')
+      .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+      .limit(1);
+    
+    if (!recentNotes || recentNotes.length === 0) {
+      toast({
+        title: "Atualização obrigatória",
+        description: "Você precisa adicionar uma observação nas últimas 24 horas antes de criar uma tarefa.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
+      // Corrigir timezone local
+      const localDate = new Date(taskData.due_at);
+      const offsetMs = localDate.getTimezoneOffset() * 60000;
+      const localISOTime = new Date(localDate.getTime() - offsetMs).toISOString().slice(0, -1);
+
       const { error } = await supabase
         .from("crm_tasks")
         .insert({
           deal_id: dealId,
           title: taskData.title,
-          due_at: taskData.due_at,
+          due_at: localISOTime,
           status: "open",
         });
 
