@@ -105,10 +105,21 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
   };
 
   const handleAddTask = async () => {
-    if (!newTask.title || !newTask.due_at) {
+    // Validação detalhada do título
+    if (!newTask.title || newTask.title.trim() === "") {
       toast({
-        title: "Campos obrigatórios",
-        description: "Preencha o título e a data/hora da tarefa.",
+        title: "Título obrigatório",
+        description: "Por favor, preencha o título da tarefa.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validação detalhada da data/hora
+    if (!newTask.due_at || newTask.due_at.trim() === "") {
+      toast({
+        title: "Data/Hora obrigatória",
+        description: "Por favor, preencha a data e hora da tarefa.",
         variant: "destructive",
       });
       return;
@@ -116,10 +127,19 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
 
     // Validação para tarefas automatizadas
     if (newTask.tipo_tarefa === "automatizada") {
-      if (!newTask.whatsapp_number || !newTask.note) {
+      if (!newTask.whatsapp_number || newTask.whatsapp_number.trim() === "") {
         toast({
-          title: "Campos obrigatórios para Tarefa Automatizada",
-          description: "Preencha o Número de WhatsApp e a Mensagem (Observações) para tarefas automatizadas.",
+          title: "WhatsApp obrigatório",
+          description: "Preencha o número de WhatsApp para tarefas automatizadas.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      if (!newTask.note || newTask.note.trim() === "") {
+        toast({
+          title: "Mensagem obrigatória",
+          description: "Preencha a mensagem que será enviada via WhatsApp.",
           variant: "destructive",
         });
         return;
@@ -137,11 +157,14 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
       return;
     }
 
+    // Converter para formato ISO timestamp
+    const dueDate = new Date(newTask.due_at).toISOString();
+
     const { error } = await supabase
       .from("tendenci_prospec_arq_agendamentos")
       .insert({
         architect_id: architectId,
-        data_agendamento: newTask.due_at,
+        data_agendamento: dueDate,
         observacoes: `${newTask.title}${newTask.note ? '\n\n' + newTask.note : ''}`,
         canal: "tarefa",
         status: "pendente",
