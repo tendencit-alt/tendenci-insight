@@ -606,7 +606,6 @@ export function DealTasks({ dealId }: DealTasksProps) {
                           )}
                         </div>
                       </div>
-                      </div>
 
                       <div className="flex items-center gap-2 flex-wrap">
                         <Badge variant={dueInfo.variant}>
