@@ -9,11 +9,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Edit, CheckCircle, XCircle, FileText, User, Users, Phone, Mail, MapPin, Package, TrendingUp, DollarSign, ExternalLink, Calendar, Tag as TagIcon, History, FolderOpen, Plus, Unlink } from "lucide-react";
+import { Edit, CheckCircle, XCircle, FileText, User, Users, Phone, Mail, MapPin, Package, TrendingUp, DollarSign, ExternalLink, Calendar, Tag as TagIcon, History, FolderOpen, Plus, Unlink, Building } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { EditDealDialog } from "./EditDealDialog";
+import { CreateArchitectDialog } from "@/components/architects/CreateArchitectDialog";
 
 import { DealHistory } from "./DealHistory";
 import { DealTasks } from "./DealTasks";
@@ -71,6 +72,10 @@ export function DealDetailSheet({
   const [owners, setOwners] = useState<any[]>([]);
   const [selectedOwner, setSelectedOwner] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
+  const [architects, setArchitects] = useState<any[]>([]);
+  const [selectedArchitect, setSelectedArchitect] = useState("");
+  const [isEditingArchitect, setIsEditingArchitect] = useState(false);
+  const [isArchitectDialogOpen, setIsArchitectDialogOpen] = useState(false);
 
   const fetchProject = async () => {
     if (!deal?.id) return;
@@ -115,16 +120,31 @@ export function DealDetailSheet({
     }
   };
 
+  const fetchArchitects = async () => {
+    const { data } = await supabase
+      .from("architects")
+      .select("id, name, company, phone")
+      .eq("active", true)
+      .order("name");
+    
+    if (data) {
+      setArchitects(data);
+    }
+  };
+
   useEffect(() => {
     if (open && deal?.id) {
       setSelectedStage(deal.stage_id);
       setSelectedPipeline(deal.pipeline_id);
       setSelectedOwner(deal.owner_id || "");
+      setSelectedArchitect(deal.architect_id || "");
+      setIsEditingArchitect(false);
       fetchAllPipelines();
       fetchAllStages(deal.pipeline_id);
       fetchProject();
       fetchDealFiles();
       fetchOwners();
+      fetchArchitects();
     }
   }, [open, deal]);
 
@@ -244,6 +264,52 @@ export function DealDetailSheet({
     }
     
     setIsUpdating(false);
+  };
+
+  const handleArchitectChange = async (architectId: string) => {
+    if (isUpdating) return;
+    setIsUpdating(true);
+    
+    const actualArchitectId = architectId === "none" ? "" : architectId;
+    const oldArchitectId = deal.architect_id || "";
+    setSelectedArchitect(actualArchitectId);
+    setIsEditingArchitect(false);
+
+    const { error } = await supabase
+      .from("crm_deals")
+      .update({ architect_id: actualArchitectId || null })
+      .eq("id", deal.id);
+
+    if (error) {
+      toast({
+        title: "Erro ao atualizar arquiteto",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      const oldValue = await getDisplayValue('architect_id', oldArchitectId);
+      const newValue = await getDisplayValue('architect_id', actualArchitectId);
+      
+      await logDealChange(deal.id, {
+        field_name: 'architect_id',
+        old_value: oldValue,
+        new_value: newValue,
+      });
+
+      toast({
+        title: "Arquiteto atualizado",
+        description: "O arquiteto foi atualizado com sucesso.",
+      });
+      onSuccess();
+    }
+    
+    setIsUpdating(false);
+  };
+
+  const handleArchitectCreated = async (architectId: string) => {
+    await fetchArchitects();
+    await handleArchitectChange(architectId);
+    setIsArchitectDialogOpen(false);
   };
 
   const handleWinDeal = async () => {
@@ -498,6 +564,88 @@ export function DealDetailSheet({
               ) : (
                 <div className="text-center py-4 text-muted-foreground text-sm">
                   Nenhum cliente vinculado
+                </div>
+              )}
+            </Card>
+
+            {/* Arquiteto */}
+            <Card className="p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <User className="h-5 w-5 text-primary" />
+                  <h3 className="font-semibold text-lg">Arquiteto</h3>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsEditingArchitect(!isEditingArchitect)}
+                >
+                  <Edit className="h-4 w-4" />
+                </Button>
+              </div>
+              
+              {deal.architect && !isEditingArchitect ? (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm">
+                    <User className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-medium">{deal.architect.name}</span>
+                  </div>
+                  {deal.architect.company && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <Building className="h-4 w-4 text-muted-foreground" />
+                      <span>{deal.architect.company}</span>
+                    </div>
+                  )}
+                  {deal.architect.phone && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <Phone className="h-4 w-4 text-muted-foreground" />
+                      <a 
+                        href={`https://wa.me/55${deal.architect.phone.replace(/\D/g, '')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline"
+                      >
+                        {deal.architect.phone}
+                      </a>
+                    </div>
+                  )}
+                </div>
+              ) : !deal.architect && !isEditingArchitect ? (
+                <div className="text-center py-4 text-muted-foreground text-sm">
+                  Cliente sem arquiteto vinculado
+                </div>
+              ) : null}
+              
+              {isEditingArchitect && (
+                <div className="mt-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label>Selecionar Arquiteto</Label>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setIsArchitectDialogOpen(true)}
+                      className="h-7 text-xs"
+                    >
+                      <Plus className="mr-1 h-3 w-3" />
+                      Novo Arquiteto
+                    </Button>
+                  </div>
+                  <Select
+                    value={selectedArchitect || "none"}
+                    onValueChange={handleArchitectChange}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecionar arquiteto" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Cliente sem arquiteto</SelectItem>
+                      {architects.map((arch) => (
+                        <SelectItem key={arch.id} value={arch.id}>
+                          {arch.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               )}
             </Card>
@@ -887,6 +1035,12 @@ export function DealDetailSheet({
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        <CreateArchitectDialog
+          open={isArchitectDialogOpen}
+          onOpenChange={setIsArchitectDialogOpen}
+          onSuccess={handleArchitectCreated}
+        />
       </SheetContent>
     </Sheet>
   );

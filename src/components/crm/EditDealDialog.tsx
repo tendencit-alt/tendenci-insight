@@ -24,7 +24,7 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Calendar as CalendarIcon, Mic, Square, Paperclip, Loader2 } from "lucide-react";
+import { Calendar as CalendarIcon, Mic, Square, Paperclip, Loader2, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { DealFileUpload } from "./DealFileUpload";
@@ -32,6 +32,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { logDealChange, logStageChange, getDisplayValue } from "@/utils/dealHistory";
 import { CreateLeadDialog } from "@/components/leads/CreateLeadDialog";
+import { CreateArchitectDialog } from "@/components/architects/CreateArchitectDialog";
 
 interface EditDealDialogProps {
   deal: any;
@@ -58,6 +59,7 @@ export function EditDealDialog({
   const [isRecording, setIsRecording] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [showCreateLead, setShowCreateLead] = useState(false);
+  const [isArchitectDialogOpen, setIsArchitectDialogOpen] = useState(false);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -147,6 +149,16 @@ export function EditDealDialog({
     setSources(sourcesData || []);
     setClients(clientsData || []);
     setOwners(ownersData || []);
+  };
+
+  const handleArchitectCreated = async (architectId: string) => {
+    await fetchOptions();
+    setFormData({ ...formData, architect_id: architectId });
+    setIsArchitectDialogOpen(false);
+    toast({
+      title: "Arquiteto criado",
+      description: "O novo arquiteto foi criado e selecionado.",
+    });
   };
 
   const fetchDealFiles = async () => {
@@ -654,7 +666,19 @@ export function EditDealDialog({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="architect">Arquiteto</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="architect">Arquiteto</Label>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsArchitectDialogOpen(true)}
+                    className="h-7 text-xs"
+                  >
+                    <Plus className="mr-1 h-3 w-3" />
+                    Novo Arquiteto
+                  </Button>
+                </div>
                 <Select
                   value={formData.architect_id || "none"}
                   onValueChange={(value) =>
@@ -853,6 +877,12 @@ export function EditDealDialog({
           fetchOptions();
           setShowCreateLead(false);
         }}
+      />
+
+      <CreateArchitectDialog
+        open={isArchitectDialogOpen}
+        onOpenChange={setIsArchitectDialogOpen}
+        onSuccess={handleArchitectCreated}
       />
     </Dialog>
   );
