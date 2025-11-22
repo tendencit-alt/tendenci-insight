@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Upload, File, X, Download, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { validateFileType, validateFileSize, ALLOWED_FILE_TYPES_ACCEPT, MAX_FILE_SIZE_MB, formatFileSize } from "@/lib/utils";
 
 interface DealFileUploadProps {
   dealId: string;
@@ -22,13 +23,25 @@ export function DealFileUpload({ dealId, files, onFilesChange }: DealFileUploadP
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validar tamanho (20MB)
-    if (file.size > 20 * 1024 * 1024) {
+    // Validar tipo de arquivo
+    if (!validateFileType(file.name)) {
       toast({
-        title: "Arquivo muito grande",
-        description: "O arquivo deve ter no máximo 20MB",
+        title: "Tipo de arquivo não permitido",
+        description: "Por favor, selecione um formato de arquivo válido.",
         variant: "destructive",
       });
+      e.target.value = "";
+      return;
+    }
+
+    // Validar tamanho
+    if (!validateFileSize(file.size)) {
+      toast({
+        title: "Arquivo muito grande",
+        description: `O arquivo deve ter no máximo ${MAX_FILE_SIZE_MB}MB`,
+        variant: "destructive",
+      });
+      e.target.value = "";
       return;
     }
 
@@ -156,13 +169,6 @@ export function DealFileUpload({ dealId, files, onFilesChange }: DealFileUploadP
     }
   };
 
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
-  };
 
   return (
     <div className="space-y-4">
@@ -177,7 +183,7 @@ export function DealFileUpload({ dealId, files, onFilesChange }: DealFileUploadP
             type="file"
             onChange={handleFileUpload}
             disabled={uploading}
-            accept=".pdf,.doc,.docx,.xls,.xlsx,.dwg,.jpg,.jpeg,.png,.webp,.txt"
+            accept={ALLOWED_FILE_TYPES_ACCEPT}
           />
           {uploading && (
             <Button disabled size="sm">
@@ -199,7 +205,7 @@ export function DealFileUpload({ dealId, files, onFilesChange }: DealFileUploadP
           </div>
         )}
         <p className="text-xs text-muted-foreground mt-1">
-          Formatos aceitos: PDF, DOC, DOCX, XLS, XLSX, DWG, JPG, PNG, WEBP, TXT (máx. 20MB)
+          Formatos aceitos: PDF, DOC, DOCX, XLS, XLSX, DWG, JPG, PNG, WEBP, TXT, MP3, WAV, M4A, WEBM, OGG (máx. {MAX_FILE_SIZE_MB}MB)
         </p>
       </div>
 

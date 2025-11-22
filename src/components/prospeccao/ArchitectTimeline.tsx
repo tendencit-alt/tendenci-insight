@@ -4,6 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { validateFileType, validateFileSize, ALLOWED_FILE_TYPES_ACCEPT, MAX_FILE_SIZE_MB } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -143,6 +144,47 @@ export function ArchitectTimeline({ architectId }: ArchitectTimelineProps) {
   const handleSubmit = async () => {
     if (!message.trim() && !files && !audioFiles && !audioBlob) return;
 
+    // Validar arquivos regulares antes do upload
+    if (files && files.length > 0) {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        
+        if (!validateFileType(file.name)) {
+          toast({
+            title: "Tipo de arquivo não permitido",
+            description: `O arquivo ${file.name} não é um formato aceito.`,
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        if (!validateFileSize(file.size)) {
+          toast({
+            title: "Arquivo muito grande",
+            description: `${file.name} excede o limite de ${MAX_FILE_SIZE_MB}MB`,
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+    }
+
+    // Validar arquivos de áudio
+    if (audioFiles && audioFiles.length > 0) {
+      for (let i = 0; i < audioFiles.length; i++) {
+        const file = audioFiles[i];
+        
+        if (!validateFileSize(file.size)) {
+          toast({
+            title: "Arquivo muito grande",
+            description: `${file.name} excede o limite de ${MAX_FILE_SIZE_MB}MB`,
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+    }
+
     setSubmitting(true);
 
     try {
@@ -173,16 +215,6 @@ export function ArchitectTimeline({ architectId }: ArchitectTimelineProps) {
       if (files && files.length > 0) {
         for (let i = 0; i < files.length; i++) {
           const file = files[i];
-          
-          // Validar tamanho (20MB)
-          if (file.size > 20 * 1024 * 1024) {
-            toast({
-              title: "Arquivo muito grande",
-              description: `${file.name} excede o limite de 20MB`,
-              variant: "destructive",
-            });
-            continue;
-          }
           
           const fileName = `${architectId}/${Date.now()}-${file.name}`;
           
@@ -556,7 +588,7 @@ export function ArchitectTimeline({ architectId }: ArchitectTimelineProps) {
               id="architect-file-input"
               type="file"
               multiple
-              accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.webp,.xls,.xlsx,.dwg"
+              accept={ALLOWED_FILE_TYPES_ACCEPT}
               onChange={(e) => setFiles(e.target.files)}
               className="mt-1"
             />
