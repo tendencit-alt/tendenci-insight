@@ -27,6 +27,7 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
   const [tasks, setTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [architectInfo, setArchitectInfo] = useState<any>(null);
   const [newTask, setNewTask] = useState({
     title: "",
@@ -81,6 +82,13 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
   const fetchTasks = async () => {
     setLoading(true);
 
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
     const { data, error } = await supabase
       .from("tendenci_prospec_arq_agendamentos")
       .select(`
@@ -88,6 +96,7 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
         vendedor:profiles!tendenci_prospec_arq_agendamentos_vendedor_id_fkey(full_name, email)
       `)
       .eq("architect_id", architectId)
+      .or(`vendedor_id.eq.${user.id},architect_id.in.(select id from architects where vendedor_responsavel = '${user.id}')`)
       .order("data_agendamento", { ascending: true });
 
     if (error) {
@@ -105,95 +114,129 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
   };
 
   const handleAddTask = async () => {
-    // Validação detalhada do título
-    if (!newTask.title || newTask.title.trim() === "") {
-      toast({
-        title: "Título obrigatório",
-        description: "Por favor, preencha o título da tarefa.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Validação detalhada da data/hora
-    if (!newTask.due_at || newTask.due_at.trim() === "") {
-      toast({
-        title: "Data/Hora obrigatória",
-        description: "Por favor, preencha a data e hora da tarefa.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Validação para tarefas automatizadas
-    if (newTask.tipo_tarefa === "automatizada") {
-      if (!newTask.whatsapp_number || newTask.whatsapp_number.trim() === "") {
+    setIsSaving(true);
+    
+    try {
+      // Validação detalhada do título
+      if (!newTask.title || newTask.title.trim() === "") {
         toast({
-          title: "WhatsApp obrigatório",
-          description: "Preencha o número de WhatsApp para tarefas automatizadas.",
+          title: "Título obrigatório",
+          description: "Por favor, preencha o título da tarefa.",
           variant: "destructive",
         });
         return;
       }
-      
-      if (!newTask.note || newTask.note.trim() === "") {
+
+      // Validação detalhada da data/hora
+      if (!newTask.due_at || newTask.due_at.trim() === "") {
         toast({
-          title: "Mensagem obrigatória",
-          description: "Preencha a mensagem que será enviada via WhatsApp.",
+          title: "Data/Hora obrigatória",
+          description: "Por favor, preencha a data e hora da tarefa.",
           variant: "destructive",
         });
         return;
       }
-    }
 
-    // Obter ID do usuário autenticado
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      toast({
-        title: "Erro de autenticação",
-        description: "Usuário não autenticado.",
-        variant: "destructive",
-      });
-      return;
-    }
+      // Validar se a data é válida
+      const dueDate = new Date(newTask.due_at);
+      if (isNaN(dueDate.getTime())) {
+        toast({
+          title: "Data inválida",
+          description: "Por favor, selecione uma data válida.",
+          variant: "destructive",
+        });
+        return;
+      }
 
-    // Converter para formato ISO timestamp
-    const dueDate = new Date(newTask.due_at).toISOString();
+      // Validar se a data está no futuro
+      const now = new Date();
+      if (dueDate < now) {
+        toast({
+          title: "Data no passado",
+          description: "Selecione uma data e hora futura.",
+          variant: "destructive",
+        });
+        return;
+      }
 
-    const { error } = await supabase
-      .from("tendenci_prospec_arq_agendamentos")
-      .insert({
-        architect_id: architectId,
-        data_agendamento: dueDate,
-        observacoes: `${newTask.title}${newTask.note ? '\n\n' + newTask.note : ''}`,
-        canal: "tarefa",
-        status: "pendente",
-        tipo_tarefa: newTask.tipo_tarefa,
-        whatsapp_number: newTask.whatsapp_number || null,
-        vendedor_id: user.id,
+      // Validação para tarefas automatizadas
+      if (newTask.tipo_tarefa === "automatizada") {
+        if (!newTask.whatsapp_number || newTask.whatsapp_number.trim() === "") {
+          toast({
+            title: "WhatsApp obrigatório",
+            description: "Preencha o número de WhatsApp para tarefas automatizadas.",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        if (!newTask.note || newTask.note.trim() === "") {
+          toast({
+            title: "Mensagem obrigatória",
+            description: "Preencha a mensagem que será enviada via WhatsApp.",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+
+      // Obter ID do usuário autenticado
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: "Erro de autenticação",
+          description: "Usuário não autenticado.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Converter para formato ISO timestamp
+      const dueISO = dueDate.toISOString();
+
+      // Estruturar observações como JSON
+      const observacoesJSON = JSON.stringify({
+        titulo: newTask.title,
+        nota: newTask.note || null
       });
 
-    if (error) {
-      console.error("Erro ao criar tarefa:", error);
-      toast({
-        title: "Erro",
-        description: "Erro ao criar tarefa",
-        variant: "destructive",
-      });
-    } else {
-      toast({
-        title: "Sucesso",
-        description: "Tarefa criada com sucesso!",
-      });
-      setNewTask({ 
-        title: "", 
-        note: "", 
-        due_at: "", 
-        tipo_tarefa: "interna",
-        whatsapp_number: "",
-      });
-      setIsAdding(false);
-      fetchTasks();
+      const { error } = await supabase
+        .from("tendenci_prospec_arq_agendamentos")
+        .insert({
+          architect_id: architectId,
+          data_agendamento: dueISO,
+          observacoes: observacoesJSON,
+          canal: "tarefa",
+          status: "pendente",
+          tipo_tarefa: newTask.tipo_tarefa,
+          whatsapp_number: newTask.whatsapp_number || null,
+          vendedor_id: user.id,
+        });
+
+      if (error) {
+        console.error("Erro ao criar tarefa:", error);
+        toast({
+          title: "Erro",
+          description: "Erro ao criar tarefa",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Sucesso",
+          description: "Tarefa criada com sucesso!",
+        });
+        setNewTask({ 
+          title: "", 
+          note: "", 
+          due_at: "", 
+          tipo_tarefa: "interna",
+          whatsapp_number: "",
+        });
+        setIsAdding(false);
+        fetchTasks();
+      }
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -258,12 +301,31 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
               <Label htmlFor="task-tipo">Tipo de Tarefa *</Label>
               <Select
                 value={newTask.tipo_tarefa}
-                onValueChange={(value: "interna" | "automatizada") => {
+                onValueChange={async (value: "interna" | "automatizada") => {
                   const updates: any = { tipo_tarefa: value };
                   
                   // Auto-preencher WhatsApp quando selecionar "automatizada"
-                  if (value === "automatizada" && architectInfo?.phone) {
-                    updates.whatsapp_number = architectInfo.phone;
+                  if (value === "automatizada") {
+                    if (architectInfo?.phone) {
+                      updates.whatsapp_number = architectInfo.phone;
+                    } else {
+                      // Buscar novamente se não tiver
+                      const { data } = await supabase
+                        .from("architects")
+                        .select("phone")
+                        .eq("id", architectId)
+                        .single();
+                      
+                      if (data?.phone) {
+                        updates.whatsapp_number = data.phone;
+                      } else {
+                        toast({
+                          title: "Atenção",
+                          description: "Arquiteto não possui número de WhatsApp cadastrado.",
+                          variant: "destructive",
+                        });
+                      }
+                    }
                   }
                   
                   setNewTask({ ...newTask, ...updates });
@@ -355,8 +417,9 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
               <Button
                 onClick={handleAddTask}
                 className="flex-1"
+                disabled={isSaving}
               >
-                Salvar Tarefa
+                {isSaving ? "Salvando..." : "Salvar Tarefa"}
               </Button>
               <Button
                 onClick={() => {
@@ -424,13 +487,31 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
                             isCompleted ? "line-through text-muted-foreground" : ""
                           }`}
                         >
-                          {task.observacoes?.split('\n\n')[0] || "Tarefa"}
+                          {(() => {
+                            try {
+                              const taskData = JSON.parse(task.observacoes || '{}');
+                              return taskData.titulo || "Tarefa";
+                            } catch {
+                              return task.observacoes?.split('\n\n')[0] || "Tarefa";
+                            }
+                          })()}
                         </h4>
-                        {task.observacoes?.includes('\n\n') && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {task.observacoes.split('\n\n')[1]}
-                          </p>
-                        )}
+                        {(() => {
+                          try {
+                            const taskData = JSON.parse(task.observacoes || '{}');
+                            return taskData.nota && (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {taskData.nota}
+                              </p>
+                            );
+                          } catch {
+                            return task.observacoes?.includes('\n\n') && (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {task.observacoes.split('\n\n')[1]}
+                              </p>
+                            );
+                          }
+                        })()}
                         <div className="flex items-center gap-2 flex-wrap mt-1">
                           <Badge
                             variant={
