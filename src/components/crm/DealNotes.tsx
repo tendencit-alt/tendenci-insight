@@ -186,7 +186,7 @@ export function DealNotes({ dealId, currentNote, onNoteUpdate }: DealNotesProps)
     });
     
     setNote(""); // Limpar campo após salvar
-    onNoteUpdate(note);
+    // NÃO chamar onNoteUpdate aqui para evitar loop
     fetchNoteHistory(); // Atualizar histórico
   };
 

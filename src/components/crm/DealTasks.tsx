@@ -5,10 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, CheckCircle, Clock, Loader2 } from "lucide-react";
+import { Plus, Trash2, CheckCircle, Clock, Loader2, Edit } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Select,
   SelectContent,
@@ -36,12 +37,14 @@ interface DealTasksProps {
 export function DealTasks({ dealId }: DealTasksProps) {
   const { toast } = useToast();
   const { isMaster } = usePermissions();
+  const { user } = useAuth();
   const [tasks, setTasks] = useState<any[]>([]);
   const [isAdding, setIsAdding] = useState(false);
   const [dealInfo, setDealInfo] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
   const [errors, setErrors] = useState({ title: "", due_at: "" });
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [newTask, setNewTask] = useState({
     title: "",
     note: "",
@@ -141,7 +144,38 @@ export function DealTasks({ dealId }: DealTasksProps) {
     }
   };
 
-  const handleAddTask = async () => {
+  const handleStartEdit = (task: any) => {
+    setEditingTaskId(task.id);
+    // Converter ISO para datetime-local format
+    const dueDate = new Date(task.due_at);
+    const localISOTime = new Date(dueDate.getTime() - (dueDate.getTimezoneOffset() * 60000))
+      .toISOString()
+      .slice(0, 16);
+    
+    setNewTask({
+      title: task.title,
+      note: task.note || "",
+      due_at: localISOTime,
+      tipo_tarefa: task.tipo_tarefa || "interna",
+      whatsapp_number: task.whatsapp_number || "",
+    });
+    setIsAdding(true);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingTaskId(null);
+    setNewTask({ 
+      title: "", 
+      note: "", 
+      due_at: "", 
+      tipo_tarefa: "interna",
+      whatsapp_number: "",
+    });
+    setErrors({ title: "", due_at: "" });
+    setIsAdding(false);
+  };
+
+  const handleSaveTask = async () => {
     if (!newTask.title || !newTask.due_at) {
       toast({
         title: "Campos obrigatórios",
@@ -163,15 +197,17 @@ export function DealTasks({ dealId }: DealTasksProps) {
       }
     }
 
-    // VALIDAÇÃO: Verificar observação nas últimas 24h
-    const hasRecentObservation = await checkRecentObservations();
-    if (!hasRecentObservation) {
-      toast({
-        title: "Atualização obrigatória",
-        description: "Você precisa adicionar uma observação nas últimas 24 horas antes de criar uma tarefa. Vá até a aba 'Observações' e registre uma atualização do status do negócio.",
-        variant: "destructive",
-      });
-      return;
+    // VALIDAÇÃO: Verificar observação nas últimas 24h (apenas para novas tarefas)
+    if (!editingTaskId) {
+      const hasRecentObservation = await checkRecentObservations();
+      if (!hasRecentObservation) {
+        toast({
+          title: "Atualização obrigatória",
+          description: "Você precisa adicionar uma observação nas últimas 24 horas antes de criar uma tarefa. Vá até a aba 'Observações' e registre uma atualização do status do negócio.",
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     setIsSubmitting(true);
@@ -193,34 +229,68 @@ export function DealTasks({ dealId }: DealTasksProps) {
     const offsetMs = localDate.getTimezoneOffset() * 60000;
     const localISOTime = new Date(localDate.getTime() - offsetMs).toISOString().slice(0, -1);
 
-    const { data, error } = await supabase.from("crm_tasks").insert({
-      deal_id: dealId,
-      title: newTask.title,
-      note: newTask.note || null,
-      due_at: localISOTime,
-      status: "open",
-      origem_modulo: "crm",
-      tipo_tarefa: newTask.tipo_tarefa,
-      whatsapp_number: newTask.whatsapp_number || null,
-      created_by: user.id,
-    }).select();
+    if (editingTaskId) {
+      // UPDATE: Editar tarefa existente
+      const { error } = await supabase
+        .from("crm_tasks")
+        .update({
+          title: newTask.title,
+          note: newTask.note || null,
+          due_at: localISOTime,
+          tipo_tarefa: newTask.tipo_tarefa,
+          whatsapp_number: newTask.whatsapp_number || null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", editingTaskId)
+        .eq("created_by", user.id); // Garantir que só edita próprias tarefas
 
-    setIsSubmitting(false);
+      setIsSubmitting(false);
 
-    if (error) {
+      if (error) {
+        toast({
+          title: "Erro ao editar tarefa",
+          description: error.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
       toast({
-        title: "Erro ao criar tarefa",
-        description: error.message,
-        variant: "destructive",
+        title: "Tarefa atualizada",
+        description: "A tarefa foi atualizada com sucesso.",
       });
-      return;
+    } else {
+      // INSERT: Criar nova tarefa
+      const { error } = await supabase.from("crm_tasks").insert({
+        deal_id: dealId,
+        title: newTask.title,
+        note: newTask.note || null,
+        due_at: localISOTime,
+        status: "open",
+        origem_modulo: "crm",
+        tipo_tarefa: newTask.tipo_tarefa,
+        whatsapp_number: newTask.whatsapp_number || null,
+        created_by: user.id,
+      });
+
+      setIsSubmitting(false);
+
+      if (error) {
+        toast({
+          title: "Erro ao criar tarefa",
+          description: error.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Tarefa criada",
+        description: "A tarefa foi adicionada com sucesso.",
+      });
     }
 
-    toast({
-      title: "Tarefa criada",
-      description: "A tarefa foi adicionada com sucesso.",
-    });
-
+    setEditingTaskId(null);
     setNewTask({ 
       title: "", 
       note: "", 
@@ -326,9 +396,12 @@ export function DealTasks({ dealId }: DealTasksProps) {
         </Button>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Formulário de nova tarefa */}
+        {/* Formulário de nova/editar tarefa */}
         {isAdding && (
           <div className="p-4 border rounded-md bg-muted/30 space-y-3">
+            <h4 className="font-semibold text-sm">
+              {editingTaskId ? "✏️ Editar Tarefa" : "➕ Nova Tarefa"}
+            </h4>
             <div>
               <Label htmlFor="task-tipo">Tipo de Tarefa *</Label>
               <Select
@@ -439,21 +512,18 @@ export function DealTasks({ dealId }: DealTasksProps) {
             </div>
 
             <div className="flex gap-2">
-              <Button onClick={handleAddTask} size="sm" disabled={isSubmitting}>
+              <Button onClick={handleSaveTask} size="sm" disabled={isSubmitting}>
                 {isSubmitting ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     Salvando...
                   </>
                 ) : (
-                  "Salvar Tarefa"
+                  editingTaskId ? "Atualizar Tarefa" : "Salvar Tarefa"
                 )}
               </Button>
               <Button
-                onClick={() => {
-                  setIsAdding(false);
-                  setErrors({ title: "", due_at: "" });
-                }}
+                onClick={handleCancelEdit}
                 size="sm"
                 variant="ghost"
               >
@@ -509,17 +579,33 @@ export function DealTasks({ dealId }: DealTasksProps) {
                         >
                           {task.title}
                         </p>
-                        {isMaster && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-6 w-6 p-0"
-                            onClick={() => setTaskToDelete(task.id)}
-                            title="Excluir tarefa (somente MASTER)"
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        )}
+                        <div className="flex gap-1">
+                          {/* Botão de editar - apenas para tarefas próprias */}
+                          {task.created_by === user?.id && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 w-6 p-0"
+                              onClick={() => handleStartEdit(task)}
+                              title="Editar tarefa"
+                            >
+                              <Edit className="h-4 w-4 text-muted-foreground hover:text-primary" />
+                            </Button>
+                          )}
+                          {/* Botão de excluir - apenas MASTER */}
+                          {isMaster && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 w-6 p-0"
+                              onClick={() => setTaskToDelete(task.id)}
+                              title="Excluir tarefa (somente MASTER)"
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
                       </div>
 
                       <div className="flex items-center gap-2 flex-wrap">

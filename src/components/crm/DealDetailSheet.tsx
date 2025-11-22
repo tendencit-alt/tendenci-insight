@@ -70,6 +70,7 @@ export function DealDetailSheet({
   const [dealFiles, setDealFiles] = useState<any[]>([]);
   const [owners, setOwners] = useState<any[]>([]);
   const [selectedOwner, setSelectedOwner] = useState("");
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const fetchProject = async () => {
     if (!deal?.id) return;
@@ -168,6 +169,9 @@ export function DealDetailSheet({
   };
 
   const handleStageChange = async (stageId: string, pipelineId?: string) => {
+    if (isUpdating) return;
+    setIsUpdating(true);
+    
     setSelectedStage(stageId);
 
     const { error } = await supabase
@@ -199,9 +203,14 @@ export function DealDetailSheet({
       });
       onSuccess();
     }
+    
+    setIsUpdating(false);
   };
 
   const handleOwnerChange = async (ownerId: string) => {
+    if (isUpdating) return;
+    setIsUpdating(true);
+    
     const actualOwnerId = ownerId === "none" ? "" : ownerId;
     const oldOwnerId = deal.owner_id || "";
     setSelectedOwner(actualOwnerId);
@@ -233,6 +242,8 @@ export function DealDetailSheet({
       });
       onSuccess();
     }
+    
+    setIsUpdating(false);
   };
 
   const handleWinDeal = async () => {
