@@ -1,13 +1,9 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import { corsHeaders } from '../_shared/cors.ts'
 
 interface EvolutionRequest {
-  action: string
-  instanceName?: string
+  action: 'check-status' | 'create' | 'qrcode' | 'delete' | 'disconnect'
+  instanceName: string
 }
 
 Deno.serve(async (req) => {
@@ -16,130 +12,126 @@ Deno.serve(async (req) => {
   }
 
   try {
-    console.log('🔔 Evolution API request received')
-    
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      { auth: { autoRefreshToken: false, persistSession: false } }
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
     const evolutionUrl = Deno.env.get('EVOLUTION_API_URL')
     const evolutionApiKey = Deno.env.get('EVOLUTION_API_KEY')
 
     if (!evolutionUrl || !evolutionApiKey) {
-      throw new Error('Missing Evolution API configuration')
+      throw new Error('Evolution API credentials not configured')
     }
 
-    const body: EvolutionRequest = await req.json()
-    const { action, instanceName } = body
-    
-    console.log('📋 Request:', { action, instanceName })
+    const { action, instanceName }: EvolutionRequest = await req.json()
+    console.log(`🔧 Action: ${action} | Instance: ${instanceName}`)
 
     // ========== CHECK STATUS ==========
     if (action === 'check-status') {
-      console.log('🔍 Checking status for:', instanceName)
+      console.log('📊 Checking status for:', instanceName)
       
-      const response = await fetch(`${evolutionUrl}/instance/connectionState/${instanceName}`, {
-        method: 'GET',
+      const statusResp = await fetch(`${evolutionUrl}/instance/fetchInstances?instanceName=${instanceName}`, {
         headers: { 'apikey': evolutionApiKey }
       })
-      
-      if (!response.ok) {
-        throw new Error(`Evolution API error: ${response.status}`)
+
+      if (!statusResp.ok) {
+        throw new Error(`Evolution API status check failed: ${statusResp.status}`)
       }
-      
-      const statusData = await response.json()
-      console.log('📊 Raw status:', JSON.stringify(statusData, null, 2))
-      
-      // 🎯 CORREÇÃO CRÍTICA: O estado está em instance.state, não em state!
+
+      const statusData = await statusResp.json()
+      console.log('📊 Evolution API response:', JSON.stringify(statusData, null, 2))
+
       const currentState = statusData.instance?.state || statusData.state
-      let mappedStatus = 'connecting'
-      let phoneNumber = null
-      
-      console.log(`🔍 Extracted state: "${currentState}"`)
-      
-      if (currentState === 'open') {
-        mappedStatus = 'connected'
-        phoneNumber = statusData.instance?.wuid?.split('@')[0] || 
-                     statusData.instance?.phoneNumber || 
-                     null
-        console.log('✅ CONNECTED! Phone:', phoneNumber)
-      } else if (currentState === 'close') {
-        mappedStatus = 'disconnected'
-        console.log('❌ DISCONNECTED')
-      } else {
-        console.log('⏳ CONNECTING...')
-      }
-      
-      // Buscar registro atual
+      console.log('📊 Current state:', currentState)
+
+      const mappedStatus = currentState === 'open' ? 'connected' : 
+                          currentState === 'close' ? 'disconnected' : 
+                          'connecting'
+
+      const phoneNumber = statusData.instance?.owner || 
+                         statusData.owner || 
+                         statusData.phone_number ||
+                         null
+
+      console.log('📊 Mapped status:', mappedStatus, '| Phone:', phoneNumber)
+
+      // Buscar conexão atual no banco
       const { data: currentConn } = await supabase
         .from('tendenci_whatsapp_connections')
         .select('status, phone_number, connected_at')
         .eq('instance_name', instanceName)
         .single()
-      
-      const needsUpdate = currentConn?.status !== mappedStatus || 
-                         currentConn?.phone_number !== phoneNumber
-      
-      console.log('🔍 Comparison:', {
-        dbStatus: currentConn?.status,
-        newStatus: mappedStatus,
-        needsUpdate
-      })
-      
-      if (needsUpdate) {
-        console.log('💾 Updating database...')
-        await supabase
+
+      // Atualizar no banco se status mudou
+      if (currentConn && currentConn.status !== mappedStatus) {
+        console.log(`🔄 Status changed: ${currentConn.status} → ${mappedStatus}`)
+        
+        const updateData: any = { status: mappedStatus }
+        
+        if (mappedStatus === 'connected' && phoneNumber) {
+          updateData.phone_number = phoneNumber
+          updateData.connected_at = new Date().toISOString()
+          updateData.qr_code = null
+          updateData.qr_code_base64 = null
+        }
+        
+        if (mappedStatus === 'disconnected') {
+          updateData.phone_number = null
+          updateData.connected_at = null
+          updateData.qr_code = null
+          updateData.qr_code_base64 = null
+        }
+
+        const { error: updateError } = await supabase
           .from('tendenci_whatsapp_connections')
-          .update({
-            status: mappedStatus,
-            phone_number: phoneNumber,
-            connected_at: mappedStatus === 'connected' ? new Date().toISOString() : currentConn?.connected_at,
-            last_sync: new Date().toISOString()
-          })
+          .update(updateData)
           .eq('instance_name', instanceName)
-        console.log('✅ Database updated!')
+
+        if (updateError) {
+          console.error('❌ Error updating status:', updateError)
+        } else {
+          console.log('✅ Status updated in database')
+        }
       }
-      
+
       return new Response(
         JSON.stringify({ 
-          success: true, 
           status: mappedStatus, 
           phoneNumber,
-          updated: needsUpdate
+          rawState: currentState 
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // ========== CREATE INSTANCE ==========
+    // ========== CREATE INSTANCE (REFATORADO) ==========
     if (action === 'create') {
-      console.log('🆕 Creating:', instanceName)
+      console.log('🆕 Creating instance:', instanceName)
       
-      // Verificar se já existe na Evolution API
+      // 1️⃣ Deletar instância existente na Evolution API (se existir)
       try {
-        const checkResponse = await fetch(`${evolutionUrl}/instance/fetchInstances?instanceName=${instanceName}`, {
+        const deleteResp = await fetch(`${evolutionUrl}/instance/delete/${instanceName}`, {
+          method: 'DELETE',
           headers: { 'apikey': evolutionApiKey }
         })
-        
-        if (checkResponse.ok) {
-          const instances = await checkResponse.json()
-          if (instances && instances.length > 0) {
-            console.log('⚠️ Instance already exists, deleting...')
-            await fetch(`${evolutionUrl}/instance/delete/${instanceName}`, {
-              method: 'DELETE',
-              headers: { 'apikey': evolutionApiKey }
-            })
-            await new Promise(resolve => setTimeout(resolve, 2000))
-          }
+        if (deleteResp.ok) {
+          console.log('🗑️ Deleted existing instance from Evolution API')
+          await new Promise(resolve => setTimeout(resolve, 2000))
         }
       } catch (err) {
         console.log('ℹ️ No existing instance to delete')
       }
       
-      // Criar na Evolution API
-      const createResponse = await fetch(`${evolutionUrl}/instance/create`, {
+      // 2️⃣ Deletar registro do banco (se existir)
+      await supabase
+        .from('tendenci_whatsapp_connections')
+        .delete()
+        .eq('instance_name', instanceName)
+      console.log('🗑️ Cleaned database')
+      
+      // 3️⃣ Criar nova instância na Evolution API
+      const createResp = await fetch(`${evolutionUrl}/instance/create`, {
         method: 'POST',
         headers: {
           'apikey': evolutionApiKey,
@@ -152,40 +144,57 @@ Deno.serve(async (req) => {
         })
       })
       
-      if (!createResponse.ok) {
-        throw new Error('Failed to create instance in Evolution API')
+      if (!createResp.ok) {
+        const errorText = await createResp.text()
+        console.error('❌ Evolution API error:', errorText)
+        throw new Error(`Evolution API failed: ${createResp.status} - ${errorText}`)
       }
       
-      const createData = await createResponse.json()
-      console.log('✅ Instance created:', createData)
+      const createData = await createResp.json()
+      console.log('✅ Instance created:', JSON.stringify(createData, null, 2))
       
-      const instanceId = createData.instance?.instanceId || createData.instanceId || createData.instance?.instanceName
+      // 4️⃣ Extrair instance_id de forma robusta
+      const instanceId = 
+        createData?.instance?.instanceId || 
+        createData?.instanceId || 
+        createData?.instance?.instanceName ||
+        instanceName // fallback para instance_name
       
-      // Aguardar e obter QR Code
-      await new Promise(resolve => setTimeout(resolve, 2000))
+      console.log('📝 Instance ID:', instanceId)
+      
+      // 5️⃣ Aguardar e obter QR Code
+      await new Promise(resolve => setTimeout(resolve, 3000)) // 3 segundos
       
       let qrCodeBase64 = null
       try {
-        const connectResponse = await fetch(`${evolutionUrl}/instance/connect/${instanceName}`, {
+        const connectResp = await fetch(`${evolutionUrl}/instance/connect/${instanceName}`, {
           method: 'GET',
           headers: { 'apikey': evolutionApiKey }
         })
         
-        if (connectResponse.ok) {
-          const connectData = await connectResponse.json()
-          qrCodeBase64 = connectData.base64 || connectData.qrcode?.base64 || connectData.qrcode?.code
-          console.log('📱 QR Code obtained:', qrCodeBase64 ? 'Yes' : 'No')
+        if (connectResp.ok) {
+          const connectData = await connectResp.json()
+          qrCodeBase64 = 
+            connectData?.base64 || 
+            connectData?.qrcode?.base64 || 
+            connectData?.qrcode?.code ||
+            null
+          
+          console.log('📱 QR Code obtained:', qrCodeBase64 ? 'YES ✅' : 'NO ❌')
+          if (qrCodeBase64) {
+            console.log('📱 QR Code length:', qrCodeBase64.length)
+          }
+        } else {
+          console.warn('⚠️ Connect endpoint failed:', connectResp.status)
         }
       } catch (err) {
-        console.log('⚠️ QR Code not ready yet')
+        console.error('❌ Error getting QR code:', err)
       }
       
-      // Configurar webhook
-      const supabaseUrl = Deno.env.get('SUPABASE_URL')
-      const webhookUrl = `${supabaseUrl}/functions/v1/whatsapp-webhook`
-      
+      // 6️⃣ Configurar webhook
+      const webhookUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/whatsapp-webhook`
       try {
-        await fetch(`${evolutionUrl}/webhook/set/${instanceName}`, {
+        const webhookResp = await fetch(`${evolutionUrl}/webhook/set/${instanceName}`, {
           method: 'POST',
           headers: {
             'apikey': evolutionApiKey,
@@ -200,61 +209,64 @@ Deno.serve(async (req) => {
             }
           })
         })
-        console.log('✅ Webhook configured')
+        
+        if (webhookResp.ok) {
+          console.log('✅ Webhook configured:', webhookUrl)
+        } else {
+          console.warn('⚠️ Webhook config failed:', webhookResp.status)
+        }
       } catch (err) {
-        console.warn('⚠️ Webhook config failed:', err)
+        console.error('❌ Webhook error:', err)
       }
       
-      // Verificar se já existe no banco
-      const { data: existing } = await supabase
+      // 7️⃣ INSERIR no banco (com todos os campos necessários)
+      const insertData = {
+        instance_name: instanceName,
+        instance_id: instanceId,
+        status: 'connecting',
+        qr_code: qrCodeBase64,
+        qr_code_base64: qrCodeBase64,
+        phone_number: null,
+        connected_at: null,
+        created_by: null, // Agora é opcional!
+        webhook_configured: true,
+        webhook_url: webhookUrl
+      }
+      
+      console.log('💾 Inserting into database:', JSON.stringify(insertData, null, 2))
+      
+      const { data: insertedData, error: insertError } = await supabase
         .from('tendenci_whatsapp_connections')
-        .select('id')
-        .eq('instance_name', instanceName)
+        .insert(insertData)
+        .select()
         .single()
       
-      if (existing) {
-        // Atualizar
-        await supabase
-          .from('tendenci_whatsapp_connections')
-          .update({
-            instance_id: instanceId,
-            status: 'connecting',
-            qr_code: qrCodeBase64,
-            qr_code_base64: qrCodeBase64,
-            phone_number: null,
-            connected_at: null,
-            last_sync: new Date().toISOString()
-          })
-          .eq('instance_name', instanceName)
-      } else {
-        // Inserir
-        await supabase
-          .from('tendenci_whatsapp_connections')
-          .insert({
-            instance_name: instanceName,
-            instance_id: instanceId,
-            status: 'connecting',
-            qr_code: qrCodeBase64,
-            qr_code_base64: qrCodeBase64,
-            phone_number: null
-          })
+      if (insertError) {
+        console.error('❌ DATABASE INSERT ERROR:', insertError)
+        throw new Error(`Database insert failed: ${insertError.message}`)
       }
       
+      console.log('✅ Database insert SUCCESS:', insertedData)
+      
+      // 8️⃣ Retornar resposta com TUDO
       return new Response(
-        JSON.stringify({ 
-          success: true, 
-          instanceId, 
-          qrCode: qrCodeBase64 
+        JSON.stringify({
+          success: true,
+          instanceId,
+          instanceName,
+          qrCode: qrCodeBase64,
+          databaseId: insertedData.id,
+          status: 'connecting'
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // ========== GENERATE QR CODE ==========
+    // ========== QRCODE ==========
     if (action === 'qrcode') {
-      console.log('📱 Generating QR for:', instanceName)
+      console.log('📱 Generating new QR Code for:', instanceName)
       
-      // Desconectar
+      // Desconectar primeiro
       await fetch(`${evolutionUrl}/instance/logout/${instanceName}`, {
         method: 'DELETE',
         headers: { 'apikey': evolutionApiKey }
@@ -262,71 +274,50 @@ Deno.serve(async (req) => {
       
       await new Promise(resolve => setTimeout(resolve, 2000))
       
-      // Reconectar para novo QR
-      const connectResponse = await fetch(`${evolutionUrl}/instance/connect/${instanceName}`, {
+      // Conectar novamente para obter QR code
+      const connectResp = await fetch(`${evolutionUrl}/instance/connect/${instanceName}`, {
         method: 'GET',
         headers: { 'apikey': evolutionApiKey }
       })
-      
-      if (!connectResponse.ok) {
+
+      if (!connectResp.ok) {
         throw new Error('Failed to generate QR code')
       }
-      
-      const connectData = await connectResponse.json()
-      const qrCodeBase64 = connectData.base64 || connectData.qrcode?.base64 || connectData.qrcode?.code
-      
-      // Reconfigurar webhook
-      const supabaseUrl = Deno.env.get('SUPABASE_URL')
-      const webhookUrl = `${supabaseUrl}/functions/v1/whatsapp-webhook`
-      
-      await fetch(`${evolutionUrl}/webhook/set/${instanceName}`, {
-        method: 'POST',
-        headers: {
-          'apikey': evolutionApiKey,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          webhook: {
-            url: webhookUrl,
-            enabled: true,
-            webhookByEvents: false,
-            events: ['CONNECTION_UPDATE', 'QRCODE_UPDATED', 'MESSAGES_UPSERT']
-          }
-        })
-      })
-      
-      // Atualizar banco
-      await supabase
-        .from('tendenci_whatsapp_connections')
-        .update({
-          status: 'connecting',
-          qr_code: qrCodeBase64,
-          qr_code_base64: qrCodeBase64,
-          phone_number: null,
-          last_sync: new Date().toISOString()
-        })
-        .eq('instance_name', instanceName)
-      
+
+      const connectData = await connectResp.json()
+      const qrCodeBase64 = connectData?.base64 || connectData?.qrcode?.base64 || null
+
+      if (qrCodeBase64) {
+        await supabase
+          .from('tendenci_whatsapp_connections')
+          .update({ 
+            qr_code_base64: qrCodeBase64,
+            qr_code: qrCodeBase64,
+            status: 'connecting'
+          })
+          .eq('instance_name', instanceName)
+      }
+
       return new Response(
-        JSON.stringify({ success: true, qrCode: qrCodeBase64 }),
+        JSON.stringify({ qrCode: qrCodeBase64 }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
     // ========== DELETE ==========
     if (action === 'delete') {
-      console.log('🗑️ Deleting:', instanceName)
+      console.log('🗑️ Deleting instance:', instanceName)
       
       await fetch(`${evolutionUrl}/instance/delete/${instanceName}`, {
         method: 'DELETE',
         headers: { 'apikey': evolutionApiKey }
       })
-      
+
       await supabase
         .from('tendenci_whatsapp_connections')
         .delete()
         .eq('instance_name', instanceName)
-      
+
       return new Response(
         JSON.stringify({ success: true }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -335,23 +326,18 @@ Deno.serve(async (req) => {
 
     // ========== DISCONNECT ==========
     if (action === 'disconnect') {
-      console.log('🔌 Disconnecting:', instanceName)
+      console.log('🔌 Disconnecting instance:', instanceName)
       
       await fetch(`${evolutionUrl}/instance/logout/${instanceName}`, {
         method: 'DELETE',
         headers: { 'apikey': evolutionApiKey }
       })
-      
+
       await supabase
         .from('tendenci_whatsapp_connections')
-        .update({
-          status: 'disconnected',
-          qr_code: null,
-          qr_code_base64: null,
-          phone_number: null
-        })
+        .update({ status: 'disconnected', phone_number: null })
         .eq('instance_name', instanceName)
-      
+
       return new Response(
         JSON.stringify({ success: true }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -360,14 +346,14 @@ Deno.serve(async (req) => {
 
     throw new Error('Invalid action')
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('💥 Error:', error)
     return new Response(
-      JSON.stringify({
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      JSON.stringify({ error: error.message }),
+      { 
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
     )
   }
 })
