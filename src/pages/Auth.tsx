@@ -11,16 +11,6 @@ import { Loader2, Lock } from 'lucide-react';
 import tendenciLogo from '@/assets/tendenci-logo-new.png';
 import { supabase } from '@/integrations/supabase/client';
 
-const motivationalMessages = [
-  "Bom dia! Vamos conquistar mais um dia de sucesso!",
-  "Sua dedicação faz a diferença. Vamos em frente!",
-  "Hoje é um ótimo dia para fechar novos negócios!",
-  "Acredite no seu potencial. Você é capaz de grandes coisas!",
-  "Cada cliente é uma nova oportunidade. Vamos nessa!",
-  "Seu trabalho transforma sonhos em realidade!",
-  "Foco, energia e determinação. Esse é o seu dia!",
-  "Sucesso é a soma de pequenos esforços repetidos dia após dia!"
-];
 const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [loginData, setLoginData] = useState({
@@ -51,23 +41,6 @@ const Auth = () => {
       }
     }
   }, [user, profile, navigate]);
-
-  useEffect(() => {
-    // Reproduz mensagem motivacional aleatória ao carregar a página
-    const randomMessage = motivationalMessages[Math.floor(Math.random() * motivationalMessages.length)];
-    
-    if ('speechSynthesis' in window) {
-      const utterance = new SpeechSynthesisUtterance(randomMessage);
-      utterance.lang = 'pt-BR';
-      utterance.rate = 1.0;
-      utterance.pitch = 1.0;
-      
-      // Aguarda um pequeno delay para garantir que a página carregou
-      setTimeout(() => {
-        window.speechSynthesis.speak(utterance);
-      }, 500);
-    }
-  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
