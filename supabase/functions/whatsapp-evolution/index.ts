@@ -331,18 +331,41 @@ Deno.serve(async (req) => {
     if (action === 'delete') {
       console.log('🗑️ Deleting instance:', instanceName)
       
-      await fetch(`${evolutionUrl}/instance/delete/${instanceName}`, {
-        method: 'DELETE',
-        headers: { 'apikey': evolutionApiKey }
-      })
+      // 1️⃣ Deletar da Evolution API
+      try {
+        const deleteResp = await fetch(`${evolutionUrl}/instance/delete/${instanceName}`, {
+          method: 'DELETE',
+          headers: { 'apikey': evolutionApiKey }
+        })
 
-      await supabase
+        if (!deleteResp.ok && deleteResp.status !== 404) {
+          const errorText = await deleteResp.text()
+          console.error('❌ Evolution API delete error:', errorText)
+          throw new Error(`Failed to delete from Evolution API: ${deleteResp.status}`)
+        }
+
+        console.log('✅ Deleted from Evolution API')
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : String(err)
+        console.log('⚠️ Evolution API error (continuing):', errorMsg)
+        // Continue mesmo se falhar na API, pelo menos limpa o banco
+      }
+
+      // 2️⃣ Deletar do banco de dados
+      const { error: deleteError } = await supabase
         .from('tendenci_whatsapp_connections')
         .delete()
         .eq('instance_name', instanceName)
 
+      if (deleteError) {
+        console.error('❌ Database delete error:', deleteError)
+        throw new Error(`Failed to delete from database: ${deleteError.message}`)
+      }
+
+      console.log('✅ Deleted from database')
+
       return new Response(
-        JSON.stringify({ success: true }),
+        JSON.stringify({ success: true, message: 'Instance deleted successfully' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
