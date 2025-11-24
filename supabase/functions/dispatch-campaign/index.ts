@@ -91,15 +91,13 @@ Deno.serve(async (req) => {
     // Formatar número (limpar e adicionar código do país se necessário)
     let cleanNumber = telefone.replace('@s.whatsapp.net', '').replace(/\D/g, '')
     
-    // Se o número não começa com 55 (Brasil), adicionar
-    if (!cleanNumber.startsWith('55')) {
-      cleanNumber = `55${cleanNumber}`
-    }
-    
-    // Remover possível duplicação do 55
-    if (cleanNumber.startsWith('5555')) {
+    // Remover TODOS os "55" do início primeiro
+    while (cleanNumber.startsWith('55')) {
       cleanNumber = cleanNumber.substring(2)
     }
+    
+    // Agora adicionar apenas UM "55" no início
+    cleanNumber = `55${cleanNumber}`
     
     const formattedNumber = `${cleanNumber}@s.whatsapp.net`
 
