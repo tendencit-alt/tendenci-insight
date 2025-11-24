@@ -55,7 +55,7 @@ export default function CRM() {
       searchParams.delete('deal');
       setSearchParams(searchParams, { replace: true });
     }
-  }, [user, isAdmin]);
+  }, [user, isAdmin, profile]);
   const fetchPipelines = async () => {
     const {
       data,
@@ -86,10 +86,24 @@ export default function CRM() {
     }
   };
   const fetchCategories = async () => {
-    const {
-      data,
-      error
-    } = await supabase.from("crm_deals").select("categoria").not("categoria", "is", null);
+    // Filtrar categorias baseado na especialização do vendedor
+    const userEspec = profile?.especializacao;
+    
+    let categoriesQuery = supabase
+      .from("crm_deals")
+      .select("categoria")
+      .not("categoria", "is", null);
+
+    // Se vendedor tem especialização específica, filtrar apenas sua categoria
+    if (userEspec === 'moveis_soltos') {
+      categoriesQuery = categoriesQuery.eq("categoria", "Móveis Soltos");
+    } else if (userEspec === 'moveis_planejados') {
+      categoriesQuery = categoriesQuery.eq("categoria", "Planejados");
+    }
+    // Se for 'todos' ou admin, busca todas as categorias
+
+    const { data, error } = await categoriesQuery;
+    
     if (!error && data) {
       const uniqueCategories = Array.from(new Set(data.map(d => d.categoria).filter(Boolean)));
       setCategories(uniqueCategories as string[]);

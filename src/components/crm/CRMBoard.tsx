@@ -157,10 +157,13 @@ export function CRMBoard({ pipelineId, onRefresh, autoOpenDealId, onDealOpened, 
       dealsQuery = dealsQuery.eq("status", filters.status);
     }
 
+    // Filtro de categoria - aplicado mesmo se showPlanned estiver ativo
+    if (filters?.category && filters.category !== "all") {
+      dealsQuery = dealsQuery.eq("categoria", filters.category);
+    }
+    
     if (filters?.showPlanned) {
       dealsQuery = dealsQuery.not("scheduled_call", "is", null);
-    } else if (filters?.category && filters.category !== "all") {
-      dealsQuery = dealsQuery.eq("categoria", filters.category);
     }
 
     // Filtro de período
