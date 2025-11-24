@@ -88,12 +88,17 @@ Deno.serve(async (req) => {
       throw new Error(`Instância "${instance_name}" não está conectada`)
     }
 
-    // Formatar número (adicionar código do país se necessário)
+    // Formatar número (limpar e adicionar código do país se necessário)
     let cleanNumber = telefone.replace('@s.whatsapp.net', '').replace(/\D/g, '')
     
-    // Se o número não começa com código do país, adicionar 55 (Brasil)
-    if (cleanNumber.length < 12) {
+    // Se o número não começa com 55 (Brasil), adicionar
+    if (!cleanNumber.startsWith('55')) {
       cleanNumber = `55${cleanNumber}`
+    }
+    
+    // Remover possível duplicação do 55
+    if (cleanNumber.startsWith('5555')) {
+      cleanNumber = cleanNumber.substring(2)
     }
     
     const formattedNumber = `${cleanNumber}@s.whatsapp.net`
