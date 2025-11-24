@@ -21,7 +21,7 @@ export const ALLOWED_FILE_EXTENSIONS = [
 
 export const ALLOWED_FILE_TYPES_ACCEPT = '.pdf,.doc,.docx,.xls,.xlsx,.xlsm,.dwg,.jpg,.jpeg,.png,.webp,.txt,.mp3,.wav,.m4a,.webm,.ogg';
 
-export const MAX_FILE_SIZE_MB = 20;
+export const MAX_FILE_SIZE_MB = 100;
 export const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
 export function validateFileType(fileName: string): boolean {
