@@ -92,6 +92,9 @@ export function CampanhasManager() {
   const [whatsappConnectionId, setWhatsappConnectionId] = useState("");
   const [viewingCampanha, setViewingCampanha] = useState<Campanha | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  
+  // ✅ Webhook N8N padrão (pode ser sobrescrito)
+  const DEFAULT_N8N_WEBHOOK = "https://n8n.tendenci.com.br/webhook/whatsapp-campaign";
 
   useEffect(() => {
     fetchCampanhas();
@@ -146,7 +149,7 @@ export function CampanhasManager() {
     setImagemFile(null);
     setAudioFile(null);
     setArquitetosSelecionados([]);
-    setWebhookN8n("");
+    setWebhookN8n(DEFAULT_N8N_WEBHOOK); // ✅ Usar webhook padrão
     setWhatsappConnectionId("");
     setEditingCampanha(null);
   };
@@ -371,7 +374,7 @@ export function CampanhasManager() {
       conteudo_imagem_url: tipoEnvio === 'imagem' ? conteudoImagemUrl : null,
       conteudo_audio_url: tipoEnvio === 'audio' ? conteudoAudioUrl : null,
       arquitetos_selecionados: arquitetosSelecionados,
-      webhook_n8n: webhookN8n.trim() || null,
+      webhook_n8n: webhookN8n.trim() || DEFAULT_N8N_WEBHOOK, // ✅ Usar padrão se vazio
       whatsapp_connection_id: whatsappConnectionId,
       status: 'rascunho',
       updated_at: new Date().toISOString(),
@@ -448,7 +451,10 @@ export function CampanhasManager() {
   };
 
   const handleDispatchCampanha = async (campanha: Campanha) => {
-    if (!campanha.webhook_n8n) {
+    // ✅ Usar webhook padrão se não configurado
+    const webhookToUse = campanha.webhook_n8n || DEFAULT_N8N_WEBHOOK;
+    
+    if (!webhookToUse) {
       toast({
         title: "Erro",
         description: "Configure o webhook N8N antes de disparar",
