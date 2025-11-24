@@ -398,47 +398,97 @@ Deno.serve(async (req) => {
       console.log('🔍 Checking status for:', instanceName)
       
       try {
+        // 1. Buscar status na Evolution API
         const response = await fetch(`${evolutionUrl}/instance/connectionState/${instanceName}`, {
           method: 'GET',
           headers: { 'apikey': evolutionApiKey }
         })
         
         if (!response.ok) {
-          throw new Error('Failed to fetch connection state')
+          const errorText = await response.text()
+          console.error('❌ Evolution API error:', response.status, errorText)
+          throw new Error(`Failed to fetch connection state: ${response.status}`)
         }
         
         const statusData = await response.json()
-        console.log('📊 Connection state:', statusData)
+        console.log('📊 Connection state:', JSON.stringify(statusData, null, 2))
         
-        const currentStatus = statusData.state // 'open', 'connecting', 'close'
+        const currentStatus = statusData.state
         let mappedStatus = 'connecting'
         let phoneNumber = null
         
         if (currentStatus === 'open') {
           mappedStatus = 'connected'
           phoneNumber = statusData.instance?.wuid?.split('@')[0] || statusData.instance?.phoneNumber || null
+          console.log('📱 Phone number extracted:', phoneNumber)
         } else if (currentStatus === 'close') {
           mappedStatus = 'disconnected'
         }
         
-        // Atualizar banco se status mudou
-        const { data: currentConn } = await supabase
+        console.log(`🔄 Mapped status: ${currentStatus} -> ${mappedStatus}`)
+        
+        // 2. Buscar registro atual no banco COM TRATAMENTO DE ERRO
+        const { data: currentConn, error: selectError } = await supabase
           .from('tendenci_whatsapp_connections')
-          .select('status, phone_number')
+          .select('status, phone_number, connected_at')
           .eq('instance_name', instanceName)
           .single()
         
-        if (currentConn && (currentConn.status !== mappedStatus || currentConn.phone_number !== phoneNumber)) {
+        // ✅ LOG DETALHADO
+        console.log('💾 Current DB record:', { 
+          found: !!currentConn, 
+          status: currentConn?.status, 
+          phone: currentConn?.phone_number,
+          error: selectError?.message 
+        })
+        
+        if (selectError) {
+          console.error('❌ SELECT error:', selectError)
+          throw selectError
+        }
+        
+        if (!currentConn) {
+          console.error('❌ Connection not found in database!')
+          throw new Error('Connection not found')
+        }
+        
+        // 3. Verificar se precisa atualizar
+        const needsUpdate = currentConn.status !== mappedStatus || currentConn.phone_number !== phoneNumber
+        
+        console.log('🔍 Update check:', {
+          currentStatus: currentConn.status,
+          newStatus: mappedStatus,
+          currentPhone: currentConn.phone_number,
+          newPhone: phoneNumber,
+          needsUpdate
+        })
+        
+        if (needsUpdate) {
           console.log(`✅ Status mudou: ${currentConn.status} -> ${mappedStatus}`)
           
-          await supabase
+          const { error: updateError } = await supabase
             .from('tendenci_whatsapp_connections')
             .update({
               status: mappedStatus,
               phone_number: phoneNumber,
-              connected_at: mappedStatus === 'connected' ? new Date().toISOString() : null,
+              connected_at: mappedStatus === 'connected' ? new Date().toISOString() : currentConn.connected_at,
               last_sync: new Date().toISOString()
             })
+            .eq('instance_name', instanceName)
+          
+          if (updateError) {
+            console.error('❌ UPDATE error:', updateError)
+            throw updateError
+          }
+          
+          console.log('💾 Database updated successfully!')
+        } else {
+          console.log('⏭️ No update needed - status is the same')
+          
+          // Atualizar last_sync mesmo sem mudança de status
+          await supabase
+            .from('tendenci_whatsapp_connections')
+            .update({ last_sync: new Date().toISOString() })
             .eq('instance_name', instanceName)
         }
         
@@ -447,13 +497,22 @@ Deno.serve(async (req) => {
             success: true, 
             status: mappedStatus, 
             phoneNumber,
-            updated: currentConn?.status !== mappedStatus
+            updated: needsUpdate
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       } catch (error) {
         console.error('💥 Check status error:', error)
-        throw error
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: error instanceof Error ? error.message : 'Unknown error'
+          }),
+          { 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 500
+          }
+        )
       }
     }
 
