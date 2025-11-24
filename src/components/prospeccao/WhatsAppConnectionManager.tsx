@@ -49,23 +49,32 @@ export default function WhatsAppConnectionManager() {
       const connectingConns = data?.filter(c => c.status === 'connecting') || [];
 
       if (connectingConns.length > 0) {
-        console.log(`🔄 Polling: ${connectingConns.length} connecting instances`);
+        console.log(`🔄 Polling: Verificando ${connectingConns.length} conexões...`);
 
-        // Verificar status de cada uma (SEM toast)
-        connectingConns.forEach(async (conn) => {
+        // Verificar status de cada uma e atualizar no banco
+        for (const conn of connectingConns) {
           try {
-            const { data: statusData } = await supabase.functions.invoke("whatsapp-evolution", {
+            console.log(`🔍 Verificando status de: ${conn.instance_name}`);
+            
+            const { data: statusData, error: statusError } = await supabase.functions.invoke("whatsapp-evolution", {
               body: { action: "check-status", instanceName: conn.instance_name },
             });
 
+            if (statusError) {
+              console.error(`❌ Erro ao verificar ${conn.instance_name}:`, statusError);
+              continue;
+            }
+
+            console.log(`📊 Status de ${conn.instance_name}:`, statusData);
+
+            // Se está conectado, o edge function já atualizou o banco
             if (statusData?.status === 'connected') {
-              console.log(`✅ ${conn.instance_name} is now CONNECTED!`);
-              // O realtime vai mostrar o toast
+              console.log(`✅ ${conn.instance_name} CONECTADO! Número: ${statusData.phoneNumber}`);
             }
           } catch (err) {
-            console.error('❌ Status check failed:', err);
+            console.error(`❌ Erro ao verificar ${conn.instance_name}:`, err);
           }
-        });
+        }
       }
 
       return data as WhatsAppConnection[];
@@ -75,6 +84,8 @@ export default function WhatsAppConnectionManager() {
 
   // 2️⃣ Realtime - SIMPLIFICADO
   useEffect(() => {
+    console.log('🔔 Iniciando listener Realtime para whatsapp connections...');
+    
     const channel = supabase
       .channel('whatsapp-connections-realtime')
       .on(
@@ -88,32 +99,43 @@ export default function WhatsAppConnectionManager() {
           const newData = payload.new as WhatsAppConnection;
           const oldData = payload.old as WhatsAppConnection;
 
-          console.log('🔔 Realtime UPDATE:', {
+          console.log('🔔 Realtime UPDATE recebido:', {
             instance: newData.instance_name,
             oldStatus: oldData.status,
-            newStatus: newData.status
+            newStatus: newData.status,
+            phoneNumber: newData.phone_number
           });
 
           // ✅ Detectar conexão automática
           if (oldData.status === 'connecting' && newData.status === 'connected') {
+            console.log(`🎉 CONEXÃO DETECTADA! ${newData.instance_name}`);
+            
             toast.success(
-              `✅ ${newData.instance_name} conectado automaticamente!\n📱 ${newData.phone_number}`,
+              `✅ ${newData.instance_name} conectado!\n📱 ${newData.phone_number || 'Número não disponível'}`,
               { duration: 5000 }
             );
 
             // Fechar modal se estiver aberto
             if (qrCodeDialog?.id === newData.id) {
-              setTimeout(() => setQrCodeDialog(null), 1500);
+              console.log('🚪 Fechando modal do QR Code...');
+              setTimeout(() => {
+                setQrCodeDialog(null);
+                console.log('✅ Modal fechado!');
+              }, 1500);
             }
           }
 
           // Atualizar lista
+          console.log('🔄 Invalidando queries para atualizar lista...');
           queryClient.invalidateQueries({ queryKey: ['whatsapp-connections'] });
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('📡 Status do canal Realtime:', status);
+      });
 
     return () => {
+      console.log('👋 Removendo canal Realtime...');
       supabase.removeChannel(channel);
     };
   }, [queryClient, qrCodeDialog]);
