@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -35,9 +35,18 @@ export function CampanhaExecutor({ campaignId, campaignName, onComplete }: Execu
     waitingSeconds: 0,
   });
   const [isPaused, setIsPaused] = useState(false);
+  const isExecutingRef = useRef(false);
 
   const executeMutation = useMutation({
     mutationFn: async () => {
+      // Verificar se já há uma execução em andamento
+      if (isExecutingRef.current) {
+        console.warn('⚠️ Execução já em andamento, ignorando novo clique');
+        return { sent: 0, failed: 0, total: 0 };
+      }
+
+      isExecutingRef.current = true;
+      console.log('🚀 Iniciando execução da campanha:', campaignId, 'Timestamp:', new Date().toISOString());
       setStatus(prev => ({ ...prev, isRunning: true }));
 
       // 1. Buscar campanha
@@ -298,37 +307,49 @@ export function CampanhaExecutor({ campaignId, campaignName, onComplete }: Execu
         const isLastArchitect = arquitetos.indexOf(arq) === arquitetos.length - 1;
         if (!isLastArchitect) {
           const waitTime = 180; // 180 segundos = 3 minutos
-          console.log(`⏳ Aguardando ${waitTime} segundos (3 minutos) antes do próximo envio...`);
+          console.log(`⏳ [${new Date().toISOString()}] Aguardando ${waitTime} segundos (3 minutos) antes do próximo envio...`);
           setStatus(prev => ({ ...prev, isWaiting: true, waitingSeconds: waitTime }));
           
           // Countdown visual
           for (let i = waitTime; i > 0; i--) {
             if (isPaused) break;
             setStatus(prev => ({ ...prev, waitingSeconds: i }));
+            console.log(`⏳ Countdown: ${i} segundos restantes`);
             await new Promise(resolve => setTimeout(resolve, 1000)); // 1 segundo
           }
           
           setStatus(prev => ({ ...prev, isWaiting: false, waitingSeconds: 0 }));
-          console.log(`✅ Aguardo concluído, próximo envio iniciando...`);
+          console.log(`✅ [${new Date().toISOString()}] Aguardo concluído, próximo envio iniciando...`);
         }
       }
 
+      setStatus(prev => ({ ...prev, isRunning: false }));
+      isExecutingRef.current = false;
+      console.log('✅ Execução concluída com sucesso');
       return { sent, failed, total: arquitetos.length };
     },
     onSuccess: (result) => {
-      setStatus(prev => ({ ...prev, isRunning: false }));
-      toast.success(
-        `Campanha concluída! ${result.sent} enviadas, ${result.failed} falharam`
-      );
-      onComplete?.();
+      if (result && result.total > 0) {
+        toast.success(
+          `Campanha concluída! ${result.sent} enviadas, ${result.failed} falharam`
+        );
+        onComplete?.();
+      }
     },
     onError: (error: Error) => {
+      console.error('❌ Erro na execução:', error);
       setStatus(prev => ({ ...prev, isRunning: false }));
+      isExecutingRef.current = false;
       toast.error(`Erro: ${error.message}`);
     },
   });
 
   const handleStart = () => {
+    if (isExecutingRef.current) {
+      console.warn('⚠️ Já há uma execução em andamento');
+      toast.warning("Aguarde a execução atual terminar");
+      return;
+    }
     if (isPaused) {
       setIsPaused(false);
       return;
@@ -341,6 +362,7 @@ export function CampanhaExecutor({ campaignId, campaignName, onComplete }: Execu
   };
 
   const handleReset = () => {
+    isExecutingRef.current = false;
     setStatus({
       total: 0,
       sent: 0,
@@ -364,7 +386,10 @@ export function CampanhaExecutor({ campaignId, campaignName, onComplete }: Execu
         </div>
         <div className="flex gap-2">
           {!status.isRunning ? (
-            <Button onClick={handleStart} disabled={executeMutation.isPending}>
+            <Button 
+              onClick={handleStart} 
+              disabled={status.isRunning || executeMutation.isPending || isExecutingRef.current}
+            >
               <Play className="w-4 h-4 mr-2" />
               {isPaused ? 'Continuar' : 'Iniciar'}
             </Button>
