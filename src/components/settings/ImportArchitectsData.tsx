@@ -34,7 +34,12 @@ export const ImportArchitectsData = () => {
 
     try {
       const data = await file.arrayBuffer();
-      const workbook = XLSX.read(data, { type: "array" });
+      const workbook = XLSX.read(data, { 
+        type: "array",
+        cellDates: true,
+        cellNF: false,
+        cellText: false
+      });
       const sheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[sheetName];
       const jsonData = XLSX.utils.sheet_to_json(worksheet) as any[];
@@ -179,7 +184,7 @@ export const ImportArchitectsData = () => {
               <input
                 id="file-upload"
                 type="file"
-                accept=".xlsx,.xls,.xlsm"
+                accept=".xlsx,.xls,.xlsm,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel.sheet.macroEnabled.12"
                 onChange={handleFileUpload}
                 className="hidden"
                 disabled={isProcessing}
