@@ -82,9 +82,10 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
 
   return (
     <>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-6">
+      <div className="overflow-x-auto pb-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-7 gap-4 lg:gap-6 min-w-max lg:min-w-0">
         {/* Recebido */}
-        <div className="space-y-4">
+        <div className="space-y-4 min-w-[280px] lg:min-w-0">
           <div className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 rounded-lg">
             <span className="text-2xl">📥</span>
             <h3 className="font-semibold text-blue-700 dark:text-blue-400">
@@ -124,7 +125,7 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
         </div>
 
         {/* Em Orçamento */}
-        <div className="space-y-4">
+        <div className="space-y-4 min-w-[280px] lg:min-w-0">
           <div className="flex items-center gap-2 px-4 py-2 bg-purple-500/10 rounded-lg">
             <span className="text-2xl">📝</span>
             <h3 className="font-semibold text-purple-700 dark:text-purple-400">
@@ -164,7 +165,7 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
         </div>
 
         {/* Orçado */}
-        <div className="space-y-4">
+        <div className="space-y-4 min-w-[280px] lg:min-w-0">
           <div className="flex items-center gap-2 px-4 py-2 bg-indigo-500/10 rounded-lg">
             <span className="text-2xl">💰</span>
             <h3 className="font-semibold text-indigo-700 dark:text-indigo-400">
@@ -204,7 +205,7 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
         </div>
 
         {/* Apresentado */}
-        <div className="space-y-4">
+        <div className="space-y-4 min-w-[280px] lg:min-w-0">
           <div className="flex items-center gap-2 px-4 py-2 bg-cyan-500/10 rounded-lg">
             <span className="text-2xl">📊</span>
             <h3 className="font-semibold text-cyan-700 dark:text-cyan-400">
@@ -244,7 +245,7 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
         </div>
 
         {/* Em Negociação */}
-        <div className="space-y-4">
+        <div className="space-y-4 min-w-[280px] lg:min-w-0">
           <div className="flex items-center gap-2 px-4 py-2 bg-orange-500/10 rounded-lg">
             <span className="text-2xl">🤝</span>
             <h3 className="font-semibold text-orange-700 dark:text-orange-400">
@@ -284,7 +285,7 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
         </div>
 
         {/* Aprovado */}
-        <div className="space-y-4">
+        <div className="space-y-4 min-w-[280px] lg:min-w-0">
           <div className="flex items-center gap-2 px-4 py-2 bg-green-500/10 rounded-lg">
             <span className="text-2xl">✅</span>
             <h3 className="font-semibold text-green-700 dark:text-green-400">
@@ -324,7 +325,7 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
         </div>
 
         {/* Perdido */}
-        <div className="space-y-4">
+        <div className="space-y-4 min-w-[280px] lg:min-w-0">
           <div className="flex items-center gap-2 px-4 py-2 bg-red-500/10 rounded-lg">
             <span className="text-2xl">❌</span>
             <h3 className="font-semibold text-red-700 dark:text-red-400">
@@ -361,6 +362,7 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
               </p>
             )}
           </div>
+        </div>
         </div>
       </div>
 
