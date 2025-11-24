@@ -49,8 +49,10 @@ export function WhatsAppConnectionManager() {
     },
   });
 
-  // ✅ Supabase Realtime para updates instantâneos
+  // ✅ Supabase Realtime para reconexão automática instantânea via webhook
   useEffect(() => {
+    console.log('🔔 Ativando listener Realtime para reconexão automática...');
+    
     const channel = supabase
       .channel('whatsapp-connections-changes')
       .on(
@@ -62,12 +64,29 @@ export function WhatsAppConnectionManager() {
         },
         (payload) => {
           console.log('🔔 Realtime WhatsApp update:', payload);
+          
+          // 🎯 Detectar reconexão automática via webhook
+          if (payload.eventType === 'UPDATE') {
+            const newData = payload.new as any;
+            const oldData = payload.old as any;
+            
+            // Se mudou de "connecting" para "connected" = RECONEXÃO AUTOMÁTICA!
+            if (oldData?.status === 'connecting' && newData?.status === 'connected') {
+              console.log('🎉 RECONEXÃO AUTOMÁTICA via webhook detectada!');
+              toast.success(
+                `✅ ${newData.instance_name} conectado automaticamente!\n📱 ${newData.phone_number}`,
+                { duration: 5000 }
+              );
+            }
+          }
+          
           queryClient.invalidateQueries({ queryKey: ['whatsapp-connections'] });
         }
       )
       .subscribe();
 
     return () => {
+      console.log('🛑 Removendo listener Realtime');
       supabase.removeChannel(channel);
     };
   }, [queryClient]);
@@ -112,35 +131,38 @@ export function WhatsAppConnectionManager() {
     
     if (connectingInstances.length === 0) return;
     
-    console.log('🔄 Iniciando polling para', connectingInstances.length, 'instâncias...');
+    console.log('🚀 Polling AGRESSIVO para reconexão automática:', connectingInstances.length, 'instâncias');
     
     const intervalId = setInterval(async () => {
       for (const conn of connectingInstances) {
         try {
-          console.log(`📡 Polling status para: ${conn.instance_name}`);
+          console.log(`📡 Verificando ${conn.instance_name}...`);
           
           const { data, error } = await supabase.functions.invoke("whatsapp-evolution", {
             body: { action: "check-status", instanceName: conn.instance_name },
           });
           
           if (error) {
-            console.error('❌ Erro no invoke:', error);
-            toast.error(`Erro ao verificar status: ${error.message}`);
+            console.error(`❌ Erro ao verificar ${conn.instance_name}:`, error);
             continue;
           }
           
-          console.log(`📊 Response para ${conn.instance_name}:`, data);
+          console.log(`📊 ${conn.instance_name}: status=${data?.status}, phone=${data?.phoneNumber}`);
           
-          if (data?.updated) {
-            console.log(`✅ Status atualizado via polling para ${conn.instance_name}!`);
+          // 🎯 RECONEXÃO AUTOMÁTICA: Detectar quando conectou!
+          if (data?.status === 'connected' || data?.phoneNumber) {
+            console.log(`🎉 ${conn.instance_name} CONECTOU AUTOMATICAMENTE!`);
+            toast.success(`✅ ${conn.instance_name} conectado!`, { duration: 5000 });
             queryClient.invalidateQueries({ queryKey: ["whatsapp-connections"] });
-            toast.success(`✅ Status atualizado: ${data.status}`);
+          } else if (data?.updated) {
+            console.log(`🔄 Status de ${conn.instance_name} atualizado`);
+            queryClient.invalidateQueries({ queryKey: ["whatsapp-connections"] });
           }
         } catch (error) {
-          console.error('💥 Erro no polling:', error);
+          console.error(`💥 Erro no polling de ${conn.instance_name}:`, error);
         }
       }
-    }, 3000); // A cada 3 segundos (mais agressivo)
+    }, 2000); // 🔥 2 segundos (SUPER AGRESSIVO para detectar scan imediato)
     
     return () => {
       console.log('🛑 Parando polling');

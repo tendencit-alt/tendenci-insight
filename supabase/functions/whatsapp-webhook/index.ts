@@ -43,29 +43,45 @@ Deno.serve(async (req) => {
 
     const { event, instance, data } = body
 
-    // Processar evento de conexão
-    if (event === 'connection.update' || event === 'qrcode.updated') {
-      const state = data?.state || 'unknown'
-      
+    // 🔥 PROCESSAR EVENTOS DE CONEXÃO (RECONEXÃO AUTOMÁTICA)
+    const connectionEvents = [
+      'connection.update', 
+      'qrcode.updated', 
+      'open',
+      'messages.upsert',
+      'connection.open'
+    ]
+    
+    if (connectionEvents.includes(event)) {
+      const state = data?.state || event
       let status = 'connecting'
       let phoneNumber = null
 
-      // Mapear estados da Evolution API para nosso status
-      if (state === 'open' || state === 'connected') {
+      console.log(`🔍 Processando evento: ${event}, state: ${state}`)
+
+      // 🎯 Mapear TODOS os estados possíveis da Evolution API
+      if (
+        state === 'open' || 
+        state === 'connected' || 
+        event === 'connection.open' ||
+        event === 'messages.upsert' // Se recebeu mensagem, está conectado!
+      ) {
         status = 'connected'
-        phoneNumber = data?.remoteJid?.split('@')[0] || null
+        phoneNumber = data?.remoteJid?.split('@')[0] || 
+                     data?.key?.remoteJid?.split('@')[0] ||
+                     data?.phoneNumber || null
         console.log('✅ Connection established! Phone:', phoneNumber)
-      } else if (state === 'close' || state === 'disconnected') {
+      } else if (state === 'close' || state === 'disconnected' || state === 'logout') {
         status = 'disconnected'
         console.log('❌ Connection closed')
-      } else if (state === 'connecting') {
+      } else if (state === 'connecting' || event === 'qrcode.updated') {
         status = 'connecting'
         console.log('⏳ Still connecting...')
       }
 
-      console.log(`📱 Instance ${instance} - state: ${state} -> status: ${status}`)
+      console.log(`📱 Instance ${instance} - ${event}/${state} -> ${status}`)
 
-      // Atualizar no banco
+      // 📝 Atualizar no banco
       const updateData: any = {
         status,
         last_sync: new Date().toISOString()
@@ -84,6 +100,13 @@ Deno.serve(async (req) => {
         console.log('🧹 Cleared connection data')
       }
 
+      // 🔄 Atualizar QR Code se disponível
+      if (event === 'qrcode.updated' && data?.qrcode) {
+        updateData.qr_code_base64 = data.qrcode
+        updateData.qr_code = data.qrcode
+        console.log('📱 QR Code incluído no update')
+      }
+
       const { error: updateError } = await supabase
         .from('tendenci_whatsapp_connections')
         .update(updateData)
@@ -93,28 +116,7 @@ Deno.serve(async (req) => {
         console.error('❌ Erro ao atualizar status:', updateError)
         throw updateError
       } else {
-        console.log('✅ Status atualizado com sucesso no banco')
-      }
-    }
-
-    // Processar QR Code
-    if (event === 'qrcode.updated' && data?.qrcode) {
-      console.log('📱 Atualizando QR Code no banco via webhook')
-      
-      const { error: qrError } = await supabase
-        .from('tendenci_whatsapp_connections')
-        .update({
-          qr_code_base64: data.qrcode,
-          qr_code: data.qrcode,
-          status: 'connecting',
-          last_sync: new Date().toISOString()
-        })
-        .eq('instance_name', instance)
-
-      if (qrError) {
-        console.error('❌ Erro ao atualizar QR Code:', qrError)
-      } else {
-        console.log('✅ QR Code atualizado com sucesso')
+        console.log(`✅ Status atualizado: ${status} (phone: ${phoneNumber || 'N/A'})`)
       }
     }
 
