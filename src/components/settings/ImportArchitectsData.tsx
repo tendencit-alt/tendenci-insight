@@ -179,13 +179,13 @@ export const ImportArchitectsData = () => {
               <input
                 id="file-upload"
                 type="file"
-                accept=".xlsx,.xls"
+                accept=".xlsx,.xls,.xlsm"
                 onChange={handleFileUpload}
                 className="hidden"
                 disabled={isProcessing}
               />
               <p className="text-xs text-muted-foreground">
-                Formatos suportados: .xlsx, .xls
+                Formatos suportados: .xlsx, .xls, .xlsm (Excel com macros)
               </p>
             </div>
           </div>
