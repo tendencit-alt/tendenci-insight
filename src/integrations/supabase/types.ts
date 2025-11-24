@@ -2587,11 +2587,14 @@ export type Database = {
           instance_name: string
           last_sync: string | null
           metadata: Json | null
+          n8n_webhook_url: string | null
           phone_number: string | null
           qr_code: string | null
           qr_code_base64: string | null
           status: string
           updated_at: string
+          webhook_configured: boolean | null
+          webhook_url: string | null
         }
         Insert: {
           connected_at?: string | null
@@ -2602,11 +2605,14 @@ export type Database = {
           instance_name: string
           last_sync?: string | null
           metadata?: Json | null
+          n8n_webhook_url?: string | null
           phone_number?: string | null
           qr_code?: string | null
           qr_code_base64?: string | null
           status?: string
           updated_at?: string
+          webhook_configured?: boolean | null
+          webhook_url?: string | null
         }
         Update: {
           connected_at?: string | null
@@ -2617,11 +2623,14 @@ export type Database = {
           instance_name?: string
           last_sync?: string | null
           metadata?: Json | null
+          n8n_webhook_url?: string | null
           phone_number?: string | null
           qr_code?: string | null
           qr_code_base64?: string | null
           status?: string
           updated_at?: string
+          webhook_configured?: boolean | null
+          webhook_url?: string | null
         }
         Relationships: []
       }

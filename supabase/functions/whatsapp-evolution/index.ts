@@ -68,7 +68,21 @@ Deno.serve(async (req) => {
     if (action === 'create') {
       console.log('🆕 Creating instance:', instanceName)
       
-      // PASSO 1: Verificar se já existe NA EVOLUTION API (CRÍTICO!)
+      // Obter usuário autenticado
+      const authHeader = req.headers.get('Authorization')
+      let currentUserId: string | null = null
+      
+      if (authHeader) {
+        const { data: { user }, error: authError } = await supabase.auth.getUser(
+          authHeader.replace('Bearer ', '')
+        )
+        if (!authError && user) {
+          currentUserId = user.id
+          console.log('✅ User authenticated:', currentUserId)
+        }
+      }
+      
+      // PASSO 1: Verificar se já existe NA EVOLUTION API
       console.log('🔍 Verificando se instância existe na Evolution API...')
       const checkResponse = await fetch(`${evolutionUrl}/instance/fetchInstances`, {
         method: 'GET',
@@ -147,39 +161,50 @@ Deno.serve(async (req) => {
         console.warn('⚠️ QR Code generation failed (will retry later)')
       }
 
-      // PASSO 6: Configurar webhook (NON-BLOCKING)
+      // PASSO 6: Configurar webhook COM RETRY
       const supabaseUrl = Deno.env.get('SUPABASE_URL')
       const webhookUrl = `${supabaseUrl}/functions/v1/whatsapp-webhook`
       
-      console.log('🔗 Configuring webhook (non-blocking)...')
+      console.log('🔗 Configuring webhook with retry...')
       
-      // Fazer em background para não bloquear criação
-      fetch(`${evolutionUrl}/webhook/set/${instanceName}`, {
-        method: 'POST',
-        headers: {
-          'apikey': evolutionApiKey,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          url: webhookUrl,
-          enabled: true,
-          webhookByEvents: false,
-          events: ['CONNECTION_UPDATE', 'QRCODE_UPDATED', 'MESSAGES_UPSERT']
-        })
-      })
-      .then(async (res) => {
-        if (res.ok) {
-          console.log('✅ Webhook configured successfully')
-        } else {
-          const error = await res.text()
-          console.warn('⚠️ Webhook config failed (non-critical):', error)
-        }
-      })
-      .catch((err) => {
-        console.warn('⚠️ Webhook config error (non-critical):', err)
-      })
+      const configureWebhook = async (retries = 3): Promise<boolean> => {
+        for (let i = 0; i < retries; i++) {
+          try {
+            const res = await fetch(`${evolutionUrl}/webhook/set/${instanceName}`, {
+              method: 'POST',
+              headers: {
+                'apikey': evolutionApiKey,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                url: webhookUrl,
+                enabled: true,
+                webhookByEvents: false,
+                events: ['CONNECTION_UPDATE', 'QRCODE_UPDATED', 'MESSAGES_UPSERT', 'MESSAGES_UPDATE']
+              })
+            })
 
-      // PASSO 7: Salvar no banco
+            if (res.ok) {
+              console.log(`✅ Webhook configured successfully (attempt ${i + 1})`)
+              return true
+            } else {
+              const error = await res.text()
+              console.warn(`⚠️ Webhook config failed (attempt ${i + 1}):`, error)
+            }
+          } catch (err) {
+            console.warn(`⚠️ Webhook config error (attempt ${i + 1}):`, err)
+          }
+
+          if (i < retries - 1) {
+            await new Promise(resolve => setTimeout(resolve, 2000))
+          }
+        }
+        return false
+      }
+
+      const webhookConfigured = await configureWebhook()
+
+      // PASSO 7: Salvar no banco com created_by
       console.log('💾 Saving to database...')
       const { data: dbConnection, error: dbError } = await supabase
         .from('tendenci_whatsapp_connections')
@@ -189,7 +214,9 @@ Deno.serve(async (req) => {
           status: 'connecting',
           qr_code: qrCodeBase64,
           qr_code_base64: qrCodeBase64,
-          created_by: null,
+          created_by: currentUserId, // ✅ AUTO-FILL created_by
+          webhook_configured: webhookConfigured,
+          webhook_url: webhookUrl,
           metadata: instanceData
         })
         .select()
@@ -240,6 +267,32 @@ Deno.serve(async (req) => {
         const data = await response.json()
         const qrCode = data.base64 || data.qrcode?.base64
 
+        // ✅ RECONFIGURAR webhook após reconexão
+        console.log('🔗 Reconfiguring webhook after reconnect...')
+        const supabaseUrl = Deno.env.get('SUPABASE_URL')
+        const webhookUrl = `${supabaseUrl}/functions/v1/whatsapp-webhook`
+
+        const webhookResponse = await fetch(`${evolutionUrl}/webhook/set/${instanceName}`, {
+          method: 'POST',
+          headers: {
+            'apikey': evolutionApiKey,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            url: webhookUrl,
+            enabled: true,
+            webhookByEvents: false,
+            events: ['CONNECTION_UPDATE', 'QRCODE_UPDATED', 'MESSAGES_UPSERT', 'MESSAGES_UPDATE']
+          })
+        })
+
+        const webhookConfigured = webhookResponse.ok
+        if (!webhookConfigured) {
+          console.warn('⚠️ Webhook reconfig failed (non-critical)')
+        } else {
+          console.log('✅ Webhook reconfigured successfully')
+        }
+
         // Atualizar banco
         await supabase
           .from('tendenci_whatsapp_connections')
@@ -247,12 +300,13 @@ Deno.serve(async (req) => {
             qr_code: qrCode,
             qr_code_base64: qrCode,
             status: 'connecting',
-            last_sync: new Date().toISOString()
+            last_sync: new Date().toISOString(),
+            webhook_configured: webhookConfigured
           })
           .eq('instance_name', instanceName)
 
         return new Response(
-          JSON.stringify({ success: true, qrCode }),
+          JSON.stringify({ success: true, qrCode, webhookConfigured }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       } catch (error) {

@@ -52,20 +52,46 @@ export function CampanhaExecutor({ campaignId, campaignName, onComplete }: Execu
         .select('*')
         .eq('id', campanha.whatsapp_connection_id)
         .maybeSingle();
-      if (whatsappError || !whatsappConn) {
-        throw new Error('Nenhuma conexão WhatsApp configurada');
+
+      console.log('🔍 Validating WhatsApp connection:', whatsappConn);
+
+      if (whatsappError) {
+        throw new Error(`❌ Erro ao buscar conexão WhatsApp: ${whatsappError.message}`);
+      }
+
+      if (!whatsappConn) {
+        throw new Error('❌ Conexão WhatsApp não encontrada no banco de dados');
       }
 
       if (whatsappConn.status !== 'connected') {
-        throw new Error('Conexão WhatsApp não está ativa');
-      }
-
-      // VALIDAÇÃO CRÍTICA: verificar se instance_id e instance_name existem
-      if (!whatsappConn.instance_id || !whatsappConn.instance_name) {
         throw new Error(
-          'Dados da instância WhatsApp ausentes. Por favor, delete e recrie esta campanha para incluir as informações da instância.'
+          `❌ Conexão "${whatsappConn.instance_name || 'Desconhecida'}" não está conectada (status: ${whatsappConn.status}). Conecte-a primeiro na aba "WhatsApp API".`
         );
       }
+
+      if (!whatsappConn.instance_id) {
+        throw new Error(
+          `❌ Conexão "${whatsappConn.instance_name}" sem instance_id. Delete e recrie esta conexão.`
+        );
+      }
+
+      if (!whatsappConn.instance_name) {
+        throw new Error(
+          `❌ Conexão sem instance_name (ID: ${whatsappConn.id}). Delete e recrie esta conexão.`
+        );
+      }
+
+      if (!whatsappConn.phone_number) {
+        console.warn('⚠️ Conexão sem phone_number, mas continuando...');
+      }
+
+      console.log('✅ WhatsApp connection validated:', {
+        id: whatsappConn.id,
+        instance_name: whatsappConn.instance_name,
+        instance_id: whatsappConn.instance_id,
+        phone: whatsappConn.phone_number,
+        status: whatsappConn.status
+      });
 
       // 3. Buscar sequência
       const { data: sequencia, error: seqError } = await supabase
