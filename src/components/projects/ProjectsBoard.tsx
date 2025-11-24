@@ -51,8 +51,10 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
   const getStageColor = (stage: string) => {
     const colors: Record<string, string> = {
       recebido: "bg-blue-500",
-      em_desenvolvimento: "bg-yellow-500",
-      aguardando_aprovacao: "bg-orange-500",
+      em_orcamento: "bg-purple-500",
+      orcado: "bg-indigo-500",
+      apresentado: "bg-cyan-500",
+      em_negociacao: "bg-orange-500",
       aprovado: "bg-green-500",
       perdido: "bg-red-500"
     };
@@ -61,8 +63,10 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
 
   const groupedProjects = {
     recebido: projects.filter(p => p.stage === "recebido"),
-    em_desenvolvimento: projects.filter(p => p.stage === "em_desenvolvimento"),
-    aguardando_aprovacao: projects.filter(p => p.stage === "aguardando_aprovacao"),
+    em_orcamento: projects.filter(p => p.stage === "em_orcamento"),
+    orcado: projects.filter(p => p.stage === "orcado"),
+    apresentado: projects.filter(p => p.stage === "apresentado"),
+    em_negociacao: projects.filter(p => p.stage === "em_negociacao"),
     aprovado: projects.filter(p => p.stage === "aprovado"),
     perdido: projects.filter(p => p.stage === "perdido")
   };
@@ -78,11 +82,11 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
 
   return (
     <>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-6">
         {/* Recebido */}
         <div className="space-y-4">
           <div className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 rounded-lg">
-            <span className="text-2xl">🟦</span>
+            <span className="text-2xl">📥</span>
             <h3 className="font-semibold text-blue-700 dark:text-blue-400">
               Recebido ({groupedProjects.recebido.length})
             </h3>
@@ -119,19 +123,19 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
           </div>
         </div>
 
-        {/* Em Desenvolvimento */}
+        {/* Em Orçamento */}
         <div className="space-y-4">
-          <div className="flex items-center gap-2 px-4 py-2 bg-yellow-500/10 rounded-lg">
-            <span className="text-2xl">🟨</span>
-            <h3 className="font-semibold text-yellow-700 dark:text-yellow-400">
-              Em Desenvolvimento ({groupedProjects.em_desenvolvimento.length})
+          <div className="flex items-center gap-2 px-4 py-2 bg-purple-500/10 rounded-lg">
+            <span className="text-2xl">📝</span>
+            <h3 className="font-semibold text-purple-700 dark:text-purple-400">
+              Em Orçamento ({groupedProjects.em_orcamento.length})
             </h3>
           </div>
           <div className="space-y-3">
-            {groupedProjects.em_desenvolvimento.map((project) => (
+            {groupedProjects.em_orcamento.map((project) => (
               <Card
                 key={project.id}
-                className="p-4 cursor-pointer hover:shadow-lg transition-all duration-200 border-l-4 border-l-yellow-500"
+                className="p-4 cursor-pointer hover:shadow-lg transition-all duration-200 border-l-4 border-l-purple-500"
                 onClick={() => handleCardClick(project)}
               >
                 <h4 className="font-semibold mb-2">{project.name || "Sem título"}</h4>
@@ -151,24 +155,104 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
                 </p>
               </Card>
             ))}
-            {groupedProjects.em_desenvolvimento.length === 0 && (
+            {groupedProjects.em_orcamento.length === 0 && (
               <p className="text-sm text-muted-foreground text-center py-4">
-                Nenhum projeto em desenvolvimento
+                Nenhum projeto em orçamento
               </p>
             )}
           </div>
         </div>
 
-        {/* Aguardando Aprovação */}
+        {/* Orçado */}
         <div className="space-y-4">
-          <div className="flex items-center gap-2 px-4 py-2 bg-orange-500/10 rounded-lg">
-            <span className="text-2xl">🟧</span>
-            <h3 className="font-semibold text-orange-700 dark:text-orange-400">
-              Aguardando Aprovação ({groupedProjects.aguardando_aprovacao.length})
+          <div className="flex items-center gap-2 px-4 py-2 bg-indigo-500/10 rounded-lg">
+            <span className="text-2xl">💰</span>
+            <h3 className="font-semibold text-indigo-700 dark:text-indigo-400">
+              Orçado ({groupedProjects.orcado.length})
             </h3>
           </div>
           <div className="space-y-3">
-            {groupedProjects.aguardando_aprovacao.map((project) => (
+            {groupedProjects.orcado.map((project) => (
+              <Card
+                key={project.id}
+                className="p-4 cursor-pointer hover:shadow-lg transition-all duration-200 border-l-4 border-l-indigo-500"
+                onClick={() => handleCardClick(project)}
+              >
+                <h4 className="font-semibold mb-2">{project.name || "Sem título"}</h4>
+                <p className="text-sm text-muted-foreground mb-2">
+                  {project.client?.name || "Cliente não definido"}
+                </p>
+                <div className="flex items-center justify-between">
+                  <Badge className={getStageColor(project.stage)}>
+                    R$ {project.value?.toLocaleString('pt-BR') || "0"}
+                  </Badge>
+                  <span className="text-xs text-muted-foreground">
+                    {project.deadline ? formatDistanceToNow(new Date(project.deadline), { addSuffix: true, locale: ptBR }) : "Sem prazo"}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  {project.architect?.name || "Sem responsável"}
+                </p>
+              </Card>
+            ))}
+            {groupedProjects.orcado.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                Nenhum projeto orçado
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Apresentado */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 px-4 py-2 bg-cyan-500/10 rounded-lg">
+            <span className="text-2xl">📊</span>
+            <h3 className="font-semibold text-cyan-700 dark:text-cyan-400">
+              Apresentado ({groupedProjects.apresentado.length})
+            </h3>
+          </div>
+          <div className="space-y-3">
+            {groupedProjects.apresentado.map((project) => (
+              <Card
+                key={project.id}
+                className="p-4 cursor-pointer hover:shadow-lg transition-all duration-200 border-l-4 border-l-cyan-500"
+                onClick={() => handleCardClick(project)}
+              >
+                <h4 className="font-semibold mb-2">{project.name || "Sem título"}</h4>
+                <p className="text-sm text-muted-foreground mb-2">
+                  {project.client?.name || "Cliente não definido"}
+                </p>
+                <div className="flex items-center justify-between">
+                  <Badge className={getStageColor(project.stage)}>
+                    R$ {project.value?.toLocaleString('pt-BR') || "0"}
+                  </Badge>
+                  <span className="text-xs text-muted-foreground">
+                    {project.deadline ? formatDistanceToNow(new Date(project.deadline), { addSuffix: true, locale: ptBR }) : "Sem prazo"}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  {project.architect?.name || "Sem responsável"}
+                </p>
+              </Card>
+            ))}
+            {groupedProjects.apresentado.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                Nenhum projeto apresentado
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Em Negociação */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 px-4 py-2 bg-orange-500/10 rounded-lg">
+            <span className="text-2xl">🤝</span>
+            <h3 className="font-semibold text-orange-700 dark:text-orange-400">
+              Em Negociação ({groupedProjects.em_negociacao.length})
+            </h3>
+          </div>
+          <div className="space-y-3">
+            {groupedProjects.em_negociacao.map((project) => (
               <Card
                 key={project.id}
                 className="p-4 cursor-pointer hover:shadow-lg transition-all duration-200 border-l-4 border-l-orange-500"
@@ -191,9 +275,9 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
                 </p>
               </Card>
             ))}
-            {groupedProjects.aguardando_aprovacao.length === 0 && (
+            {groupedProjects.em_negociacao.length === 0 && (
               <p className="text-sm text-muted-foreground text-center py-4">
-                Nenhum projeto aguardando aprovação
+                Nenhum projeto em negociação
               </p>
             )}
           </div>
@@ -202,7 +286,7 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
         {/* Aprovado */}
         <div className="space-y-4">
           <div className="flex items-center gap-2 px-4 py-2 bg-green-500/10 rounded-lg">
-            <span className="text-2xl">🟩</span>
+            <span className="text-2xl">✅</span>
             <h3 className="font-semibold text-green-700 dark:text-green-400">
               Aprovado ({groupedProjects.aprovado.length})
             </h3>
@@ -242,7 +326,7 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
         {/* Perdido */}
         <div className="space-y-4">
           <div className="flex items-center gap-2 px-4 py-2 bg-red-500/10 rounded-lg">
-            <span className="text-2xl">🟥</span>
+            <span className="text-2xl">❌</span>
             <h3 className="font-semibold text-red-700 dark:text-red-400">
               Perdido ({groupedProjects.perdido.length})
             </h3>
