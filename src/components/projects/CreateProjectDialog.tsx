@@ -82,7 +82,13 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess, preSelected
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const newFiles = Array.from(e.target.files);
+      console.log('📁 Arquivos selecionados:', newFiles.map(f => ({
+        name: f.name,
+        type: f.type,
+        size: f.size
+      })));
       setFiles(prev => [...prev, ...newFiles]);
+      toast.success(`${newFiles.length} arquivo(s) selecionado(s)`);
     }
   };
 
@@ -129,8 +135,13 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess, preSelected
           uploaded_by: user?.id
         });
       } catch (error: any) {
-        console.error('Erro ao fazer upload:', error);
-        toast.error(`Erro ao enviar ${file.name}`);
+        console.error('❌ Erro detalhado ao fazer upload:', {
+          file: file.name,
+          error: error,
+          message: error.message,
+          details: error.details
+        });
+        toast.error(`Erro ao enviar ${file.name}: ${error.message || 'Erro desconhecido'}`);
       }
     }
 
@@ -398,12 +409,11 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess, preSelected
                     id="file-upload"
                     type="file"
                     multiple
-                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.dwg,.txt,.mp3,.wav,.webp"
                     onChange={handleFileSelect}
                     className="hidden"
                   />
                   <span className="text-sm text-muted-foreground">
-                    PDF, Excel, Word, DWG, Imagens, Áudio
+                    Todos os formatos aceitos
                   </span>
                 </div>
 
