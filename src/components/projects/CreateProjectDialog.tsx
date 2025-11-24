@@ -97,15 +97,28 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess, preSelected
     const { data: { user } } = await supabase.auth.getUser();
 
     for (const file of files) {
-      const fileExt = file.name.split('.').pop();
+      const fileExt = file.name.split('.').pop()?.toLowerCase();
       const fileName = `${projectId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      
+      console.log('📤 Upload de arquivo do projeto:', {
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: file.size,
+        extension: fileExt
+      });
       
       try {
         const { error: uploadError } = await supabase.storage
           .from('project-files')
-          .upload(fileName, file);
+          .upload(fileName, file, {
+            contentType: file.type || 'application/octet-stream',
+            upsert: false
+          });
 
-        if (uploadError) throw uploadError;
+        if (uploadError) {
+          console.error('❌ Erro no upload:', uploadError);
+          throw uploadError;
+        }
 
         await supabase.from('project_files').insert({
           project_id: projectId,
@@ -385,12 +398,12 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess, preSelected
                     id="file-upload"
                     type="file"
                     multiple
-                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.dwg"
+                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.dwg,.txt,.mp3,.wav,.webp"
                     onChange={handleFileSelect}
                     className="hidden"
                   />
                   <span className="text-sm text-muted-foreground">
-                    PDF, JPG, PNG, DOC
+                    PDF, Excel, Word, DWG, Imagens, Áudio
                   </span>
                 </div>
 
