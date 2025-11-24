@@ -555,15 +555,17 @@ export function CampanhasManager() {
           whatsapp_connection_id: campanha.whatsapp_connection_id,
           instance_name: whatsappConn.instance_name,
           instance_id: whatsappConn.instance_id,
+          webhook_n8n: campanha.webhook_n8n
         };
-        const response = await fetch(campanha.webhook_n8n, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(payload),
+
+        // Enviar via edge function (resolve CORS e segurança)
+        const { data, error } = await supabase.functions.invoke('dispatch-campaign', {
+          body: payload
         });
-        if (response.ok) {
+
+        if (error) throw error;
+        
+        if (data?.status === 'success') {
           successCount++;
           
           // Atualizar status para "sucesso"
@@ -603,7 +605,7 @@ export function CampanhasManager() {
 
         } else {
           errorCount++;
-          const errorMsg = `Erro HTTP ${response.status}`;
+          const errorMsg = data?.error || 'Erro ao enviar mensagem';
           
           setDispatchStatuses(prev => prev.map(s => 
             s.architect_id === arquiteto.id 
