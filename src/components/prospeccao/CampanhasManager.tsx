@@ -27,6 +27,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { AudioRecorder } from "./AudioRecorder";
+import { CampanhaRelatorio } from "./CampanhaRelatorio";
 
 interface Campanha {
   id: string;
@@ -1437,6 +1438,14 @@ export function CampanhasManager() {
                   })}
                 </div>
               </div>
+
+              {/* Relatório da Campanha */}
+              {(viewingCampanha.status === 'enviado' || viewingCampanha.status === 'erro') && (
+                <div className="border-t pt-4">
+                  <Label className="text-base font-semibold mb-3 block">Relatório de Envios</Label>
+                  <CampanhaRelatorio campanhaId={viewingCampanha.id} />
+                </div>
+              )}
             </div>
           )}
         </DialogContent>

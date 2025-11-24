@@ -213,14 +213,26 @@ export function CampanhaExecutor({ campaignId, campaignName, onComplete }: Execu
 
         } catch (error) {
           failed++;
+          console.error(`❌ Erro ao enviar para ${arq.name}:`, error);
+          
+          // Registrar erro no banco
+          await supabase
+            .from('tendenci_prospec_arq_campaign_dispatches')
+            .insert({
+              campanha_id: campanha.id,
+              architect_id: arq.id,
+              status: 'erro',
+              mensagem_erro: error instanceof Error ? error.message : 'Erro desconhecido',
+            });
         }
 
         setStatus(prev => ({ ...prev, sent, failed }));
 
-        // Aguardar entre mensagens (2-5 segundos aleatório)
-        await new Promise(resolve => 
-          setTimeout(resolve, 2000 + Math.random() * 3000)
-        );
+        // Aguardar 3 minutos entre mensagens (180000ms)
+        if (arquitetos.indexOf(arq) < arquitetos.length - 1) {
+          console.log('⏳ Aguardando 3 minutos antes do próximo envio...');
+          await new Promise(resolve => setTimeout(resolve, 180000));
+        }
       }
 
       return { sent, failed, total: arquitetos.length };
@@ -326,11 +338,14 @@ export function CampanhaExecutor({ campaignId, campaignName, onComplete }: Execu
         </div>
       )}
 
-      <Alert>
-        <AlertCircle className="h-4 w-4" />
-        <AlertDescription className="text-xs">
-          <strong>Importante:</strong> O envio respeita intervalos de 2-5 segundos entre mensagens
-          para evitar bloqueios do WhatsApp. Campanhas grandes podem levar alguns minutos.
+      <Alert className="bg-blue-50 border-blue-200">
+        <AlertCircle className="h-4 w-4 text-blue-600" />
+        <AlertDescription className="text-blue-900 text-xs">
+          <strong>Importante:</strong> Cada mensagem será enviada com intervalo de <strong>3 minutos</strong> entre elas 
+          para evitar bloqueio pelo WhatsApp. {status.total > 0 && (
+            <>Para {status.total} destinatários, o envio levará aproximadamente{' '}
+            <strong>{Math.ceil((status.total * 3) / 60)} horas</strong>.</>
+          )}
         </AlertDescription>
       </Alert>
     </Card>

@@ -157,7 +157,25 @@ Deno.serve(async (req) => {
     if (!evolutionResponse.ok) {
       const errorText = await evolutionResponse.text()
       console.error('❌ Erro Evolution API:', errorText)
-      throw new Error(`Evolution API error: ${evolutionResponse.status}`)
+      
+      // Registrar erro mas não falhar completamente
+      await supabase
+        .from('tendenci_prospec_arq_logs')
+        .insert({
+          architect_id: arquiteto_id,
+          campanha_id: campanha_id,
+          tipo: 'erro_envio',
+          canal: 'whatsapp',
+          mensagem: `Erro ao enviar: ${errorText}`,
+          metadata: {
+            instance_name,
+            phone_number: formattedNumber,
+            tipo_envio,
+            error_response: errorText
+          }
+        })
+      
+      throw new Error(`Evolution API error: ${evolutionResponse.status} - ${errorText}`)
     }
 
     const evolutionData = await evolutionResponse.json()
