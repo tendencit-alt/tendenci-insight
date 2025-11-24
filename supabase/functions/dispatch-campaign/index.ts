@@ -44,7 +44,16 @@ Deno.serve(async (req) => {
     const evolutionApiKey = Deno.env.get('EVOLUTION_API_KEY')
 
     if (!evolutionUrl || !evolutionApiKey) {
-      throw new Error('Evolution API não está configurada')
+      return new Response(
+        JSON.stringify({ 
+          status: 'failed',
+          error: 'Evolution API não está configurada'
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200
+        }
+      )
     }
 
     const body: DispatchRequest = await req.json()
@@ -70,7 +79,17 @@ Deno.serve(async (req) => {
 
     // Validações
     if (!instance_name || !telefone || !tipo_envio) {
-      throw new Error('Dados obrigatórios faltando')
+      return new Response(
+        JSON.stringify({ 
+          status: 'failed',
+          error: 'Dados obrigatórios faltando',
+          details: { instance_name, telefone: !!telefone, tipo_envio }
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200
+        }
+      )
     }
 
     // Verificar se instância está conectada
@@ -81,11 +100,30 @@ Deno.serve(async (req) => {
       .single()
 
     if (!connection) {
-      throw new Error(`Instância "${instance_name}" não encontrada`)
+      return new Response(
+        JSON.stringify({ 
+          status: 'failed',
+          error: `Instância "${instance_name}" não encontrada`
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200
+        }
+      )
     }
 
     if (connection.status !== 'connected') {
-      throw new Error(`Instância "${instance_name}" não está conectada`)
+      return new Response(
+        JSON.stringify({ 
+          status: 'failed',
+          error: `Instância "${instance_name}" não está conectada`,
+          details: { status: connection.status }
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200
+        }
+      )
     }
 
     // Formatar número (limpar e adicionar código do país se necessário)
@@ -149,7 +187,17 @@ Deno.serve(async (req) => {
         })
       })
     } else {
-      throw new Error('Tipo de envio inválido ou conteúdo faltando')
+      return new Response(
+        JSON.stringify({ 
+          status: 'failed',
+          error: 'Tipo de envio inválido ou conteúdo faltando',
+          details: { tipo_envio, has_texto: !!conteudo_texto, has_imagem: !!conteudo_imagem_url, has_audio: !!conteudo_audio_url }
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200
+        }
+      )
     }
 
     if (!evolutionResponse.ok) {
@@ -316,16 +364,18 @@ Deno.serve(async (req) => {
     )
 
   } catch (error) {
-    console.error('💥 Erro ao disparar campanha:', error)
+    console.error('💥 Erro inesperado ao disparar campanha:', error)
     
+    // SEMPRE retornar status 200 mesmo em erro crítico
     return new Response(
       JSON.stringify({
-        status: 'error',
-        error: error instanceof Error ? error.message : 'Erro desconhecido'
+        status: 'failed',
+        error: error instanceof Error ? error.message : 'Erro desconhecido',
+        details: 'Erro crítico não tratado'
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400
+        status: 200 // Status 200 para não bloquear a campanha
       }
     )
   }
