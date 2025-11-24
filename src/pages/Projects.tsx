@@ -24,8 +24,10 @@ const Projects = () => {
   });
   const [metrics, setMetrics] = useState({
     recebido_count: 0,
-    em_desenvolvimento_count: 0,
-    aguardando_aprovacao_count: 0,
+    em_orcamento_count: 0,
+    orcado_count: 0,
+    apresentado_count: 0,
+    em_negociacao_count: 0,
     aprovado_count: 0,
     aprovado_value: 0,
     perdido_count: 0,
@@ -98,20 +100,36 @@ const Projects = () => {
             <p className="text-3xl font-bold text-blue-600">{metrics.recebido_count}</p>
           </Card>
 
-          <Card className="p-6 space-y-2 hover:shadow-xl transition-all duration-300 border-l-4 border-l-yellow-500">
+          <Card className="p-6 space-y-2 hover:shadow-xl transition-all duration-300 border-l-4 border-l-purple-500">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-muted-foreground">Em Desenvolvimento</span>
-              <span className="text-2xl">⚙️</span>
+              <span className="text-sm font-medium text-muted-foreground">Em Orçamento</span>
+              <span className="text-2xl">📝</span>
             </div>
-            <p className="text-3xl font-bold text-yellow-600">{metrics.em_desenvolvimento_count}</p>
+            <p className="text-3xl font-bold text-purple-600">{metrics.em_orcamento_count}</p>
+          </Card>
+
+          <Card className="p-6 space-y-2 hover:shadow-xl transition-all duration-300 border-l-4 border-l-indigo-500">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-muted-foreground">Orçado</span>
+              <span className="text-2xl">💰</span>
+            </div>
+            <p className="text-3xl font-bold text-indigo-600">{metrics.orcado_count}</p>
+          </Card>
+
+          <Card className="p-6 space-y-2 hover:shadow-xl transition-all duration-300 border-l-4 border-l-cyan-500">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-muted-foreground">Apresentado</span>
+              <span className="text-2xl">📊</span>
+            </div>
+            <p className="text-3xl font-bold text-cyan-600">{metrics.apresentado_count}</p>
           </Card>
 
           <Card className="p-6 space-y-2 hover:shadow-xl transition-all duration-300 border-l-4 border-l-orange-500">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-muted-foreground">Aguardando Aprovação</span>
-              <span className="text-2xl">⏳</span>
+              <span className="text-sm font-medium text-muted-foreground">Em Negociação</span>
+              <span className="text-2xl">🤝</span>
             </div>
-            <p className="text-3xl font-bold text-orange-600">{metrics.aguardando_aprovacao_count}</p>
+            <p className="text-3xl font-bold text-orange-600">{metrics.em_negociacao_count}</p>
           </Card>
 
           <Card className="p-6 space-y-2 hover:shadow-xl transition-all duration-300 border-l-4 border-l-green-500">
@@ -122,12 +140,12 @@ const Projects = () => {
             <p className="text-3xl font-bold text-green-600">{metrics.aprovado_count}</p>
           </Card>
 
-          <Card className="p-6 space-y-2 hover:shadow-xl transition-all duration-300 border-l-4 border-l-green-700 col-span-1 sm:col-span-2">
+          <Card className="p-6 space-y-2 hover:shadow-xl transition-all duration-300 border-l-4 border-l-green-700">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-muted-foreground">Valor Total Aprovado</span>
-              <span className="text-2xl">💰</span>
+              <span className="text-sm font-medium text-muted-foreground">Valor Aprovado</span>
+              <span className="text-2xl">💵</span>
             </div>
-            <p className="text-3xl font-bold text-green-700">
+            <p className="text-2xl font-bold text-green-700">
               R$ {(metrics.aprovado_value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </p>
           </Card>
@@ -138,22 +156,6 @@ const Projects = () => {
               <span className="text-2xl">❌</span>
             </div>
             <p className="text-3xl font-bold text-red-600">{metrics.perdido_count}</p>
-          </Card>
-
-          <Card className="p-6 space-y-2 hover:shadow-xl transition-all duration-300 border-l-4 border-l-orange-600">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-muted-foreground">Prazos Próximos</span>
-              <span className="text-2xl">⚠️</span>
-            </div>
-            <p className="text-3xl font-bold text-orange-600">{metrics.near_due_count}</p>
-          </Card>
-
-          <Card className="p-6 space-y-2 hover:shadow-xl transition-all duration-300 border-l-4 border-l-red-700">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-muted-foreground">Prazos Vencidos</span>
-              <span className="text-2xl">🚨</span>
-            </div>
-            <p className="text-3xl font-bold text-red-700">{metrics.overdue_count}</p>
           </Card>
         </div>
 
