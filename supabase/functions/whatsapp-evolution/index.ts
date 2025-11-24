@@ -331,7 +331,33 @@ Deno.serve(async (req) => {
     if (action === 'delete') {
       console.log('🗑️ Deleting instance:', instanceName)
       
-      // 1️⃣ Deletar da Evolution API
+      // 1️⃣ Buscar o ID da conexão
+      const { data: connection } = await supabase
+        .from('tendenci_whatsapp_connections')
+        .select('id')
+        .eq('instance_name', instanceName)
+        .single()
+
+      if (!connection) {
+        throw new Error('Connection not found in database')
+      }
+
+      console.log('📝 Connection ID:', connection.id)
+
+      // 2️⃣ Remover referências em campanhas (setar NULL)
+      const { error: updateCampaignsError } = await supabase
+        .from('tendenci_prospec_arq_campaigns')
+        .update({ whatsapp_connection_id: null })
+        .eq('whatsapp_connection_id', connection.id)
+
+      if (updateCampaignsError) {
+        console.error('❌ Error updating campaigns:', updateCampaignsError)
+        throw new Error(`Failed to remove campaign references: ${updateCampaignsError.message}`)
+      }
+
+      console.log('✅ Campaign references removed')
+
+      // 3️⃣ Deletar da Evolution API
       try {
         const deleteResp = await fetch(`${evolutionUrl}/instance/delete/${instanceName}`, {
           method: 'DELETE',
@@ -351,7 +377,7 @@ Deno.serve(async (req) => {
         // Continue mesmo se falhar na API, pelo menos limpa o banco
       }
 
-      // 2️⃣ Deletar do banco de dados
+      // 4️⃣ Deletar do banco de dados
       const { error: deleteError } = await supabase
         .from('tendenci_whatsapp_connections')
         .delete()
