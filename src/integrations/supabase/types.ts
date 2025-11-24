@@ -2939,11 +2939,13 @@ export type Database = {
       projects_metrics: {
         Args: never
         Returns: {
-          aguardando_aprovacao_count: number
+          apresentado_count: number
           aprovado_count: number
           aprovado_value: number
-          em_desenvolvimento_count: number
+          em_negociacao_count: number
+          em_orcamento_count: number
           near_due_count: number
+          orcado_count: number
           overdue_count: number
           perdido_count: number
           recebido_count: number
