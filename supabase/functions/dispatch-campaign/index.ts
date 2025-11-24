@@ -238,6 +238,44 @@ Deno.serve(async (req) => {
         data_envio: new Date().toISOString(),
       })
 
+    // Obter informações do usuário que disparou
+    const authHeader = req.headers.get('Authorization')
+    let userId = null
+    if (authHeader) {
+      try {
+        const token = authHeader.replace('Bearer ', '')
+        const { data: { user } } = await supabase.auth.getUser(token)
+        userId = user?.id
+      } catch (e) {
+        console.warn('⚠️ Não foi possível obter usuário:', e)
+      }
+    }
+
+    // Atualizar dados do arquiteto após envio bem-sucedido
+    const updateData: any = {
+      status_funil: 'contato_feito_ia',
+      tag_prospeccao: 'contactado',
+      data_ultimo_contato: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }
+
+    // Se conseguimos identificar o usuário, atualizar vendedor_responsavel
+    if (userId) {
+      updateData.vendedor_responsavel = userId
+    }
+
+    await supabase
+      .from('architects')
+      .update(updateData)
+      .eq('id', arquiteto_id)
+
+    console.log('✅ Arquiteto atualizado:', {
+      arquiteto_id,
+      status_funil: 'contato_feito_ia',
+      tag_prospeccao: 'contactado',
+      vendedor: userId || 'não identificado'
+    })
+
     return new Response(
       JSON.stringify({ 
         status: 'success',
