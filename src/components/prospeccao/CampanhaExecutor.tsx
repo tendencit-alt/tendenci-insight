@@ -20,6 +20,8 @@ interface ExecutionStatus {
   failed: number;
   current: string;
   isRunning: boolean;
+  isWaiting: boolean;
+  waitingSeconds: number;
 }
 
 export function CampanhaExecutor({ campaignId, campaignName, onComplete }: ExecutorProps) {
@@ -29,6 +31,8 @@ export function CampanhaExecutor({ campaignId, campaignName, onComplete }: Execu
     failed: 0,
     current: "",
     isRunning: false,
+    isWaiting: false,
+    waitingSeconds: 0,
   });
   const [isPaused, setIsPaused] = useState(false);
 
@@ -290,10 +294,22 @@ export function CampanhaExecutor({ campaignId, campaignName, onComplete }: Execu
 
         setStatus(prev => ({ ...prev, sent, failed }));
 
-        // Aguardar 3 minutos entre mensagens (180000ms)
-        if (arquitetos.indexOf(arq) < arquitetos.length - 1) {
-          console.log('⏳ Aguardando 3 minutos antes do próximo envio...');
-          await new Promise(resolve => setTimeout(resolve, 180000));
+        // Aguardar 3 minutos entre mensagens (180000ms = 3 minutos)
+        const isLastArchitect = arquitetos.indexOf(arq) === arquitetos.length - 1;
+        if (!isLastArchitect) {
+          const waitTime = 180; // 180 segundos = 3 minutos
+          console.log(`⏳ Aguardando ${waitTime} segundos (3 minutos) antes do próximo envio...`);
+          setStatus(prev => ({ ...prev, isWaiting: true, waitingSeconds: waitTime }));
+          
+          // Countdown visual
+          for (let i = waitTime; i > 0; i--) {
+            if (isPaused) break;
+            setStatus(prev => ({ ...prev, waitingSeconds: i }));
+            await new Promise(resolve => setTimeout(resolve, 1000)); // 1 segundo
+          }
+          
+          setStatus(prev => ({ ...prev, isWaiting: false, waitingSeconds: 0 }));
+          console.log(`✅ Aguardo concluído, próximo envio iniciando...`);
         }
       }
 
@@ -331,6 +347,8 @@ export function CampanhaExecutor({ campaignId, campaignName, onComplete }: Execu
       failed: 0,
       current: "",
       isRunning: false,
+      isWaiting: false,
+      waitingSeconds: 0,
     });
     setIsPaused(false);
   };
@@ -374,11 +392,23 @@ export function CampanhaExecutor({ campaignId, campaignName, onComplete }: Execu
         </div>
       )}
 
-      {status.isRunning && status.current && (
+      {status.isRunning && status.current && !status.isWaiting && (
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
             Enviando para: <strong>{status.current}</strong>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {status.isWaiting && (
+        <Alert className="bg-orange-50 border-orange-200">
+          <AlertCircle className="h-4 w-4 text-orange-600" />
+          <AlertDescription className="text-orange-900">
+            ⏳ Aguardando <strong>{Math.floor(status.waitingSeconds / 60)}:{String(status.waitingSeconds % 60).padStart(2, '0')}</strong> antes do próximo envio...
+            <div className="mt-2">
+              <Progress value={((180 - status.waitingSeconds) / 180) * 100} className="h-2" />
+            </div>
           </AlertDescription>
         </Alert>
       )}
