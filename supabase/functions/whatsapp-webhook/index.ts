@@ -1,147 +1,133 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import { corsHeaders } from '../_shared/cors.ts'
 
 interface EvolutionWebhook {
   event: string
   instance: string
-  data?: {
+  data: {
     state?: string
     remoteJid?: string
-    [key: string]: any
+    key?: {
+      remoteJid?: string
+    }
+    phoneNumber?: string
+    qrcode?: {
+      code?: string
+      base64?: string
+    }
   }
 }
 
 Deno.serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
 
   try {
-    console.log('🔔 🔔 🔔 WEBHOOK EVOLUTION API RECEBIDO! 🔔 🔔 🔔')
-    console.log('⏰ Timestamp:', new Date().toISOString())
-    console.log('📍 Request method:', req.method)
-    console.log('📍 Request headers:', JSON.stringify(Object.fromEntries(req.headers)))
-
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const body: EvolutionWebhook = await req.json()
-    console.log('📦 Webhook BODY completo:', JSON.stringify(body, null, 2))
-
-    const { event, instance, data } = body
-
-    // 🔥 PROCESSAR EVENTOS DE CONEXÃO (RECONEXÃO AUTOMÁTICA)
-    const connectionEvents = [
-      'connection.update', 
-      'qrcode.updated', 
-      'open',
-      'messages.upsert',
-      'connection.open'
-    ]
+    const payload: EvolutionWebhook = await req.json()
     
+    console.log('🔔 WEBHOOK RECEIVED:', {
+      event: payload.event,
+      instance: payload.instance,
+      state: payload.data?.state,
+      timestamp: new Date().toISOString()
+    })
+
+    const { instance, event, data } = payload
+    const connectionEvents = ['connection.update', 'qrcode.updated', 'open', 'messages.upsert', 'connection.open']
+
     if (connectionEvents.includes(event)) {
-      const state = data?.state || event
+      console.log('📡 Processing connection event:', event)
+
+      // Determinar status baseado no evento e state
       let status = 'connecting'
-      let phoneNumber = null
-
-      console.log(`🔍 Processando evento: ${event}, state: ${state}`)
-
-      // 🎯 Mapear TODOS os estados possíveis da Evolution API
-      if (
-        state === 'open' || 
-        state === 'connected' || 
-        event === 'connection.open' ||
-        event === 'messages.upsert' // Se recebeu mensagem, está conectado!
-      ) {
+      if (event === 'open' || event === 'connection.open' || data?.state === 'open') {
         status = 'connected'
-        phoneNumber = data?.remoteJid?.split('@')[0] || 
-                     data?.key?.remoteJid?.split('@')[0] ||
-                     data?.phoneNumber || null
-        console.log('✅ Connection established! Phone:', phoneNumber)
-      } else if (state === 'close' || state === 'disconnected' || state === 'logout') {
+        console.log('✅ Connection is OPEN')
+      } else if (data?.state === 'close') {
         status = 'disconnected'
-        console.log('❌ Connection closed')
-      } else if (state === 'connecting' || event === 'qrcode.updated') {
-        status = 'connecting'
-        console.log('⏳ Still connecting...')
+        console.log('❌ Connection is CLOSED')
       }
 
-      console.log(`📱 Instance ${instance} - ${event}/${state} -> ${status}`)
+      // Extrair número de telefone
+      const phoneNumber = 
+        data?.remoteJid?.replace('@s.whatsapp.net', '') ||
+        data?.key?.remoteJid?.replace('@s.whatsapp.net', '') ||
+        data?.phoneNumber ||
+        null
 
-      // 📝 Atualizar no banco
+      console.log('📱 Phone number:', phoneNumber)
+
+      // Preparar dados para atualização
       const updateData: any = {
         status,
-        last_sync: new Date().toISOString()
+        last_sync: new Date().toISOString(),
+        metadata: {
+          last_event: event,
+          last_state: data?.state,
+          updated_at: new Date().toISOString()
+        }
       }
 
-      if (phoneNumber) {
+      // Se conectado, adicionar phone e data de conexão
+      if (status === 'connected' && phoneNumber) {
         updateData.phone_number = phoneNumber
         updateData.connected_at = new Date().toISOString()
-        console.log('📞 Phone number saved:', phoneNumber)
+        updateData.qr_code = null
+        updateData.qr_code_base64 = null
+        console.log('✅ Setting connected state with phone:', phoneNumber)
       }
 
+      // Se desconectado, limpar dados
       if (status === 'disconnected') {
         updateData.phone_number = null
         updateData.qr_code = null
         updateData.qr_code_base64 = null
-        console.log('🧹 Cleared connection data')
+        console.log('🔌 Clearing disconnected state')
       }
 
-      // 🔄 Atualizar QR Code se disponível
-      if (event === 'qrcode.updated' && data?.qrcode) {
-        updateData.qr_code_base64 = data.qrcode
-        updateData.qr_code = data.qrcode
-        console.log('📱 QR Code incluído no update')
+      // Atualizar QR code se disponível
+      if (data?.qrcode?.base64) {
+        updateData.qr_code_base64 = data.qrcode.base64
+        updateData.qr_code = data.qrcode.base64
+        console.log('📱 Updating QR code')
       }
 
+      console.log('💾 Updating database with:', JSON.stringify(updateData, null, 2))
+
+      // Atualizar banco de dados
       const { error: updateError } = await supabase
         .from('tendenci_whatsapp_connections')
         .update(updateData)
         .eq('instance_name', instance)
 
       if (updateError) {
-        console.error('❌ Erro ao atualizar status:', updateError)
+        console.error('❌ Error updating database:', updateError)
         throw updateError
-      } else {
-        console.log(`✅ Status atualizado: ${status} (phone: ${phoneNumber || 'N/A'})`)
       }
+
+      console.log('✅ Database updated successfully')
+    } else {
+      console.log('ℹ️ Ignoring event:', event)
     }
 
-    // Log do evento
-    console.log('✅ Webhook processado:', event)
-
     return new Response(
-      JSON.stringify({ success: true, event, instance }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200
-      }
+      JSON.stringify({ success: true }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
-  } catch (error) {
-    console.error('💥 Erro ao processar webhook:', error)
-    
+  } catch (error: any) {
+    console.error('💥 Webhook error:', error)
     return new Response(
-      JSON.stringify({
-        success: false,
-        error: error instanceof Error ? error.message : 'Erro desconhecido'
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400
+      JSON.stringify({ error: error.message }),
+      { 
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }
     )
   }
