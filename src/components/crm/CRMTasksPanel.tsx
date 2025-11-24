@@ -7,9 +7,10 @@ import { Button } from "@/components/ui/button";
 
 interface CRMTasksPanelProps {
   pipelineId: string;
+  categoryFilter?: string;
 }
 
-export function CRMTasksPanel({ pipelineId }: CRMTasksPanelProps) {
+export function CRMTasksPanel({ pipelineId, categoryFilter }: CRMTasksPanelProps) {
   const [tasks, setTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -35,17 +36,24 @@ export function CRMTasksPanel({ pipelineId }: CRMTasksPanelProps) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [pipelineId]);
+  }, [pipelineId, categoryFilter]);
 
   const fetchTasks = async () => {
     setLoading(true);
 
     // Buscar tarefas de deals do pipeline atual
-    const { data: deals } = await supabase
+    let dealsQuery = supabase
       .from("crm_deals")
       .select("id")
       .eq("pipeline_id", pipelineId)
       .eq("status", "aberto");
+    
+    // Filtrar por categoria se especificado
+    if (categoryFilter && categoryFilter !== "all") {
+      dealsQuery = dealsQuery.eq("categoria", categoryFilter);
+    }
+    
+    const { data: deals } = await dealsQuery;
 
     if (!deals || deals.length === 0) {
       setTasks([]);

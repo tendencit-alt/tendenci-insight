@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 interface CRMKPIsProps {
   pipelineId: string;
+  categoryFilter?: string;
 }
 
 interface ConversionMetrics {
@@ -15,7 +16,7 @@ interface ConversionMetrics {
   bestMonthDate: string;
 }
 
-export function CRMKPIs({ pipelineId }: CRMKPIsProps) {
+export function CRMKPIs({ pipelineId, categoryFilter }: CRMKPIsProps) {
   const [loading, setLoading] = useState(true);
   const [metrics, setMetrics] = useState<any>(null);
   const [conversionMetrics, setConversionMetrics] = useState<ConversionMetrics>({
@@ -31,7 +32,7 @@ export function CRMKPIs({ pipelineId }: CRMKPIsProps) {
   useEffect(() => {
     if (!pipelineId) return;
     fetchMetrics();
-  }, [pipelineId]);
+  }, [pipelineId, categoryFilter]);
 
   const fetchMetrics = async () => {
     setLoading(true);
@@ -55,12 +56,19 @@ export function CRMKPIs({ pipelineId }: CRMKPIsProps) {
 
     // Contar deals em negociação e calcular valor total
     if (negociacaoStage) {
-      const { data: negociacaoDeals } = await supabase
+      let negociacaoQuery = supabase
         .from("crm_deals")
         .select("value")
         .eq("pipeline_id", pipelineId)
         .eq("stage_id", negociacaoStage.id)
         .eq("status", "aberto");
+      
+      // Filtrar por categoria se especificado
+      if (categoryFilter && categoryFilter !== "all") {
+        negociacaoQuery = negociacaoQuery.eq("categoria", categoryFilter);
+      }
+      
+      const { data: negociacaoDeals } = await negociacaoQuery;
       
       const count = negociacaoDeals?.length || 0;
       const totalValue = negociacaoDeals?.reduce((sum, deal) => sum + (deal.value || 0), 0) || 0;
@@ -70,10 +78,17 @@ export function CRMKPIs({ pipelineId }: CRMKPIsProps) {
     }
 
     // Buscar todos os deals do pipeline para cálculos customizados
-    const { data: allDeals } = await supabase
+    let allDealsQuery = supabase
       .from("crm_deals")
       .select("value, status, created_at")
       .eq("pipeline_id", pipelineId);
+    
+    // Filtrar por categoria se especificado
+    if (categoryFilter && categoryFilter !== "all") {
+      allDealsQuery = allDealsQuery.eq("categoria", categoryFilter);
+    }
+    
+    const { data: allDeals } = await allDealsQuery;
 
     if (allDeals) {
       // Calcular Ticket Médio (média apenas dos negócios ganhos)
