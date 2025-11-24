@@ -6,7 +6,7 @@ const corsHeaders = {
 }
 
 interface EvolutionAPIRequest {
-  action: 'create' | 'status' | 'qrcode' | 'disconnect' | 'delete' | 'check-webhook'
+  action: 'create' | 'status' | 'qrcode' | 'disconnect' | 'delete' | 'check-webhook' | 'reconfigure-webhook'
   instanceName?: string
 }
 
@@ -375,6 +375,88 @@ Deno.serve(async (req) => {
         JSON.stringify({ success: true }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
+    }
+
+    // ========== CHECK WEBHOOK ==========
+    if (action === 'check-webhook') {
+      console.log('🔍 Checking webhook for:', instanceName)
+      
+      const response = await fetch(`${evolutionUrl}/webhook/find/${instanceName}`, {
+        method: 'GET',
+        headers: { 'apikey': evolutionApiKey }
+      })
+      
+      const webhookConfig = await response.json()
+      console.log('📡 Current webhook config:', webhookConfig)
+      
+      return new Response(
+        JSON.stringify({ success: true, webhook: webhookConfig }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // ========== RECONFIGURE WEBHOOK ==========
+    if (action === 'reconfigure-webhook') {
+      console.log('🔧 Reconfiguring webhook for:', instanceName)
+      
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')
+      const webhookUrl = `${supabaseUrl}/functions/v1/whatsapp-webhook`
+      
+      try {
+        // Configurar webhook na Evolution API
+        const webhookResponse = await fetch(`${evolutionUrl}/webhook/set/${instanceName}`, {
+          method: 'POST',
+          headers: {
+            'apikey': evolutionApiKey,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            url: webhookUrl,
+            enabled: true,
+            webhookByEvents: false, // ✅ Receber TODOS os eventos
+            events: [
+              'CONNECTION_UPDATE',
+              'QRCODE_UPDATED',
+              'MESSAGES_UPSERT',
+              'MESSAGES_UPDATE'
+            ]
+          })
+        })
+
+        if (!webhookResponse.ok) {
+          const errorText = await webhookResponse.text()
+          console.error('❌ Webhook config failed:', errorText)
+          throw new Error(`Webhook config failed: ${errorText}`)
+        }
+
+        console.log('✅ Webhook configured successfully')
+
+        // Atualizar banco de dados
+        const { error: dbError } = await supabase
+          .from('tendenci_whatsapp_connections')
+          .update({
+            webhook_configured: true,
+            webhook_url: webhookUrl,
+            last_sync: new Date().toISOString()
+          })
+          .eq('instance_name', instanceName)
+
+        if (dbError) {
+          console.warn('⚠️ Database update warning:', dbError)
+        }
+
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            message: 'Webhook reconfigurado com sucesso',
+            webhookUrl 
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      } catch (error) {
+        console.error('💥 Reconfigure webhook error:', error)
+        throw error
+      }
     }
 
     // ========== DELETE ==========
