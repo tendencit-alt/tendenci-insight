@@ -216,10 +216,12 @@ Deno.serve(async (req) => {
                 'Content-Type': 'application/json'
               },
               body: JSON.stringify({
-                url: webhookUrl,
-                enabled: true,
-                webhookByEvents: false,
-                events: ['CONNECTION_UPDATE', 'QRCODE_UPDATED', 'MESSAGES_UPSERT', 'MESSAGES_UPDATE']
+                webhook: {
+                  url: webhookUrl,
+                  enabled: true,
+                  webhookByEvents: false,
+                  events: ['CONNECTION_UPDATE', 'QRCODE_UPDATED', 'MESSAGES_UPSERT', 'MESSAGES_UPDATE']
+                }
               })
             })
 
@@ -318,10 +320,12 @@ Deno.serve(async (req) => {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            url: webhookUrl,
-            enabled: true,
-            webhookByEvents: false,
-            events: ['CONNECTION_UPDATE', 'QRCODE_UPDATED', 'MESSAGES_UPSERT', 'MESSAGES_UPDATE']
+            webhook: {
+              url: webhookUrl,
+              enabled: true,
+              webhookByEvents: false,
+              events: ['CONNECTION_UPDATE', 'QRCODE_UPDATED', 'MESSAGES_UPSERT', 'MESSAGES_UPDATE']
+            }
           })
         })
 
@@ -395,15 +399,17 @@ Deno.serve(async (req) => {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            url: webhookUrl,
-            enabled: true,
-            webhookByEvents: false, // ✅ Receber TODOS os eventos
-            events: [
-              'CONNECTION_UPDATE',
-              'QRCODE_UPDATED',
-              'MESSAGES_UPSERT',
-              'MESSAGES_UPDATE'
-            ]
+            webhook: {
+              url: webhookUrl,
+              enabled: true,
+              webhookByEvents: false,
+              events: [
+                'CONNECTION_UPDATE',
+                'QRCODE_UPDATED',
+                'MESSAGES_UPSERT',
+                'MESSAGES_UPDATE'
+              ]
+            }
           })
         })
 
