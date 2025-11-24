@@ -273,7 +273,11 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
                   {/* Badges - Indicações, Produtos e Projetos */}
                   <div className="flex gap-1.5 flex-wrap">
                     {/* Badge 1: Status de Contato */}
-                    {!architect.data_primeiro_contato && !architect.data_ultimo_contato ? (
+                    {architect.status_funil === 'contato_feito_ia' ? (
+                      <Badge variant="outline" className="text-xs bg-purple-50 dark:bg-purple-950 border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300">
+                        🤖 Contato feito por I.A
+                      </Badge>
+                    ) : !architect.data_primeiro_contato && !architect.data_ultimo_contato ? (
                       <Badge variant="outline" className="text-xs bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800 text-red-700 dark:text-red-300">
                         ⚠️ Nunca Contactado
                       </Badge>
