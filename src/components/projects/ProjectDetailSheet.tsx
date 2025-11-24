@@ -152,25 +152,40 @@ export function ProjectDetailSheet({ project, open, onOpenChange, onSuccess }: P
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
-      const fileExt = file.name.split('.').pop();
+      const fileExt = file.name.split('.').pop()?.toLowerCase();
       const fileName = `${project.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+      console.log('📤 Fazendo upload:', {
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: file.size,
+        extension: fileExt
+      });
 
       // Retry lógica: até 3 tentativas
       let uploadError;
       for (let attempt = 0; attempt < 3; attempt++) {
         const { error } = await supabase.storage
           .from('project-files')
-          .upload(fileName, file);
+          .upload(fileName, file, {
+            contentType: file.type || 'application/octet-stream',
+            upsert: false
+          });
         
         uploadError = error;
         if (!error) break;
+        
+        console.error(`Tentativa ${attempt + 1} falhou:`, error);
         
         if (attempt < 2) {
           await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
         }
       }
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('❌ Erro no upload após 3 tentativas:', uploadError);
+        throw uploadError;
+      }
 
       const { error: dbError } = await supabase
         .from('project_files')
