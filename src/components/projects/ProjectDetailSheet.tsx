@@ -7,12 +7,13 @@ import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { FileText, Image as ImageIcon, Download, Upload, X, Loader2 } from "lucide-react";
+import { FileText, Image as ImageIcon, Download, Upload, X, Loader2, Edit } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useWebhookSync } from "@/hooks/useWebhookSync";
+import { EditProjectDialog } from "./EditProjectDialog";
 import { 
   validateFileType, 
   validateFileSize, 
@@ -37,6 +38,7 @@ export function ProjectDetailSheet({ project, open, onOpenChange, onSuccess }: P
   const [currentStage, setCurrentStage] = useState(project?.stage || "recebido");
   const [originalStage, setOriginalStage] = useState(project?.stage || "recebido");
   const [savingStage, setSavingStage] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { notifyFileUploaded, notifyStageChanged } = useWebhookSync();
 
@@ -264,7 +266,18 @@ export function ProjectDetailSheet({ project, open, onOpenChange, onSuccess }: P
         }}
       >
         <SheetHeader>
-          <SheetTitle className="text-2xl">Detalhes do Projeto</SheetTitle>
+          <div className="flex items-center justify-between">
+            <SheetTitle className="text-2xl">Detalhes do Projeto</SheetTitle>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setEditDialogOpen(true)}
+              className="gap-2"
+            >
+              <Edit className="w-4 h-4" />
+              Editar Projeto
+            </Button>
+          </div>
         </SheetHeader>
 
         <div className="space-y-6 mt-6">
@@ -468,6 +481,17 @@ export function ProjectDetailSheet({ project, open, onOpenChange, onSuccess }: P
           </Card>
         </div>
       </SheetContent>
+
+      {/* Edit Dialog */}
+      <EditProjectDialog 
+        project={project} 
+        open={editDialogOpen} 
+        onOpenChange={setEditDialogOpen}
+        onSuccess={() => {
+          fetchProjectData();
+          onSuccess?.();
+        }}
+      />
     </Sheet>
   );
 }
