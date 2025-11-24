@@ -9,6 +9,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Plus, Target, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useFormPersistence } from "@/hooks/useFormPersistence";
+import { FormSaveIndicator } from "@/components/ui/FormSaveIndicator";
 
 interface DealArchitectIndicationProps {
   dealId: string;
@@ -41,14 +43,18 @@ export function DealArchitectIndication({
   const [loading, setLoading] = useState(false);
   const [architects, setArchitects] = useState<any[]>([]);
   const [indications, setIndications] = useState<Indication[]>([]);
-  const [formData, setFormData] = useState({
-    architect_id: "",
-    product_type: dealTipoProduto || "",
-    categoria: dealCategoria || "",
-    centro_custo: dealCentroCusto || "",
-    value: "",
-    notes: "",
-  });
+  const [formData, setFormData, clearPersistedData, hasRestoredData] = useFormPersistence(
+    `deal-architect-indication-${dealId}`,
+    {
+      architect_id: "",
+      product_type: dealTipoProduto || "",
+      categoria: dealCategoria || "",
+      centro_custo: dealCentroCusto || "",
+      value: "",
+      notes: "",
+    },
+    showForm
+  );
 
   useEffect(() => {
     fetchArchitects();
@@ -117,6 +123,7 @@ export function DealArchitectIndication({
       if (error) throw error;
 
       toast.success("Indicação registrada com sucesso!");
+      clearPersistedData();
       setShowForm(false);
       setFormData({
         architect_id: "",
@@ -172,6 +179,8 @@ export function DealArchitectIndication({
 
       {showForm && (
         <form onSubmit={handleSubmit} className="space-y-3 border-t pt-3">
+          <FormSaveIndicator hasRestoredData={hasRestoredData} className="mb-2" />
+          
           <div>
             <Label>Arquiteto *</Label>
             <Select

@@ -6,6 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useFormPersistence } from "@/hooks/useFormPersistence";
+import { FormSaveIndicator } from "@/components/ui/FormSaveIndicator";
 
 interface EditLeadDialogProps {
   lead: any;
@@ -17,14 +19,18 @@ interface EditLeadDialogProps {
 export function EditLeadDialog({ lead, open, onOpenChange, onSuccess }: EditLeadDialogProps) {
   const [loading, setLoading] = useState(false);
   const [responsaveis, setResponsaveis] = useState<any[]>([]);
-  const [formData, setFormData] = useState({
-    name: "",
-    phone: "",
-    email: "",
-    source: "",
-    status: "",
-    responsible: ""
-  });
+  const [formData, setFormData, clearPersistedData, hasRestoredData] = useFormPersistence(
+    `edit-lead-form-${lead?.id || 'new'}`,
+    {
+      name: "",
+      phone: "",
+      email: "",
+      source: "",
+      status: "",
+      responsible: ""
+    },
+    open
+  );
 
   useEffect(() => {
     fetchResponsaveis();
@@ -86,6 +92,7 @@ export function EditLeadDialog({ lead, open, onOpenChange, onSuccess }: EditLead
       if (leadError) throw leadError;
 
       toast.success("Lead atualizado com sucesso!");
+      clearPersistedData();
       onSuccess();
       onOpenChange(false);
     } catch (error: any) {
@@ -109,6 +116,8 @@ export function EditLeadDialog({ lead, open, onOpenChange, onSuccess }: EditLead
         <DialogHeader>
           <DialogTitle className="text-2xl">Editar Lead</DialogTitle>
         </DialogHeader>
+
+        <FormSaveIndicator hasRestoredData={hasRestoredData} className="mb-4" />
 
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           <div className="grid grid-cols-2 gap-4">

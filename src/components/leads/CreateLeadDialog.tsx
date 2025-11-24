@@ -9,6 +9,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Upload, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useFormPersistence } from "@/hooks/useFormPersistence";
+import { FormSaveIndicator } from "@/components/ui/FormSaveIndicator";
 
 interface CreateLeadDialogProps {
   open: boolean;
@@ -22,15 +24,19 @@ export function CreateLeadDialog({ open, onOpenChange, onSuccess }: CreateLeadDi
   const [files, setFiles] = useState<File[]>([]);
   const [responsaveis, setResponsaveis] = useState<any[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [formData, setFormData] = useState({
-    name: "",
-    phone: "",
-    email: "",
-    source: "",
-    message: "",
-    interest: "",
-    responsible: ""
-  });
+  const [formData, setFormData, clearPersistedData, hasRestoredData] = useFormPersistence(
+    'create-lead-form',
+    {
+      name: "",
+      phone: "",
+      email: "",
+      source: "",
+      message: "",
+      interest: "",
+      responsible: ""
+    },
+    open
+  );
 
   useEffect(() => {
     fetchResponsaveis();
@@ -193,6 +199,7 @@ export function CreateLeadDialog({ open, onOpenChange, onSuccess }: CreateLeadDi
       console.log('=== LEAD CRIADO COM SUCESSO ===');
       toast.success("Lead criado com sucesso!");
       
+      clearPersistedData();
       onSuccess?.(leadData);
       onOpenChange(false);
       
@@ -235,6 +242,8 @@ export function CreateLeadDialog({ open, onOpenChange, onSuccess }: CreateLeadDi
         <DialogHeader>
           <DialogTitle className="text-2xl">Novo Lead</DialogTitle>
         </DialogHeader>
+
+        <FormSaveIndicator hasRestoredData={hasRestoredData} className="mb-4" />
 
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           <div className="grid grid-cols-2 gap-4">

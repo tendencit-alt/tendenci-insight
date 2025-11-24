@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useWebhookSync } from "@/hooks/useWebhookSync";
+import { useFormPersistence } from "@/hooks/useFormPersistence";
+import { FormSaveIndicator } from "@/components/ui/FormSaveIndicator";
 
 interface EditProjectDialogProps {
   project: any;
@@ -20,13 +22,17 @@ export function EditProjectDialog({ project, open, onOpenChange, onSuccess }: Ed
   const [loading, setLoading] = useState(false);
   const [architects, setArchitects] = useState<any[]>([]);
   const { notifyStageChanged, notifyDeadlineChanged } = useWebhookSync();
-  const [formData, setFormData] = useState({
-    name: "",
-    architect_id: "",
-    stage: "",
-    value: "",
-    deadline: ""
-  });
+  const [formData, setFormData, clearPersistedData, hasRestoredData] = useFormPersistence(
+    `edit-project-form-${project?.id || 'new'}`,
+    {
+      name: "",
+      architect_id: "",
+      stage: "",
+      value: "",
+      deadline: ""
+    },
+    open
+  );
 
   useEffect(() => {
     if (open) {
@@ -88,6 +94,7 @@ export function EditProjectDialog({ project, open, onOpenChange, onSuccess }: Ed
       }
 
       toast.success("Projeto atualizado com sucesso!");
+      clearPersistedData();
       onSuccess();
       onOpenChange(false);
     } catch (error: any) {
@@ -111,6 +118,8 @@ export function EditProjectDialog({ project, open, onOpenChange, onSuccess }: Ed
         <DialogHeader>
           <DialogTitle className="text-2xl">Editar Projeto</DialogTitle>
         </DialogHeader>
+
+        <FormSaveIndicator hasRestoredData={hasRestoredData} className="mb-4" />
 
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           <div className="grid grid-cols-2 gap-4">

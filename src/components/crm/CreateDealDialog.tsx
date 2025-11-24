@@ -32,6 +32,8 @@ import { CreateProjectDialog } from "../projects/CreateProjectDialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { useFormPersistence } from "@/hooks/useFormPersistence";
+import { FormSaveIndicator } from "@/components/ui/FormSaveIndicator";
 
 interface CreateDealDialogProps {
   open: boolean;
@@ -71,22 +73,26 @@ export function CreateDealDialog({
   const audioChunksRef = useRef<Blob[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [formData, setFormData] = useState({
-    stage_id: "",
-    lead_id: "",
-    architect_id: "",
-    project_id: "",
-    value: "",
-    note: "",
-    temperature: "frio",
-    categorias: [] as string[],
-    centros_custo: [] as string[],
-    tipos_produto: [] as string[],
-    observations: "",
-    conversation_history: "",
-    owner_id: "",
-    source_id: "",
-  });
+  const [formData, setFormData, clearPersistedData, hasRestoredData] = useFormPersistence(
+    `create-deal-form-${pipelineId}`,
+    {
+      stage_id: "",
+      lead_id: "",
+      architect_id: "",
+      project_id: "",
+      value: "",
+      note: "",
+      temperature: "frio",
+      categorias: [] as string[],
+      centros_custo: [] as string[],
+      tipos_produto: [] as string[],
+      observations: "",
+      conversation_history: "",
+      owner_id: "",
+      source_id: "",
+    },
+    open
+  );
 
   useEffect(() => {
     if (open && pipelineId) {
@@ -417,6 +423,7 @@ export function CreateDealDialog({
         description: "Negócio criado com sucesso!",
       });
 
+      clearPersistedData();
       setFormData({
         stage_id: "",
         lead_id: "",
@@ -469,6 +476,8 @@ export function CreateDealDialog({
         <DialogHeader>
           <DialogTitle>Novo Negócio</DialogTitle>
         </DialogHeader>
+
+        <FormSaveIndicator hasRestoredData={hasRestoredData} className="mb-4" />
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Seção: Lead e Arquiteto */}
