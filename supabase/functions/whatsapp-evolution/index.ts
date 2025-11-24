@@ -6,7 +6,7 @@ const corsHeaders = {
 }
 
 interface EvolutionAPIRequest {
-  action: 'create' | 'status' | 'qrcode' | 'disconnect' | 'delete'
+  action: 'create' | 'status' | 'qrcode' | 'disconnect' | 'delete' | 'check-webhook'
   instanceName?: string
 }
 
@@ -58,6 +58,43 @@ Deno.serve(async (req) => {
         JSON.stringify({ success: true, instances }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
+    }
+
+    // ========== ✅ FASE 3: CHECK WEBHOOK ==========
+    if (action === 'check-webhook') {
+      if (!instanceName) {
+        throw new Error('instanceName é obrigatório para check-webhook')
+      }
+
+      console.log('🔍 Checking webhook config for:', instanceName)
+      
+      try {
+        const response = await fetch(`${evolutionUrl}/webhook/find/${instanceName}`, {
+          method: 'GET',
+          headers: { 'apikey': evolutionApiKey }
+        })
+
+        if (!response.ok) {
+          const errorText = await response.text()
+          console.error('❌ Failed to fetch webhook:', errorText)
+          throw new Error(`Failed to fetch webhook: ${errorText}`)
+        }
+
+        const webhookConfig = await response.json()
+        console.log('📡 Current webhook config:', JSON.stringify(webhookConfig, null, 2))
+
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            webhook: webhookConfig,
+            instance: instanceName
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      } catch (error) {
+        console.error('💥 Check webhook error:', error)
+        throw error
+      }
     }
 
     if (!instanceName) {

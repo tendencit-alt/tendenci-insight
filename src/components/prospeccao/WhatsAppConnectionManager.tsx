@@ -30,74 +30,16 @@ export function WhatsAppConnectionManager() {
   const [qrCodeDialog, setQrCodeDialog] = useState<WhatsAppConnection | null>(null);
   const queryClient = useQueryClient();
 
-  // Buscar conexões
+  // ✅ FASE 5: Buscar conexões SEM polling manual - confiar no Realtime
   const { data: connections, isLoading, refetch } = useQuery({
     queryKey: ["whatsapp-connections"],
     queryFn: async () => {
-      // Primeiro busca do banco
       const { data, error } = await supabase
         .from("tendenci_whatsapp_connections")
         .select("*")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-
-      // Depois verifica status real na Evolution API
-      try {
-        const { data: statusData } = await supabase.functions.invoke("whatsapp-evolution", {
-          body: { action: "status" },
-        });
-
-        if (statusData?.success && statusData.instances) {
-          // Atualiza status no banco para cada instância
-          for (const conn of data) {
-            const evolutionInstance = statusData.instances.find(
-              (i: any) => i.name === conn.instance_name
-            );
-
-            if (evolutionInstance) {
-              // Evolution API retorna connectionStatus e ownerJid
-              const connectionStatus = evolutionInstance.connectionStatus || "close";
-              const ownerJid = evolutionInstance.ownerJid;
-              const phoneNumber = ownerJid?.split('@')[0] || null;
-              
-              // Considera conectado SOMENTE se status é "open" E tem ownerJid válido
-              let newStatus = "disconnected";
-              if (connectionStatus === "open" && ownerJid && phoneNumber) {
-                newStatus = "connected";
-              } else if (connectionStatus === "connecting" || connectionStatus === "open") {
-                newStatus = "connecting";
-              } else {
-                newStatus = "disconnected";
-              }
-              // Atualiza SOMENTE se mudou o status OU se ficou realmente conectado
-              const shouldUpdate = conn.status !== newStatus || 
-                                 (newStatus === "connected" && phoneNumber && conn.phone_number !== phoneNumber);
-              
-              if (shouldUpdate) {
-                const updateData: any = { status: newStatus };
-                
-                // Se conectou de verdade, salva phone e data de conexão
-                if (newStatus === "connected" && phoneNumber) {
-                  updateData.phone_number = phoneNumber;
-                  updateData.connected_at = new Date().toISOString();
-                }
-                
-                await supabase
-                  .from("tendenci_whatsapp_connections")
-                  .update(updateData)
-                  .eq("id", conn.id);
-                
-                conn.status = newStatus;
-                if (phoneNumber) conn.phone_number = phoneNumber;
-              }
-            }
-          }
-        }
-      } catch (error) {
-        // Silenciar erro de verificação de status
-      }
-
       return data as WhatsAppConnection[];
     },
   });
@@ -124,6 +66,68 @@ export function WhatsAppConnectionManager() {
       supabase.removeChannel(channel);
     };
   }, [queryClient]);
+
+  // ✅ FASE 1: Auto-close modal quando conectar
+  useEffect(() => {
+    if (!qrCodeDialog) return;
+
+    const currentConnection = connections?.find(c => c.id === qrCodeDialog.id);
+    
+    if (currentConnection?.status === 'connected' && currentConnection.phone_number) {
+      // 🎉 CONECTOU COM SUCESSO!
+      console.log('✅ WhatsApp connected successfully:', currentConnection.phone_number);
+      
+      // 1. Toast animado de sucesso
+      toast.success(
+        `✅ WhatsApp conectado com sucesso!\n📱 ${currentConnection.phone_number}`,
+        {
+          duration: 5000,
+          style: {
+            background: '#10b981',
+            color: 'white',
+            fontSize: '16px',
+            fontWeight: 'bold'
+          }
+        }
+      );
+      
+      // 2. Fechar modal após 1.5s (tempo para usuário ver animação)
+      setTimeout(() => {
+        setQrCodeDialog(null);
+      }, 1500);
+      
+      // 3. Invalidar queries
+      queryClient.invalidateQueries({ queryKey: ['whatsapp-connections'] });
+    }
+  }, [connections, qrCodeDialog, queryClient]);
+
+  // ✅ FASE 4: Detectar timeout de conexões travadas (> 2 minutos)
+  useEffect(() => {
+    if (!connections) return;
+    
+    const stuckConnections = connections.filter(conn => {
+      if (conn.status !== 'connecting') return false;
+      
+      const lastUpdate = new Date(conn.created_at).getTime();
+      const minutesSinceUpdate = (Date.now() - lastUpdate) / 1000 / 60;
+      
+      return minutesSinceUpdate > 2;
+    });
+    
+    stuckConnections.forEach(conn => {
+      console.warn('⚠️ Connection stuck:', conn.instance_name);
+      toast.error(
+        `⚠️ Conexão "${conn.instance_name}" travada há mais de 2 minutos.\nClique em "Gerar Novo QR Code" ou delete e recrie.`,
+        {
+          duration: 10000,
+          action: {
+            label: 'Gerar QR Code',
+            onClick: () => getQrCodeMutation.mutate(conn)
+          }
+        }
+      );
+    });
+  }, [connections]);
 
   // Criar nova conexão
   const createMutation = useMutation({
@@ -337,18 +341,47 @@ export function WhatsAppConnectionManager() {
             <Alert>
               <QrCode className="h-4 w-4" />
               <AlertDescription>
-                Abra o WhatsApp no seu celular, vá em <strong>Dispositivos Conectados</strong> e escaneie este código. 
-                O QR Code expira a cada 60 segundos.
+                {connections?.find(c => c.id === qrCodeDialog?.id)?.status === 'connected' 
+                  ? "✅ WhatsApp conectado com sucesso! Fechando em instantes..."
+                  : "Abra o WhatsApp no seu celular, vá em Dispositivos Conectados e escaneie este código. Aguardando conexão..."
+                }
               </AlertDescription>
             </Alert>
 
             {qrCodeDialog?.qr_code_base64 ? (
-              <div className="flex justify-center p-4 bg-white rounded-lg">
-                <img
-                  src={qrCodeDialog.qr_code_base64}
-                  alt="QR Code"
-                  className="w-64 h-64"
-                />
+              <div className="relative">
+                {/* QR Code */}
+                <div className="flex justify-center p-4 bg-white rounded-lg">
+                  <img
+                    src={qrCodeDialog.qr_code_base64}
+                    alt="QR Code"
+                    className="w-64 h-64"
+                  />
+                </div>
+
+                {/* ✅ FASE 2: Overlay "Verificando conexão..." */}
+                {connections?.find(c => c.id === qrCodeDialog.id)?.status === 'connecting' && 
+                 connections?.find(c => c.id === qrCodeDialog.id)?.connected_at && (
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-lg">
+                    <div className="text-center text-white">
+                      <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-2" />
+                      <p className="font-semibold">Verificando conexão...</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* ✅ FASE 2: Overlay de SUCESSO com animação */}
+                {connections?.find(c => c.id === qrCodeDialog.id)?.status === 'connected' && (
+                  <div className="absolute inset-0 bg-green-500 flex items-center justify-center rounded-lg animate-in fade-in zoom-in duration-500">
+                    <div className="text-center text-white">
+                      <div className="text-6xl mb-4 animate-bounce">🎉</div>
+                      <p className="text-2xl font-bold">Conectado!</p>
+                      <p className="text-sm mt-2">
+                        {connections?.find(c => c.id === qrCodeDialog.id)?.phone_number}
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="flex flex-col justify-center items-center h-64 bg-muted rounded-lg gap-2">
