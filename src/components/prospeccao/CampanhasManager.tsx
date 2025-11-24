@@ -576,12 +576,13 @@ export function CampanhasManager() {
               : s
           ));
 
-          // Atualizar status do arquiteto para "contato_iniciado" e registrar data do contato
+          // Atualizar status do arquiteto para "Contato Feito por I.A" e registrar data do contato
           const agora = new Date().toISOString();
           await supabase
             .from('architects')
             .update({
-              status_funil: 'contato_iniciado',
+              status_funil: 'adicionar_epata',
+              tag_prospeccao: 'contactado',
               data_primeiro_contato: arquiteto.data_primeiro_contato || agora,
               data_ultimo_contato: agora,
             })

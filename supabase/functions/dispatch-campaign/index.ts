@@ -324,7 +324,7 @@ Deno.serve(async (req) => {
 
     // Atualizar dados do arquiteto após envio bem-sucedido
     const updateData: any = {
-      status_funil: 'contato_feito_ia',
+      status_funil: 'adicionar_epata',
       tag_prospeccao: 'contactado',
       data_ultimo_contato: new Date().toISOString(),
       updated_at: new Date().toISOString()
