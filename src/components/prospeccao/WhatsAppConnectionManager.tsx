@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -100,8 +100,30 @@ export function WhatsAppConnectionManager() {
 
       return data as WhatsAppConnection[];
     },
-    refetchInterval: 10000, // Refetch a cada 10s
   });
+
+  // ✅ Supabase Realtime para updates instantâneos
+  useEffect(() => {
+    const channel = supabase
+      .channel('whatsapp-connections-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'tendenci_whatsapp_connections'
+        },
+        (payload) => {
+          console.log('🔔 Realtime WhatsApp update:', payload);
+          queryClient.invalidateQueries({ queryKey: ['whatsapp-connections'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   // Criar nova conexão
   const createMutation = useMutation({

@@ -397,11 +397,14 @@ export function CampanhasManager() {
         fetchCampanhas();
       }
     } else {
+      const { data: { user } } = await supabase.auth.getUser();
+      
       const { error } = await supabase
         .from('tendenci_prospec_arq_campaigns')
         .insert({
           ...campanhaData,
-          created_by: (await supabase.auth.getUser()).data.user?.id,
+          created_by: user?.id,
+          vendedor_id: user?.id, // ✅ Garantir vendedor_id
         });
 
       if (error) {
