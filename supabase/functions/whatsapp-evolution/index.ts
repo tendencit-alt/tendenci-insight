@@ -5,10 +5,12 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+
 interface EvolutionAPIRequest {
   action: 'create' | 'status' | 'qrcode' | 'disconnect' | 'delete' | 'check-webhook' | 'reconfigure-webhook'
   instanceName?: string
 }
+
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -373,24 +375,6 @@ Deno.serve(async (req) => {
 
       return new Response(
         JSON.stringify({ success: true }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    // ========== CHECK WEBHOOK ==========
-    if (action === 'check-webhook') {
-      console.log('🔍 Checking webhook for:', instanceName)
-      
-      const response = await fetch(`${evolutionUrl}/webhook/find/${instanceName}`, {
-        method: 'GET',
-        headers: { 'apikey': evolutionApiKey }
-      })
-      
-      const webhookConfig = await response.json()
-      console.log('📡 Current webhook config:', webhookConfig)
-      
-      return new Response(
-        JSON.stringify({ success: true, webhook: webhookConfig }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
