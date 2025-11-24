@@ -2581,9 +2581,9 @@ export type Database = {
         Row: {
           connected_at: string | null
           created_at: string
-          created_by: string | null
+          created_by: string
           id: string
-          instance_id: string | null
+          instance_id: string
           instance_name: string
           last_sync: string | null
           metadata: Json | null
@@ -2599,9 +2599,9 @@ export type Database = {
         Insert: {
           connected_at?: string | null
           created_at?: string
-          created_by?: string | null
+          created_by: string
           id?: string
-          instance_id?: string | null
+          instance_id: string
           instance_name: string
           last_sync?: string | null
           metadata?: Json | null
@@ -2617,9 +2617,9 @@ export type Database = {
         Update: {
           connected_at?: string | null
           created_at?: string
-          created_by?: string | null
+          created_by?: string
           id?: string
-          instance_id?: string | null
+          instance_id?: string
           instance_name?: string
           last_sync?: string | null
           metadata?: Json | null
