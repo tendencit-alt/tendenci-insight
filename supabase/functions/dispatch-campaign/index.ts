@@ -156,7 +156,7 @@ Deno.serve(async (req) => {
       const errorText = await evolutionResponse.text()
       console.error('❌ Erro Evolution API:', errorText)
       
-      // Registrar erro mas não falhar completamente
+      // Registrar erro mas NÃO falhar completamente - continuar campanha
       await supabase
         .from('tendenci_prospec_arq_logs')
         .insert({
@@ -173,7 +173,29 @@ Deno.serve(async (req) => {
           }
         })
       
-      throw new Error(`Evolution API error: ${evolutionResponse.status} - ${errorText}`)
+      // Registrar falha na campanha
+      await supabase
+        .from('tendenci_prospec_arq_campaign_architects')
+        .upsert({
+          campanha_id,
+          architect_id: arquiteto_id,
+          status: 'erro',
+          data_envio: new Date().toISOString(),
+          metadata: { error: errorText }
+        })
+      
+      // Retornar SUCESSO com status de erro (não bloqueia campanha)
+      return new Response(
+        JSON.stringify({ 
+          status: 'failed',
+          error: `Evolution API error: ${evolutionResponse.status}`,
+          details: errorText
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200 // Status 200 para não bloquear a campanha
+        }
+      )
     }
 
     const evolutionData = await evolutionResponse.json()

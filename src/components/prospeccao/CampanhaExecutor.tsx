@@ -198,17 +198,32 @@ export function CampanhaExecutor({ campaignId, campaignName, onComplete }: Execu
             body: payload
           });
 
+          // Erro fatal da edge function (não da Evolution API)
           if (error) {
-            console.error('❌ Erro ao disparar:', error);
+            console.error('❌ Erro fatal ao disparar:', error);
             throw new Error(error.message || 'Erro ao enviar mensagem');
           }
 
+          // Verificar status do envio
           if (data?.status === 'success') {
             sent++;
             console.log(`✅ Enviado para ${arq.name}`);
+          } else if (data?.status === 'failed') {
+            failed++;
+            console.error(`❌ Falha ao enviar para ${arq.name}:`, data.error);
+            
+            // Registrar erro específico no log
+            await supabase
+              .from('tendenci_prospec_arq_campaign_dispatches')
+              .insert({
+                campanha_id: campanha.id,
+                architect_id: arq.id,
+                status: 'erro',
+                mensagem_erro: data.error || 'Erro desconhecido',
+              });
           } else {
             failed++;
-            console.error(`❌ Falha ao enviar para ${arq.name}`);
+            console.error(`❌ Resposta inesperada para ${arq.name}`);
           }
 
         } catch (error) {
