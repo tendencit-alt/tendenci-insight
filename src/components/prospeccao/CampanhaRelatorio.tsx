@@ -109,47 +109,49 @@ export function CampanhaRelatorio({ campanhaId }: RelatorioProps) {
               dispatches?.map((dispatch) => (
                 <div
                   key={dispatch.id}
-                  className="flex items-center justify-between p-3 border rounded-lg"
+                  className="space-y-2 p-3 border rounded-lg"
                 >
-                  <div className="flex items-center gap-3">
-                    <User className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <p className="font-medium">{dispatch.architects.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {dispatch.architects.phone}
-                      </p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <User className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <p className="font-medium">{dispatch.architects.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {dispatch.architects.phone}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      {dispatch.enviado_em && (
+                        <span className="text-sm text-muted-foreground">
+                          {format(new Date(dispatch.enviado_em), "dd/MM 'às' HH:mm", {
+                            locale: ptBR,
+                          })}
+                        </span>
+                      )}
+                      
+                      <Badge
+                        variant={
+                          dispatch.status === 'sucesso'
+                            ? 'default'
+                            : dispatch.status === 'erro'
+                            ? 'destructive'
+                            : 'secondary'
+                        }
+                      >
+                        {dispatch.status === 'sucesso' && <CheckCircle2 className="h-3 w-3 mr-1" />}
+                        {dispatch.status === 'erro' && <XCircle className="h-3 w-3 mr-1" />}
+                        {dispatch.status === 'pendente' && <Clock className="h-3 w-3 mr-1" />}
+                        {dispatch.status === 'sucesso' ? 'Enviado' : 
+                         dispatch.status === 'erro' ? 'Falhou' : 'Pendente'}
+                      </Badge>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3">
-                    {dispatch.enviado_em && (
-                      <span className="text-sm text-muted-foreground">
-                        {format(new Date(dispatch.enviado_em), "dd/MM 'às' HH:mm", {
-                          locale: ptBR,
-                        })}
-                      </span>
-                    )}
-                    
-                    <Badge
-                      variant={
-                        dispatch.status === 'sucesso'
-                          ? 'default'
-                          : dispatch.status === 'erro'
-                          ? 'destructive'
-                          : 'secondary'
-                      }
-                    >
-                      {dispatch.status === 'sucesso' && <CheckCircle2 className="h-3 w-3 mr-1" />}
-                      {dispatch.status === 'erro' && <XCircle className="h-3 w-3 mr-1" />}
-                      {dispatch.status === 'pendente' && <Clock className="h-3 w-3 mr-1" />}
-                      {dispatch.status === 'sucesso' ? 'Enviado' : 
-                       dispatch.status === 'erro' ? 'Falhou' : 'Pendente'}
-                    </Badge>
-                  </div>
-
                   {dispatch.mensagem_erro && (
-                    <div className="text-xs text-red-500 mt-1">
-                      {dispatch.mensagem_erro}
+                    <div className="text-xs text-destructive bg-destructive/10 p-2 rounded">
+                      <strong>Erro:</strong> {dispatch.mensagem_erro}
                     </div>
                   )}
                 </div>
