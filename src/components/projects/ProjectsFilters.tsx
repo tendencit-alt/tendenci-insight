@@ -19,8 +19,11 @@ export function ProjectsFilters({ filters, onFiltersChange }: ProjectsFiltersPro
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="Todos">Todos</SelectItem>
-          <SelectItem value="captado">Captado</SelectItem>
-          <SelectItem value="orçamento">Em Orçamento</SelectItem>
+          <SelectItem value="recebido">Recebido</SelectItem>
+          <SelectItem value="em_orcamento">Em Orçamento</SelectItem>
+          <SelectItem value="orcado">Orçado</SelectItem>
+          <SelectItem value="apresentado">Apresentado</SelectItem>
+          <SelectItem value="em_negociacao">Em Negociação</SelectItem>
           <SelectItem value="aprovado">Aprovado</SelectItem>
           <SelectItem value="perdido">Perdido</SelectItem>
         </SelectContent>

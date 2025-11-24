@@ -350,9 +350,11 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess, preSelected
                   <SelectValue placeholder="Selecione o estágio" />
                 </SelectTrigger>
                 <SelectContent className="bg-popover z-50">
-                  <SelectItem value="recebido">Recebido do Arquiteto</SelectItem>
-                  <SelectItem value="em_desenvolvimento">Em Desenvolvimento</SelectItem>
-                  <SelectItem value="aguardando_aprovacao">Aguardando Aprovação</SelectItem>
+                  <SelectItem value="recebido">Recebido</SelectItem>
+                  <SelectItem value="em_orcamento">Em Orçamento</SelectItem>
+                  <SelectItem value="orcado">Orçado</SelectItem>
+                  <SelectItem value="apresentado">Apresentado</SelectItem>
+                  <SelectItem value="em_negociacao">Em Negociação</SelectItem>
                   <SelectItem value="aprovado">Aprovado</SelectItem>
                   <SelectItem value="perdido">Perdido</SelectItem>
                 </SelectContent>
