@@ -7,7 +7,7 @@ const corsHeaders = {
 
 
 interface EvolutionAPIRequest {
-  action: 'create' | 'status' | 'qrcode' | 'disconnect' | 'delete' | 'check-webhook' | 'reconfigure-webhook'
+  action: 'create' | 'status' | 'qrcode' | 'disconnect' | 'delete' | 'check-webhook' | 'reconfigure-webhook' | 'check-status'
   instanceName?: string
 }
 
@@ -182,22 +182,28 @@ Deno.serve(async (req) => {
       console.log('⏳ Waiting 2 seconds for Evolution to initialize...')
       await new Promise(resolve => setTimeout(resolve, 2000))
 
-      // PASSO 5: Gerar QR Code
+      // PASSO 5: Gerar QR Code IMEDIATAMENTE (FASE 1)
       console.log('📱 Generating QR Code...')
-      const connectResponse = await fetch(`${evolutionUrl}/instance/connect/${instanceName}`, {
-        method: 'GET',
-        headers: {
-          'apikey': evolutionApiKey
-        }
-      })
+      
+      // ✅ FASE 1: Extrair QR do response da criação
+      let qrCodeBase64 = instanceData.qrcode?.base64 || instanceData.qrcode?.code || instanceData.base64 || null
+      console.log('📷 QR Code from creation:', qrCodeBase64 ? 'Found!' : 'Not found')
+      
+      // Se não veio no create, tentar connect
+      if (!qrCodeBase64) {
+        console.log('🔄 Trying /connect endpoint...')
+        const connectResponse = await fetch(`${evolutionUrl}/instance/connect/${instanceName}`, {
+          method: 'GET',
+          headers: { 'apikey': evolutionApiKey }
+        })
 
-      let qrCodeBase64 = null
-      if (connectResponse.ok) {
-        const connectData = await connectResponse.json()
-        qrCodeBase64 = connectData.base64 || connectData.qrcode?.base64 || null
-        console.log('✅ QR Code generated:', qrCodeBase64 ? 'Yes' : 'No')
-      } else {
-        console.warn('⚠️ QR Code generation failed (will retry later)')
+        if (connectResponse.ok) {
+          const connectData = await connectResponse.json()
+          qrCodeBase64 = connectData.base64 || connectData.qrcode?.base64 || connectData.qrcode?.code || null
+          console.log('✅ QR Code from connect:', qrCodeBase64 ? 'Yes' : 'No')
+        } else {
+          console.warn('⚠️ QR Code generation failed (will be generated via polling)')
+        }
       }
 
       // PASSO 6: Configurar webhook COM RETRY
@@ -270,11 +276,15 @@ Deno.serve(async (req) => {
 
       console.log('✅ SUCCESS! Instance created:', dbConnection.id)
 
+      // ✅ FASE 1: Retornar QR Code imediatamente no response
       return new Response(
         JSON.stringify({ 
           success: true, 
-          connection: dbConnection,
-          qrCode: qrCodeBase64
+          connection: {
+            ...dbConnection,
+            qr_code_base64: qrCodeBase64 // Garantir que QR vem no connection
+          },
+          qrCode: qrCodeBase64 // QR code separado também
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
@@ -381,6 +391,70 @@ Deno.serve(async (req) => {
         JSON.stringify({ success: true }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
+    }
+
+    // ========== ✅ FASE 3: CHECK STATUS ==========
+    if (action === 'check-status') {
+      console.log('🔍 Checking status for:', instanceName)
+      
+      try {
+        const response = await fetch(`${evolutionUrl}/instance/connectionState/${instanceName}`, {
+          method: 'GET',
+          headers: { 'apikey': evolutionApiKey }
+        })
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch connection state')
+        }
+        
+        const statusData = await response.json()
+        console.log('📊 Connection state:', statusData)
+        
+        const currentStatus = statusData.state // 'open', 'connecting', 'close'
+        let mappedStatus = 'connecting'
+        let phoneNumber = null
+        
+        if (currentStatus === 'open') {
+          mappedStatus = 'connected'
+          phoneNumber = statusData.instance?.wuid?.split('@')[0] || statusData.instance?.phoneNumber || null
+        } else if (currentStatus === 'close') {
+          mappedStatus = 'disconnected'
+        }
+        
+        // Atualizar banco se status mudou
+        const { data: currentConn } = await supabase
+          .from('tendenci_whatsapp_connections')
+          .select('status, phone_number')
+          .eq('instance_name', instanceName)
+          .single()
+        
+        if (currentConn && (currentConn.status !== mappedStatus || currentConn.phone_number !== phoneNumber)) {
+          console.log(`✅ Status mudou: ${currentConn.status} -> ${mappedStatus}`)
+          
+          await supabase
+            .from('tendenci_whatsapp_connections')
+            .update({
+              status: mappedStatus,
+              phone_number: phoneNumber,
+              connected_at: mappedStatus === 'connected' ? new Date().toISOString() : null,
+              last_sync: new Date().toISOString()
+            })
+            .eq('instance_name', instanceName)
+        }
+        
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            status: mappedStatus, 
+            phoneNumber,
+            updated: currentConn?.status !== mappedStatus
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      } catch (error) {
+        console.error('💥 Check status error:', error)
+        throw error
+      }
     }
 
     // ========== RECONFIGURE WEBHOOK ==========

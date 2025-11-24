@@ -34,7 +34,7 @@ export function WhatsAppConnectionManager() {
   const [qrCodeDialog, setQrCodeDialog] = useState<WhatsAppConnection | null>(null);
   const queryClient = useQueryClient();
 
-  // ✅ FASE 5: Buscar conexões SEM polling manual - confiar no Realtime
+  // ✅ Buscar conexões do banco
   const { data: connections, isLoading, refetch } = useQuery({
     queryKey: ["whatsapp-connections"],
     queryFn: async () => {
@@ -105,6 +105,37 @@ export function WhatsAppConnectionManager() {
     }
   }, [connections, qrCodeDialog, queryClient]);
 
+  // ✅ FASE 2: POLLING DE FALLBACK para instâncias conectando
+  useEffect(() => {
+    const connectingInstances = connections?.filter(c => c.status === 'connecting') || [];
+    
+    if (connectingInstances.length === 0) return;
+    
+    console.log('🔄 Iniciando polling para', connectingInstances.length, 'instâncias...');
+    
+    const intervalId = setInterval(async () => {
+      for (const conn of connectingInstances) {
+        try {
+          const { data, error } = await supabase.functions.invoke("whatsapp-evolution", {
+            body: { action: "check-status", instanceName: conn.instance_name },
+          });
+          
+          if (!error && data?.updated) {
+            console.log(`✅ Status atualizado via polling: ${conn.instance_name}`);
+            queryClient.invalidateQueries({ queryKey: ["whatsapp-connections"] });
+          }
+        } catch (error) {
+          console.error('⚠️ Erro no polling:', error);
+        }
+      }
+    }, 5000); // A cada 5 segundos
+    
+    return () => {
+      console.log('🛑 Parando polling');
+      clearInterval(intervalId);
+    };
+  }, [connections, queryClient]);
+
   // ✅ FASE 4: Detectar timeout de conexões travadas (> 2 minutos)
   useEffect(() => {
     if (!connections) return;
@@ -155,13 +186,11 @@ export function WhatsAppConnectionManager() {
       setDialogOpen(false);
       setInstanceName("");
       
+      // ✅ FASE 1: Abrir modal IMEDIATAMENTE (sem timeout)
       if (data.connection) {
-        // Esperar 2 segundos antes de buscar QR code para garantir que foi gerado
-        setTimeout(() => {
-          setQrCodeDialog(data.connection);
-        }, 2000);
+        setQrCodeDialog(data.connection);
+        toast.success("✅ Instância criada! QR Code pronto.");
       }
-      toast.success("Instância criada! Aguarde o QR Code...");
     },
     onError: (error: any) => {
       toast.error(error.message || "Erro ao criar instância. Verifique se o Evolution API está configurado.");
@@ -400,14 +429,11 @@ export function WhatsAppConnectionManager() {
                   />
                 </div>
 
-                {/* ✅ FASE 2: Overlay "Verificando conexão..." */}
-                {connections?.find(c => c.id === qrCodeDialog.id)?.status === 'connecting' && 
-                 connections?.find(c => c.id === qrCodeDialog.id)?.connected_at && (
-                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-lg">
-                    <div className="text-center text-white">
-                      <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-2" />
-                      <p className="font-semibold">Verificando conexão...</p>
-                    </div>
+                {/* ✅ FASE 4: Indicador de polling ativo */}
+                {connections?.find(c => c.id === qrCodeDialog.id)?.status === 'connecting' && (
+                  <div className="absolute top-2 right-2 bg-blue-500 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                    <RefreshCw className="h-3 w-3 animate-spin" />
+                    Verificando a cada 5s...
                   </div>
                 )}
 
@@ -427,7 +453,7 @@ export function WhatsAppConnectionManager() {
             ) : (
               <div className="flex flex-col justify-center items-center h-64 bg-muted rounded-lg gap-2">
                 <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">Gerando QR Code...</p>
+                <p className="text-sm text-muted-foreground">⏳ Gerando QR Code... (pode levar até 5 segundos)</p>
               </div>
             )}
 
