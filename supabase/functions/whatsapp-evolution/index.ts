@@ -35,6 +35,24 @@ Deno.serve(async (req) => {
         headers: { 'apikey': evolutionApiKey }
       })
 
+      // Se 404, instância não existe mais na API
+      if (statusResp.status === 404) {
+        console.log('⚠️ Instance not found in Evolution API (404) - cleaning database')
+        
+        await supabase
+          .from('tendenci_whatsapp_connections')
+          .delete()
+          .eq('instance_name', instanceName)
+        
+        return new Response(
+          JSON.stringify({ 
+            status: 'deleted', 
+            message: 'Instance not found in API' 
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
       if (!statusResp.ok) {
         throw new Error(`Evolution API status check failed: ${statusResp.status}`)
       }
