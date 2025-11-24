@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.tendenci-assistant]
 verify_jwt = true
+
+[functions.dispatch-campaign]
+verify_jwt = true
