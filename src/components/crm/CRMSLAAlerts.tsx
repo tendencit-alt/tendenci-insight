@@ -8,9 +8,10 @@ import { Button } from "@/components/ui/button";
 
 interface CRMSLAAlertsProps {
   pipelineId: string;
+  categoryFilter?: string;
 }
 
-export function CRMSLAAlerts({ pipelineId }: CRMSLAAlertsProps) {
+export function CRMSLAAlerts({ pipelineId, categoryFilter }: CRMSLAAlertsProps) {
   const [alerts, setAlerts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isOpen, setIsOpen] = useState(false);
@@ -18,7 +19,7 @@ export function CRMSLAAlerts({ pipelineId }: CRMSLAAlertsProps) {
   useEffect(() => {
     if (!pipelineId) return;
     fetchAlerts();
-  }, [pipelineId]);
+  }, [pipelineId, categoryFilter]);
 
   const fetchAlerts = async () => {
     setLoading(true);
@@ -27,7 +28,22 @@ export function CRMSLAAlerts({ pipelineId }: CRMSLAAlertsProps) {
     });
 
     if (!error && data) {
-      setAlerts(data);
+      // Filtrar alertas client-side baseado na categoria
+      let filteredAlerts = data;
+      if (categoryFilter && categoryFilter !== "all") {
+        // Buscar categoria dos deals para filtrar
+        const dealIds = data.map((alert: any) => alert.deal_id);
+        const { data: dealsData } = await supabase
+          .from("crm_deals")
+          .select("id, categoria")
+          .in("id", dealIds);
+        
+        const dealCategories = new Map(dealsData?.map(d => [d.id, d.categoria]));
+        filteredAlerts = data.filter((alert: any) => 
+          dealCategories.get(alert.deal_id) === categoryFilter
+        );
+      }
+      setAlerts(filteredAlerts);
     }
     setLoading(false);
   };

@@ -210,13 +210,25 @@ export default function CRM() {
             </div>
 
             {/* KPIs do CRM */}
-            <CRMKPIs pipelineId={selectedPipeline} key={`kpi-${refreshKey}`} />
+            <CRMKPIs 
+              pipelineId={selectedPipeline} 
+              categoryFilter={selectedCategory}
+              key={`kpi-${refreshKey}`} 
+            />
 
             {/* SLA Alerts */}
-            <CRMSLAAlerts pipelineId={selectedPipeline} key={`sla-${refreshKey}`} />
+            <CRMSLAAlerts 
+              pipelineId={selectedPipeline} 
+              categoryFilter={selectedCategory}
+              key={`sla-${refreshKey}`} 
+            />
 
             {/* Tarefas Pendentes */}
-            <CRMTasksPanel pipelineId={selectedPipeline} key={`tasks-${refreshKey}`} />
+            <CRMTasksPanel 
+              pipelineId={selectedPipeline} 
+              categoryFilter={selectedCategory}
+              key={`tasks-${refreshKey}`} 
+            />
 
             {/* Alerta de Tarefas Faltantes */}
             <TaskReminderAlert pipelineId={selectedPipeline} />
