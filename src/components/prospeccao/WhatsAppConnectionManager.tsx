@@ -116,16 +116,26 @@ export function WhatsAppConnectionManager() {
     const intervalId = setInterval(async () => {
       for (const conn of connectingInstances) {
         try {
+          console.log(`📡 Polling status para: ${conn.instance_name}`);
+          
           const { data, error } = await supabase.functions.invoke("whatsapp-evolution", {
             body: { action: "check-status", instanceName: conn.instance_name },
           });
           
-          if (!error && data?.updated) {
-            console.log(`✅ Status atualizado via polling: ${conn.instance_name}`);
+          if (error) {
+            console.error('❌ Erro no invoke:', error);
+            continue;
+          }
+          
+          console.log(`📊 Response para ${conn.instance_name}:`, data);
+          
+          if (data?.updated) {
+            console.log(`✅ Status atualizado via polling para ${conn.instance_name}!`);
             queryClient.invalidateQueries({ queryKey: ["whatsapp-connections"] });
+            toast.success(`Conexão ${conn.instance_name} atualizada!`);
           }
         } catch (error) {
-          console.error('⚠️ Erro no polling:', error);
+          console.error('💥 Erro no polling:', error);
         }
       }
     }, 5000); // A cada 5 segundos
@@ -578,6 +588,40 @@ export function WhatsAppConnectionManager() {
                           <QrCode className="h-4 w-4 mr-2" />
                           {isStuckConnecting ? "Gerar Novo QR Code" : "Conectar"}
                         </Button>
+                        
+                        {connection.status === 'connecting' && (
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={async () => {
+                              try {
+                                toast.info("Verificando status...");
+                                const { data, error } = await supabase.functions.invoke("whatsapp-evolution", {
+                                  body: { action: "check-status", instanceName: connection.instance_name },
+                                });
+                                
+                                if (error) {
+                                  toast.error("Erro ao verificar status");
+                                  console.error('Erro:', error);
+                                  return;
+                                }
+                                
+                                if (data?.updated) {
+                                  toast.success("Status atualizado!");
+                                  queryClient.invalidateQueries({ queryKey: ["whatsapp-connections"] });
+                                } else {
+                                  toast.info("Status já está atualizado");
+                                }
+                              } catch (error) {
+                                toast.error("Erro ao verificar status");
+                                console.error('Erro:', error);
+                              }
+                            }}
+                          >
+                            <RefreshCw className="h-3 w-3 mr-1" />
+                            Verificar Agora
+                          </Button>
+                        )}
                         
                         {isStuckConnecting && (
                           <Button
