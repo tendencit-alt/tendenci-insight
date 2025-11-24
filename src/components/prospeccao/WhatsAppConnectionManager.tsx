@@ -8,8 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { QrCode, Smartphone, Power, Trash2, RefreshCw, AlertCircle } from "lucide-react";
+import { QrCode, Smartphone, Power, Trash2, RefreshCw, AlertCircle, Webhook } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface WhatsAppConnection {
   id: string;
@@ -21,6 +22,9 @@ interface WhatsAppConnection {
   qr_code_base64: string | null;
   created_at: string;
   connected_at: string | null;
+  webhook_configured: boolean | null;
+  webhook_url: string | null;
+  n8n_webhook_url: string | null;
   metadata: any;
 }
 
@@ -233,6 +237,29 @@ export function WhatsAppConnectionManager() {
     },
   });
 
+  // Reconfigurar Webhook
+  const reconfigureWebhookMutation = useMutation({
+    mutationFn: async (instanceName: string) => {
+      const { data, error } = await supabase.functions.invoke("whatsapp-evolution", {
+        body: {
+          action: "reconfigure-webhook",
+          instanceName,
+        },
+      });
+
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error || "Erro ao reconfigurar webhook");
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["whatsapp-connections"] });
+      toast.success("✅ Webhook reconfigurado com sucesso! Conexão agora receberá atualizações em tempo real.");
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Erro ao reconfigurar webhook");
+    },
+  });
+
   const getStatusBadge = (status: string) => {
     const variants: Record<string, { label: string; variant: any }> = {
       connected: { label: "Conectado", variant: "default" },
@@ -263,6 +290,20 @@ export function WhatsAppConnectionManager() {
             <p className="text-sm font-medium mt-2 text-yellow-700 dark:text-yellow-400">⚠️ O QR Code expira em 60 segundos. Se expirar, clique em "Gerar Novo QR Code".</p>
             <p className="text-sm font-semibold mt-2 text-red-600 dark:text-red-400">🔴 Se ficar muito tempo em "Conectando..." sem mostrar número, delete a instância e crie uma nova.</p>
           </div>
+        </AlertDescription>
+      </Alert>
+
+      {/* Instruções de Webhook */}
+      <Alert className="bg-purple-50 border-purple-200 dark:bg-purple-950 dark:border-purple-800">
+        <Webhook className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+        <AlertDescription className="text-purple-800 dark:text-purple-200">
+          <p className="font-semibold mb-2">🔗 Sobre Webhooks:</p>
+          <ul className="list-disc list-inside text-sm space-y-1">
+            <li>Webhooks permitem atualizações em tempo real do WhatsApp</li>
+            <li>Conexões novas configuram webhook automaticamente</li>
+            <li>Se seu webhook não está configurado, clique em "Configurar Webhook"</li>
+            <li>Apenas conexões "Conectadas" podem ter webhook configurado</li>
+          </ul>
         </AlertDescription>
       </Alert>
 
@@ -438,8 +479,45 @@ export function WhatsAppConnectionManager() {
                         </p>
                       )}
                     </div>
-                    {getStatusBadge(connection.status)}
+                    <div className="flex flex-col gap-2 items-end">
+                      {getStatusBadge(connection.status)}
+                      
+                      {/* Badge de Status do Webhook */}
+                      {connection.status === 'connected' && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Badge 
+                                variant={connection.webhook_configured ? "default" : "destructive"}
+                                className="text-xs"
+                              >
+                                {connection.webhook_configured ? "✅ Webhook Ativo" : "⚠️ Webhook Inativo"}
+                              </Badge>
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              <p className="text-xs">
+                                {connection.webhook_configured 
+                                  ? "Esta conexão está recebendo atualizações em tempo real da Evolution API"
+                                  : "Configure o webhook para receber atualizações em tempo real"
+                                }
+                              </p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
+                    </div>
                   </div>
+
+                  {/* Alerta de Webhook não configurado */}
+                  {connection.status === 'connected' && !connection.webhook_configured && (
+                    <Alert variant="destructive" className="py-2">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription className="text-xs">
+                        Webhook não configurado! Esta conexão NÃO receberá updates em tempo real. 
+                        Clique em "Configurar Webhook" abaixo.
+                      </AlertDescription>
+                    </Alert>
+                  )}
 
                   {/* Alerta de QR Code expirado */}
                   {isStuckConnecting && (
@@ -490,16 +568,28 @@ export function WhatsAppConnectionManager() {
                         )}
                       </>
                     ) : (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex-1"
-                        onClick={() => disconnectMutation.mutate(connection.instance_name)}
-                        disabled={disconnectMutation.isPending}
-                      >
-                        <Power className="h-4 w-4 mr-2" />
-                        Desconectar
-                      </Button>
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => disconnectMutation.mutate(connection.instance_name)}
+                          disabled={disconnectMutation.isPending}
+                        >
+                          <Power className="h-4 w-4 mr-2" />
+                          Desconectar
+                        </Button>
+                        
+                        {/* Botão Reconfigurar Webhook */}
+                        <Button
+                          variant={connection.webhook_configured ? "outline" : "default"}
+                          size="sm"
+                          onClick={() => reconfigureWebhookMutation.mutate(connection.instance_name)}
+                          disabled={reconfigureWebhookMutation.isPending}
+                        >
+                          <Webhook className="h-4 w-4 mr-2" />
+                          {connection.webhook_configured ? "Reconfigurar" : "Configurar Webhook"}
+                        </Button>
+                      </>
                     )}
                     
                     <Button
