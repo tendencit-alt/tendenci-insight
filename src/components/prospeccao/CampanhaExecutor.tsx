@@ -154,9 +154,9 @@ export function CampanhaExecutor({ campaignId, campaignName, onComplete }: Execu
 
       setStatus(prev => ({ ...prev, total: arquitetos.length }));
 
-      // 6. Verificar se tem webhook configurado
-      if (!campanha.webhook_n8n) {
-        throw new Error('Webhook N8N não configurado para esta campanha');
+      // 6. Webhook N8N é opcional (será notificado após envio, se configurado)
+      if (campanha.webhook_n8n) {
+        console.log('📡 Webhook N8N configurado, será notificado após envios');
       }
 
       // 7. Enviar mensagens
@@ -172,7 +172,7 @@ export function CampanhaExecutor({ campaignId, campaignName, onComplete }: Execu
         setStatus(prev => ({ ...prev, current: arq.name }));
 
         try {
-          // Preparar payload para webhook n8n
+          // Preparar payload para envio
           const payload = {
             campanha_id: campanha.id,
             arquiteto_id: arq.id,
@@ -184,40 +184,31 @@ export function CampanhaExecutor({ campaignId, campaignName, onComplete }: Execu
             conteudo_audio_url: campanha.conteudo_audio_url || null,
             instance_name: whatsappConn.instance_name || '',
             instance_id: whatsappConn.instance_id || '',
-            whatsapp_connection_id: campanha.whatsapp_connection_id || ''
+            whatsapp_connection_id: campanha.whatsapp_connection_id || '',
+            webhook_n8n: campanha.webhook_n8n || null
           };
 
-          console.log('📤 Enviando payload para n8n:', JSON.stringify(payload, null, 2));
+          console.log('📤 Disparando campanha via edge function:', JSON.stringify({
+            ...payload,
+            telefone: payload.telefone?.substring(0, 4) + '****'
+          }, null, 2));
 
-          // Enviar via webhook n8n
-          const response = await fetch(campanha.webhook_n8n, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(payload)
+          // Enviar via edge function (resolve CORS e segurança)
+          const { data, error } = await supabase.functions.invoke('dispatch-campaign', {
+            body: payload
           });
-          if (!response.ok) {
-            throw new Error(`Webhook retornou status ${response.status}`);
+
+          if (error) {
+            console.error('❌ Erro ao disparar:', error);
+            throw new Error(error.message || 'Erro ao enviar mensagem');
           }
 
-          const result = await response.json();
-
-          if (result.status === 'success' || response.status === 200) {
+          if (data?.status === 'success') {
             sent++;
-            
-            // Registrar no relacionamento campanha-arquiteto
-            await supabase
-              .from('tendenci_prospec_arq_campaign_architects')
-              .upsert({
-                campanha_id: campanha.id,
-                architect_id: arq.id,
-                status: 'enviado',
-                data_envio: new Date().toISOString(),
-              });
-
+            console.log(`✅ Enviado para ${arq.name}`);
           } else {
             failed++;
+            console.error(`❌ Falha ao enviar para ${arq.name}`);
           }
 
         } catch (error) {
