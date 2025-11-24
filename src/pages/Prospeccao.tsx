@@ -5,7 +5,7 @@ import { ProspeccaoOverview } from "@/components/prospeccao/ProspeccaoOverview";
 import { ProspeccaoCRM } from "@/components/prospeccao/ProspeccaoCRM";
 import { ManageStagesDialog } from "@/components/prospeccao/ManageStagesDialog";
 import { ProspeccaoTasksManager } from "@/components/prospeccao/ProspeccaoTasksManager";
-import { WhatsAppConnectionManager } from "@/components/prospeccao/WhatsAppConnectionManager";
+import WhatsAppConnectionManager from "@/components/prospeccao/WhatsAppConnectionManager";
 import { CampanhasManager } from "@/components/prospeccao/CampanhasManager";
 import { UserSearch, LayoutGrid, CheckSquare, MessageSquare, Megaphone } from "lucide-react";
 
