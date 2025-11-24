@@ -7,12 +7,19 @@ import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { FileText, Image as ImageIcon, Download, Upload, X } from "lucide-react";
+import { FileText, Image as ImageIcon, Download, Upload, X, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useWebhookSync } from "@/hooks/useWebhookSync";
+import { 
+  validateFileType, 
+  validateFileSize, 
+  formatFileSize,
+  ALLOWED_FILE_TYPES_ACCEPT,
+  MAX_FILE_SIZE_MB 
+} from "@/lib/utils";
 
 interface ProjectDetailSheetProps {
   project: any;
@@ -124,27 +131,44 @@ export function ProjectDetailSheet({ project, open, onOpenChange, onSuccess }: P
     if (!e.target.files || e.target.files.length === 0) return;
 
     const file = e.target.files[0];
-    const validTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
     
-    if (!validTypes.includes(file.type)) {
-      toast.error("Tipo de arquivo não suportado. Use PDF, PNG ou JPG.");
+    // Validar tipo de arquivo usando utils
+    if (!validateFileType(file.name)) {
+      toast.error("Tipo de arquivo não permitido. Formatos aceitos: PDF, DOC, DOCX, XLS, XLSX, DWG, JPG, PNG, WEBP, TXT, MP3, WAV, M4A, WEBM, OGG");
+      e.target.value = "";
       return;
     }
 
-    if (file.size > 20 * 1024 * 1024) {
-      toast.error("Arquivo muito grande. Máximo 20MB.");
+    // Validar tamanho usando utils
+    if (!validateFileSize(file.size)) {
+      toast.error(`Arquivo muito grande. Máximo ${MAX_FILE_SIZE_MB}MB`);
+      e.target.value = "";
       return;
     }
 
     setUploading(true);
 
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
+
       const fileExt = file.name.split('.').pop();
       const fileName = `${project.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from('project-files')
-        .upload(fileName, file);
+      // Retry lógica: até 3 tentativas
+      let uploadError;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const { error } = await supabase.storage
+          .from('project-files')
+          .upload(fileName, file);
+        
+        uploadError = error;
+        if (!error) break;
+        
+        if (attempt < 2) {
+          await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+        }
+      }
 
       if (uploadError) throw uploadError;
 
@@ -155,7 +179,8 @@ export function ProjectDetailSheet({ project, open, onOpenChange, onSuccess }: P
           file_name: file.name,
           file_path: fileName,
           file_type: file.type,
-          file_size: file.size
+          file_size: file.size,
+          uploaded_by: user.id
         });
 
       if (dbError) throw dbError;
@@ -323,13 +348,22 @@ export function ProjectDetailSheet({ project, open, onOpenChange, onSuccess }: P
                 disabled={uploading}
                 className="gap-2"
               >
-                <Upload className="w-4 h-4" />
-                {uploading ? "Enviando..." : "Adicionar"}
+                {uploading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Enviando...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-4 h-4" />
+                    Adicionar
+                  </>
+                )}
               </Button>
               <input
                 ref={fileInputRef}
                 type="file"
-                accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.dwg"
+                accept={ALLOWED_FILE_TYPES_ACCEPT}
                 onChange={handleFileUpload}
                 className="hidden"
               />
@@ -350,9 +384,15 @@ export function ProjectDetailSheet({ project, open, onOpenChange, onSuccess }: P
                       )}
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-sm truncate">{file.file_name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {(file.file_size / 1024).toFixed(2)} KB
-                        </p>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <span>{formatFileSize(file.file_size)}</span>
+                          {file.uploaded_at && (
+                            <>
+                              <span>•</span>
+                              <span>{new Date(file.uploaded_at).toLocaleDateString('pt-BR')}</span>
+                            </>
+                          )}
+                        </div>
                       </div>
                       <div className="flex gap-2">
                         <Button
