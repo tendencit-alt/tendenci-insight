@@ -32,6 +32,7 @@ export function WhatsAppConnectionManager() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [instanceName, setInstanceName] = useState("");
   const [qrCodeDialog, setQrCodeDialog] = useState<WhatsAppConnection | null>(null);
+  const [notifiedStuckConnections, setNotifiedStuckConnections] = useState<Set<string>>(new Set());
   const queryClient = useQueryClient();
 
   // ✅ Buscar conexões do banco
@@ -132,7 +133,6 @@ export function WhatsAppConnectionManager() {
           if (data?.updated) {
             console.log(`✅ Status atualizado via polling para ${conn.instance_name}!`);
             queryClient.invalidateQueries({ queryKey: ["whatsapp-connections"] });
-            toast.success(`Conexão ${conn.instance_name} atualizada!`);
           }
         } catch (error) {
           console.error('💥 Erro no polling:', error);
@@ -146,7 +146,7 @@ export function WhatsAppConnectionManager() {
     };
   }, [connections, queryClient]);
 
-  // ✅ FASE 4: Detectar timeout de conexões travadas (> 2 minutos)
+  // ✅ FASE 4: Detectar timeout de conexões travadas (> 5 minutos)
   useEffect(() => {
     if (!connections) return;
     
@@ -156,23 +156,39 @@ export function WhatsAppConnectionManager() {
       const lastUpdate = new Date(conn.created_at).getTime();
       const minutesSinceUpdate = (Date.now() - lastUpdate) / 1000 / 60;
       
-      return minutesSinceUpdate > 2;
+      return minutesSinceUpdate > 5;
     });
     
     stuckConnections.forEach(conn => {
-      console.warn('⚠️ Connection stuck:', conn.instance_name);
-      toast.error(
-        `⚠️ Conexão "${conn.instance_name}" travada há mais de 2 minutos.\nClique em "Gerar Novo QR Code" ou delete e recrie.`,
-        {
-          duration: 10000,
-          action: {
-            label: 'Gerar QR Code',
-            onClick: () => getQrCodeMutation.mutate(conn)
+      // ✅ Só mostrar toast se ainda não mostrou
+      if (!notifiedStuckConnections.has(conn.id)) {
+        console.warn('⚠️ Connection stuck:', conn.instance_name);
+        toast.error(
+          `⚠️ Conexão "${conn.instance_name}" travada há mais de 5 minutos.\nClique em "Gerar Novo QR Code" ou delete e recrie.`,
+          {
+            duration: 10000,
+            action: {
+              label: 'Gerar QR Code',
+              onClick: () => getQrCodeMutation.mutate(conn)
+            }
           }
-        }
-      );
+        );
+        
+        // ✅ Marcar como notificado
+        setNotifiedStuckConnections(prev => new Set(prev).add(conn.id));
+      }
     });
-  }, [connections]);
+    
+    // ✅ Limpar notificações de conexões que não estão mais stuck
+    const stuckIds = new Set(stuckConnections.map(c => c.id));
+    setNotifiedStuckConnections(prev => {
+      const newSet = new Set<string>();
+      prev.forEach(id => {
+        if (stuckIds.has(id)) newSet.add(id);
+      });
+      return newSet;
+    });
+  }, [connections, notifiedStuckConnections]);
 
   // Criar nova conexão
   const createMutation = useMutation({
@@ -418,12 +434,27 @@ export function WhatsAppConnectionManager() {
           </DialogHeader>
 
           <div className="space-y-4">
-            <Alert>
-              <QrCode className="h-4 w-4" />
-              <AlertDescription>
+            <Alert variant="default" className="bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
+              <AlertCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              <AlertDescription className="text-blue-800 dark:text-blue-200">
                 {connections?.find(c => c.id === qrCodeDialog?.id)?.status === 'connected' 
-                  ? "✅ WhatsApp conectado com sucesso! Fechando em instantes..."
-                  : "Abra o WhatsApp no seu celular, vá em Dispositivos Conectados e escaneie este código. Aguardando conexão..."
+                  ? (
+                    <p className="font-semibold text-green-600 dark:text-green-400">✅ WhatsApp conectado com sucesso! Fechando em instantes...</p>
+                  )
+                  : (
+                    <>
+                      <p className="font-semibold mb-2">📱 Como conectar:</p>
+                      <ol className="text-sm space-y-1 list-decimal list-inside">
+                        <li>Abra o WhatsApp no seu celular</li>
+                        <li>Vá em <strong>Configurações</strong> {">"} <strong>Aparelhos Conectados</strong></li>
+                        <li>Toque em <strong>Conectar Aparelho</strong></li>
+                        <li>Escaneie o QR Code abaixo</li>
+                      </ol>
+                      <p className="text-xs mt-2 text-muted-foreground">
+                        ⏱️ O QR Code expira em 2 minutos. Se expirar, clique em "Gerar Novo QR Code".
+                      </p>
+                    </>
+                  )
                 }
               </AlertDescription>
             </Alert>
@@ -438,6 +469,16 @@ export function WhatsAppConnectionManager() {
                     className="w-64 h-64"
                   />
                 </div>
+
+                {/* Aguardando scan do QR Code */}
+                {qrCodeDialog.qr_code_base64 && connections?.find(c => c.id === qrCodeDialog.id)?.status === 'connecting' && (
+                  <div className="text-center mt-4 p-3 bg-yellow-50 dark:bg-yellow-950 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                    <div className="flex items-center justify-center gap-2 text-yellow-800 dark:text-yellow-200">
+                      <div className="animate-pulse">📱</div>
+                      <p className="text-sm font-medium">Aguardando você escanear o QR Code no WhatsApp...</p>
+                    </div>
+                  </div>
+                )}
 
                 {/* ✅ FASE 4: Indicador de polling ativo */}
                 {connections?.find(c => c.id === qrCodeDialog.id)?.status === 'connecting' && (
