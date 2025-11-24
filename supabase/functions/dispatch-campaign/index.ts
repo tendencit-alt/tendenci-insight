@@ -330,10 +330,31 @@ Deno.serve(async (req) => {
       updated_at: new Date().toISOString()
     }
 
+    // Se não há data_primeiro_contato, adicionar agora
+    const { data: currentArchitect } = await supabase
+      .from('architects')
+      .select('data_primeiro_contato')
+      .eq('id', arquiteto_id)
+      .single()
+
+    if (!currentArchitect?.data_primeiro_contato) {
+      updateData.data_primeiro_contato = new Date().toISOString()
+      console.log('📝 Definindo data_primeiro_contato para arquiteto:', arquiteto_id)
+    }
+
     // Se conseguimos identificar o usuário, atualizar vendedor_responsavel
     if (userId) {
       updateData.vendedor_responsavel = userId
     }
+
+    console.log('📝 Atualizando arquiteto com dados:', {
+      arquiteto_id,
+      updateData: {
+        ...updateData,
+        data_primeiro_contato: updateData.data_primeiro_contato ? 'SET' : 'NOT SET',
+        data_ultimo_contato: 'SET',
+      }
+    })
 
     const { error: updateError } = await supabase
       .from('architects')
@@ -341,13 +362,20 @@ Deno.serve(async (req) => {
       .eq('id', arquiteto_id)
 
     if (updateError) {
-      console.error('❌ Erro ao atualizar arquiteto:', updateError)
+      console.error('❌ ERRO CRÍTICO ao atualizar arquiteto:', {
+        error: updateError,
+        message: updateError.message,
+        details: updateError.details,
+        hint: updateError.hint,
+        arquiteto_id
+      })
     } else {
-      console.log('✅ Arquiteto atualizado:', {
+      console.log('✅ Arquiteto atualizado com sucesso:', {
         arquiteto_id,
         status_funil: 'contato_feito_ia',
         tag_prospeccao: 'contactado',
-        vendedor: userId || 'não identificado'
+        vendedor: userId || 'não identificado',
+        data_primeiro_contato_set: !!updateData.data_primeiro_contato
       })
     }
 
