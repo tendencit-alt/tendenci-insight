@@ -194,23 +194,57 @@ export function CampanhaExecutor({ campaignId, campaignName, onComplete }: Execu
           }, null, 2));
 
           // Enviar via edge function (resolve CORS e segurança)
+          const startTime = Date.now();
           const { data, error } = await supabase.functions.invoke('dispatch-campaign', {
             body: payload
           });
+          const duration = Date.now() - startTime;
+
+          console.log(`⏱️ Edge function respondeu em ${duration}ms`);
 
           // Erro fatal da edge function (não da Evolution API)
           if (error) {
-            console.error('❌ Erro fatal ao disparar:', error);
-            throw new Error(error.message || 'Erro ao enviar mensagem');
+            console.error('❌ Erro fatal ao disparar edge function:', {
+              error,
+              message: error.message,
+              context: error.context,
+              details: error,
+              duration: `${duration}ms`,
+              architect: arq.name,
+              phone: arq.phone?.substring(0, 4) + '****'
+            });
+            
+            // Log detalhado no banco
+            await supabase
+              .from('tendenci_prospec_arq_campaign_dispatches')
+              .insert({
+                campanha_id: campanha.id,
+                architect_id: arq.id,
+                status: 'erro',
+                mensagem_erro: `Edge function error: ${error.message || JSON.stringify(error)}`,
+                tentativas: 1
+              });
+
+            failed++;
+            toast.error(`Erro no disparo para ${arq.name}: ${error.message || 'Status não-2xx'}`);
+            setStatus(prev => ({ ...prev, sent, failed }));
+            continue;
           }
+
+          console.log('📥 Resposta da edge function:', {
+            status: data?.status,
+            architect: arq.name,
+            data
+          });
 
           // Verificar status do envio
           if (data?.status === 'success') {
             sent++;
-            console.log(`✅ Enviado para ${arq.name}`);
+            console.log(`✅ Enviado com sucesso para ${arq.name}`);
+            toast.success(`Enviado para ${arq.name}`);
           } else if (data?.status === 'failed') {
             failed++;
-            console.error(`❌ Falha ao enviar para ${arq.name}:`, data.error);
+            console.error(`❌ Falha reportada pela API para ${arq.name}:`, data.error);
             
             // Registrar erro específico no log
             await supabase
@@ -219,11 +253,24 @@ export function CampanhaExecutor({ campaignId, campaignName, onComplete }: Execu
                 campanha_id: campanha.id,
                 architect_id: arq.id,
                 status: 'erro',
-                mensagem_erro: data.error || 'Erro desconhecido',
+                mensagem_erro: data.error || 'Erro desconhecido da API',
+                tentativas: 1
               });
+            
+            toast.error(`Falha ao enviar para ${arq.name}: ${data.error}`);
           } else {
             failed++;
-            console.error(`❌ Resposta inesperada para ${arq.name}`);
+            console.error(`❌ Resposta inesperada para ${arq.name}:`, data);
+            
+            await supabase
+              .from('tendenci_prospec_arq_campaign_dispatches')
+              .insert({
+                campanha_id: campanha.id,
+                architect_id: arq.id,
+                status: 'erro',
+                mensagem_erro: 'Resposta inesperada da edge function',
+                tentativas: 1
+              });
           }
 
         } catch (error) {
