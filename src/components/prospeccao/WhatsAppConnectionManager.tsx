@@ -125,6 +125,7 @@ export function WhatsAppConnectionManager() {
           
           if (error) {
             console.error('❌ Erro no invoke:', error);
+            toast.error(`Erro ao verificar status: ${error.message}`);
             continue;
           }
           
@@ -133,12 +134,13 @@ export function WhatsAppConnectionManager() {
           if (data?.updated) {
             console.log(`✅ Status atualizado via polling para ${conn.instance_name}!`);
             queryClient.invalidateQueries({ queryKey: ["whatsapp-connections"] });
+            toast.success(`✅ Status atualizado: ${data.status}`);
           }
         } catch (error) {
           console.error('💥 Erro no polling:', error);
         }
       }
-    }, 5000); // A cada 5 segundos
+    }, 3000); // A cada 3 segundos (mais agressivo)
     
     return () => {
       console.log('🛑 Parando polling');
@@ -636,25 +638,35 @@ export function WhatsAppConnectionManager() {
                             size="sm"
                             onClick={async () => {
                               try {
-                                toast.info("Verificando status...");
+                                toast.info("🔍 Verificando status na Evolution API...");
                                 const { data, error } = await supabase.functions.invoke("whatsapp-evolution", {
                                   body: { action: "check-status", instanceName: connection.instance_name },
                                 });
                                 
                                 if (error) {
-                                  toast.error("Erro ao verificar status");
+                                  toast.error(`❌ Erro: ${error.message}`);
                                   console.error('Erro:', error);
                                   return;
                                 }
                                 
+                                console.log("📊 Response completa:", data);
+                                
                                 if (data?.updated) {
-                                  toast.success("Status atualizado!");
+                                  toast.success(`✅ Status atualizado: ${data.status}`);
+                                  queryClient.invalidateQueries({ queryKey: ["whatsapp-connections"] });
+                                } else if (data?.status === 'connecting') {
+                                  toast.warning(
+                                    `⚠️ Evolution API ainda reporta "connecting".\n\nSe você já escaneou o QR Code, aguarde 30s ou clique em "Gerar Novo QR Code".`,
+                                    { duration: 8000 }
+                                  );
+                                } else if (data?.status === 'connected') {
+                                  toast.success("✅ Já está conectado! Atualizando...");
                                   queryClient.invalidateQueries({ queryKey: ["whatsapp-connections"] });
                                 } else {
-                                  toast.info("Status já está atualizado");
+                                  toast.info(`Status atual: ${data?.status || 'desconhecido'}`);
                                 }
                               } catch (error) {
-                                toast.error("Erro ao verificar status");
+                                toast.error("Erro ao verificar");
                                 console.error('Erro:', error);
                               }
                             }}
