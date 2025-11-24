@@ -241,14 +241,28 @@ export default function WhatsAppConnectionManager() {
 
   const deleteMutation = useMutation({
     mutationFn: async (instanceName: string) => {
-      const { error } = await supabase.functions.invoke("whatsapp-evolution", {
+      console.log('🗑️ Deleting instance:', instanceName);
+      
+      const { data, error } = await supabase.functions.invoke("whatsapp-evolution", {
         body: { action: "delete", instanceName },
       });
-      if (error) throw error;
+      
+      if (error) {
+        console.error('❌ Delete error:', error);
+        throw error;
+      }
+      
+      console.log('✅ Delete response:', data);
+      return data;
     },
-    onSuccess: () => {
-      toast.success("Conexão deletada");
+    onSuccess: (data, instanceName) => {
+      console.log('✅ Instance deleted successfully:', instanceName);
+      toast.success("Conexão deletada com sucesso");
       queryClient.invalidateQueries({ queryKey: ["whatsapp-connections"] });
+    },
+    onError: (error: any) => {
+      console.error('💥 Delete mutation error:', error);
+      toast.error(error.message || "Erro ao deletar conexão");
     },
   });
 
