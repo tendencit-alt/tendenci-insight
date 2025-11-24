@@ -54,25 +54,28 @@ Deno.serve(async (req) => {
       }
 
       if (!statusResp.ok) {
+        const errorText = await statusResp.text()
+        console.error('❌ Evolution API error:', statusResp.status, errorText)
         throw new Error(`Evolution API status check failed: ${statusResp.status}`)
       }
 
-      const statusData = await statusResp.json()
-      console.log('📊 Evolution API response:', JSON.stringify(statusData, null, 2))
+      const statusDataRaw = await statusResp.json()
+      const statusData = Array.isArray(statusDataRaw) ? statusDataRaw[0] : statusDataRaw
 
-      const currentState = statusData.instance?.state || statusData.state
-      console.log('📊 Current state:', currentState)
+      console.log('🔍 connectionStatus:', statusData?.connectionStatus)
+      
+      const isConnected = statusData?.connectionStatus === 'open'
+      console.log('✅ CONNECTED:', isConnected)
 
-      const mappedStatus = currentState === 'open' ? 'connected' : 
-                          currentState === 'close' ? 'disconnected' : 
-                          'connecting'
+      // Extrair número de telefone do ownerJid
+      const phoneNumber = statusData.ownerJid 
+        ? statusData.ownerJid.split('@')[0]
+        : null
 
-      const phoneNumber = statusData.instance?.owner || 
-                         statusData.owner || 
-                         statusData.phone_number ||
-                         null
+      console.log('📊 Phone number:', phoneNumber)
 
-      console.log('📊 Mapped status:', mappedStatus, '| Phone:', phoneNumber)
+      const mappedStatus = isConnected ? 'connected' : 'connecting'
+      console.log('📊 Final mapped status:', mappedStatus)
 
       // Buscar conexão atual no banco
       const { data: currentConn } = await supabase
@@ -81,25 +84,25 @@ Deno.serve(async (req) => {
         .eq('instance_name', instanceName)
         .single()
 
-      // Atualizar no banco se status mudou
-      if (currentConn && currentConn.status !== mappedStatus) {
-        console.log(`🔄 Status changed: ${currentConn.status} → ${mappedStatus}`)
+      console.log('📊 Current DB status:', currentConn?.status)
+
+      // Atualizar no banco se status mudou OU se detectou telefone
+      if (currentConn && (currentConn.status !== mappedStatus || (isConnected && phoneNumber && !currentConn.phone_number))) {
+        console.log(`🔄 Updating: ${currentConn.status} → ${mappedStatus}`)
         
-        const updateData: any = { status: mappedStatus }
+        const updateData: any = { 
+          status: mappedStatus,
+          last_sync: new Date().toISOString()
+        }
         
         if (mappedStatus === 'connected' && phoneNumber) {
           updateData.phone_number = phoneNumber
-          updateData.connected_at = new Date().toISOString()
+          updateData.connected_at = currentConn.connected_at || new Date().toISOString()
           updateData.qr_code = null
           updateData.qr_code_base64 = null
         }
-        
-        if (mappedStatus === 'disconnected') {
-          updateData.phone_number = null
-          updateData.connected_at = null
-          updateData.qr_code = null
-          updateData.qr_code_base64 = null
-        }
+
+        console.log('📊 Update data:', JSON.stringify(updateData, null, 2))
 
         const { error: updateError } = await supabase
           .from('tendenci_whatsapp_connections')
@@ -109,15 +112,17 @@ Deno.serve(async (req) => {
         if (updateError) {
           console.error('❌ Error updating status:', updateError)
         } else {
-          console.log('✅ Status updated in database')
+          console.log('✅ Status updated in database successfully')
         }
+      } else {
+        console.log('ℹ️ No update needed - status unchanged')
       }
 
       return new Response(
         JSON.stringify({ 
           status: mappedStatus, 
           phoneNumber,
-          rawState: currentState 
+          isConnected
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
