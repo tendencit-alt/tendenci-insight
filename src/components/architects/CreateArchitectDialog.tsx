@@ -7,6 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useFormPersistence } from "@/hooks/useFormPersistence";
+import { FormSaveIndicator } from "@/components/ui/FormSaveIndicator";
 
 interface CreateArchitectDialogProps {
   open: boolean;
@@ -16,17 +18,21 @@ interface CreateArchitectDialogProps {
 
 export function CreateArchitectDialog({ open, onOpenChange, onSuccess }: CreateArchitectDialogProps) {
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    name: "",
-    company: "",
-    phone: "",
-    email: "",
-    birthday: "",
-    categoria: "metropolitano",
-    ja_contactado: false,
-    data_primeiro_contato: "",
-    data_ultimo_contato: ""
-  });
+  const [formData, setFormData, clearPersistedData, hasRestoredData] = useFormPersistence(
+    'create-architect-form',
+    {
+      name: "",
+      company: "",
+      phone: "",
+      email: "",
+      birthday: "",
+      categoria: "metropolitano",
+      ja_contactado: false,
+      data_primeiro_contato: "",
+      data_ultimo_contato: ""
+    },
+    open
+  );
 
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -70,6 +76,7 @@ export function CreateArchitectDialog({ open, onOpenChange, onSuccess }: CreateA
 
       toast.success("Arquiteto criado com sucesso!");
       
+      clearPersistedData();
       onSuccess(data?.id);
       onOpenChange(false);
       
@@ -111,6 +118,8 @@ export function CreateArchitectDialog({ open, onOpenChange, onSuccess }: CreateA
         <DialogHeader>
           <DialogTitle className="text-2xl">Novo Arquiteto</DialogTitle>
         </DialogHeader>
+
+        <FormSaveIndicator hasRestoredData={hasRestoredData} className="mb-4" />
 
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           <div className="grid grid-cols-2 gap-4">

@@ -12,6 +12,8 @@ import { Upload, X, FileText, Plus } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { CreateClientDialog } from "@/components/crm/CreateClientDialog";
 import { CreateArchitectDialog } from "@/components/architects/CreateArchitectDialog";
+import { useFormPersistence } from "@/hooks/useFormPersistence";
+import { FormSaveIndicator } from "@/components/ui/FormSaveIndicator";
 
 interface CreateProjectDialogProps {
   open: boolean;
@@ -29,15 +31,19 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess, preSelected
   const [isCreateClientOpen, setIsCreateClientOpen] = useState(false);
   const [isCreateArchitectOpen, setIsCreateArchitectOpen] = useState(false);
   const { notifyProjectCreated } = useWebhookSync();
-  const [formData, setFormData] = useState({
-    name: "",
-    client_id: "",
-    architect_id: "",
-    stage: "recebido",
-    value: "",
-    deadline: "",
-    notes: ""
-  });
+  const [formData, setFormData, clearPersistedData, hasRestoredData] = useFormPersistence(
+    `create-project-form-${preSelectedArchitectId || 'new'}`,
+    {
+      name: "",
+      client_id: "",
+      architect_id: preSelectedArchitectId || "",
+      stage: "recebido",
+      value: "",
+      deadline: "",
+      notes: ""
+    },
+    open
+  );
 
   useEffect(() => {
     if (open) {
@@ -203,6 +209,7 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess, preSelected
 
       toast.success("Projeto criado com sucesso!");
       
+      clearPersistedData();
       onSuccess?.();
       onOpenChange(false);
       
@@ -243,6 +250,8 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess, preSelected
         <DialogHeader>
           <DialogTitle className="text-2xl">Novo Projeto</DialogTitle>
         </DialogHeader>
+
+        <FormSaveIndicator hasRestoredData={hasRestoredData} className="mb-4" />
 
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           <div className="grid grid-cols-2 gap-4">

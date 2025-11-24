@@ -33,6 +33,8 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { logDealChange, logStageChange, getDisplayValue } from "@/utils/dealHistory";
 import { CreateLeadDialog } from "@/components/leads/CreateLeadDialog";
 import { CreateArchitectDialog } from "@/components/architects/CreateArchitectDialog";
+import { useFormPersistence } from "@/hooks/useFormPersistence";
+import { FormSaveIndicator } from "@/components/ui/FormSaveIndicator";
 
 interface EditDealDialogProps {
   deal: any;
@@ -65,19 +67,23 @@ export function EditDealDialog({
   const audioChunksRef = useRef<Blob[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [formData, setFormData] = useState({
-    title: "",
-    stage_id: "",
-    architect_id: "",
-    value: "",
-    note: "",
-    temperature: "frio",
-    product_type: "",
-    conversation_history: "",
-    owner_id: "",
-    source_id: "",
-    lead_id: "",
-  });
+  const [formData, setFormData, clearPersistedData, hasRestoredData] = useFormPersistence(
+    `edit-deal-form-${deal?.id || 'new'}`,
+    {
+      title: "",
+      stage_id: "",
+      architect_id: "",
+      value: "",
+      note: "",
+      temperature: "frio",
+      product_type: "",
+      conversation_history: "",
+      owner_id: "",
+      source_id: "",
+      lead_id: "",
+    },
+    open
+  );
 
   useEffect(() => {
     if (open && deal) {
@@ -477,6 +483,7 @@ export function EditDealDialog({
         description: "Negócio atualizado com sucesso!",
       });
 
+      clearPersistedData();
       setLoading(false);
       onOpenChange(false);
       onSuccess();
@@ -511,6 +518,8 @@ export function EditDealDialog({
         <DialogHeader>
           <DialogTitle>Editar Negócio</DialogTitle>
         </DialogHeader>
+
+        <FormSaveIndicator hasRestoredData={hasRestoredData} className="mb-4" />
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Seção: Informações Básicas */}
