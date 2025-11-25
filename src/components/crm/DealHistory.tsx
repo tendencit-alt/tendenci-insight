@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { History, ArrowRight, Edit } from "lucide-react";
+import { History, ArrowRight, Edit, ChevronDown, ChevronUp } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface DealHistoryProps {
   dealId: string;
@@ -28,6 +29,7 @@ interface HistoryEntry {
 export function DealHistory({ dealId }: DealHistoryProps) {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expandedNotes, setExpandedNotes] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     fetchHistory();
@@ -87,6 +89,43 @@ export function DealHistory({ dealId }: DealHistoryProps) {
       return 'bg-blue-500';
     }
     return 'bg-purple-500';
+  };
+
+  // Função para resolver valores de display (fallback para UUIDs históricos)
+  const resolveDisplayValue = async (fieldName: string, value: string | null): Promise<string> => {
+    if (!value) return '(vazio)';
+    
+    // Detectar se é UUID (formato: 8-4-4-4-12 caracteres hexadecimais)
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    
+    if (fieldName === 'owner_id' && uuidRegex.test(value)) {
+      const { data } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', value)
+        .maybeSingle();
+      return data?.full_name || value;
+    }
+    
+    if (fieldName === 'architect_id' && uuidRegex.test(value)) {
+      const { data } = await supabase
+        .from('architects')
+        .select('name')
+        .eq('id', value)
+        .maybeSingle();
+      return data?.name || value;
+    }
+    
+    return value;
+  };
+
+  const toggleNoteExpansion = (entryId: string) => {
+    setExpandedNotes(prev => ({ ...prev, [entryId]: !prev[entryId] }));
+  };
+
+  const truncateText = (text: string, maxLength: number = 150) => {
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
   };
 
   if (loading) {
@@ -178,6 +217,66 @@ export function DealHistory({ dealId }: DealHistoryProps) {
                     <span className="font-medium">
                       {entry.to_stage?.name || 'Nova etapa'}
                     </span>
+                  </div>
+                ) : entry.field_name === 'note' ? (
+                  <div className="space-y-2">
+                    {entry.old_value && (
+                      <div className="space-y-1">
+                        <span className="text-xs font-semibold text-muted-foreground">Observação Anterior:</span>
+                        <div className="px-3 py-2 bg-muted/50 rounded text-sm border-l-2 border-muted">
+                          {expandedNotes[entry.id] || entry.old_value.length <= 150 ? (
+                            <p className="whitespace-pre-wrap">{entry.old_value}</p>
+                          ) : (
+                            <p className="whitespace-pre-wrap">{truncateText(entry.old_value)}</p>
+                          )}
+                          {entry.old_value.length > 150 && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => toggleNoteExpansion(entry.id)}
+                              className="mt-1 h-6 text-xs"
+                            >
+                              {expandedNotes[entry.id] ? (
+                                <>Ver menos <ChevronUp className="ml-1 h-3 w-3" /></>
+                              ) : (
+                                <>Ver mais <ChevronDown className="ml-1 h-3 w-3" /></>
+                              )}
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    {entry.new_value && (
+                      <div className="space-y-1">
+                        <span className="text-xs font-semibold text-primary">Nova Observação:</span>
+                        <div className="px-3 py-2 bg-primary/5 rounded text-sm border-l-2 border-primary">
+                          {expandedNotes[`${entry.id}-new`] || entry.new_value.length <= 150 ? (
+                            <p className="whitespace-pre-wrap">{entry.new_value}</p>
+                          ) : (
+                            <p className="whitespace-pre-wrap">{truncateText(entry.new_value)}</p>
+                          )}
+                          {entry.new_value.length > 150 && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => toggleNoteExpansion(`${entry.id}-new`)}
+                              className="mt-1 h-6 text-xs"
+                            >
+                              {expandedNotes[`${entry.id}-new`] ? (
+                                <>Ver menos <ChevronUp className="ml-1 h-3 w-3" /></>
+                              ) : (
+                                <>Ver mais <ChevronDown className="ml-1 h-3 w-3" /></>
+                              )}
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    {!entry.old_value && !entry.new_value && (
+                      <p className="text-sm text-muted-foreground italic">
+                        Observações foram atualizadas
+                      </p>
+                    )}
                   </div>
                 ) : (
                   <div className="space-y-1">
