@@ -320,6 +320,10 @@ export function DealTasks({ dealId }: DealTasksProps) {
 
   const handleToggleStatus = async (taskId: string, currentStatus: string) => {
     const newStatus = currentStatus === "open" ? "done" : "open";
+    
+    // Buscar título da tarefa e stage_id do deal para o histórico
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
 
     const { error } = await supabase
       .from("crm_tasks")
@@ -334,6 +338,36 @@ export function DealTasks({ dealId }: DealTasksProps) {
       });
       return;
     }
+
+    // Adicionar entrada no histórico quando tarefa for concluída
+    if (newStatus === "done") {
+      const { data: dealData } = await supabase
+        .from("crm_deals")
+        .select("stage_id")
+        .eq("id", dealId)
+        .single();
+      
+      if (dealData) {
+        await supabase
+          .from("crm_deal_history")
+          .insert({
+            deal_id: dealId,
+            action_type: "task_completed",
+            description: `Tarefa concluída: ${task.title}`,
+            field_name: "task_status",
+            old_value: "open",
+            new_value: "done",
+            to_stage_id: dealData.stage_id,
+            moved_by: user?.id,
+          });
+      }
+      
+      toast({
+        title: "Tarefa concluída",
+        description: "A tarefa foi marcada como concluída e registrada no histórico.",
+      });
+    }
+    
     fetchTasks();
   };
 
