@@ -44,7 +44,7 @@ export function CRMFilters({
   return (
     <div className="flex flex-wrap items-center gap-2">
       <Select value={selectedPipeline} onValueChange={onPipelineChange}>
-        <SelectTrigger className="w-48 flex-1 min-w-[180px]">
+        <SelectTrigger className="flex-1 min-w-[150px] max-w-[220px]">
           <SelectValue placeholder="Selecione um funil" />
         </SelectTrigger>
         <SelectContent>
@@ -67,7 +67,7 @@ export function CRMFilters({
       </div>
 
       <Select value={selectedOwner} onValueChange={onOwnerChange}>
-        <SelectTrigger className="w-44 flex-1 min-w-[150px]">
+        <SelectTrigger className="flex-1 min-w-[150px] max-w-[220px]">
           <SelectValue placeholder="Responsável" />
         </SelectTrigger>
         <SelectContent>
@@ -80,10 +80,10 @@ export function CRMFilters({
         </SelectContent>
       </Select>
 
-      <Select value={selectedStatus} onValueChange={onStatusChange}>
-        <SelectTrigger className="w-36 flex-1 min-w-[120px]">
-          <SelectValue placeholder="Status" />
-        </SelectTrigger>
+          <Select value={selectedStatus} onValueChange={onStatusChange}>
+            <SelectTrigger className="flex-1 min-w-[150px] max-w-[220px]">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">Todos</SelectItem>
           <SelectItem value="aberto">Aberto</SelectItem>
@@ -93,7 +93,7 @@ export function CRMFilters({
       </Select>
 
       <Select value={dateFilter} onValueChange={onDateFilterChange}>
-        <SelectTrigger className="w-40 flex-1 min-w-[140px]">
+        <SelectTrigger className="flex-1 min-w-[150px] max-w-[220px]">
           <SelectValue placeholder="Período" />
         </SelectTrigger>
         <SelectContent>
