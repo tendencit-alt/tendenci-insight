@@ -11,6 +11,42 @@ interface DealHistoryProps {
   dealId: string;
 }
 
+// Componente para resolver valores assíncronos (UUIDs -> Nomes)
+function ResolvedValue({ fieldName, value }: { fieldName: string | null; value: string | null }) {
+  const [resolvedValue, setResolvedValue] = useState<string>(value || '(vazio)');
+  
+  useEffect(() => {
+    const resolve = async () => {
+      if (!value || !fieldName) {
+        setResolvedValue(value || '(vazio)');
+        return;
+      }
+      
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      
+      // Resolver owner_id (responsáveis)
+      if (fieldName === 'owner_id' && uuidRegex.test(value)) {
+        const { data } = await supabase.from('profiles').select('full_name').eq('id', value).maybeSingle();
+        setResolvedValue(data?.full_name || value);
+        return;
+      }
+      
+      // Resolver architect_id (arquitetos)
+      if (fieldName === 'architect_id' && uuidRegex.test(value)) {
+        const { data } = await supabase.from('architects').select('name').eq('id', value).maybeSingle();
+        setResolvedValue(data?.name || value);
+        return;
+      }
+      
+      setResolvedValue(value);
+    };
+    
+    resolve();
+  }, [fieldName, value]);
+  
+  return <>{resolvedValue}</>;
+}
+
 interface HistoryEntry {
   id: string;
   deal_id: string;
@@ -290,13 +326,13 @@ export function DealHistory({ dealId }: DealHistoryProps) {
                         <div className="flex items-center gap-2">
                           <span className="text-muted-foreground">De:</span>
                           <code className="px-2 py-1 bg-muted rounded text-xs">
-                            {entry.old_value || '(vazio)'}
+                            <ResolvedValue fieldName={entry.field_name} value={entry.old_value} />
                           </code>
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="text-muted-foreground">Para:</span>
                           <code className="px-2 py-1 bg-primary/10 rounded text-xs font-semibold">
-                            {entry.new_value || '(vazio)'}
+                            <ResolvedValue fieldName={entry.field_name} value={entry.new_value} />
                           </code>
                         </div>
                       </div>
