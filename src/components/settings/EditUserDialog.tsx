@@ -189,7 +189,7 @@ export function EditUserDialog({ open, onOpenChange, user, onSuccess }: EditUser
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                Define quais categorias de negócios o vendedor pode visualizar no CRM Kanban
+                Define quais categorias de negócios o vendedor pode visualizar no CRM Clientes
               </p>
             </div>
           )}

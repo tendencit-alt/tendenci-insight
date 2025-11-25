@@ -131,7 +131,7 @@ export default function CRM() {
         {/* Header com botões responsivos - COMPACTO */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-1.5">
           <div className="flex flex-col gap-0.5">
-            <h1 className="text-xl lg:text-2xl font-bold tracking-tight">🗂️ CRM Kanban</h1>
+            <h1 className="text-xl lg:text-2xl font-bold tracking-tight">🗂️ CRM Clientes</h1>
             <p className="text-xs text-muted-foreground">
               Funis e cadências personalizadas, com métricas, SLA e integrações
             </p>

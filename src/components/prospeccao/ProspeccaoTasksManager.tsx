@@ -161,7 +161,7 @@ export function ProspeccaoTasksManager() {
 
     toast({
       title: "Tarefa criada",
-      description: "A tarefa foi adicionada e aparecerá no CRM Kanban.",
+      description: "A tarefa foi adicionada e aparecerá no CRM Clientes.",
     });
 
     setNewTask({ 
