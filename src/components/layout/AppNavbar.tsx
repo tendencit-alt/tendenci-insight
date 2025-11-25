@@ -84,7 +84,7 @@ export function AppNavbar() {
     <nav className="sticky top-0 z-50 h-14 border-b border-border/40 bg-card/95 backdrop-blur-[12px] supports-[backdrop-filter]:bg-card/95 shadow-sm">
       <div className="flex items-center h-full px-4 max-w-[1800px] mx-auto gap-4">
         {/* Logo */}
-        <img src={tendenciLogo} alt="Tendenci" className="h-8 w-8 flex-shrink-0" />
+        <img src={tendenciLogo} alt="Tendenci" className="h-8 w-auto flex-shrink-0" />
         
         {/* Desktop Menu Items */}
         <div className="hidden lg:flex items-center gap-1 flex-1">
