@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { CheckCircle, Clock, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { DealDetailSheet } from "./DealDetailSheet";
 
 interface CRMTasksPanelProps {
   pipelineId: string;
@@ -13,6 +14,8 @@ interface CRMTasksPanelProps {
 export function CRMTasksPanel({ pipelineId, categoryFilter }: CRMTasksPanelProps) {
   const [tasks, setTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedDeal, setSelectedDeal] = useState<any | null>(null);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
 
   useEffect(() => {
     fetchTasks();
@@ -134,6 +137,29 @@ export function CRMTasksPanel({ pipelineId, categoryFilter }: CRMTasksPanelProps
     }
   };
 
+  const handleOpenDeal = async (dealId: string) => {
+    const { data, error } = await supabase
+      .from("crm_deals")
+      .select(`
+        *,
+        stage:crm_stages(*),
+        pipeline:crm_pipelines(*),
+        owner:profiles(*),
+        lead:leads(
+          *,
+          client:clients(*)
+        ),
+        architect:architects(*)
+      `)
+      .eq("id", dealId)
+      .single();
+
+    if (!error && data) {
+      setSelectedDeal(data);
+      setIsSheetOpen(true);
+    }
+  };
+
   if (loading) {
     return (
       <Card>
@@ -188,7 +214,10 @@ export function CRMTasksPanel({ pipelineId, categoryFilter }: CRMTasksPanelProps
                       className="p-3 border border-destructive/40 rounded-lg bg-destructive/5 hover:bg-destructive/10 transition-colors space-y-2"
                     >
                       <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 space-y-1 min-w-0">
+                        <div 
+                          className="flex-1 space-y-1 min-w-0 cursor-pointer hover:opacity-80 transition-opacity"
+                          onClick={() => handleOpenDeal(task.deal_id)}
+                        >
                           <p className="font-semibold text-sm line-clamp-1">{task.title}</p>
                           <p className="text-xs text-muted-foreground line-clamp-1 leading-relaxed">
                             {task.deal?.title} • {clientName}
@@ -198,7 +227,10 @@ export function CRMTasksPanel({ pipelineId, categoryFilter }: CRMTasksPanelProps
                           size="sm"
                           variant="ghost"
                           className="h-8 w-8 p-0 flex-shrink-0 hover:bg-primary/10"
-                          onClick={() => handleMarkDone(task.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleMarkDone(task.id);
+                          }}
                         >
                           <CheckCircle className="h-4 w-4" />
                         </Button>
@@ -253,7 +285,10 @@ export function CRMTasksPanel({ pipelineId, categoryFilter }: CRMTasksPanelProps
                       className="p-3 border border-primary/40 rounded-lg bg-primary/5 hover:bg-primary/10 transition-colors space-y-2"
                     >
                       <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 space-y-1 min-w-0">
+                        <div 
+                          className="flex-1 space-y-1 min-w-0 cursor-pointer hover:opacity-80 transition-opacity"
+                          onClick={() => handleOpenDeal(task.deal_id)}
+                        >
                           <p className="font-semibold text-sm line-clamp-1">{task.title}</p>
                           <p className="text-xs text-muted-foreground line-clamp-1 leading-relaxed">
                             {task.deal?.title} • {clientName}
@@ -263,7 +298,10 @@ export function CRMTasksPanel({ pipelineId, categoryFilter }: CRMTasksPanelProps
                           size="sm"
                           variant="ghost"
                           className="h-8 w-8 p-0 flex-shrink-0 hover:bg-primary/10"
-                          onClick={() => handleMarkDone(task.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleMarkDone(task.id);
+                          }}
                         >
                           <CheckCircle className="h-4 w-4" />
                         </Button>
@@ -293,6 +331,18 @@ export function CRMTasksPanel({ pipelineId, categoryFilter }: CRMTasksPanelProps
           </div>
         )}
       </CardContent>
+
+      {selectedDeal && (
+        <DealDetailSheet
+          deal={selectedDeal}
+          open={isSheetOpen}
+          onOpenChange={setIsSheetOpen}
+          onSuccess={() => {
+            fetchTasks();
+            setIsSheetOpen(false);
+          }}
+        />
+      )}
     </Card>
   );
 }
