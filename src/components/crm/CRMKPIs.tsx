@@ -226,20 +226,20 @@ export function CRMKPIs({ pipelineId, categoryFilter }: CRMKPIsProps) {
   }
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
+    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-2">
       {kpis.map((kpi, index) => (
         <Card 
           key={index} 
           className="hover:shadow-lg transition-all duration-200 hover:scale-[1.02] animate-fade-in" 
           style={{ animationDelay: `${index * 100}ms` }}
         >
-          <CardContent className="p-4">
-            <div className="flex flex-col gap-2">
-              <kpi.icon className={`h-7 w-7 ${kpi.color}`} />
-              <p className="text-xs font-medium text-muted-foreground">{kpi.label}</p>
-              <p className="text-2xl font-bold tracking-tight">{kpi.value}</p>
+          <CardContent className="p-2.5">
+            <div className="flex flex-col gap-1">
+              <kpi.icon className={`h-5 w-5 ${kpi.color}`} />
+              <p className="text-[10px] font-medium text-muted-foreground">{kpi.label}</p>
+              <p className="text-lg font-bold tracking-tight">{kpi.value}</p>
               {kpi.subtitle && (
-                <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{kpi.subtitle}</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5 leading-snug">{kpi.subtitle}</p>
               )}
             </div>
           </CardContent>

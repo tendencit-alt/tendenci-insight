@@ -42,9 +42,9 @@ export function CRMFilters({
   onCustomDateRangeChange
 }: CRMFiltersProps) {
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-wrap items-center gap-1.5">
       <Select value={selectedPipeline} onValueChange={onPipelineChange}>
-        <SelectTrigger className="flex-1 min-w-[150px] max-w-[220px]">
+        <SelectTrigger className="flex-1 min-w-[100px] max-w-[160px]">
           <SelectValue placeholder="Selecione um funil" />
         </SelectTrigger>
         <SelectContent>
@@ -56,18 +56,18 @@ export function CRMFilters({
         </SelectContent>
       </Select>
 
-      <div className="relative flex-1 min-w-[200px]">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+      <div className="relative flex-1 min-w-[140px]">
+        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
         <Input
           placeholder="Buscar..."
-          className="pl-10"
+          className="pl-9 h-8 text-xs"
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
         />
       </div>
 
       <Select value={selectedOwner} onValueChange={onOwnerChange}>
-        <SelectTrigger className="flex-1 min-w-[150px] max-w-[220px]">
+        <SelectTrigger className="flex-1 min-w-[100px] max-w-[160px] h-8 text-xs">
           <SelectValue placeholder="Responsável" />
         </SelectTrigger>
         <SelectContent>
@@ -81,7 +81,7 @@ export function CRMFilters({
       </Select>
 
           <Select value={selectedStatus} onValueChange={onStatusChange}>
-            <SelectTrigger className="flex-1 min-w-[150px] max-w-[220px]">
+            <SelectTrigger className="flex-1 min-w-[100px] max-w-[160px] h-8 text-xs">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
         <SelectContent>
@@ -93,7 +93,7 @@ export function CRMFilters({
       </Select>
 
       <Select value={dateFilter} onValueChange={onDateFilterChange}>
-        <SelectTrigger className="flex-1 min-w-[150px] max-w-[220px]">
+        <SelectTrigger className="flex-1 min-w-[100px] max-w-[160px] h-8 text-xs">
           <SelectValue placeholder="Período" />
         </SelectTrigger>
         <SelectContent>
@@ -111,12 +111,13 @@ export function CRMFilters({
           <PopoverTrigger asChild>
             <Button
               variant="outline"
+              size="sm"
               className={cn(
-                "w-60 justify-start text-left font-normal",
+                "w-48 justify-start text-left font-normal h-8 text-xs",
                 !customDateRange?.from && "text-muted-foreground"
               )}
             >
-              <CalendarIcon className="mr-2 h-4 w-4" />
+              <CalendarIcon className="mr-1.5 h-3.5 w-3.5" />
               {customDateRange?.from ? (
                 customDateRange.to ? (
                   <>
@@ -157,7 +158,8 @@ export function CRMFilters({
       {(selectedOwner !== "all" || searchQuery || selectedStatus !== "all" || dateFilter !== "all") && (
         <Button 
           variant="destructive" 
-          size="default"
+          size="sm"
+          className="gap-1.5 h-8 text-xs"
           onClick={() => {
             onOwnerChange("all");
             onSearchChange("");
@@ -167,9 +169,8 @@ export function CRMFilters({
               onCustomDateRangeChange({ from: undefined, to: undefined });
             }
           }}
-          className="gap-2"
         >
-          <X className="h-4 w-4" />
+          <X className="h-3.5 w-3.5" />
           Limpar
         </Button>
       )}
