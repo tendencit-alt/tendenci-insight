@@ -22,22 +22,32 @@ function ResolvedValue({ fieldName, value }: { fieldName: string | null; value: 
         return;
       }
       
+      console.log('ResolvedValue - Tentando resolver:', { fieldName, value });
+      
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const isUUID = uuidRegex.test(value);
+      
+      console.log('ResolvedValue - É UUID?', isUUID);
       
       // Resolver owner_id (responsáveis)
-      if (fieldName === 'owner_id' && uuidRegex.test(value)) {
-        const { data } = await supabase.from('profiles').select('full_name').eq('id', value).maybeSingle();
+      if (fieldName === 'owner_id' && isUUID) {
+        console.log('ResolvedValue - Buscando perfil para:', value);
+        const { data, error } = await supabase.from('profiles').select('full_name').eq('id', value).maybeSingle();
+        console.log('ResolvedValue - Resultado perfil:', { data, error });
         setResolvedValue(data?.full_name || value);
         return;
       }
       
       // Resolver architect_id (arquitetos)
-      if (fieldName === 'architect_id' && uuidRegex.test(value)) {
-        const { data } = await supabase.from('architects').select('name').eq('id', value).maybeSingle();
+      if (fieldName === 'architect_id' && isUUID) {
+        console.log('ResolvedValue - Buscando arquiteto para:', value);
+        const { data, error } = await supabase.from('architects').select('name').eq('id', value).maybeSingle();
+        console.log('ResolvedValue - Resultado arquiteto:', { data, error });
         setResolvedValue(data?.name || value);
         return;
       }
       
+      console.log('ResolvedValue - Sem resolução necessária, usando valor original');
       setResolvedValue(value);
     };
     
