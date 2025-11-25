@@ -22,32 +22,36 @@ function ResolvedValue({ fieldName, value }: { fieldName: string | null; value: 
         return;
       }
       
-      console.log('ResolvedValue - Tentando resolver:', { fieldName, value });
-      
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       const isUUID = uuidRegex.test(value);
       
-      console.log('ResolvedValue - É UUID?', isUUID);
+      if (!isUUID) {
+        setResolvedValue(value);
+        return;
+      }
       
       // Resolver owner_id (responsáveis)
-      if (fieldName === 'owner_id' && isUUID) {
-        console.log('ResolvedValue - Buscando perfil para:', value);
-        const { data, error } = await supabase.from('profiles').select('full_name').eq('id', value).maybeSingle();
-        console.log('ResolvedValue - Resultado perfil:', { data, error });
-        setResolvedValue(data?.full_name || value);
+      if (fieldName === 'owner_id') {
+        const { data } = await supabase.from('profiles').select('full_name').eq('id', value).maybeSingle();
+        if (data?.full_name) {
+          setResolvedValue(data.full_name);
+        } else {
+          setResolvedValue('(usuário removido)');
+        }
         return;
       }
       
       // Resolver architect_id (arquitetos)
-      if (fieldName === 'architect_id' && isUUID) {
-        console.log('ResolvedValue - Buscando arquiteto para:', value);
-        const { data, error } = await supabase.from('architects').select('name').eq('id', value).maybeSingle();
-        console.log('ResolvedValue - Resultado arquiteto:', { data, error });
-        setResolvedValue(data?.name || value);
+      if (fieldName === 'architect_id') {
+        const { data } = await supabase.from('architects').select('name').eq('id', value).maybeSingle();
+        if (data?.name) {
+          setResolvedValue(data.name);
+        } else {
+          setResolvedValue('(arquiteto removido)');
+        }
         return;
       }
       
-      console.log('ResolvedValue - Sem resolução necessária, usando valor original');
       setResolvedValue(value);
     };
     
@@ -332,16 +336,16 @@ export function DealHistory({ dealId }: DealHistoryProps) {
                       </p>
                     )}
                     {entry.field_name && (
-                      <div className="flex flex-col gap-1 text-sm">
+                      <div className="flex flex-col gap-2 text-sm">
                         <div className="flex items-center gap-2">
-                          <span className="text-muted-foreground">De:</span>
-                          <code className="px-2 py-1 bg-muted rounded text-xs">
+                          <span className="text-muted-foreground font-medium">De:</span>
+                          <code className="px-2 py-1 bg-muted rounded text-xs text-foreground">
                             <ResolvedValue fieldName={entry.field_name} value={entry.old_value} />
                           </code>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-muted-foreground">Para:</span>
-                          <code className="px-2 py-1 bg-primary/10 rounded text-xs font-semibold">
+                          <span className="text-muted-foreground font-medium">Para:</span>
+                          <code className="px-2 py-1 bg-primary/10 rounded text-xs font-semibold text-foreground">
                             <ResolvedValue fieldName={entry.field_name} value={entry.new_value} />
                           </code>
                         </div>
