@@ -268,6 +268,12 @@ export function DealHistory({ dealId }: DealHistoryProps) {
                       {entry.to_stage?.name || 'Nova etapa'}
                     </span>
                   </div>
+                ) : entry.field_name === 'task_status' ? (
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-green-600">
+                      ✓ {entry.description}
+                    </p>
+                  </div>
                 ) : entry.field_name === 'note' ? (
                   <div className="space-y-2">
                     {entry.old_value && (
