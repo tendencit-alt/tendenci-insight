@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -77,6 +77,7 @@ export function CampanhasManager() {
   const [isWaiting, setIsWaiting] = useState(false);
   const [waitingSeconds, setWaitingSeconds] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const isPausedRef = useRef(false); // ✅ useRef para evitar stale closure
   
   // Form state
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -473,6 +474,16 @@ export function CampanhasManager() {
   };
 
   const handleDispatchCampanha = async (campanha: Campanha) => {
+    // 🛑 PREVENIR MÚLTIPLOS DISPAROS SIMULTÂNEOS
+    if (dispatching) {
+      toast({
+        title: "Erro",
+        description: "Já existe um disparo em andamento",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // ✅ Usar webhook padrão se não configurado
     const webhookToUse = campanha.webhook_n8n || DEFAULT_N8N_WEBHOOK;
     
@@ -557,6 +568,7 @@ export function CampanhasManager() {
     setDispatching(true);
     setDispatchProgress(0);
     setIsPaused(false);
+    isPausedRef.current = false; // ✅ Resetar ref
     
     console.log(`🚀 [${new Date().toISOString()}] Iniciando disparo de campanha "${campanha.nome}" para ${campanha.arquitetos_selecionados.length} arquitetos`);
     
@@ -618,27 +630,28 @@ export function CampanhasManager() {
     let errorCount = 0;
 
     for (let i = 0; i < arquitetos.data.length; i++) {
-      // 🛑 VERIFICAR SE FOI PAUSADO
-      if (isPaused) {
-        console.log(`⏸️ [${new Date().toISOString()}] Disparo cancelado pelo usuário no arquiteto ${i + 1}/${arquitetos.data.length}`);
-        toast({
-          title: "Disparo cancelado",
-          description: "Disparo interrompido pelo usuário",
-          variant: "destructive",
-        });
-        break;
-      }
+      try {
+        // 🛑 VERIFICAR SE FOI PAUSADO (usando ref para evitar stale closure)
+        if (isPausedRef.current) {
+          console.log(`⏸️ [${new Date().toISOString()}] Disparo cancelado pelo usuário no arquiteto ${i + 1}/${arquitetos.data.length}`);
+          toast({
+            title: "Disparo cancelado",
+            description: "Disparo interrompido pelo usuário",
+            variant: "destructive",
+          });
+          break;
+        }
 
-      // ⏱️ AGUARDAR 3 MINUTOS ANTES DE ENVIAR (exceto primeiro)
-      if (i > 0) {
-        console.log(`⏳ [${new Date().toISOString()}] Iniciando delay de 3 minutos antes do arquiteto ${i + 1}/${arquitetos.data.length}...`);
-        setIsWaiting(true);
-        const waitTime = 180; // 3 minutos em segundos
-        
-        try {
+        // ⏱️ AGUARDAR 3 MINUTOS ANTES DE ENVIAR (exceto primeiro)
+        if (i > 0) {
+          const delayStartTime = Date.now();
+          console.log(`⏳ [${new Date().toISOString()}] Iniciando delay de 3 minutos antes do arquiteto ${i + 1}/${arquitetos.data.length}...`);
+          setIsWaiting(true);
+          const waitTime = 180; // 3 minutos em segundos
+          
           for (let countdown = waitTime; countdown > 0; countdown--) {
-            // Verificar se foi pausado durante o aguardo
-            if (isPaused) {
+            // Verificar se foi pausado durante o aguardo (usando ref)
+            if (isPausedRef.current) {
               console.log(`⏸️ [${new Date().toISOString()}] Disparo cancelado durante o aguardo`);
               setIsWaiting(false);
               setWaitingSeconds(0);
@@ -653,39 +666,38 @@ export function CampanhasManager() {
             setWaitingSeconds(countdown);
             await new Promise(resolve => setTimeout(resolve, 1000));
           }
-          console.log(`✅ [${new Date().toISOString()}] Delay concluído, enviando próxima mensagem...`);
-        } catch (error) {
-          console.error(`❌ [${new Date().toISOString()}] Erro durante delay:`, error);
+          
+          const delayEndTime = Date.now();
+          const actualDelaySeconds = Math.floor((delayEndTime - delayStartTime) / 1000);
+          console.log(`✅ [${new Date().toISOString()}] Delay concluído! Tempo real: ${actualDelaySeconds} segundos. Enviando próxima mensagem...`);
+          
+          setWaitingSeconds(0);
+          setIsWaiting(false);
+        }
+
+        const arquiteto = arquitetos.data[i];
+        const sendStartTime = Date.now();
+        console.log(`📤 [${new Date().toISOString()}] [${i + 1}/${arquitetos.data.length}] Enviando para: ${arquiteto.name} (${arquiteto.phone})`);
+        
+        // Validar número antes de enviar
+        const phoneValidation = validateBrazilianPhone(arquiteto.phone);
+        if (!phoneValidation.valid) {
+          console.warn(`⚠️ [${new Date().toISOString()}] Pulando ${arquiteto.name} - ${phoneValidation.error}`);
+          setDispatchStatuses(prev => prev.map(s => 
+            s.architect_id === arquiteto.id 
+              ? { ...s, status: 'erro', mensagem_erro: phoneValidation.error }
+              : s
+          ));
+          errorCount++;
+          continue; // Pular este arquiteto
         }
         
-        setWaitingSeconds(0);
-        setIsWaiting(false);
-      }
-
-      const arquiteto = arquitetos.data[i];
-      console.log(`📤 [${new Date().toISOString()}] Enviando para arquiteto ${i + 1}/${arquitetos.data.length}: ${arquiteto.name} (${arquiteto.phone})`);
-      
-      // Validar número antes de enviar
-      const phoneValidation = validateBrazilianPhone(arquiteto.phone);
-      if (!phoneValidation.valid) {
-        console.warn(`⚠️ Pulando ${arquiteto.name} - ${phoneValidation.error}`);
+        // Atualizar status para "enviando"
         setDispatchStatuses(prev => prev.map(s => 
           s.architect_id === arquiteto.id 
-            ? { ...s, status: 'erro', mensagem_erro: phoneValidation.error }
+            ? { ...s, status: 'enviando' }
             : s
         ));
-        errorCount++;
-        continue; // Pular este arquiteto
-      }
-      
-      // Atualizar status para "enviando"
-      setDispatchStatuses(prev => prev.map(s => 
-        s.architect_id === arquiteto.id 
-          ? { ...s, status: 'enviando' }
-          : s
-      ));
-
-      try {
         const payload = {
           campanha_id: campanha.id,
           arquiteto_id: arquiteto.id,
@@ -707,6 +719,9 @@ export function CampanhasManager() {
         });
 
         if (error) throw error;
+        
+        const sendEndTime = Date.now();
+        const sendDurationMs = sendEndTime - sendStartTime;
         
         if (data?.status === 'success') {
           successCount++;
@@ -730,7 +745,7 @@ export function CampanhasManager() {
             })
             .eq('id', arquiteto.id);
 
-          console.log(`✅ [${new Date().toISOString()}] Mensagem enviada com sucesso para ${arquiteto.name}`);
+          console.log(`✅ [${new Date().toISOString()}] Mensagem enviada com sucesso para ${arquiteto.name} (tempo: ${sendDurationMs}ms)`);
 
           // Registrar no histórico do arquiteto
           await supabase.from('tendenci_prospec_arq_logs').insert({
@@ -750,7 +765,7 @@ export function CampanhasManager() {
           });
 
         } else {
-          console.error(`❌ [${new Date().toISOString()}] Erro ao enviar para ${arquiteto.name}:`, data?.error);
+          console.error(`❌ [${new Date().toISOString()}] Erro ao enviar para ${arquiteto.name} (tempo: ${sendDurationMs}ms):`, data?.error);
           errorCount++;
           const errorMsg = data?.error || 'Erro ao enviar mensagem';
           
@@ -767,27 +782,36 @@ export function CampanhasManager() {
             mensagem_erro: errorMsg,
           });
         }
-      } catch (error: any) {
-        console.error(`❌ [${new Date().toISOString()}] Erro ao enviar para ${arquiteto.name}:`, error);
+
+        // Atualizar progresso
+        setDispatchProgress(((i + 1) / arquitetos.data.length) * 100);
+
+      } catch (innerError: any) {
+        console.error(`❌ [${new Date().toISOString()}] Erro ao processar arquiteto:`, innerError);
         errorCount++;
-        const errorMsg = error.message || 'Erro desconhecido';
         
-        setDispatchStatuses(prev => prev.map(s => 
-          s.architect_id === arquiteto.id 
-            ? { ...s, status: 'erro', mensagem_erro: errorMsg }
-            : s
-        ));
+        // Tentar obter nome do arquiteto se possível
+        const arquiteto = arquitetos.data[i];
+        const errorMsg = innerError.message || 'Erro desconhecido';
+        
+        if (arquiteto) {
+          setDispatchStatuses(prev => prev.map(s => 
+            s.architect_id === arquiteto.id 
+              ? { ...s, status: 'erro', mensagem_erro: errorMsg }
+              : s
+          ));
 
-        await supabase.from('tendenci_prospec_arq_campaign_dispatches').insert({
-          campanha_id: campanha.id,
-          architect_id: arquiteto.id,
-          status: 'erro',
-          mensagem_erro: errorMsg,
-        });
+          await supabase.from('tendenci_prospec_arq_campaign_dispatches').insert({
+            campanha_id: campanha.id,
+            architect_id: arquiteto.id,
+            status: 'erro',
+            mensagem_erro: errorMsg,
+          });
+        }
+        
+        // Atualizar progresso mesmo com erro
+        setDispatchProgress(((i + 1) / arquitetos.data.length) * 100);
       }
-
-      // Atualizar progresso
-      setDispatchProgress(((i + 1) / arquitetos.data.length) * 100);
     }
 
     // Atualizar status final da campanha
@@ -808,6 +832,7 @@ export function CampanhasManager() {
     setIsWaiting(false);
     setWaitingSeconds(0);
     setIsPaused(false);
+    isPausedRef.current = false; // ✅ Resetar ref
     fetchCampanhas();
   };
 
@@ -1470,6 +1495,7 @@ export function CampanhasManager() {
                 variant="destructive" 
                 onClick={() => {
                   setIsPaused(true);
+                  isPausedRef.current = true; // ✅ Atualizar ref
                   console.log(`🛑 [${new Date().toISOString()}] Usuário solicitou cancelamento do disparo`);
                 }}
                 disabled={isPaused}
