@@ -5,6 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { CheckCircle, Clock, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DealDetailSheet } from "./DealDetailSheet";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface CRMTasksPanelProps {
   pipelineId: string;
@@ -12,10 +14,14 @@ interface CRMTasksPanelProps {
 }
 
 export function CRMTasksPanel({ pipelineId, categoryFilter }: CRMTasksPanelProps) {
+  const { profile } = useAuth();
   const [tasks, setTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDeal, setSelectedDeal] = useState<any | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(true); // Sempre aberto por padrão
+  
+  const isMaster = profile?.role === 'admin';
 
   useEffect(() => {
     fetchTasks();
@@ -177,14 +183,23 @@ export function CRMTasksPanel({ pipelineId, categoryFilter }: CRMTasksPanelProps
   }
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-base font-bold flex items-center gap-2">
-          <span className="text-xl">✅</span>
-          <span className="truncate">Tarefas Pendentes ({tasks.length})</span>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
+    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+      <Card>
+        <CollapsibleTrigger asChild>
+          <CardHeader className="pb-3 cursor-pointer hover:bg-muted/50 transition-colors">
+            <CardTitle className="text-base font-bold flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">✅</span>
+                <span className="truncate">Tarefas Pendentes ({tasks.length})</span>
+              </div>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? "" : "-rotate-90"}`} />
+              </Button>
+            </CardTitle>
+          </CardHeader>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <CardContent>
         {tasks.length === 0 ? (
           <p className="text-center py-8 text-muted-foreground text-sm">
             Nenhuma tarefa pendente
@@ -330,7 +345,9 @@ export function CRMTasksPanel({ pipelineId, categoryFilter }: CRMTasksPanelProps
             )}
           </div>
         )}
-      </CardContent>
+          </CardContent>
+        </CollapsibleContent>
+      </Card>
 
       {selectedDeal && (
         <DealDetailSheet
@@ -343,6 +360,6 @@ export function CRMTasksPanel({ pipelineId, categoryFilter }: CRMTasksPanelProps
           }}
         />
       )}
-    </Card>
+    </Collapsible>
   );
 }
