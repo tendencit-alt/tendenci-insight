@@ -1813,6 +1813,72 @@ export type Database = {
           },
         ]
       }
+      tendenci_campaign_dispatches: {
+        Row: {
+          arquiteto_atual: string | null
+          campanha_id: string
+          concluido_em: string | null
+          created_at: string | null
+          enviados_erro: number
+          enviados_sucesso: number
+          erro_mensagem: string | null
+          id: string
+          iniciado_em: string | null
+          progresso_percentual: number
+          status: string
+          total_arquitetos: number
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          arquiteto_atual?: string | null
+          campanha_id: string
+          concluido_em?: string | null
+          created_at?: string | null
+          enviados_erro?: number
+          enviados_sucesso?: number
+          erro_mensagem?: string | null
+          id?: string
+          iniciado_em?: string | null
+          progresso_percentual?: number
+          status?: string
+          total_arquitetos?: number
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          arquiteto_atual?: string | null
+          campanha_id?: string
+          concluido_em?: string | null
+          created_at?: string | null
+          enviados_erro?: number
+          enviados_sucesso?: number
+          erro_mensagem?: string | null
+          id?: string
+          iniciado_em?: string | null
+          progresso_percentual?: number
+          status?: string
+          total_arquitetos?: number
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tendenci_campaign_dispatches_campanha_id_fkey"
+            columns: ["campanha_id"]
+            isOneToOne: false
+            referencedRelation: "tendenci_prospec_arq_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tendenci_campaign_dispatches_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tendenci_company_goals: {
         Row: {
           created_at: string | null

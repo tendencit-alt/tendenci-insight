@@ -7,6 +7,7 @@ import { ManageStagesDialog } from "@/components/prospeccao/ManageStagesDialog";
 import { ProspeccaoTasksManager } from "@/components/prospeccao/ProspeccaoTasksManager";
 import WhatsAppConnectionManager from "@/components/prospeccao/WhatsAppConnectionManager";
 import { CampanhasManager } from "@/components/prospeccao/CampanhasManager";
+import { CampaignProgressMonitor } from "@/components/prospeccao/CampaignProgressMonitor";
 import { UserSearch, LayoutGrid, CheckSquare, MessageSquare, Megaphone } from "lucide-react";
 
 export default function Prospeccao() {
@@ -45,6 +46,10 @@ export default function Prospeccao() {
             <TabsTrigger value="campanhas" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <Megaphone className="h-4 w-4" />
               Campanhas
+            </TabsTrigger>
+            <TabsTrigger value="progresso" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <CheckSquare className="h-4 w-4" />
+              Progresso
             </TabsTrigger>
             {/* Tabs ocultas temporariamente */}
             {/* <TabsTrigger value="campanhas" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
@@ -91,6 +96,10 @@ export default function Prospeccao() {
 
           <TabsContent value="campanhas" className="space-y-6">
             <CampanhasManager />
+          </TabsContent>
+
+          <TabsContent value="progresso" className="space-y-6">
+            <CampaignProgressMonitor />
           </TabsContent>
 
           {/* Tabs ocultas temporariamente */}

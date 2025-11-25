@@ -565,275 +565,64 @@ export function CampanhasManager() {
       }
     }
 
+    // 🚀 NOVO: Executar campanha em background via Edge Function
+    console.log(`🚀 [${new Date().toISOString()}] Iniciando disparo em background de campanha "${campanha.nome}" para ${campanha.arquitetos_selecionados.length} arquitetos`);
+    
     setDispatching(true);
-    setDispatchProgress(0);
-    setIsPaused(false);
-    isPausedRef.current = false; // ✅ Resetar ref
     
-    console.log(`🚀 [${new Date().toISOString()}] Iniciando disparo de campanha "${campanha.nome}" para ${campanha.arquitetos_selecionados.length} arquitetos`);
-    
-    // 🔥 BUSCAR DADOS DA CONEXÃO WHATSAPP
-    const { data: whatsappConn, error: whatsappError } = await supabase
-      .from('tendenci_whatsapp_connections')
-      .select('instance_name, instance_id')
-      .eq('id', campanha.whatsapp_connection_id)
-      .maybeSingle();
-
-    if (whatsappError || !whatsappConn) {
-      toast({
-        title: "Erro",
-        description: "Conexão WhatsApp não encontrada",
-        variant: "destructive",
-      });
-      setDispatching(false);
-      return;
-    }
-
-    if (!whatsappConn.instance_name || !whatsappConn.instance_id) {
-      toast({
-        title: "Erro Crítico",
-        description: "Dados da instância WhatsApp ausentes. Delete e recrie esta campanha.",
-        variant: "destructive",
-      });
-      setDispatching(false);
-      return;
-    }
-    // Atualizar status para "enviando"
-    await supabase
-      .from('tendenci_prospec_arq_campaigns')
-      .update({ status: 'enviando' })
-      .eq('id', campanha.id);
-
-    const arquitetos = await supabase
-      .from('architects')
-      .select('id, name, phone, data_primeiro_contato, data_ultimo_contato')
-      .in('id', campanha.arquitetos_selecionados);
-
-    if (!arquitetos.data || arquitetos.data.length === 0) {
-      toast({
-        title: "Erro",
-        description: "Nenhum arquiteto encontrado",
-        variant: "destructive",
-      });
-      setDispatching(false);
-      return;
-    }
-
-    const statuses: DispatchStatus[] = arquitetos.data.map(arq => ({
-      architect_id: arq.id,
-      architect_name: arq.name,
-      status: 'pendente'
-    }));
-    setDispatchStatuses(statuses);
-
-    let successCount = 0;
-    let errorCount = 0;
-
-    for (let i = 0; i < arquitetos.data.length; i++) {
-      try {
-        // 🛑 VERIFICAR SE FOI PAUSADO (usando ref para evitar stale closure)
-        if (isPausedRef.current) {
-          console.log(`⏸️ [${new Date().toISOString()}] Disparo cancelado pelo usuário no arquiteto ${i + 1}/${arquitetos.data.length}`);
-          toast({
-            title: "Disparo cancelado",
-            description: "Disparo interrompido pelo usuário",
-            variant: "destructive",
-          });
-          break;
-        }
-
-        // ⏱️ AGUARDAR 3 MINUTOS ANTES DE ENVIAR (exceto primeiro)
-        if (i > 0) {
-          const delayStartTime = Date.now();
-          console.log(`⏳ [${new Date().toISOString()}] Iniciando delay de 3 minutos antes do arquiteto ${i + 1}/${arquitetos.data.length}...`);
-          setIsWaiting(true);
-          const waitTime = 180; // 3 minutos em segundos
-          
-          for (let countdown = waitTime; countdown > 0; countdown--) {
-            // Verificar se foi pausado durante o aguardo (usando ref)
-            if (isPausedRef.current) {
-              console.log(`⏸️ [${new Date().toISOString()}] Disparo cancelado durante o aguardo`);
-              setIsWaiting(false);
-              setWaitingSeconds(0);
-              toast({
-                title: "Disparo cancelado",
-                description: "Disparo interrompido pelo usuário",
-                variant: "destructive",
-              });
-              return;
-            }
-            
-            setWaitingSeconds(countdown);
-            await new Promise(resolve => setTimeout(resolve, 1000));
-          }
-          
-          const delayEndTime = Date.now();
-          const actualDelaySeconds = Math.floor((delayEndTime - delayStartTime) / 1000);
-          console.log(`✅ [${new Date().toISOString()}] Delay concluído! Tempo real: ${actualDelaySeconds} segundos. Enviando próxima mensagem...`);
-          
-          setWaitingSeconds(0);
-          setIsWaiting(false);
-        }
-
-        const arquiteto = arquitetos.data[i];
-        const sendStartTime = Date.now();
-        console.log(`📤 [${new Date().toISOString()}] [${i + 1}/${arquitetos.data.length}] Enviando para: ${arquiteto.name} (${arquiteto.phone})`);
-        
-        // Validar número antes de enviar
-        const phoneValidation = validateBrazilianPhone(arquiteto.phone);
-        if (!phoneValidation.valid) {
-          console.warn(`⚠️ [${new Date().toISOString()}] Pulando ${arquiteto.name} - ${phoneValidation.error}`);
-          setDispatchStatuses(prev => prev.map(s => 
-            s.architect_id === arquiteto.id 
-              ? { ...s, status: 'erro', mensagem_erro: phoneValidation.error }
-              : s
-          ));
-          errorCount++;
-          continue; // Pular este arquiteto
-        }
-        
-        // Atualizar status para "enviando"
-        setDispatchStatuses(prev => prev.map(s => 
-          s.architect_id === arquiteto.id 
-            ? { ...s, status: 'enviando' }
-            : s
-        ));
-        const payload = {
-          campanha_id: campanha.id,
-          arquiteto_id: arquiteto.id,
-          nome: arquiteto.name,
-          telefone: arquiteto.phone,
-          tipo_envio: campanha.tipo_envio,
-          conteudo_texto: campanha.conteudo_texto,
-          conteudo_imagem_url: campanha.conteudo_imagem_url,
-          conteudo_audio_url: campanha.conteudo_audio_url,
-          whatsapp_connection_id: campanha.whatsapp_connection_id,
-          instance_name: whatsappConn.instance_name,
-          instance_id: whatsappConn.instance_id,
-          webhook_n8n: campanha.webhook_n8n
-        };
-
-        // Enviar via edge function (resolve CORS e segurança)
-        const { data, error } = await supabase.functions.invoke('dispatch-campaign', {
-          body: payload
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        toast({
+          title: "Erro",
+          description: "Sessão não encontrada. Faça login novamente.",
+          variant: "destructive",
         });
-
-        if (error) throw error;
-        
-        const sendEndTime = Date.now();
-        const sendDurationMs = sendEndTime - sendStartTime;
-        
-        if (data?.status === 'success') {
-          successCount++;
-          
-          // Atualizar status para "sucesso"
-          setDispatchStatuses(prev => prev.map(s => 
-            s.architect_id === arquiteto.id 
-              ? { ...s, status: 'sucesso' }
-              : s
-          ));
-
-          // Atualizar status do arquiteto para "Contato Feito por I.A" e registrar data do contato
-          const agora = new Date().toISOString();
-          await supabase
-            .from('architects')
-            .update({
-              status_funil: 'adicionar_epata',
-              tag_prospeccao: 'contactado',
-              data_primeiro_contato: arquiteto.data_primeiro_contato || agora,
-              data_ultimo_contato: agora,
-            })
-            .eq('id', arquiteto.id);
-
-          console.log(`✅ [${new Date().toISOString()}] Mensagem enviada com sucesso para ${arquiteto.name} (tempo: ${sendDurationMs}ms)`);
-
-          // Registrar no histórico do arquiteto
-          await supabase.from('tendenci_prospec_arq_logs').insert({
-            architect_id: arquiteto.id,
-            tipo: 'campanha',
-            canal: 'whatsapp',
-            mensagem: `Mensagem enviada pela Campanha "${campanha.nome}" em ${new Date().toLocaleString('pt-BR')}`,
-            campanha_id: campanha.id,
-          });
-
-          // Salvar dispatch log
-          await supabase.from('tendenci_prospec_arq_campaign_dispatches').insert({
-            campanha_id: campanha.id,
-            architect_id: arquiteto.id,
-            status: 'sucesso',
-            enviado_em: agora,
-          });
-
-        } else {
-          console.error(`❌ [${new Date().toISOString()}] Erro ao enviar para ${arquiteto.name} (tempo: ${sendDurationMs}ms):`, data?.error);
-          errorCount++;
-          const errorMsg = data?.error || 'Erro ao enviar mensagem';
-          
-          setDispatchStatuses(prev => prev.map(s => 
-            s.architect_id === arquiteto.id 
-              ? { ...s, status: 'erro', mensagem_erro: errorMsg }
-              : s
-          ));
-
-          await supabase.from('tendenci_prospec_arq_campaign_dispatches').insert({
-            campanha_id: campanha.id,
-            architect_id: arquiteto.id,
-            status: 'erro',
-            mensagem_erro: errorMsg,
-          });
-        }
-
-        // Atualizar progresso
-        setDispatchProgress(((i + 1) / arquitetos.data.length) * 100);
-
-      } catch (innerError: any) {
-        console.error(`❌ [${new Date().toISOString()}] Erro ao processar arquiteto:`, innerError);
-        errorCount++;
-        
-        // Tentar obter nome do arquiteto se possível
-        const arquiteto = arquitetos.data[i];
-        const errorMsg = innerError.message || 'Erro desconhecido';
-        
-        if (arquiteto) {
-          setDispatchStatuses(prev => prev.map(s => 
-            s.architect_id === arquiteto.id 
-              ? { ...s, status: 'erro', mensagem_erro: errorMsg }
-              : s
-          ));
-
-          await supabase.from('tendenci_prospec_arq_campaign_dispatches').insert({
-            campanha_id: campanha.id,
-            architect_id: arquiteto.id,
-            status: 'erro',
-            mensagem_erro: errorMsg,
-          });
-        }
-        
-        // Atualizar progresso mesmo com erro
-        setDispatchProgress(((i + 1) / arquitetos.data.length) * 100);
+        setDispatching(false);
+        return;
       }
+
+      // Chamar Edge Function de background
+      const { data, error } = await supabase.functions.invoke('execute-campaign-background', {
+        body: {
+          campanha_id: campanha.id,
+          arquiteto_ids: campanha.arquitetos_selecionados
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (!data.success) {
+        throw new Error(data.error || 'Erro ao iniciar campanha');
+      }
+
+      toast({
+        title: "✅ Campanha Iniciada!",
+        description: `Processando ${campanha.arquitetos_selecionados.length} arquitetos em background. Você pode continuar trabalhando normalmente.`,
+      });
+
+      console.log(`✅ Dispatch ID: ${data.dispatch_id}`);
+
+      // Limpar estado
+      setDispatching(false);
+      setDispatchProgress(0);
+      setDispatchStatuses([]);
+      
+      // Atualizar lista de campanhas
+      await fetchCampanhas();
+      
+    } catch (error: any) {
+      console.error('💥 Erro ao iniciar campanha em background:', error);
+      toast({
+        title: "Erro ao Disparar",
+        description: error.message || "Erro desconhecido ao iniciar campanha",
+        variant: "destructive",
+      });
+      setDispatching(false);
     }
-
-    // Atualizar status final da campanha
-    const finalStatus = errorCount === 0 ? 'enviado' : 'erro';
-    await supabase
-      .from('tendenci_prospec_arq_campaigns')
-      .update({ status: finalStatus })
-      .eq('id', campanha.id);
-
-    console.log(`🎉 [${new Date().toISOString()}] Campanha "${campanha.nome}" finalizada! ${successCount} sucesso(s), ${errorCount} erro(s)`);
-
-    toast({
-      title: "Disparo concluído!",
-      description: `${successCount} sucesso(s), ${errorCount} erro(s)`,
-    });
-
-    setDispatching(false);
-    setIsWaiting(false);
-    setWaitingSeconds(0);
-    setIsPaused(false);
-    isPausedRef.current = false; // ✅ Resetar ref
-    fetchCampanhas();
   };
 
   const toggleArquiteto = (id: string) => {

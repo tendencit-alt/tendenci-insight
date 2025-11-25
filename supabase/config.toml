@@ -8,3 +8,6 @@ verify_jwt = true
 
 [functions.dispatch-campaign]
 verify_jwt = true
+
+[functions.execute-campaign-background]
+verify_jwt = true
