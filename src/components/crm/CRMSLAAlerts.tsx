@@ -66,35 +66,35 @@ export function CRMSLAAlerts({ pipelineId, categoryFilter }: CRMSLAAlertsProps) 
   return (
     <Card className="border-yellow-200 bg-yellow-50/50 dark:border-yellow-800 dark:bg-yellow-950/20">
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-        <CardHeader className="pb-3">
+      <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2 text-yellow-700 dark:text-yellow-300 text-base font-bold">
-              <AlertTriangle className="h-5 w-5 flex-shrink-0" />
+            <CardTitle className="flex items-center gap-1.5 text-yellow-700 dark:text-yellow-300 text-sm font-bold">
+              <AlertTriangle className="h-4 w-4 flex-shrink-0" />
               Alertas de SLA ({alerts.length})
             </CardTitle>
             <CollapsibleTrigger asChild>
-              <Button variant="ghost" size="sm" className="w-8 h-8 p-0">
-                <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+              <Button variant="ghost" size="sm" className="w-6 h-6 p-0">
+                <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
                 <span className="sr-only">Toggle</span>
               </Button>
             </CollapsibleTrigger>
           </div>
         </CardHeader>
         <CollapsibleContent>
-          <CardContent>
-            <div className="space-y-3">
+          <CardContent className="px-3 pb-2">
+            <div className="space-y-2">
               {alerts.map((alert) => (
                 <div
                   key={alert.deal_id}
-                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-background rounded-lg border hover:border-primary/30 transition-colors cursor-pointer"
+                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2 bg-background rounded-lg border hover:border-primary/30 transition-colors cursor-pointer"
                 >
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-sm truncate">{alert.title}</p>
-                    <p className="text-xs text-muted-foreground line-clamp-2 mt-1 leading-relaxed">
+                    <p className="font-semibold text-xs truncate">{alert.title}</p>
+                    <p className="text-[10px] text-muted-foreground line-clamp-2 mt-0.5 leading-relaxed">
                       Cliente: {alert.lead_name} • Estágio: {alert.stage_name} • Atraso: {alert.delay_h}h
                     </p>
                   </div>
-                  <Badge variant="outline" className="flex-shrink-0 text-xs w-fit font-medium h-6 px-2">
+                  <Badge variant="outline" className="flex-shrink-0 text-[10px] w-fit font-medium h-4 px-1.5">
                     Resp: {alert.owner_name}
                   </Badge>
                 </div>

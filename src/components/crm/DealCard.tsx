@@ -80,34 +80,34 @@ function DealCardComponent({ deal, timeInStage, onClick, onDragStart, onDelete }
           <X className="h-3.5 w-3.5 text-destructive" />
         </Button>
       )}
-      <CardContent className="p-3">
-        <div className="space-y-2">
+      <CardContent className="p-2">
+        <div className="space-y-1">
           {/* Nome do cliente em destaque com tag IA */}
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-1.5 flex-wrap">
             {fromAI && (
-              <Badge variant="secondary" className="text-xs bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300 flex-shrink-0">
-                <Bot className="h-3 w-3 mr-1" />
+              <Badge variant="secondary" className="text-[10px] bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300 flex-shrink-0 h-4">
+                <Bot className="h-2.5 w-2.5 mr-0.5" />
                 IA
               </Badge>
             )}
-            <p className="font-bold text-base line-clamp-1 flex-1 min-w-0">{clientName}</p>
+            <p className="font-bold text-sm line-clamp-1 flex-1 min-w-0">{clientName}</p>
           </div>
           
           {/* Título do negócio com indicador de etapa Lead */}
-          <div className="flex items-center gap-2">
-            <p className="text-sm text-muted-foreground flex-1 line-clamp-1">{deal.title}</p>
+          <div className="flex items-center gap-1.5">
+            <p className="text-xs text-muted-foreground flex-1 line-clamp-1">{deal.title}</p>
           </div>
           
           {/* Telefone */}
           {phone && (
-            <p className="text-xs text-muted-foreground truncate">{phone}</p>
+            <p className="text-[10px] text-muted-foreground truncate">{phone}</p>
           )}
           
           {/* Última Observação */}
           {deal.note && (
-            <div className="p-2 bg-muted/50 rounded-md border-l-3 border-primary/40">
-              <p className="text-xs font-semibold text-muted-foreground mb-1">📋 Última Observação:</p>
-              <p className="text-xs line-clamp-2 leading-relaxed">{deal.note}</p>
+            <div className="p-1.5 bg-muted/50 rounded-md border-l-2 border-primary/40">
+              <p className="text-[10px] font-semibold text-muted-foreground mb-0.5">📋 Última Observação:</p>
+              <p className="text-[10px] line-clamp-2 leading-relaxed">{deal.note}</p>
             </div>
           )}
 
@@ -115,14 +115,14 @@ function DealCardComponent({ deal, timeInStage, onClick, onDragStart, onDelete }
           {(audioCount > 0 || fileCount > 0) && (
             <div className="flex gap-1 flex-wrap">
               {audioCount > 0 && (
-                <Badge variant="outline" className="text-xs flex items-center gap-1">
-                  <Mic className="h-3 w-3" />
+                <Badge variant="outline" className="text-[10px] flex items-center gap-0.5 h-4 px-1.5">
+                  <Mic className="h-2.5 w-2.5" />
                   {audioCount}
                 </Badge>
               )}
               {fileCount > 0 && (
-                <Badge variant="outline" className="text-xs flex items-center gap-1">
-                  <Paperclip className="h-3 w-3" />
+                <Badge variant="outline" className="text-[10px] flex items-center gap-0.5 h-4 px-1.5">
+                  <Paperclip className="h-2.5 w-2.5" />
                   {fileCount}
                 </Badge>
               )}
@@ -130,15 +130,15 @@ function DealCardComponent({ deal, timeInStage, onClick, onDragStart, onDelete }
           )}
           
           {/* Badges: Temperatura e Tipo de Produto */}
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-1">
             {temperature && (
-              <Badge variant="outline" className="text-xs flex items-center gap-1.5 flex-shrink-0 px-2 py-1">
+              <Badge variant="outline" className="text-[10px] flex items-center gap-1 flex-shrink-0 px-1.5 py-0.5 h-4">
                 {getTemperatureIcon()}
                 <span className="truncate font-medium">{temperature.charAt(0).toUpperCase() + temperature.slice(1)}</span>
               </Badge>
             )}
             {productType && (
-              <Badge variant="secondary" className="text-xs truncate px-2 py-1 font-medium">
+              <Badge variant="secondary" className="text-[10px] truncate px-1.5 py-0.5 font-medium h-4">
                 {productType}
               </Badge>
             )}
@@ -146,19 +146,19 @@ function DealCardComponent({ deal, timeInStage, onClick, onDragStart, onDelete }
           
           {/* Responsável */}
           {ownerName && (
-            <div className="flex items-center gap-1 text-xs text-muted-foreground min-w-0">
-              <User className="h-3 w-3 flex-shrink-0" />
+            <div className="flex items-center gap-0.5 text-[10px] text-muted-foreground min-w-0">
+              <User className="h-2.5 w-2.5 flex-shrink-0" />
               <span className="truncate">{ownerName}</span>
             </div>
           )}
           
           {/* Valor e Tempo */}
-          <div className="flex items-center justify-between pt-3 border-t gap-2">
-            <Badge variant="secondary" className="text-sm font-bold truncate px-3 py-1.5">
+          <div className="flex items-center justify-between pt-2 border-t gap-1.5">
+            <Badge variant="secondary" className="text-xs font-bold truncate px-2 py-1">
               R$ {Number(deal.value || 0).toLocaleString("pt-BR")}
             </Badge>
-            <div className="flex items-center gap-1.5 text-sm text-muted-foreground flex-shrink-0">
-              <Clock className="h-4 w-4" />
+            <div className="flex items-center gap-1 text-xs text-muted-foreground flex-shrink-0">
+              <Clock className="h-3 w-3" />
               <span className="font-medium">{timeInStage}h</span>
             </div>
           </div>

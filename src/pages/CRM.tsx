@@ -150,32 +150,32 @@ export default function CRM() {
         {!isAdmin && <SellerPerformancePanel />}
 
         {/* Header com botões - OTIMIZADO */}
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2">
           <div className="flex flex-col gap-1">
-            <h1 className="text-2xl lg:text-3xl font-bold tracking-tight">🗂️ CRM Clientes</h1>
+            <h1 className="text-xl lg:text-2xl font-bold tracking-tight">🗂️ CRM Clientes</h1>
             <p className="text-sm text-muted-foreground">
               Funis e cadências personalizadas, com métricas, SLA e integrações
             </p>
           </div>
 
           {/* Botões de Ação - MELHORADOS */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <Button onClick={() => setIsCreateDialogOpen(true)} size="default" className="h-10">
-              <Plus className="mr-2 h-4 w-4" />
-              <span className="hidden sm:inline">Novo Negócio</span>
-              <span className="sm:hidden">Novo</span>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <Button onClick={() => setIsCreateDialogOpen(true)} size="sm" className="h-8">
+              <Plus className="mr-1.5 h-3.5 w-3.5" />
+              <span className="hidden sm:inline text-xs">Novo Negócio</span>
+              <span className="sm:hidden text-xs">Novo</span>
             </Button>
-            <Button variant="outline" onClick={() => setIsManageDialogOpen(true)} size="default" className="h-10">
-              <Settings className="mr-2 h-4 w-4" />
-              <span className="hidden md:inline">Funis/Etapas</span>
-              <span className="md:hidden">Funis</span>
+            <Button variant="outline" onClick={() => setIsManageDialogOpen(true)} size="sm" className="h-8">
+              <Settings className="mr-1.5 h-3.5 w-3.5" />
+              <span className="hidden md:inline text-xs">Funis/Etapas</span>
+              <span className="md:hidden text-xs">Funis</span>
             </Button>
-            <Button variant="outline" onClick={handleRefresh} size="icon" className="h-10 w-10">
-              <RefreshCcw className="h-4 w-4" />
+            <Button variant="outline" onClick={handleRefresh} size="icon" className="h-8 w-8">
+              <RefreshCcw className="h-3.5 w-3.5" />
               <span className="sr-only">Atualizar</span>
             </Button>
-            <Button variant="outline" onClick={handleExport} size="icon" className="h-10 w-10">
-              <Download className="h-4 w-4" />
+            <Button variant="outline" onClick={handleExport} size="icon" className="h-8 w-8">
+              <Download className="h-3.5 w-3.5" />
               <span className="sr-only">Exportar</span>
             </Button>
           </div>
@@ -201,11 +201,11 @@ export default function CRM() {
 
         {selectedPipeline && <>
             {/* Tabs de Categorias - Responsivas */}
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-1.5 flex-wrap">
               <Button 
                 variant={!showPlanned && selectedCategory === "all" ? "default" : "outline"} 
-                size="default" 
-                className="h-9" 
+                size="sm" 
+                className="h-7 text-xs" 
                 onClick={() => {
                   setShowPlanned(false);
                   setSelectedCategory("all");
@@ -218,8 +218,8 @@ export default function CRM() {
                 <Button 
                   key={category} 
                   variant={!showPlanned && selectedCategory === category ? "default" : "outline"} 
-                  size="default" 
-                  className="h-9" 
+                  size="sm" 
+                  className="h-7 text-xs" 
                   onClick={() => {
                     setShowPlanned(false);
                     setSelectedCategory(category);

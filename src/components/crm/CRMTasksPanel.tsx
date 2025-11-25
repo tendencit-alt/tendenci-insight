@@ -186,26 +186,26 @@ export function CRMTasksPanel({ pipelineId, categoryFilter }: CRMTasksPanelProps
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <Card>
         <CollapsibleTrigger asChild>
-          <CardHeader className="pb-3 cursor-pointer hover:bg-muted/50 transition-colors">
-            <CardTitle className="text-base font-bold flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <span className="text-xl">✅</span>
-                <span className="truncate">Tarefas Pendentes ({tasks.length})</span>
+          <CardHeader className="pb-2 cursor-pointer hover:bg-muted/50 transition-colors">
+            <CardTitle className="text-sm font-bold flex items-center justify-between gap-1.5">
+              <div className="flex items-center gap-1.5">
+                <span className="text-base">✅</span>
+                <span className="truncate text-sm">Tarefas Pendentes ({tasks.length})</span>
               </div>
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? "" : "-rotate-90"}`} />
+              <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                <ChevronDown className={`h-3.5 w-3.5 transition-transform ${isOpen ? "" : "-rotate-90"}`} />
               </Button>
             </CardTitle>
           </CardHeader>
         </CollapsibleTrigger>
         <CollapsibleContent>
-          <CardContent>
+          <CardContent className="px-3 pb-2">
         {tasks.length === 0 ? (
-          <p className="text-center py-8 text-muted-foreground text-sm">
+          <p className="text-center py-6 text-muted-foreground text-xs">
             Nenhuma tarefa pendente
           </p>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-2">
             {/* Tarefas Atrasadas */}
             {tasks.filter(task => {
               const dueDate = new Date(task.due_at);
@@ -226,7 +226,7 @@ export function CRMTasksPanel({ pipelineId, categoryFilter }: CRMTasksPanelProps
                   return (
                     <div
                       key={task.id}
-                      className="p-3 border border-destructive/40 rounded-lg bg-destructive/5 hover:bg-destructive/10 transition-colors space-y-2"
+                      className="p-2 border border-destructive/40 rounded-lg bg-destructive/5 hover:bg-destructive/10 transition-colors space-y-1.5"
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div 
