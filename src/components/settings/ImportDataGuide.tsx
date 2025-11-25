@@ -148,7 +148,7 @@ Projeto Móvel Sala,Juliana Lima,21923456789,juliana@email.com,8000,Móvel,morno
 
             <div className="space-y-3">
               <p className="text-sm text-muted-foreground">
-                Use este template para importar negócios do CRM Kanban
+                Use este template para importar negócios do CRM Clientes
               </p>
 
               <div className="bg-muted p-4 rounded-lg space-y-2">

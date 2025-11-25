@@ -86,7 +86,7 @@ const Index = () => {
         setMetaAdSpend(adSpendData);
       }
 
-      // 4. Mensagens Iniciadas Meta - Leads com tag de IA do CRM Kanban
+      // 4. Mensagens Iniciadas Meta - Leads com tag de IA do CRM Clientes
       const { count: aiLeadsCount, error: aiLeadsError } = await supabase
         .from('crm_deals')
         .select('*', { count: 'exact', head: true })
@@ -308,7 +308,7 @@ const Index = () => {
             <StatCard
               title="Mensagens Iniciadas"
               value={`${metaInitiatedMessages?.count || 0}`}
-              subtitle="Leads com tag de IA (CRM Kanban)"
+              subtitle="Leads com tag de IA (CRM Clientes)"
               icon={MessageSquare}
               variant="default"
             />

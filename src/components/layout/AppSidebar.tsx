@@ -29,7 +29,7 @@ const menuItems = [
   { title: "Leads", url: "/leads", icon: TrendingUp, module: "leads" },
   { title: "Projetos", url: "/projects", icon: Package, module: "projetos" },
   { title: "Prospecção Arquitetos", url: "/prospeccao", icon: UserSearch, module: "arquitetos" },
-  { title: "CRM KANBAN", url: "/kanban", icon: MessageSquare, module: "crm" },
+  { title: "CRM CLIENTES", url: "/kanban", icon: MessageSquare, module: "crm" },
   { title: "Metas", url: "/metas", icon: Target, module: "metas" },
   { title: "Dashboards Personalizados", url: "/dashboards", icon: PanelTop, module: null, masterOnly: true },
   { title: "Configurações", url: "/settings", icon: Settings, module: "configuracoes" },
