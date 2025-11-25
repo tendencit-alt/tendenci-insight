@@ -451,6 +451,24 @@ export function CampanhasManager() {
     }
   };
 
+  // Função de validação de telefone brasileiro
+  const validateBrazilianPhone = (phone: string | null): { valid: boolean; error?: string } => {
+    if (!phone) return { valid: false, error: 'Telefone não cadastrado' };
+    
+    const clean = phone.replace(/\D/g, '');
+    
+    if (clean.length < 10) {
+      return { valid: false, error: `Número muito curto (${clean.length} dígitos - falta DDD)` };
+    }
+    
+    // Aceita 10 dígitos (será corrigido automaticamente), 11 dígitos, ou com código do país
+    if (clean.length === 10 || clean.length === 11 || clean.length === 12 || clean.length === 13) {
+      return { valid: true };
+    }
+    
+    return { valid: false, error: `Número com formato inválido (${clean.length} dígitos)` };
+  };
+
   const handleDispatchCampanha = async (campanha: Campanha) => {
     // ✅ Usar webhook padrão se não configurado
     const webhookToUse = campanha.webhook_n8n || DEFAULT_N8N_WEBHOOK;
@@ -471,6 +489,46 @@ export function CampanhasManager() {
         variant: "destructive",
       });
       return;
+    }
+    
+    // ✅ VALIDAR NÚMEROS DE TELEFONE ANTES DE DISPARAR
+    const arquitetosParaValidacao = await supabase
+      .from('architects')
+      .select('id, name, phone')
+      .in('id', campanha.arquitetos_selecionados);
+    
+    if (arquitetosParaValidacao.data) {
+      const numerosInvalidos = arquitetosParaValidacao.data
+        .map(arq => ({ ...arq, validation: validateBrazilianPhone(arq.phone) }))
+        .filter(arq => !arq.validation.valid);
+      
+      if (numerosInvalidos.length > 0) {
+        const nomesList = numerosInvalidos.slice(0, 3).map(a => `${a.name} (${a.validation.error})`).join(', ');
+        const maisArquitetos = numerosInvalidos.length > 3 ? ` e mais ${numerosInvalidos.length - 3}` : '';
+        
+        toast({
+          title: "⚠️ Números Inválidos Detectados",
+          description: `${numerosInvalidos.length} arquiteto(s) com telefones inválidos serão ignorados: ${nomesList}${maisArquitetos}`,
+          variant: "destructive",
+        });
+        
+        // Continuar apenas com arquitetos válidos
+        const arquitetosValidos = arquitetosParaValidacao.data
+          .filter(arq => validateBrazilianPhone(arq.phone).valid)
+          .map(arq => arq.id);
+        
+        if (arquitetosValidos.length === 0) {
+          toast({
+            title: "Erro",
+            description: "Nenhum arquiteto com telefone válido na seleção",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        // Atualizar lista para apenas arquitetos válidos
+        campanha.arquitetos_selecionados = arquitetosValidos;
+      }
     }
 
     setDispatching(true);
@@ -535,6 +593,19 @@ export function CampanhasManager() {
 
     for (let i = 0; i < arquitetos.data.length; i++) {
       const arquiteto = arquitetos.data[i];
+      
+      // Validar número antes de enviar
+      const phoneValidation = validateBrazilianPhone(arquiteto.phone);
+      if (!phoneValidation.valid) {
+        console.warn(`⚠️ Pulando ${arquiteto.name} - ${phoneValidation.error}`);
+        setDispatchStatuses(prev => prev.map(s => 
+          s.architect_id === arquiteto.id 
+            ? { ...s, status: 'erro', mensagem_erro: phoneValidation.error }
+            : s
+        ));
+        errorCount++;
+        continue; // Pular este arquiteto
+      }
       
       // Atualizar status para "enviando"
       setDispatchStatuses(prev => prev.map(s => 
@@ -1191,44 +1262,69 @@ export function CampanhasManager() {
                   </div>
                   <ScrollArea className="h-64 border rounded-lg p-4">
                     <div className="space-y-2">
-                      {arquitetosDisponiveis.map((arq) => (
-                        <div
-                          key={arq.id}
-                          className="flex items-center space-x-2 p-2 hover:bg-muted rounded transition-colors"
-                        >
-                          <Checkbox
-                            id={arq.id}
-                            checked={arquitetosSelecionados.includes(arq.id)}
-                            onCheckedChange={() => toggleArquiteto(arq.id)}
-                          />
-                          <Label
-                            htmlFor={arq.id}
-                            className="flex-1 cursor-pointer flex items-center justify-between"
+                      {arquitetosDisponiveis.map((arq) => {
+                        const phoneValidation = validateBrazilianPhone(arq.phone);
+                        return (
+                          <div
+                            key={arq.id}
+                            className="flex items-center space-x-2 p-2 hover:bg-muted rounded transition-colors"
                           >
-                            <div>
-                              <p className="font-medium">{arq.name}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {arq.phone || 'Sem telefone'}
-                              </p>
-                            </div>
-                            <div className="flex gap-1">
-                              <Badge variant="outline" className="text-xs">
-                                {arq.tier || 'Sem tier'}
-                              </Badge>
-                              <Badge variant="secondary" className="text-xs">
-                                Nunca Contactado
-                              </Badge>
-                            </div>
-                          </Label>
-                        </div>
-                      ))}
+                            <Checkbox
+                              id={arq.id}
+                              checked={arquitetosSelecionados.includes(arq.id)}
+                              onCheckedChange={() => toggleArquiteto(arq.id)}
+                            />
+                            <Label
+                              htmlFor={arq.id}
+                              className="flex-1 cursor-pointer flex items-center justify-between"
+                            >
+                              <div>
+                                <p className="font-medium">{arq.name}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {arq.phone || 'Sem telefone'}
+                                </p>
+                              </div>
+                              <div className="flex gap-1">
+                                {!phoneValidation.valid && (
+                                  <Badge variant="destructive" className="text-xs gap-1">
+                                    <XCircle className="w-3 h-3" />
+                                    Tel. Inválido
+                                  </Badge>
+                                )}
+                                {phoneValidation.valid && (
+                                  <Badge variant="outline" className="text-xs gap-1 border-green-500 text-green-700 dark:text-green-400">
+                                    <CheckCircle className="w-3 h-3" />
+                                    Tel. OK
+                                  </Badge>
+                                )}
+                                <Badge variant="outline" className="text-xs">
+                                  {arq.tier || 'Sem tier'}
+                                </Badge>
+                                <Badge variant="secondary" className="text-xs">
+                                  Nunca Contactado
+                                </Badge>
+                              </div>
+                            </Label>
+                          </div>
+                        );
+                      })}
                     </div>
                   </ScrollArea>
                 </>
               )}
-              <p className="text-sm font-medium text-primary">
-                {arquitetosSelecionados.length} arquiteto(s) selecionado(s)
-              </p>
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-primary">
+                  {arquitetosSelecionados.length} arquiteto(s) selecionado(s)
+                </p>
+                {arquitetosSelecionados.length > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    {arquitetosDisponiveis.filter(arq => 
+                      arquitetosSelecionados.includes(arq.id) && 
+                      validateBrazilianPhone(arq.phone).valid
+                    ).length} com telefone válido
+                  </p>
+                )}
+              </div>
             </div>
 
             <div className="space-y-2">
