@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { DealCard } from "./DealCard";
 import { DealDetailSheet } from "./DealDetailSheet";
+import { useCRMStatePersistence } from "@/hooks/useCRMStatePersistence";
 
 // Debounce helper function
 function debounce<T extends (...args: any[]) => any>(
@@ -36,21 +37,41 @@ interface CRMBoardProps {
 
 export function CRMBoard({ pipelineId, onRefresh, autoOpenDealId, onDealOpened, filters }: CRMBoardProps) {
   const { toast } = useToast();
+  const { saveOpenDeal, getOpenDeal, clearOpenDeal } = useCRMStatePersistence();
   const [stages, setStages] = useState<any[]>([]);
   const [deals, setDeals] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedDeal, setSelectedDeal] = useState<any>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [draggedDeal, setDraggedDeal] = useState<any>(null);
 
+  // Memoizar filtros para evitar re-renders desnecessários
+  const memoizedFilters = useMemo(() => JSON.stringify(filters), [filters]);
+
   useEffect(() => {
     if (!pipelineId) return;
+    
+    // Verificar se há deal para restaurar ao carregar
+    const savedState = getOpenDeal();
+    if (savedState && !autoOpenDealId) {
+      // Aguardar que deals sejam carregados para abrir o deal salvo
+      setTimeout(() => {
+        const dealToRestore = deals.find(d => d.id === savedState.dealId);
+        if (dealToRestore) {
+          setSelectedDeal(dealToRestore);
+          setIsDetailOpen(true);
+        }
+      }, 1000);
+    }
+    
     fetchData();
 
-    // Debounced fetchData para evitar múltiplos refetches
+    // Debounced fetchData com 1500ms para evitar múltiplos refetches
     const debouncedFetchData = debounce(() => {
+      setIsRefreshing(true);
       fetchData();
-    }, 1000);
+    }, 1500);
 
     // Setup realtime subscription for deals updates
     const dealsChannel = supabase
@@ -89,7 +110,7 @@ export function CRMBoard({ pipelineId, onRefresh, autoOpenDealId, onDealOpened, 
       supabase.removeChannel(dealsChannel);
       supabase.removeChannel(tasksChannel);
     };
-  }, [pipelineId, filters]);
+  }, [pipelineId, memoizedFilters]);
 
   // Efeito para abrir automaticamente um deal quando autoOpenDealId está definido
   useEffect(() => {
@@ -104,7 +125,13 @@ export function CRMBoard({ pipelineId, onRefresh, autoOpenDealId, onDealOpened, 
   }, [autoOpenDealId, deals]);
 
   const fetchData = async () => {
-    setLoading(true);
+    if (isInitialLoading) {
+      // Apenas mostrar loading no carregamento inicial
+      setIsInitialLoading(true);
+    } else {
+      // Durante refresh, não mostrar loading completo
+      setIsRefreshing(true);
+    }
     
     // Fetch stages
     let { data: stagesData, error: stagesError } = await supabase
@@ -241,13 +268,25 @@ export function CRMBoard({ pipelineId, onRefresh, autoOpenDealId, onDealOpened, 
 
     setStages(stagesData || []);
     setDeals(filteredDeals);
-    setLoading(false);
+    setIsInitialLoading(false);
+    setIsRefreshing(false);
   };
 
-  const handleDealClick = (deal: any) => {
+  // Memoizar getDealsByStage para evitar recálculos
+  const dealsByStage = useMemo(() => {
+    const result: Record<string, any[]> = {};
+    stages.forEach(stage => {
+      result[stage.id] = deals.filter((deal) => deal.stage_id === stage.id && deal.status === "aberto");
+    });
+    return result;
+  }, [stages, deals]);
+
+  const handleDealClick = useCallback((deal: any) => {
     setSelectedDeal(deal);
     setIsDetailOpen(true);
-  };
+    // Salvar estado do deal aberto
+    saveOpenDeal(deal.id, 'info');
+  }, [saveOpenDeal]);
 
   const handleDeleteDeal = async (dealId: string) => {
     if (!confirm("Tem certeza que deseja excluir este negócio?")) {
@@ -278,7 +317,7 @@ export function CRMBoard({ pipelineId, onRefresh, autoOpenDealId, onDealOpened, 
   };
 
   const getDealsByStage = (stageId: string) => {
-    return deals.filter((deal) => deal.stage_id === stageId && deal.status === "aberto");
+    return dealsByStage[stageId] || [];
   };
 
   const getWonDeals = () => {
@@ -383,7 +422,7 @@ export function CRMBoard({ pipelineId, onRefresh, autoOpenDealId, onDealOpened, 
     onRefresh();
   };
 
-  if (loading) {
+  if (isInitialLoading) {
     return <div className="text-center py-12 animate-fade-in">Carregando...</div>;
   }
 
@@ -523,7 +562,13 @@ export function CRMBoard({ pipelineId, onRefresh, autoOpenDealId, onDealOpened, 
       <DealDetailSheet
         deal={selectedDeal}
         open={isDetailOpen}
-        onOpenChange={setIsDetailOpen}
+        onOpenChange={(open) => {
+          setIsDetailOpen(open);
+          if (!open) {
+            // Limpar estado salvo quando fechar o sheet
+            clearOpenDeal();
+          }
+        }}
         onSuccess={() => {
           fetchData();
           onRefresh();
