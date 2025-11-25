@@ -65,7 +65,7 @@ function DealCardComponent({ deal, timeInStage, onClick, onDragStart, onDelete }
 
   return (
     <Card
-      className="cursor-move hover:shadow-xl hover:border-primary/40 transition-all duration-300 hover:scale-[1.03] animate-fade-in relative group border-border/50 hover:bg-accent/5"
+      className="cursor-move hover:shadow-lg hover:border-primary/50 transition-all duration-200 hover:scale-[1.01] animate-fade-in relative group border-border/50 hover:bg-accent/5"
       onClick={onClick}
       draggable={true}
       onDragStart={onDragStart}
@@ -80,8 +80,8 @@ function DealCardComponent({ deal, timeInStage, onClick, onDragStart, onDelete }
           <X className="h-3.5 w-3.5 text-destructive" />
         </Button>
       )}
-      <CardContent className="p-4" style={{ paddingTop: '1rem', paddingBottom: '1rem' }}>
-        <div className="space-y-2">
+      <CardContent className="p-5">
+        <div className="space-y-3">
           {/* Nome do cliente em destaque com tag IA */}
           <div className="flex items-center gap-2 flex-wrap">
             {fromAI && (
@@ -90,7 +90,7 @@ function DealCardComponent({ deal, timeInStage, onClick, onDragStart, onDelete }
                 IA
               </Badge>
             )}
-            <p className="font-bold text-base line-clamp-1 flex-1 min-w-0">{clientName}</p>
+            <p className="font-bold text-lg line-clamp-1 flex-1 min-w-0">{clientName}</p>
           </div>
           
           {/* Título do negócio com indicador de etapa Lead */}
@@ -105,9 +105,9 @@ function DealCardComponent({ deal, timeInStage, onClick, onDragStart, onDelete }
           
           {/* Última Observação */}
           {deal.note && (
-            <div className="p-2 bg-muted/50 rounded border-l-2 border-primary/30">
-              <p className="text-xs font-medium text-muted-foreground mb-1">Última Observação:</p>
-              <p className="text-xs line-clamp-2">{deal.note}</p>
+            <div className="p-3 bg-muted/50 rounded-md border-l-3 border-primary/40">
+              <p className="text-xs font-semibold text-muted-foreground mb-1.5">📋 Última Observação:</p>
+              <p className="text-sm line-clamp-2 leading-relaxed">{deal.note}</p>
             </div>
           )}
 
@@ -130,15 +130,15 @@ function DealCardComponent({ deal, timeInStage, onClick, onDragStart, onDelete }
           )}
           
           {/* Badges: Temperatura e Tipo de Produto */}
-          <div className="flex flex-wrap gap-1">
+          <div className="flex flex-wrap gap-1.5">
             {temperature && (
-              <Badge variant="outline" className="text-xs flex items-center gap-1 flex-shrink-0">
+              <Badge variant="outline" className="text-xs flex items-center gap-1.5 flex-shrink-0 px-2 py-1">
                 {getTemperatureIcon()}
-                <span className="truncate">{temperature.charAt(0).toUpperCase() + temperature.slice(1)}</span>
+                <span className="truncate font-medium">{temperature.charAt(0).toUpperCase() + temperature.slice(1)}</span>
               </Badge>
             )}
             {productType && (
-              <Badge variant="secondary" className="text-xs truncate">
+              <Badge variant="secondary" className="text-xs truncate px-2 py-1 font-medium">
                 {productType}
               </Badge>
             )}
@@ -153,13 +153,13 @@ function DealCardComponent({ deal, timeInStage, onClick, onDragStart, onDelete }
           )}
           
           {/* Valor e Tempo */}
-          <div className="flex items-center justify-between pt-2 border-t gap-2">
-            <Badge variant="secondary" className="text-xs font-semibold truncate">
+          <div className="flex items-center justify-between pt-3 border-t gap-2">
+            <Badge variant="secondary" className="text-sm font-bold truncate px-3 py-1.5">
               R$ {Number(deal.value || 0).toLocaleString("pt-BR")}
             </Badge>
-            <div className="flex items-center gap-1 text-xs text-muted-foreground flex-shrink-0">
-              <Clock className="h-3 w-3" />
-              <span>{timeInStage}h</span>
+            <div className="flex items-center gap-1.5 text-sm text-muted-foreground flex-shrink-0">
+              <Clock className="h-4 w-4" />
+              <span className="font-medium">{timeInStage}h</span>
             </div>
           </div>
         </div>

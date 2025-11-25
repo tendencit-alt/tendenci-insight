@@ -159,8 +159,8 @@ export function CRMFilters({
 
         {(selectedOwner !== "all" || searchQuery || selectedStatus !== "all" || dateFilter !== "all") && (
           <Button 
-            variant="outline" 
-            size="sm"
+            variant="destructive" 
+            size="default"
             onClick={() => {
               onOwnerChange("all");
               onSearchChange("");
@@ -170,7 +170,7 @@ export function CRMFilters({
                 onCustomDateRangeChange({ from: undefined, to: undefined });
               }
             }}
-            className="gap-2"
+            className="gap-2 h-10"
           >
             <X className="h-4 w-4" />
             Limpar filtros
