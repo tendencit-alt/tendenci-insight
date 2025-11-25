@@ -14,7 +14,7 @@ interface CRMSLAAlertsProps {
 export function CRMSLAAlerts({ pipelineId, categoryFilter }: CRMSLAAlertsProps) {
   const [alerts, setAlerts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isOpen, setIsOpen] = useState(true); // Aberto por padrão para visibilidade
+  const [isOpen, setIsOpen] = useState(false); // Minimizado por padrão
 
   useEffect(() => {
     if (!pipelineId) return;
