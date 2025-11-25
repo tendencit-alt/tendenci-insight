@@ -74,6 +74,8 @@ export function CampanhasManager() {
   const [dispatching, setDispatching] = useState(false);
   const [dispatchProgress, setDispatchProgress] = useState(0);
   const [dispatchStatuses, setDispatchStatuses] = useState<DispatchStatus[]>([]);
+  const [isWaiting, setIsWaiting] = useState(false);
+  const [waitingSeconds, setWaitingSeconds] = useState(0);
   
   // Form state
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -490,6 +492,26 @@ export function CampanhasManager() {
       });
       return;
     }
+
+    // ⏱️ CALCULAR E CONFIRMAR TEMPO TOTAL ESTIMADO
+    const numArquitetos = campanha.arquitetos_selecionados.length;
+    const intervaloMinutos = 3;
+    const tempoTotalMinutos = (numArquitetos - 1) * intervaloMinutos;
+    const tempoTotalHoras = Math.floor(tempoTotalMinutos / 60);
+    const minutosRestantes = tempoTotalMinutos % 60;
+    
+    const tempoEstimado = tempoTotalHoras > 0 
+      ? `${tempoTotalHoras}h ${minutosRestantes}min`
+      : `${tempoTotalMinutos} minutos`;
+
+    const confirmarDisparo = confirm(
+      `⏱️ ATENÇÃO: Esta campanha enviará mensagens para ${numArquitetos} arquitetos.\n\n` +
+      `⏳ Tempo estimado total: ${tempoEstimado}\n` +
+      `⚡ Intervalo entre envios: ${intervaloMinutos} minutos\n\n` +
+      `Deseja continuar?`
+    );
+
+    if (!confirmarDisparo) return;
     
     // ✅ VALIDAR NÚMEROS DE TELEFONE ANTES DE DISPARAR
     const arquitetosParaValidacao = await supabase
@@ -714,9 +736,18 @@ export function CampanhasManager() {
       // Atualizar progresso
       setDispatchProgress(((i + 1) / arquitetos.data.length) * 100);
       
-      // Aguardar 500ms entre envios para não sobrecarregar
+      // ⏱️ Aguardar 3 minutos (180 segundos) entre envios com countdown visual
       if (i < arquitetos.data.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, 500));
+        setIsWaiting(true);
+        const waitTime = 180; // 3 minutos em segundos
+        
+        for (let countdown = waitTime; countdown > 0; countdown--) {
+          setWaitingSeconds(countdown);
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+        
+        setWaitingSeconds(0);
+        setIsWaiting(false);
       }
     }
 
@@ -1369,6 +1400,25 @@ export function CampanhasManager() {
               </div>
               <Progress value={dispatchProgress} className="h-2" />
             </div>
+
+            {/* ⏳ COUNTDOWN VISUAL DO AGUARDO */}
+            {isWaiting && waitingSeconds > 0 && (
+              <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                <div className="flex items-center gap-3 mb-2">
+                  <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
+                  <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                    ⏳ Aguardando {Math.floor(waitingSeconds / 60)}:{String(waitingSeconds % 60).padStart(2, '0')} antes do próximo envio...
+                  </span>
+                </div>
+                <Progress 
+                  value={((180 - waitingSeconds) / 180) * 100} 
+                  className="h-1"
+                />
+                <p className="text-xs text-muted-foreground mt-2">
+                  Intervalo de segurança para evitar bloqueio do WhatsApp
+                </p>
+              </div>
+            )}
 
             <ScrollArea className="h-72 border rounded-lg p-4">
               <div className="space-y-2">
