@@ -268,7 +268,7 @@ export function DealHistory({ dealId }: DealHistoryProps) {
                       {entry.to_stage?.name || 'Nova etapa'}
                     </span>
                   </div>
-                ) : entry.field_name === 'task_status' ? (
+                ) : entry.action_type === 'task_completed' ? (
                   <div className="space-y-1">
                     <p className="text-sm font-medium text-green-600">
                       ✓ {entry.description}
