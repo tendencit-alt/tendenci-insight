@@ -13,6 +13,63 @@ interface SendMessageRequest {
   architectId?: string
 }
 
+// Função para formatar número de telefone brasileiro com validação robusta
+function formatBrazilianPhone(phone: string): { formatted: string | null; error?: string; original: string } {
+  const original = phone
+  
+  // Remove tudo que não é número
+  let clean = phone.replace(/\D/g, '')
+  
+  console.log(`📱 Formatando número - Original: "${original}" → Limpo: "${clean}"`)
+  
+  // Remove prefixo 55 duplicado do início
+  while (clean.startsWith('55') && clean.length > 11) {
+    clean = clean.substring(2)
+    console.log(`🔄 Removendo 55 duplicado: "${clean}"`)
+  }
+  
+  // Validação: número muito curto (falta DDD)
+  if (clean.length < 10) {
+    return { 
+      formatted: null, 
+      error: `Número muito curto - falta DDD (${clean.length} dígitos)`,
+      original 
+    }
+  }
+  
+  // Se tem 10 dígitos (DDD + 8 dígitos formato antigo), adiciona o 9
+  if (clean.length === 10) {
+    clean = clean.slice(0, 2) + '9' + clean.slice(2)
+    console.log(`✨ Adicionado 9° dígito (10→11): "${clean}"`)
+  }
+  
+  // Se tem 12 dígitos (55 + DDD + 8), adiciona o 9
+  if (clean.length === 12 && clean.startsWith('55')) {
+    clean = clean.slice(0, 4) + '9' + clean.slice(4)
+    console.log(`✨ Adicionado 9° dígito (12→13): "${clean}"`)
+  }
+  
+  // Garante que começa com 55
+  if (!clean.startsWith('55')) {
+    clean = '55' + clean
+    console.log(`🌍 Adicionado código do país: "${clean}"`)
+  }
+  
+  // Validação final: deve ter 13 dígitos (55 + DDD + 9 + 8)
+  if (clean.length !== 13) {
+    return { 
+      formatted: null, 
+      error: `Número com tamanho inválido: ${clean.length} dígitos (esperado 13)`,
+      original 
+    }
+  }
+  
+  const formatted = `${clean}@s.whatsapp.net`
+  console.log(`✅ Número formatado com sucesso: "${formatted}"`)
+  
+  return { formatted, original }
+}
+
 Deno.serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -64,21 +121,15 @@ Deno.serve(async (req) => {
       throw new Error('Instância não está conectada')
     }
 
-    // Formatar número (adicionar código do país se necessário)
-    let formattedNumber = phoneNumber
+    // Formatar e validar número
+    const phoneResult = formatBrazilianPhone(phoneNumber)
     
-    // Remover @s.whatsapp.net temporariamente se presente
-    let cleanNumber = phoneNumber.replace('@s.whatsapp.net', '').replace(/\D/g, '')
-    
-    // Se o número não começa com código do país (menos de 12 dígitos), adicionar 55 (Brasil)
-    if (cleanNumber.length < 12) {
-      cleanNumber = `55${cleanNumber}`
-      console.log(`📞 Código do país adicionado: ${cleanNumber}`)
+    if (!phoneResult.formatted) {
+      console.error(`❌ Número inválido:`, phoneResult.error)
+      throw new Error(`Número inválido: ${phoneResult.error}`)
     }
     
-    // Adicionar sufixo WhatsApp
-    formattedNumber = `${cleanNumber}@s.whatsapp.net`
-
+    const formattedNumber = phoneResult.formatted
     console.log(`📱 Enviando mensagem para ${formattedNumber} via ${instanceName}`)
 
     // Enviar mensagem via Evolution API
