@@ -1747,6 +1747,30 @@ export type Database = {
         }
         Relationships: []
       }
+      temp_phone_fixes: {
+        Row: {
+          action: string | null
+          architect_id: string | null
+          created_at: string | null
+          fixed_phone: string | null
+          original_phone: string | null
+        }
+        Insert: {
+          action?: string | null
+          architect_id?: string | null
+          created_at?: string | null
+          fixed_phone?: string | null
+          original_phone?: string | null
+        }
+        Update: {
+          action?: string | null
+          architect_id?: string | null
+          created_at?: string | null
+          fixed_phone?: string | null
+          original_phone?: string | null
+        }
+        Relationships: []
+      }
       tendenci_badges: {
         Row: {
           badge_type: string
