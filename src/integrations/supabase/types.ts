@@ -1310,6 +1310,42 @@ export type Database = {
           },
         ]
       }
+      menu_items: {
+        Row: {
+          created_at: string | null
+          icon: string
+          id: string
+          label: string
+          module: string
+          position: number
+          route: string
+          updated_at: string | null
+          visible: boolean
+        }
+        Insert: {
+          created_at?: string | null
+          icon: string
+          id?: string
+          label: string
+          module: string
+          position: number
+          route: string
+          updated_at?: string | null
+          visible?: boolean
+        }
+        Update: {
+          created_at?: string | null
+          icon?: string
+          id?: string
+          label?: string
+          module?: string
+          position?: number
+          route?: string
+          updated_at?: string | null
+          visible?: boolean
+        }
+        Relationships: []
+      }
       msg_costs: {
         Row: {
           conversation_id: string | null
