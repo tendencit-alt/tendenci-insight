@@ -23,7 +23,7 @@ interface ComparisonCardsProps {
 
 export function ComparisonCards({ ranking, trend, pace }: ComparisonCardsProps) {
   return (
-    <div className="grid gap-6 md:grid-cols-3">
+    <div className="grid gap-3 md:grid-cols-3">
       {/* Ranking da Equipe */}
       {ranking && (
         <Card className="shadow-card hover:shadow-hover transition-shadow">

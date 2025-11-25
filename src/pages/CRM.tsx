@@ -200,38 +200,34 @@ export default function CRM() {
             />
 
         {selectedPipeline && <>
-            {/* Tabs de Categorias - MELHORADAS */}
-            <div className="relative">
-              <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
+            {/* Tabs de Categorias - Responsivas */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button 
+                variant={!showPlanned && selectedCategory === "all" ? "default" : "outline"} 
+                size="default" 
+                className="h-9" 
+                onClick={() => {
+                  setShowPlanned(false);
+                  setSelectedCategory("all");
+                }}
+              >
+                Todas as Categorias
+              </Button>
+              
+              {categories.map(category => (
                 <Button 
-                  variant={!showPlanned && selectedCategory === "all" ? "default" : "outline"} 
+                  key={category} 
+                  variant={!showPlanned && selectedCategory === category ? "default" : "outline"} 
                   size="default" 
-                  className="h-9 shrink-0" 
+                  className="h-9" 
                   onClick={() => {
                     setShowPlanned(false);
-                    setSelectedCategory("all");
+                    setSelectedCategory(category);
                   }}
                 >
-                  Todas as Categorias
+                  {category}
                 </Button>
-                
-                {categories.map(category => (
-                  <Button 
-                    key={category} 
-                    variant={!showPlanned && selectedCategory === category ? "default" : "outline"} 
-                    size="default" 
-                    className="h-9 shrink-0" 
-                    onClick={() => {
-                      setShowPlanned(false);
-                      setSelectedCategory(category);
-                    }}
-                  >
-                    {category}
-                  </Button>
-                ))}
-              </div>
-              {/* Indicador visual de scroll */}
-              <div className="absolute right-0 top-0 bottom-2 w-8 bg-gradient-to-l from-background to-transparent pointer-events-none" />
+              ))}
             </div>
 
             {/* KPIs do CRM */}
@@ -258,28 +254,24 @@ export default function CRM() {
             {/* Alerta de Tarefas Faltantes */}
             <TaskReminderAlert pipelineId={selectedPipeline} />
 
-      {/* Kanban Board - Fora do container principal para controlar scroll */}
-      {selectedPipeline && <div className="relative -mt-2">
-          <div className="w-full overflow-x-auto">
-            <div className="min-w-max px-4 lg:px-6 pb-4">
-              <CRMBoard
-                pipelineId={selectedPipeline} 
-                key={`board-${refreshKey}`} 
-                onRefresh={handleRefresh}
-                autoOpenDealId={autoOpenDealId}
-                onDealOpened={() => setAutoOpenDealId(null)}
-                filters={{
-                  owner: selectedOwner,
-                  search: searchQuery,
-                  status: selectedStatus,
-                  category: selectedCategory,
-                  showPlanned: showPlanned,
-                  dateFilter,
-                  customDateRange
-                }} 
-              />
-            </div>
-          </div>
+      {/* Kanban Board - Scroll contido apenas internamente */}
+      {selectedPipeline && <div className="relative">
+          <CRMBoard
+            pipelineId={selectedPipeline} 
+            key={`board-${refreshKey}`} 
+            onRefresh={handleRefresh}
+            autoOpenDealId={autoOpenDealId}
+            onDealOpened={() => setAutoOpenDealId(null)}
+            filters={{
+              owner: selectedOwner,
+              search: searchQuery,
+              status: selectedStatus,
+              category: selectedCategory,
+              showPlanned: showPlanned,
+              dateFilter,
+              customDateRange
+            }} 
+          />
         </div>}
           </>}
         

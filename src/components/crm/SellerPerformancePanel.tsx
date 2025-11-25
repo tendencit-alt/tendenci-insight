@@ -308,7 +308,7 @@ export function SellerPerformancePanel() {
   } : undefined;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <h3 className="text-lg font-semibold flex items-center gap-2">
         <Target className="h-5 w-5 text-primary" />
         Meu Desempenho
@@ -321,8 +321,7 @@ export function SellerPerformancePanel() {
         pace={pace}
       />
 
-
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-3 md:grid-cols-3">
         {/* Metas de Vendas */}
         <Card>
           <CardHeader className="pb-3">

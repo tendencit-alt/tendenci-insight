@@ -428,55 +428,55 @@ export function CRMBoard({ pipelineId, onRefresh, autoOpenDealId, onDealOpened, 
 
   return (
     <>
-      {/* Render board: container com colunas do kanban */}
-      <div className="flex gap-4">
-        {stages.map((stage) => {
-          const stageDeals = getDealsByStage(stage.id);
-          return (
-            <Card 
-              key={stage.id} 
-              className="flex-shrink-0 hover:shadow-md transition-all duration-300 border-border/50 animate-fade-in"
-              style={{ minWidth: '300px', width: '300px' }}
-              onDragOver={handleDragOver}
-              onDrop={handleDrop(stage.id)}
-            >
-              <CardHeader className="pb-2 px-4 pt-3">
-                <CardTitle className="flex flex-col gap-1.5 text-sm">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="truncate font-semibold text-sm">{stage.name}</span>
-                    <Badge variant="secondary" className="flex-shrink-0 font-medium text-xs h-5">{stageDeals.length}</Badge>
-                  </div>
-                  <span className="text-xs font-semibold text-primary">
-                    {calculateStageValue(stageDeals)}
-                  </span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent 
-                className="space-y-2 px-4 pb-3"
-                style={{ maxHeight: '500px', overflowY: 'auto' }}
+      {/* Render board: container com colunas do kanban - scroll horizontal contido */}
+      <div className="overflow-x-auto pb-4">
+        <div className="flex gap-3 min-w-min">
+          {stages.map((stage) => {
+            const stageDeals = getDealsByStage(stage.id);
+            return (
+              <Card 
+                key={stage.id} 
+                className="flex-shrink-0 hover:shadow-md transition-all duration-300 border-border/50 animate-fade-in w-[280px]"
                 onDragOver={handleDragOver}
                 onDrop={handleDrop(stage.id)}
               >
-                {stageDeals.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-8">
-                    Nenhum negócio nesta etapa
-                  </p>
-                ) : (
-                  stageDeals.map((deal) => (
-                    <DealCard
-                      key={deal.id}
-                      deal={deal}
-                      timeInStage={getTimeInStage(deal)}
-                      onClick={() => handleDealClick(deal)}
-                      onDragStart={handleDragStart(deal)}
-                      onDelete={handleDeleteDeal}
-                    />
-                  ))
-                )}
-              </CardContent>
-            </Card>
-          );
-        })}
+                <CardHeader className="pb-2 px-3 pt-3">
+                  <CardTitle className="flex flex-col gap-1.5 text-sm">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="truncate font-semibold text-sm">{stage.name}</span>
+                      <Badge variant="secondary" className="flex-shrink-0 font-medium text-xs h-5">{stageDeals.length}</Badge>
+                    </div>
+                    <span className="text-xs font-semibold text-primary">
+                      {calculateStageValue(stageDeals)}
+                    </span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent 
+                  className="space-y-2 px-3 pb-3 overflow-y-auto"
+                  style={{ maxHeight: '400px' }}
+                  onDragOver={handleDragOver}
+                  onDrop={handleDrop(stage.id)}
+                >
+                  {stageDeals.length === 0 ? (
+                    <p className="text-xs text-muted-foreground text-center py-6">
+                      Nenhum negócio nesta etapa
+                    </p>
+                  ) : (
+                    stageDeals.map((deal) => (
+                      <DealCard
+                        key={deal.id}
+                        deal={deal}
+                        timeInStage={getTimeInStage(deal)}
+                        onClick={() => handleDealClick(deal)}
+                        onDragStart={handleDragStart(deal)}
+                        onDelete={handleDeleteDeal}
+                      />
+                    ))
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
 
         {/* Fixed Won column - COMPACTO */}
         <Card 
@@ -518,45 +518,84 @@ export function CRMBoard({ pipelineId, onRefresh, autoOpenDealId, onDealOpened, 
           </CardContent>
         </Card>
 
-        {/* Fixed Lost column - COMPACTO */}
-        <Card 
-          className="flex-shrink-0 bg-gradient-to-br from-destructive/5 to-destructive/10 border-destructive/30 hover:shadow-lg hover:border-destructive/50 transition-all duration-300 animate-fade-in"
-          style={{ minWidth: '300px', width: '300px' }}
-        >
-          <CardHeader className="pb-2 px-4 pt-3 space-y-0">
-            <CardTitle className="flex flex-col gap-1.5">
-              <div className="flex items-center justify-between gap-2">
-                <span className="truncate font-semibold text-sm text-destructive">❌ Perdido</span>
-                <Badge className="bg-destructive hover:bg-destructive/90 flex-shrink-0 font-bold text-xs h-5 px-2">
-                  {getLostDeals().length}
-                </Badge>
-              </div>
-              {getLostDeals().length > 0 && (
-                <span className="text-xs font-bold text-destructive">
-                  💸 {calculateStageValue(getLostDeals())}
-                </span>
+          {/* Fixed Won column */}
+          <Card 
+            className="flex-shrink-0 bg-gradient-to-br from-success/5 to-success/10 border-success/30 hover:shadow-lg hover:border-success/50 transition-all duration-300 animate-fade-in w-[280px]"
+          >
+            <CardHeader className="pb-2 px-3 pt-3 space-y-0">
+              <CardTitle className="flex flex-col gap-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="truncate font-semibold text-sm text-success">✅ Ganho</span>
+                  <Badge className="bg-success hover:bg-success/90 flex-shrink-0 font-bold text-xs h-5 px-2">
+                    {getWonDeals().length}
+                  </Badge>
+                </div>
+                {getWonDeals().length > 0 && (
+                  <span className="text-xs font-bold text-success">
+                    💰 {calculateStageValue(getWonDeals())}
+                  </span>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 px-3 pb-3 overflow-y-auto" style={{ maxHeight: '400px' }}>
+              {getWonDeals().length === 0 ? (
+                <div className="text-xs text-muted-foreground text-center py-6 border-2 border-dashed border-success/20 rounded-lg">
+                  <p>Nenhum negócio ganho</p>
+                </div>
+              ) : (
+                getWonDeals().map((deal) => (
+                  <DealCard
+                    key={deal.id}
+                    deal={deal}
+                    timeInStage={getTimeInStage(deal)}
+                    onClick={() => handleDealClick(deal)}
+                    onDragStart={handleDragStart(deal)}
+                    onDelete={handleDeleteDeal}
+                  />
+                ))
               )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 px-4 pb-3" style={{ maxHeight: '500px', overflowY: 'auto' }}>
-            {getLostDeals().length === 0 ? (
-              <div className="text-sm text-muted-foreground text-center py-12 px-4 border-2 border-dashed border-destructive/20 rounded-lg">
-                <p>Nenhum negócio perdido</p>
-              </div>
-            ) : (
-              getLostDeals().map((deal) => (
-                <DealCard
-                  key={deal.id}
-                  deal={deal}
-                  timeInStage={getTimeInStage(deal)}
-                  onClick={() => handleDealClick(deal)}
-                  onDragStart={handleDragStart(deal)}
-                  onDelete={handleDeleteDeal}
-                />
-              ))
-            )}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+
+          {/* Fixed Lost column */}
+          <Card 
+            className="flex-shrink-0 bg-gradient-to-br from-destructive/5 to-destructive/10 border-destructive/30 hover:shadow-lg hover:border-destructive/50 transition-all duration-300 animate-fade-in w-[280px]"
+          >
+            <CardHeader className="pb-2 px-3 pt-3 space-y-0">
+              <CardTitle className="flex flex-col gap-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="truncate font-semibold text-sm text-destructive">❌ Perdido</span>
+                  <Badge className="bg-destructive hover:bg-destructive/90 flex-shrink-0 font-bold text-xs h-5 px-2">
+                    {getLostDeals().length}
+                  </Badge>
+                </div>
+                {getLostDeals().length > 0 && (
+                  <span className="text-xs font-bold text-destructive">
+                    💸 {calculateStageValue(getLostDeals())}
+                  </span>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 px-3 pb-3 overflow-y-auto" style={{ maxHeight: '400px' }}>
+              {getLostDeals().length === 0 ? (
+                <div className="text-xs text-muted-foreground text-center py-6 border-2 border-dashed border-destructive/20 rounded-lg">
+                  <p>Nenhum negócio perdido</p>
+                </div>
+              ) : (
+                getLostDeals().map((deal) => (
+                  <DealCard
+                    key={deal.id}
+                    deal={deal}
+                    timeInStage={getTimeInStage(deal)}
+                    onClick={() => handleDealClick(deal)}
+                    onDragStart={handleDragStart(deal)}
+                    onDelete={handleDeleteDeal}
+                  />
+                ))
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       <DealDetailSheet
