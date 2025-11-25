@@ -336,62 +336,10 @@ export function EditDealDialog({
     setLoading(true);
 
     try {
-      // Track all changes
+      // Track only changes NOT logged by database trigger
       const changes: Array<{field_name: string, old_value: string, new_value: string}> = [];
       
-      // Check each field for changes
-      if (formData.title !== deal.title) {
-        changes.push({
-          field_name: 'title',
-          old_value: deal.title || '',
-          new_value: formData.title,
-        });
-      }
-      
-      if (formData.value !== deal.value?.toString()) {
-        changes.push({
-          field_name: 'value',
-          old_value: deal.value?.toString() || '0',
-          new_value: formData.value || '0',
-        });
-      }
-      
-      if (formData.note !== deal.note) {
-        changes.push({
-          field_name: 'note',
-          old_value: deal.note || '',
-          new_value: formData.note || '',
-        });
-      }
-      
-      if (formData.product_type !== deal.product_type) {
-        changes.push({
-          field_name: 'product_type',
-          old_value: deal.product_type || '',
-          new_value: formData.product_type || '',
-        });
-      }
-      
-      if (formData.architect_id !== deal.architect_id) {
-        const oldValue = await getDisplayValue('architect_id', deal.architect_id);
-        const newValue = await getDisplayValue('architect_id', formData.architect_id);
-        changes.push({
-          field_name: 'architect_id',
-          old_value: oldValue,
-          new_value: newValue,
-        });
-      }
-      
-      if (formData.owner_id !== deal.owner_id) {
-        const oldValue = await getDisplayValue('owner_id', deal.owner_id);
-        const newValue = await getDisplayValue('owner_id', formData.owner_id);
-        changes.push({
-          field_name: 'owner_id',
-          old_value: oldValue,
-          new_value: newValue,
-        });
-      }
-      
+      // lead_id is NOT logged by trigger, so we manually log it
       if (formData.lead_id !== deal.lead_id) {
         const oldValue = await getDisplayValue('lead_id', deal.lead_id);
         const newValue = await getDisplayValue('lead_id', formData.lead_id);
@@ -454,12 +402,7 @@ export function EditDealDialog({
         return;
       }
 
-      // Log stage change separately if changed
-      if (formData.stage_id && formData.stage_id !== deal.stage_id) {
-        await logStageChange(deal.id, deal.stage_id, formData.stage_id);
-      }
-      
-      // Log all other changes
+      // Log only changes NOT handled by database trigger (lead_id)
       if (changes.length > 0) {
         await logDealChange(deal.id, changes);
       }
