@@ -209,48 +209,42 @@ export function CRMKPIs({ pipelineId, categoryFilter }: CRMKPIsProps) {
 
   if (loading) {
     return (
-      <div className="relative">
-        <div className="flex gap-4 overflow-x-auto pb-3 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Card 
-              key={i} 
-              className="flex-shrink-0 animate-fade-in min-w-[280px]" 
-              style={{ animationDelay: `${i * 100}ms` }}
-            >
-              <CardContent className="p-6">
-                <Skeleton className="h-28 w-full" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-        <div className="absolute right-0 top-0 bottom-3 w-12 bg-gradient-to-l from-background to-transparent pointer-events-none" />
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <Card 
+            key={i} 
+            className="animate-fade-in" 
+            style={{ animationDelay: `${i * 100}ms` }}
+          >
+            <CardContent className="p-4">
+              <Skeleton className="h-24 w-full" />
+            </CardContent>
+          </Card>
+        ))}
       </div>
     );
   }
 
   return (
-    <div className="relative">
-      <div className="flex gap-4 overflow-x-auto pb-3 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
-        {kpis.map((kpi, index) => (
-          <Card 
-            key={index} 
-            className="flex-shrink-0 hover:shadow-lg transition-all duration-200 hover:scale-[1.02] animate-fade-in min-w-[280px]" 
-            style={{ animationDelay: `${index * 100}ms` }}
-          >
-            <CardContent className="p-6">
-              <div className="flex flex-col gap-3">
-                <kpi.icon className={`h-9 w-9 ${kpi.color}`} />
-                <p className="text-sm font-medium text-muted-foreground">{kpi.label}</p>
-                <p className="text-3xl font-bold tracking-tight">{kpi.value}</p>
-                {kpi.subtitle && (
-                  <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{kpi.subtitle}</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-      <div className="absolute right-0 top-0 bottom-3 w-12 bg-gradient-to-l from-background to-transparent pointer-events-none" />
+    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
+      {kpis.map((kpi, index) => (
+        <Card 
+          key={index} 
+          className="hover:shadow-lg transition-all duration-200 hover:scale-[1.02] animate-fade-in" 
+          style={{ animationDelay: `${index * 100}ms` }}
+        >
+          <CardContent className="p-4">
+            <div className="flex flex-col gap-2">
+              <kpi.icon className={`h-7 w-7 ${kpi.color}`} />
+              <p className="text-xs font-medium text-muted-foreground">{kpi.label}</p>
+              <p className="text-2xl font-bold tracking-tight">{kpi.value}</p>
+              {kpi.subtitle && (
+                <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{kpi.subtitle}</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      ))}
     </div>
   );
 }
