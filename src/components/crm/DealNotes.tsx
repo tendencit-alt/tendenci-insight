@@ -21,7 +21,7 @@ interface DealNotesProps {
 
 export function DealNotes({ dealId, currentNote, onNoteUpdate }: DealNotesProps) {
   const { toast } = useToast();
-  const [note, setNote] = useState(currentNote);
+  const [note, setNote] = useState("");
   const [showAudioRecorder, setShowAudioRecorder] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -40,11 +40,10 @@ export function DealNotes({ dealId, currentNote, onNoteUpdate }: DealNotesProps)
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    setNote(currentNote);
     fetchAttachments();
     fetchNoteHistory();
     fetchAvailableUsers();
-  }, [currentNote, dealId]);
+  }, [dealId]);
 
   const fetchAvailableUsers = async () => {
     const { data, error } = await supabase
@@ -172,11 +171,6 @@ export function DealNotes({ dealId, currentNote, onNoteUpdate }: DealNotesProps)
       }
     }
 
-    // Atualizar o campo note do deal também
-    await supabase
-      .from("crm_deals")
-      .update({ note })
-      .eq("id", dealId);
 
     toast({
       title: "Observação salva",
