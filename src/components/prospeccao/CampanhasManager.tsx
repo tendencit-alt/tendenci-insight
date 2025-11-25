@@ -76,6 +76,7 @@ export function CampanhasManager() {
   const [dispatchStatuses, setDispatchStatuses] = useState<DispatchStatus[]>([]);
   const [isWaiting, setIsWaiting] = useState(false);
   const [waitingSeconds, setWaitingSeconds] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
   
   // Form state
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -555,6 +556,9 @@ export function CampanhasManager() {
 
     setDispatching(true);
     setDispatchProgress(0);
+    setIsPaused(false);
+    
+    console.log(`🚀 [${new Date().toISOString()}] Iniciando disparo de campanha "${campanha.nome}" para ${campanha.arquitetos_selecionados.length} arquitetos`);
     
     // 🔥 BUSCAR DADOS DA CONEXÃO WHATSAPP
     const { data: whatsappConn, error: whatsappError } = await supabase
@@ -614,7 +618,52 @@ export function CampanhasManager() {
     let errorCount = 0;
 
     for (let i = 0; i < arquitetos.data.length; i++) {
+      // 🛑 VERIFICAR SE FOI PAUSADO
+      if (isPaused) {
+        console.log(`⏸️ [${new Date().toISOString()}] Disparo cancelado pelo usuário no arquiteto ${i + 1}/${arquitetos.data.length}`);
+        toast({
+          title: "Disparo cancelado",
+          description: "Disparo interrompido pelo usuário",
+          variant: "destructive",
+        });
+        break;
+      }
+
+      // ⏱️ AGUARDAR 3 MINUTOS ANTES DE ENVIAR (exceto primeiro)
+      if (i > 0) {
+        console.log(`⏳ [${new Date().toISOString()}] Iniciando delay de 3 minutos antes do arquiteto ${i + 1}/${arquitetos.data.length}...`);
+        setIsWaiting(true);
+        const waitTime = 180; // 3 minutos em segundos
+        
+        try {
+          for (let countdown = waitTime; countdown > 0; countdown--) {
+            // Verificar se foi pausado durante o aguardo
+            if (isPaused) {
+              console.log(`⏸️ [${new Date().toISOString()}] Disparo cancelado durante o aguardo`);
+              setIsWaiting(false);
+              setWaitingSeconds(0);
+              toast({
+                title: "Disparo cancelado",
+                description: "Disparo interrompido pelo usuário",
+                variant: "destructive",
+              });
+              return;
+            }
+            
+            setWaitingSeconds(countdown);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+          console.log(`✅ [${new Date().toISOString()}] Delay concluído, enviando próxima mensagem...`);
+        } catch (error) {
+          console.error(`❌ [${new Date().toISOString()}] Erro durante delay:`, error);
+        }
+        
+        setWaitingSeconds(0);
+        setIsWaiting(false);
+      }
+
       const arquiteto = arquitetos.data[i];
+      console.log(`📤 [${new Date().toISOString()}] Enviando para arquiteto ${i + 1}/${arquitetos.data.length}: ${arquiteto.name} (${arquiteto.phone})`);
       
       // Validar número antes de enviar
       const phoneValidation = validateBrazilianPhone(arquiteto.phone);
@@ -681,6 +730,8 @@ export function CampanhasManager() {
             })
             .eq('id', arquiteto.id);
 
+          console.log(`✅ [${new Date().toISOString()}] Mensagem enviada com sucesso para ${arquiteto.name}`);
+
           // Registrar no histórico do arquiteto
           await supabase.from('tendenci_prospec_arq_logs').insert({
             architect_id: arquiteto.id,
@@ -699,6 +750,7 @@ export function CampanhasManager() {
           });
 
         } else {
+          console.error(`❌ [${new Date().toISOString()}] Erro ao enviar para ${arquiteto.name}:`, data?.error);
           errorCount++;
           const errorMsg = data?.error || 'Erro ao enviar mensagem';
           
@@ -716,6 +768,7 @@ export function CampanhasManager() {
           });
         }
       } catch (error: any) {
+        console.error(`❌ [${new Date().toISOString()}] Erro ao enviar para ${arquiteto.name}:`, error);
         errorCount++;
         const errorMsg = error.message || 'Erro desconhecido';
         
@@ -735,20 +788,6 @@ export function CampanhasManager() {
 
       // Atualizar progresso
       setDispatchProgress(((i + 1) / arquitetos.data.length) * 100);
-      
-      // ⏱️ Aguardar 3 minutos (180 segundos) entre envios com countdown visual
-      if (i < arquitetos.data.length - 1) {
-        setIsWaiting(true);
-        const waitTime = 180; // 3 minutos em segundos
-        
-        for (let countdown = waitTime; countdown > 0; countdown--) {
-          setWaitingSeconds(countdown);
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-        
-        setWaitingSeconds(0);
-        setIsWaiting(false);
-      }
     }
 
     // Atualizar status final da campanha
@@ -758,12 +797,17 @@ export function CampanhasManager() {
       .update({ status: finalStatus })
       .eq('id', campanha.id);
 
+    console.log(`🎉 [${new Date().toISOString()}] Campanha "${campanha.nome}" finalizada! ${successCount} sucesso(s), ${errorCount} erro(s)`);
+
     toast({
       title: "Disparo concluído!",
       description: `${successCount} sucesso(s), ${errorCount} erro(s)`,
     });
 
     setDispatching(false);
+    setIsWaiting(false);
+    setWaitingSeconds(0);
+    setIsPaused(false);
     fetchCampanhas();
   };
 
@@ -1418,6 +1462,20 @@ export function CampanhasManager() {
                   Intervalo de segurança para evitar bloqueio do WhatsApp
                 </p>
               </div>
+            )}
+
+            {/* 🛑 BOTÃO DE CANCELAR DISPARO */}
+            {dispatching && (
+              <Button 
+                variant="destructive" 
+                onClick={() => {
+                  setIsPaused(true);
+                  console.log(`🛑 [${new Date().toISOString()}] Usuário solicitou cancelamento do disparo`);
+                }}
+                disabled={isPaused}
+              >
+                {isPaused ? "Cancelando..." : "Cancelar Disparo"}
+              </Button>
             )}
 
             <ScrollArea className="h-72 border rounded-lg p-4">
