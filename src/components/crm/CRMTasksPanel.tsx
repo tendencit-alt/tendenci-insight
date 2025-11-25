@@ -136,10 +136,10 @@ export function CRMTasksPanel({ pipelineId, categoryFilter }: CRMTasksPanelProps
 
   if (loading) {
     return (
-      <Card className="border-border/50">
+      <Card>
         <CardHeader>
-          <CardTitle className="text-lg font-semibold flex items-center gap-2">
-            <span className="text-xl">✅</span>
+          <CardTitle className="text-xl font-bold flex items-center gap-2">
+            <span className="text-2xl">✅</span>
             Tarefas Pendentes
           </CardTitle>
         </CardHeader>
@@ -151,10 +151,10 @@ export function CRMTasksPanel({ pipelineId, categoryFilter }: CRMTasksPanelProps
   }
 
   return (
-    <Card className="border-border/50">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-semibold flex items-center gap-1.5">
-          <span className="text-base">✅</span>
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base font-bold flex items-center gap-2">
+          <span className="text-xl">✅</span>
           <span className="truncate">Tarefas Pendentes ({tasks.length})</span>
         </CardTitle>
       </CardHeader>
@@ -170,8 +170,8 @@ export function CRMTasksPanel({ pipelineId, categoryFilter }: CRMTasksPanelProps
               const dueDate = new Date(task.due_at);
               return dueDate < new Date();
             }).length > 0 && (
-              <div className="space-y-2">
-                <h4 className="text-xs font-semibold text-destructive uppercase tracking-wide">
+              <div className="space-y-3">
+                <h4 className="text-sm font-bold text-destructive uppercase tracking-wide">
                   Atrasadas
                 </h4>
                 {tasks.filter(task => {
@@ -185,35 +185,35 @@ export function CRMTasksPanel({ pipelineId, categoryFilter }: CRMTasksPanelProps
                   return (
                     <div
                       key={task.id}
-                      className="p-2.5 border border-destructive/30 rounded-lg bg-destructive/5 hover:bg-destructive/10 transition-colors space-y-2"
+                      className="p-3 border border-destructive/40 rounded-lg bg-destructive/5 hover:bg-destructive/10 transition-colors space-y-2"
                     >
                       <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 space-y-0.5 min-w-0">
-                          <p className="font-medium text-xs line-clamp-1">{task.title}</p>
-                          <p className="text-[10px] text-muted-foreground line-clamp-1">
+                        <div className="flex-1 space-y-1 min-w-0">
+                          <p className="font-semibold text-sm line-clamp-1">{task.title}</p>
+                          <p className="text-xs text-muted-foreground line-clamp-1 leading-relaxed">
                             {task.deal?.title} • {clientName}
                           </p>
                         </div>
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-6 w-6 p-0 flex-shrink-0 hover:bg-primary/10"
+                          className="h-8 w-8 p-0 flex-shrink-0 hover:bg-primary/10"
                           onClick={() => handleMarkDone(task.id)}
                         >
-                          <CheckCircle className="h-3.5 w-3.5" />
+                          <CheckCircle className="h-4 w-4" />
                         </Button>
                       </div>
 
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <Badge variant={dueInfo.variant} className="text-[10px] flex-shrink-0 font-medium h-4">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge variant={dueInfo.variant} className="text-xs flex-shrink-0 font-semibold h-6 px-2">
                           {dueInfo.icon} {dueInfo.text}
                         </Badge>
                         {task.origem_modulo === "prospeccao" && (
-                          <Badge variant="outline" className="text-[10px] flex-shrink-0 h-4">
+                          <Badge variant="outline" className="text-xs flex-shrink-0 h-6 px-2">
                             📋 Prospecção
                           </Badge>
                         )}
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-xs text-muted-foreground font-medium">
                           {dueDate.toLocaleString("pt-BR", {
                             dateStyle: "short",
                             timeStyle: "short",
@@ -233,8 +233,8 @@ export function CRMTasksPanel({ pipelineId, categoryFilter }: CRMTasksPanelProps
               const diffDays = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
               return diffDays === 0;
             }).length > 0 && (
-              <div className="space-y-2">
-                <h4 className="text-xs font-semibold text-primary uppercase tracking-wide">
+              <div className="space-y-3">
+                <h4 className="text-sm font-bold text-primary uppercase tracking-wide">
                   Hoje
                 </h4>
                 {tasks.filter(task => {
@@ -250,35 +250,35 @@ export function CRMTasksPanel({ pipelineId, categoryFilter }: CRMTasksPanelProps
                   return (
                     <div
                       key={task.id}
-                      className="p-2.5 border border-primary/30 rounded-lg bg-primary/5 hover:bg-primary/10 transition-colors space-y-2"
+                      className="p-3 border border-primary/40 rounded-lg bg-primary/5 hover:bg-primary/10 transition-colors space-y-2"
                     >
                       <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 space-y-0.5 min-w-0">
-                          <p className="font-medium text-xs line-clamp-1">{task.title}</p>
-                          <p className="text-[10px] text-muted-foreground line-clamp-1">
+                        <div className="flex-1 space-y-1 min-w-0">
+                          <p className="font-semibold text-sm line-clamp-1">{task.title}</p>
+                          <p className="text-xs text-muted-foreground line-clamp-1 leading-relaxed">
                             {task.deal?.title} • {clientName}
                           </p>
                         </div>
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-6 w-6 p-0 flex-shrink-0 hover:bg-primary/10"
+                          className="h-8 w-8 p-0 flex-shrink-0 hover:bg-primary/10"
                           onClick={() => handleMarkDone(task.id)}
                         >
-                          <CheckCircle className="h-3.5 w-3.5" />
+                          <CheckCircle className="h-4 w-4" />
                         </Button>
                       </div>
 
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <Badge variant={dueInfo.variant} className="text-[10px] flex-shrink-0 font-medium h-4">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge variant={dueInfo.variant} className="text-xs flex-shrink-0 font-semibold h-6 px-2">
                           {dueInfo.icon} {dueInfo.text}
                         </Badge>
                         {task.origem_modulo === "prospeccao" && (
-                          <Badge variant="outline" className="text-[10px] flex-shrink-0 h-4">
+                          <Badge variant="outline" className="text-xs flex-shrink-0 h-6 px-2">
                             📋 Prospecção
                           </Badge>
                         )}
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-xs text-muted-foreground font-medium">
                           {dueDate.toLocaleString("pt-BR", {
                             dateStyle: "short",
                             timeStyle: "short",

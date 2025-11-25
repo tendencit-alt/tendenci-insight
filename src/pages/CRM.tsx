@@ -149,33 +149,33 @@ export default function CRM() {
         {/* Painel de Desempenho do Vendedor */}
         {!isAdmin && <SellerPerformancePanel />}
 
-        {/* Header com botões responsivos - COMPACTO */}
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-1.5">
-          <div className="flex flex-col gap-0.5">
-            <h1 className="text-xl lg:text-2xl font-bold tracking-tight">🗂️ CRM Clientes</h1>
-            <p className="text-xs text-muted-foreground">
+        {/* Header com botões - OTIMIZADO */}
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+          <div className="flex flex-col gap-1">
+            <h1 className="text-2xl lg:text-3xl font-bold tracking-tight">🗂️ CRM Clientes</h1>
+            <p className="text-sm text-muted-foreground">
               Funis e cadências personalizadas, com métricas, SLA e integrações
             </p>
           </div>
 
-          {/* Botões de Ação - COMPACTO */}
-            <div className="flex items-center gap-1.5 flex-wrap">
-            <Button onClick={() => setIsCreateDialogOpen(true)} size="sm" className="h-8 text-xs">
-              <Plus className="mr-1.5 h-3.5 w-3.5" />
+          {/* Botões de Ação - MELHORADOS */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button onClick={() => setIsCreateDialogOpen(true)} size="default" className="h-10">
+              <Plus className="mr-2 h-4 w-4" />
               <span className="hidden sm:inline">Novo Negócio</span>
               <span className="sm:hidden">Novo</span>
             </Button>
-            <Button variant="outline" onClick={() => setIsManageDialogOpen(true)} size="sm" className="h-8 text-xs">
-              <Settings className="mr-1.5 h-3.5 w-3.5" />
+            <Button variant="outline" onClick={() => setIsManageDialogOpen(true)} size="default" className="h-10">
+              <Settings className="mr-2 h-4 w-4" />
               <span className="hidden md:inline">Funis/Etapas</span>
               <span className="md:hidden">Funis</span>
             </Button>
-            <Button variant="outline" onClick={handleRefresh} size="sm" className="h-8 w-8 p-0">
-              <RefreshCcw className="h-3.5 w-3.5" />
+            <Button variant="outline" onClick={handleRefresh} size="icon" className="h-10 w-10">
+              <RefreshCcw className="h-4 w-4" />
               <span className="sr-only">Atualizar</span>
             </Button>
-            <Button variant="outline" onClick={handleExport} size="sm" className="h-8 w-8 p-0">
-              <Download className="h-3.5 w-3.5" />
+            <Button variant="outline" onClick={handleExport} size="icon" className="h-10 w-10">
+              <Download className="h-4 w-4" />
               <span className="sr-only">Exportar</span>
             </Button>
           </div>
@@ -200,34 +200,38 @@ export default function CRM() {
             />
 
         {selectedPipeline && <>
-            {/* Tabs de Categorias - COMPACTO */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-              <Button 
-                variant={!showPlanned && selectedCategory === "all" ? "default" : "outline"} 
-                size="sm" 
-                className="h-7 text-xs shrink-0" 
-                onClick={() => {
-                  setShowPlanned(false);
-                  setSelectedCategory("all");
-                }}
-              >
-                Todas as Categorias
-              </Button>
-              
-              {categories.map(category => (
+            {/* Tabs de Categorias - MELHORADAS */}
+            <div className="relative">
+              <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
                 <Button 
-                  key={category} 
-                  variant={!showPlanned && selectedCategory === category ? "default" : "outline"} 
-                  size="sm" 
-                  className="h-7 text-xs shrink-0" 
+                  variant={!showPlanned && selectedCategory === "all" ? "default" : "outline"} 
+                  size="default" 
+                  className="h-9 shrink-0" 
                   onClick={() => {
                     setShowPlanned(false);
-                    setSelectedCategory(category);
+                    setSelectedCategory("all");
                   }}
                 >
-                  {category}
+                  Todas as Categorias
                 </Button>
-              ))}
+                
+                {categories.map(category => (
+                  <Button 
+                    key={category} 
+                    variant={!showPlanned && selectedCategory === category ? "default" : "outline"} 
+                    size="default" 
+                    className="h-9 shrink-0" 
+                    onClick={() => {
+                      setShowPlanned(false);
+                      setSelectedCategory(category);
+                    }}
+                  >
+                    {category}
+                  </Button>
+                ))}
+              </div>
+              {/* Indicador visual de scroll */}
+              <div className="absolute right-0 top-0 bottom-2 w-8 bg-gradient-to-l from-background to-transparent pointer-events-none" />
             </div>
 
             {/* KPIs do CRM */}
