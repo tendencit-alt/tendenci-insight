@@ -806,6 +806,9 @@ export function DealDetailSheet({
           <TabsContent value="tasks" className="space-y-4">
             <DealTasks dealId={deal.id} />
             
+            {/* Separador visual entre Tarefas e Observações */}
+            <div className="h-6" />
+            
             {/* Observações/Histórico */}
             <DealNotes
               dealId={deal.id}

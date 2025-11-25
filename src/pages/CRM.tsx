@@ -15,15 +15,13 @@ import { CreateDealDialog } from "@/components/crm/CreateDealDialog";
 import { ManagePipelineDialog } from "@/components/crm/ManagePipelineDialog";
 import { SellerPerformancePanel } from "@/components/crm/SellerPerformancePanel";
 import { TaskReminderAlert } from "@/components/crm/TaskReminderAlert";
+import { useCRMStatePersistence } from "@/hooks/useCRMStatePersistence";
+
 export default function CRM() {
-  const {
-    toast
-  } = useToast();
-  const {
-    user,
-    profile
-  } = useAuth();
+  const { toast } = useToast();
+  const { user, profile } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { saveFilters, getFilters } = useCRMStatePersistence();
   const [pipelines, setPipelines] = useState<any[]>([]);
   const [selectedPipeline, setSelectedPipeline] = useState<string>("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -47,6 +45,16 @@ export default function CRM() {
     fetchOwners();
     fetchCategories();
     
+    // Restaurar filtros salvos
+    const savedFilters = getFilters();
+    if (savedFilters) {
+      if (savedFilters.pipelineId) setSelectedPipeline(savedFilters.pipelineId);
+      if (savedFilters.owner) setSelectedOwner(savedFilters.owner);
+      if (savedFilters.status) setSelectedStatus(savedFilters.status);
+      if (savedFilters.category) setSelectedCategory(savedFilters.category);
+      if (savedFilters.search) setSearchQuery(savedFilters.search);
+    }
+    
     // Verificar se há parâmetro ?deal=ID na URL
     const dealId = searchParams.get('deal');
     if (dealId) {
@@ -56,6 +64,19 @@ export default function CRM() {
       setSearchParams(searchParams, { replace: true });
     }
   }, [user, isAdmin, profile]);
+
+  // Salvar filtros sempre que mudarem
+  useEffect(() => {
+    if (selectedPipeline) {
+      saveFilters({
+        pipelineId: selectedPipeline,
+        owner: selectedOwner,
+        status: selectedStatus,
+        category: selectedCategory,
+        search: searchQuery,
+      });
+    }
+  }, [selectedPipeline, selectedOwner, selectedStatus, selectedCategory, searchQuery, saveFilters]);
   const fetchPipelines = async () => {
     const {
       data,

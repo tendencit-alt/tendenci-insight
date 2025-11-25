@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { validateFileType, validateFileSize, ALLOWED_FILE_TYPES_ACCEPT, MAX_FILE_SIZE_MB, formatFileSize } from "@/lib/utils";
@@ -526,70 +526,25 @@ export function DealNotes({ dealId, currentNote, onNoteUpdate }: DealNotesProps)
   };
 
   return (
-    <Card className="p-6">
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <Label>Observações/Histórico</Label>
+    <Card>
+      <CardHeader>
+        <div className="space-y-1">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <span className="text-xl">📋</span>
+            Observações Internas
+          </CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Registre anotações internas sobre este negócio
+          </p>
         </div>
-
-        <div className="flex gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setShowAudioRecorder(true)}
-            disabled={isUploading}
-          >
-            <Mic className="h-4 w-4 mr-2" />
-            Gravar Áudio
-          </Button>
-
-          <label htmlFor="file-upload">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={isUploading}
-              asChild
-            >
-              <span className="cursor-pointer">
-                {isUploading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Enviando...
-                  </>
-                ) : (
-                  <>
-                    <Paperclip className="h-4 w-4 mr-2" />
-                    Anexar Arquivo
-                  </>
-                )}
-              </span>
-            </Button>
-          </label>
-
-          <input
-            id="file-upload"
-            type="file"
-            className="hidden"
-            multiple
-            onChange={handleFileUpload}
-            accept={ALLOWED_FILE_TYPES_ACCEPT}
-            disabled={isUploading}
-          />
-        </div>
-
-        {isUploading && uploadProgress > 0 && (
-          <div className="space-y-2">
-            <Progress value={uploadProgress} className="h-2" />
-            <p className="text-xs text-muted-foreground text-center">
-              Enviando arquivo... {uploadProgress}%
-            </p>
-          </div>
-        )}
-
-        <div className="relative">
-          <Textarea
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Seção: Nova Observação */}
+        <div className="p-4 rounded-lg bg-muted/30 space-y-3">
+          <Label className="text-sm font-medium">Nova Observação</Label>
+          
+          <div className="relative">
+            <Textarea
             ref={textareaRef}
             value={note}
             onChange={(e) => {
@@ -674,13 +629,69 @@ export function DealNotes({ dealId, currentNote, onNoteUpdate }: DealNotesProps)
               </Command>
             </Card>
           )}
+          </div>
+
+          <div className="flex gap-2 pt-2">
+            <Button type="button" onClick={handleSaveNote} size="sm">
+              Salvar Observação
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setShowAudioRecorder(true)}
+              disabled={isUploading}
+            >
+              <Mic className="h-4 w-4 mr-1" />
+              Gravar Áudio
+            </Button>
+
+            <label htmlFor="file-upload">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={isUploading}
+                asChild
+              >
+                <span className="cursor-pointer">
+                  {isUploading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                      Enviando...
+                    </>
+                  ) : (
+                    <>
+                      <Paperclip className="h-4 w-4 mr-1" />
+                      Anexar
+                    </>
+                  )}
+                </span>
+              </Button>
+            </label>
+
+            <input
+              id="file-upload"
+              type="file"
+              className="hidden"
+              multiple
+              onChange={handleFileUpload}
+              accept={ALLOWED_FILE_TYPES_ACCEPT}
+              disabled={isUploading}
+            />
+          </div>
+
+          {isUploading && uploadProgress > 0 && (
+            <div className="space-y-2 pt-2">
+              <Progress value={uploadProgress} className="h-2" />
+              <p className="text-xs text-muted-foreground text-center">
+                Enviando arquivo... {uploadProgress}%
+              </p>
+            </div>
+          )}
         </div>
 
-        <Button type="button" onClick={handleSaveNote}>
-          Salvar Observação
-        </Button>
-
-        {/* Histórico de Observações */}
+        {/* Seção: Histórico de Observações */}
         {noteHistory.length > 0 && (
           <div className="space-y-3 pt-4 border-t">
             <Label className="text-sm font-medium">Histórico de Observações</Label>
@@ -750,8 +761,9 @@ export function DealNotes({ dealId, currentNote, onNoteUpdate }: DealNotesProps)
           </div>
         )}
 
+        {/* Seção: Arquivos Anexados */}
         {attachments.length > 0 && (
-          <div className="space-y-2">
+          <div className="space-y-3 pt-4 border-t">
             <Label className="text-sm font-medium">Arquivos Anexados</Label>
             {attachments.map((file) => {
               const isAudio = file.file_type?.startsWith('audio/');
@@ -811,7 +823,7 @@ export function DealNotes({ dealId, currentNote, onNoteUpdate }: DealNotesProps)
             })}
           </div>
         )}
-      </div>
+      </CardContent>
 
       <AudioRecorder
         isOpen={showAudioRecorder}

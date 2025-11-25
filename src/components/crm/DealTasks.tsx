@@ -397,10 +397,15 @@ export function DealTasks({ dealId }: DealTasksProps) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-lg flex items-center gap-2">
-          <span className="text-xl">✅</span>
-          Tarefas ({tasks.length})
-        </CardTitle>
+        <div className="space-y-1">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <span className="text-xl">✅</span>
+            Tarefas ({tasks.length})
+          </CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Gerencie tarefas e follow-ups desta oportunidade
+          </p>
+        </div>
         <Button
           size="sm"
           variant="outline"

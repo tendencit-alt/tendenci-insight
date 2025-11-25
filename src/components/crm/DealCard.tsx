@@ -2,7 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Clock, Flame, Snowflake, User, Bot, X, Mic, Paperclip } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, memo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface DealCardProps {
@@ -13,29 +13,29 @@ interface DealCardProps {
   onDelete?: (dealId: string) => void;
 }
 
-export function DealCard({ deal, timeInStage, onClick, onDragStart, onDelete }: DealCardProps) {
+function DealCardComponent({ deal, timeInStage, onClick, onDragStart, onDelete }: DealCardProps) {
   const [audioCount, setAudioCount] = useState(0);
   const [fileCount, setFileCount] = useState(0);
 
+  const fetchFiles = useCallback(async () => {
+    const { data } = await supabase
+      .from("crm_deal_files")
+      .select("file_type")
+      .eq("deal_id", deal.id);
+
+    if (data) {
+      const audios = data.filter(f => f.file_type?.startsWith('audio/')).length;
+      const files = data.filter(f => !f.file_type?.startsWith('audio/')).length;
+      setAudioCount(audios);
+      setFileCount(files);
+    }
+  }, [deal.id]);
+
   useEffect(() => {
-    const fetchFiles = async () => {
-      const { data } = await supabase
-        .from("crm_deal_files")
-        .select("file_type")
-        .eq("deal_id", deal.id);
-
-      if (data) {
-        const audios = data.filter(f => f.file_type?.startsWith('audio/')).length;
-        const files = data.filter(f => !f.file_type?.startsWith('audio/')).length;
-        setAudioCount(audios);
-        setFileCount(files);
-      }
-    };
-
     if (deal.id) {
       fetchFiles();
     }
-  }, [deal.id]);
+  }, [deal.id, fetchFiles]);
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -103,11 +103,12 @@ export function DealCard({ deal, timeInStage, onClick, onDragStart, onDelete }: 
             <p className="text-xs text-muted-foreground truncate">{phone}</p>
           )}
           
-          {/* Observações */}
+          {/* Última Observação */}
           {deal.note && (
-            <p className="text-xs text-muted-foreground italic line-clamp-2">
-              📝 {deal.note}
-            </p>
+            <div className="p-2 bg-muted/50 rounded border-l-2 border-primary/30">
+              <p className="text-xs font-medium text-muted-foreground mb-1">Última Observação:</p>
+              <p className="text-xs line-clamp-2">{deal.note}</p>
+            </div>
           )}
 
           {/* Arquivos e Áudios */}
@@ -166,3 +167,6 @@ export function DealCard({ deal, timeInStage, onClick, onDragStart, onDelete }: 
     </Card>
   );
 }
+
+// Exportar componente com React.memo para otimização
+export const DealCard = memo(DealCardComponent);
