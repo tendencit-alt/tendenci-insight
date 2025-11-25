@@ -19,7 +19,7 @@ export function CRMTasksPanel({ pipelineId, categoryFilter }: CRMTasksPanelProps
   const [loading, setLoading] = useState(true);
   const [selectedDeal, setSelectedDeal] = useState<any | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [isOpen, setIsOpen] = useState(true); // Sempre aberto por padrão
+  const [isOpen, setIsOpen] = useState(false); // Minimizado por padrão
   
   const isMaster = profile?.role === 'admin';
 
