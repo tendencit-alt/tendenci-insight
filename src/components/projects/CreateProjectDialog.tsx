@@ -14,6 +14,7 @@ import { CreateClientDialog } from "@/components/crm/CreateClientDialog";
 import { CreateArchitectDialog } from "@/components/architects/CreateArchitectDialog";
 import { useFormPersistence } from "@/hooks/useFormPersistence";
 import { FormSaveIndicator } from "@/components/ui/FormSaveIndicator";
+import { validateFileType, validateFileSize, ALLOWED_FILE_TYPES_ACCEPT, MAX_FILE_SIZE_MB, formatFileSize } from "@/lib/utils";
 
 interface CreateProjectDialogProps {
   open: boolean;
@@ -82,13 +83,33 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess, preSelected
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const newFiles = Array.from(e.target.files);
-      console.log('📁 Arquivos selecionados:', newFiles.map(f => ({
-        name: f.name,
-        type: f.type,
-        size: f.size
-      })));
-      setFiles(prev => [...prev, ...newFiles]);
-      toast.success(`${newFiles.length} arquivo(s) selecionado(s)`);
+      const validFiles: File[] = [];
+      
+      for (const file of newFiles) {
+        // Validar tipo de arquivo
+        if (!validateFileType(file.name)) {
+          toast.error(`Arquivo "${file.name}" possui tipo não permitido`);
+          continue;
+        }
+        
+        // Validar tamanho do arquivo (100MB)
+        if (!validateFileSize(file.size)) {
+          toast.error(`Arquivo "${file.name}" excede o tamanho máximo de ${MAX_FILE_SIZE_MB}MB. Tamanho: ${formatFileSize(file.size)}`);
+          continue;
+        }
+        
+        validFiles.push(file);
+      }
+      
+      if (validFiles.length > 0) {
+        console.log('📁 Arquivos válidos selecionados:', validFiles.map(f => ({
+          name: f.name,
+          type: f.type,
+          size: f.size
+        })));
+        setFiles(prev => [...prev, ...validFiles]);
+        toast.success(`${validFiles.length} arquivo(s) válido(s) selecionado(s)`);
+      }
     }
   };
 
@@ -411,11 +432,12 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess, preSelected
                     id="file-upload"
                     type="file"
                     multiple
+                    accept={ALLOWED_FILE_TYPES_ACCEPT}
                     onChange={handleFileSelect}
                     className="hidden"
                   />
                   <span className="text-sm text-muted-foreground">
-                    Todos os formatos aceitos
+                    Máx. {MAX_FILE_SIZE_MB}MB - PDF, DOC, Excel, DWG, Imagens, Áudio
                   </span>
                 </div>
 
