@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, CheckCircle, Clock, Calendar } from "lucide-react";
+import { Plus, Trash2, CheckCircle, Clock, Calendar, Edit } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
@@ -29,6 +29,7 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
   const [isAdding, setIsAdding] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [architectInfo, setArchitectInfo] = useState<any>(null);
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [newTask, setNewTask] = useState({
     title: "",
     note: "",
@@ -116,6 +117,48 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
     }
 
     setLoading(false);
+  };
+
+  const handleStartEdit = (task: any) => {
+    setEditingTaskId(task.id);
+    // Converter ISO para datetime-local format
+    const dueDate = new Date(task.data_agendamento);
+    const localISOTime = new Date(dueDate.getTime() - (dueDate.getTimezoneOffset() * 60000))
+      .toISOString()
+      .slice(0, 16);
+    
+    // Parser de observações JSON
+    let taskTitle = "";
+    let taskNote = "";
+    try {
+      const taskData = JSON.parse(task.observacoes || '{}');
+      taskTitle = taskData.titulo || "";
+      taskNote = taskData.nota || "";
+    } catch {
+      taskTitle = task.observacoes?.split('\n\n')[0] || "";
+      taskNote = task.observacoes?.split('\n\n')[1] || "";
+    }
+    
+    setNewTask({
+      title: taskTitle,
+      note: taskNote,
+      due_at: localISOTime,
+      tipo_tarefa: task.tipo_tarefa || "interna",
+      whatsapp_number: task.whatsapp_number || "",
+    });
+    setIsAdding(true);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingTaskId(null);
+    setNewTask({ 
+      title: "", 
+      note: "", 
+      due_at: "", 
+      tipo_tarefa: "interna",
+      whatsapp_number: "",
+    });
+    setIsAdding(false);
   };
 
   const handleAddTask = async () => {
@@ -207,39 +250,77 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
         nota: newTask.note || null
       });
 
-      const { error } = await supabase
-        .from("tendenci_prospec_arq_agendamentos")
-        .insert({
-          architect_id: architectId,
-          data_agendamento: localISOTime,
-          observacoes: observacoesJSON,
-          canal: "tarefa",
-          status: "pendente",
-          tipo_tarefa: newTask.tipo_tarefa,
-          whatsapp_number: newTask.whatsapp_number || null,
-          vendedor_id: user.id,
-        });
+      if (editingTaskId) {
+        // UPDATE: Editar tarefa existente
+        const { error } = await supabase
+          .from("tendenci_prospec_arq_agendamentos")
+          .update({
+            data_agendamento: localISOTime,
+            observacoes: observacoesJSON,
+            tipo_tarefa: newTask.tipo_tarefa,
+            whatsapp_number: newTask.whatsapp_number || null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", editingTaskId);
 
-      if (error) {
-        toast({
-          title: "Erro",
-          description: "Erro ao criar tarefa",
-          variant: "destructive",
-        });
+        if (error) {
+          toast({
+            title: "Erro",
+            description: "Erro ao editar tarefa",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "✅ Tarefa atualizada",
+            description: `"${newTask.title}" foi atualizada com sucesso.`,
+          });
+          setNewTask({ 
+            title: "", 
+            note: "", 
+            due_at: "", 
+            tipo_tarefa: "interna",
+            whatsapp_number: "",
+          });
+          setEditingTaskId(null);
+          setIsAdding(false);
+          fetchTasks();
+        }
       } else {
-        toast({
-          title: "Sucesso",
-          description: "Tarefa criada com sucesso!",
-        });
-        setNewTask({ 
-          title: "", 
-          note: "", 
-          due_at: "", 
-          tipo_tarefa: "interna",
-          whatsapp_number: "",
-        });
-        setIsAdding(false);
-        fetchTasks();
+        // INSERT: Criar nova tarefa
+        const { error } = await supabase
+          .from("tendenci_prospec_arq_agendamentos")
+          .insert({
+            architect_id: architectId,
+            data_agendamento: localISOTime,
+            observacoes: observacoesJSON,
+            canal: "tarefa",
+            status: "pendente",
+            tipo_tarefa: newTask.tipo_tarefa,
+            whatsapp_number: newTask.whatsapp_number || null,
+            vendedor_id: user.id,
+          });
+
+        if (error) {
+          toast({
+            title: "Erro",
+            description: "Erro ao criar tarefa",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Sucesso",
+            description: "Tarefa criada com sucesso!",
+          });
+          setNewTask({ 
+            title: "", 
+            note: "", 
+            due_at: "", 
+            tipo_tarefa: "interna",
+            whatsapp_number: "",
+          });
+          setIsAdding(false);
+          fetchTasks();
+        }
       }
     } finally {
       setIsSaving(false);
@@ -301,6 +382,9 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
       ) : (
         <Card className="p-4">
           <div className="space-y-4">
+            <h4 className="font-semibold text-sm">
+              {editingTaskId ? "✏️ Editar Tarefa" : "➕ Nova Tarefa"}
+            </h4>
             <div className="space-y-2">
               <Label htmlFor="task-tipo">Tipo de Tarefa *</Label>
               <Select
@@ -423,19 +507,10 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
                 className="flex-1"
                 disabled={isSaving}
               >
-                {isSaving ? "Salvando..." : "Salvar Tarefa"}
+                {isSaving ? "Salvando..." : editingTaskId ? "Atualizar Tarefa" : "Salvar Tarefa"}
               </Button>
               <Button
-                onClick={() => {
-                  setIsAdding(false);
-                  setNewTask({ 
-                    title: "", 
-                    note: "", 
-                    due_at: "", 
-                    tipo_tarefa: "interna",
-                    whatsapp_number: "",
-                  });
-                }}
+                onClick={handleCancelEdit}
                 variant="outline"
                 className="flex-1"
               >
@@ -557,14 +632,26 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
                         )}
                       </div>
 
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteTask(task.id)}
-                        className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleStartEdit(task)}
+                          className="h-8 w-8 p-0"
+                          title="Editar tarefa"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteTask(task.id)}
+                          className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                          title="Deletar tarefa"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </div>
