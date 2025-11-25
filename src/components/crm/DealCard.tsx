@@ -80,8 +80,8 @@ function DealCardComponent({ deal, timeInStage, onClick, onDragStart, onDelete }
           <X className="h-3.5 w-3.5 text-destructive" />
         </Button>
       )}
-      <CardContent className="p-5">
-        <div className="space-y-3">
+      <CardContent className="p-3">
+        <div className="space-y-2">
           {/* Nome do cliente em destaque com tag IA */}
           <div className="flex items-center gap-2 flex-wrap">
             {fromAI && (
@@ -90,7 +90,7 @@ function DealCardComponent({ deal, timeInStage, onClick, onDragStart, onDelete }
                 IA
               </Badge>
             )}
-            <p className="font-bold text-lg line-clamp-1 flex-1 min-w-0">{clientName}</p>
+            <p className="font-bold text-base line-clamp-1 flex-1 min-w-0">{clientName}</p>
           </div>
           
           {/* Título do negócio com indicador de etapa Lead */}
@@ -105,9 +105,9 @@ function DealCardComponent({ deal, timeInStage, onClick, onDragStart, onDelete }
           
           {/* Última Observação */}
           {deal.note && (
-            <div className="p-3 bg-muted/50 rounded-md border-l-3 border-primary/40">
-              <p className="text-xs font-semibold text-muted-foreground mb-1.5">📋 Última Observação:</p>
-              <p className="text-sm line-clamp-2 leading-relaxed">{deal.note}</p>
+            <div className="p-2 bg-muted/50 rounded-md border-l-3 border-primary/40">
+              <p className="text-xs font-semibold text-muted-foreground mb-1">📋 Última Observação:</p>
+              <p className="text-xs line-clamp-2 leading-relaxed">{deal.note}</p>
             </div>
           )}
 

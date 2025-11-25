@@ -478,46 +478,6 @@ export function CRMBoard({ pipelineId, onRefresh, autoOpenDealId, onDealOpened, 
             );
           })}
 
-        {/* Fixed Won column - COMPACTO */}
-        <Card 
-          className="flex-shrink-0 bg-gradient-to-br from-success/5 to-success/10 border-success/30 hover:shadow-lg hover:border-success/50 transition-all duration-300 animate-fade-in"
-          style={{ minWidth: '300px', width: '300px' }}
-        >
-          <CardHeader className="pb-2 px-4 pt-3 space-y-0">
-            <CardTitle className="flex flex-col gap-1.5">
-              <div className="flex items-center justify-between gap-2">
-                <span className="truncate font-semibold text-sm text-success">✅ Ganho</span>
-                <Badge className="bg-success hover:bg-success/90 flex-shrink-0 font-bold text-xs h-5 px-2">
-                  {getWonDeals().length}
-                </Badge>
-              </div>
-              {getWonDeals().length > 0 && (
-                <span className="text-xs font-bold text-success">
-                  💰 {calculateStageValue(getWonDeals())}
-                </span>
-              )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 px-4 pb-3" style={{ maxHeight: '500px', overflowY: 'auto' }}>
-            {getWonDeals().length === 0 ? (
-              <div className="text-sm text-muted-foreground text-center py-12 px-4 border-2 border-dashed border-success/20 rounded-lg">
-                <p>Nenhum negócio ganho</p>
-              </div>
-            ) : (
-              getWonDeals().map((deal) => (
-                <DealCard
-                  key={deal.id}
-                  deal={deal}
-                  timeInStage={getTimeInStage(deal)}
-                  onClick={() => handleDealClick(deal)}
-                  onDragStart={handleDragStart(deal)}
-                  onDelete={handleDeleteDeal}
-                />
-              ))
-            )}
-          </CardContent>
-        </Card>
-
           {/* Fixed Won column */}
           <Card 
             className="flex-shrink-0 bg-gradient-to-br from-success/5 to-success/10 border-success/30 hover:shadow-lg hover:border-success/50 transition-all duration-300 animate-fade-in w-[280px]"
