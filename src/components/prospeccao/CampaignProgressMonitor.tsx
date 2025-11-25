@@ -4,8 +4,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, XCircle, Loader2, Ban, Clock } from "lucide-react";
+import { CheckCircle2, XCircle, Loader2, Ban, Clock, AlertTriangle, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
+import { CampaignErrorDetails } from "./CampaignErrorDetails";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface CampaignDispatch {
   id: string;
@@ -26,10 +28,15 @@ interface CampaignDispatch {
 
 export function CampaignProgressMonitor() {
   const [dispatches, setDispatches] = useState<CampaignDispatch[]>([]);
+  const [recentDispatches, setRecentDispatches] = useState<CampaignDispatch[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expandedRecent, setExpandedRecent] = useState(false);
+  const [errorDetailsOpen, setErrorDetailsOpen] = useState(false);
+  const [selectedDispatchId, setSelectedDispatchId] = useState<string | null>(null);
 
   const fetchDispatches = async () => {
-    const { data, error } = await supabase
+    // Buscar campanhas em andamento
+    const { data: activeData, error: activeError } = await supabase
       .from('tendenci_campaign_dispatches')
       .select(`
         *,
@@ -40,29 +47,74 @@ export function CampaignProgressMonitor() {
       .in('status', ['pendente', 'em_andamento'])
       .order('iniciado_em', { ascending: false });
 
-    if (error) {
-      console.error('Erro ao buscar dispatches:', error);
-      return;
+    if (activeError) {
+      console.error('Erro ao buscar dispatches ativos:', activeError);
+    } else {
+      setDispatches((activeData || []) as CampaignDispatch[]);
     }
 
-    setDispatches((data || []) as CampaignDispatch[]);
+    // Buscar campanhas concluídas/erro das últimas 24h
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { data: recentData, error: recentError } = await supabase
+      .from('tendenci_campaign_dispatches')
+      .select(`
+        *,
+        tendenci_prospec_arq_campaigns (
+          nome
+        )
+      `)
+      .in('status', ['concluido', 'erro', 'cancelado'])
+      .gte('concluido_em', twentyFourHoursAgo)
+      .order('concluido_em', { ascending: false })
+      .limit(10);
+
+    if (recentError) {
+      console.error('Erro ao buscar dispatches recentes:', recentError);
+    } else {
+      setRecentDispatches((recentData || []) as CampaignDispatch[]);
+    }
+
     setLoading(false);
   };
 
   useEffect(() => {
     fetchDispatches();
 
-    // Realtime subscription
+    // Realtime subscription com notificações
     const channel = supabase
       .channel('campaign_dispatches')
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'UPDATE',
           schema: 'public',
           table: 'tendenci_campaign_dispatches'
         },
-        () => {
+        (payload) => {
+          const newDispatch = payload.new as CampaignDispatch;
+          
+          // Toast quando campanha concluir com sucesso
+          if (newDispatch.status === 'concluido' && payload.old.status !== 'concluido') {
+            toast.success('Campanha Concluída!', {
+              description: `${newDispatch.enviados_sucesso} mensagens enviadas com sucesso.`,
+            });
+          }
+          
+          // Toast quando campanha tiver erros
+          if ((newDispatch.status === 'erro' || newDispatch.enviados_erro > 0) && 
+              (payload.old.status !== 'erro' || payload.old.enviados_erro === 0)) {
+            toast.error('Campanha com Erros', {
+              description: `${newDispatch.enviados_erro} falha(s) no envio. Clique para ver detalhes.`,
+              action: {
+                label: 'Ver Erros',
+                onClick: () => {
+                  setSelectedDispatchId(newDispatch.id);
+                  setErrorDetailsOpen(true);
+                }
+              }
+            });
+          }
+          
           fetchDispatches();
         }
       )
@@ -121,21 +173,13 @@ export function CampaignProgressMonitor() {
     );
   }
 
-  if (dispatches.length === 0) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Campanhas em Execução</CardTitle>
-          <CardDescription>Nenhuma campanha em execução no momento</CardDescription>
-        </CardHeader>
-      </Card>
-    );
-  }
-
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold">Campanhas em Execução</h3>
-      {dispatches.map((dispatch) => (
+      {/* Campanhas em Execução */}
+      {dispatches.length > 0 && (
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold">Campanhas em Execução</h3>
+          {dispatches.map((dispatch) => (
         <Card key={dispatch.id}>
           <CardHeader>
             <div className="flex items-start justify-between">
@@ -204,9 +248,134 @@ export function CampaignProgressMonitor() {
                 Cancelar Campanha
               </Button>
             )}
+
+            {/* Botão Ver Erros */}
+            {dispatch.enviados_erro > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSelectedDispatchId(dispatch.id);
+                  setErrorDetailsOpen(true);
+                }}
+                className="w-full mt-2"
+              >
+                <AlertTriangle className="w-4 h-4 mr-2" />
+                Ver Detalhes dos Erros
+              </Button>
+            )}
           </CardContent>
         </Card>
-      ))}
+          ))}
+        </div>
+      )}
+
+      {/* Campanhas Recentes (últimas 24h) */}
+      {recentDispatches.length > 0 && (
+        <Collapsible open={expandedRecent} onOpenChange={setExpandedRecent}>
+          <Card>
+            <CollapsibleTrigger asChild>
+              <CardHeader className="cursor-pointer hover:bg-accent/50 transition-colors">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-base">Campanhas Recentes (24h)</CardTitle>
+                    <CardDescription>
+                      {recentDispatches.length} campanha(s) concluída(s) ou com erro
+                    </CardDescription>
+                  </div>
+                  {expandedRecent ? (
+                    <ChevronUp className="w-5 h-5 text-muted-foreground" />
+                  ) : (
+                    <ChevronDown className="w-5 h-5 text-muted-foreground" />
+                  )}
+                </div>
+              </CardHeader>
+            </CollapsibleTrigger>
+            
+            <CollapsibleContent>
+              <CardContent className="space-y-3 pt-0">
+                {recentDispatches.map((dispatch) => (
+                  <Card key={dispatch.id} className="border-l-4" style={{
+                    borderLeftColor: dispatch.status === 'concluido' ? 'hsl(var(--success))' : 
+                                    dispatch.status === 'erro' ? 'hsl(var(--destructive))' : 
+                                    'hsl(var(--muted))'
+                  }}>
+                    <CardContent className="p-4 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <p className="font-medium">
+                          {dispatch.tendenci_prospec_arq_campaigns?.nome || 'Campanha'}
+                        </p>
+                        {getStatusBadge(dispatch.status)}
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-2 text-sm">
+                        <div>
+                          <p className="text-muted-foreground">Total</p>
+                          <p className="font-semibold">{dispatch.total_arquitetos}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Sucesso</p>
+                          <p className="font-semibold text-green-600">{dispatch.enviados_sucesso}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Erros</p>
+                          <p className="font-semibold text-red-600">{dispatch.enviados_erro}</p>
+                        </div>
+                      </div>
+
+                      {dispatch.concluido_em && (
+                        <p className="text-xs text-muted-foreground">
+                          Concluído em: {new Date(dispatch.concluido_em).toLocaleString('pt-BR')}
+                        </p>
+                      )}
+
+                      {dispatch.erro_mensagem && (
+                        <div className="text-sm text-red-600 bg-red-50 p-2 rounded mt-2">
+                          {dispatch.erro_mensagem}
+                        </div>
+                      )}
+
+                      {dispatch.enviados_erro > 0 && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedDispatchId(dispatch.id);
+                            setErrorDetailsOpen(true);
+                          }}
+                          className="w-full mt-2"
+                        >
+                          <AlertTriangle className="w-4 h-4 mr-2" />
+                          Ver Detalhes dos Erros ({dispatch.enviados_erro})
+                        </Button>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
+      )}
+
+      {/* Dialog de Detalhes de Erros */}
+      {selectedDispatchId && (
+        <CampaignErrorDetails
+          open={errorDetailsOpen}
+          onOpenChange={setErrorDetailsOpen}
+          dispatchId={selectedDispatchId}
+        />
+      )}
+
+      {/* Mensagem quando não há campanhas */}
+      {dispatches.length === 0 && recentDispatches.length === 0 && !loading && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Nenhuma Campanha</CardTitle>
+            <CardDescription>Não há campanhas em execução ou recentes</CardDescription>
+          </CardHeader>
+        </Card>
+      )}
     </div>
   );
 }
