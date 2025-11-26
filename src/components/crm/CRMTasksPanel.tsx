@@ -247,19 +247,19 @@ export function CRMTasksPanel({ pipelineId, categoryFilter }: CRMTasksPanelProps
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {/* TODAS */}
-        <Card className="flex flex-col">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base font-bold flex items-center gap-2">
-              <span>📋</span>
+        <Card className="flex flex-col min-h-[600px]">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg font-bold flex items-center gap-2">
+              <span className="text-xl">📋</span>
               <span>TODAS</span>
-              <Badge variant="secondary" className="ml-auto">
+              <Badge variant="secondary" className="ml-auto text-sm">
                 {allTasks.length}
               </Badge>
             </CardTitle>
           </CardHeader>
-          <CardContent className="flex-1 space-y-2 max-h-[500px] overflow-y-auto">
+          <CardContent className="flex-1 space-y-3 overflow-y-auto">
             {allTasks.length === 0 ? (
-              <p className="text-center py-8 text-muted-foreground text-sm">
+              <p className="text-center py-12 text-muted-foreground text-sm">
                 Nenhuma tarefa
               </p>
             ) : (
@@ -269,19 +269,19 @@ export function CRMTasksPanel({ pipelineId, categoryFilter }: CRMTasksPanelProps
         </Card>
 
         {/* DIÁRIAS */}
-        <Card className="flex flex-col">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base font-bold flex items-center gap-2">
-              <span>📅</span>
+        <Card className="flex flex-col min-h-[600px]">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg font-bold flex items-center gap-2">
+              <span className="text-xl">📅</span>
               <span>DIÁRIAS</span>
-              <Badge variant="default" className="ml-auto">
+              <Badge variant="default" className="ml-auto text-sm">
                 {todayTasks.length}
               </Badge>
             </CardTitle>
           </CardHeader>
-          <CardContent className="flex-1 space-y-2 max-h-[500px] overflow-y-auto">
+          <CardContent className="flex-1 space-y-3 overflow-y-auto">
             {todayTasks.length === 0 ? (
-              <p className="text-center py-8 text-muted-foreground text-sm">
+              <p className="text-center py-12 text-muted-foreground text-sm">
                 Nenhuma tarefa para hoje
               </p>
             ) : (
@@ -291,19 +291,19 @@ export function CRMTasksPanel({ pipelineId, categoryFilter }: CRMTasksPanelProps
         </Card>
 
         {/* FUTURAS */}
-        <Card className="flex flex-col">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base font-bold flex items-center gap-2">
-              <span>🔮</span>
+        <Card className="flex flex-col min-h-[600px]">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg font-bold flex items-center gap-2">
+              <span className="text-xl">🔮</span>
               <span>FUTURAS</span>
-              <Badge variant="secondary" className="ml-auto">
+              <Badge variant="secondary" className="ml-auto text-sm">
                 {futureTasks.length}
               </Badge>
             </CardTitle>
           </CardHeader>
-          <CardContent className="flex-1 space-y-2 max-h-[500px] overflow-y-auto">
+          <CardContent className="flex-1 space-y-3 overflow-y-auto">
             {futureTasks.length === 0 ? (
-              <p className="text-center py-8 text-muted-foreground text-sm">
+              <p className="text-center py-12 text-muted-foreground text-sm">
                 Nenhuma tarefa futura
               </p>
             ) : (
