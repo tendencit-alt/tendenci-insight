@@ -37,10 +37,13 @@ export default function CRM() {
   const [dateFilter, setDateFilter] = useState<string>("all");
   const [customDateRange, setCustomDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({ from: undefined, to: undefined });
   const [autoOpenDealId, setAutoOpenDealId] = useState<string | null>(null);
+  const [isLoadingPipelines, setIsLoadingPipelines] = useState(true);
   
   const isAdmin = profile?.role === 'admin';
   
   useEffect(() => {
+    if (!user) return;
+    
     fetchPipelines();
     fetchOwners();
     fetchCategories();
@@ -63,7 +66,7 @@ export default function CRM() {
       searchParams.delete('deal');
       setSearchParams(searchParams, { replace: true });
     }
-  }, [user, isAdmin, profile]);
+  }, [user]);
 
   // Salvar filtros sempre que mudarem
   useEffect(() => {
@@ -76,25 +79,37 @@ export default function CRM() {
         search: searchQuery,
       });
     }
-  }, [selectedPipeline, selectedOwner, selectedStatus, selectedCategory, searchQuery, saveFilters]);
+  }, [selectedPipeline, selectedOwner, selectedStatus, selectedCategory, searchQuery]);
   const fetchPipelines = async () => {
-    const {
-      data,
-      error
-    } = await supabase.from("crm_pipelines").select("*").order("created_at", {
-      ascending: true
-    });
-    if (error) {
+    try {
+      setIsLoadingPipelines(true);
+      const {
+        data,
+        error
+      } = await supabase.from("crm_pipelines").select("*").order("created_at", {
+        ascending: true
+      });
+      if (error) {
+        toast({
+          title: "Erro ao carregar funis",
+          description: error.message,
+          variant: "destructive"
+        });
+        return;
+      }
+      setPipelines(data || []);
+      if (data && data.length > 0 && !selectedPipeline) {
+        setSelectedPipeline(data[0].id);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar pipelines:', error);
       toast({
-        title: "Erro ao carregar funis",
-        description: error.message,
+        title: "Erro",
+        description: "Falha ao carregar funis de vendas",
         variant: "destructive"
       });
-      return;
-    }
-    setPipelines(data || []);
-    if (data && data.length > 0 && !selectedPipeline) {
-      setSelectedPipeline(data[0].id);
+    } finally {
+      setIsLoadingPipelines(false);
     }
   };
   const fetchOwners = async () => {
@@ -199,7 +214,15 @@ export default function CRM() {
               onCustomDateRangeChange={setCustomDateRange}
             />
 
-        {selectedPipeline && <>
+        {isLoadingPipelines ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-sm text-muted-foreground">Carregando funis de vendas...</p>
+            </div>
+          </div>
+        ) : selectedPipeline ? (
+          <>
             {/* Tabs de Categorias - Responsivas */}
             <div className="flex items-center gap-1.5 flex-wrap">
               <Button 
@@ -254,30 +277,33 @@ export default function CRM() {
             {/* Alerta de Tarefas Faltantes */}
             <TaskReminderAlert pipelineId={selectedPipeline} />
 
-      {/* Kanban Board - Scroll contido apenas internamente */}
-      {selectedPipeline && <div className="relative">
-          <CRMBoard
-            pipelineId={selectedPipeline} 
-            key={`board-${refreshKey}`} 
-            onRefresh={handleRefresh}
-            autoOpenDealId={autoOpenDealId}
-            onDealOpened={() => setAutoOpenDealId(null)}
-            filters={{
-              owner: selectedOwner,
-              search: searchQuery,
-              status: selectedStatus,
-              category: selectedCategory,
-              showPlanned: showPlanned,
-              dateFilter,
-              customDateRange
-            }} 
-          />
-        </div>}
-          </>}
-        
-        {!selectedPipeline && pipelines.length === 0 && <div className="flex items-center justify-center py-12">
-            <p className="text-sm text-muted-foreground">Nenhum funil cadastrado. Crie seu primeiro funil de vendas!</p>
-          </div>}
+            {/* Kanban Board - Scroll contido apenas internamente */}
+            <div className="relative">
+              <CRMBoard
+                pipelineId={selectedPipeline} 
+                key={`board-${refreshKey}`} 
+                onRefresh={handleRefresh}
+                autoOpenDealId={autoOpenDealId}
+                onDealOpened={() => setAutoOpenDealId(null)}
+                filters={{
+                  owner: selectedOwner,
+                  search: searchQuery,
+                  status: selectedStatus,
+                  category: selectedCategory,
+                  showPlanned: showPlanned,
+                  dateFilter,
+                  customDateRange
+                }} 
+              />
+            </div>
+          </>
+        ) : (
+          !isLoadingPipelines && pipelines.length === 0 && (
+            <div className="flex items-center justify-center py-12">
+              <p className="text-sm text-muted-foreground">Nenhum funil cadastrado. Crie seu primeiro funil de vendas!</p>
+            </div>
+          )
+        )}
 
         {/* Dialogs */}
         <CreateDealDialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen} pipelineId={selectedPipeline} onSuccess={handleRefresh} />
