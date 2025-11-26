@@ -26,6 +26,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { Plus, Calendar as CalendarIcon, Clock, Trash2, Mic, Square, Paperclip, Loader2 } from "lucide-react";
+import { validateFileType, validateFileSize, MAX_FILE_SIZE_MB, ALLOWED_FILE_TYPES_ACCEPT } from "@/lib/utils";
 import { CreateClientDialog } from "./CreateClientDialog";
 import { CreateArchitectDialog } from "../architects/CreateArchitectDialog";
 import { CreateProjectDialog } from "../projects/CreateProjectDialog";
@@ -255,14 +256,26 @@ export function CreateDealDialog({
     if (!files || files.length === 0) return;
 
     const newFiles = Array.from(files).filter(file => {
-      if (file.size > 20 * 1024 * 1024) {
+      // Usar validação do utils (100MB)
+      if (!validateFileSize(file.size)) {
         toast({
           title: "Arquivo muito grande",
-          description: `${file.name} excede o limite de 20MB`,
+          description: `${file.name} excede o limite de ${MAX_FILE_SIZE_MB}MB`,
           variant: "destructive",
         });
         return false;
       }
+      
+      // Validar tipo
+      if (!validateFileType(file.name)) {
+        toast({
+          title: "Tipo de arquivo não permitido",
+          description: `${file.name} não é um formato aceito`,
+          variant: "destructive",
+        });
+        return false;
+      }
+      
       return true;
     });
 
@@ -281,47 +294,80 @@ export function CreateDealDialog({
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    // Upload audios
+    let successCount = 0;
+    let totalFiles = pendingAudios.length + pendingFiles.length;
+
+    // Upload audios com retry
     for (let i = 0; i < pendingAudios.length; i++) {
       const audioBlob = pendingAudios[i];
       const fileName = `audio_${Date.now()}_${i}.webm`;
       const filePath = `${dealId}/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from("crm-files")
-        .upload(filePath, audioBlob);
+      // Retry até 3 vezes
+      let uploaded = false;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const { error: uploadError } = await supabase.storage
+          .from("crm-files")
+          .upload(filePath, audioBlob);
 
-      if (!uploadError) {
-        await supabase.from("crm_deal_files").insert({
-          deal_id: dealId,
-          file_name: fileName,
-          file_path: filePath,
-          file_type: "audio/webm",
-          file_size: audioBlob.size,
-          uploaded_by: user.id,
-        });
+        if (!uploadError) {
+          await supabase.from("crm_deal_files").insert({
+            deal_id: dealId,
+            file_name: fileName,
+            file_path: filePath,
+            file_type: "audio/webm",
+            file_size: audioBlob.size,
+            uploaded_by: user.id,
+          });
+          uploaded = true;
+          successCount++;
+          break;
+        }
+        
+        if (attempt < 2) {
+          await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+        }
       }
     }
 
-    // Upload files
+    // Upload files com retry
     for (const file of pendingFiles) {
       const fileName = `${Date.now()}_${file.name}`;
       const filePath = `${dealId}/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from("crm-files")
-        .upload(filePath, file);
+      // Retry até 3 vezes
+      let uploaded = false;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const { error: uploadError } = await supabase.storage
+          .from("crm-files")
+          .upload(filePath, file);
 
-      if (!uploadError) {
-        await supabase.from("crm_deal_files").insert({
-          deal_id: dealId,
-          file_name: file.name,
-          file_path: filePath,
-          file_type: file.type,
-          file_size: file.size,
-          uploaded_by: user.id,
-        });
+        if (!uploadError) {
+          await supabase.from("crm_deal_files").insert({
+            deal_id: dealId,
+            file_name: file.name,
+            file_path: filePath,
+            file_type: file.type,
+            file_size: file.size,
+            uploaded_by: user.id,
+          });
+          uploaded = true;
+          successCount++;
+          break;
+        }
+        
+        if (attempt < 2) {
+          await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+        }
       }
+    }
+
+    if (successCount < totalFiles) {
+      toast({
+        title: "Alguns arquivos falharam",
+        description: `${successCount} de ${totalFiles} arquivo(s) enviado(s)`,
+        variant: "destructive",
+      });
     }
   };
 
@@ -785,7 +831,7 @@ export function CreateDealDialog({
                   className="hidden"
                   multiple
                   onChange={handleFileSelect}
-                  accept=".pdf,.doc,.docx,.xls,.xlsx,.dwg,.txt,.jpg,.jpeg,.png,.webp"
+                  accept={ALLOWED_FILE_TYPES_ACCEPT}
                 />
               </div>
 

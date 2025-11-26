@@ -20,27 +20,34 @@ export function DealFileUpload({ dealId, files, onFilesChange }: DealFileUploadP
   const [uploadProgress, setUploadProgress] = useState(0);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
-    // Validar tipo de arquivo
-    if (!validateFileType(file.name)) {
-      toast({
-        title: "Tipo de arquivo não permitido",
-        description: "Por favor, selecione um formato de arquivo válido.",
-        variant: "destructive",
-      });
-      e.target.value = "";
-      return;
+    // Validar todos os arquivos antes de começar upload
+    const validFiles: File[] = [];
+    for (const file of Array.from(files)) {
+      if (!validateFileType(file.name)) {
+        toast({
+          title: "Tipo não permitido",
+          description: `${file.name} não é um formato aceito`,
+          variant: "destructive",
+        });
+        continue;
+      }
+
+      if (!validateFileSize(file.size)) {
+        toast({
+          title: "Arquivo muito grande",
+          description: `${file.name} excede ${MAX_FILE_SIZE_MB}MB`,
+          variant: "destructive",
+        });
+        continue;
+      }
+      
+      validFiles.push(file);
     }
 
-    // Validar tamanho
-    if (!validateFileSize(file.size)) {
-      toast({
-        title: "Arquivo muito grande",
-        description: `O arquivo deve ter no máximo ${MAX_FILE_SIZE_MB}MB`,
-        variant: "destructive",
-      });
+    if (validFiles.length === 0) {
       e.target.value = "";
       return;
     }
@@ -48,62 +55,74 @@ export function DealFileUpload({ dealId, files, onFilesChange }: DealFileUploadP
     setUploading(true);
     setUploadProgress(0);
 
-    const showProgress = file.size > 5 * 1024 * 1024; // >5MB
-
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${dealId}/${Date.now()}.${fileExt}`;
+      let successCount = 0;
       
-      if (showProgress) setUploadProgress(30);
+      // Upload sequencial com retry para cada arquivo
+      for (let i = 0; i < validFiles.length; i++) {
+        const file = validFiles[i];
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${dealId}/${Date.now()}_${i}.${fileExt}`;
+        
+        // Atualizar progresso
+        const currentProgress = Math.round(((i) / validFiles.length) * 100);
+        setUploadProgress(currentProgress);
 
-      // Retry lógica: até 3 tentativas
-      let uploadError;
-      for (let attempt = 0; attempt < 3; attempt++) {
-        const { error } = await supabase.storage
-          .from("deal-files")
-          .upload(fileName, file);
-        
-        uploadError = error;
-        if (!error) break;
-        
-        if (attempt < 2) {
-          await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+        // Retry lógica: até 3 tentativas por arquivo
+        let uploadError;
+        for (let attempt = 0; attempt < 3; attempt++) {
+          const { error } = await supabase.storage
+            .from("deal-files")
+            .upload(fileName, file);
+          
+          uploadError = error;
+          if (!error) break;
+          
+          if (attempt < 2) {
+            await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+          }
+        }
+
+        if (!uploadError) {
+          const { error: dbError } = await supabase
+            .from("crm_deal_files")
+            .insert({
+              deal_id: dealId,
+              file_name: file.name,
+              file_path: fileName,
+              file_type: file.type,
+              file_size: file.size,
+              uploaded_by: user.id,
+            });
+
+          if (!dbError) {
+            successCount++;
+          }
         }
       }
 
-      if (uploadError) throw uploadError;
-      
-      if (showProgress) setUploadProgress(70);
+      setUploadProgress(100);
 
-      const { error: dbError } = await supabase
-        .from("crm_deal_files")
-        .insert({
-          deal_id: dealId,
-          file_name: file.name,
-          file_path: fileName,
-          file_type: file.type,
-          file_size: file.size,
-          uploaded_by: user.id,
+      if (successCount > 0) {
+        toast({
+          title: `${successCount} arquivo(s) enviado(s)`,
+          description: successCount < validFiles.length 
+            ? `${validFiles.length - successCount} falhou(aram)`
+            : "Todos os arquivos foram anexados",
         });
+        onFilesChange();
+      } else {
+        throw new Error("Nenhum arquivo foi enviado");
+      }
 
-      if (dbError) throw dbError;
-      
-      if (showProgress) setUploadProgress(100);
-
-      toast({
-        title: "Arquivo enviado",
-        description: "O arquivo foi anexado com sucesso",
-      });
-
-      onFilesChange();
       e.target.value = "";
-    } catch (error) {
+    } catch (error: any) {
       toast({
-        title: "Erro ao enviar arquivo",
-        description: "Não foi possível anexar o arquivo. Tente novamente.",
+        title: "Erro ao enviar arquivos",
+        description: error.message || "Tente novamente",
         variant: "destructive",
       });
     } finally {
@@ -181,6 +200,7 @@ export function DealFileUpload({ dealId, files, onFilesChange }: DealFileUploadP
           <Input
             id="file-upload"
             type="file"
+            multiple
             onChange={handleFileUpload}
             disabled={uploading}
             accept={ALLOWED_FILE_TYPES_ACCEPT}
@@ -191,22 +211,22 @@ export function DealFileUpload({ dealId, files, onFilesChange }: DealFileUploadP
             </Button>
           )}
         </div>
-        {uploading && uploadProgress > 0 && (
-          <div className="mt-2">
-            <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-primary transition-all duration-300"
-                style={{ width: `${uploadProgress}%` }}
-              />
-            </div>
+            {uploading && uploadProgress > 0 && (
+              <div className="mt-2 space-y-2">
+                <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-primary transition-all duration-300"
+                    style={{ width: `${uploadProgress}%` }}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Enviando arquivos... {uploadProgress}%
+                </p>
+              </div>
+            )}
             <p className="text-xs text-muted-foreground mt-1">
-              Enviando... {uploadProgress}%
+              Formatos aceitos: PDF, DOC, DOCX, XLS, XLSX, XLSM, DWG, JPG, PNG, WEBP, TXT, MP3, WAV, M4A, WEBM, OGG (máx. {MAX_FILE_SIZE_MB}MB)
             </p>
-          </div>
-        )}
-        <p className="text-xs text-muted-foreground mt-1">
-          Formatos aceitos: PDF, DOC, DOCX, XLS, XLSX, DWG, JPG, PNG, WEBP, TXT, MP3, WAV, M4A, WEBM, OGG (máx. {MAX_FILE_SIZE_MB}MB)
-        </p>
       </div>
 
       {files && files.length > 0 && (
