@@ -10,298 +10,215 @@ interface ExecuteCampaignRequest {
   arquiteto_ids: string[]
 }
 
-// Função auxiliar para delay com cancelamento
-async function delayWithCancel(seconds: number, dispatchId: string, supabase: any): Promise<boolean> {
-  const startTime = Date.now()
-  const endTime = startTime + (seconds * 1000)
+// 🚀 NOVA ARQUITETURA: Processa 1 arquiteto por invocação + auto-invoke via pg_net
+async function processNextInQueue(supabase: any, evolutionUrl: string, evolutionApiKey: string) {
+  console.log('🔍 Buscando próximo arquiteto na fila...')
   
-  while (Date.now() < endTime) {
-    // Verificar cancelamento a cada 5 segundos
-    await new Promise(resolve => setTimeout(resolve, 5000))
-    
-    const { data } = await supabase
-      .from('tendenci_campaign_dispatches')
-      .select('status')
-      .eq('id', dispatchId)
-      .single()
-    
-    if (data?.status === 'cancelado') {
-      console.log(`🛑 Dispatch ${dispatchId} foi cancelado`)
-      return true // Foi cancelado
-    }
-  }
-  
-  return false // Não foi cancelado
-}
+  // Buscar próximo arquiteto pendente ordenado por agendado_para
+  const { data: nextInQueue, error: queueError } = await supabase
+    .from('tendenci_campaign_queue')
+    .select(`
+      *,
+      tendenci_campaign_dispatches(id, status, enviados_sucesso, enviados_erro, total_arquitetos),
+      tendenci_prospec_arq_campaigns(
+        tipo_envio, 
+        conteudo_texto, 
+        conteudo_imagem_url, 
+        conteudo_audio_url,
+        webhook_n8n,
+        whatsapp_connection_id,
+        tendenci_whatsapp_connections(instance_name, instance_id)
+      ),
+      architects(id, name, phone)
+    `)
+    .eq('status', 'pendente')
+    .lte('agendado_para', new Date().toISOString())
+    .order('agendado_para', { ascending: true })
+    .limit(1)
+    .single()
 
-// Função principal de processamento em background
-async function processarCampanha(
-  dispatchId: string,
-  campanhaId: string,
-  arquitetoIds: string[],
-  supabase: any,
-  evolutionUrl: string,
-  evolutionApiKey: string,
-  authToken: string,
-  startIndex: number = 0 // Índice inicial para processamento em lotes
-) {
-  const BATCH_SIZE = 4 // Processar 4 arquitetos por vez (4 × 3min = 12min, dentro do limite)
-  const endIndex = Math.min(startIndex + BATCH_SIZE, arquitetoIds.length)
-  const isLastBatch = endIndex >= arquitetoIds.length
-  
-  console.log(`🚀 [Background] Processando lote [${startIndex + 1}-${endIndex}] de ${arquitetoIds.length} arquitetos`)
+  if (queueError || !nextInQueue) {
+    console.log('✅ Nenhum arquiteto pendente na fila')
+    return null
+  }
+
+  // Verificar se dispatch foi cancelado
+  if (nextInQueue.tendenci_campaign_dispatches.status === 'cancelado') {
+    console.log(`🛑 Dispatch ${nextInQueue.dispatch_id} cancelado, pulando`)
+    await supabase
+      .from('tendenci_campaign_queue')
+      .update({ status: 'cancelado' })
+      .eq('id', nextInQueue.id)
+    return null
+  }
+
+  console.log(`📤 Processando: ${nextInQueue.architects.name} (posição ${nextInQueue.position})`)
+
+  const startTime = Date.now()
   
   try {
-    // Marcar como em andamento (apenas no primeiro lote)
-    if (startIndex === 0) {
-      await supabase
-        .from('tendenci_campaign_dispatches')
-        .update({ 
-          status: 'em_andamento',
-          iniciado_em: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', dispatchId)
-    }
-
-    // Buscar dados da campanha
-    const { data: campanha } = await supabase
-      .from('tendenci_prospec_arq_campaigns')
-      .select('*, tendenci_whatsapp_connections(instance_name, instance_id)')
-      .eq('id', campanhaId)
-      .single()
-
-    if (!campanha) {
-      throw new Error('Campanha não encontrada')
-    }
-
+    const campanha = nextInQueue.tendenci_prospec_arq_campaigns
     const instanceName = campanha.tendenci_whatsapp_connections?.instance_name
     const instanceId = campanha.tendenci_whatsapp_connections?.instance_id
 
-    if (!instanceName) {
-      throw new Error('Instância WhatsApp não encontrada')
-    }
+    // Atualizar progresso no dispatch
+    const currentPosition = nextInQueue.position
+    const totalArquitetos = nextInQueue.tendenci_campaign_dispatches.total_arquitetos
+    const progresso = Math.round((currentPosition / totalArquitetos) * 100)
 
-    // Buscar arquitetos do lote atual
-    const batchArquitetoIds = arquitetoIds.slice(startIndex, endIndex)
-    const { data: arquitetos } = await supabase
-      .from('architects')
-      .select('id, name, phone')
-      .in('id', batchArquitetoIds)
-
-    if (!arquitetos || arquitetos.length === 0) {
-      throw new Error('Nenhum arquiteto encontrado no lote')
-    }
-
-    // Buscar contadores atuais do dispatch
-    const { data: currentDispatch } = await supabase
+    await supabase
       .from('tendenci_campaign_dispatches')
-      .select('enviados_sucesso, enviados_erro')
-      .eq('id', dispatchId)
-      .single()
+      .update({
+        arquiteto_atual: nextInQueue.architects.name,
+        progresso_percentual: progresso,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', nextInQueue.dispatch_id)
 
-    let sucessoCount = currentDispatch?.enviados_sucesso || 0
-    let erroCount = currentDispatch?.enviados_erro || 0
-
-    // Loop por cada arquiteto com delay de 3 minutos
-    for (let i = 0; i < arquitetos.length; i++) {
-      const arquiteto = arquitetos[i]
-      const globalIndex = startIndex + i // Índice global na lista completa
-      
-      // Verificar cancelamento antes de cada envio
-      const { data: currentDispatch } = await supabase
-        .from('tendenci_campaign_dispatches')
-        .select('status')
-        .eq('id', dispatchId)
-        .single()
-      
-      if (currentDispatch?.status === 'cancelado') {
-        console.log(`🛑 Dispatch cancelado no arquiteto ${globalIndex + 1}/${arquitetoIds.length}`)
-        break
+    // Chamar dispatch-campaign
+    const dispatchResponse = await fetch(
+      `${Deno.env.get('SUPABASE_URL')}/functions/v1/dispatch-campaign`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+          'Content-Type': 'application/json',
+          'apikey': Deno.env.get('SUPABASE_ANON_KEY') || ''
+        },
+        body: JSON.stringify({
+          campanha_id: nextInQueue.campanha_id,
+          arquiteto_id: nextInQueue.arquiteto_id,
+          nome: nextInQueue.architects.name,
+          telefone: nextInQueue.architects.phone,
+          tipo_envio: campanha.tipo_envio,
+          conteudo_texto: campanha.conteudo_texto,
+          conteudo_imagem_url: campanha.conteudo_imagem_url,
+          conteudo_audio_url: campanha.conteudo_audio_url,
+          instance_name: instanceName,
+          instance_id: instanceId,
+          whatsapp_connection_id: campanha.whatsapp_connection_id,
+          webhook_n8n: campanha.webhook_n8n
+        })
       }
+    )
 
-      console.log(`📤 [${globalIndex + 1}/${arquitetoIds.length}] Enviando para ${arquiteto.name}...`)
-      const startTime = Date.now()
+    const result = await dispatchResponse.json()
+    const endTime = Date.now()
+    const tempoSegundos = Math.round((endTime - startTime) / 1000)
 
-      // Atualizar progresso ANTES do envio
-      const progresso = Math.round(((globalIndex + 1) / arquitetoIds.length) * 100)
+    if (result.status === 'success') {
+      console.log(`✅ Sucesso em ${tempoSegundos}s`)
+      
+      // Marcar como enviado na fila
+      await supabase
+        .from('tendenci_campaign_queue')
+        .update({
+          status: 'enviado',
+          enviado_em: new Date().toISOString()
+        })
+        .eq('id', nextInQueue.id)
+
+      // Incrementar contador de sucesso
       await supabase
         .from('tendenci_campaign_dispatches')
         .update({
-          arquiteto_atual: arquiteto.name,
-          progresso_percentual: progresso,
+          enviados_sucesso: nextInQueue.tendenci_campaign_dispatches.enviados_sucesso + 1,
           updated_at: new Date().toISOString()
         })
-        .eq('id', dispatchId)
+        .eq('id', nextInQueue.dispatch_id)
 
-      // Chamar função de dispatch individual
-      try {
-        const dispatchResponse = await fetch(
-          `${Deno.env.get('SUPABASE_URL')}/functions/v1/dispatch-campaign`,
-          {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${authToken}`,
-              'Content-Type': 'application/json',
-              'apikey': Deno.env.get('SUPABASE_ANON_KEY') || ''
-            },
-            body: JSON.stringify({
-              campanha_id: campanhaId,
-              arquiteto_id: arquiteto.id,
-              nome: arquiteto.name,
-              telefone: arquiteto.phone,
-              tipo_envio: campanha.tipo_envio,
-              conteudo_texto: campanha.conteudo_texto,
-              conteudo_imagem_url: campanha.conteudo_imagem_url,
-              conteudo_audio_url: campanha.conteudo_audio_url,
-              instance_name: instanceName,
-              instance_id: instanceId,
-              whatsapp_connection_id: campanha.whatsapp_connection_id,
-              webhook_n8n: campanha.webhook_n8n
-            })
-          }
-        )
+    } else {
+      console.error(`❌ Erro: ${result.error}`)
+      
+      // Marcar como erro na fila
+      await supabase
+        .from('tendenci_campaign_queue')
+        .update({
+          status: 'erro',
+          erro_mensagem: result.error || 'Erro desconhecido',
+          tentativas: nextInQueue.tentativas + 1
+        })
+        .eq('id', nextInQueue.id)
 
-        const result = await dispatchResponse.json()
-        const endTime = Date.now()
-        const tempoEnvioSegundos = Math.round((endTime - startTime) / 1000)
-        
-        if (result.status === 'success') {
-          sucessoCount++
-          console.log(`✅ Enviado com sucesso para ${arquiteto.name} (${tempoEnvioSegundos}s)`)
-          
-          // Atualizar contadores em tempo real no banco
-          await supabase
-            .from('tendenci_campaign_dispatches')
-            .update({
-              enviados_sucesso: sucessoCount,
-              enviados_erro: erroCount,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', dispatchId)
-        } else {
-          erroCount++
-          console.error(`❌ Erro ao enviar para ${arquiteto.name}:`, result.error)
-          
-          // Atualizar contadores em tempo real no banco
-          await supabase
-            .from('tendenci_campaign_dispatches')
-            .update({
-              enviados_sucesso: sucessoCount,
-              enviados_erro: erroCount,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', dispatchId)
-        }
-      } catch (err) {
-        erroCount++
-        const endTime = Date.now()
-        const tempoEnvioSegundos = Math.round((endTime - startTime) / 1000)
-        console.error(`💥 Exceção ao enviar para ${arquiteto.name} após ${tempoEnvioSegundos}s:`, err)
-        
-        // Atualizar contadores em tempo real no banco
-        await supabase
-          .from('tendenci_campaign_dispatches')
-          .update({
-            enviados_sucesso: sucessoCount,
-            enviados_erro: erroCount,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', dispatchId)
-      }
-
-      // Delay de 3 minutos antes do próximo (exceto no último do lote)
-      if (i < arquitetos.length - 1) {
-        console.log(`⏳ Aguardando 3 minutos antes do próximo envio...`)
-        const foiCancelado = await delayWithCancel(180, dispatchId, supabase)
-        if (foiCancelado) {
-          console.log(`🛑 Dispatch cancelado durante delay`)
-          await supabase
-            .from('tendenci_campaign_dispatches')
-            .update({
-              status: 'cancelado',
-              enviados_sucesso: sucessoCount,
-              enviados_erro: erroCount,
-              progresso_percentual: progresso,
-              concluido_em: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', dispatchId)
-          return
-        }
-      }
+      // Incrementar contador de erro
+      await supabase
+        .from('tendenci_campaign_dispatches')
+        .update({
+          enviados_erro: nextInQueue.tendenci_campaign_dispatches.enviados_erro + 1,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', nextInQueue.dispatch_id)
     }
 
-    // Se ainda há mais arquitetos para processar, reinvocar para próximo lote
-    if (!isLastBatch) {
-      console.log(`🔄 Lote concluído. Iniciando próximo lote...`)
-      
-      // Aguardar 3 minutos antes de iniciar próximo lote
-      const foiCancelado = await delayWithCancel(180, dispatchId, supabase)
-      if (foiCancelado) {
-        console.log(`🛑 Dispatch cancelado antes do próximo lote`)
-        await supabase
-          .from('tendenci_campaign_dispatches')
-          .update({
-            status: 'cancelado',
-            enviados_sucesso: sucessoCount,
-            enviados_erro: erroCount,
-            progresso_percentual: Math.round((endIndex / arquitetoIds.length) * 100),
-            concluido_em: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', dispatchId)
-        return
-      }
-      
-      // Reinvocar função recursivamente para próximo lote
-      await processarCampanha(
-        dispatchId,
-        campanhaId,
-        arquitetoIds,
-        supabase,
-        evolutionUrl,
-        evolutionApiKey,
-        authToken,
-        endIndex // Próximo índice inicial
-      )
-      return
-    }
+  } catch (err) {
+    console.error(`💥 Exceção:`, err)
+    
+    await supabase
+      .from('tendenci_campaign_queue')
+      .update({
+        status: 'erro',
+        erro_mensagem: err instanceof Error ? err.message : 'Erro desconhecido',
+        tentativas: nextInQueue.tentativas + 1
+      })
+      .eq('id', nextInQueue.id)
 
-    // Marcar como concluído (apenas no último lote)
+    await supabase
+      .from('tendenci_campaign_dispatches')
+      .update({
+        enviados_erro: nextInQueue.tendenci_campaign_dispatches.enviados_erro + 1,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', nextInQueue.dispatch_id)
+  }
+
+  // Verificar se há mais pendentes neste dispatch
+  const { count: pendingCount } = await supabase
+    .from('tendenci_campaign_queue')
+    .select('*', { count: 'exact', head: true })
+    .eq('dispatch_id', nextInQueue.dispatch_id)
+    .eq('status', 'pendente')
+
+  if (pendingCount === 0) {
+    // Marcar dispatch como concluído
+    console.log(`✅ Dispatch ${nextInQueue.dispatch_id} concluído!`)
+    
     await supabase
       .from('tendenci_campaign_dispatches')
       .update({
         status: 'concluido',
-        enviados_sucesso: sucessoCount,
-        enviados_erro: erroCount,
         progresso_percentual: 100,
         concluido_em: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })
-      .eq('id', dispatchId)
+      .eq('id', nextInQueue.dispatch_id)
 
     // Atualizar status da campanha
     await supabase
       .from('tendenci_prospec_arq_campaigns')
       .update({ status: 'enviado' })
-      .eq('id', campanhaId)
+      .eq('id', nextInQueue.campanha_id)
 
-    console.log(`✅ [Background] Campanha concluída: ${sucessoCount} sucesso, ${erroCount} erros`)
-    
-  } catch (error) {
-    console.error('💥 [Background] Erro ao processar campanha:', error)
-    
-    await supabase
-      .from('tendenci_campaign_dispatches')
-      .update({
-        status: 'erro',
-        erro_mensagem: error instanceof Error ? error.message : 'Erro desconhecido',
-        concluido_em: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', dispatchId)
+    return null // Não auto-invocar
   }
+
+  // 🔄 AUTO-INVOKE: Agendar próxima execução em 3 minutos via pg_net
+  console.log(`⏳ Agendando próximo envio em 3 minutos...`)
+  
+  const nextInvocationTime = new Date(Date.now() + (3 * 60 * 1000)) // 3 minutos
+  
+  await supabase.rpc('http_post', {
+    url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/execute-campaign-background`,
+    headers: {
+      'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+      'Content-Type': 'application/json',
+      'apikey': Deno.env.get('SUPABASE_ANON_KEY') || ''
+    },
+    body: JSON.stringify({ auto_invoke: true }),
+    timeout_milliseconds: 30000,
+    method: 'POST'
+  })
+
+  return { scheduled: true, next_at: nextInvocationTime }
 }
 
 Deno.serve(async (req) => {
@@ -340,6 +257,30 @@ Deno.serve(async (req) => {
       )
     }
 
+    const body = await req.json()
+    
+    // Modo 1: Auto-invoke (processa próximo da fila)
+    if (body.auto_invoke) {
+      console.log('🔄 Modo auto-invoke')
+      
+      const result = await processNextInQueue(supabase, evolutionUrl, evolutionApiKey)
+      
+      return new Response(
+        JSON.stringify({ 
+          success: true,
+          processed: !!result,
+          ...result
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200
+        }
+      )
+    }
+
+    // Modo 2: Iniciar nova campanha (enfileirar arquitetos)
+    const { campanha_id, arquiteto_ids }: ExecuteCampaignRequest = body
+
     // Obter usuário autenticado
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
@@ -371,10 +312,7 @@ Deno.serve(async (req) => {
       )
     }
 
-    const body: ExecuteCampaignRequest = await req.json()
-    const { campanha_id, arquiteto_ids } = body
-
-    console.log(`📋 Campanha ${campanha_id} com ${arquiteto_ids.length} arquitetos`)
+    console.log(`📋 Nova campanha ${campanha_id} com ${arquiteto_ids.length} arquitetos`)
 
     // Criar registro de dispatch
     const { data: dispatch, error: dispatchError } = await supabase
@@ -382,11 +320,12 @@ Deno.serve(async (req) => {
       .insert({
         campanha_id,
         user_id: user.id,
-        status: 'pendente',
+        status: 'em_andamento',
         total_arquitetos: arquiteto_ids.length,
         enviados_sucesso: 0,
         enviados_erro: 0,
-        progresso_percentual: 0
+        progresso_percentual: 0,
+        iniciado_em: new Date().toISOString()
       })
       .select()
       .single()
@@ -404,40 +343,55 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Executar processamento em background usando waitUntil
+    // Enfileirar todos os arquitetos
+    const queueItems = arquiteto_ids.map((arquiteto_id, index) => ({
+      dispatch_id: dispatch.id,
+      arquiteto_id,
+      campanha_id,
+      position: index + 1,
+      status: 'pendente',
+      agendado_para: new Date(Date.now() + (index * 3 * 60 * 1000)).toISOString() // 3 min entre cada
+    }))
+
+    const { error: queueError } = await supabase
+      .from('tendenci_campaign_queue')
+      .insert(queueItems)
+
+    if (queueError) {
+      console.error('Erro ao enfileirar arquitetos:', queueError)
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: 'Erro ao criar fila de envios'
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 500
+        }
+      )
+    }
+
+    console.log(`✅ ${arquiteto_ids.length} arquitetos enfileirados`)
+
+    // Iniciar processamento imediatamente (primeiro arquiteto)
     // @ts-ignore - EdgeRuntime é global no Deno Deploy
     if (typeof EdgeRuntime !== 'undefined' && EdgeRuntime.waitUntil) {
       // @ts-ignore
       EdgeRuntime.waitUntil(
-        processarCampanha(
-          dispatch.id,
-          campanha_id,
-          arquiteto_ids,
-          supabase,
-          evolutionUrl,
-          evolutionApiKey,
-          token
-        )
+        processNextInQueue(supabase, evolutionUrl, evolutionApiKey)
       )
     } else {
-      // Fallback: executar sem waitUntil (desenvolvimento local)
-      processarCampanha(
-        dispatch.id,
-        campanha_id,
-        arquiteto_ids,
-        supabase,
-        evolutionUrl,
-        evolutionApiKey,
-        token
-      ).catch(err => console.error('Erro no processamento:', err))
+      // Fallback local
+      processNextInQueue(supabase, evolutionUrl, evolutionApiKey)
+        .catch(err => console.error('Erro no processamento:', err))
     }
 
-    // Retornar imediatamente com ID do dispatch
+    // Retornar imediatamente
     return new Response(
       JSON.stringify({ 
         success: true,
         dispatch_id: dispatch.id,
-        message: `Campanha iniciada! Processando ${arquiteto_ids.length} arquitetos em background.`
+        message: `Campanha iniciada! ${arquiteto_ids.length} arquitetos enfileirados.`
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
