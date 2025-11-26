@@ -50,10 +50,10 @@ export function CRMTasksPanel({ pipelineId, categoryFilter }: CRMTasksPanelProps
   const fetchTasks = async () => {
     setLoading(true);
 
-    // Buscar tarefas de deals do pipeline atual
+    // Buscar tarefas de deals do pipeline atual com categoria
     let dealsQuery = supabase
       .from("crm_deals")
-      .select("id")
+      .select("id, categoria")
       .eq("pipeline_id", pipelineId)
       .eq("status", "aberto");
     
@@ -72,12 +72,14 @@ export function CRMTasksPanel({ pipelineId, categoryFilter }: CRMTasksPanelProps
 
     const dealIds = deals.map((d) => d.id);
 
+    // Buscar todas as tarefas sem limite artificial
     const { data, error } = await supabase
       .from("crm_tasks")
       .select(`
         *,
         deal:crm_deals(
           title,
+          categoria,
           lead:leads(
             client:clients(name)
           )
@@ -85,10 +87,10 @@ export function CRMTasksPanel({ pipelineId, categoryFilter }: CRMTasksPanelProps
       `)
       .in("deal_id", dealIds)
       .eq("status", "open")
-      .order("due_at", { ascending: true })
-      .limit(20);
+      .order("due_at", { ascending: true });
 
     if (error) {
+      console.error("Erro ao buscar tarefas:", error);
       setLoading(false);
       return;
     }
