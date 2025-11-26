@@ -2,10 +2,11 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
-import { CheckCircle, Clock } from "lucide-react";
+import { CheckCircle, Clock, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DealDetailSheet } from "./DealDetailSheet";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface CRMTasksPanelProps {
@@ -19,6 +20,11 @@ export function CRMTasksPanel({ pipelineId, categoryFilter }: CRMTasksPanelProps
   const [loading, setLoading] = useState(true);
   const [selectedDeal, setSelectedDeal] = useState<any | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [openCards, setOpenCards] = useState({
+    todas: false,
+    diarias: false,
+    futuras: false,
+  });
 
   useEffect(() => {
     fetchTasks();
@@ -245,72 +251,97 @@ export function CRMTasksPanel({ pipelineId, categoryFilter }: CRMTasksPanelProps
 
   return (
     <>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {/* TODAS */}
-        <Card className="flex flex-col min-h-[600px]">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg font-bold flex items-center gap-2">
-              <span className="text-xl">📋</span>
-              <span>TODAS</span>
-              <Badge variant="secondary" className="ml-auto text-sm">
-                {allTasks.length}
-              </Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex-1 space-y-3 overflow-y-auto">
-            {allTasks.length === 0 ? (
-              <p className="text-center py-12 text-muted-foreground text-sm">
-                Nenhuma tarefa
-              </p>
-            ) : (
-              allTasks.map((task) => <TaskCard key={task.id} task={task} />)
-            )}
-          </CardContent>
-        </Card>
+      <div className="space-y-4">
+        <h2 className="text-2xl font-bold">Tarefas</h2>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* TODAS */}
+          <Collapsible open={openCards.todas} onOpenChange={(open) => setOpenCards(prev => ({ ...prev, todas: open }))}>
+            <Card className="flex flex-col">
+              <CollapsibleTrigger asChild>
+                <CardHeader className="pb-3 cursor-pointer hover:bg-muted/50 transition-colors">
+                  <CardTitle className="text-base font-bold flex items-center gap-2">
+                    <span>📋</span>
+                    <span>TODAS</span>
+                    <Badge variant="secondary" className="ml-auto text-sm">
+                      {allTasks.length}
+                    </Badge>
+                    <ChevronDown className={`h-4 w-4 transition-transform ${openCards.todas ? "" : "-rotate-90"}`} />
+                  </CardTitle>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="space-y-3 max-h-[500px] overflow-y-auto">
+                  {allTasks.length === 0 ? (
+                    <p className="text-center py-8 text-muted-foreground text-sm">
+                      Nenhuma tarefa
+                    </p>
+                  ) : (
+                    allTasks.map((task) => <TaskCard key={task.id} task={task} />)
+                  )}
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
 
-        {/* DIÁRIAS */}
-        <Card className="flex flex-col min-h-[600px]">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg font-bold flex items-center gap-2">
-              <span className="text-xl">📅</span>
-              <span>DIÁRIAS</span>
-              <Badge variant="default" className="ml-auto text-sm">
-                {todayTasks.length}
-              </Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex-1 space-y-3 overflow-y-auto">
-            {todayTasks.length === 0 ? (
-              <p className="text-center py-12 text-muted-foreground text-sm">
-                Nenhuma tarefa para hoje
-              </p>
-            ) : (
-              todayTasks.map((task) => <TaskCard key={task.id} task={task} />)
-            )}
-          </CardContent>
-        </Card>
+          {/* DIÁRIAS */}
+          <Collapsible open={openCards.diarias} onOpenChange={(open) => setOpenCards(prev => ({ ...prev, diarias: open }))}>
+            <Card className="flex flex-col">
+              <CollapsibleTrigger asChild>
+                <CardHeader className="pb-3 cursor-pointer hover:bg-muted/50 transition-colors">
+                  <CardTitle className="text-base font-bold flex items-center gap-2">
+                    <span>📅</span>
+                    <span>DIÁRIAS</span>
+                    <Badge variant="default" className="ml-auto text-sm">
+                      {todayTasks.length}
+                    </Badge>
+                    <ChevronDown className={`h-4 w-4 transition-transform ${openCards.diarias ? "" : "-rotate-90"}`} />
+                  </CardTitle>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="space-y-3 max-h-[500px] overflow-y-auto">
+                  {todayTasks.length === 0 ? (
+                    <p className="text-center py-8 text-muted-foreground text-sm">
+                      Nenhuma tarefa para hoje
+                    </p>
+                  ) : (
+                    todayTasks.map((task) => <TaskCard key={task.id} task={task} />)
+                  )}
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
 
-        {/* FUTURAS */}
-        <Card className="flex flex-col min-h-[600px]">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg font-bold flex items-center gap-2">
-              <span className="text-xl">🔮</span>
-              <span>FUTURAS</span>
-              <Badge variant="secondary" className="ml-auto text-sm">
-                {futureTasks.length}
-              </Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex-1 space-y-3 overflow-y-auto">
-            {futureTasks.length === 0 ? (
-              <p className="text-center py-12 text-muted-foreground text-sm">
-                Nenhuma tarefa futura
-              </p>
-            ) : (
-              futureTasks.map((task) => <TaskCard key={task.id} task={task} />)
-            )}
-          </CardContent>
-        </Card>
+          {/* FUTURAS */}
+          <Collapsible open={openCards.futuras} onOpenChange={(open) => setOpenCards(prev => ({ ...prev, futuras: open }))}>
+            <Card className="flex flex-col">
+              <CollapsibleTrigger asChild>
+                <CardHeader className="pb-3 cursor-pointer hover:bg-muted/50 transition-colors">
+                  <CardTitle className="text-base font-bold flex items-center gap-2">
+                    <span>🔮</span>
+                    <span>FUTURAS</span>
+                    <Badge variant="secondary" className="ml-auto text-sm">
+                      {futureTasks.length}
+                    </Badge>
+                    <ChevronDown className={`h-4 w-4 transition-transform ${openCards.futuras ? "" : "-rotate-90"}`} />
+                  </CardTitle>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="space-y-3 max-h-[500px] overflow-y-auto">
+                  {futureTasks.length === 0 ? (
+                    <p className="text-center py-8 text-muted-foreground text-sm">
+                      Nenhuma tarefa futura
+                    </p>
+                  ) : (
+                    futureTasks.map((task) => <TaskCard key={task.id} task={task} />)
+                  )}
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
+        </div>
       </div>
 
       {selectedDeal && (
