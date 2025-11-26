@@ -71,8 +71,9 @@ function formatBrazilianPhone(phone: string): { formatted: string | null; error?
     }
   }
   
-  const formatted = `${clean}@s.whatsapp.net`
-  console.log(`✅ Número formatado com sucesso: "${formatted}"`)
+  // Retorna apenas o número limpo (Evolution API adiciona o sufixo automaticamente)
+  const formatted = clean
+  console.log(`✅ Número formatado com sucesso: "${formatted}" (sem sufixo JID)`)
   
   return { formatted, original }
 }
