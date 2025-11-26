@@ -14,12 +14,12 @@ export function formatCurrency(value: number): string {
 
 // File validation constants and helpers
 export const ALLOWED_FILE_EXTENSIONS = [
-  'pdf', 'doc', 'docx', 'xls', 'xlsx', 'xlsm', 'dwg',
+  'pdf', 'doc', 'docx', 'xls', 'xlsx', 'xlsm', 'dwg', 'skp',
   'jpg', 'jpeg', 'png', 'webp', 'txt',
   'mp3', 'wav', 'm4a', 'webm', 'ogg'
 ];
 
-export const ALLOWED_FILE_TYPES_ACCEPT = '.pdf,.doc,.docx,.xls,.xlsx,.xlsm,.dwg,.jpg,.jpeg,.png,.webp,.txt,.mp3,.wav,.m4a,.webm,.ogg';
+export const ALLOWED_FILE_TYPES_ACCEPT = '.pdf,.doc,.docx,.xls,.xlsx,.xlsm,.dwg,.skp,.jpg,.jpeg,.png,.webp,.txt,.mp3,.wav,.m4a,.webm,.ogg';
 
 // MIME types permitidos para upload
 export const ALLOWED_MIME_TYPES = [
@@ -33,6 +33,9 @@ export const ALLOWED_MIME_TYPES = [
   'image/x-dwg',
   'application/acad',
   'application/x-acad',
+  'application/vnd.sketchup.skp', // SketchUp (.skp)
+  'application/x-sketchup',
+  'model/vnd.sketchup.skp',
   'image/jpeg',
   'image/jpg',
   'image/png',
