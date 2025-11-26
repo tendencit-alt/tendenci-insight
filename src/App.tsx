@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { PermissionGuard } from "@/components/auth/PermissionGuard";
+import { DynamicRouteHandler } from "@/components/routing/DynamicRouteHandler";
 import Index from "./pages/Index";
 import Leads from "./pages/Leads";
 import Projects from "./pages/Projects";
@@ -20,7 +21,6 @@ import DashboardsPersonalizados from "@/pages/DashboardsPersonalizados";
 import DashboardEditor from "@/pages/DashboardEditor";
 import DashboardView from "@/pages/DashboardView";
 import Auth from "./pages/Auth";
-import NotFound from "./pages/NotFound";
 import ImportTempArchitects from "./pages/ImportTempArchitects";
 import AutoImportArchitects from "./pages/AutoImportArchitects";
 import FinalBulkImport from "./pages/FinalBulkImport";
@@ -58,8 +58,12 @@ const App = () => (
             <Route path="/final-bulk-import" element={<FinalBulkImport />} />
             <Route path="/whatsapp-integration-docs" element={<ProtectedRoute><WhatsAppIntegrationDocs /></ProtectedRoute>} />
             <Route path="/n8n-tarefas" element={<ProtectedRoute><N8nTarefasGuide /></ProtectedRoute>} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
+            {/* Rotas dinâmicas - verificar se é uma rota editada antes de mostrar 404 */}
+            <Route path="*" element={
+              <ProtectedRoute>
+                <DynamicRouteHandler />
+              </ProtectedRoute>
+            } />
           </Routes>
         </AuthProvider>
       </BrowserRouter>
