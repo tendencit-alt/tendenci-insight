@@ -71,15 +71,35 @@ export function DealFileUpload({ dealId, files, onFilesChange }: DealFileUploadP
         const currentProgress = Math.round(((i) / validFiles.length) * 100);
         setUploadProgress(currentProgress);
 
+        // Determinar contentType correto baseado na extensão
+        let contentType = file.type;
+        if (!contentType || contentType === 'application/octet-stream') {
+          const ext = file.name.split('.').pop()?.toLowerCase();
+          if (ext === 'skp') {
+            contentType = 'application/vnd.sketchup.skp';
+          } else if (ext === 'dwg') {
+            contentType = 'image/vnd.dwg';
+          } else if (ext === 'xlsm') {
+            contentType = 'application/vnd.ms-excel.sheet.macroenabled.12';
+          }
+        }
+
+        console.log(`Uploading ${file.name} with type: ${contentType}, size: ${file.size}`);
+
         // Retry lógica: até 3 tentativas por arquivo
         let uploadError;
         for (let attempt = 0; attempt < 3; attempt++) {
           const { error } = await supabase.storage
             .from("deal-files")
-            .upload(fileName, file);
+            .upload(fileName, file, {
+              contentType: contentType || 'application/octet-stream',
+              upsert: false,
+            });
           
           uploadError = error;
           if (!error) break;
+          
+          console.error(`Upload attempt ${attempt + 1} failed for ${file.name}:`, error);
           
           if (attempt < 2) {
             await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));

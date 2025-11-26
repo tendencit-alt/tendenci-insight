@@ -56,6 +56,20 @@ export function useFileUpload({
     const fileExt = file.name.split(".").pop()?.toLowerCase();
     const fileName = `${folderPath}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
 
+    // Determinar contentType correto baseado na extensão
+    let contentType = file.type;
+    if (!contentType || contentType === 'application/octet-stream') {
+      if (fileExt === 'skp') {
+        contentType = 'application/vnd.sketchup.skp';
+      } else if (fileExt === 'dwg') {
+        contentType = 'image/vnd.dwg';
+      } else if (fileExt === 'xlsm') {
+        contentType = 'application/vnd.ms-excel.sheet.macroenabled.12';
+      }
+    }
+
+    console.log(`Uploading ${file.name} with type: ${contentType}, size: ${file.size}`);
+
     // Retry logic com exponential backoff
     let lastError: any;
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -72,7 +86,7 @@ export function useFileUpload({
         const { error: uploadError } = await supabase.storage
           .from(bucketName)
           .upload(fileName, file, {
-            contentType: file.type || "application/octet-stream",
+            contentType: contentType || "application/octet-stream",
             upsert: false,
           });
 
