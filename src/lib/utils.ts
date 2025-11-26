@@ -21,6 +21,30 @@ export const ALLOWED_FILE_EXTENSIONS = [
 
 export const ALLOWED_FILE_TYPES_ACCEPT = '.pdf,.doc,.docx,.xls,.xlsx,.xlsm,.dwg,.jpg,.jpeg,.png,.webp,.txt,.mp3,.wav,.m4a,.webm,.ogg';
 
+// MIME types permitidos para upload
+export const ALLOWED_MIME_TYPES = [
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-excel.sheet.macroenabled.12', // Excel com macros (.xlsm)
+  'image/dwg',
+  'image/x-dwg',
+  'application/acad',
+  'application/x-acad',
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/webp',
+  'text/plain',
+  'audio/mpeg',
+  'audio/wav',
+  'audio/mp4',
+  'audio/webm',
+  'audio/ogg'
+];
+
 export const MAX_FILE_SIZE_MB = 1024; // 1GB
 export const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
