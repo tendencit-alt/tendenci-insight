@@ -21,6 +21,7 @@ interface CampaignDispatch {
   iniciado_em: string;
   concluido_em: string | null;
   erro_mensagem: string | null;
+  updated_at: string | null;
   tendenci_prospec_arq_campaigns?: {
     nome: string;
   };
@@ -213,7 +214,7 @@ export function CampaignProgressMonitor() {
             </div>
 
             {/* Estatísticas */}
-            <div className="grid grid-cols-3 gap-4 text-sm">
+            <div className="grid grid-cols-4 gap-3 text-sm">
               <div>
                 <p className="text-muted-foreground">Total</p>
                 <p className="text-lg font-semibold">{dispatch.total_arquitetos}</p>
@@ -226,12 +227,69 @@ export function CampaignProgressMonitor() {
                 <p className="text-muted-foreground">Erros</p>
                 <p className="text-lg font-semibold text-red-600">{dispatch.enviados_erro}</p>
               </div>
+              <div>
+                <p className="text-muted-foreground">Restantes</p>
+                <p className="text-lg font-semibold text-blue-600">
+                  {dispatch.total_arquitetos - dispatch.enviados_sucesso - dispatch.enviados_erro}
+                </p>
+              </div>
             </div>
 
-            {/* Tempo */}
-            <div className="text-xs text-muted-foreground">
-              Iniciado em: {new Date(dispatch.iniciado_em).toLocaleString('pt-BR')}
+            {/* Informações de Tempo */}
+            <div className="space-y-1 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Iniciado em:</span>
+                <span className="font-medium">{new Date(dispatch.iniciado_em).toLocaleString('pt-BR')}</span>
+              </div>
+              {dispatch.updated_at && (
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Última atualização:</span>
+                  <span className="font-medium">{new Date(dispatch.updated_at).toLocaleString('pt-BR')}</span>
+                </div>
+              )}
+              {(() => {
+                const lastUpdate = dispatch.updated_at ? new Date(dispatch.updated_at) : new Date(dispatch.iniciado_em);
+                const now = new Date();
+                const diffMinutes = Math.floor((now.getTime() - lastUpdate.getTime()) / 1000 / 60);
+                const isStuck = diffMinutes > 5;
+                
+                return (
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Tempo desde última atualização:</span>
+                    <span className={`font-medium ${isStuck ? 'text-red-600' : 'text-green-600'}`}>
+                      {diffMinutes < 1 ? 'Agora mesmo' : `${diffMinutes} min atrás`}
+                      {isStuck && ' ⚠️'}
+                    </span>
+                  </div>
+                );
+              })()}
             </div>
+
+            {/* Alerta de Campanha Travada */}
+            {(() => {
+              const lastUpdate = dispatch.updated_at ? new Date(dispatch.updated_at) : new Date(dispatch.iniciado_em);
+              const now = new Date();
+              const diffMinutes = Math.floor((now.getTime() - lastUpdate.getTime()) / 1000 / 60);
+              
+              if (diffMinutes > 5 && dispatch.status === 'em_andamento') {
+                return (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="w-5 h-5 text-yellow-600 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-yellow-800">
+                          Campanha pode estar travada
+                        </p>
+                        <p className="text-xs text-yellow-700 mt-1">
+                          Sem atualizações há {diffMinutes} minutos. A campanha pode ter sido interrompida pelo sistema.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+              return null;
+            })()}
 
             {/* Erro Message */}
             {dispatch.erro_mensagem && (
