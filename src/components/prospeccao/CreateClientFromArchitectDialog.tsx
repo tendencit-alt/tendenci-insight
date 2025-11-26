@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useFormPersistence } from "@/hooks/useFormPersistence";
 import { Loader2 } from "lucide-react";
 
 interface CreateClientFromArchitectDialogProps {
@@ -25,7 +26,9 @@ export function CreateClientFromArchitectDialog({
 }: CreateClientFromArchitectDialogProps) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
+  
+  // Use session persistence for form data
+  const [formData, setFormData, clearFormData] = useFormPersistence('create-client-architect-form', {
     name: "",
     phone: "",
     email: "",
@@ -33,6 +36,14 @@ export function CreateClientFromArchitectDialog({
     state: "",
     notes: "",
   });
+
+  // Clear form data on successful submission
+  useEffect(() => {
+    if (!open) {
+      // Don't clear when closing - only clear on successful submit
+      return;
+    }
+  }, [open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -116,6 +127,9 @@ export function CreateClientFromArchitectDialog({
         description: "Cliente cadastrado, lead criado e oportunidade adicionada ao CRM",
       });
 
+      // Clear persisted form data on success
+      clearFormData();
+      
       setFormData({
         name: "",
         phone: "",
