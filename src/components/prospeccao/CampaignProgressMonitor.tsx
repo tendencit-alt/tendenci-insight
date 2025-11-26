@@ -80,7 +80,7 @@ export function CampaignProgressMonitor() {
   useEffect(() => {
     fetchDispatches();
 
-    // Realtime subscription com notificações
+    // Realtime subscription para atualização imediata dos contadores
     const channel = supabase
       .channel('campaign_dispatches')
       .on(
@@ -91,12 +91,18 @@ export function CampaignProgressMonitor() {
           table: 'tendenci_campaign_dispatches'
         },
         (payload) => {
+          console.log('📊 Realtime update recebido:', payload.new);
           const newDispatch = payload.new as CampaignDispatch;
+          
+          // Atualizar estado imediatamente
+          setDispatches(prev => 
+            prev.map(d => d.id === newDispatch.id ? { ...d, ...newDispatch } : d)
+          );
           
           // Toast quando campanha concluir com sucesso
           if (newDispatch.status === 'concluido' && payload.old.status !== 'concluido') {
             toast.success('Campanha Concluída!', {
-              description: `${newDispatch.enviados_sucesso} mensagens enviadas com sucesso.`,
+              description: `${newDispatch.total_arquitetos} mensagens processadas. ${newDispatch.enviados_sucesso} sucesso, ${newDispatch.enviados_erro} erro(s).`,
             });
           }
           
@@ -114,14 +120,12 @@ export function CampaignProgressMonitor() {
               }
             });
           }
-          
-          fetchDispatches();
         }
       )
       .subscribe();
 
-    // Poll a cada 10 segundos para atualizações
-    const interval = setInterval(fetchDispatches, 10000);
+    // Poll a cada 3 segundos para garantir sincronização
+    const interval = setInterval(fetchDispatches, 3000);
 
     return () => {
       channel.unsubscribe();
