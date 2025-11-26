@@ -12,7 +12,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface MenuItem {
   id: string;
@@ -135,6 +136,12 @@ export function EditMenuItemDialog({
               onChange={(e) => setRoute(e.target.value)}
               placeholder="Ex: /, /leads, /crm..."
             />
+            <Alert className="mt-2">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription className="text-xs">
+                A rota será atualizada no menu. O sistema redirecionará automaticamente para a rota correta baseado no módulo.
+              </AlertDescription>
+            </Alert>
           </div>
         </div>
 
