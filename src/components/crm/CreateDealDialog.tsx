@@ -378,6 +378,8 @@ export function CreateDealDialog({
     try {
       // Validação: Verificar se a etapa é "Qualificação" ou "Em Negociação" e se há valor
       const selectedStage = stages.find(s => s.id === formData.stage_id);
+      let dealStatus = "aberto";
+      
       if (selectedStage) {
         const stageName = selectedStage.name.toLowerCase();
         const requiresValue = stageName.includes("qualif") || stageName.includes("negociação");
@@ -390,6 +392,13 @@ export function CreateDealDialog({
             variant: "destructive",
           });
           return;
+        }
+        
+        // Detectar status baseado na etapa selecionada
+        if (stageName.includes("ganho") || stageName.includes("won") || stageName.startsWith("✅")) {
+          dealStatus = "won";
+        } else if (stageName.includes("perdido") || stageName.includes("lost") || stageName.startsWith("❌")) {
+          dealStatus = "lost";
         }
       }
 
@@ -423,7 +432,7 @@ export function CreateDealDialog({
         centro_custo: formData.centros_custo.join(", ") || null,
         tipo_produto: formData.tipos_produto.join(", ") || null,
         conversation_history: formData.conversation_history || null,
-        status: "aberto",
+        status: dealStatus,
       }).select().maybeSingle();
 
       if (error) {
