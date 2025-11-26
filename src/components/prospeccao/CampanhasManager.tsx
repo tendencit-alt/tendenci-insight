@@ -565,8 +565,8 @@ export function CampanhasManager() {
       }
     }
 
-    // 🚀 NOVO: Executar campanha em background via Edge Function
-    console.log(`🚀 [${new Date().toISOString()}] Iniciando disparo em background de campanha "${campanha.nome}" para ${campanha.arquitetos_selecionados.length} arquitetos`);
+    // 🚀 Enfileirar arquitetos e iniciar processamento em background
+    console.log(`🚀 Iniciando campanha "${campanha.nome}" para ${campanha.arquitetos_selecionados.length} arquitetos via fila`);
     
     setDispatching(true);
     
@@ -583,7 +583,7 @@ export function CampanhasManager() {
         return;
       }
 
-      // Chamar Edge Function de background
+      // Chamar Edge Function que enfileira e inicia processamento
       const { data, error } = await supabase.functions.invoke('execute-campaign-background', {
         body: {
           campanha_id: campanha.id,
@@ -599,9 +599,11 @@ export function CampanhasManager() {
         throw new Error(data.error || 'Erro ao iniciar campanha');
       }
 
+      const tempoEstimado = Math.round((campanha.arquitetos_selecionados.length * 3) / 60);
+
       toast({
-        title: "✅ Campanha Iniciada!",
-        description: `Processando ${campanha.arquitetos_selecionados.length} arquitetos em background. Você pode continuar trabalhando normalmente.`,
+        title: "✅ Campanha Enfileirada!",
+        description: `${campanha.arquitetos_selecionados.length} mensagens enfileiradas. Tempo estimado: ~${tempoEstimado} horas. Processamento em background.`,
       });
 
       console.log(`✅ Dispatch ID: ${data.dispatch_id}`);
@@ -615,7 +617,7 @@ export function CampanhasManager() {
       await fetchCampanhas();
       
     } catch (error: any) {
-      console.error('💥 Erro ao iniciar campanha em background:', error);
+      console.error('💥 Erro ao iniciar campanha:', error);
       toast({
         title: "Erro ao Disparar",
         description: error.message || "Erro desconhecido ao iniciar campanha",
