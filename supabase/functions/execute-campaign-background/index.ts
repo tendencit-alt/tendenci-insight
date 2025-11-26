@@ -103,7 +103,10 @@ async function processarCampanha(
         break
       }
 
-      // Atualizar progresso
+      console.log(`📤 [${i + 1}/${arquitetos.length}] Enviando para ${arquiteto.name}...`)
+      const startTime = Date.now()
+
+      // Atualizar progresso ANTES do envio
       const progresso = Math.round(((i + 1) / arquitetos.length) * 100)
       await supabase
         .from('tendenci_campaign_dispatches')
@@ -112,8 +115,6 @@ async function processarCampanha(
           progresso_percentual: progresso
         })
         .eq('id', dispatchId)
-
-      console.log(`📤 [${i + 1}/${arquitetos.length}] Enviando para ${arquiteto.name}...`)
 
       // Chamar função de dispatch individual
       try {
@@ -144,17 +145,48 @@ async function processarCampanha(
         )
 
         const result = await dispatchResponse.json()
+        const endTime = Date.now()
+        const tempoEnvioSegundos = Math.round((endTime - startTime) / 1000)
         
         if (result.status === 'success') {
           sucessoCount++
-          console.log(`✅ Enviado com sucesso para ${arquiteto.name}`)
+          console.log(`✅ Enviado com sucesso para ${arquiteto.name} (${tempoEnvioSegundos}s)`)
+          
+          // Atualizar contadores em tempo real no banco
+          await supabase
+            .from('tendenci_campaign_dispatches')
+            .update({
+              enviados_sucesso: sucessoCount,
+              enviados_erro: erroCount
+            })
+            .eq('id', dispatchId)
         } else {
           erroCount++
           console.error(`❌ Erro ao enviar para ${arquiteto.name}:`, result.error)
+          
+          // Atualizar contadores em tempo real no banco
+          await supabase
+            .from('tendenci_campaign_dispatches')
+            .update({
+              enviados_sucesso: sucessoCount,
+              enviados_erro: erroCount
+            })
+            .eq('id', dispatchId)
         }
       } catch (err) {
         erroCount++
-        console.error(`💥 Exceção ao enviar para ${arquiteto.name}:`, err)
+        const endTime = Date.now()
+        const tempoEnvioSegundos = Math.round((endTime - startTime) / 1000)
+        console.error(`💥 Exceção ao enviar para ${arquiteto.name} após ${tempoEnvioSegundos}s:`, err)
+        
+        // Atualizar contadores em tempo real no banco
+        await supabase
+          .from('tendenci_campaign_dispatches')
+          .update({
+            enviados_sucesso: sucessoCount,
+            enviados_erro: erroCount
+          })
+          .eq('id', dispatchId)
       }
 
       // Delay de 3 minutos antes do próximo (exceto no último)
