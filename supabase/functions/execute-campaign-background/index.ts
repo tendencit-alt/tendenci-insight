@@ -42,19 +42,27 @@ async function processarCampanha(
   supabase: any,
   evolutionUrl: string,
   evolutionApiKey: string,
-  authToken: string
+  authToken: string,
+  startIndex: number = 0 // Índice inicial para processamento em lotes
 ) {
-  console.log(`🚀 [Background] Iniciando processamento de campanha ${campanhaId} com ${arquitetoIds.length} arquitetos`)
+  const BATCH_SIZE = 4 // Processar 4 arquitetos por vez (4 × 3min = 12min, dentro do limite)
+  const endIndex = Math.min(startIndex + BATCH_SIZE, arquitetoIds.length)
+  const isLastBatch = endIndex >= arquitetoIds.length
+  
+  console.log(`🚀 [Background] Processando lote [${startIndex + 1}-${endIndex}] de ${arquitetoIds.length} arquitetos`)
   
   try {
-    // Marcar como em andamento
-    await supabase
-      .from('tendenci_campaign_dispatches')
-      .update({ 
-        status: 'em_andamento',
-        iniciado_em: new Date().toISOString()
-      })
-      .eq('id', dispatchId)
+    // Marcar como em andamento (apenas no primeiro lote)
+    if (startIndex === 0) {
+      await supabase
+        .from('tendenci_campaign_dispatches')
+        .update({ 
+          status: 'em_andamento',
+          iniciado_em: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', dispatchId)
+    }
 
     // Buscar dados da campanha
     const { data: campanha } = await supabase
@@ -74,22 +82,31 @@ async function processarCampanha(
       throw new Error('Instância WhatsApp não encontrada')
     }
 
-    // Buscar arquitetos
+    // Buscar arquitetos do lote atual
+    const batchArquitetoIds = arquitetoIds.slice(startIndex, endIndex)
     const { data: arquitetos } = await supabase
       .from('architects')
       .select('id, name, phone')
-      .in('id', arquitetoIds)
+      .in('id', batchArquitetoIds)
 
     if (!arquitetos || arquitetos.length === 0) {
-      throw new Error('Nenhum arquiteto encontrado')
+      throw new Error('Nenhum arquiteto encontrado no lote')
     }
 
-    let sucessoCount = 0
-    let erroCount = 0
+    // Buscar contadores atuais do dispatch
+    const { data: currentDispatch } = await supabase
+      .from('tendenci_campaign_dispatches')
+      .select('enviados_sucesso, enviados_erro')
+      .eq('id', dispatchId)
+      .single()
+
+    let sucessoCount = currentDispatch?.enviados_sucesso || 0
+    let erroCount = currentDispatch?.enviados_erro || 0
 
     // Loop por cada arquiteto com delay de 3 minutos
     for (let i = 0; i < arquitetos.length; i++) {
       const arquiteto = arquitetos[i]
+      const globalIndex = startIndex + i // Índice global na lista completa
       
       // Verificar cancelamento antes de cada envio
       const { data: currentDispatch } = await supabase
@@ -99,20 +116,21 @@ async function processarCampanha(
         .single()
       
       if (currentDispatch?.status === 'cancelado') {
-        console.log(`🛑 Dispatch cancelado no arquiteto ${i + 1}/${arquitetos.length}`)
+        console.log(`🛑 Dispatch cancelado no arquiteto ${globalIndex + 1}/${arquitetoIds.length}`)
         break
       }
 
-      console.log(`📤 [${i + 1}/${arquitetos.length}] Enviando para ${arquiteto.name}...`)
+      console.log(`📤 [${globalIndex + 1}/${arquitetoIds.length}] Enviando para ${arquiteto.name}...`)
       const startTime = Date.now()
 
       // Atualizar progresso ANTES do envio
-      const progresso = Math.round(((i + 1) / arquitetos.length) * 100)
+      const progresso = Math.round(((globalIndex + 1) / arquitetoIds.length) * 100)
       await supabase
         .from('tendenci_campaign_dispatches')
         .update({
           arquiteto_atual: arquiteto.name,
-          progresso_percentual: progresso
+          progresso_percentual: progresso,
+          updated_at: new Date().toISOString()
         })
         .eq('id', dispatchId)
 
@@ -157,7 +175,8 @@ async function processarCampanha(
             .from('tendenci_campaign_dispatches')
             .update({
               enviados_sucesso: sucessoCount,
-              enviados_erro: erroCount
+              enviados_erro: erroCount,
+              updated_at: new Date().toISOString()
             })
             .eq('id', dispatchId)
         } else {
@@ -169,7 +188,8 @@ async function processarCampanha(
             .from('tendenci_campaign_dispatches')
             .update({
               enviados_sucesso: sucessoCount,
-              enviados_erro: erroCount
+              enviados_erro: erroCount,
+              updated_at: new Date().toISOString()
             })
             .eq('id', dispatchId)
         }
@@ -184,12 +204,13 @@ async function processarCampanha(
           .from('tendenci_campaign_dispatches')
           .update({
             enviados_sucesso: sucessoCount,
-            enviados_erro: erroCount
+            enviados_erro: erroCount,
+            updated_at: new Date().toISOString()
           })
           .eq('id', dispatchId)
       }
 
-      // Delay de 3 minutos antes do próximo (exceto no último)
+      // Delay de 3 minutos antes do próximo (exceto no último do lote)
       if (i < arquitetos.length - 1) {
         console.log(`⏳ Aguardando 3 minutos antes do próximo envio...`)
         const foiCancelado = await delayWithCancel(180, dispatchId, supabase)
@@ -202,7 +223,8 @@ async function processarCampanha(
               enviados_sucesso: sucessoCount,
               enviados_erro: erroCount,
               progresso_percentual: progresso,
-              concluido_em: new Date().toISOString()
+              concluido_em: new Date().toISOString(),
+              updated_at: new Date().toISOString()
             })
             .eq('id', dispatchId)
           return
@@ -210,7 +232,43 @@ async function processarCampanha(
       }
     }
 
-    // Marcar como concluído
+    // Se ainda há mais arquitetos para processar, reinvocar para próximo lote
+    if (!isLastBatch) {
+      console.log(`🔄 Lote concluído. Iniciando próximo lote...`)
+      
+      // Aguardar 3 minutos antes de iniciar próximo lote
+      const foiCancelado = await delayWithCancel(180, dispatchId, supabase)
+      if (foiCancelado) {
+        console.log(`🛑 Dispatch cancelado antes do próximo lote`)
+        await supabase
+          .from('tendenci_campaign_dispatches')
+          .update({
+            status: 'cancelado',
+            enviados_sucesso: sucessoCount,
+            enviados_erro: erroCount,
+            progresso_percentual: Math.round((endIndex / arquitetoIds.length) * 100),
+            concluido_em: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', dispatchId)
+        return
+      }
+      
+      // Reinvocar função recursivamente para próximo lote
+      await processarCampanha(
+        dispatchId,
+        campanhaId,
+        arquitetoIds,
+        supabase,
+        evolutionUrl,
+        evolutionApiKey,
+        authToken,
+        endIndex // Próximo índice inicial
+      )
+      return
+    }
+
+    // Marcar como concluído (apenas no último lote)
     await supabase
       .from('tendenci_campaign_dispatches')
       .update({
@@ -218,7 +276,8 @@ async function processarCampanha(
         enviados_sucesso: sucessoCount,
         enviados_erro: erroCount,
         progresso_percentual: 100,
-        concluido_em: new Date().toISOString()
+        concluido_em: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       })
       .eq('id', dispatchId)
 
@@ -238,7 +297,8 @@ async function processarCampanha(
       .update({
         status: 'erro',
         erro_mensagem: error instanceof Error ? error.message : 'Erro desconhecido',
-        concluido_em: new Date().toISOString()
+        concluido_em: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       })
       .eq('id', dispatchId)
   }
