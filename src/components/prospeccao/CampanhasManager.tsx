@@ -912,8 +912,8 @@ export function CampanhasManager() {
 
       {/* Audio Recorder Dialog */}
       <AudioRecorder
-        open={isRecorderOpen}
-        onOpenChange={setIsRecorderOpen}
+        isOpen={isRecorderOpen}
+        onClose={() => setIsRecorderOpen(false)}
         onSave={handleSaveRecording}
       />
 
