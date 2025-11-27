@@ -13,6 +13,7 @@ interface ExecuteCampaignRequest {
 // 🚀 NOVA ARQUITETURA: Processa 1 arquiteto por invocação + auto-invoke via pg_net
 async function processNextInQueue(supabase: any, evolutionUrl: string, evolutionApiKey: string) {
   console.log('🔍 Buscando próximo arquiteto na fila...')
+  console.log('⏰ Timestamp atual:', new Date().toISOString())
   
   // Buscar próximo arquiteto pendente ordenado por agendado_para
   const { data: nextInQueue, error: queueError } = await supabase
@@ -37,10 +38,23 @@ async function processNextInQueue(supabase: any, evolutionUrl: string, evolution
     .limit(1)
     .single()
 
-  if (queueError || !nextInQueue) {
+  if (queueError) {
+    console.log('⚠️ Erro ao buscar fila:', queueError)
+    return null
+  }
+
+  if (!nextInQueue) {
     console.log('✅ Nenhum arquiteto pendente na fila')
     return null
   }
+
+  console.log('📋 Item encontrado na fila:', {
+    id: nextInQueue.id,
+    arquiteto: nextInQueue.architects.name,
+    position: nextInQueue.position,
+    agendado_para: nextInQueue.agendado_para,
+    dispatch_id: nextInQueue.dispatch_id
+  })
 
   // Verificar se dispatch foi cancelado
   if (nextInQueue.tendenci_campaign_dispatches.status === 'cancelado') {
@@ -52,19 +66,33 @@ async function processNextInQueue(supabase: any, evolutionUrl: string, evolution
     return null
   }
 
-  console.log(`📤 Processando: ${nextInQueue.architects.name} (posição ${nextInQueue.position})`)
+  console.log(`📤 Processando: ${nextInQueue.architects.name} (posição ${nextInQueue.position}/${nextInQueue.tendenci_campaign_dispatches.total_arquitetos})`)
 
   const startTime = Date.now()
   
   try {
     const campanha = nextInQueue.tendenci_prospec_arq_campaigns
-    const instanceName = campanha.tendenci_whatsapp_connections?.instance_name
-    const instanceId = campanha.tendenci_whatsapp_connections?.instance_id
+    
+    // Supabase retorna relacionamentos como array
+    const whatsappConn = Array.isArray(campanha.tendenci_whatsapp_connections)
+      ? campanha.tendenci_whatsapp_connections[0]
+      : campanha.tendenci_whatsapp_connections
+    
+    const instanceName = whatsappConn?.instance_name
+    const instanceId = whatsappConn?.instance_id
+
+    console.log('📞 Detalhes do envio:', {
+      tipo: campanha.tipo_envio,
+      instance: instanceName,
+      telefone_arquiteto: nextInQueue.architects.phone?.substring(0, 6) + '****'
+    })
 
     // Atualizar progresso no dispatch
     const currentPosition = nextInQueue.position
     const totalArquitetos = nextInQueue.tendenci_campaign_dispatches.total_arquitetos
     const progresso = Math.round((currentPosition / totalArquitetos) * 100)
+
+    console.log(`📊 Atualizando progresso: ${progresso}% (${currentPosition}/${totalArquitetos})`)
 
     await supabase
       .from('tendenci_campaign_dispatches')
@@ -76,6 +104,7 @@ async function processNextInQueue(supabase: any, evolutionUrl: string, evolution
       .eq('id', nextInQueue.dispatch_id)
 
     // Chamar dispatch-campaign
+    console.log('🚀 Chamando dispatch-campaign...')
     const dispatchResponse = await fetch(
       `${Deno.env.get('SUPABASE_URL')}/functions/v1/dispatch-campaign`,
       {
@@ -106,6 +135,12 @@ async function processNextInQueue(supabase: any, evolutionUrl: string, evolution
     const endTime = Date.now()
     const tempoSegundos = Math.round((endTime - startTime) / 1000)
 
+    console.log('📬 Resposta do dispatch-campaign:', {
+      status: result.status,
+      tempo: `${tempoSegundos}s`,
+      hasError: !!result.error
+    })
+
     if (result.status === 'success') {
       console.log(`✅ Sucesso em ${tempoSegundos}s`)
       
@@ -119,16 +154,19 @@ async function processNextInQueue(supabase: any, evolutionUrl: string, evolution
         .eq('id', nextInQueue.id)
 
       // Incrementar contador de sucesso
+      const newSuccessCount = nextInQueue.tendenci_campaign_dispatches.enviados_sucesso + 1
+      console.log(`📈 Incrementando contador de sucesso: ${newSuccessCount}`)
+      
       await supabase
         .from('tendenci_campaign_dispatches')
         .update({
-          enviados_sucesso: nextInQueue.tendenci_campaign_dispatches.enviados_sucesso + 1,
+          enviados_sucesso: newSuccessCount,
           updated_at: new Date().toISOString()
         })
         .eq('id', nextInQueue.dispatch_id)
 
     } else {
-      console.error(`❌ Erro: ${result.error}`)
+      console.error(`❌ Erro no envio: ${result.error}`)
       
       // Marcar como erro na fila
       await supabase
@@ -141,17 +179,23 @@ async function processNextInQueue(supabase: any, evolutionUrl: string, evolution
         .eq('id', nextInQueue.id)
 
       // Incrementar contador de erro
+      const newErrorCount = nextInQueue.tendenci_campaign_dispatches.enviados_erro + 1
+      console.log(`📉 Incrementando contador de erro: ${newErrorCount}`)
+      
       await supabase
         .from('tendenci_campaign_dispatches')
         .update({
-          enviados_erro: nextInQueue.tendenci_campaign_dispatches.enviados_erro + 1,
+          enviados_erro: newErrorCount,
           updated_at: new Date().toISOString()
         })
         .eq('id', nextInQueue.dispatch_id)
     }
 
   } catch (err) {
-    console.error(`💥 Exceção:`, err)
+    console.error(`💥 Exceção durante processamento:`, {
+      message: err instanceof Error ? err.message : 'Unknown',
+      stack: err instanceof Error ? err.stack : undefined
+    })
     
     await supabase
       .from('tendenci_campaign_queue')
@@ -172,11 +216,15 @@ async function processNextInQueue(supabase: any, evolutionUrl: string, evolution
   }
 
   // Verificar se há mais pendentes neste dispatch
+  console.log('🔍 Verificando se há mais itens pendentes neste dispatch...')
+  
   const { count: pendingCount } = await supabase
     .from('tendenci_campaign_queue')
     .select('*', { count: 'exact', head: true })
     .eq('dispatch_id', nextInQueue.dispatch_id)
     .eq('status', 'pendente')
+
+  console.log(`📊 Itens pendentes restantes: ${pendingCount || 0}`)
 
   if (pendingCount === 0) {
     // Marcar dispatch como concluído
@@ -198,6 +246,7 @@ async function processNextInQueue(supabase: any, evolutionUrl: string, evolution
       .update({ status: 'enviado' })
       .eq('id', nextInQueue.campanha_id)
 
+    console.log('🏁 Campanha finalizada, não agendando próximo envio')
     return null // Não auto-invocar
   }
 
@@ -206,19 +255,26 @@ async function processNextInQueue(supabase: any, evolutionUrl: string, evolution
   
   const nextInvocationTime = new Date(Date.now() + (3 * 60 * 1000)) // 3 minutos
   
-  await supabase.rpc('http_post', {
+  // CORREÇÃO CRÍTICA: http_post requer JSONB strings, não objetos
+  const { data: httpData, error: httpError } = await supabase.rpc('http_post', {
     url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/execute-campaign-background`,
-    headers: {
+    headers: JSON.stringify({
       'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
       'Content-Type': 'application/json',
       'apikey': Deno.env.get('SUPABASE_ANON_KEY') || ''
-    },
+    }),
     body: JSON.stringify({ auto_invoke: true }),
-    timeout_milliseconds: 30000,
-    method: 'POST'
+    params: JSON.stringify({}),
+    timeout_milliseconds: 30000
   })
 
-  return { scheduled: true, next_at: nextInvocationTime }
+  if (httpError) {
+    console.error('❌ Erro ao agendar próximo envio via pg_net:', httpError)
+  } else {
+    console.log('✅ Próximo envio agendado com sucesso:', httpData)
+  }
+
+  return { scheduled: true, next_at: nextInvocationTime, http_result: httpData }
 }
 
 Deno.serve(async (req) => {
@@ -278,6 +334,113 @@ Deno.serve(async (req) => {
       )
     }
 
+    // Modo 3: Recuperação de fila (reprocessar itens atrasados)
+    if (body.recover_queue) {
+      console.log('🔧 Modo recuperação de fila')
+      
+      // Buscar itens pendentes atrasados (mais de 5 minutos do agendado)
+      const { data: overdueItems, error: overdueError } = await supabase
+        .from('tendenci_campaign_queue')
+        .select('id, dispatch_id, arquiteto_id, agendado_para')
+        .eq('status', 'pendente')
+        .lt('agendado_para', new Date(Date.now() - (5 * 60 * 1000)).toISOString())
+        .limit(10)
+      
+      if (overdueError || !overdueItems || overdueItems.length === 0) {
+        return new Response(
+          JSON.stringify({ 
+            success: true,
+            message: 'Nenhum item atrasado na fila',
+            recovered: 0
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 200
+          }
+        )
+      }
+
+      console.log(`🔧 Encontrados ${overdueItems.length} itens atrasados, reprocessando...`)
+
+      // Reagendar itens atrasados para processamento imediato
+      for (const item of overdueItems) {
+        await supabase
+          .from('tendenci_campaign_queue')
+          .update({ agendado_para: new Date().toISOString() })
+          .eq('id', item.id)
+      }
+
+      // Iniciar processamento
+      const result = await processNextInQueue(supabase, evolutionUrl, evolutionApiKey)
+      
+      return new Response(
+        JSON.stringify({ 
+          success: true,
+          message: `${overdueItems.length} itens reagendados`,
+          recovered: overdueItems.length,
+          processed: !!result
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200
+        }
+      )
+    }
+
+    // Modo 4: Limpar dispatches travados
+    if (body.cleanup_stalled) {
+      console.log('🧹 Modo limpeza de dispatches travados')
+      
+      // Buscar dispatches em_andamento sem atividade há 2+ horas
+      const twoHoursAgo = new Date(Date.now() - (2 * 60 * 60 * 1000)).toISOString()
+      
+      const { data: stalledDispatches, error: stalledError } = await supabase
+        .from('tendenci_campaign_dispatches')
+        .select('id, campanha_id, total_arquitetos, enviados_sucesso, enviados_erro')
+        .eq('status', 'em_andamento')
+        .lt('updated_at', twoHoursAgo)
+      
+      if (stalledError || !stalledDispatches || stalledDispatches.length === 0) {
+        return new Response(
+          JSON.stringify({ 
+            success: true,
+            message: 'Nenhum dispatch travado encontrado',
+            cleaned: 0
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 200
+          }
+        )
+      }
+
+      console.log(`🧹 Limpando ${stalledDispatches.length} dispatches travados...`)
+
+      for (const dispatch of stalledDispatches) {
+        await supabase
+          .from('tendenci_campaign_dispatches')
+          .update({
+            status: 'erro',
+            erro_mensagem: 'Dispatch travado - timeout após 2 horas sem atividade',
+            concluido_em: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', dispatch.id)
+      }
+      
+      return new Response(
+        JSON.stringify({ 
+          success: true,
+          message: `${stalledDispatches.length} dispatches marcados como erro`,
+          cleaned: stalledDispatches.length
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200
+        }
+      )
+    }
+
     // Modo 2: Iniciar nova campanha (enfileirar arquitetos)
     const { campanha_id, arquiteto_ids }: ExecuteCampaignRequest = body
 
@@ -313,6 +476,68 @@ Deno.serve(async (req) => {
     }
 
     console.log(`📋 Nova campanha ${campanha_id} com ${arquiteto_ids.length} arquitetos`)
+
+    // FASE 5: Validar instância WhatsApp antes de enfileirar
+    const { data: campanha, error: campanhaError } = await supabase
+      .from('tendenci_prospec_arq_campaigns')
+      .select(`
+        whatsapp_connection_id,
+        tendenci_whatsapp_connections(instance_name, status)
+      `)
+      .eq('id', campanha_id)
+      .single()
+
+    if (campanhaError || !campanha) {
+      console.error('❌ Campanha não encontrada:', campanhaError)
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: 'Campanha não encontrada'
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400
+        }
+      )
+    }
+
+    // Supabase retorna relacionamentos como array
+    const whatsappConnection = Array.isArray(campanha.tendenci_whatsapp_connections) 
+      ? campanha.tendenci_whatsapp_connections[0] 
+      : campanha.tendenci_whatsapp_connections
+
+    if (!campanha.whatsapp_connection_id || !whatsappConnection) {
+      console.error('❌ Instância WhatsApp não configurada para esta campanha')
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: 'Instância WhatsApp não configurada. Selecione uma instância conectada antes de disparar.'
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400
+        }
+      )
+    }
+
+    const instanceStatus = whatsappConnection.status
+    const instanceName = whatsappConnection.instance_name
+
+    if (instanceStatus !== 'connected') {
+      console.error(`❌ Instância ${instanceName} não está conectada (status: ${instanceStatus})`)
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: `Instância WhatsApp "${instanceName}" não está conectada. Status: ${instanceStatus}`
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400
+        }
+      )
+    }
+
+    console.log(`✅ Validação OK: Instância ${instanceName} conectada`)
 
     // Criar registro de dispatch
     const { data: dispatch, error: dispatchError } = await supabase
