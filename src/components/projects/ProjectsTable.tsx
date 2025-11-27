@@ -11,6 +11,7 @@ import { ProjectDetailSheet } from "./ProjectDetailSheet";
 import { EditProjectDialog } from "./EditProjectDialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { usePermissions } from "@/hooks/usePermissions";
 
 interface ProjectsTableProps {
   filters: any;
@@ -24,6 +25,7 @@ export function ProjectsTable({ filters }: ProjectsTableProps) {
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<any>(null);
+  const { isMaster } = usePermissions();
 
   useEffect(() => {
     fetchProjects();
@@ -172,14 +174,16 @@ export function ProjectsTable({ filters }: ProjectsTableProps) {
                         <Button size="sm" variant="ghost" onClick={() => handleEdit(project)}>
                           <Edit className="w-4 h-4" />
                         </Button>
-                        <Button 
-                          size="sm" 
-                          variant="ghost" 
-                          onClick={() => handleDelete(project)}
-                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        {isMaster && (
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            onClick={() => handleDelete(project)}
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
