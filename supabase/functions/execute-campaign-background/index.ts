@@ -342,7 +342,7 @@ Deno.serve(async (req) => {
       ? campanha.tendenci_whatsapp_connections[0]
       : campanha.tendenci_whatsapp_connections
 
-    if (!whatsappConn || whatsappConn.status !== 'open') {
+    if (!whatsappConn || whatsappConn.status !== 'connected') {
       console.error('❌ [MAIN] Instância WhatsApp não conectada')
       return new Response(
         JSON.stringify({ 
