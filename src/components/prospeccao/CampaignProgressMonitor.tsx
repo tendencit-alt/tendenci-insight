@@ -34,6 +34,7 @@ export function CampaignProgressMonitor() {
   const [expandedRecent, setExpandedRecent] = useState(false);
   const [errorDetailsOpen, setErrorDetailsOpen] = useState(false);
   const [selectedDispatchId, setSelectedDispatchId] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const fetchDispatches = async () => {
     // Buscar campanhas em andamento
@@ -77,6 +78,47 @@ export function CampaignProgressMonitor() {
 
     setLoading(false);
   };
+
+  // 🔄 CONTROLE AUTOMÁTICO: Processar próximo item a cada 3 minutos
+  useEffect(() => {
+    const activeDispatch = dispatches.find(d => d.status === 'em_andamento');
+    
+    if (!activeDispatch || isProcessing) return;
+
+    const processNext = async () => {
+      setIsProcessing(true);
+      try {
+        console.log('⏰ [FRONTEND] Chamando process_next automaticamente...');
+        
+        const { data, error } = await supabase.functions.invoke('execute-campaign-background', {
+          body: { process_next: true }
+        });
+
+        if (error) {
+          console.error('❌ [FRONTEND] Erro ao processar próximo:', error);
+        } else {
+          console.log('✅ [FRONTEND] Próximo item processado:', data);
+          
+          // Se não há mais itens, parar o loop
+          if (!data.has_more) {
+            console.log('🏁 [FRONTEND] Campanha concluída');
+          }
+        }
+      } catch (err) {
+        console.error('💥 [FRONTEND] Exceção ao processar:', err);
+      } finally {
+        setIsProcessing(false);
+      }
+    };
+
+    // Chamar imediatamente
+    processNext();
+
+    // Repetir a cada 3 minutos
+    const interval = setInterval(processNext, 3 * 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, [dispatches, isProcessing]);
 
   useEffect(() => {
     fetchDispatches();
@@ -125,8 +167,8 @@ export function CampaignProgressMonitor() {
       )
       .subscribe();
 
-    // Poll a cada 3 segundos para garantir sincronização
-    const interval = setInterval(fetchDispatches, 3000);
+    // Poll a cada 5 segundos para sincronização
+    const interval = setInterval(fetchDispatches, 5000);
 
     return () => {
       channel.unsubscribe();
@@ -146,6 +188,30 @@ export function CampaignProgressMonitor() {
     }
 
     toast.success('Dispatch cancelado! O processamento será interrompido.');
+  };
+
+  const handleResumeQueue = async (dispatchId: string) => {
+    setIsProcessing(true);
+    try {
+      console.log('▶️ [FRONTEND] Retomando fila manualmente...');
+      
+      const { data, error } = await supabase.functions.invoke('execute-campaign-background', {
+        body: { process_next: true }
+      });
+
+      if (error) {
+        console.error('❌ [FRONTEND] Erro ao retomar:', error);
+        toast.error('Erro ao retomar campanha');
+      } else {
+        console.log('✅ [FRONTEND] Fila retomada:', data);
+        toast.success('Processamento retomado!');
+      }
+    } catch (err) {
+      console.error('💥 [FRONTEND] Exceção ao retomar:', err);
+      toast.error('Erro ao retomar campanha');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const getStatusBadge = (status: CampaignDispatch['status']) => {
@@ -298,17 +364,33 @@ export function CampaignProgressMonitor() {
               </div>
             )}
 
-            {/* Botão Cancelar */}
+            {/* Botões de Controle */}
             {dispatch.status === 'em_andamento' && (
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => handleCancelDispatch(dispatch.id)}
-                className="w-full"
-              >
-                <Ban className="w-4 h-4 mr-2" />
-                Cancelar Campanha
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleResumeQueue(dispatch.id)}
+                  disabled={isProcessing}
+                  className="flex-1"
+                >
+                  {isProcessing ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Clock className="w-4 h-4 mr-2" />
+                  )}
+                  Retomar Fila
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => handleCancelDispatch(dispatch.id)}
+                  className="flex-1"
+                >
+                  <Ban className="w-4 h-4 mr-2" />
+                  Cancelar
+                </Button>
+              </div>
             )}
 
             {/* Botão Ver Erros */}

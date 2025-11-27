@@ -10,17 +10,22 @@ interface ExecuteCampaignRequest {
   arquiteto_ids: string[]
 }
 
-// 🚀 NOVA ARQUITETURA: Processa 1 arquiteto por invocação + auto-invoke via pg_net
-async function processNextInQueue(supabase: any, evolutionUrl: string, evolutionApiKey: string) {
-  console.log('🔍 Buscando próximo arquiteto na fila...')
-  console.log('⏰ Timestamp atual:', new Date().toISOString())
+interface ProcessNextRequest {
+  process_next: boolean
+  dispatch_id?: string
+}
+
+// 🎯 NOVA ARQUITETURA: Processa APENAS 1 arquiteto por invocação
+// Frontend controla o intervalo de 3 minutos entre invocações
+async function processNextInQueue(supabase: any) {
+  console.log('🔍 [PROCESS] Buscando próximo arquiteto pendente...')
   
   // Buscar próximo arquiteto pendente ordenado por agendado_para
   const { data: nextInQueue, error: queueError } = await supabase
     .from('tendenci_campaign_queue')
     .select(`
       *,
-      tendenci_campaign_dispatches(id, status, enviados_sucesso, enviados_erro, total_arquitetos),
+      tendenci_campaign_dispatches!inner(id, status, enviados_sucesso, enviados_erro, total_arquitetos),
       tendenci_prospec_arq_campaigns(
         tipo_envio, 
         conteudo_texto, 
@@ -33,46 +38,40 @@ async function processNextInQueue(supabase: any, evolutionUrl: string, evolution
       architects(id, name, phone)
     `)
     .eq('status', 'pendente')
+    .eq('tendenci_campaign_dispatches.status', 'em_andamento')
     .lte('agendado_para', new Date().toISOString())
     .order('agendado_para', { ascending: true })
     .limit(1)
     .single()
 
   if (queueError) {
-    console.log('⚠️ Erro ao buscar fila:', queueError)
-    return null
+    console.log('⚠️ [PROCESS] Nenhum item pendente encontrado')
+    return { 
+      success: true, 
+      processed: false, 
+      has_more: false,
+      message: 'Nenhum item pendente'
+    }
   }
 
   if (!nextInQueue) {
-    console.log('✅ Nenhum arquiteto pendente na fila')
-    return null
+    console.log('✅ [PROCESS] Fila vazia')
+    return { 
+      success: true, 
+      processed: false, 
+      has_more: false,
+      message: 'Fila vazia'
+    }
   }
 
-  console.log('📋 Item encontrado na fila:', {
-    id: nextInQueue.id,
-    arquiteto: nextInQueue.architects.name,
-    position: nextInQueue.position,
-    agendado_para: nextInQueue.agendado_para,
-    dispatch_id: nextInQueue.dispatch_id
-  })
-
-  // Verificar se dispatch foi cancelado
-  if (nextInQueue.tendenci_campaign_dispatches.status === 'cancelado') {
-    console.log(`🛑 Dispatch ${nextInQueue.dispatch_id} cancelado, pulando`)
-    await supabase
-      .from('tendenci_campaign_queue')
-      .update({ status: 'cancelado' })
-      .eq('id', nextInQueue.id)
-    return null
-  }
-
-  console.log(`📤 Processando: ${nextInQueue.architects.name} (posição ${nextInQueue.position}/${nextInQueue.tendenci_campaign_dispatches.total_arquitetos})`)
+  console.log(`📤 [PROCESS] Processando: ${nextInQueue.architects.name} (posição ${nextInQueue.position}/${nextInQueue.tendenci_campaign_dispatches[0].total_arquitetos})`)
 
   const startTime = Date.now()
   
   try {
+    const dispatch = nextInQueue.tendenci_campaign_dispatches[0]
     const campanha = nextInQueue.tendenci_prospec_arq_campaigns
-    
+
     // Supabase retorna relacionamentos como array
     const whatsappConn = Array.isArray(campanha.tendenci_whatsapp_connections)
       ? campanha.tendenci_whatsapp_connections[0]
@@ -81,18 +80,12 @@ async function processNextInQueue(supabase: any, evolutionUrl: string, evolution
     const instanceName = whatsappConn?.instance_name
     const instanceId = whatsappConn?.instance_id
 
-    console.log('📞 Detalhes do envio:', {
-      tipo: campanha.tipo_envio,
-      instance: instanceName,
-      telefone_arquiteto: nextInQueue.architects.phone?.substring(0, 6) + '****'
-    })
-
     // Atualizar progresso no dispatch
     const currentPosition = nextInQueue.position
-    const totalArquitetos = nextInQueue.tendenci_campaign_dispatches.total_arquitetos
+    const totalArquitetos = dispatch.total_arquitetos
     const progresso = Math.round((currentPosition / totalArquitetos) * 100)
 
-    console.log(`📊 Atualizando progresso: ${progresso}% (${currentPosition}/${totalArquitetos})`)
+    console.log(`📊 [PROCESS] Atualizando progresso: ${progresso}%`)
 
     await supabase
       .from('tendenci_campaign_dispatches')
@@ -104,7 +97,7 @@ async function processNextInQueue(supabase: any, evolutionUrl: string, evolution
       .eq('id', nextInQueue.dispatch_id)
 
     // Chamar dispatch-campaign
-    console.log('🚀 Chamando dispatch-campaign...')
+    console.log('🚀 [PROCESS] Chamando dispatch-campaign...')
     const dispatchResponse = await fetch(
       `${Deno.env.get('SUPABASE_URL')}/functions/v1/dispatch-campaign`,
       {
@@ -135,14 +128,8 @@ async function processNextInQueue(supabase: any, evolutionUrl: string, evolution
     const endTime = Date.now()
     const tempoSegundos = Math.round((endTime - startTime) / 1000)
 
-    console.log('📬 Resposta do dispatch-campaign:', {
-      status: result.status,
-      tempo: `${tempoSegundos}s`,
-      hasError: !!result.error
-    })
-
     if (result.status === 'success') {
-      console.log(`✅ Sucesso em ${tempoSegundos}s`)
+      console.log(`✅ [PROCESS] Sucesso em ${tempoSegundos}s`)
       
       // Marcar como enviado na fila
       await supabase
@@ -154,19 +141,16 @@ async function processNextInQueue(supabase: any, evolutionUrl: string, evolution
         .eq('id', nextInQueue.id)
 
       // Incrementar contador de sucesso
-      const newSuccessCount = nextInQueue.tendenci_campaign_dispatches.enviados_sucesso + 1
-      console.log(`📈 Incrementando contador de sucesso: ${newSuccessCount}`)
-      
       await supabase
         .from('tendenci_campaign_dispatches')
         .update({
-          enviados_sucesso: newSuccessCount,
+          enviados_sucesso: dispatch.enviados_sucesso + 1,
           updated_at: new Date().toISOString()
         })
         .eq('id', nextInQueue.dispatch_id)
 
     } else {
-      console.error(`❌ Erro no envio: ${result.error}`)
+      console.error(`❌ [PROCESS] Erro no envio: ${result.error}`)
       
       // Marcar como erro na fila
       await supabase
@@ -179,23 +163,17 @@ async function processNextInQueue(supabase: any, evolutionUrl: string, evolution
         .eq('id', nextInQueue.id)
 
       // Incrementar contador de erro
-      const newErrorCount = nextInQueue.tendenci_campaign_dispatches.enviados_erro + 1
-      console.log(`📉 Incrementando contador de erro: ${newErrorCount}`)
-      
       await supabase
         .from('tendenci_campaign_dispatches')
         .update({
-          enviados_erro: newErrorCount,
+          enviados_erro: dispatch.enviados_erro + 1,
           updated_at: new Date().toISOString()
         })
         .eq('id', nextInQueue.dispatch_id)
     }
 
   } catch (err) {
-    console.error(`💥 Exceção durante processamento:`, {
-      message: err instanceof Error ? err.message : 'Unknown',
-      stack: err instanceof Error ? err.stack : undefined
-    })
+    console.error(`💥 [PROCESS] Exceção:`, err)
     
     await supabase
       .from('tendenci_campaign_queue')
@@ -209,26 +187,24 @@ async function processNextInQueue(supabase: any, evolutionUrl: string, evolution
     await supabase
       .from('tendenci_campaign_dispatches')
       .update({
-        enviados_erro: nextInQueue.tendenci_campaign_dispatches.enviados_erro + 1,
+        enviados_erro: nextInQueue.tendenci_campaign_dispatches[0].enviados_erro + 1,
         updated_at: new Date().toISOString()
       })
       .eq('id', nextInQueue.dispatch_id)
   }
 
   // Verificar se há mais pendentes neste dispatch
-  console.log('🔍 Verificando se há mais itens pendentes neste dispatch...')
-  
   const { count: pendingCount } = await supabase
     .from('tendenci_campaign_queue')
     .select('*', { count: 'exact', head: true })
     .eq('dispatch_id', nextInQueue.dispatch_id)
     .eq('status', 'pendente')
 
-  console.log(`📊 Itens pendentes restantes: ${pendingCount || 0}`)
+  console.log(`📊 [PROCESS] Itens pendentes restantes: ${pendingCount || 0}`)
 
   if (pendingCount === 0) {
     // Marcar dispatch como concluído
-    console.log(`✅ Dispatch ${nextInQueue.dispatch_id} concluído!`)
+    console.log(`✅ [PROCESS] Dispatch ${nextInQueue.dispatch_id} concluído!`)
     
     await supabase
       .from('tendenci_campaign_dispatches')
@@ -246,35 +222,23 @@ async function processNextInQueue(supabase: any, evolutionUrl: string, evolution
       .update({ status: 'enviado' })
       .eq('id', nextInQueue.campanha_id)
 
-    console.log('🏁 Campanha finalizada, não agendando próximo envio')
-    return null // Não auto-invocar
+    return {
+      success: true,
+      processed: true,
+      has_more: false,
+      message: 'Dispatch concluído',
+      dispatch_id: nextInQueue.dispatch_id
+    }
   }
 
-  // 🔄 AUTO-INVOKE: Agendar próxima execução em 3 minutos via pg_net
-  console.log(`⏳ Agendando próximo envio em 3 minutos...`)
-  
-  const nextInvocationTime = new Date(Date.now() + (3 * 60 * 1000)) // 3 minutos
-  
-  // CORREÇÃO CRÍTICA: http_post requer JSONB strings, não objetos
-  const { data: httpData, error: httpError } = await supabase.rpc('http_post', {
-    url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/execute-campaign-background`,
-    headers: JSON.stringify({
-      'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
-      'Content-Type': 'application/json',
-      'apikey': Deno.env.get('SUPABASE_ANON_KEY') || ''
-    }),
-    body: JSON.stringify({ auto_invoke: true }),
-    params: JSON.stringify({}),
-    timeout_milliseconds: 30000
-  })
-
-  if (httpError) {
-    console.error('❌ Erro ao agendar próximo envio via pg_net:', httpError)
-  } else {
-    console.log('✅ Próximo envio agendado com sucesso:', httpData)
+  return {
+    success: true,
+    processed: true,
+    has_more: true,
+    message: 'Item processado com sucesso',
+    dispatch_id: nextInQueue.dispatch_id,
+    remaining: pendingCount
   }
-
-  return { scheduled: true, next_at: nextInvocationTime, http_result: httpData }
 }
 
 Deno.serve(async (req) => {
@@ -284,7 +248,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    console.log('🎯 Execute Campaign Background - Iniciando')
+    console.log('🎯 [MAIN] Execute Campaign Background - Iniciando')
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -297,36 +261,16 @@ Deno.serve(async (req) => {
       }
     )
 
-    const evolutionUrl = Deno.env.get('EVOLUTION_API_URL')
-    const evolutionApiKey = Deno.env.get('EVOLUTION_API_KEY')
+    const body = await req.json() as ExecuteCampaignRequest | ProcessNextRequest
 
-    if (!evolutionUrl || !evolutionApiKey) {
-      return new Response(
-        JSON.stringify({ 
-          success: false,
-          error: 'Evolution API não configurada'
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400
-        }
-      )
-    }
-
-    const body = await req.json()
-    
-    // Modo 1: Auto-invoke (processa próximo da fila)
-    if (body.auto_invoke) {
-      console.log('🔄 Modo auto-invoke')
+    // ⚡ MODO 1: Processar próximo item da fila (chamado pelo frontend)
+    if ('process_next' in body && body.process_next) {
+      console.log('🔄 [MAIN] Modo: process_next')
       
-      const result = await processNextInQueue(supabase, evolutionUrl, evolutionApiKey)
+      const result = await processNextInQueue(supabase)
       
       return new Response(
-        JSON.stringify({ 
-          success: true,
-          processed: !!result,
-          ...result
-        }),
+        JSON.stringify(result),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 200
@@ -334,115 +278,8 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Modo 3: Recuperação de fila (reprocessar itens atrasados)
-    if (body.recover_queue) {
-      console.log('🔧 Modo recuperação de fila')
-      
-      // Buscar itens pendentes atrasados (mais de 5 minutos do agendado)
-      const { data: overdueItems, error: overdueError } = await supabase
-        .from('tendenci_campaign_queue')
-        .select('id, dispatch_id, arquiteto_id, agendado_para')
-        .eq('status', 'pendente')
-        .lt('agendado_para', new Date(Date.now() - (5 * 60 * 1000)).toISOString())
-        .limit(10)
-      
-      if (overdueError || !overdueItems || overdueItems.length === 0) {
-        return new Response(
-          JSON.stringify({ 
-            success: true,
-            message: 'Nenhum item atrasado na fila',
-            recovered: 0
-          }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 200
-          }
-        )
-      }
-
-      console.log(`🔧 Encontrados ${overdueItems.length} itens atrasados, reprocessando...`)
-
-      // Reagendar itens atrasados para processamento imediato
-      for (const item of overdueItems) {
-        await supabase
-          .from('tendenci_campaign_queue')
-          .update({ agendado_para: new Date().toISOString() })
-          .eq('id', item.id)
-      }
-
-      // Iniciar processamento
-      const result = await processNextInQueue(supabase, evolutionUrl, evolutionApiKey)
-      
-      return new Response(
-        JSON.stringify({ 
-          success: true,
-          message: `${overdueItems.length} itens reagendados`,
-          recovered: overdueItems.length,
-          processed: !!result
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200
-        }
-      )
-    }
-
-    // Modo 4: Limpar dispatches travados
-    if (body.cleanup_stalled) {
-      console.log('🧹 Modo limpeza de dispatches travados')
-      
-      // Buscar dispatches em_andamento sem atividade há 2+ horas
-      const twoHoursAgo = new Date(Date.now() - (2 * 60 * 60 * 1000)).toISOString()
-      
-      const { data: stalledDispatches, error: stalledError } = await supabase
-        .from('tendenci_campaign_dispatches')
-        .select('id, campanha_id, total_arquitetos, enviados_sucesso, enviados_erro')
-        .eq('status', 'em_andamento')
-        .lt('updated_at', twoHoursAgo)
-      
-      if (stalledError || !stalledDispatches || stalledDispatches.length === 0) {
-        return new Response(
-          JSON.stringify({ 
-            success: true,
-            message: 'Nenhum dispatch travado encontrado',
-            cleaned: 0
-          }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 200
-          }
-        )
-      }
-
-      console.log(`🧹 Limpando ${stalledDispatches.length} dispatches travados...`)
-
-      for (const dispatch of stalledDispatches) {
-        await supabase
-          .from('tendenci_campaign_dispatches')
-          .update({
-            status: 'erro',
-            erro_mensagem: 'Dispatch travado - timeout após 2 horas sem atividade',
-            concluido_em: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', dispatch.id)
-      }
-      
-      return new Response(
-        JSON.stringify({ 
-          success: true,
-          message: `${stalledDispatches.length} dispatches marcados como erro`,
-          cleaned: stalledDispatches.length
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200
-        }
-      )
-    }
-
-    // Modo 2: Iniciar nova campanha (enfileirar arquitetos)
-    const { campanha_id, arquiteto_ids }: ExecuteCampaignRequest = body
+    // 🚀 MODO 2: Iniciar nova campanha (criar fila e dispatch)
+    const { campanha_id, arquiteto_ids } = body as ExecuteCampaignRequest
 
     // Obter usuário autenticado
     const authHeader = req.headers.get('Authorization')
@@ -475,9 +312,9 @@ Deno.serve(async (req) => {
       )
     }
 
-    console.log(`📋 Nova campanha ${campanha_id} com ${arquiteto_ids.length} arquitetos`)
+    console.log(`📋 [MAIN] Nova campanha ${campanha_id} com ${arquiteto_ids.length} arquitetos`)
 
-    // FASE 5: Validar instância WhatsApp antes de enfileirar
+    // Validar instância WhatsApp
     const { data: campanha, error: campanhaError } = await supabase
       .from('tendenci_prospec_arq_campaigns')
       .select(`
@@ -488,7 +325,7 @@ Deno.serve(async (req) => {
       .single()
 
     if (campanhaError || !campanha) {
-      console.error('❌ Campanha não encontrada:', campanhaError)
+      console.error('❌ [MAIN] Campanha não encontrada:', campanhaError)
       return new Response(
         JSON.stringify({ 
           success: false,
@@ -501,17 +338,16 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Supabase retorna relacionamentos como array
-    const whatsappConnection = Array.isArray(campanha.tendenci_whatsapp_connections) 
-      ? campanha.tendenci_whatsapp_connections[0] 
+    const whatsappConn = Array.isArray(campanha.tendenci_whatsapp_connections)
+      ? campanha.tendenci_whatsapp_connections[0]
       : campanha.tendenci_whatsapp_connections
 
-    if (!campanha.whatsapp_connection_id || !whatsappConnection) {
-      console.error('❌ Instância WhatsApp não configurada para esta campanha')
+    if (!whatsappConn || whatsappConn.status !== 'open') {
+      console.error('❌ [MAIN] Instância WhatsApp não conectada')
       return new Response(
         JSON.stringify({ 
           success: false,
-          error: 'Instância WhatsApp não configurada. Selecione uma instância conectada antes de disparar.'
+          error: 'Instância WhatsApp não está conectada. Conecte antes de disparar.'
         }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -520,42 +356,24 @@ Deno.serve(async (req) => {
       )
     }
 
-    const instanceStatus = whatsappConnection.status
-    const instanceName = whatsappConnection.instance_name
-
-    if (instanceStatus !== 'connected') {
-      console.error(`❌ Instância ${instanceName} não está conectada (status: ${instanceStatus})`)
-      return new Response(
-        JSON.stringify({ 
-          success: false,
-          error: `Instância WhatsApp "${instanceName}" não está conectada. Status: ${instanceStatus}`
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400
-        }
-      )
-    }
-
-    console.log(`✅ Validação OK: Instância ${instanceName} conectada`)
-
-    // Criar registro de dispatch
+    // Criar dispatch
     const { data: dispatch, error: dispatchError } = await supabase
       .from('tendenci_campaign_dispatches')
       .insert({
         campanha_id,
         user_id: user.id,
-        status: 'em_andamento',
         total_arquitetos: arquiteto_ids.length,
+        status: 'em_andamento',
+        progresso_percentual: 0,
         enviados_sucesso: 0,
         enviados_erro: 0,
-        progresso_percentual: 0,
         iniciado_em: new Date().toISOString()
       })
       .select()
       .single()
 
     if (dispatchError || !dispatch) {
+      console.error('❌ [MAIN] Erro ao criar dispatch:', dispatchError)
       return new Response(
         JSON.stringify({ 
           success: false,
@@ -568,14 +386,18 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Enfileirar todos os arquitetos
+    console.log(`✅ [MAIN] Dispatch criado: ${dispatch.id}`)
+
+    // Enfileirar arquitetos com intervalo de 3 minutos entre cada
     const queueItems = arquiteto_ids.map((arquiteto_id, index) => ({
       dispatch_id: dispatch.id,
-      arquiteto_id,
       campanha_id,
+      arquiteto_id,
       position: index + 1,
       status: 'pendente',
-      agendado_para: new Date(Date.now() + (index * 3 * 60 * 1000)).toISOString() // 3 min entre cada
+      // Primeiro item: agora. Demais: 3 minutos a partir do anterior
+      agendado_para: new Date(Date.now() + (index * 3 * 60 * 1000)).toISOString(),
+      tentativas: 0
     }))
 
     const { error: queueError } = await supabase
@@ -583,11 +405,21 @@ Deno.serve(async (req) => {
       .insert(queueItems)
 
     if (queueError) {
-      console.error('Erro ao enfileirar arquitetos:', queueError)
+      console.error('❌ [MAIN] Erro ao enfileirar:', queueError)
+      
+      // Marcar dispatch como erro
+      await supabase
+        .from('tendenci_campaign_dispatches')
+        .update({ 
+          status: 'erro',
+          erro_mensagem: 'Erro ao enfileirar arquitetos'
+        })
+        .eq('id', dispatch.id)
+
       return new Response(
         JSON.stringify({ 
           success: false,
-          error: 'Erro ao criar fila de envios'
+          error: 'Erro ao enfileirar arquitetos'
         }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -596,27 +428,19 @@ Deno.serve(async (req) => {
       )
     }
 
-    console.log(`✅ ${arquiteto_ids.length} arquitetos enfileirados`)
+    console.log(`✅ [MAIN] ${arquiteto_ids.length} arquitetos enfileirados`)
 
-    // Iniciar processamento imediatamente (primeiro arquiteto)
-    // @ts-ignore - EdgeRuntime é global no Deno Deploy
-    if (typeof EdgeRuntime !== 'undefined' && EdgeRuntime.waitUntil) {
-      // @ts-ignore
-      EdgeRuntime.waitUntil(
-        processNextInQueue(supabase, evolutionUrl, evolutionApiKey)
-      )
-    } else {
-      // Fallback local
-      processNextInQueue(supabase, evolutionUrl, evolutionApiKey)
-        .catch(err => console.error('Erro no processamento:', err))
-    }
+    // Processar primeiro item imediatamente
+    const firstResult = await processNextInQueue(supabase)
 
-    // Retornar imediatamente
     return new Response(
       JSON.stringify({ 
         success: true,
+        message: 'Campanha iniciada com sucesso',
         dispatch_id: dispatch.id,
-        message: `Campanha iniciada! ${arquiteto_ids.length} arquitetos enfileirados.`
+        total_arquitetos: arquiteto_ids.length,
+        first_processed: firstResult.processed,
+        has_more: firstResult.has_more
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -625,10 +449,9 @@ Deno.serve(async (req) => {
     )
 
   } catch (error) {
-    console.error('💥 Erro inesperado:', error)
-    
+    console.error('💥 [MAIN] Erro geral:', error)
     return new Response(
-      JSON.stringify({
+      JSON.stringify({ 
         success: false,
         error: error instanceof Error ? error.message : 'Erro desconhecido'
       }),
