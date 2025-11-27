@@ -472,6 +472,30 @@ export function CampanhasManager() {
   };
 
   const handleDispatchCampanha = async (campanha: Campanha) => {
+    // ✅ Validação OBRIGATÓRIA: Verificar se há instância WhatsApp configurada
+    if (!campanha.whatsapp_connection_id) {
+      toast({
+        title: "❌ Erro: Instância WhatsApp Obrigatória",
+        description: "Esta campanha não possui uma instância WhatsApp configurada. Edite a campanha e selecione uma instância conectada.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Verificar se a instância está conectada
+    const instanceConnected = whatsappConnections.find(
+      conn => conn.id === campanha.whatsapp_connection_id && conn.status === 'connected'
+    );
+
+    if (!instanceConnected) {
+      toast({
+        title: "❌ Erro: Instância Desconectada",
+        description: "A instância WhatsApp selecionada não está conectada. Conecte a instância ou selecione outra.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const arquitetosSelecionados = campanha.arquitetos_selecionados || [];
     const arquitetosValidos = arquitetosSelecionados.filter(id => {
       const arq = arquitetosDisponiveis.find(a => a.id === id);
@@ -629,23 +653,42 @@ export function CampanhasManager() {
             <div className="space-y-2">
               <Label>Instância WhatsApp *</Label>
               <Select value={formData.whatsappConnectionId} onValueChange={(v) => setFormData({ ...formData, whatsappConnectionId: v })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione uma instância conectada" />
+                <SelectTrigger className={!formData.whatsappConnectionId ? "border-red-500" : ""}>
+                  <SelectValue placeholder="⚠️ OBRIGATÓRIO: Selecione uma instância conectada" />
                 </SelectTrigger>
                 <SelectContent>
                   {whatsappConnections.length === 0 ? (
-                    <div className="p-2 text-sm text-muted-foreground text-center">
-                      Nenhuma instância conectada
+                    <div className="p-3 text-center space-y-2">
+                      <p className="text-sm font-medium text-destructive">
+                        ⚠️ Nenhuma instância conectada
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Conecte uma instância WhatsApp na aba "WhatsApp API" antes de criar campanhas.
+                      </p>
                     </div>
                   ) : (
                     whatsappConnections.map((conn) => (
                       <SelectItem key={conn.id} value={conn.id}>
-                        {conn.instance_name} {conn.phone_number && `(${conn.phone_number})`}
+                        ✅ {conn.instance_name} {conn.phone_number && `(${conn.phone_number})`}
                       </SelectItem>
                     ))
                   )}
                 </SelectContent>
               </Select>
+              {!formData.whatsappConnectionId && (
+                <p className="text-xs text-destructive font-medium">
+                  ⚠️ Instância WhatsApp é obrigatória para disparar campanhas
+                </p>
+              )}
+              {whatsappConnections.length === 0 && (
+                <Card className="border-red-200 bg-red-50/50 dark:border-red-800 dark:bg-red-950/20">
+                  <CardContent className="p-3">
+                    <p className="text-sm text-red-800 dark:text-red-200">
+                      <strong>Atenção:</strong> Você precisa conectar uma instância WhatsApp antes de criar/disparar campanhas.
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -901,7 +944,11 @@ export function CampanhasManager() {
             <Button variant="outline" onClick={handleCloseDialog}>
               Cancelar
             </Button>
-            <Button onClick={handleSaveCampanha} disabled={loading} className="gap-2">
+            <Button 
+              onClick={handleSaveCampanha} 
+              disabled={loading || !formData.whatsappConnectionId || whatsappConnections.length === 0} 
+              className="gap-2"
+            >
               {loading && <Loader2 className="w-4 h-4 animate-spin" />}
               <Save className="w-4 h-4" />
               Salvar Campanha
