@@ -1,10 +1,15 @@
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ProjectDetailSheet } from "./ProjectDetailSheet";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { X } from "lucide-react";
+import { toast } from "sonner";
+import { usePermissions } from "@/hooks/usePermissions";
 
 interface ProjectsBoardProps {
   filters: any;
@@ -15,6 +20,9 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
   const [loading, setLoading] = useState(true);
   const [selectedProject, setSelectedProject] = useState<any>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState<any>(null);
+  const { isMaster } = usePermissions();
 
   useEffect(() => {
     fetchProjects();
@@ -76,6 +84,45 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
     setDetailOpen(true);
   };
 
+  const handleDeleteClick = (e: React.MouseEvent, project: any) => {
+    e.stopPropagation();
+    setProjectToDelete(project);
+    setDeleteOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!projectToDelete) return;
+
+    try {
+      const { data: files } = await supabase
+        .from('project_files')
+        .select('file_path')
+        .eq('project_id', projectToDelete.id);
+
+      if (files) {
+        for (const file of files) {
+          await supabase.storage
+            .from('project-files')
+            .remove([file.file_path]);
+        }
+      }
+
+      const { error } = await supabase
+        .from('projects')
+        .delete()
+        .eq('id', projectToDelete.id);
+
+      if (error) throw error;
+
+      toast.success('Projeto excluído com sucesso!');
+      fetchProjects();
+      setDeleteOpen(false);
+      setProjectToDelete(null);
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao excluir projeto');
+    }
+  };
+
   if (loading) {
     return <div className="text-center py-8">Carregando projetos...</div>;
   }
@@ -96,9 +143,19 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
             {groupedProjects.recebido.map((project) => (
               <Card
                 key={project.id}
-                className="p-4 cursor-pointer hover:shadow-lg transition-all duration-200 border-l-4 border-l-blue-500"
+                className="p-4 cursor-pointer hover:shadow-lg transition-all duration-200 border-l-4 border-l-blue-500 relative group"
                 onClick={() => handleCardClick(project)}
               >
+                {isMaster && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10"
+                    onClick={(e) => handleDeleteClick(e, project)}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                )}
                 <h4 className="font-semibold mb-2">{project.name || "Sem título"}</h4>
                 <p className="text-sm text-muted-foreground mb-2">
                   {project.client?.name || "Cliente não definido"}
@@ -136,9 +193,19 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
             {groupedProjects.em_orcamento.map((project) => (
               <Card
                 key={project.id}
-                className="p-4 cursor-pointer hover:shadow-lg transition-all duration-200 border-l-4 border-l-purple-500"
+                className="p-4 cursor-pointer hover:shadow-lg transition-all duration-200 border-l-4 border-l-purple-500 relative group"
                 onClick={() => handleCardClick(project)}
               >
+                {isMaster && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10"
+                    onClick={(e) => handleDeleteClick(e, project)}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                )}
                 <h4 className="font-semibold mb-2">{project.name || "Sem título"}</h4>
                 <p className="text-sm text-muted-foreground mb-2">
                   {project.client?.name || "Cliente não definido"}
@@ -176,9 +243,19 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
             {groupedProjects.orcado.map((project) => (
               <Card
                 key={project.id}
-                className="p-4 cursor-pointer hover:shadow-lg transition-all duration-200 border-l-4 border-l-indigo-500"
+                className="p-4 cursor-pointer hover:shadow-lg transition-all duration-200 border-l-4 border-l-indigo-500 relative group"
                 onClick={() => handleCardClick(project)}
               >
+                {isMaster && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10"
+                    onClick={(e) => handleDeleteClick(e, project)}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                )}
                 <h4 className="font-semibold mb-2">{project.name || "Sem título"}</h4>
                 <p className="text-sm text-muted-foreground mb-2">
                   {project.client?.name || "Cliente não definido"}
@@ -216,9 +293,19 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
             {groupedProjects.apresentado.map((project) => (
               <Card
                 key={project.id}
-                className="p-4 cursor-pointer hover:shadow-lg transition-all duration-200 border-l-4 border-l-cyan-500"
+                className="p-4 cursor-pointer hover:shadow-lg transition-all duration-200 border-l-4 border-l-cyan-500 relative group"
                 onClick={() => handleCardClick(project)}
               >
+                {isMaster && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10"
+                    onClick={(e) => handleDeleteClick(e, project)}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                )}
                 <h4 className="font-semibold mb-2">{project.name || "Sem título"}</h4>
                 <p className="text-sm text-muted-foreground mb-2">
                   {project.client?.name || "Cliente não definido"}
@@ -256,9 +343,19 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
             {groupedProjects.em_negociacao.map((project) => (
               <Card
                 key={project.id}
-                className="p-4 cursor-pointer hover:shadow-lg transition-all duration-200 border-l-4 border-l-orange-500"
+                className="p-4 cursor-pointer hover:shadow-lg transition-all duration-200 border-l-4 border-l-orange-500 relative group"
                 onClick={() => handleCardClick(project)}
               >
+                {isMaster && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10"
+                    onClick={(e) => handleDeleteClick(e, project)}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                )}
                 <h4 className="font-semibold mb-2">{project.name || "Sem título"}</h4>
                 <p className="text-sm text-muted-foreground mb-2">
                   {project.client?.name || "Cliente não definido"}
@@ -296,9 +393,19 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
             {groupedProjects.aprovado.map((project) => (
               <Card
                 key={project.id}
-                className="p-4 cursor-pointer hover:shadow-lg transition-all duration-200 border-l-4 border-l-green-500"
+                className="p-4 cursor-pointer hover:shadow-lg transition-all duration-200 border-l-4 border-l-green-500 relative group"
                 onClick={() => handleCardClick(project)}
               >
+                {isMaster && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10"
+                    onClick={(e) => handleDeleteClick(e, project)}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                )}
                 <h4 className="font-semibold mb-2">{project.name || "Sem título"}</h4>
                 <p className="text-sm text-muted-foreground mb-2">
                   {project.client?.name || "Cliente não definido"}
@@ -336,9 +443,19 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
             {groupedProjects.perdido.map((project) => (
               <Card
                 key={project.id}
-                className="p-4 cursor-pointer hover:shadow-lg transition-all duration-200 border-l-4 border-l-red-500"
+                className="p-4 cursor-pointer hover:shadow-lg transition-all duration-200 border-l-4 border-l-red-500 relative group"
                 onClick={() => handleCardClick(project)}
               >
+                {isMaster && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10"
+                    onClick={(e) => handleDeleteClick(e, project)}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                )}
                 <h4 className="font-semibold mb-2">{project.name || "Sem título"}</h4>
                 <p className="text-sm text-muted-foreground mb-2">
                   {project.client?.name || "Cliente não definido"}
@@ -374,6 +491,24 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
           onSuccess={fetchProjects}
         />
       )}
+
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Deseja realmente excluir o projeto <strong>{projectToDelete?.name}</strong>? 
+              Esta ação não pode ser desfeita e todos os arquivos e histórico serão removidos permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive hover:bg-destructive/90">
+              Excluir Definitivamente
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
