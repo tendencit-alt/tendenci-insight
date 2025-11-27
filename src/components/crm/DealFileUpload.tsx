@@ -84,25 +84,43 @@ export function DealFileUpload({ dealId, files, onFilesChange }: DealFileUploadP
           }
         }
 
-        console.log(`Uploading ${file.name} with type: ${contentType}, size: ${file.size}`);
+        console.log(`[UPLOAD START] File: ${file.name}, Type: ${contentType}, Size: ${formatFileSize(file.size)}`);
 
-        // Retry lógica: até 3 tentativas por arquivo
+        // Retry lógica: até 5 tentativas para arquivos grandes
         let uploadError;
-        for (let attempt = 0; attempt < 3; attempt++) {
-          const { error } = await supabase.storage
-            .from("deal-files")
-            .upload(fileName, file, {
-              contentType: contentType || 'application/octet-stream',
-              upsert: false,
+        const maxAttempts = file.size > 50 * 1024 * 1024 ? 5 : 3; // 5 tentativas para arquivos >50MB
+        
+        for (let attempt = 0; attempt < maxAttempts; attempt++) {
+          console.log(`[UPLOAD ATTEMPT ${attempt + 1}/${maxAttempts}] Starting upload for ${file.name}`);
+          
+          try {
+            const { data, error } = await supabase.storage
+              .from("deal-files")
+              .upload(fileName, file, {
+                contentType: contentType || 'application/octet-stream',
+                upsert: false,
+              });
+            
+            uploadError = error;
+            
+            if (!error) {
+              console.log(`[UPLOAD SUCCESS] File ${file.name} uploaded successfully:`, data);
+              break;
+            }
+            
+            console.error(`[UPLOAD ERROR] Attempt ${attempt + 1} failed for ${file.name}:`, {
+              error,
+              message: error?.message,
             });
+          } catch (err) {
+            console.error(`[UPLOAD EXCEPTION] Attempt ${attempt + 1} threw exception for ${file.name}:`, err);
+            uploadError = err;
+          }
           
-          uploadError = error;
-          if (!error) break;
-          
-          console.error(`Upload attempt ${attempt + 1} failed for ${file.name}:`, error);
-          
-          if (attempt < 2) {
-            await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+          if (attempt < maxAttempts - 1) {
+            const delay = 2000 * (attempt + 1); // Delay progressivo: 2s, 4s, 6s...
+            console.log(`[UPLOAD RETRY] Waiting ${delay}ms before retry...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
           }
         }
 
