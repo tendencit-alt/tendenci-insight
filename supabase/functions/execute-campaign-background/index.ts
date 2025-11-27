@@ -69,10 +69,13 @@ async function processNextInQueue(supabase: any) {
   const startTime = Date.now()
   
   try {
-    const dispatch = nextInQueue.tendenci_campaign_dispatches[0]
+    // Supabase pode retornar relacionamentos como array ou objeto único
+    const dispatch = Array.isArray(nextInQueue.tendenci_campaign_dispatches)
+      ? nextInQueue.tendenci_campaign_dispatches[0]
+      : nextInQueue.tendenci_campaign_dispatches
+    
     const campanha = nextInQueue.tendenci_prospec_arq_campaigns
 
-    // Supabase retorna relacionamentos como array
     const whatsappConn = Array.isArray(campanha.tendenci_whatsapp_connections)
       ? campanha.tendenci_whatsapp_connections[0]
       : campanha.tendenci_whatsapp_connections
@@ -163,10 +166,14 @@ async function processNextInQueue(supabase: any) {
         .eq('id', nextInQueue.id)
 
       // Incrementar contador de erro
+      const currentDispatch = Array.isArray(nextInQueue.tendenci_campaign_dispatches)
+        ? nextInQueue.tendenci_campaign_dispatches[0]
+        : nextInQueue.tendenci_campaign_dispatches
+      
       await supabase
         .from('tendenci_campaign_dispatches')
         .update({
-          enviados_erro: dispatch.enviados_erro + 1,
+          enviados_erro: (currentDispatch?.enviados_erro || 0) + 1,
           updated_at: new Date().toISOString()
         })
         .eq('id', nextInQueue.dispatch_id)
@@ -184,10 +191,14 @@ async function processNextInQueue(supabase: any) {
       })
       .eq('id', nextInQueue.id)
 
+    const errorDispatch = Array.isArray(nextInQueue.tendenci_campaign_dispatches)
+      ? nextInQueue.tendenci_campaign_dispatches[0]
+      : nextInQueue.tendenci_campaign_dispatches
+    
     await supabase
       .from('tendenci_campaign_dispatches')
       .update({
-        enviados_erro: nextInQueue.tendenci_campaign_dispatches[0].enviados_erro + 1,
+        enviados_erro: (errorDispatch?.enviados_erro || 0) + 1,
         updated_at: new Date().toISOString()
       })
       .eq('id', nextInQueue.dispatch_id)
