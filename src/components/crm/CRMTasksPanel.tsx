@@ -12,9 +12,20 @@ import { useAuth } from "@/contexts/AuthContext";
 interface CRMTasksPanelProps {
   pipelineId: string;
   categoryFilter?: string;
+  ownerFilter?: string;
+  searchQuery?: string;
+  dateFilter?: string;
+  customDateRange?: { from: Date | undefined; to: Date | undefined };
 }
 
-export function CRMTasksPanel({ pipelineId, categoryFilter }: CRMTasksPanelProps) {
+export function CRMTasksPanel({ 
+  pipelineId, 
+  categoryFilter, 
+  ownerFilter, 
+  searchQuery, 
+  dateFilter, 
+  customDateRange 
+}: CRMTasksPanelProps) {
   const { profile } = useAuth();
   const [tasks, setTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,21 +64,61 @@ export function CRMTasksPanel({ pipelineId, categoryFilter }: CRMTasksPanelProps
       clearTimeout(debounceTimeout);
       supabase.removeChannel(channel);
     };
-  }, [pipelineId, categoryFilter]);
+  }, [pipelineId, categoryFilter, ownerFilter, searchQuery, dateFilter, customDateRange]);
 
   const fetchTasks = async () => {
     setLoading(true);
 
-    // Buscar tarefas de deals do pipeline atual com categoria
+    // Buscar tarefas de deals do pipeline atual com todos os filtros
     let dealsQuery = supabase
       .from("crm_deals")
-      .select("id, categoria")
+      .select("id, categoria, owner_id, title, created_at, lead:leads(client:clients(name))")
       .eq("pipeline_id", pipelineId)
       .eq("status", "aberto");
     
     // Filtrar por categoria se especificado
     if (categoryFilter && categoryFilter !== "all") {
       dealsQuery = dealsQuery.eq("categoria", categoryFilter);
+    }
+
+    // Filtrar por responsável
+    if (ownerFilter && ownerFilter !== "all") {
+      dealsQuery = dealsQuery.eq("owner_id", ownerFilter);
+    }
+
+    // Filtrar por busca (título do deal ou nome do cliente)
+    if (searchQuery && searchQuery.trim()) {
+      dealsQuery = dealsQuery.or(`title.ilike.%${searchQuery}%,lead.client.name.ilike.%${searchQuery}%`);
+    }
+
+    // Filtrar por data de criação do deal
+    if (dateFilter && dateFilter !== "all") {
+      const now = new Date();
+      let startDate: Date | undefined;
+      
+      switch(dateFilter) {
+        case "today":
+          startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          break;
+        case "week":
+          startDate = new Date(now.setDate(now.getDate() - 7));
+          break;
+        case "month":
+          startDate = new Date(now.setMonth(now.getMonth() - 1));
+          break;
+        case "custom":
+          if (customDateRange?.from) {
+            dealsQuery = dealsQuery.gte("created_at", customDateRange.from.toISOString());
+          }
+          if (customDateRange?.to) {
+            dealsQuery = dealsQuery.lte("created_at", customDateRange.to.toISOString());
+          }
+          break;
+      }
+      
+      if (startDate && dateFilter !== "custom") {
+        dealsQuery = dealsQuery.gte("created_at", startDate.toISOString());
+      }
     }
     
     const { data: deals } = await dealsQuery;
@@ -80,7 +131,7 @@ export function CRMTasksPanel({ pipelineId, categoryFilter }: CRMTasksPanelProps
 
     const dealIds = deals.map((d) => d.id);
 
-    // Buscar todas as tarefas
+    // Buscar todas as tarefas abertas
     const { data, error } = await supabase
       .from("crm_tasks")
       .select(`

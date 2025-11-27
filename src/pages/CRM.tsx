@@ -271,6 +271,10 @@ export default function CRM() {
             <CRMTasksPanel 
               pipelineId={selectedPipeline} 
               categoryFilter={selectedCategory}
+              ownerFilter={selectedOwner}
+              searchQuery={searchQuery}
+              dateFilter={dateFilter}
+              customDateRange={customDateRange}
               key={`tasks-${refreshKey}`} 
             />
 
