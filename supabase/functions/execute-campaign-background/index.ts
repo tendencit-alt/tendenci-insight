@@ -64,17 +64,27 @@ async function processNextInQueue(supabase: any) {
     }
   }
 
-  console.log(`📤 [PROCESS] Processando: ${nextInQueue.architects.name} (posição ${nextInQueue.position}/${nextInQueue.tendenci_campaign_dispatches[0].total_arquitetos})`)
-
   const startTime = Date.now()
   
   try {
-    // Supabase pode retornar relacionamentos como array ou objeto único
-    const dispatch = Array.isArray(nextInQueue.tendenci_campaign_dispatches)
+    // Extrair dados de forma segura ANTES de qualquer acesso
+    const dispatchData = Array.isArray(nextInQueue.tendenci_campaign_dispatches)
       ? nextInQueue.tendenci_campaign_dispatches[0]
       : nextInQueue.tendenci_campaign_dispatches
+
+    const architectData = Array.isArray(nextInQueue.architects)
+      ? nextInQueue.architects[0]
+      : nextInQueue.architects
+
+    console.log(`📤 [PROCESS] Processando: ${architectData?.name || 'Desconhecido'} (posição ${nextInQueue.position}/${dispatchData?.total_arquitetos || '?'})`)
     
+    const dispatch = dispatchData
     const campanha = nextInQueue.tendenci_prospec_arq_campaigns
+
+    if (!dispatch) {
+      console.error('❌ [PROCESS] Dispatch não encontrado para item da fila')
+      return { success: false, error: 'Dispatch não encontrado' }
+    }
 
     const whatsappConn = Array.isArray(campanha.tendenci_whatsapp_connections)
       ? campanha.tendenci_whatsapp_connections[0]
@@ -85,7 +95,7 @@ async function processNextInQueue(supabase: any) {
 
     // Atualizar progresso no dispatch
     const currentPosition = nextInQueue.position
-    const totalArquitetos = dispatch.total_arquitetos
+    const totalArquitetos = dispatch?.total_arquitetos || 1
     const progresso = Math.round((currentPosition / totalArquitetos) * 100)
 
     console.log(`📊 [PROCESS] Atualizando progresso: ${progresso}%`)
@@ -93,7 +103,7 @@ async function processNextInQueue(supabase: any) {
     await supabase
       .from('tendenci_campaign_dispatches')
       .update({
-        arquiteto_atual: nextInQueue.architects.name,
+        arquiteto_atual: architectData?.name || 'Desconhecido',
         progresso_percentual: progresso,
         updated_at: new Date().toISOString()
       })
@@ -113,8 +123,8 @@ async function processNextInQueue(supabase: any) {
         body: JSON.stringify({
           campanha_id: nextInQueue.campanha_id,
           arquiteto_id: nextInQueue.arquiteto_id,
-          nome: nextInQueue.architects.name,
-          telefone: nextInQueue.architects.phone,
+          nome: architectData?.name || 'Desconhecido',
+          telefone: architectData?.phone || '',
           tipo_envio: campanha.tipo_envio,
           conteudo_texto: campanha.conteudo_texto,
           conteudo_imagem_url: campanha.conteudo_imagem_url,
@@ -147,7 +157,7 @@ async function processNextInQueue(supabase: any) {
       await supabase
         .from('tendenci_campaign_dispatches')
         .update({
-          enviados_sucesso: dispatch.enviados_sucesso + 1,
+          enviados_sucesso: (dispatch?.enviados_sucesso || 0) + 1,
           updated_at: new Date().toISOString()
         })
         .eq('id', nextInQueue.dispatch_id)
