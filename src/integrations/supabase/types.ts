@@ -3106,6 +3106,16 @@ export type Database = {
         Args: { _module: string; _user_id: string }
         Returns: boolean
       }
+      http_post: {
+        Args: {
+          body?: Json
+          headers?: Json
+          params?: Json
+          timeout_milliseconds?: number
+          url: string
+        }
+        Returns: Json
+      }
       is_admin: { Args: never; Returns: boolean }
       is_user_admin: { Args: { _user_id: string }; Returns: boolean }
       is_user_master: { Args: { _user_id: string }; Returns: boolean }
