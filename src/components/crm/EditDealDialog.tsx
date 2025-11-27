@@ -355,13 +355,13 @@ export function EditDealDialog({
         const selectedStage = stages.find(s => s.id === formData.stage_id);
         if (selectedStage) {
           const stageName = selectedStage.name.toLowerCase();
-          const requiresValue = stageName.includes("qualif") || stageName.includes("negociação");
+          const requiresValue = stageName.includes("negociação");
           
           if (requiresValue && (!formData.value || Number(formData.value) <= 0)) {
             setLoading(false);
             toast({
               title: "Valor obrigatório",
-              description: "Para as etapas 'Qualificação' e 'Em Negociação', é obrigatório informar o valor (R$) do negócio.",
+              description: "Para a etapa 'Negociação', é obrigatório informar o valor (R$) do negócio.",
               variant: "destructive",
             });
             return;
