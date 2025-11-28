@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, Calendar, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 
 interface DealWithoutTask {
@@ -33,7 +34,7 @@ export function TaskReminderAlert({ pipelineId }: TaskReminderAlertProps) {
   const [showAlert, setShowAlert] = useState(false);
   const [dealsWithoutTasks, setDealsWithoutTasks] = useState<DealWithoutTask[]>([]);
   const [addingTaskFor, setAddingTaskFor] = useState<string | null>(null);
-  const [taskData, setTaskData] = useState({ title: "", due_at: "" });
+  const [taskData, setTaskData] = useState({ title: "", due_at: "", observation: "" });
 
   useEffect(() => {
     if (!pipelineId) return;
@@ -111,40 +112,36 @@ export function TaskReminderAlert({ pipelineId }: TaskReminderAlertProps) {
   };
 
   const handleAddTask = async (dealId: string) => {
-    if (!taskData.title || !taskData.due_at) {
+    if (!taskData.title || !taskData.due_at || !taskData.observation) {
       toast({
         title: "Campos obrigatórios",
-        description: "Preencha o título e a data da tarefa",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Validar observação nas últimas 24 horas
-    const { data: recentNotes } = await supabase
-      .from('crm_timeline')
-      .select('created_at')
-      .eq('deal_id', dealId)
-      .eq('update_type', 'Observação')
-      .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
-      .limit(1);
-    
-    if (!recentNotes || recentNotes.length === 0) {
-      toast({
-        title: "Atualização obrigatória",
-        description: "Você precisa adicionar uma observação nas últimas 24 horas antes de criar uma tarefa.",
+        description: "Preencha a observação, título e data da tarefa",
         variant: "destructive",
       });
       return;
     }
 
     try {
-      // Corrigir timezone local
+      // Primeiro, salvar a observação no timeline
+      const { data: userData } = await supabase.auth.getUser();
+      
+      const { error: timelineError } = await supabase
+        .from("crm_timeline")
+        .insert({
+          deal_id: dealId,
+          message: taskData.observation,
+          update_type: "Observação",
+          author_id: userData.user?.id,
+        });
+
+      if (timelineError) throw timelineError;
+
+      // Depois, criar a tarefa
       const localDate = new Date(taskData.due_at);
       const offsetMs = localDate.getTimezoneOffset() * 60000;
       const localISOTime = new Date(localDate.getTime() - offsetMs).toISOString().slice(0, -1);
 
-      const { error } = await supabase
+      const { error: taskError } = await supabase
         .from("crm_tasks")
         .insert({
           deal_id: dealId,
@@ -153,14 +150,14 @@ export function TaskReminderAlert({ pipelineId }: TaskReminderAlertProps) {
           status: "open",
         });
 
-      if (error) throw error;
+      if (taskError) throw taskError;
 
       toast({
-        title: "Tarefa criada",
-        description: "A tarefa foi adicionada ao negócio",
+        title: "Observação e tarefa criadas",
+        description: "A observação e a tarefa foram adicionadas ao negócio",
       });
 
-      setTaskData({ title: "", due_at: "" });
+      setTaskData({ title: "", due_at: "", observation: "" });
       setAddingTaskFor(null);
       
       // Recarregar lista
@@ -225,7 +222,19 @@ export function TaskReminderAlert({ pipelineId }: TaskReminderAlertProps) {
                       {addingTaskFor === deal.id ? (
                         <div className="space-y-3 pt-3 border-t">
                           <div className="space-y-2">
-                            <Label htmlFor={`task-title-${deal.id}`}>Título da Tarefa</Label>
+                            <Label htmlFor={`task-observation-${deal.id}`}>
+                              Observação (obrigatória) *
+                            </Label>
+                            <Textarea
+                              id={`task-observation-${deal.id}`}
+                              placeholder="Descreva o status atual da oportunidade..."
+                              value={taskData.observation}
+                              onChange={(e) => setTaskData({ ...taskData, observation: e.target.value })}
+                              className="min-h-[80px]"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor={`task-title-${deal.id}`}>Título da Tarefa *</Label>
                             <Input
                               id={`task-title-${deal.id}`}
                               placeholder="Ex: Ligar para cliente"
@@ -234,7 +243,7 @@ export function TaskReminderAlert({ pipelineId }: TaskReminderAlertProps) {
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label htmlFor={`task-date-${deal.id}`}>Data de Vencimento</Label>
+                            <Label htmlFor={`task-date-${deal.id}`}>Data de Vencimento *</Label>
                             <Input
                               id={`task-date-${deal.id}`}
                               type="datetime-local"
@@ -247,14 +256,14 @@ export function TaskReminderAlert({ pipelineId }: TaskReminderAlertProps) {
                               size="sm" 
                               onClick={() => handleAddTask(deal.id)}
                             >
-                              Salvar Tarefa
+                              Salvar Observação + Tarefa
                             </Button>
                             <Button 
                               size="sm" 
                               variant="outline"
                               onClick={() => {
                                 setAddingTaskFor(null);
-                                setTaskData({ title: "", due_at: "" });
+                                setTaskData({ title: "", due_at: "", observation: "" });
                               }}
                             >
                               Cancelar
