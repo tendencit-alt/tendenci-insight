@@ -12,6 +12,7 @@ const MODULE_TO_ROUTE_MAP: Record<string, string> = {
   arquitetos: "/prospeccao",
   metas: "/metas",
   configuracoes: "/settings",
+  gestao_usuarios: "/settings",
   dashboards_personalizados: "/dashboards",
 };
 
