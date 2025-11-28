@@ -261,8 +261,9 @@ export function DealTasks({ dealId }: DealTasksProps) {
         throw new Error("Data/hora inválida");
       }
       
-      const offsetMs = localDate.getTimezoneOffset() * 60000;
-      const localISOTime = new Date(localDate.getTime() - offsetMs).toISOString().slice(0, -1);
+      // Conversão correta: new Date() já interpreta datetime-local como horário local
+      // toISOString() converte automaticamente para UTC - não precisa ajuste manual
+      const localISOTime = localDate.toISOString();
 
       if (editingTaskId) {
         // UPDATE: Editar tarefa existente
