@@ -145,8 +145,18 @@ export default function WhatsAppConnectionManager() {
     mutationFn: async (instanceName: string) => {
       console.log('🚀 Creating instance:', instanceName);
 
+      // Obter user_id do usuário autenticado
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error("Usuário não autenticado");
+      }
+
       const { data, error } = await supabase.functions.invoke("whatsapp-evolution", {
-        body: { action: "create", instanceName },
+        body: { 
+          action: "create", 
+          instanceName,
+          user_id: user.id // Enviar user_id para o edge function salvar no banco
+        },
       });
 
       if (error) {
