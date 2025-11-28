@@ -197,7 +197,7 @@ const UserManagement = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => navigate('/configuracoes')}
+                onClick={() => navigate('/settings')}
                 className="h-8 w-8"
               >
                 <ArrowLeft className="w-4 h-4" />
