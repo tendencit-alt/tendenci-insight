@@ -362,13 +362,18 @@ export default function N8nTarefasGuide() {
               <div>
                 <h3 className="font-semibold mb-2">2. Supabase Node (Query)</h3>
                 <div className="bg-muted p-4 rounded-lg space-y-3">
-                  <p className="text-sm font-medium">Configuração:</p>
-                  <div className="bg-background p-3 rounded text-xs font-mono space-y-1">
-                    <div><span className="text-muted-foreground">Operation:</span> Execute Query</div>
-                    <div><span className="text-muted-foreground">Query Type:</span> Custom SQL</div>
-                  </div>
+                  <Alert>
+                    <CheckCircle className="h-4 w-4" />
+                    <AlertDescription className="text-xs">
+                      <strong>📋 Passo a Passo:</strong><br/>
+                      1. Selecione <strong>Operation: executeQuery</strong><br/>
+                      2. Ative o toggle <strong>"Use Custom Schema"</strong> se necessário<br/>
+                      3. Um campo de texto grande aparecerá abaixo chamado <strong>"Query"</strong><br/>
+                      4. Cole a query SQL completa neste campo
+                    </AlertDescription>
+                  </Alert>
                   
-                  <p className="text-sm font-medium mt-3">Query SQL:</p>
+                  <p className="text-sm font-medium mt-3">Query SQL (copie e cole no campo "Query"):</p>
                   <pre className="bg-background p-3 rounded text-xs overflow-x-auto">
 {`SELECT 
   t.id,
