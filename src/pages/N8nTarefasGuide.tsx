@@ -2,10 +2,238 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { CheckCircle, AlertCircle, Code, Webhook, Clock, MessageSquare } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { CheckCircle, AlertCircle, Code, Webhook, Clock, MessageSquare, Download } from "lucide-react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { toast } from "sonner";
 
 export default function N8nTarefasGuide() {
+  const downloadWorkflowJSON = () => {
+    const workflowJSON = {
+      "name": "Tarefas Automatizadas WhatsApp",
+      "nodes": [
+        {
+          "parameters": {
+            "rule": {
+              "interval": [
+                {
+                  "field": "minutes",
+                  "minutesInterval": 1
+                }
+              ]
+            }
+          },
+          "name": "Schedule Trigger",
+          "type": "n8n-nodes-base.scheduleTrigger",
+          "typeVersion": 1,
+          "position": [250, 300]
+        },
+        {
+          "parameters": {
+            "operation": "executeQuery",
+            "query": "SELECT \n  t.id,\n  t.deal_id,\n  t.title,\n  t.note as mensagem,\n  t.whatsapp_number,\n  t.due_at,\n  t.created_by,\n  t.origem_modulo,\n  wc.instance_name,\n  wc.instance_id,\n  wc.id as whatsapp_connection_id\nFROM crm_tasks t\nINNER JOIN profiles p ON t.created_by = p.id\nINNER JOIN tendenci_whatsapp_connections wc \n  ON wc.user_id = p.id \n  AND wc.status = 'connected'\nWHERE t.tipo_tarefa = 'automatizada'\n  AND t.status = 'open'\n  AND t.due_at <= NOW()\nORDER BY t.due_at ASC"
+          },
+          "name": "Buscar Tarefas Pendentes",
+          "type": "n8n-nodes-base.supabase",
+          "typeVersion": 1,
+          "position": [450, 300],
+          "credentials": {
+            "supabaseApi": {
+              "id": "1",
+              "name": "Supabase account"
+            }
+          }
+        },
+        {
+          "parameters": {
+            "conditions": {
+              "number": [
+                {
+                  "value1": "={{Object.keys($json).length}}",
+                  "operation": "larger",
+                  "value2": 0
+                }
+              ]
+            }
+          },
+          "name": "Verificar Tarefas",
+          "type": "n8n-nodes-base.if",
+          "typeVersion": 1,
+          "position": [650, 300]
+        },
+        {
+          "parameters": {
+            "batchSize": 1,
+            "options": {}
+          },
+          "name": "Loop Over Items",
+          "type": "n8n-nodes-base.splitInBatches",
+          "typeVersion": 1,
+          "position": [850, 200]
+        },
+        {
+          "parameters": {
+            "method": "POST",
+            "url": "={{$env.EVOLUTION_API_URL}}/message/sendText/{{$node[\"Loop Over Items\"].json[\"instance_name\"]}}",
+            "authentication": "genericCredentialType",
+            "genericAuthType": "httpHeaderAuth",
+            "sendHeaders": true,
+            "headerParameters": {
+              "parameters": [
+                {
+                  "name": "apikey",
+                  "value": "={{$env.EVOLUTION_API_KEY}}"
+                }
+              ]
+            },
+            "sendBody": true,
+            "bodyParameters": {
+              "parameters": [
+                {
+                  "name": "number",
+                  "value": "={{$node[\"Loop Over Items\"].json[\"whatsapp_number\"]}}"
+                },
+                {
+                  "name": "text",
+                  "value": "={{$node[\"Loop Over Items\"].json[\"mensagem\"]}}"
+                }
+              ]
+            },
+            "options": {}
+          },
+          "name": "Enviar WhatsApp",
+          "type": "n8n-nodes-base.httpRequest",
+          "typeVersion": 3,
+          "position": [1050, 200]
+        },
+        {
+          "parameters": {
+            "operation": "update",
+            "tableId": "crm_tasks",
+            "filterType": "manual",
+            "matchCriteria": {
+              "values": [
+                {
+                  "key": "id",
+                  "value": "={{$node[\"Loop Over Items\"].json[\"id\"]}}"
+                }
+              ]
+            },
+            "fieldsUi": {
+              "fieldValues": [
+                {
+                  "fieldId": "status",
+                  "fieldValue": "done"
+                },
+                {
+                  "fieldId": "updated_at",
+                  "fieldValue": "={{$now.toISO()}}"
+                }
+              ]
+            }
+          },
+          "name": "Atualizar Status",
+          "type": "n8n-nodes-base.supabase",
+          "typeVersion": 1,
+          "position": [1250, 200],
+          "credentials": {
+            "supabaseApi": {
+              "id": "1",
+              "name": "Supabase account"
+            }
+          }
+        }
+      ],
+      "connections": {
+        "Schedule Trigger": {
+          "main": [
+            [
+              {
+                "node": "Buscar Tarefas Pendentes",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "Buscar Tarefas Pendentes": {
+          "main": [
+            [
+              {
+                "node": "Verificar Tarefas",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "Verificar Tarefas": {
+          "main": [
+            [
+              {
+                "node": "Loop Over Items",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "Loop Over Items": {
+          "main": [
+            [
+              {
+                "node": "Enviar WhatsApp",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "Enviar WhatsApp": {
+          "main": [
+            [
+              {
+                "node": "Atualizar Status",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        },
+        "Atualizar Status": {
+          "main": [
+            [
+              {
+                "node": "Loop Over Items",
+                "type": "main",
+                "index": 0
+              }
+            ]
+          ]
+        }
+      },
+      "settings": {
+        "executionOrder": "v1"
+      },
+      "staticData": null,
+      "tags": [],
+      "triggerCount": 0,
+      "updatedAt": "2025-01-21T00:00:00.000Z",
+      "versionId": "1"
+    };
+
+    const blob = new Blob([JSON.stringify(workflowJSON, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'n8n-tarefas-automatizadas-workflow.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    toast.success("Workflow JSON baixado com sucesso!");
+  };
   return (
     <DashboardLayout>
       <div className="container mx-auto py-8 px-4 max-w-5xl">
@@ -283,6 +511,66 @@ ORDER BY t.due_at ASC`}
                   </Alert>
                 </div>
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Download do Workflow JSON */}
+        <Card className="mb-6 border-primary/20 bg-primary/5">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Download className="h-5 w-5" />
+              Download do Workflow Completo
+            </CardTitle>
+            <CardDescription>Baixe o JSON pronto para importar no n8n</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Alert>
+              <CheckCircle className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Workflow Pré-Configurado:</strong> Este arquivo JSON contém o workflow completo com todos os nós configurados. Basta importar no n8n e ajustar suas credenciais do Supabase e Evolution API.
+              </AlertDescription>
+            </Alert>
+
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                O arquivo inclui:
+              </p>
+              <ul className="list-disc ml-6 text-sm space-y-1 text-muted-foreground">
+                <li>Schedule Trigger configurado para executar a cada minuto</li>
+                <li>Query SQL otimizada com isolamento por vendedor</li>
+                <li>Loop para processar tarefas individualmente</li>
+                <li>Integração com Evolution API WhatsApp</li>
+                <li>Atualização automática de status no banco</li>
+              </ul>
+
+              <div className="pt-4">
+                <Button 
+                  onClick={downloadWorkflowJSON}
+                  size="lg"
+                  className="w-full sm:w-auto"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Baixar Workflow JSON
+                </Button>
+              </div>
+
+              <Alert className="mt-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="text-xs">
+                  <strong>Após importar:</strong>
+                  <ol className="list-decimal ml-4 mt-2 space-y-1">
+                    <li>Configure suas credenciais do Supabase no nó "Buscar Tarefas Pendentes" e "Atualizar Status"</li>
+                    <li>Adicione as variáveis de ambiente no n8n:
+                      <ul className="list-disc ml-4 mt-1">
+                        <li><code className="text-xs bg-muted px-1 py-0.5 rounded">EVOLUTION_API_URL</code> - URL base da Evolution API</li>
+                        <li><code className="text-xs bg-muted px-1 py-0.5 rounded">EVOLUTION_API_KEY</code> - Chave de API global</li>
+                      </ul>
+                    </li>
+                    <li>Ative o workflow e teste com uma tarefa automatizada</li>
+                  </ol>
+                </AlertDescription>
+              </Alert>
             </div>
           </CardContent>
         </Card>
