@@ -197,34 +197,36 @@ export function DealTasks({ dealId }: DealTasksProps) {
         return;
       }
 
-      // VALIDAÇÃO CRÍTICA: Verificar se vendedor tem instância WhatsApp conectada
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        toast({
-          title: "Erro de autenticação",
-          description: "Usuário não autenticado.",
-          variant: "destructive",
-        });
-        return;
+      // VALIDAÇÃO CRÍTICA: Verificar se vendedor tem instância WhatsApp conectada (APENAS na criação)
+      if (!editingTaskId) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          toast({
+            title: "Erro de autenticação",
+            description: "Usuário não autenticado.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        const { data: whatsappInstance, error: instanceError } = await supabase
+          .from("tendenci_whatsapp_connections")
+          .select("id, instance_name, status")
+          .eq("user_id", user.id)
+          .eq("status", "connected")
+          .maybeSingle();
+
+        if (instanceError || !whatsappInstance) {
+          toast({
+            title: "⚠️ Instância WhatsApp não conectada",
+            description: "Você precisa conectar uma instância WhatsApp antes de criar tarefas automatizadas. Vá em Configurações > Conexões WhatsApp.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        console.log("✅ Instância WhatsApp identificada:", whatsappInstance.instance_name);
       }
-
-      const { data: whatsappInstance, error: instanceError } = await supabase
-        .from("tendenci_whatsapp_connections")
-        .select("id, instance_name, status")
-        .eq("user_id", user.id)
-        .eq("status", "connected")
-        .maybeSingle();
-
-      if (instanceError || !whatsappInstance) {
-        toast({
-          title: "⚠️ Instância WhatsApp não conectada",
-          description: "Você precisa conectar uma instância WhatsApp antes de criar tarefas automatizadas. Vá em Configurações > Conexões WhatsApp.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      console.log("✅ Instância WhatsApp identificada:", whatsappInstance.instance_name);
     }
 
     // VALIDAÇÃO: Verificar observação nas últimas 24h (apenas para novas tarefas)
