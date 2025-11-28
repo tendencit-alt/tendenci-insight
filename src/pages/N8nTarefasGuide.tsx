@@ -365,20 +365,24 @@ export default function N8nTarefasGuide() {
                   <Alert>
                     <CheckCircle className="h-4 w-4" />
                     <AlertDescription className="text-xs">
-                      <strong>📋 Passo a Passo IMPORTANTE:</strong><br/>
-                      1. Selecione <strong>Operation: executeQuery</strong><br/>
-                      2. <strong className="text-primary">⚠️ ATIVE o toggle "Use Custom Schema"</strong> (ele vem desligado por padrão)<br/>
-                      3. Após ativar, aparecerá um campo de texto grande chamado <strong>"Query"</strong><br/>
-                      4. Cole a query SQL completa abaixo neste campo
+                      <strong>📋 Passo a Passo CORRETO:</strong><br/>
+                      1. Ative o toggle <strong>"Use Custom Schema"</strong> (ele vem desligado)<br/>
+                      2. No campo <strong>Resource</strong>, selecione <strong>"Custom API Call"</strong> (não deixe "Row")<br/>
+                      3. Após selecionar "Custom API Call", aparecerá uma mensagem sugerindo usar HTTP Request node<br/>
+                      4. <strong>IGNORE essa mensagem</strong> - role para baixo e você verá campos adicionais<br/>
+                      5. Cole a query SQL no campo que aparecerá
                     </AlertDescription>
                   </Alert>
                   
                   <div className="bg-destructive/10 border border-destructive/30 p-3 rounded mt-2">
-                    <p className="text-sm font-semibold text-destructive">⚠️ Se o campo "Query" não aparecer:</p>
-                    <p className="text-xs text-muted-foreground mt-1">Certifique-se que o toggle "Use Custom Schema" está ATIVADO (ligado). Sem isso, o n8n mostra interface visual ao invés do campo SQL.</p>
+                    <p className="text-sm font-semibold text-destructive">⚠️ IMPORTANTE:</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Se você deixar "Resource: Row" e "Operation: Create", NÃO vai funcionar!<br/>
+                      Você PRECISA selecionar <strong>Resource: Custom API Call</strong>
+                    </p>
                   </div>
                   
-                  <p className="text-sm font-medium mt-3">Query SQL (copie e cole no campo "Query"):</p>
+                  <p className="text-sm font-medium mt-3">Query SQL (copie e cole no campo SQL que aparece após selecionar Custom API Call):</p>
                   <pre className="bg-background p-3 rounded text-xs overflow-x-auto">
 {`SELECT 
   t.id,
