@@ -365,13 +365,18 @@ export default function N8nTarefasGuide() {
                   <Alert>
                     <CheckCircle className="h-4 w-4" />
                     <AlertDescription className="text-xs">
-                      <strong>📋 Passo a Passo:</strong><br/>
+                      <strong>📋 Passo a Passo IMPORTANTE:</strong><br/>
                       1. Selecione <strong>Operation: executeQuery</strong><br/>
-                      2. Ative o toggle <strong>"Use Custom Schema"</strong> se necessário<br/>
-                      3. Um campo de texto grande aparecerá abaixo chamado <strong>"Query"</strong><br/>
-                      4. Cole a query SQL completa neste campo
+                      2. <strong className="text-primary">⚠️ ATIVE o toggle "Use Custom Schema"</strong> (ele vem desligado por padrão)<br/>
+                      3. Após ativar, aparecerá um campo de texto grande chamado <strong>"Query"</strong><br/>
+                      4. Cole a query SQL completa abaixo neste campo
                     </AlertDescription>
                   </Alert>
+                  
+                  <div className="bg-destructive/10 border border-destructive/30 p-3 rounded mt-2">
+                    <p className="text-sm font-semibold text-destructive">⚠️ Se o campo "Query" não aparecer:</p>
+                    <p className="text-xs text-muted-foreground mt-1">Certifique-se que o toggle "Use Custom Schema" está ATIVADO (ligado). Sem isso, o n8n mostra interface visual ao invés do campo SQL.</p>
+                  </div>
                   
                   <p className="text-sm font-medium mt-3">Query SQL (copie e cole no campo "Query"):</p>
                   <pre className="bg-background p-3 rounded text-xs overflow-x-auto">
