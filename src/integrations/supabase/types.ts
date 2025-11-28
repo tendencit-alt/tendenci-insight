@@ -3176,7 +3176,7 @@ export type Database = {
         | "gestao_usuarios"
         | "configuracoes"
         | "arquitetos"
-      user_role: "admin" | "vendedor" | "arquiteto"
+      user_role: "admin" | "vendedor" | "arquiteto" | "projetista"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -3316,7 +3316,7 @@ export const Constants = {
         "configuracoes",
         "arquitetos",
       ],
-      user_role: ["admin", "vendedor", "arquiteto"],
+      user_role: ["admin", "vendedor", "arquiteto", "projetista"],
     },
   },
 } as const
