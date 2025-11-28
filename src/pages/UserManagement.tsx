@@ -19,7 +19,7 @@ interface UserProfile {
   email: string;
   username: string;
   full_name?: string;
-  role: 'admin' | 'vendedor' | 'arquiteto';
+  role: 'admin' | 'vendedor' | 'arquiteto' | 'projetista';
   created_at: string;
   especializacao?: string | null;
 }
@@ -35,6 +35,7 @@ const UserManagement = () => {
   const [resetPasswordDialogOpen, setResetPasswordDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [creatingProjetista, setCreatingProjetista] = useState(false);
 
   useEffect(() => {
     fetchUsers();
@@ -84,6 +85,39 @@ const UserManagement = () => {
     setDeleteDialogOpen(true);
   };
 
+  const handleCreateProjetista = async () => {
+    try {
+      setCreatingProjetista(true);
+      
+      const { data, error } = await supabase.functions.invoke('admin-create-user', {
+        body: {
+          email: 'Rsandrade1989@gmail.com',
+          password: '123456',
+          full_name: 'Projetista',
+          role: 'projetista'
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: 'Sucesso',
+        description: 'Usuário projetista criado com sucesso!',
+      });
+
+      fetchUsers();
+    } catch (error: any) {
+      console.error('Erro ao criar projetista:', error);
+      toast({
+        title: 'Erro',
+        description: error.message || 'Não foi possível criar o usuário projetista.',
+        variant: 'destructive',
+      });
+    } finally {
+      setCreatingProjetista(false);
+    }
+  };
+
   const getRoleBadge = (user: UserProfile) => {
     const isMaster = user.role === 'admin';
     return isMaster ? (
@@ -95,6 +129,11 @@ const UserManagement = () => {
       <Badge variant="outline">
         <User className="w-3 h-3 mr-1" />
         Arquiteto
+      </Badge>
+    ) : user.role === 'projetista' ? (
+      <Badge variant="outline" className="border-blue-500 text-blue-500">
+        <User className="w-3 h-3 mr-1" />
+        Projetista
       </Badge>
     ) : (
       <Badge variant="outline">
@@ -171,10 +210,25 @@ const UserManagement = () => {
               </div>
             </div>
           </div>
-          <Button onClick={() => setCreateDialogOpen(true)} className="gap-2">
-            <UserPlus className="w-4 h-4" />
-            Criar Usuário
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              onClick={handleCreateProjetista} 
+              className="gap-2"
+              variant="secondary"
+              disabled={creatingProjetista || users.some(u => u.email === 'Rsandrade1989@gmail.com')}
+            >
+              {creatingProjetista ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <UserPlus className="w-4 h-4" />
+              )}
+              Criar Projetista
+            </Button>
+            <Button onClick={() => setCreateDialogOpen(true)} className="gap-2">
+              <UserPlus className="w-4 h-4" />
+              Criar Usuário
+            </Button>
+          </div>
         </div>
 
         <Card>

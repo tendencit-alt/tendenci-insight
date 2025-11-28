@@ -38,7 +38,7 @@ export function CreateUserDialog({
     email: '',
     password: '',
     full_name: '',
-    role: 'vendedor' as 'admin' | 'vendedor' | 'arquiteto',
+    role: 'vendedor' as 'admin' | 'vendedor' | 'arquiteto' | 'projetista',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -186,6 +186,7 @@ export function CreateUserDialog({
                 <SelectItem value="admin">Master (Admin)</SelectItem>
                 <SelectItem value="vendedor">Vendedor</SelectItem>
                 <SelectItem value="arquiteto">Arquiteto</SelectItem>
+                <SelectItem value="projetista">Projetista</SelectItem>
               </SelectContent>
             </Select>
           </div>
