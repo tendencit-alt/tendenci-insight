@@ -266,11 +266,13 @@ export function DealTasks({ dealId }: DealTasksProps) {
 
       if (editingTaskId) {
         // UPDATE: Editar tarefa existente
-        console.log("🔄 Editando tarefa:", editingTaskId, {
+        console.log("🔄 [UPDATE] Editando tarefa:", editingTaskId, {
           title: newTask.title,
+          note: newTask.note,
           tipo_tarefa: newTask.tipo_tarefa,
           whatsapp_number: newTask.whatsapp_number,
           due_at: localISOTime,
+          raw_input: newTask.due_at,
         });
 
         const { data: updatedTask, error } = await supabase
@@ -288,11 +290,17 @@ export function DealTasks({ dealId }: DealTasksProps) {
           .single();
 
         if (error) {
-          console.error("❌ Erro ao editar tarefa:", error);
+          console.error("❌ [UPDATE] Erro ao editar tarefa:", {
+            error,
+            code: error.code,
+            message: error.message,
+            details: error.details,
+            hint: error.hint,
+          });
           throw error;
         }
 
-        console.log("✅ Tarefa editada com sucesso:", updatedTask);
+        console.log("✅ [UPDATE] Tarefa editada com sucesso:", updatedTask);
 
         // Fase 2: Feedback visual aprimorado
         toast({
