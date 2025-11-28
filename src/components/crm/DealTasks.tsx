@@ -176,6 +176,7 @@ export function DealTasks({ dealId }: DealTasksProps) {
   };
 
   const handleSaveTask = async () => {
+    // Fase 3: Validação de dados antes do UPDATE/INSERT
     if (!newTask.title || !newTask.due_at) {
       toast({
         title: "Campos obrigatórios",
@@ -253,98 +254,128 @@ export function DealTasks({ dealId }: DealTasksProps) {
       return;
     }
 
-    // Corrigir timezone local
-    const localDate = new Date(newTask.due_at);
-    const offsetMs = localDate.getTimezoneOffset() * 60000;
-    const localISOTime = new Date(localDate.getTime() - offsetMs).toISOString().slice(0, -1);
+    try {
+      // Fase 3: Validar conversão de timezone corretamente
+      const localDate = new Date(newTask.due_at);
+      if (isNaN(localDate.getTime())) {
+        throw new Error("Data/hora inválida");
+      }
+      
+      const offsetMs = localDate.getTimezoneOffset() * 60000;
+      const localISOTime = new Date(localDate.getTime() - offsetMs).toISOString().slice(0, -1);
 
-    if (editingTaskId) {
-      // UPDATE: Editar tarefa existente
-      const { error } = await supabase
-        .from("crm_tasks")
-        .update({
+      if (editingTaskId) {
+        // UPDATE: Editar tarefa existente
+        console.log("🔄 Editando tarefa:", editingTaskId, {
           title: newTask.title,
-          note: newTask.note || null,
-          due_at: localISOTime,
           tipo_tarefa: newTask.tipo_tarefa,
-          whatsapp_number: newTask.whatsapp_number || null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", editingTaskId);
-        // RLS policy já garante que vendedores só editam próprias tarefas e admins editam todas
-
-      setIsSubmitting(false);
-
-      if (error) {
-        toast({
-          title: "Erro ao editar tarefa",
-          description: error.message,
-          variant: "destructive",
+          whatsapp_number: newTask.whatsapp_number,
+          due_at: localISOTime,
         });
-        return;
-      }
 
-      toast({
-        title: "✅ Tarefa atualizada com sucesso",
-        description: `"${newTask.title}" foi atualizada.`,
-      });
-      
-      // Forçar refetch imediato para sincronizar dados
-      await fetchTasks();
-      
-      // Limpar formulário e estado de edição
-      setNewTask({
-        title: "",
-        due_at: "",
-        note: "",
-        tipo_tarefa: "interna",
-        whatsapp_number: "",
-      });
-      setEditingTaskId(null);
-      setIsAdding(false);
-      return;
-    } else {
-      // INSERT: Criar nova tarefa
-      const { error } = await supabase.from("crm_tasks").insert({
-        deal_id: dealId,
-        title: newTask.title,
-        note: newTask.note || null,
-        due_at: localISOTime,
-        status: "open",
-        origem_modulo: "crm",
-        tipo_tarefa: newTask.tipo_tarefa,
-        whatsapp_number: newTask.whatsapp_number || null,
-        created_by: user.id,
-      });
+        const { data: updatedTask, error } = await supabase
+          .from("crm_tasks")
+          .update({
+            title: newTask.title,
+            note: newTask.note || null,
+            due_at: localISOTime,
+            tipo_tarefa: newTask.tipo_tarefa,
+            whatsapp_number: newTask.whatsapp_number || null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", editingTaskId)
+          .select()
+          .single();
 
-      setIsSubmitting(false);
+        if (error) {
+          console.error("❌ Erro ao editar tarefa:", error);
+          throw error;
+        }
 
-      if (error) {
+        console.log("✅ Tarefa editada com sucesso:", updatedTask);
+
+        // Fase 2: Feedback visual aprimorado
         toast({
-          title: "Erro ao criar tarefa",
-          description: error.message,
-          variant: "destructive",
+          title: "✅ Tarefa atualizada",
+          description: `"${newTask.title}" foi atualizada para ${new Date(newTask.due_at).toLocaleString("pt-BR")}`,
         });
-        return;
-      }
+        
+        // Forçar refetch imediato para sincronizar dados
+        await fetchTasks();
+        
+        // Limpar formulário e estado de edição
+        setNewTask({
+          title: "",
+          due_at: "",
+          note: "",
+          tipo_tarefa: "interna",
+          whatsapp_number: "",
+        });
+        setErrors({ title: "", due_at: "" });
+        setEditingTaskId(null);
+        setIsAdding(false);
+      } else {
+        // INSERT: Criar nova tarefa
+        console.log("➕ Criando nova tarefa:", {
+          deal_id: dealId,
+          title: newTask.title,
+          tipo_tarefa: newTask.tipo_tarefa,
+          whatsapp_number: newTask.whatsapp_number,
+          due_at: localISOTime,
+        });
 
+        const { data: createdTask, error } = await supabase
+          .from("crm_tasks")
+          .insert({
+            deal_id: dealId,
+            title: newTask.title,
+            note: newTask.note || null,
+            due_at: localISOTime,
+            status: "open",
+            origem_modulo: "crm",
+            tipo_tarefa: newTask.tipo_tarefa,
+            whatsapp_number: newTask.whatsapp_number || null,
+            created_by: user.id,
+          })
+          .select()
+          .single();
+
+        if (error) {
+          console.error("❌ Erro ao criar tarefa:", error);
+          throw error;
+        }
+
+        console.log("✅ Tarefa criada com sucesso:", createdTask);
+
+        toast({
+          title: "Tarefa criada",
+          description: `"${newTask.title}" foi adicionada para ${new Date(newTask.due_at).toLocaleString("pt-BR")}`,
+        });
+
+        // Limpar formulário
+        setNewTask({ 
+          title: "", 
+          note: "", 
+          due_at: "", 
+          tipo_tarefa: "interna",
+          whatsapp_number: "",
+        });
+        setErrors({ title: "", due_at: "" });
+        setIsAdding(false);
+        
+        // Forçar refetch
+        await fetchTasks();
+      }
+    } catch (error: any) {
+      console.error("❌ Erro ao salvar tarefa:", error);
       toast({
-        title: "Tarefa criada",
-        description: "A tarefa foi adicionada com sucesso.",
+        title: editingTaskId ? "Erro ao editar tarefa" : "Erro ao criar tarefa",
+        description: error.message || "Ocorreu um erro ao salvar a tarefa. Tente novamente.",
+        variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
-
-    setEditingTaskId(null);
-    setNewTask({ 
-      title: "", 
-      note: "", 
-      due_at: "", 
-      tipo_tarefa: "interna",
-      whatsapp_number: "",
-    });
-    setErrors({ title: "", due_at: "" });
-    setIsAdding(false);
-    fetchTasks();
   };
 
   const handleToggleStatus = async (taskId: string, currentStatus: string) => {
