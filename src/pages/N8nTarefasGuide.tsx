@@ -3,11 +3,19 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, AlertCircle, Code, Webhook, Clock, MessageSquare, Download } from "lucide-react";
+import { CheckCircle, AlertCircle, Code, Webhook, Clock, MessageSquare, Download, Copy } from "lucide-react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { toast } from "sonner";
 
 export default function N8nTarefasGuide() {
+  const apiUrl = "https://emnwuzrysqoiwapzmnbv.supabase.co";
+  const apiKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtbnd1enJ5c3FvaXdhcHptbmJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI1MjkxMjMsImV4cCI6MjA3ODEwNTEyM30.tzEXZQShQWgyyJHxvCVYIGQg0gal-LuO4jlKQDFjq-c";
+  
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success(`${label} copiado!`);
+  };
+
   const downloadWorkflowJSON = () => {
     const workflowJSON = {
       "name": "Tarefas Automatizadas WhatsApp",
@@ -360,57 +368,72 @@ export default function N8nTarefasGuide() {
               </div>
 
               <div>
-                <h3 className="font-semibold mb-2">2. Supabase Node (Query)</h3>
+                <h3 className="font-semibold mb-2">2. HTTP Request Node</h3>
                 <div className="bg-muted p-4 rounded-lg space-y-3">
                   <Alert>
                     <CheckCircle className="h-4 w-4" />
                     <AlertDescription className="text-xs">
-                      <strong>📋 Passo a Passo CORRETO:</strong><br/>
-                      1. Ative o toggle <strong>"Use Custom Schema"</strong> (ele vem desligado)<br/>
-                      2. No campo <strong>Resource</strong>, selecione <strong>"Custom API Call"</strong> (não deixe "Row")<br/>
-                      3. Após selecionar "Custom API Call", aparecerá uma mensagem sugerindo usar HTTP Request node<br/>
-                      4. <strong>IGNORE essa mensagem</strong> - role para baixo e você verá campos adicionais<br/>
-                      5. Cole a query SQL no campo que aparecerá
+                      <strong>📋 Por que HTTP Request?</strong><br/>
+                      O Supabase node do n8n NÃO suporta executar queries SQL diretamente.<br/>
+                      Por isso, criamos uma função RPC no Supabase que você chama via HTTP Request.
                     </AlertDescription>
                   </Alert>
                   
-                  <div className="bg-destructive/10 border border-destructive/30 p-3 rounded mt-2">
-                    <p className="text-sm font-semibold text-destructive">⚠️ IMPORTANTE:</p>
+                  <div className="bg-primary/10 border border-primary/30 p-3 rounded">
+                    <p className="text-sm font-semibold text-primary mb-2">⚙️ Configuração do HTTP Request:</p>
+                    <ul className="text-xs space-y-1">
+                      <li><strong>Method:</strong> POST</li>
+                      <li><strong>URL:</strong> {apiUrl}/rest/v1/rpc/get_pending_automated_tasks</li>
+                      <li><strong>Authentication:</strong> Generic Credential Type</li>
+                      <li><strong>Generic Auth Type:</strong> Header Auth</li>
+                      <li><strong>Header Name:</strong> apikey</li>
+                      <li><strong>Header Value:</strong> {apiKey}</li>
+                    </ul>
+                    
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => copyToClipboard(`${apiUrl}/rest/v1/rpc/get_pending_automated_tasks`, "URL da RPC")}
+                      className="mt-3 w-full"
+                    >
+                      <Copy className="h-3 w-3 mr-2" />
+                      Copiar URL Completa
+                    </Button>
+                  </div>
+                  
+                  <div className="bg-destructive/10 border border-destructive/30 p-3 rounded">
+                    <p className="text-sm font-semibold text-destructive">⚠️ ATENÇÃO:</p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Se você deixar "Resource: Row" e "Operation: Create", NÃO vai funcionar!<br/>
-                      Você PRECISA selecionar <strong>Resource: Custom API Call</strong>
+                      NÃO use o Supabase node! Use HTTP Request node conforme configuração acima.
                     </p>
                   </div>
                   
-                  <p className="text-sm font-medium mt-3">Query SQL (copie e cole no campo SQL que aparece após selecionar Custom API Call):</p>
+                  <p className="text-sm font-medium mt-3">Exemplo de resposta (JSON que o n8n receberá):</p>
                   <pre className="bg-background p-3 rounded text-xs overflow-x-auto">
-{`SELECT 
-  t.id,
-  t.deal_id,
-  t.title,
-  t.note as mensagem,
-  t.whatsapp_number,
-  t.due_at,
-  t.created_by,
-  t.origem_modulo,
-  wc.instance_name,
-  wc.instance_id,
-  wc.id as whatsapp_connection_id
-FROM crm_tasks t
-INNER JOIN profiles p ON t.created_by = p.id
-INNER JOIN tendenci_whatsapp_connections wc 
-  ON wc.user_id = p.id 
-  AND wc.status = 'connected'
-WHERE t.tipo_tarefa = 'automatizada'
-  AND t.status = 'open'
-  AND t.due_at <= NOW()
-ORDER BY t.due_at ASC`}
+{`[
+  {
+    "tarefa_id": "uuid...",
+    "deal_id": "uuid...",
+    "lead_id": "uuid...",
+    "arquiteto_id": "uuid...",
+    "nome": "Cliente ou Arquiteto",
+    "telefone": "5511999999999",
+    "tipo_envio": "texto",
+    "conteudo_texto": "Mensagem automática...",
+    "whatsapp_connection_id": "uuid...",
+    "instance_name": "tendenci-prod",
+    "instance_id": "12345",
+    "due_at": "2025-01-15T10:00:00Z",
+    "created_by": "uuid...",
+    "origem_modulo": "crm"
+  }
+]`}
                   </pre>
                   
                   <Alert className="mt-3">
                     <CheckCircle className="h-4 w-4" />
                     <AlertDescription className="text-xs">
-                      <strong>✨ Isolamento por Vendedor:</strong> O JOIN garante que apenas tarefas de vendedores com instância WhatsApp conectada sejam processadas. Cada tarefa usa automaticamente a instância específica do vendedor que a criou, evitando duplicidade.
+                      <strong>✨ Isolamento por Vendedor:</strong> A função RPC garante que apenas tarefas de vendedores com instância WhatsApp conectada sejam processadas. Cada tarefa usa automaticamente a instância específica do vendedor que a criou.
                     </AlertDescription>
                   </Alert>
                 </div>

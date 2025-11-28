@@ -3057,6 +3057,25 @@ export type Database = {
         Args: { p_date?: string; p_vendedor_id: string }
         Returns: Json
       }
+      get_pending_automated_tasks: {
+        Args: never
+        Returns: {
+          arquiteto_id: string
+          conteudo_texto: string
+          created_by: string
+          deal_id: string
+          due_at: string
+          instance_id: string
+          instance_name: string
+          lead_id: string
+          nome: string
+          origem_modulo: string
+          tarefa_id: string
+          telefone: string
+          tipo_envio: string
+          whatsapp_connection_id: string
+        }[]
+      }
       get_project_stats_by_type: {
         Args: never
         Returns: {
