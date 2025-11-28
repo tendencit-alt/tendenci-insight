@@ -2783,6 +2783,7 @@ export type Database = {
           qr_code_base64: string | null
           status: string
           updated_at: string
+          user_id: string | null
           webhook_configured: boolean | null
           webhook_url: string | null
         }
@@ -2801,6 +2802,7 @@ export type Database = {
           qr_code_base64?: string | null
           status?: string
           updated_at?: string
+          user_id?: string | null
           webhook_configured?: boolean | null
           webhook_url?: string | null
         }
@@ -2819,10 +2821,19 @@ export type Database = {
           qr_code_base64?: string | null
           status?: string
           updated_at?: string
+          user_id?: string | null
           webhook_configured?: boolean | null
           webhook_url?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "tendenci_whatsapp_connections_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_permissions: {
         Row: {
