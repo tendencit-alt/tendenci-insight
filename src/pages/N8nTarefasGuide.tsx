@@ -379,26 +379,82 @@ export default function N8nTarefasGuide() {
                     </AlertDescription>
                   </Alert>
                   
-                  <div className="bg-primary/10 border border-primary/30 p-3 rounded">
-                    <p className="text-sm font-semibold text-primary mb-2">⚙️ Configuração do HTTP Request:</p>
-                    <ul className="text-xs space-y-1">
-                      <li><strong>Method:</strong> POST</li>
-                      <li><strong>URL:</strong> {apiUrl}/rest/v1/rpc/get_pending_automated_tasks</li>
-                      <li><strong>Authentication:</strong> Generic Credential Type</li>
-                      <li><strong>Generic Auth Type:</strong> Header Auth</li>
-                      <li><strong>Header Name:</strong> apikey</li>
-                      <li><strong>Header Value:</strong> {apiKey}</li>
-                    </ul>
+                  <div className="bg-primary/10 border border-primary/30 p-3 rounded space-y-3">
+                    <p className="text-sm font-semibold text-primary mb-2">⚙️ Configuração Passo a Passo:</p>
                     
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => copyToClipboard(`${apiUrl}/rest/v1/rpc/get_pending_automated_tasks`, "URL da RPC")}
-                      className="mt-3 w-full"
-                    >
-                      <Copy className="h-3 w-3 mr-2" />
-                      Copiar URL Completa
-                    </Button>
+                    <div className="space-y-2">
+                      <div className="bg-background/50 p-2 rounded">
+                        <p className="text-xs font-semibold mb-1">1. Method:</p>
+                        <code className="text-xs">POST</code>
+                      </div>
+
+                      <div className="bg-background/50 p-2 rounded">
+                        <p className="text-xs font-semibold mb-1">2. URL (copie completa):</p>
+                        <div className="flex items-center gap-2">
+                          <code className="text-xs break-all flex-1">{apiUrl}/rest/v1/rpc/get_pending_automated_tasks</code>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => copyToClipboard(`${apiUrl}/rest/v1/rpc/get_pending_automated_tasks`, "URL")}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="bg-background/50 p-2 rounded">
+                        <p className="text-xs font-semibold mb-1">3. Authentication:</p>
+                        <ul className="text-xs space-y-1 ml-3">
+                          <li>• <strong>Generic Credential Type</strong></li>
+                          <li>• <strong>Generic Auth Type:</strong> Header Auth</li>
+                        </ul>
+                      </div>
+
+                      <div className="bg-yellow-50 dark:bg-yellow-900/30 border-2 border-yellow-400 p-3 rounded">
+                        <p className="text-xs font-bold text-yellow-900 dark:text-yellow-100 mb-2">
+                          4. ⚠️ ATIVE "Send Headers" e adicione 2 headers:
+                        </p>
+                        <div className="space-y-2 text-xs">
+                          <div className="bg-background/80 p-2 rounded">
+                            <p className="font-semibold mb-1">Header 1:</p>
+                            <p><strong>Name:</strong> <code>apikey</code></p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <p className="break-all flex-1"><strong>Value:</strong> <code>{apiKey.substring(0, 30)}...</code></p>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => copyToClipboard(apiKey, "API Key")}
+                              >
+                                <Copy className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+
+                          <div className="bg-background/80 p-2 rounded">
+                            <p className="font-semibold mb-1">Header 2:</p>
+                            <p><strong>Name:</strong> <code>Authorization</code></p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <p className="break-all flex-1"><strong>Value:</strong> <code>Bearer {apiKey.substring(0, 20)}...</code></p>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => copyToClipboard(`Bearer ${apiKey}`, "Authorization")}
+                              >
+                                <Copy className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="bg-background/50 p-2 rounded">
+                        <p className="text-xs font-semibold mb-1">5. Outras configurações:</p>
+                        <ul className="text-xs space-y-1 ml-3">
+                          <li>• <strong>Send Query Parameters:</strong> OFF (desligado)</li>
+                          <li>• <strong>Send Body:</strong> OFF (desligado)</li>
+                        </ul>
+                      </div>
+                    </div>
                   </div>
                   
                   <div className="bg-destructive/10 border border-destructive/30 p-3 rounded">
