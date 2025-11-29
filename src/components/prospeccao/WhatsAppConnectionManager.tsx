@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2, QrCode, Trash2, RefreshCw, Plus, Phone, Calendar } from "lucide-react";
+import { Loader2, QrCode, Trash2, RefreshCw, Plus, Phone, Calendar, PowerOff } from "lucide-react";
 import { format } from "date-fns";
 
 interface WhatsAppConnection {
@@ -289,6 +289,33 @@ export default function WhatsAppConnectionManager() {
     },
   });
 
+  const disconnectMutation = useMutation({
+    mutationFn: async (instanceName: string) => {
+      console.log('🔌 Disconnecting instance:', instanceName);
+      
+      const { data, error } = await supabase.functions.invoke("whatsapp-evolution", {
+        body: { action: "disconnect", instanceName },
+      });
+      
+      if (error) {
+        console.error('❌ Disconnect error:', error);
+        throw error;
+      }
+      
+      console.log('✅ Disconnect response:', data);
+      return data;
+    },
+    onSuccess: (data, instanceName) => {
+      console.log('✅ Instance disconnected successfully:', instanceName);
+      toast.success("WhatsApp desconectado e offline");
+      queryClient.invalidateQueries({ queryKey: ["whatsapp-connections"] });
+    },
+    onError: (error: any) => {
+      console.error('💥 Disconnect mutation error:', error);
+      toast.error(error.message || "Erro ao desconectar");
+    },
+  });
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'connected':
@@ -389,6 +416,7 @@ export default function WhatsAppConnectionManager() {
                         variant="outline"
                         onClick={() => getQrCodeMutation.mutate(conn.instance_name)}
                         disabled={getQrCodeMutation.isPending}
+                        title="Gerar novo QR Code"
                       >
                         <QrCode className="h-4 w-4" />
                       </Button>
@@ -397,14 +425,27 @@ export default function WhatsAppConnectionManager() {
                         variant="outline"
                         onClick={() => checkStatusMutation.mutate(conn.instance_name)}
                         disabled={checkStatusMutation.isPending}
+                        title="Verificar status"
                       >
                         <RefreshCw className="h-4 w-4" />
                       </Button>
+                      {conn.status === 'connected' && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => disconnectMutation.mutate(conn.instance_name)}
+                          disabled={disconnectMutation.isPending}
+                          title="Desconectar e ficar offline"
+                        >
+                          <PowerOff className="h-4 w-4" />
+                        </Button>
+                      )}
                       <Button
                         size="sm"
                         variant="destructive"
                         onClick={() => deleteMutation.mutate(conn.instance_name)}
                         disabled={deleteMutation.isPending}
+                        title="Deletar conexão"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>

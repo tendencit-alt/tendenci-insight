@@ -400,18 +400,53 @@ Deno.serve(async (req) => {
     if (action === 'disconnect') {
       console.log('🔌 Disconnecting instance:', instanceName)
       
-      await fetch(`${evolutionUrl}/instance/logout/${instanceName}`, {
-        method: 'DELETE',
-        headers: { 'apikey': evolutionApiKey }
-      })
+      // 1️⃣ PRIMEIRO: Fazer logout para encerrar sessão atual
+      try {
+        await fetch(`${evolutionUrl}/instance/logout/${instanceName}`, {
+          method: 'DELETE',
+          headers: { 'apikey': evolutionApiKey }
+        })
+        console.log('✅ Logout realizado')
+      } catch (err) {
+        console.log('⚠️ Erro no logout (continuando):', err)
+      }
+      
+      // 2️⃣ AGUARDAR um momento
+      await new Promise(resolve => setTimeout(resolve, 2000))
+      
+      // 3️⃣ DELETAR a instância da Evolution API para realmente ficar OFFLINE
+      try {
+        const deleteResp = await fetch(`${evolutionUrl}/instance/delete/${instanceName}`, {
+          method: 'DELETE',
+          headers: { 'apikey': evolutionApiKey }
+        })
+        
+        if (deleteResp.ok) {
+          console.log('✅ Instância deletada da Evolution API - WhatsApp OFFLINE')
+        } else {
+          console.warn('⚠️ Falha ao deletar instância:', deleteResp.status)
+        }
+      } catch (err) {
+        console.error('❌ Erro ao deletar instância:', err)
+      }
 
+      // 4️⃣ ATUALIZAR banco - manter registro mas marcar como desconectado
       await supabase
         .from('tendenci_whatsapp_connections')
-        .update({ status: 'disconnected', phone_number: null })
+        .update({ 
+          status: 'disconnected', 
+          phone_number: null,
+          qr_code: null,
+          qr_code_base64: null,
+          connected_at: null,
+          last_sync: new Date().toISOString()
+        })
         .eq('instance_name', instanceName)
 
+      console.log('✅ Banco atualizado - instância desconectada')
+
       return new Response(
-        JSON.stringify({ success: true }),
+        JSON.stringify({ success: true, message: 'Instance disconnected and offline' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
