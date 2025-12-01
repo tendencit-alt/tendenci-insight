@@ -11,3 +11,6 @@ verify_jwt = true
 
 [functions.execute-campaign-background]
 verify_jwt = true
+
+[functions.process-automated-task]
+verify_jwt = false

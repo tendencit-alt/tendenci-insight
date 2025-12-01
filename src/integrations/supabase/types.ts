@@ -969,6 +969,7 @@ export type Database = {
           id: string
           note: string | null
           origem_modulo: string | null
+          processed_at: string | null
           status: string | null
           tipo_tarefa: string
           title: string
@@ -983,6 +984,7 @@ export type Database = {
           id?: string
           note?: string | null
           origem_modulo?: string | null
+          processed_at?: string | null
           status?: string | null
           tipo_tarefa?: string
           title: string
@@ -997,6 +999,7 @@ export type Database = {
           id?: string
           note?: string | null
           origem_modulo?: string | null
+          processed_at?: string | null
           status?: string | null
           tipo_tarefa?: string
           title?: string
