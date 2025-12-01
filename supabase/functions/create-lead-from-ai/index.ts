@@ -23,6 +23,46 @@ interface LeadData {
   ai_status?: string
 }
 
+// Função para limpar e validar números de telefone
+function cleanPhone(raw: string): string {
+  console.log('📞 Limpando telefone. Input:', raw)
+  
+  // Remove @s.whatsapp.net e caracteres não numéricos
+  let phone = raw.replace('@s.whatsapp.net', '').replace(/\D/g, '')
+  console.log('📞 Após remover não-numéricos:', phone)
+  
+  // Se tem mais de 13 dígitos, é provavelmente um JID do WhatsApp
+  if (phone.length > 13) {
+    console.log('⚠️ Número muito longo (JID detectado), tentando extrair número brasileiro válido...')
+    
+    // Tenta extrair número brasileiro válido (55 + DDD + 8 ou 9 dígitos)
+    const match = phone.match(/55\d{10,11}$/)
+    if (match) {
+      phone = match[0]
+      console.log('✅ Número brasileiro extraído:', phone)
+    } else {
+      // Fallback: pega os últimos 11-13 dígitos
+      phone = phone.slice(-13)
+      console.log('⚠️ Usando fallback (últimos 13 dígitos):', phone)
+    }
+  }
+  
+  // Remove prefixo 55 duplicado
+  if (phone.startsWith('5555')) {
+    phone = phone.slice(2)
+    console.log('📞 Removido 55 duplicado:', phone)
+  }
+  
+  // Adiciona 55 se não tiver
+  if (!phone.startsWith('55') && phone.length >= 10) {
+    phone = '55' + phone
+    console.log('📞 Adicionado prefixo 55:', phone)
+  }
+  
+  console.log('✅ Telefone final:', phone)
+  return phone
+}
+
 // Função para detectar tipo de produto baseado na conversa
 function detectProductType(conversation: string): string {
   const lowerConv = conversation.toLowerCase()
@@ -57,28 +97,36 @@ function detectProductType(conversation: string): string {
   return 'Personalizado'
 }
 
-// Função para formatar conversa no formato esperado
+// Função para formatar conversa com alternância forçada
 function formatConversation(rawConversation: string | any): string {
+  console.log('💬 Formatando conversa. Tipo:', typeof rawConversation)
+  console.log('💬 Input (primeiros 200 chars):', String(rawConversation).slice(0, 200))
+  
   if (!rawConversation) return ''
   
-  // Se é um array de mensagens estruturadas
+  // Se é um array de mensagens estruturadas do n8n
   if (Array.isArray(rawConversation)) {
+    console.log('✅ Array estruturado detectado')
     return rawConversation.map(msg => {
-      const sender = msg.sender === 'client' || msg.sender === 'cliente' ? '👤 Cliente' : '🤖 IA'
-      return `${sender}: ${msg.message}`
-    }).join('\n')
+      const isClient = msg.sender === 'client' || msg.sender === 'cliente' || msg.role === 'user'
+      const sender = isClient ? '👤 Cliente' : '🤖 IA'
+      const content = msg.message || msg.content || ''
+      return `${sender}: ${content}`
+    }).join('\n\n')
   }
   
-  // Se é string
+  // Converter para string
   const conversationStr = String(rawConversation)
   
   // Se já está formatado com emojis, retorna como está
-  if (conversationStr.includes('👤 Cliente:') || conversationStr.includes('🤖 IA:')) {
+  if (conversationStr.includes('👤 Cliente:') && conversationStr.includes('🤖 IA:')) {
+    console.log('✅ Já formatado com emojis')
     return conversationStr
   }
   
   // Se está formatado com CLIENT: e AI:
   if (conversationStr.includes('CLIENT:') || conversationStr.includes('AI:')) {
+    console.log('✅ Formatado com CLIENT:/AI:, convertendo...')
     return conversationStr
       .replace(/CLIENT:/g, '👤 Cliente:')
       .replace(/AI:/g, '🤖 IA:')
@@ -86,7 +134,22 @@ function formatConversation(rawConversation: string | any): string {
       .replace(/IA:/g, '🤖 IA:')
   }
   
-  // Tenta parsear a conversa identificando padrões comuns
+  // Estratégia avançada: detectar padrões de separação natural
+  console.log('🔍 Aplicando estratégia de alternância forçada...')
+  
+  // Tenta separar por perguntas seguidas de respostas
+  const segments = conversationStr.split(/(?<=\?)\s+(?=[A-ZÁÉÍÓÚ])/g)
+  
+  if (segments.length > 1) {
+    console.log(`✅ Detectados ${segments.length} segmentos por separação de perguntas`)
+    return segments.map((seg, i) => {
+      const isClient = i % 2 === 0 // Alternância: cliente pergunta, IA responde
+      return `${isClient ? '👤 Cliente' : '🤖 IA'}: ${seg.trim()}`
+    }).join('\n\n')
+  }
+  
+  // Fallback: quebrar por linhas e usar heurística
+  console.log('⚠️ Usando fallback de heurística por linhas')
   const lines = conversationStr.split('\n').filter(line => line.trim())
   const formattedMessages: string[] = []
   
@@ -94,20 +157,29 @@ function formatConversation(rawConversation: string | any): string {
     const message = lines[i].trim()
     if (!message) continue
     
-    // Detecta padrões que indicam cliente vs IA
+    // Heurística melhorada para detectar cliente vs IA
     const isClientMessage = 
-      message.match(/^(olá|oi|bom dia|boa tarde|boa noite|gostaria|preciso|quanto|valor|preço)/i) ||
+      message.match(/^(olá|oi|ola|bom dia|boa tarde|boa noite|gostaria|preciso|quanto|quero|valor|preço|tem|possui)/i) ||
       message.includes('?') ||
-      (message.length < 100 && !message.match(/^(claro|com certeza|perfeito|entendo|vou|posso)/i))
+      (message.length < 150 && !message.match(/^(claro|com certeza|perfeito|entendo|vou|posso|aqui|segue)/i))
     
-    if (isClientMessage) {
+    // Alternância forçada se detectar múltiplas mensagens curtas
+    const forceAlternation = lines.length > 3 && message.length < 100
+    
+    if (forceAlternation) {
+      // Força alternância: ímpar = cliente, par = IA
+      const sender = i % 2 === 0 ? '👤 Cliente' : '🤖 IA'
+      formattedMessages.push(`${sender}: ${message}`)
+    } else if (isClientMessage) {
       formattedMessages.push(`👤 Cliente: ${message}`)
     } else {
       formattedMessages.push(`🤖 IA: ${message}`)
     }
   }
   
-  return formattedMessages.join('\n')
+  const result = formattedMessages.join('\n\n')
+  console.log('✅ Conversa formatada (primeiros 200 chars):', result.slice(0, 200))
+  return result
 }
 
 Deno.serve(async (req) => {
@@ -151,14 +223,24 @@ Deno.serve(async (req) => {
 
     // Normalizar campos para aceitar português e inglês
     const rawConversation = rawData.conversation_history || rawData.conversa_whatsapp || rawData.historico_conversa || ''
+    console.log('📝 Conversa raw recebida (primeiros 300 chars):', String(rawConversation).slice(0, 300))
+    
     const formattedConversation = formatConversation(rawConversation)
-    const detectedProductType = detectProductType(rawConversation)
+    const detectedProductType = detectProductType(String(rawConversation))
+    
+    // Limpar e validar telefone
+    const rawPhone = rawData.phone || rawData.contato_whatsapp || rawData.telefone || ''
+    console.log('📞 Telefone raw recebido:', rawPhone)
+    const cleanedPhone = cleanPhone(rawPhone)
+    
+    // Limpar nome (remover caracteres especiais excessivos)
+    const rawName = rawData.name || rawData.nome || ''
+    const cleanedName = rawName.trim().replace(/[^\w\sÀ-ÿ]/g, ' ').replace(/\s+/g, ' ')
+    console.log('👤 Nome raw:', rawName, '→ Nome limpo:', cleanedName)
     
     const data: LeadData = {
-      name: rawData.name || rawData.nome,
-      phone: (rawData.phone || rawData.contato_whatsapp || rawData.telefone || '')
-        .replace('@s.whatsapp.net', '')
-        .replace(/\D/g, ''), // Remove tudo que não é número
+      name: cleanedName,
+      phone: cleanedPhone,
       email: rawData.email,
       city: rawData.city || rawData.cidade,
       state: rawData.state || rawData.estado,
@@ -177,7 +259,8 @@ Deno.serve(async (req) => {
     }
 
     // Validações básicas
-    console.log('🔍 Validando dados:', { name: data.name, phone: data.phone })
+    console.log('🔍 Validando dados finais:', { name: data.name, phone: data.phone, phoneLength: data.phone.length })
+    
     if (!data.name || !data.phone) {
       console.error('❌ Validação falhou - Nome ou telefone ausente')
       return new Response(
@@ -190,6 +273,21 @@ Deno.serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
+    
+    // Validar formato de telefone brasileiro (11-13 dígitos com 55)
+    if (data.phone.length < 11 || data.phone.length > 13) {
+      console.error('❌ Telefone com comprimento inválido:', data.phone.length)
+      return new Response(
+        JSON.stringify({ 
+          error: 'Telefone brasileiro inválido',
+          received: data.phone,
+          expectedLength: '11-13 dígitos',
+          tip: 'Formato esperado: 5511999999999 (55 + DDD + número)'
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+    
     console.log('✅ Validação passou')
 
     // 1. Verificar se cliente já existe pelo telefone
