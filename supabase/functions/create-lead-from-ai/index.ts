@@ -97,10 +97,144 @@ function detectProductType(conversation: string): string {
   return 'Personalizado'
 }
 
-// Função para formatar conversa com alternância forçada
+// ============= FUNÇÕES AUXILIARES DE DETECÇÃO =============
+
+// Padrões de junção Cliente→IA (onde mensagem curta do cliente termina e IA responde)
+function findJunctionPoint(text: string): number {
+  const junctionPatterns = [
+    // "Mesa de jantar 2.20Certo, vou ajudar..." → separa antes de "Certo"
+    /(\w{2,}(?:\s+\w+){0,6})(Certo|Claro|Ok|Entendi|Perfeito|Com certeza|Ótimo|Maravilha)/gi,
+    
+    // "Poltrona verdeCom certeza! Temos..." → separa antes de "Com certeza"
+    /(\w+)(Com certeza|Sem problema|Vou verificar|Deixa eu ver|Vamos lá)/gi,
+    
+    // "Sofá 3 lugaresOlá|Oi|Bom dia" → separa antes de saudação
+    /(\w+\s*\d*)(Olá|Oi,?\s|Bom dia|Boa tarde|Boa noite)/gi,
+    
+    // "2.20mAqui na Tendenci..." → separa antes de "Aqui"
+    /(\d+(?:\.\d+)?m?)(Aqui|Temos|Possuímos|Oferecemos|Trabalhamos)/gi,
+    
+    // "Mesa retangularVou" → separa palavras coladas
+    /([a-záéíóúãõç]+)([A-ZÁÉÍÓÚÃÕÇ][a-z]{3,})/g
+  ]
+  
+  let earliestMatch = -1
+  
+  for (const pattern of junctionPatterns) {
+    const match = pattern.exec(text)
+    if (match && match.index > 0) {
+      // Ponto de separação é entre grupo 1 e grupo 2
+      const separationPoint = match.index + (match[1]?.length || 0)
+      
+      if (earliestMatch === -1 || separationPoint < earliestMatch) {
+        earliestMatch = separationPoint
+      }
+    }
+  }
+  
+  return earliestMatch
+}
+
+// Detecta se texto parece ser início de mensagem de cliente
+function seemsClientStart(text: string): boolean {
+  const clientIndicators = [
+    /^(olá|oi|bom dia|boa tarde|boa noite)/i,
+    /^(quero|preciso|gostaria|quanto|qual|tem|vocês|posso)/i,
+    /^(me\s+|como\s+|quando\s+|onde\s+)/i,
+    /\?$/,  // Termina com pergunta
+    /^\d+(\.\d+)?m?\s*$/  // Apenas medida (ex: "2.20m")
+  ]
+  
+  return clientIndicators.some(pattern => pattern.test(text.trim()))
+}
+
+// Detecta se texto parece ser início de mensagem da IA
+function seemsAIStart(text: string): boolean {
+  const aiIndicators = [
+    /^(certo|claro|ok|entendi|perfeito|com certeza|ótimo|maravilha)/i,
+    /^(olá!?\s+aqui|oi!?\s+aqui|bom dia!?\s+aqui)/i,
+    /^(temos|possuímos|oferecemos|trabalhamos|aqui na)/i,
+    /^(posso|vou|deixa eu|deixe-me|vamos)/i,
+    /(tendenci|nossa loja|nossos produtos|nosso catálogo)/i
+  ]
+  
+  return aiIndicators.some(pattern => pattern.test(text.trim()))
+}
+
+// Algoritmo de separação inteligente
+function smartSplitConversation(text: string): {sender: string, message: string}[] {
+  console.log('🧠 Iniciando separação inteligente...')
+  console.log('📝 Texto original:', text)
+  
+  const messages: {sender: string, message: string}[] = []
+  let remaining = text.trim()
+  let lastSender = 'client' // Assume que cliente inicia
+  let iterationCount = 0
+  const maxIterations = 10 // Prevenir loop infinito
+  
+  while (remaining.length > 0 && iterationCount < maxIterations) {
+    iterationCount++
+    console.log(`\n🔄 Iteração ${iterationCount}`)
+    console.log('📏 Texto restante (${remaining.length} chars):', remaining.slice(0, 100))
+    
+    // 1. Tentar encontrar ponto de junção
+    const splitPoint = findJunctionPoint(remaining)
+    console.log('🎯 Ponto de junção detectado:', splitPoint)
+    
+    if (splitPoint > 0 && splitPoint < remaining.length - 10) {
+      // Encontrou ponto de junção válido
+      const firstPart = remaining.slice(0, splitPoint).trim()
+      remaining = remaining.slice(splitPoint).trim()
+      
+      console.log('✂️ Primeira parte extraída:', firstPart)
+      console.log('📄 Texto restante após corte:', remaining.slice(0, 50))
+      
+      if (firstPart) {
+        messages.push({ sender: lastSender, message: firstPart })
+        lastSender = lastSender === 'client' ? 'ai' : 'client'
+      }
+    } else {
+      // Não encontrou junção clara
+      console.log('⚠️ Junção não detectada, aplicando heurística...')
+      
+      // Se tem quebras de linha naturais, tenta usar
+      if (remaining.includes('\n')) {
+        const lines = remaining.split('\n').filter(l => l.trim())
+        
+        if (lines.length > 1) {
+          // Pega primeira linha como mensagem
+          const firstLine = lines[0].trim()
+          remaining = lines.slice(1).join('\n').trim()
+          
+          console.log('📋 Usando primeira linha:', firstLine)
+          messages.push({ sender: lastSender, message: firstLine })
+          lastSender = lastSender === 'client' ? 'ai' : 'client'
+          continue
+        }
+      }
+      
+      // Último recurso: todo o texto restante
+      console.log('🏁 Finalizando com texto restante completo')
+      
+      if (remaining.length > 200 && messages.length === 0) {
+        // Texto longo sem mensagens anteriores - provavelmente só IA
+        messages.push({ sender: 'ai', message: remaining })
+      } else {
+        messages.push({ sender: lastSender, message: remaining })
+      }
+      break
+    }
+  }
+  
+  console.log(`✅ Separação concluída: ${messages.length} mensagens detectadas`)
+  return messages
+}
+
+// ============= FUNÇÃO PRINCIPAL DE FORMATAÇÃO =============
+
 function formatConversation(rawConversation: string | any): string {
   console.log('💬 Formatando conversa. Tipo:', typeof rawConversation)
-  console.log('💬 Input (primeiros 200 chars):', String(rawConversation).slice(0, 200))
+  console.log('💬 Input (primeiros 300 chars):', String(rawConversation).slice(0, 300))
   
   if (!rawConversation) return ''
   
@@ -134,21 +268,26 @@ function formatConversation(rawConversation: string | any): string {
       .replace(/IA:/g, '🤖 IA:')
   }
   
-  // Estratégia avançada: detectar padrões de separação natural
-  console.log('🔍 Aplicando estratégia de alternância forçada...')
+  // ============= NOVA ESTRATÉGIA: SEPARAÇÃO INTELIGENTE =============
   
-  // Tenta separar por perguntas seguidas de respostas
-  const segments = conversationStr.split(/(?<=\?)\s+(?=[A-ZÁÉÍÓÚ])/g)
+  console.log('🧠 Aplicando algoritmo de separação inteligente...')
   
-  if (segments.length > 1) {
-    console.log(`✅ Detectados ${segments.length} segmentos por separação de perguntas`)
-    return segments.map((seg, i) => {
-      const isClient = i % 2 === 0 // Alternância: cliente pergunta, IA responde
-      return `${isClient ? '👤 Cliente' : '🤖 IA'}: ${seg.trim()}`
+  // Aplicar separação inteligente
+  const separatedMessages = smartSplitConversation(conversationStr)
+  
+  if (separatedMessages.length > 0) {
+    console.log('✅ Mensagens separadas com sucesso')
+    const formatted = separatedMessages.map(msg => {
+      const sender = msg.sender === 'client' ? '👤 Cliente' : '🤖 IA'
+      return `${sender}: ${msg.message}`
     }).join('\n\n')
+    
+    console.log('✅ Conversa formatada (primeiros 300 chars):', formatted.slice(0, 300))
+    return formatted
   }
   
-  // Fallback: quebrar por linhas e usar heurística
+  // ============= FALLBACK: ESTRATÉGIA ORIGINAL MELHORADA =============
+  
   console.log('⚠️ Usando fallback de heurística por linhas')
   const lines = conversationStr.split('\n').filter(line => line.trim())
   const formattedMessages: string[] = []
@@ -157,28 +296,26 @@ function formatConversation(rawConversation: string | any): string {
     const message = lines[i].trim()
     if (!message) continue
     
-    // Heurística melhorada para detectar cliente vs IA
-    const isClientMessage = 
-      message.match(/^(olá|oi|ola|bom dia|boa tarde|boa noite|gostaria|preciso|quanto|quero|valor|preço|tem|possui)/i) ||
-      message.includes('?') ||
-      (message.length < 150 && !message.match(/^(claro|com certeza|perfeito|entendo|vou|posso|aqui|segue)/i))
+    // Usar detecção semântica melhorada
+    const isClientMessage = seemsClientStart(message)
+    const isAIMessage = seemsAIStart(message)
     
-    // Alternância forçada se detectar múltiplas mensagens curtas
-    const forceAlternation = lines.length > 3 && message.length < 100
-    
-    if (forceAlternation) {
-      // Força alternância: ímpar = cliente, par = IA
-      const sender = i % 2 === 0 ? '👤 Cliente' : '🤖 IA'
-      formattedMessages.push(`${sender}: ${message}`)
-    } else if (isClientMessage) {
-      formattedMessages.push(`👤 Cliente: ${message}`)
+    // Decidir sender
+    let sender: string
+    if (isClientMessage && !isAIMessage) {
+      sender = '👤 Cliente'
+    } else if (isAIMessage && !isClientMessage) {
+      sender = '🤖 IA'
     } else {
-      formattedMessages.push(`🤖 IA: ${message}`)
+      // Ambíguo - usar alternância
+      sender = i % 2 === 0 ? '👤 Cliente' : '🤖 IA'
     }
+    
+    formattedMessages.push(`${sender}: ${message}`)
   }
   
   const result = formattedMessages.join('\n\n')
-  console.log('✅ Conversa formatada (primeiros 200 chars):', result.slice(0, 200))
+  console.log('✅ Conversa formatada via fallback (primeiros 300 chars):', result.slice(0, 300))
   return result
 }
 
