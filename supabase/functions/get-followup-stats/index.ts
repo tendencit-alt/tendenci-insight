@@ -14,6 +14,31 @@ Deno.serve(async (req) => {
 
     console.log('📊 Fetching follow-up statistics...')
 
+    // Obter o usuário autenticado
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) {
+      throw new Error('No authorization header')
+    }
+
+    const token = authHeader.replace('Bearer ', '')
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token)
+    
+    if (userError || !user) {
+      throw new Error('User not authenticated')
+    }
+
+    // Buscar especialização do usuário
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('especializacao, role')
+      .eq('id', user.id)
+      .single()
+
+    const userEspec = profile?.especializacao
+    const isAdmin = profile?.role === 'admin'
+
+    console.log('👤 User especialização:', userEspec)
+
     // Buscar o ID da etapa "Follow Up (I.A)"
     const { data: followupStage, error: stageError } = await supabase
       .from('crm_stages')
@@ -29,12 +54,24 @@ Deno.serve(async (req) => {
     console.log('✅ Follow Up stage found:', followupStage.id)
 
     // Total na fila (deals na etapa "Follow Up (I.A)" com status aberto e follow-ups pendentes)
-    const { count: queueCount } = await supabase
+    // Aplicar filtro de especialização se vendedor não for admin ou 'todos'
+    let queueQuery = supabase
       .from('crm_deals')
       .select('*', { count: 'exact', head: true })
       .eq('stage_id', followupStage.id)
       .eq('status', 'aberto')
       .or('followup_count.is.null,followup_count.lt.5')
+
+    // Aplicar filtro de categoria baseado na especialização
+    if (!isAdmin && userEspec !== 'todos') {
+      if (userEspec === 'moveis_soltos') {
+        queueQuery = queueQuery.eq('categoria', 'Móveis Soltos')
+      } else if (userEspec === 'moveis_planejados') {
+        queueQuery = queueQuery.eq('categoria', 'Planejados')
+      }
+    }
+
+    const { count: queueCount } = await queueQuery
 
     // Enviados hoje
     const today = new Date()
