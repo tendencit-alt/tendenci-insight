@@ -16,6 +16,8 @@ interface DealCardProps {
 function DealCardComponent({ deal, timeInStage, onClick, onDragStart, onDelete }: DealCardProps) {
   const [audioCount, setAudioCount] = useState(0);
   const [fileCount, setFileCount] = useState(0);
+  const [taskCount, setTaskCount] = useState(0);
+  const [overdueTaskCount, setOverdueTaskCount] = useState(0);
 
   const fetchFiles = useCallback(async () => {
     const { data } = await supabase
@@ -31,11 +33,49 @@ function DealCardComponent({ deal, timeInStage, onClick, onDragStart, onDelete }
     }
   }, [deal.id]);
 
+  const fetchTasks = useCallback(async () => {
+    const { data } = await supabase
+      .from("crm_tasks")
+      .select("id, status, due_at")
+      .eq("deal_id", deal.id)
+      .eq("status", "open");
+
+    if (data) {
+      setTaskCount(data.length);
+      const now = new Date();
+      const overdue = data.filter(t => new Date(t.due_at) < now).length;
+      setOverdueTaskCount(overdue);
+    }
+  }, [deal.id]);
+
   useEffect(() => {
     if (deal.id) {
       fetchFiles();
+      fetchTasks();
     }
-  }, [deal.id, fetchFiles]);
+  }, [deal.id, fetchFiles, fetchTasks]);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel(`tasks-${deal.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'crm_tasks',
+          filter: `deal_id=eq.${deal.id}`
+        },
+        () => {
+          fetchTasks();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [deal.id, fetchTasks]);
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -111,8 +151,8 @@ function DealCardComponent({ deal, timeInStage, onClick, onDragStart, onDelete }
             </div>
           )}
 
-          {/* Arquivos e Áudios */}
-          {(audioCount > 0 || fileCount > 0) && (
+          {/* Arquivos, Áudios e Tarefas */}
+          {(audioCount > 0 || fileCount > 0 || taskCount > 0) && (
             <div className="flex gap-1 flex-wrap">
               {audioCount > 0 && (
                 <Badge variant="outline" className="text-[10px] flex items-center gap-0.5 h-4 px-1.5">
@@ -124,6 +164,15 @@ function DealCardComponent({ deal, timeInStage, onClick, onDragStart, onDelete }
                 <Badge variant="outline" className="text-[10px] flex items-center gap-0.5 h-4 px-1.5">
                   <Paperclip className="h-2.5 w-2.5" />
                   {fileCount}
+                </Badge>
+              )}
+              {taskCount > 0 && (
+                <Badge 
+                  variant={overdueTaskCount > 0 ? "destructive" : "outline"} 
+                  className="text-[10px] flex items-center gap-0.5 h-4 px-1.5 font-semibold"
+                >
+                  {overdueTaskCount > 0 ? "⚠️" : "✅"}
+                  {overdueTaskCount > 0 ? `${overdueTaskCount} atrasada${overdueTaskCount > 1 ? 's' : ''}` : `${taskCount} tarefa${taskCount > 1 ? 's' : ''}`}
                 </Badge>
               )}
             </div>
