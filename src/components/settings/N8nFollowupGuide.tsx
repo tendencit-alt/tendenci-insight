@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Card } from "@/components/ui/card";
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -13,15 +13,49 @@ import {
   Check, 
   Download,
   AlertTriangle,
-  Info
+  Info,
+  Users,
+  TrendingUp,
+  XCircle
 } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+
+interface FollowupStats {
+  queueSize: number;
+  sentToday: number;
+  sentWeek: number;
+  responseRate: number;
+  failedRecent: number;
+}
 
 export function N8nFollowupGuide() {
   const projectUrl = import.meta.env.VITE_SUPABASE_URL;
   const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
   
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [stats, setStats] = useState<FollowupStats | null>(null);
+  const [loadingStats, setLoadingStats] = useState(true);
+
+  useEffect(() => {
+    fetchStats();
+    const interval = setInterval(fetchStats, 30000); // atualiza a cada 30s
+    return () => clearInterval(interval);
+  }, []);
+
+  const fetchStats = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('get-followup-stats');
+      if (error) throw error;
+      if (data?.success) {
+        setStats(data.stats);
+      }
+    } catch (error) {
+      console.error('Erro ao buscar estatísticas:', error);
+    } finally {
+      setLoadingStats(false);
+    }
+  };
 
   const copyToClipboard = (text: string, field: string) => {
     navigator.clipboard.writeText(text);
@@ -245,6 +279,61 @@ export function N8nFollowupGuide() {
           e atualiza o histórico no CRM. Máximo de 5 follow-ups por lead.
         </AlertDescription>
       </Alert>
+
+      {/* Dashboard de Métricas */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Na Fila</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {loadingStats ? "..." : stats?.queueSize || 0}
+            </div>
+            <p className="text-xs text-muted-foreground">Aguardando follow-up</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Enviados Hoje</CardTitle>
+            <MessageCircle className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {loadingStats ? "..." : stats?.sentToday || 0}
+            </div>
+            <p className="text-xs text-muted-foreground">Últimas 24h</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Taxa de Resposta</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {loadingStats ? "..." : `${stats?.responseRate || 0}%`}
+            </div>
+            <p className="text-xs text-muted-foreground">Última semana</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Falhas Recentes</CardTitle>
+            <XCircle className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {loadingStats ? "..." : stats?.failedRecent || 0}
+            </div>
+            <p className="text-xs text-muted-foreground">Última semana</p>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Credenciais */}
       <Card className="p-6 bg-muted/50">
