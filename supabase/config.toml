@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.update-followup-history]
 verify_jwt = false
+
+[functions.get-followup-stats]
+verify_jwt = false
