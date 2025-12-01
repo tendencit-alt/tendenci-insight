@@ -14,3 +14,6 @@ verify_jwt = true
 
 [functions.process-automated-task]
 verify_jwt = false
+
+[functions.update-followup-history]
+verify_jwt = false
