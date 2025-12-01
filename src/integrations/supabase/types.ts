@@ -3168,16 +3168,22 @@ export type Database = {
       get_pending_followups: {
         Args: never
         Returns: {
+          categoria: string
           client_name: string
           client_phone: string
           conversation_history: string
           deal_id: string
+          evolution_apikey: string
+          evolution_url: string
           followup_count: number
           instance_id: string
           instance_name: string
           lead_id: string
           owner_id: string
           owner_name: string
+          product_type: string
+          system_prompt: string
+          tone: string
           whatsapp_connection_id: string
         }[]
       }
