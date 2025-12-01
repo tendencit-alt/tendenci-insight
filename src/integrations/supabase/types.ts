@@ -779,12 +779,16 @@ export type Database = {
           centro_custo: string | null
           conversation_history: string | null
           created_at: string | null
+          followup_count: number | null
+          followup_enabled: boolean | null
           from_ai: boolean | null
           id: string
+          last_followup_at: string | null
           last_interaction: string | null
           lead_id: string | null
           lost_note: string | null
           lost_reason: string | null
+          max_followups: number | null
           note: string | null
           owner_id: string | null
           pipeline_id: string
@@ -806,12 +810,16 @@ export type Database = {
           centro_custo?: string | null
           conversation_history?: string | null
           created_at?: string | null
+          followup_count?: number | null
+          followup_enabled?: boolean | null
           from_ai?: boolean | null
           id?: string
+          last_followup_at?: string | null
           last_interaction?: string | null
           lead_id?: string | null
           lost_note?: string | null
           lost_reason?: string | null
+          max_followups?: number | null
           note?: string | null
           owner_id?: string | null
           pipeline_id: string
@@ -833,12 +841,16 @@ export type Database = {
           centro_custo?: string | null
           conversation_history?: string | null
           created_at?: string | null
+          followup_count?: number | null
+          followup_enabled?: boolean | null
           from_ai?: boolean | null
           id?: string
+          last_followup_at?: string | null
           last_interaction?: string | null
           lead_id?: string | null
           lost_note?: string | null
           lost_reason?: string | null
+          max_followups?: number | null
           note?: string | null
           owner_id?: string | null
           pipeline_id?: string
@@ -3076,6 +3088,22 @@ export type Database = {
           tarefa_id: string
           telefone: string
           tipo_envio: string
+          whatsapp_connection_id: string
+        }[]
+      }
+      get_pending_followups: {
+        Args: never
+        Returns: {
+          client_name: string
+          client_phone: string
+          conversation_history: string
+          deal_id: string
+          followup_count: number
+          instance_id: string
+          instance_name: string
+          lead_id: string
+          owner_id: string
+          owner_name: string
           whatsapp_connection_id: string
         }[]
       }

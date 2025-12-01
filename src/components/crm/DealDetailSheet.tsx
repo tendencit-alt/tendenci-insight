@@ -9,10 +9,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Edit, CheckCircle, XCircle, FileText, User, Users, Phone, Mail, MapPin, Package, TrendingUp, DollarSign, ExternalLink, Calendar, Tag as TagIcon, History, FolderOpen, Plus, Unlink, Building } from "lucide-react";
+import { Edit, CheckCircle, XCircle, FileText, User, Users, Phone, Mail, MapPin, Package, TrendingUp, DollarSign, ExternalLink, Calendar, Tag as TagIcon, History, FolderOpen, Plus, Unlink, Building, Repeat } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { EditDealDialog } from "./EditDealDialog";
 import { CreateArchitectDialog } from "@/components/architects/CreateArchitectDialog";
 
@@ -77,6 +78,8 @@ export function DealDetailSheet({
   const [selectedArchitect, setSelectedArchitect] = useState("");
   const [isEditingArchitect, setIsEditingArchitect] = useState(false);
   const [isArchitectDialogOpen, setIsArchitectDialogOpen] = useState(false);
+  const [followupEnabled, setFollowupEnabled] = useState(deal?.followup_enabled ?? true);
+  const [isUpdatingFollowup, setIsUpdatingFollowup] = useState(false);
 
   const fetchProject = async () => {
     if (!deal?.id) return;
@@ -139,6 +142,7 @@ export function DealDetailSheet({
       setSelectedPipeline(deal.pipeline_id);
       setSelectedOwner(deal.owner_id || "");
       setSelectedArchitect(deal.architect_id || "");
+      setFollowupEnabled(deal.followup_enabled ?? true);
       setIsEditingArchitect(false);
       fetchAllPipelines();
       fetchAllStages(deal.pipeline_id);
@@ -437,6 +441,58 @@ export function DealDetailSheet({
       setIsUnlinkProjectOpen(false);
       setProject(null);
     }
+  };
+
+  const handleFollowupToggle = async (enabled: boolean) => {
+    if (isUpdatingFollowup) return;
+    setIsUpdatingFollowup(true);
+    setFollowupEnabled(enabled);
+
+    const { error } = await supabase
+      .from("crm_deals")
+      .update({ followup_enabled: enabled })
+      .eq("id", deal.id);
+
+    if (error) {
+      toast({
+        title: "Erro ao atualizar follow-up",
+        description: error.message,
+        variant: "destructive",
+      });
+      setFollowupEnabled(!enabled);
+    } else {
+      toast({
+        title: enabled ? "Follow-up ativado" : "Follow-up desativado",
+        description: enabled 
+          ? "O sistema enviará mensagens automáticas a cada 2 dias." 
+          : "Follow-ups automáticos foram pausados.",
+      });
+      onSuccess();
+    }
+    
+    setIsUpdatingFollowup(false);
+  };
+
+  const getNextFollowupTime = () => {
+    if (!deal?.last_followup_at && !deal?.last_interaction) return null;
+    
+    const lastTime = deal.last_followup_at || deal.last_interaction;
+    const nextTime = new Date(lastTime);
+    nextTime.setDate(nextTime.getDate() + 2);
+    
+    const now = new Date();
+    const diffMs = nextTime.getTime() - now.getTime();
+    
+    if (diffMs < 0) return "Pendente de envio";
+    
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffHours / 24);
+    const hours = diffHours % 24;
+    
+    if (diffDays > 0) {
+      return `${diffDays} dia${diffDays > 1 ? 's' : ''} e ${hours}h`;
+    }
+    return `${diffHours}h`;
   };
 
   const getStatusVariant = (status: string) => {
@@ -821,6 +877,49 @@ export function DealDetailSheet({
 
           {/* Tab: WhatsApp IA */}
           <TabsContent value="whatsapp" className="space-y-4">
+            {/* Card de Configuração de Follow-up */}
+            <Card className="p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Repeat className="h-5 w-5 text-primary" />
+                  <h3 className="font-semibold text-lg">Follow-up Automático</h3>
+                </div>
+                <Switch
+                  checked={followupEnabled}
+                  onCheckedChange={handleFollowupToggle}
+                  disabled={isUpdatingFollowup}
+                />
+              </div>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Status:</span>
+                  <Badge variant={followupEnabled ? "default" : "secondary"}>
+                    {followupEnabled ? "Ativo" : "Pausado"}
+                  </Badge>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Follow-ups enviados:</span>
+                  <span className="font-semibold">
+                    {deal.followup_count || 0} / {deal.max_followups || 5}
+                  </span>
+                </div>
+                {followupEnabled && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Próximo follow-up:</span>
+                    <span className="font-semibold text-primary">
+                      {getNextFollowupTime() || "Calculando..."}
+                    </span>
+                  </div>
+                )}
+              </div>
+              {followupEnabled && (
+                <div className="mt-3 pt-3 border-t text-xs text-muted-foreground">
+                  💬 A IA enviará mensagens personalizadas a cada 2 dias baseadas no histórico de conversa
+                </div>
+              )}
+            </Card>
+
+            {/* Card de Histórico de Conversas */}
             <Card className="p-4">
               <div className="flex items-center gap-2 mb-3">
                 <Phone className="h-5 w-5 text-primary" />

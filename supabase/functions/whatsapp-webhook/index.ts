@@ -9,6 +9,7 @@ interface EvolutionWebhook {
     remoteJid?: string
     key?: {
       remoteJid?: string
+      fromMe?: boolean
     }
     phoneNumber?: string
     qrcode?: {
@@ -40,6 +41,83 @@ Deno.serve(async (req) => {
 
     const { instance, event, data } = payload
     const connectionEvents = ['connection.update', 'qrcode.updated', 'open', 'messages.upsert', 'connection.open']
+
+    // ========== DETECTAR RESPOSTA DE CLIENTE PARA FOLLOW-UP ==========
+    if (event === 'messages.upsert' && data?.key?.remoteJid && data?.key?.fromMe === false) {
+      console.log('💬 Message received from client, checking for follow-up deals...')
+      
+      // Extrair número do cliente
+      const clientPhone = data.key.remoteJid.replace('@s.whatsapp.net', '')
+      console.log('📱 Client phone:', clientPhone)
+      
+      // Buscar deals na etapa "Follow Up (I.A)" com esse telefone
+      const { data: deals, error: dealsError } = await supabase
+        .from('crm_deals')
+        .select(`
+          id,
+          title,
+          followup_count,
+          owner_id,
+          stage_id,
+          crm_stages!inner(name),
+          leads!inner(
+            client_id,
+            clients!inner(phone)
+          )
+        `)
+        .eq('status', 'aberto')
+        .eq('crm_stages.name', 'Follow Up (I.A)')
+        .like('leads.clients.phone', `%${clientPhone}%`)
+
+      if (!dealsError && deals && deals.length > 0) {
+        console.log(`✅ Found ${deals.length} follow-up deal(s) for this client`)
+        
+        for (const deal of deals) {
+          console.log(`🔄 Resetting follow-up counter for deal: ${deal.title}`)
+          
+          // Resetar contador de follow-up
+          const { error: updateError } = await supabase
+            .from('crm_deals')
+            .update({
+              followup_count: 0,
+              last_interaction: new Date().toISOString()
+            })
+            .eq('id', deal.id)
+          
+          if (updateError) {
+            console.error('❌ Error updating deal:', updateError)
+          } else {
+            console.log('✅ Follow-up counter reset successfully')
+            
+            // Registrar na timeline
+            await supabase
+              .from('crm_timeline')
+              .insert({
+                deal_id: deal.id,
+                message: '🎉 Cliente respondeu! Contador de follow-up resetado.',
+                update_type: 'Sistema - Follow-up'
+              })
+            
+            // Notificar vendedor responsável
+            if (deal.owner_id) {
+              await supabase
+                .from('notifications')
+                .insert({
+                  user_id: deal.owner_id,
+                  type: 'followup_response',
+                  title: 'Cliente respondeu!',
+                  message: `O cliente respondeu no negócio "${deal.title}". Verifique a conversa.`,
+                  link: `/crm?deal=${deal.id}`,
+                  metadata: {
+                    deal_id: deal.id,
+                    client_phone: clientPhone
+                  }
+                })
+            }
+          }
+        }
+      }
+    }
 
     if (connectionEvents.includes(event)) {
       console.log('📡 Processing connection event:', event)
