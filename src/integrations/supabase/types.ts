@@ -1205,6 +1205,74 @@ export type Database = {
           },
         ]
       }
+      followup_logs: {
+        Row: {
+          created_at: string | null
+          deal_id: string | null
+          error_message: string | null
+          followup_number: number
+          id: string
+          message_sent: string | null
+          sent_at: string | null
+          status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          deal_id?: string | null
+          error_message?: string | null
+          followup_number: number
+          id?: string
+          message_sent?: string | null
+          sent_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          deal_id?: string | null
+          error_message?: string | null
+          followup_number?: number
+          id?: string
+          message_sent?: string | null
+          sent_at?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "followup_logs_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "crm_deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      followup_templates: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          followup_number: number
+          id: string
+          system_prompt: string
+          tone: string
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          followup_number: number
+          id?: string
+          system_prompt: string
+          tone: string
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          followup_number?: number
+          id?: string
+          system_prompt?: string
+          tone?: string
+        }
+        Relationships: []
+      }
       lead_attachments: {
         Row: {
           file_name: string
@@ -2787,6 +2855,8 @@ export type Database = {
           connected_at: string | null
           created_at: string
           created_by: string | null
+          evolution_apikey: string | null
+          evolution_url: string | null
           id: string
           instance_id: string | null
           instance_name: string
@@ -2806,6 +2876,8 @@ export type Database = {
           connected_at?: string | null
           created_at?: string
           created_by?: string | null
+          evolution_apikey?: string | null
+          evolution_url?: string | null
           id?: string
           instance_id?: string | null
           instance_name: string
@@ -2825,6 +2897,8 @@ export type Database = {
           connected_at?: string | null
           created_at?: string
           created_by?: string | null
+          evolution_apikey?: string | null
+          evolution_url?: string | null
           id?: string
           instance_id?: string | null
           instance_name?: string

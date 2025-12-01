@@ -52,14 +52,27 @@ Deno.serve(async (req) => {
       ? `${deal.conversation_history}\n\n${newEntry}`
       : newEntry
 
-    // 3️⃣ Atualizar deal no banco
+    // 3️⃣ Detectar opt-out do cliente
+    const optOutKeywords = ['pare', 'parar', 'não quero', 'sair', 'desinscrever', 'cancelar']
+    const hasOptOut = optOutKeywords.some(keyword => 
+      new_message.toLowerCase().includes(keyword)
+    )
+
+    // 4️⃣ Atualizar deal no banco
+    const updateData: any = {
+      conversation_history: updatedHistory,
+      followup_count: followupNumber,
+      last_followup_at: new Date().toISOString()
+    }
+
+    if (hasOptOut) {
+      updateData.followup_enabled = false
+      console.log('🛑 Opt-out detected - disabling follow-ups for deal:', deal_id)
+    }
+
     const { error: updateError } = await supabase
       .from('crm_deals')
-      .update({
-        conversation_history: updatedHistory,
-        followup_count: followupNumber,
-        last_followup_at: new Date().toISOString()
-      })
+      .update(updateData)
       .eq('id', deal_id)
 
     if (updateError) {
@@ -67,12 +80,31 @@ Deno.serve(async (req) => {
       throw updateError
     }
 
-    // 4️⃣ Registrar na timeline do deal
+    // 5️⃣ Registrar no followup_logs
+    const { error: logError } = await supabase
+      .from('followup_logs')
+      .insert({
+        deal_id: deal_id,
+        followup_number: followupNumber,
+        message_sent: new_message,
+        status: 'sent',
+        sent_at: new Date().toISOString()
+      })
+
+    if (logError) {
+      console.warn('⚠️ Error creating followup log:', logError)
+    }
+
+    // 6️⃣ Registrar na timeline do deal
+    const timelineMessage = hasOptOut 
+      ? `Follow-up automático #${followupNumber} enviado - Cliente solicitou parar follow-ups`
+      : `Follow-up automático #${followupNumber} enviado`
+
     const { error: timelineError } = await supabase
       .from('crm_timeline')
       .insert({
         deal_id: deal_id,
-        message: `Follow-up automático #${followupNumber} enviado`,
+        message: timelineMessage,
         update_type: 'Sistema - Follow-up'
       })
 
@@ -86,6 +118,7 @@ Deno.serve(async (req) => {
       JSON.stringify({ 
         success: true, 
         followup_count: followupNumber,
+        opt_out_detected: hasOptOut,
         message: 'Follow-up history updated successfully' 
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
