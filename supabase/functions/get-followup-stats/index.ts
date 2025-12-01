@@ -14,11 +14,26 @@ Deno.serve(async (req) => {
 
     console.log('📊 Fetching follow-up statistics...')
 
-    // Total na fila (deals com followup_enabled=true e followup_count < max_followups)
+    // Buscar o ID da etapa "Follow Up (I.A)"
+    const { data: followupStage, error: stageError } = await supabase
+      .from('crm_stages')
+      .select('id')
+      .ilike('name', '%Follow Up%')
+      .single()
+
+    if (stageError) {
+      console.error('Error fetching Follow Up stage:', stageError)
+      throw new Error('Follow Up stage not found')
+    }
+
+    console.log('✅ Follow Up stage found:', followupStage.id)
+
+    // Total na fila (deals na etapa "Follow Up (I.A)" com status aberto e follow-ups pendentes)
     const { count: queueCount } = await supabase
       .from('crm_deals')
       .select('*', { count: 'exact', head: true })
-      .eq('followup_enabled', true)
+      .eq('stage_id', followupStage.id)
+      .eq('status', 'aberto')
       .or('followup_count.is.null,followup_count.lt.5')
 
     // Enviados hoje
