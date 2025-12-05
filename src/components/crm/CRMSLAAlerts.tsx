@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertTriangle, ShieldCheck, ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,39 +14,84 @@ interface CRMSLAAlertsProps {
 export function CRMSLAAlerts({ pipelineId, categoryFilter }: CRMSLAAlertsProps) {
   const [alerts, setAlerts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isOpen, setIsOpen] = useState(false); // Minimizado por padrão
+  const [isOpen, setIsOpen] = useState(false);
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
-  useEffect(() => {
+  const fetchAlerts = useCallback(async () => {
     if (!pipelineId) return;
-    fetchAlerts();
-  }, [pipelineId, categoryFilter]);
-
-  const fetchAlerts = async () => {
-    setLoading(true);
+    
     const { data, error } = await supabase.rpc("crm_sla_alerts", {
       p_pipeline_id: pipelineId,
     });
 
     if (!error && data) {
-      // Filtrar alertas client-side baseado na categoria
       let filteredAlerts = data;
       if (categoryFilter && categoryFilter !== "all") {
-        // Buscar categoria dos deals para filtrar
         const dealIds = data.map((alert: any) => alert.deal_id);
-        const { data: dealsData } = await supabase
-          .from("crm_deals")
-          .select("id, categoria")
-          .in("id", dealIds);
-        
-        const dealCategories = new Map(dealsData?.map(d => [d.id, d.categoria]));
-        filteredAlerts = data.filter((alert: any) => 
-          dealCategories.get(alert.deal_id) === categoryFilter
-        );
+        if (dealIds.length > 0) {
+          const { data: dealsData } = await supabase
+            .from("crm_deals")
+            .select("id, categoria")
+            .in("id", dealIds);
+          
+          const dealCategories = new Map(dealsData?.map(d => [d.id, d.categoria]));
+          filteredAlerts = data.filter((alert: any) => 
+            dealCategories.get(alert.deal_id) === categoryFilter
+          );
+        }
       }
       setAlerts(filteredAlerts);
     }
     setLoading(false);
-  };
+  }, [pipelineId, categoryFilter]);
+
+  useEffect(() => {
+    if (!pipelineId) return;
+    
+    // Fetch inicial
+    fetchAlerts();
+
+    // Debounced fetch para realtime
+    const debouncedFetch = () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+      debounceRef.current = setTimeout(() => {
+        fetchAlerts();
+      }, 1500);
+    };
+
+    // Realtime subscription para crm_deals
+    const channel = supabase
+      .channel(`sla-alerts-${pipelineId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'crm_deals',
+          filter: `pipeline_id=eq.${pipelineId}`
+        },
+        () => {
+          debouncedFetch();
+        }
+      )
+      .subscribe();
+
+    // Polling a cada 60s para atualizar cálculo de horas de atraso
+    const pollingInterval = setInterval(() => {
+      fetchAlerts();
+    }, 60000);
+
+    // Cleanup
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+      supabase.removeChannel(channel);
+      clearInterval(pollingInterval);
+    };
+  }, [pipelineId, categoryFilter, fetchAlerts]);
 
   if (loading) return null;
 
