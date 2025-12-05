@@ -141,34 +141,6 @@ export function DealHistory({ dealId }: DealHistoryProps) {
     return 'bg-purple-500';
   };
 
-  // Função para resolver valores de display (fallback para UUIDs históricos)
-  const resolveDisplayValue = async (fieldName: string, value: string | null): Promise<string> => {
-    if (!value) return '(vazio)';
-    
-    // Detectar se é UUID (formato: 8-4-4-4-12 caracteres hexadecimais)
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    
-    if (fieldName === 'owner_id' && uuidRegex.test(value)) {
-      const { data } = await supabase
-        .from('profiles')
-        .select('full_name')
-        .eq('id', value)
-        .maybeSingle();
-      return data?.full_name || value;
-    }
-    
-    if (fieldName === 'architect_id' && uuidRegex.test(value)) {
-      const { data } = await supabase
-        .from('architects')
-        .select('name')
-        .eq('id', value)
-        .maybeSingle();
-      return data?.name || value;
-    }
-    
-    return value;
-  };
-
   const toggleNoteExpansion = (entryId: string) => {
     setExpandedNotes(prev => ({ ...prev, [entryId]: !prev[entryId] }));
   };
