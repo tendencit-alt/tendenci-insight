@@ -19,8 +19,13 @@ Deno.serve(async (req) => {
 
     const { deal_id, new_message }: UpdateFollowupRequest = await req.json()
 
-    if (!deal_id || !new_message) {
-      throw new Error('deal_id and new_message are required')
+    // FASE 10: Validações adicionais
+    if (!deal_id) {
+      throw new Error('deal_id é obrigatório')
+    }
+    
+    if (!new_message || new_message.trim().length === 0) {
+      throw new Error('new_message é obrigatório e não pode ser vazio')
     }
 
     console.log('📝 Updating follow-up history for deal:', deal_id)
@@ -33,6 +38,7 @@ Deno.serve(async (req) => {
       .single()
 
     if (fetchError || !deal) {
+      console.error('❌ Deal not found:', fetchError)
       throw new Error('Deal not found')
     }
 
@@ -42,7 +48,8 @@ Deno.serve(async (req) => {
       month: '2-digit',
       year: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
+      timeZone: 'America/Sao_Paulo' // FASE 3: Usar timezone Brasil
     })
     
     const followupNumber = (deal.followup_count || 0) + 1
@@ -52,11 +59,13 @@ Deno.serve(async (req) => {
       ? `${deal.conversation_history}\n\n${newEntry}`
       : newEntry
 
-    // 3️⃣ Atualizar deal no banco (opt-out é detectado no whatsapp-webhook quando CLIENTE responde)
+    // 3️⃣ Atualizar deal no banco
+    // FASE 7: Atualizar last_followup_at (não last_interaction, que é para cliente)
     const updateData: any = {
       conversation_history: updatedHistory,
       followup_count: followupNumber,
       last_followup_at: new Date().toISOString()
+      // NOTA: last_interaction é atualizado apenas quando o CLIENTE responde
     }
 
     const { error: updateError } = await supabase
@@ -69,22 +78,50 @@ Deno.serve(async (req) => {
       throw updateError
     }
 
-    // 5️⃣ Registrar no followup_logs
-    const { error: logError } = await supabase
+    // 4️⃣ FASE 8: Atualizar log de 'pending' para 'sent' (confirmação do callback)
+    const { error: logUpdateError } = await supabase
       .from('followup_logs')
-      .insert({
-        deal_id: deal_id,
-        followup_number: followupNumber,
+      .update({
+        status: 'sent', // Confirmado pelo callback
         message_sent: new_message,
-        status: 'sent',
         sent_at: new Date().toISOString()
       })
+      .eq('deal_id', deal_id)
+      .eq('followup_number', followupNumber)
+      .eq('status', 'pending') // Apenas logs pendentes
 
-    if (logError) {
-      console.warn('⚠️ Error creating followup log:', logError)
+    if (logUpdateError) {
+      console.warn('⚠️ Error updating followup log status:', logUpdateError)
+      // Não lançar erro, apenas log - pode ser que já foi atualizado
+    } else {
+      console.log('✅ Follow-up log status updated to sent')
     }
 
-    // 5️⃣ Registrar na timeline do deal
+    // 5️⃣ Se não encontrou log pending, criar novo com status 'sent'
+    const { data: existingLog } = await supabase
+      .from('followup_logs')
+      .select('id')
+      .eq('deal_id', deal_id)
+      .eq('followup_number', followupNumber)
+      .single()
+
+    if (!existingLog) {
+      const { error: logError } = await supabase
+        .from('followup_logs')
+        .insert({
+          deal_id: deal_id,
+          followup_number: followupNumber,
+          message_sent: new_message,
+          status: 'sent',
+          sent_at: new Date().toISOString()
+        })
+
+      if (logError) {
+        console.warn('⚠️ Error creating followup log:', logError)
+      }
+    }
+
+    // 6️⃣ Registrar na timeline do deal
     const { error: timelineError } = await supabase
       .from('crm_timeline')
       .insert({

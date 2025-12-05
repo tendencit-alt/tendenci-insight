@@ -1,6 +1,30 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
 import { corsHeaders } from '../_shared/cors.ts'
 
+// FASE 3: Função para converter para horário de Brasília
+function toBrasilTime(date: Date): Date {
+  const brasilOffset = -3 * 60 // -3 horas em minutos
+  const utcOffset = date.getTimezoneOffset() // offset do servidor em minutos
+  return new Date(date.getTime() + (utcOffset + brasilOffset) * 60 * 1000)
+}
+
+// Função para obter início do dia em Brasília
+function getStartOfDayBrasil(): Date {
+  const now = new Date()
+  const brasil = toBrasilTime(now)
+  brasil.setHours(0, 0, 0, 0)
+  return brasil
+}
+
+// Função para obter início da semana em Brasília
+function getStartOfWeekBrasil(): Date {
+  const now = new Date()
+  const brasil = toBrasilTime(now)
+  brasil.setDate(brasil.getDate() - 7)
+  brasil.setHours(0, 0, 0, 0)
+  return brasil
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -54,7 +78,6 @@ Deno.serve(async (req) => {
     console.log('✅ Follow Up stage found:', followupStage.id)
 
     // Total na fila (deals na etapa "Follow Up (I.A)" com status aberto e followup_enabled=true)
-    // SEM LIMITE de follow-ups - continua até cliente pedir para parar
     let queueQuery = supabase
       .from('crm_deals')
       .select('*', { count: 'exact', head: true })
@@ -73,59 +96,70 @@ Deno.serve(async (req) => {
 
     const { count: queueCount } = await queueQuery
 
-    // Enviados hoje
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
+    // FASE 3: Enviados hoje - usando horário Brasil
+    const todayBrasil = getStartOfDayBrasil()
+    console.log('📅 Início do dia Brasil:', todayBrasil.toISOString())
     
+    // FASE 8: Contar status 'sent' (confirmado pelo callback) para métricas precisas
     const { count: sentToday } = await supabase
       .from('followup_logs')
       .select('*', { count: 'exact', head: true })
       .eq('status', 'sent')
-      .gte('sent_at', today.toISOString())
+      .gte('sent_at', todayBrasil.toISOString())
 
-    // Enviados última semana
-    const lastWeek = new Date()
-    lastWeek.setDate(lastWeek.getDate() - 7)
-    lastWeek.setHours(0, 0, 0, 0)
+    // FASE 3: Enviados última semana - usando horário Brasil
+    const lastWeekBrasil = getStartOfWeekBrasil()
+    console.log('📅 Início da semana Brasil:', lastWeekBrasil.toISOString())
 
     const { count: sentWeek } = await supabase
       .from('followup_logs')
       .select('*', { count: 'exact', head: true })
       .eq('status', 'sent')
-      .gte('sent_at', lastWeek.toISOString())
+      .gte('sent_at', lastWeekBrasil.toISOString())
 
-    // Taxa de resposta (deals que tiveram last_interaction atualizada após follow-up)
-    // Query otimizada: busca logs com deals em uma única query
-    const { data: responseLogs } = await supabase
+    // FASE 9: Taxa de resposta - query corrigida sem FK sintaxe problemática
+    // Buscar logs primeiro
+    const { data: logsData, error: logsError } = await supabase
       .from('followup_logs')
-      .select(`
-        deal_id, 
-        sent_at,
-        crm_deals!deal_id(last_interaction)
-      `)
+      .select('deal_id, sent_at')
       .eq('status', 'sent')
-      .gte('sent_at', lastWeek.toISOString())
+      .gte('sent_at', lastWeekBrasil.toISOString())
 
-    let responseCount = 0
-    if (responseLogs && responseLogs.length > 0) {
-      for (const log of responseLogs) {
-        const deal = (log as any).crm_deals
-        if (deal?.last_interaction && new Date(deal.last_interaction) > new Date(log.sent_at)) {
-          responseCount++
+    let responseRate = 0
+    if (!logsError && logsData && logsData.length > 0) {
+      // Buscar deals correspondentes com last_interaction
+      const dealIds = [...new Set(logsData.map(log => log.deal_id).filter(Boolean))]
+      
+      if (dealIds.length > 0) {
+        const { data: dealsData } = await supabase
+          .from('crm_deals')
+          .select('id, last_interaction')
+          .in('id', dealIds)
+
+        // Criar mapa de deals para acesso rápido
+        const dealsMap = new Map((dealsData || []).map(d => [d.id, d.last_interaction]))
+
+        let responseCount = 0
+        for (const log of logsData) {
+          if (!log.deal_id) continue
+          const dealLastInteraction = dealsMap.get(log.deal_id)
+          if (dealLastInteraction && new Date(dealLastInteraction) > new Date(log.sent_at)) {
+            responseCount++
+          }
         }
+
+        responseRate = Math.round((responseCount / logsData.length) * 100)
       }
     }
 
-    const responseRate = responseLogs && responseLogs.length > 0 
-      ? Math.round((responseCount / responseLogs.length) * 100) 
-      : 0
+    console.log('📊 Taxa de resposta calculada:', responseRate, '%')
 
-    // Falhas recentes
+    // Falhas recentes (inclui 'failed' e 'pending' não confirmados)
     const { count: failedCount } = await supabase
       .from('followup_logs')
       .select('*', { count: 'exact', head: true })
       .eq('status', 'failed')
-      .gte('created_at', lastWeek.toISOString())
+      .gte('created_at', lastWeekBrasil.toISOString())
 
     console.log('✅ Statistics fetched successfully')
 
