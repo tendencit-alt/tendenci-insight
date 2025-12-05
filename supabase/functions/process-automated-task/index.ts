@@ -6,7 +6,8 @@ const corsHeaders = {
 }
 
 interface ProcessTaskRequest {
-  taskId: string
+  taskId?: string
+  tarefa_id?: string  // Compatibilidade com n8n
 }
 
 // Função para formatar número de telefone brasileiro
@@ -128,10 +129,11 @@ Deno.serve(async (req) => {
     }
 
     const body: ProcessTaskRequest = await req.json()
-    const { taskId } = body
+    // Aceita tanto taskId quanto tarefa_id (compatibilidade n8n)
+    const taskId = body.taskId || body.tarefa_id
 
     if (!taskId) {
-      throw new Error('taskId é obrigatório')
+      throw new Error('taskId ou tarefa_id é obrigatório')
     }
 
     console.log(`📋 Processando tarefa: ${taskId}`)
