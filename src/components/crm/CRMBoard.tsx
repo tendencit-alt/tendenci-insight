@@ -125,11 +125,8 @@ export function CRMBoard({ pipelineId, onRefresh, autoOpenDealId, onDealOpened, 
   }, [autoOpenDealId, deals]);
 
   const fetchData = async () => {
-    if (isInitialLoading) {
-      // Apenas mostrar loading no carregamento inicial
-      setIsInitialLoading(true);
-    } else {
-      // Durante refresh, não mostrar loading completo
+    // Durante refresh, não mostrar loading completo - apenas indicador sutil
+    if (!isInitialLoading) {
       setIsRefreshing(true);
     }
     
