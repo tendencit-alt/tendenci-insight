@@ -93,6 +93,19 @@ Deno.serve(async (req) => {
 
     console.log(`📋 Processando tarefa: ${taskId}`)
 
+    // 0️⃣ Cleanup: Resetar tarefas stuck em 'processing' há mais de 5 minutos
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString()
+    const { data: stuckTasks } = await supabase
+      .from('crm_tasks')
+      .update({ status: 'open' })
+      .eq('status', 'processing')
+      .lt('updated_at', fiveMinutesAgo)
+      .select('id')
+    
+    if (stuckTasks && stuckTasks.length > 0) {
+      console.log(`🔄 Resetadas ${stuckTasks.length} tarefas stuck em 'processing'`)
+    }
+
     // 1️⃣ Buscar tarefa
     const { data: task, error: taskError } = await supabase
       .from('crm_tasks')

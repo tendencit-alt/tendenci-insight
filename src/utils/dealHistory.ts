@@ -13,10 +13,19 @@ export const logDealChange = async (
   const changesArray = Array.isArray(changes) ? changes : [changes];
   const { data: userData } = await supabase.auth.getUser();
   
+  // Buscar o stage_id atual do deal para usar como to_stage_id
+  const { data: dealData } = await supabase
+    .from("crm_deals")
+    .select("stage_id")
+    .eq("id", dealId)
+    .maybeSingle();
+  
+  const currentStageId = dealData?.stage_id || dealId; // Fallback para dealId se não encontrar
+  
   const historyEntries = changesArray.map((change) => ({
     deal_id: dealId,
     from_stage_id: null,
-    to_stage_id: dealId, // Required field, we use deal_id as placeholder for non-stage changes
+    to_stage_id: currentStageId,
     action_type: 'field_change',
     field_name: change.field_name,
     old_value: change.old_value || null,
@@ -80,7 +89,7 @@ export const getDisplayValue = async (fieldName: string, value: any): Promise<st
         .from('profiles')
         .select('full_name, email')
         .eq('id', value)
-        .single();
+        .maybeSingle();
       return profile?.full_name || profile?.email || value;
       
     case 'architect_id':
@@ -88,7 +97,7 @@ export const getDisplayValue = async (fieldName: string, value: any): Promise<st
         .from('architects')
         .select('name')
         .eq('id', value)
-        .single();
+        .maybeSingle();
       return architect?.name || value;
       
     case 'pipeline_id':
@@ -96,7 +105,7 @@ export const getDisplayValue = async (fieldName: string, value: any): Promise<st
         .from('crm_pipelines')
         .select('name')
         .eq('id', value)
-        .single();
+        .maybeSingle();
       return pipeline?.name || value;
       
     case 'stage_id':
@@ -104,7 +113,7 @@ export const getDisplayValue = async (fieldName: string, value: any): Promise<st
         .from('crm_stages')
         .select('name')
         .eq('id', value)
-        .single();
+        .maybeSingle();
       return stage?.name || value;
       
     default:
