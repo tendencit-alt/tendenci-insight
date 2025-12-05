@@ -58,10 +58,18 @@ function formatBrazilianPhone(phone: string | null): string | null {
   
   // Validar tamanho final (13 dígitos: 55 + DDD + 9 + número)
   if (cleaned.length < 12 || cleaned.length > 13) {
+    console.warn(`⚠️ Telefone inválido após formatação: ${phone} -> ${cleaned}`)
     return null
   }
   
   return cleaned
+}
+
+// Converte data para horário de Brasília (UTC-3)
+function toBrasilTime(date: Date): Date {
+  const brasilOffset = -3 * 60 // -3 horas em minutos
+  const utcOffset = date.getTimezoneOffset() // offset do servidor em minutos
+  return new Date(date.getTime() + (utcOffset + brasilOffset) * 60 * 1000)
 }
 
 Deno.serve(async (req) => {
@@ -86,10 +94,7 @@ Deno.serve(async (req) => {
 
     // Verificar horário comercial (9h-18h, seg-sex) - usando timezone Brasil
     const now = new Date()
-    // Converter para horário de Brasília (UTC-3)
-    const brasilOffset = -3 * 60 // -3 horas em minutos
-    const utcOffset = now.getTimezoneOffset() // offset do servidor em minutos
-    const brasilTime = new Date(now.getTime() + (utcOffset + brasilOffset) * 60 * 1000)
+    const brasilTime = toBrasilTime(now)
     const hour = brasilTime.getHours()
     const day = brasilTime.getDay() // 0=Dom, 6=Sab
     
@@ -108,10 +113,23 @@ Deno.serve(async (req) => {
       )
     }
 
+    // FASE 2: Buscar ID da etapa "Follow Up (I.A)" para filtrar corretamente
+    const { data: followupStage, error: stageError } = await supabase
+      .from('crm_stages')
+      .select('id, name')
+      .ilike('name', '%Follow Up%')
+      .single()
+
+    if (stageError) {
+      console.warn('⚠️ Etapa "Follow Up" não encontrada, buscando sem filtro de etapa:', stageError.message)
+    } else {
+      console.log(`✅ Etapa Follow Up encontrada: ${followupStage.name} (${followupStage.id})`)
+    }
+
     // Buscar leads elegíveis para follow-up
     // Critérios: followup_enabled, status aberto, tem telefone, última interação > 48h
-    // SEM LIMITE de follow-ups
-    const { data: leads, error: leadsError } = await supabase
+    // FASE 2: Adicionar filtro de stage_id se etapa existir
+    let query = supabase
       .from('crm_deals')
       .select(`
         id,
@@ -136,12 +154,19 @@ Deno.serve(async (req) => {
       .eq('followup_enabled', true)
       .eq('status', 'aberto')
 
+    // Adicionar filtro de etapa se encontrada
+    if (followupStage?.id) {
+      query = query.eq('stage_id', followupStage.id)
+    }
+
+    const { data: leads, error: leadsError } = await query
+
     if (leadsError) {
       console.error('❌ Erro ao buscar leads:', leadsError)
       throw leadsError
     }
 
-    console.log(`📊 Total de leads com follow-up ativo: ${leads?.length || 0}`)
+    console.log(`📊 Total de leads com follow-up ativo${followupStage ? ' na etapa Follow Up' : ''}: ${leads?.length || 0}`)
 
     // Filtrar leads elegíveis (última interação > 48h)
     const now48hAgo = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString()
@@ -153,10 +178,15 @@ Deno.serve(async (req) => {
         return !lastInteraction || lastInteraction < now48hAgo
       })
       .map(deal => {
-        // Buscar telefone do lead OU de outra fonte se não tiver lead
-        const leadPhone = (deal.leads as any)?.clients?.phone
+        // FASE 5: Corrigir acesso a leads (pode ser array ou objeto)
+        const leadsData = deal.leads
+        const clientData = Array.isArray(leadsData) 
+          ? leadsData[0]?.clients 
+          : (leadsData as any)?.clients
+        
+        const leadPhone = clientData?.phone
         const phone = formatBrazilianPhone(leadPhone)
-        const clientName = (deal.leads as any)?.clients?.name || 'Cliente'
+        const clientName = clientData?.name || 'Cliente'
         
         return {
           deal_id: deal.id,
@@ -226,20 +256,30 @@ Deno.serve(async (req) => {
           console.log(`✅ Lead ${lead.client_name} enviado com sucesso`)
           results.success++
           
-          // Registrar log de disparo
+          // FASE 8: Registrar log com status 'pending' (aguardando confirmação do n8n)
           await supabase
             .from('followup_logs')
             .insert({
               deal_id: lead.deal_id,
               followup_number: lead.followup_count + 1,
-              status: 'dispatched',
-              message_sent: 'Enviado para n8n via webhook'
+              status: 'pending', // Alterado de 'dispatched' para 'pending'
+              message_sent: 'Enviado para n8n via webhook - aguardando processamento'
             })
         } else {
           const errorText = await response.text()
           console.error(`❌ Erro ao enviar lead ${lead.client_name}:`, errorText)
           results.failed++
           results.errors.push(`${lead.client_name}: ${errorText}`)
+          
+          // Registrar falha
+          await supabase
+            .from('followup_logs')
+            .insert({
+              deal_id: lead.deal_id,
+              followup_number: lead.followup_count + 1,
+              status: 'failed',
+              error_message: errorText.substring(0, 500)
+            })
         }
 
         // NOTA: Delay de 3 minutos deve ser controlado pelo n8n, não aqui

@@ -19,6 +19,13 @@ interface EvolutionWebhook {
   }
 }
 
+// FASE 6: Função simplificada para extrair últimos 8 dígitos
+function getPhoneDigits(phone: string | null | undefined): string {
+  if (!phone) return ''
+  const cleaned = phone.replace(/\D/g, '')
+  return cleaned.length >= 8 ? cleaned.slice(-8) : ''
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -64,109 +71,125 @@ Deno.serve(async (req) => {
         console.log('🛑 OPT-OUT DETECTADO na mensagem do cliente:', messageText)
       }
       
-      // Normalizar telefone do cliente para busca (últimos 8-9 dígitos)
-      const normalizedPhone = clientPhone.replace(/^55/, '').replace(/^0/, '')
-      const phoneDigits = normalizedPhone.slice(-9) // Últimos 9 dígitos
+      // FASE 6: Usar função simplificada para comparação
+      const clientLast8 = getPhoneDigits(clientPhone)
       
-      console.log('🔍 Buscando deals com telefone normalizado:', phoneDigits)
-      
-      // Buscar deals com follow-up ativo para esse telefone
-      const { data: deals, error: dealsError } = await supabase
-        .from('crm_deals')
-        .select(`
-          id,
-          title,
-          followup_count,
-          followup_enabled,
-          owner_id,
-          stage_id,
-          leads(
-            client_id,
-            clients(phone)
-          )
-        `)
-        .eq('status', 'aberto')
-        .eq('followup_enabled', true)
-      
-      // Filtrar deals cujo telefone corresponde ao cliente
-      // Comparação estrita: últimos 8 dígitos devem ser EXATAMENTE iguais
-      const matchingDeals = (deals || []).filter(deal => {
-        const dealPhone = (deal.leads as any)?.clients?.phone?.replace(/\D/g, '') || ''
-        // Evitar falso positivo quando dealPhone é vazio ou muito curto
-        if (!dealPhone || dealPhone.length < 8) return false
-        // Comparar últimos 8 dígitos (parte que identifica o número)
-        const dealLast8 = dealPhone.slice(-8)
-        const clientLast8 = phoneDigits.slice(-8)
-        return dealLast8 === clientLast8
-      })
-
-      if (!dealsError && matchingDeals.length > 0) {
-        console.log(`✅ Found ${matchingDeals.length} follow-up deal(s) for this client`)
+      if (clientLast8.length < 8) {
+        console.log('⚠️ Número do cliente muito curto para comparação:', clientPhone)
+      } else {
+        console.log('🔍 Buscando deals com últimos 8 dígitos:', clientLast8)
         
-        for (const deal of matchingDeals) {
-          console.log(`🔄 Processing deal: ${deal.title}`)
-          
-          // Dados para atualização
-          const updateData: any = {
-            followup_count: 0,
-            last_interaction: new Date().toISOString()
-          }
-          
-          // Se opt-out detectado, desabilitar follow-ups
-          if (hasOptOut) {
-            updateData.followup_enabled = false
-            console.log('🛑 Desabilitando follow-ups para deal:', deal.id)
-          }
-          
-          // Atualizar deal
-          const { error: updateError } = await supabase
-            .from('crm_deals')
-            .update(updateData)
-            .eq('id', deal.id)
-          
-          if (updateError) {
-            console.error('❌ Error updating deal:', updateError)
-          } else {
-            console.log('✅ Deal updated successfully')
+        // Buscar deals com follow-up ativo para esse telefone
+        const { data: deals, error: dealsError } = await supabase
+          .from('crm_deals')
+          .select(`
+            id,
+            title,
+            followup_count,
+            followup_enabled,
+            owner_id,
+            stage_id,
+            leads(
+              client_id,
+              clients(phone)
+            )
+          `)
+          .eq('status', 'aberto')
+          .eq('followup_enabled', true)
+        
+        if (dealsError) {
+          console.error('❌ Erro ao buscar deals:', dealsError)
+        } else {
+          // FASE 6: Comparação simplificada de telefone
+          const matchingDeals = (deals || []).filter(deal => {
+            // Corrigir acesso: leads pode ser array ou objeto
+            const leadsData = deal.leads
+            const clientData = Array.isArray(leadsData) 
+              ? leadsData[0]?.clients 
+              : (leadsData as any)?.clients
             
-            // Registrar na timeline
-            const timelineMessage = hasOptOut 
-              ? '🛑 Cliente solicitou PARAR follow-ups. Sistema desativado.'
-              : '🎉 Cliente respondeu! Contador de follow-up resetado.'
+            const dealLast8 = getPhoneDigits(clientData?.phone)
             
-            await supabase
-              .from('crm_timeline')
-              .insert({
-                deal_id: deal.id,
-                message: timelineMessage,
-                update_type: 'Sistema - Follow-up'
-              })
+            // Evitar falso positivo quando dealPhone é vazio ou muito curto
+            if (dealLast8.length < 8) return false
             
-            // Notificar vendedor responsável
-            if (deal.owner_id) {
-              const notificationTitle = hasOptOut 
-                ? 'Cliente pediu para parar!'
-                : 'Cliente respondeu!'
+            // Comparação estrita: últimos 8 dígitos devem ser EXATAMENTE iguais
+            return dealLast8 === clientLast8
+          })
+
+          if (matchingDeals.length > 0) {
+            console.log(`✅ Found ${matchingDeals.length} follow-up deal(s) for this client`)
+            
+            for (const deal of matchingDeals) {
+              console.log(`🔄 Processing deal: ${deal.title}`)
               
-              const notificationMessage = hasOptOut
-                ? `O cliente no negócio "${deal.title}" pediu para PARAR os follow-ups. Sistema desativado.`
-                : `O cliente respondeu no negócio "${deal.title}". Verifique a conversa.`
+              // FASE 4: Dados para atualização - NÃO resetar followup_count para 0
+              // Apenas atualizar last_interaction para marcar que o cliente respondeu
+              const updateData: any = {
+                last_interaction: new Date().toISOString()
+                // REMOVIDO: followup_count: 0 - mantemos o contador para histórico
+              }
               
-              await supabase
-                .from('notifications')
-                .insert({
-                  user_id: deal.owner_id,
-                  type: hasOptOut ? 'followup_optout' : 'followup_response',
-                  title: notificationTitle,
-                  message: notificationMessage,
-                  link: `/crm?deal=${deal.id}`,
-                  metadata: {
+              // Se opt-out detectado, desabilitar follow-ups
+              if (hasOptOut) {
+                updateData.followup_enabled = false
+                console.log('🛑 Desabilitando follow-ups para deal:', deal.id)
+              }
+              
+              // Atualizar deal
+              const { error: updateError } = await supabase
+                .from('crm_deals')
+                .update(updateData)
+                .eq('id', deal.id)
+              
+              if (updateError) {
+                console.error('❌ Error updating deal:', updateError)
+              } else {
+                console.log('✅ Deal updated successfully')
+                
+                // Registrar na timeline
+                const timelineMessage = hasOptOut 
+                  ? '🛑 Cliente solicitou PARAR follow-ups. Sistema desativado.'
+                  : `🎉 Cliente respondeu! Follow-up #${deal.followup_count} encerrado. Próximo follow-up em 48h se não houver nova interação.`
+                
+                await supabase
+                  .from('crm_timeline')
+                  .insert({
                     deal_id: deal.id,
-                    client_phone: clientPhone,
-                    opt_out: hasOptOut
-                  }
-                })
+                    message: timelineMessage,
+                    update_type: 'Sistema - Follow-up'
+                  })
+                
+                // Notificar vendedor responsável
+                if (deal.owner_id) {
+                  const notificationTitle = hasOptOut 
+                    ? 'Cliente pediu para parar!'
+                    : 'Cliente respondeu!'
+                  
+                  const notificationMessage = hasOptOut
+                    ? `O cliente no negócio "${deal.title}" pediu para PARAR os follow-ups. Sistema desativado.`
+                    : `O cliente respondeu no negócio "${deal.title}". Verifique a conversa.`
+                  
+                  await supabase
+                    .from('notifications')
+                    .insert({
+                      user_id: deal.owner_id,
+                      type: hasOptOut ? 'followup_optout' : 'followup_response',
+                      title: notificationTitle,
+                      message: notificationMessage,
+                      link: `/crm?deal=${deal.id}`,
+                      metadata: {
+                        deal_id: deal.id,
+                        client_phone: clientPhone,
+                        opt_out: hasOptOut,
+                        followup_count: deal.followup_count
+                      }
+                    })
+                }
+              }
             }
+          } else {
+            console.log('ℹ️ Nenhum deal com follow-up ativo encontrado para este telefone')
           }
         }
       }

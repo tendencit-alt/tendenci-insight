@@ -98,10 +98,17 @@ export function N8nFollowupGuide() {
   const checkEligibleLeads = async () => {
     setLoadingEligible(true);
     try {
+      // Buscar ID da etapa "Follow Up" para filtrar corretamente
+      const { data: followupStage } = await supabase
+        .from('crm_stages')
+        .select('id')
+        .ilike('name', '%Follow Up%')
+        .single();
+
       // Buscar leads elegíveis diretamente
       const now48hAgo = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
       
-      const { data, error } = await supabase
+      let query = supabase
         .from('crm_deals')
         .select(`
           id,
@@ -114,14 +121,25 @@ export function N8nFollowupGuide() {
         .eq('followup_enabled', true)
         .eq('status', 'aberto');
 
+      // Filtrar por etapa "Follow Up" se existir
+      if (followupStage?.id) {
+        query = query.eq('stage_id', followupStage.id);
+      }
+
+      const { data, error } = await query;
+
       if (error) throw error;
 
       // Filtrar por última interação > 48h E que tenha telefone válido
       const eligible = (data || []).filter(deal => {
         const lastInteraction = deal.last_interaction || deal.last_followup_at;
         const hasValidTime = !lastInteraction || lastInteraction < now48hAgo;
-        const phone = (deal.leads as any)?.clients?.phone;
-        const hasPhone = phone && phone.replace(/\D/g, '').length >= 10;
+        // Corrigir acesso: leads pode ser objeto ou array
+        const leadsData = deal.leads;
+        const clientPhone = Array.isArray(leadsData) 
+          ? leadsData[0]?.clients?.phone 
+          : (leadsData as any)?.clients?.phone;
+        const hasPhone = clientPhone && clientPhone.replace(/\D/g, '').length >= 10;
         return hasValidTime && hasPhone;
       });
 
@@ -510,7 +528,7 @@ export function N8nFollowupGuide() {
             <AlertTriangle className="h-4 w-4 text-orange-600" />
             <AlertDescription className="text-orange-800">
               Cada lead será enviado para o n8n que processará e enviará via WhatsApp. 
-              <strong> Intervalo de 3 segundos entre envios</strong> para evitar bloqueio.
+              <strong> O n8n deve controlar o intervalo de 3 minutos entre envios</strong> para evitar bloqueio.
             </AlertDescription>
           </Alert>
         </CardContent>
