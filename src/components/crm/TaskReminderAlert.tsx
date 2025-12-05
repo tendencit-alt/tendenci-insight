@@ -148,6 +148,7 @@ export function TaskReminderAlert({ pipelineId }: TaskReminderAlertProps) {
           title: taskData.title,
           due_at: localISOTime,
           status: "open",
+          created_by: userData.user?.id || null,
         });
 
       if (taskError) throw taskError;

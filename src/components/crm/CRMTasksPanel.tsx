@@ -209,6 +209,7 @@ export function CRMTasksPanel({
         action_type: "task_completed",
         description: `Tarefa concluída: ${task.title}`,
         to_stage_id: task.deal?.stage_id,
+        moved_by: profile?.id || null,
       });
       
       fetchTasks();
