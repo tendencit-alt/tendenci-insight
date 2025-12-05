@@ -64,6 +64,12 @@ Deno.serve(async (req) => {
         console.log('🛑 OPT-OUT DETECTADO na mensagem do cliente:', messageText)
       }
       
+      // Normalizar telefone do cliente para busca (últimos 8-9 dígitos)
+      const normalizedPhone = clientPhone.replace(/^55/, '').replace(/^0/, '')
+      const phoneDigits = normalizedPhone.slice(-9) // Últimos 9 dígitos
+      
+      console.log('🔍 Buscando deals com telefone normalizado:', phoneDigits)
+      
       // Buscar deals com follow-up ativo para esse telefone
       const { data: deals, error: dealsError } = await supabase
         .from('crm_deals')
@@ -74,19 +80,24 @@ Deno.serve(async (req) => {
           followup_enabled,
           owner_id,
           stage_id,
-          leads!inner(
+          leads(
             client_id,
-            clients!inner(phone)
+            clients(phone)
           )
         `)
         .eq('status', 'aberto')
         .eq('followup_enabled', true)
-        .like('leads.clients.phone', `%${clientPhone}%`)
+      
+      // Filtrar deals cujo telefone contém os dígitos do cliente
+      const matchingDeals = (deals || []).filter(deal => {
+        const dealPhone = (deal.leads as any)?.clients?.phone?.replace(/\D/g, '') || ''
+        return dealPhone.includes(phoneDigits) || phoneDigits.includes(dealPhone.slice(-9))
+      })
 
-      if (!dealsError && deals && deals.length > 0) {
-        console.log(`✅ Found ${deals.length} follow-up deal(s) for this client`)
+      if (!dealsError && matchingDeals.length > 0) {
+        console.log(`✅ Found ${matchingDeals.length} follow-up deal(s) for this client`)
         
-        for (const deal of deals) {
+        for (const deal of matchingDeals) {
           console.log(`🔄 Processing deal: ${deal.title}`)
           
           // Dados para atualização

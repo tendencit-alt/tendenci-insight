@@ -31,9 +31,24 @@ function formatBrazilianPhone(phone: string | null): string | null {
     cleaned = cleaned.substring(2)
   }
   
-  // Adicionar 9 se número tem 10 dígitos (DDD + 8 dígitos)
+  // Remove 0 inicial antes do DDD (ex: 034... -> 34...)
+  if (cleaned.startsWith('0')) {
+    cleaned = cleaned.substring(1)
+  }
+  
+  // Se começa com 55 e tem 0 depois, remover o 0 (ex: 550... -> 55...)
+  if (cleaned.startsWith('550')) {
+    cleaned = '55' + cleaned.substring(3)
+  }
+  
+  // Adicionar 9 se número tem 10 dígitos (DDD + 8 dígitos) e não começa com 55
   if (cleaned.length === 10 && !cleaned.startsWith('55')) {
     cleaned = cleaned.substring(0, 2) + '9' + cleaned.substring(2)
+  }
+  
+  // Se tem 12 dígitos e começa com 55, adicionar o 9 (55 + DDD + 8 dígitos)
+  if (cleaned.length === 12 && cleaned.startsWith('55')) {
+    cleaned = cleaned.substring(0, 4) + '9' + cleaned.substring(4)
   }
   
   // Adicionar 55 se não tem
@@ -102,10 +117,10 @@ Deno.serve(async (req) => {
         categoria,
         last_interaction,
         last_followup_at,
-        leads!inner(
+        leads(
           id,
           client_id,
-          clients!inner(
+          clients(
             name,
             phone
           )
@@ -114,7 +129,6 @@ Deno.serve(async (req) => {
       `)
       .eq('followup_enabled', true)
       .eq('status', 'aberto')
-      .not('leads.clients.phone', 'is', null)
 
     if (leadsError) {
       console.error('❌ Erro ao buscar leads:', leadsError)
@@ -133,11 +147,15 @@ Deno.serve(async (req) => {
         return !lastInteraction || lastInteraction < now48hAgo
       })
       .map(deal => {
-        const phone = formatBrazilianPhone((deal.leads as any)?.clients?.phone)
+        // Buscar telefone do lead OU de outra fonte se não tiver lead
+        const leadPhone = (deal.leads as any)?.clients?.phone
+        const phone = formatBrazilianPhone(leadPhone)
+        const clientName = (deal.leads as any)?.clients?.name || 'Cliente'
+        
         return {
           deal_id: deal.id,
           lead_id: deal.lead_id,
-          client_name: (deal.leads as any)?.clients?.name || 'Cliente',
+          client_name: clientName,
           client_phone: phone,
           conversation_history: deal.conversation_history,
           followup_count: deal.followup_count || 0,
@@ -218,10 +236,10 @@ Deno.serve(async (req) => {
           results.errors.push(`${lead.client_name}: ${errorText}`)
         }
 
-        // Delay de 3 minutos entre envios (controlado pelo frontend, mas garantia aqui)
+        // Delay de 3 minutos entre envios para evitar bloqueio do WhatsApp
         if (eligibleLeads.indexOf(lead) < eligibleLeads.length - 1) {
-          console.log('⏳ Aguardando antes do próximo envio...')
-          await new Promise(resolve => setTimeout(resolve, 3000)) // 3 segundos entre envios via edge function
+          console.log('⏳ Aguardando 3 minutos antes do próximo envio...')
+          await new Promise(resolve => setTimeout(resolve, 180000)) // 3 minutos = 180000ms
         }
 
       } catch (error: any) {

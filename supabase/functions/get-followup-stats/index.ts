@@ -53,14 +53,14 @@ Deno.serve(async (req) => {
 
     console.log('✅ Follow Up stage found:', followupStage.id)
 
-    // Total na fila (deals na etapa "Follow Up (I.A)" com status aberto e follow-ups pendentes)
-    // Aplicar filtro de especialização se vendedor não for admin ou 'todos'
+    // Total na fila (deals na etapa "Follow Up (I.A)" com status aberto e followup_enabled=true)
+    // SEM LIMITE de follow-ups - continua até cliente pedir para parar
     let queueQuery = supabase
       .from('crm_deals')
       .select('*', { count: 'exact', head: true })
       .eq('stage_id', followupStage.id)
       .eq('status', 'aberto')
-      .or('followup_count.is.null,followup_count.lt.5')
+      .eq('followup_enabled', true)
 
     // Aplicar filtro de categoria baseado na especialização
     if (!isAdmin && userEspec !== 'todos') {
