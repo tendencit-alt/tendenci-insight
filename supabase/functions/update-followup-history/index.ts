@@ -1,9 +1,11 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
 import { corsHeaders } from '../_shared/cors.ts'
+import { formatBrasilDateTime } from '../_shared/timezone.ts'
 
 interface UpdateFollowupRequest {
   deal_id: string
   new_message: string
+  followup_number?: number // Receber do payload para sincronizar
 }
 
 Deno.serve(async (req) => {
@@ -17,9 +19,9 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const { deal_id, new_message }: UpdateFollowupRequest = await req.json()
+    const { deal_id, new_message, followup_number }: UpdateFollowupRequest = await req.json()
 
-    // FASE 11: Validações robustas
+    // Validações robustas
     if (!deal_id) {
       console.error('❌ deal_id é obrigatório')
       throw new Error('deal_id é obrigatório')
@@ -32,6 +34,7 @@ Deno.serve(async (req) => {
 
     console.log('📝 Updating follow-up history for deal:', deal_id)
     console.log('📝 Message length:', new_message.length)
+    console.log('📝 Followup number from payload:', followup_number)
 
     // 1️⃣ Buscar deal atual
     const { data: deal, error: fetchError } = await supabase
@@ -47,91 +50,95 @@ Deno.serve(async (req) => {
 
     console.log('✅ Deal encontrado:', deal.title, 'followup_count atual:', deal.followup_count)
 
-    // 2️⃣ Adicionar nova mensagem ao histórico
-    const timestamp = new Date().toLocaleString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZone: 'America/Sao_Paulo'
-    })
+    // 2️⃣ Determinar o número do follow-up
+    // PRIORIDADE: usar followup_number do payload se fornecido, senão calcular
+    const finalFollowupNumber = followup_number ?? ((deal.followup_count || 0) + 1)
     
-    const followupNumber = (deal.followup_count || 0) + 1
-    const newEntry = `🤖 IA (Follow-up ${followupNumber}) [${timestamp}]: ${new_message}`
+    console.log('📊 Follow-up number final:', finalFollowupNumber)
+
+    // 3️⃣ Adicionar nova mensagem ao histórico
+    const timestamp = formatBrasilDateTime(new Date())
+    const newEntry = `🤖 IA (Follow-up ${finalFollowupNumber}) [${timestamp}]: ${new_message}`
     
     const updatedHistory = deal.conversation_history 
       ? `${deal.conversation_history}\n\n${newEntry}`
       : newEntry
 
-    // 3️⃣ Atualizar deal no banco
-    // FASE 7: last_followup_at = quando sistema enviou, last_interaction = quando cliente respondeu
+    // 4️⃣ Atualizar deal no banco
     const updateData: any = {
       conversation_history: updatedHistory,
-      followup_count: followupNumber,
+      followup_count: finalFollowupNumber,
       last_followup_at: new Date().toISOString()
     }
 
-    const { error: updateError } = await supabase
+    const { data: updateResult, error: updateError } = await supabase
       .from('crm_deals')
       .update(updateData)
       .eq('id', deal_id)
+      .select('id')
+      .single()
 
     if (updateError) {
       console.error('❌ Error updating deal:', updateError)
       throw updateError
     }
 
-    console.log('✅ Deal updated, followup_count agora:', followupNumber)
+    console.log('✅ Deal updated, followup_count agora:', finalFollowupNumber, 'rows affected:', updateResult ? 1 : 0)
 
-    // 4️⃣ FASE 5: Verificar se já existe log com QUALQUER status para este followup_number
+    // 5️⃣ Verificar se já existe log para este follow-up number
     const { data: existingLog, error: existingLogError } = await supabase
       .from('followup_logs')
       .select('id, status')
       .eq('deal_id', deal_id)
-      .eq('followup_number', followupNumber)
-      .maybeSingle() // Usar maybeSingle para não dar erro se não encontrar
+      .eq('followup_number', finalFollowupNumber)
+      .maybeSingle()
 
     if (existingLogError) {
       console.warn('⚠️ Error checking existing log:', existingLogError)
     }
 
+    const nowISO = new Date().toISOString()
+
     if (existingLog) {
-      // Log existe - atualizar para 'sent' independente do status anterior
+      // Log existe - atualizar para 'sent'
       console.log(`📝 Log existente encontrado (status: ${existingLog.status}), atualizando para sent...`)
       
-      const { error: logUpdateError, count } = await supabase
+      const { data: logUpdateResult, error: logUpdateError } = await supabase
         .from('followup_logs')
         .update({
           status: 'sent',
           message_sent: new_message,
-          sent_at: new Date().toISOString()
+          sent_at: nowISO
         })
         .eq('id', existingLog.id)
+        .select('id')
+        .single()
 
       if (logUpdateError) {
         console.warn('⚠️ Error updating followup log:', logUpdateError)
       } else {
-        console.log('✅ Follow-up log atualizado para sent')
+        console.log('✅ Follow-up log atualizado para sent, id:', logUpdateResult?.id)
       }
     } else {
-      // 5️⃣ Não existe log - criar novo com status 'sent'
+      // Não existe log - criar novo com status 'sent'
       console.log('📝 Nenhum log existente, criando novo com status sent...')
       
-      const { error: logError } = await supabase
+      const { data: newLog, error: logError } = await supabase
         .from('followup_logs')
         .insert({
           deal_id: deal_id,
-          followup_number: followupNumber,
+          followup_number: finalFollowupNumber,
           message_sent: new_message,
           status: 'sent',
-          sent_at: new Date().toISOString()
+          sent_at: nowISO
         })
+        .select('id')
+        .single()
 
       if (logError) {
         console.warn('⚠️ Error creating followup log:', logError)
       } else {
-        console.log('✅ Novo log criado com status sent')
+        console.log('✅ Novo log criado com status sent, id:', newLog?.id)
       }
     }
 
@@ -140,7 +147,7 @@ Deno.serve(async (req) => {
       .from('crm_timeline')
       .insert({
         deal_id: deal_id,
-        message: `Follow-up automático #${followupNumber} enviado`,
+        message: `Follow-up automático #${finalFollowupNumber} enviado`,
         update_type: 'Sistema - Follow-up'
       })
 
@@ -155,7 +162,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        followup_count: followupNumber,
+        followup_count: finalFollowupNumber,
         message: 'Follow-up history updated successfully' 
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

@@ -19,7 +19,7 @@ interface EvolutionWebhook {
   }
 }
 
-// FASE 6: Função simplificada para extrair últimos 8 dígitos
+// Função para extrair últimos 8 dígitos
 function getPhoneDigits(phone: string | null | undefined): string {
   if (!phone) return ''
   const cleaned = phone.replace(/\D/g, '')
@@ -71,7 +71,6 @@ Deno.serve(async (req) => {
         console.log('🛑 OPT-OUT DETECTADO na mensagem do cliente:', messageText)
       }
       
-      // Usar função simplificada para comparação
       const clientLast8 = getPhoneDigits(clientPhone)
       
       if (clientLast8.length < 8) {
@@ -79,8 +78,15 @@ Deno.serve(async (req) => {
       } else {
         console.log('🔍 Buscando deals com últimos 8 dígitos:', clientLast8)
         
-        // FASE 6: Adicionar LIMIT para evitar timeout com muitos deals
-        const { data: deals, error: dealsError } = await supabase
+        // Buscar ID da etapa "Follow Up" para filtrar corretamente
+        const { data: followupStage } = await supabase
+          .from('crm_stages')
+          .select('id')
+          .ilike('name', '%Follow Up%')
+          .maybeSingle()
+        
+        // Construir query com filtro de stage se disponível
+        let dealsQuery = supabase
           .from('crm_deals')
           .select(`
             id,
@@ -96,14 +102,21 @@ Deno.serve(async (req) => {
           `)
           .eq('status', 'aberto')
           .eq('followup_enabled', true)
-          .limit(200) // FASE 6: Limitar resultado para evitar timeout
+          .limit(200)
+        
+        // Filtrar por stage_id se encontrado
+        if (followupStage?.id) {
+          dealsQuery = dealsQuery.eq('stage_id', followupStage.id)
+          console.log('📂 Filtrando por stage Follow Up:', followupStage.id)
+        }
+        
+        const { data: deals, error: dealsError } = await dealsQuery
         
         if (dealsError) {
           console.error('❌ Erro ao buscar deals:', dealsError)
         } else {
-          // Comparação simplificada de telefone
+          // Comparação de telefone
           const matchingDeals = (deals || []).filter(deal => {
-            // Corrigir acesso: leads pode ser array ou objeto
             const leadsData = deal.leads
             const clientData = Array.isArray(leadsData) 
               ? leadsData[0]?.clients 
@@ -111,10 +124,8 @@ Deno.serve(async (req) => {
             
             const dealLast8 = getPhoneDigits(clientData?.phone)
             
-            // Evitar falso positivo quando dealPhone é vazio ou muito curto
             if (dealLast8.length < 8) return false
             
-            // Comparação estrita: últimos 8 dígitos devem ser EXATAMENTE iguais
             return dealLast8 === clientLast8
           })
 
@@ -124,7 +135,6 @@ Deno.serve(async (req) => {
             for (const deal of matchingDeals) {
               console.log(`🔄 Processing deal: ${deal.title}`)
               
-              // FASE 4: Apenas atualizar last_interaction, NÃO resetar followup_count
               const updateData: any = {
                 last_interaction: new Date().toISOString()
               }
@@ -136,17 +146,36 @@ Deno.serve(async (req) => {
               }
               
               // Atualizar deal
-              const { error: updateError } = await supabase
+              const { data: updateResult, error: updateError } = await supabase
                 .from('crm_deals')
                 .update(updateData)
                 .eq('id', deal.id)
+                .select('id')
+                .single()
               
               if (updateError) {
                 console.error('❌ Error updating deal:', updateError)
               } else {
-                console.log('✅ Deal updated successfully')
+                console.log('✅ Deal updated successfully, id:', updateResult?.id)
                 
-                // FASE 7: Mensagem de timeline mais genérica, sem referência ao número de follow-up
+                // Criar log de resposta do cliente
+                const { error: responseLogError } = await supabase
+                  .from('followup_logs')
+                  .insert({
+                    deal_id: deal.id,
+                    followup_number: deal.followup_count || 0,
+                    status: 'client_responded',
+                    message_sent: `Cliente respondeu: "${messageText.substring(0, 200)}${messageText.length > 200 ? '...' : ''}"`,
+                    sent_at: new Date().toISOString()
+                  })
+                
+                if (responseLogError) {
+                  console.warn('⚠️ Erro ao criar log de resposta:', responseLogError)
+                } else {
+                  console.log('✅ Log de resposta do cliente criado')
+                }
+                
+                // Timeline message
                 const timelineMessage = hasOptOut 
                   ? '🛑 Cliente solicitou PARAR follow-ups. Sistema desativado.'
                   : '🎉 Cliente respondeu! Ciclo de follow-up pausado. Próximo follow-up em 48h se não houver nova interação.'

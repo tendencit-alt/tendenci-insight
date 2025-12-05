@@ -109,12 +109,16 @@ export function N8nFollowupGuide() {
   const checkEligibleLeads = async () => {
     setLoadingEligible(true);
     try {
-      // Buscar ID da etapa "Follow Up" para filtrar corretamente
-      const { data: followupStage } = await supabase
+      // Buscar ID da etapa "Follow Up" - usando maybeSingle para não dar erro
+      const { data: followupStage, error: stageError } = await supabase
         .from('crm_stages')
         .select('id')
         .ilike('name', '%Follow Up%')
-        .single();
+        .maybeSingle();
+
+      if (stageError) {
+        console.warn('Erro ao buscar etapa Follow Up:', stageError);
+      }
 
       // Buscar leads elegíveis diretamente
       let query = supabase
@@ -123,6 +127,8 @@ export function N8nFollowupGuide() {
           id,
           last_interaction,
           last_followup_at,
+          followup_count,
+          max_followups,
           leads(
             clients(phone)
           )
@@ -139,18 +145,23 @@ export function N8nFollowupGuide() {
 
       if (error) throw error;
 
-      // FASE 1 & 3: Cutoff de 48h usando timestamp numérico
+      // Cutoff de 48h usando timestamp UTC consistente
       const cutoffTimestamp = Date.now() - (48 * 60 * 60 * 1000);
 
       // Filtrar por última interação > 48h E que tenha telefone válido
       const eligible = (data || []).filter(deal => {
-        // FASE 1: Usar Math.max para pegar a data mais recente
+        // Verificar max_followups
+        const currentCount = deal.followup_count || 0;
+        const maxFollowups = deal.max_followups || 999;
+        if (currentCount >= maxFollowups) return false;
+        
+        // Usar Math.max para pegar a data mais recente
         const mostRecentDate = getMostRecentDate(deal.last_interaction, deal.last_followup_at);
         
         // Se nunca teve interação, é elegível
         if (!mostRecentDate) return true;
         
-        // FASE 3: Comparar timestamps numéricos, não strings
+        // Comparar timestamps numéricos UTC
         const hasValidTime = mostRecentDate.getTime() < cutoffTimestamp;
         
         // Corrigir acesso: leads pode ser objeto ou array
