@@ -95,21 +95,21 @@ Deno.serve(async (req) => {
       .gte('sent_at', lastWeek.toISOString())
 
     // Taxa de resposta (deals que tiveram last_interaction atualizada após follow-up)
+    // Query otimizada: busca logs com deals em uma única query
     const { data: responseLogs } = await supabase
       .from('followup_logs')
-      .select('deal_id, sent_at')
+      .select(`
+        deal_id, 
+        sent_at,
+        crm_deals!deal_id(last_interaction)
+      `)
       .eq('status', 'sent')
       .gte('sent_at', lastWeek.toISOString())
 
     let responseCount = 0
     if (responseLogs && responseLogs.length > 0) {
       for (const log of responseLogs) {
-        const { data: deal } = await supabase
-          .from('crm_deals')
-          .select('last_interaction')
-          .eq('id', log.deal_id)
-          .single()
-
+        const deal = (log as any).crm_deals
         if (deal?.last_interaction && new Date(deal.last_interaction) > new Date(log.sent_at)) {
           responseCount++
         }

@@ -88,13 +88,16 @@ Deno.serve(async (req) => {
         .eq('status', 'aberto')
         .eq('followup_enabled', true)
       
-      // Filtrar deals cujo telefone contém os dígitos do cliente
+      // Filtrar deals cujo telefone corresponde ao cliente
+      // Comparação estrita: últimos 8 dígitos devem ser EXATAMENTE iguais
       const matchingDeals = (deals || []).filter(deal => {
         const dealPhone = (deal.leads as any)?.clients?.phone?.replace(/\D/g, '') || ''
-        // Evitar falso positivo quando dealPhone é vazio
+        // Evitar falso positivo quando dealPhone é vazio ou muito curto
         if (!dealPhone || dealPhone.length < 8) return false
-        const dealPhoneDigits = dealPhone.slice(-9)
-        return dealPhone.includes(phoneDigits) || phoneDigits.includes(dealPhoneDigits)
+        // Comparar últimos 8 dígitos (parte que identifica o número)
+        const dealLast8 = dealPhone.slice(-8)
+        const clientLast8 = phoneDigits.slice(-8)
+        return dealLast8 === clientLast8
       })
 
       if (!dealsError && matchingDeals.length > 0) {

@@ -242,11 +242,8 @@ Deno.serve(async (req) => {
           results.errors.push(`${lead.client_name}: ${errorText}`)
         }
 
-        // Delay de 3 minutos entre envios para evitar bloqueio do WhatsApp
-        if (eligibleLeads.indexOf(lead) < eligibleLeads.length - 1) {
-          console.log('⏳ Aguardando 3 minutos antes do próximo envio...')
-          await new Promise(resolve => setTimeout(resolve, 180000)) // 3 minutos = 180000ms
-        }
+        // NOTA: Delay de 3 minutos deve ser controlado pelo n8n, não aqui
+        // Edge Functions têm timeout de ~60s, então não podemos aguardar aqui
 
       } catch (error: any) {
         console.error(`❌ Erro ao processar lead ${lead.client_name}:`, error.message)

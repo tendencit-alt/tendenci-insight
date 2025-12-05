@@ -185,7 +185,7 @@ export function N8nFollowupGuide() {
       return;
     }
 
-    const confirmMessage = `Disparar follow-ups para ${eligibleCount} lead(s)?\n\nTempo estimado: ${Math.ceil((eligibleCount || 0) * 3)} minutos`;
+    const confirmMessage = `Disparar follow-ups para ${eligibleCount} lead(s)?\n\nNOTA: Os leads serão enviados para n8n, que controlará o intervalo de 3 minutos entre envios.`;
     if (!confirm(confirmMessage)) return;
 
     setDispatching(true);
