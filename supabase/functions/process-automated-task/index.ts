@@ -58,6 +58,49 @@ function formatBrazilianPhone(phone: string): { formatted: string | null; error?
   return { formatted, original }
 }
 
+// Função para criar notificação de falha
+async function createFailureNotification(
+  supabase: any,
+  userId: string,
+  errorType: string,
+  errorMessage: string,
+  taskId: string,
+  dealId: string,
+  dealTitle: string,
+  instanceName?: string
+) {
+  const notificationMessages: Record<string, string> = {
+    'whatsapp_offline': `Sua instância WhatsApp "${instanceName || 'desconhecida'}" não está conectada. Reconecte em Configurações.`,
+    'invalid_phone': `O número do cliente está em formato inválido: ${errorMessage}`,
+    'api_error': `Erro ao enviar mensagem via WhatsApp. Verifique a conexão.`,
+    'missing_client': `O cliente deste negócio não possui telefone cadastrado.`,
+    'no_instance': `Você não possui uma instância WhatsApp conectada. Configure em Configurações.`,
+    'unknown': errorMessage
+  }
+
+  const message = notificationMessages[errorType] || notificationMessages['unknown']
+
+  try {
+    await supabase.from('notifications').insert({
+      user_id: userId,
+      type: 'automation_failure',
+      title: '⚠️ Falha na Automação',
+      message: message,
+      link: `/crm?deal=${dealId}`,
+      read: false,
+      metadata: {
+        task_id: taskId,
+        error_type: errorType,
+        instance_name: instanceName || null,
+        deal_title: dealTitle
+      }
+    })
+    console.log(`📢 Notificação de falha criada para usuário ${userId}`)
+  } catch (err) {
+    console.error('❌ Erro ao criar notificação de falha:', err)
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -166,10 +209,23 @@ Deno.serve(async (req) => {
 
     const clientPhone = deal.lead?.client?.phone
     const clientName = deal.lead?.client?.name || 'Cliente'
+    const dealTitle = deal.title || 'Negócio'
 
     if (!clientPhone) {
       console.error('❌ Telefone do cliente não encontrado')
       await supabase.from('crm_tasks').update({ status: 'open' }).eq('id', taskId)
+      
+      // Criar notificação de falha
+      await createFailureNotification(
+        supabase,
+        task.created_by,
+        'missing_client',
+        'Cliente sem telefone cadastrado',
+        taskId,
+        task.deal_id,
+        dealTitle
+      )
+      
       throw new Error('Telefone do cliente não encontrado')
     }
 
@@ -186,6 +242,18 @@ Deno.serve(async (req) => {
     if (connectionError || !connection) {
       console.error('❌ Instância WhatsApp não encontrada para o vendedor:', connectionError)
       await supabase.from('crm_tasks').update({ status: 'open' }).eq('id', taskId)
+      
+      // Criar notificação de falha - sem instância conectada
+      await createFailureNotification(
+        supabase,
+        task.created_by,
+        'no_instance',
+        'Vendedor não possui instância WhatsApp conectada',
+        taskId,
+        task.deal_id,
+        dealTitle
+      )
+      
       throw new Error('Vendedor não possui instância WhatsApp conectada')
     }
 
@@ -197,6 +265,19 @@ Deno.serve(async (req) => {
     if (!phoneResult.formatted) {
       console.error(`❌ Número inválido:`, phoneResult.error)
       await supabase.from('crm_tasks').update({ status: 'open' }).eq('id', taskId)
+      
+      // Criar notificação de falha - número inválido
+      await createFailureNotification(
+        supabase,
+        task.created_by,
+        'invalid_phone',
+        phoneResult.error || 'Formato inválido',
+        taskId,
+        task.deal_id,
+        dealTitle,
+        connection.instance_name
+      )
+      
       throw new Error(`Número inválido: ${phoneResult.error}`)
     }
 
@@ -225,6 +306,19 @@ Deno.serve(async (req) => {
       
       // Voltar para 'open' para tentar novamente
       await supabase.from('crm_tasks').update({ status: 'open' }).eq('id', taskId)
+      
+      // Criar notificação de falha - erro na API
+      await createFailureNotification(
+        supabase,
+        task.created_by,
+        'api_error',
+        `Erro Evolution API: ${errorText.substring(0, 100)}`,
+        taskId,
+        task.deal_id,
+        dealTitle,
+        connection.instance_name
+      )
+      
       throw new Error('Erro ao enviar mensagem via Evolution API')
     }
 

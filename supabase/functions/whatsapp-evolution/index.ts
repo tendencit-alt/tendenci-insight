@@ -242,7 +242,11 @@ Deno.serve(async (req) => {
         console.error('❌ Webhook error:', err)
       }
       
-      // 7️⃣ INSERIR no banco (com todos os campos necessários)
+      // 7️⃣ Buscar user_id do request body (enviado pelo frontend)
+      const reqBody = await req.clone().json()
+      const userId = reqBody.user_id || null
+      
+      // INSERIR no banco (com todos os campos necessários)
       const insertData = {
         instance_name: instanceName,
         instance_id: instanceId,
@@ -251,7 +255,8 @@ Deno.serve(async (req) => {
         qr_code_base64: qrCodeBase64,
         phone_number: null,
         connected_at: null,
-        created_by: null, // Agora é opcional!
+        created_by: null,
+        user_id: userId, // ✅ Salvar user_id do vendedor que está criando
         webhook_configured: true,
         webhook_url: webhookUrl
       }
