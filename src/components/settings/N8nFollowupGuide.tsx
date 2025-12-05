@@ -24,7 +24,13 @@ import {
   Play,
   Settings,
   RefreshCw,
-  Loader2
+  Loader2,
+  ArrowRight,
+  Timer,
+  Bot,
+  Smartphone,
+  Database,
+  FileJson
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -78,7 +84,7 @@ export function N8nFollowupGuide() {
     const interval = setInterval(() => {
       fetchStats();
       checkEligibleLeads();
-    }, 60000); // atualiza a cada 60s
+    }, 60000);
     return () => clearInterval(interval);
   }, []);
 
@@ -99,7 +105,6 @@ export function N8nFollowupGuide() {
   const checkEligibleLeads = async () => {
     setLoadingEligible(true);
     try {
-      // Buscar ID da etapa "Follow Up" - usando maybeSingle para não dar erro
       const { data: followupStage, error: stageError } = await supabase
         .from('crm_stages')
         .select('id')
@@ -110,7 +115,6 @@ export function N8nFollowupGuide() {
         console.warn('Erro ao buscar etapa Follow Up:', stageError);
       }
 
-      // Buscar leads elegíveis diretamente
       let query = supabase
         .from('crm_deals')
         .select(`
@@ -126,7 +130,6 @@ export function N8nFollowupGuide() {
         .eq('followup_enabled', true)
         .eq('status', 'aberto');
 
-      // Filtrar por etapa "Follow Up" se existir
       if (followupStage?.id) {
         query = query.eq('stage_id', followupStage.id);
       }
@@ -135,26 +138,19 @@ export function N8nFollowupGuide() {
 
       if (error) throw error;
 
-      // Cutoff de 48h usando timestamp UTC consistente (utilitário centralizado)
       const cutoffTimestamp = get48HoursCutoffUTC();
 
-      // Filtrar por última interação > 48h E que tenha telefone válido
       const eligible = (data || []).filter(deal => {
-        // Verificar max_followups
         const currentCount = deal.followup_count || 0;
         const maxFollowups = deal.max_followups || 999;
         if (currentCount >= maxFollowups) return false;
         
-        // Usar Math.max para pegar a data mais recente
         const mostRecentDate = getMostRecentDate(deal.last_interaction, deal.last_followup_at);
         
-        // Se nunca teve interação, é elegível
         if (!mostRecentDate) return true;
         
-        // Comparar timestamps numéricos UTC
         const hasValidTime = mostRecentDate.getTime() < cutoffTimestamp;
         
-        // Corrigir acesso: leads pode ser objeto ou array
         const leadsData = deal.leads;
         const clientPhone = Array.isArray(leadsData) 
           ? leadsData[0]?.clients?.phone 
@@ -195,6 +191,7 @@ export function N8nFollowupGuide() {
           client_phone: '5534999999999',
           conversation_history: 'Esta é uma mensagem de teste do sistema Tendenci.',
           followup_count: 0,
+          followup_number: 1,
           product_type: 'Sofá',
           categoria: 'Móveis Soltos',
           callback_url: `${projectUrl}/functions/v1/update-followup-history`
@@ -240,7 +237,7 @@ export function N8nFollowupGuide() {
       const { data, error } = await supabase.functions.invoke('dispatch-followup', {
         body: {
           webhook_url: webhookUrl,
-          ignore_time_filter: true // Permitir teste fora do horário comercial
+          ignore_time_filter: true
         }
       });
 
@@ -262,7 +259,6 @@ export function N8nFollowupGuide() {
         toast.info(data.message || 'Nenhum follow-up enviado');
       }
 
-      // Recarregar contagem
       checkEligibleLeads();
       fetchStats();
 
@@ -292,16 +288,18 @@ export function N8nFollowupGuide() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "tendenci-followup-webhook.json";
+    a.download = "tendenci-followup-completo-v2.json";
     a.click();
     URL.revokeObjectURL(url);
     toast.success("Workflow JSON baixado!");
   };
 
+  // ===== WORKFLOW n8n COMPLETO E FUNCIONAL =====
   const getWorkflowJSON = () => {
     return {
-      "name": "Tendenci - Follow-up Ativo (Webhook)",
+      "name": "Tendenci Follow-up Automático v2 - Completo",
       "nodes": [
+        // 1. WEBHOOK TRIGGER
         {
           "parameters": {
             "httpMethod": "POST",
@@ -309,36 +307,116 @@ export function N8nFollowupGuide() {
             "responseMode": "responseNode",
             "options": {}
           },
-          "name": "Webhook Trigger",
+          "id": "webhook-trigger",
+          "name": "Webhook Tendenci",
           "type": "n8n-nodes-base.webhook",
-          "typeVersion": 1.1,
-          "position": [250, 300],
+          "typeVersion": 2,
+          "position": [100, 300],
           "webhookId": "tendenci-followup"
         },
+        // 2. WAIT - 3 MINUTOS (anti-spam WhatsApp)
         {
           "parameters": {
-            "promptType": "define",
-            "text": "={{$json.conversation_history}}\n\nCliente: {{$json.client_name}}\nProduto de interesse: {{$json.product_type}}\nCategoria: {{$json.categoria}}\nFollow-up número: {{$json.followup_count + 1}}",
+            "amount": 3,
+            "unit": "minutes"
+          },
+          "id": "wait-3min",
+          "name": "Aguardar 3min",
+          "type": "n8n-nodes-base.wait",
+          "typeVersion": 1.1,
+          "position": [320, 300]
+        },
+        // 3. OPENAI - GERAR MENSAGEM
+        {
+          "parameters": {
+            "resource": "chat",
+            "model": "gpt-4o-mini",
+            "messages": {
+              "values": [
+                {
+                  "content": "=Você é o Matheus da Tendenci Móveis. Sua tarefa é enviar uma mensagem de follow-up casual e amigável para reengajar um cliente que não respondeu há 2 dias.\n\nREGRAS:\n- Máximo 2 linhas\n- Não force venda\n- Demonstre interesse genuíno em ajudar\n- Varie a abordagem conforme o número do follow-up\n- Use o histórico para personalizar\n\nFollow-up número: {{ $json.followup_number }}\nNome do cliente: {{ $json.client_name }}\nProduto de interesse: {{ $json.product_type }}\nCategoria: {{ $json.categoria }}",
+                  "role": "system"
+                },
+                {
+                  "content": "=Histórico da conversa:\n{{ $json.conversation_history }}\n\n---\nGere a mensagem de follow-up {{ $json.followup_number }} para {{ $json.client_name }}:",
+                  "role": "user"
+                }
+              ]
+            },
             "options": {
-              "systemMessage": "Você é o Matheus da Tendenci Móveis. Envie uma mensagem de follow-up casual e amigável para reengajar o cliente que não respondeu há 2 dias. Use o histórico de conversa para personalizar. Seja breve (máximo 2 linhas). Não force venda, apenas demonstre interesse genuíno em ajudar. Varie as abordagens a cada follow-up."
+              "temperature": 0.8,
+              "maxTokens": 150
             }
           },
+          "id": "openai-chat",
           "name": "Gerar Mensagem IA",
-          "type": "@n8n/n8n-nodes-langchain.agent",
-          "typeVersion": 1.6,
-          "position": [470, 300],
-          "note": "Configure suas credenciais de IA aqui (OpenAI, Gemini, etc)"
+          "type": "n8n-nodes-base.openAi",
+          "typeVersion": 1.8,
+          "position": [540, 300],
+          "credentials": {
+            "openAiApi": {
+              "id": "CONFIGURE_SUA_CREDENCIAL_OPENAI",
+              "name": "OpenAI API"
+            }
+          }
         },
+        // 4. SET - Preparar dados para envio
+        {
+          "parameters": {
+            "mode": "manual",
+            "duplicateItem": false,
+            "assignments": {
+              "assignments": [
+                {
+                  "id": "msg",
+                  "name": "mensagem_gerada",
+                  "value": "={{ $json.message.content }}",
+                  "type": "string"
+                },
+                {
+                  "id": "phone",
+                  "name": "telefone_formatado",
+                  "value": "={{ $('Webhook Tendenci').item.json.client_phone }}@s.whatsapp.net",
+                  "type": "string"
+                },
+                {
+                  "id": "deal",
+                  "name": "deal_id",
+                  "value": "={{ $('Webhook Tendenci').item.json.deal_id }}",
+                  "type": "string"
+                },
+                {
+                  "id": "callback",
+                  "name": "callback_url",
+                  "value": "={{ $('Webhook Tendenci').item.json.callback_url }}",
+                  "type": "string"
+                },
+                {
+                  "id": "followup_num",
+                  "name": "followup_number",
+                  "value": "={{ $('Webhook Tendenci').item.json.followup_number }}",
+                  "type": "number"
+                }
+              ]
+            }
+          },
+          "id": "set-data",
+          "name": "Preparar Dados",
+          "type": "n8n-nodes-base.set",
+          "typeVersion": 3.4,
+          "position": [760, 300]
+        },
+        // 5. HTTP REQUEST - ENVIAR WHATSAPP via Evolution API
         {
           "parameters": {
             "method": "POST",
-            "url": "={{$credentials.evolutionUrl}}/message/sendText/={{$credentials.evolutionInstance}}",
+            "url": "=https://SUA-EVOLUTION-API.com/message/sendText/SUA-INSTANCIA",
             "sendHeaders": true,
             "headerParameters": {
               "parameters": [
                 {
                   "name": "apikey",
-                  "value": "={{$credentials.evolutionApiKey}}"
+                  "value": "SUA_API_KEY_EVOLUTION"
                 },
                 {
                   "name": "Content-Type",
@@ -348,19 +426,53 @@ export function N8nFollowupGuide() {
             },
             "sendBody": true,
             "specifyBody": "json",
-            "jsonBody": "={\n  \"number\": \"{{$json.client_phone}}@s.whatsapp.net\",\n  \"text\": \"{{$('Gerar Mensagem IA').output}}\"\n}",
-            "options": {}
+            "jsonBody": "={\n  \"number\": \"{{ $json.telefone_formatado }}\",\n  \"text\": \"{{ $json.mensagem_gerada }}\"\n}",
+            "options": {
+              "timeout": 30000
+            }
           },
+          "id": "send-whatsapp",
           "name": "Enviar WhatsApp",
           "type": "n8n-nodes-base.httpRequest",
-          "typeVersion": 4.1,
-          "position": [690, 300],
-          "note": "Configure Evolution API via Credentials do n8n"
+          "typeVersion": 4.2,
+          "position": [980, 300],
+          "continueOnFail": true
         },
+        // 6. IF - Verificar se envio foi sucesso
+        {
+          "parameters": {
+            "conditions": {
+              "options": {
+                "caseSensitive": true,
+                "leftValue": "",
+                "typeValidation": "strict"
+              },
+              "conditions": [
+                {
+                  "id": "check-status",
+                  "leftValue": "={{ $json.key || $json.status }}",
+                  "rightValue": "",
+                  "operator": {
+                    "type": "string",
+                    "operation": "exists",
+                    "singleValue": true
+                  }
+                }
+              ],
+              "combinator": "and"
+            }
+          },
+          "id": "if-success",
+          "name": "Envio OK?",
+          "type": "n8n-nodes-base.if",
+          "typeVersion": 2,
+          "position": [1200, 300]
+        },
+        // 7A. HTTP REQUEST - CALLBACK TENDENCI (SUCESSO)
         {
           "parameters": {
             "method": "POST",
-            "url": "={{$json.callback_url}}",
+            "url": "={{ $('Preparar Dados').item.json.callback_url }}",
             "sendHeaders": true,
             "headerParameters": {
               "parameters": [
@@ -372,64 +484,166 @@ export function N8nFollowupGuide() {
             },
             "sendBody": true,
             "specifyBody": "json",
-            "jsonBody": "={\n  \"deal_id\": \"{{$json.deal_id}}\",\n  \"new_message\": \"{{$('Gerar Mensagem IA').output}}\"\n}",
+            "jsonBody": "={\n  \"deal_id\": \"{{ $('Preparar Dados').item.json.deal_id }}\",\n  \"new_message\": \"{{ $('Preparar Dados').item.json.mensagem_gerada }}\",\n  \"followup_number\": {{ $('Preparar Dados').item.json.followup_number }}\n}",
             "options": {}
           },
-          "name": "Atualizar Histórico CRM",
+          "id": "callback-success",
+          "name": "Atualizar CRM",
           "type": "n8n-nodes-base.httpRequest",
-          "typeVersion": 4.1,
-          "position": [910, 300]
+          "typeVersion": 4.2,
+          "position": [1420, 200]
         },
+        // 7B. RESPOND SUCCESS
         {
           "parameters": {
             "respondWith": "json",
-            "responseBody": "={\"success\": true, \"message\": \"Follow-up enviado\"}"
+            "responseBody": "={\n  \"success\": true,\n  \"deal_id\": \"{{ $('Preparar Dados').item.json.deal_id }}\",\n  \"message\": \"Follow-up {{ $('Preparar Dados').item.json.followup_number }} enviado com sucesso\"\n}"
           },
-          "name": "Respond",
+          "id": "respond-success",
+          "name": "Responder Sucesso",
           "type": "n8n-nodes-base.respondToWebhook",
-          "typeVersion": 1,
-          "position": [1130, 300]
+          "typeVersion": 1.1,
+          "position": [1640, 200]
+        },
+        // 8A. RESPOND ERROR
+        {
+          "parameters": {
+            "respondWith": "json",
+            "responseBody": "={\n  \"success\": false,\n  \"deal_id\": \"{{ $('Preparar Dados').item.json.deal_id }}\",\n  \"error\": \"Falha ao enviar WhatsApp\",\n  \"details\": {{ JSON.stringify($json) }}\n}",
+            "options": {
+              "responseCode": 500
+            }
+          },
+          "id": "respond-error",
+          "name": "Responder Erro",
+          "type": "n8n-nodes-base.respondToWebhook",
+          "typeVersion": 1.1,
+          "position": [1420, 420]
         }
       ],
       "connections": {
-        "Webhook Trigger": {
+        "Webhook Tendenci": {
+          "main": [[{ "node": "Aguardar 3min", "type": "main", "index": 0 }]]
+        },
+        "Aguardar 3min": {
           "main": [[{ "node": "Gerar Mensagem IA", "type": "main", "index": 0 }]]
         },
         "Gerar Mensagem IA": {
+          "main": [[{ "node": "Preparar Dados", "type": "main", "index": 0 }]]
+        },
+        "Preparar Dados": {
           "main": [[{ "node": "Enviar WhatsApp", "type": "main", "index": 0 }]]
         },
         "Enviar WhatsApp": {
-          "main": [[{ "node": "Atualizar Histórico CRM", "type": "main", "index": 0 }]]
+          "main": [[{ "node": "Envio OK?", "type": "main", "index": 0 }]]
         },
-        "Atualizar Histórico CRM": {
-          "main": [[{ "node": "Respond", "type": "main", "index": 0 }]]
+        "Envio OK?": {
+          "main": [
+            [{ "node": "Atualizar CRM", "type": "main", "index": 0 }],
+            [{ "node": "Responder Erro", "type": "main", "index": 0 }]
+          ]
+        },
+        "Atualizar CRM": {
+          "main": [[{ "node": "Responder Sucesso", "type": "main", "index": 0 }]]
         }
       },
-      "pinData": {}
+      "pinData": {},
+      "settings": {
+        "executionOrder": "v1"
+      },
+      "staticData": null,
+      "tags": [],
+      "triggerCount": 0,
+      "updatedAt": new Date().toISOString(),
+      "versionId": "v2-completo"
     };
   };
   
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold mb-2">Follow-up Automático via Webhook</h2>
+        <h2 className="text-2xl font-bold mb-2">Follow-up Automático via n8n</h2>
         <p className="text-muted-foreground">
-          Sistema de follow-up automático de 2 em 2 dias - Tendenci envia dados para n8n processar
+          Workflow completo e funcional - Baixe o JSON e importe no n8n
         </p>
       </div>
 
-      <Alert>
-        <Zap className="h-4 w-4" />
-        <AlertTitle>Nova Arquitetura - Webhook Push</AlertTitle>
-        <AlertDescription>
-          O Tendenci envia os dados do lead diretamente para o n8n via webhook POST. 
-          A IA do n8n (configurada com suas credenciais) gera a mensagem e envia via WhatsApp Evolution API.
-          <strong> Sem limite de follow-ups</strong> - continua até o cliente pedir para parar ou responder.
-        </AlertDescription>
-      </Alert>
+      {/* Visual do Fluxo */}
+      <Card className="p-4 bg-gradient-to-r from-primary/5 to-primary/10">
+        <h3 className="font-semibold mb-3 flex items-center gap-2">
+          <Zap className="h-5 w-5 text-primary" />
+          Arquitetura do Fluxo
+        </h3>
+        <div className="flex items-center justify-center gap-2 flex-wrap text-sm">
+          <div className="flex items-center gap-2 bg-background px-3 py-2 rounded-lg border">
+            <Zap className="h-4 w-4 text-orange-500" />
+            <span>Webhook</span>
+          </div>
+          <ArrowRight className="h-4 w-4 text-muted-foreground" />
+          <div className="flex items-center gap-2 bg-background px-3 py-2 rounded-lg border">
+            <Timer className="h-4 w-4 text-blue-500" />
+            <span>Wait 3min</span>
+          </div>
+          <ArrowRight className="h-4 w-4 text-muted-foreground" />
+          <div className="flex items-center gap-2 bg-background px-3 py-2 rounded-lg border">
+            <Bot className="h-4 w-4 text-purple-500" />
+            <span>OpenAI</span>
+          </div>
+          <ArrowRight className="h-4 w-4 text-muted-foreground" />
+          <div className="flex items-center gap-2 bg-background px-3 py-2 rounded-lg border">
+            <Smartphone className="h-4 w-4 text-green-500" />
+            <span>WhatsApp</span>
+          </div>
+          <ArrowRight className="h-4 w-4 text-muted-foreground" />
+          <div className="flex items-center gap-2 bg-background px-3 py-2 rounded-lg border">
+            <Database className="h-4 w-4 text-cyan-500" />
+            <span>Callback</span>
+          </div>
+        </div>
+      </Card>
+
+      {/* Download do Workflow */}
+      <Card className="border-primary bg-primary/5">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileJson className="h-5 w-5" />
+            Workflow n8n Completo
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Alert>
+            <CheckCircle className="h-4 w-4 text-green-600" />
+            <AlertTitle>Pronto para usar!</AlertTitle>
+            <AlertDescription className="text-sm">
+              O JSON inclui todos os nós configurados: Webhook, Wait 3min, OpenAI, Envio WhatsApp, 
+              verificação de sucesso com IF, callback para CRM, e respostas de sucesso/erro.
+            </AlertDescription>
+          </Alert>
+
+          <Button onClick={downloadWorkflowJSON} size="lg" className="w-full">
+            <Download className="h-5 w-5 mr-2" />
+            Baixar Workflow JSON (Importar no n8n)
+          </Button>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
+            <div className="text-center p-3 bg-background rounded-lg">
+              <div className="text-2xl font-bold text-primary">8</div>
+              <div className="text-xs text-muted-foreground">Nós configurados</div>
+            </div>
+            <div className="text-center p-3 bg-background rounded-lg">
+              <div className="text-2xl font-bold text-primary">3min</div>
+              <div className="text-xs text-muted-foreground">Delay anti-spam</div>
+            </div>
+            <div className="text-center p-3 bg-background rounded-lg">
+              <div className="text-2xl font-bold text-primary">✓</div>
+              <div className="text-xs text-muted-foreground">Error handling</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Configuração do Webhook */}
-      <Card className="border-primary/50">
+      <Card className="border-muted">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Settings className="h-5 w-5" />
@@ -438,7 +652,7 @@ export function N8nFollowupGuide() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="webhook-url">URL do Webhook n8n (Follow-up Ativo)</Label>
+            <Label htmlFor="webhook-url">URL do Webhook n8n (após importar o workflow)</Label>
             <div className="flex gap-2">
               <Input
                 id="webhook-url"
@@ -544,14 +758,6 @@ export function N8nFollowupGuide() {
               </>
             )}
           </Button>
-
-          <Alert variant="destructive" className="bg-orange-500/10 border-orange-500/50">
-            <AlertTriangle className="h-4 w-4 text-orange-600" />
-            <AlertDescription className="text-orange-800">
-              Cada lead será enviado para o n8n que processará e enviará via WhatsApp. 
-              <strong> O n8n deve controlar o intervalo de 3 minutos entre envios</strong> para evitar bloqueio.
-            </AlertDescription>
-          </Alert>
         </CardContent>
       </Card>
 
@@ -610,165 +816,170 @@ export function N8nFollowupGuide() {
         </Card>
       </div>
 
-      {/* Credenciais */}
-      <Card className="p-6 bg-muted/50">
-        <h3 className="font-semibold text-lg mb-4">🔐 Endpoints do Tendenci</h3>
-        <div className="space-y-3">
-          <div>
-            <p className="text-sm font-medium mb-1">Edge Function - Disparar Follow-ups</p>
-            <div className="flex gap-2">
-              <code className="flex-1 bg-background p-2 rounded text-xs break-all">
-                {projectUrl}/functions/v1/dispatch-followup
-              </code>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => copyToClipboard(`${projectUrl}/functions/v1/dispatch-followup`, "Dispatch URL")}
-              >
-                {copiedField === "Dispatch URL" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-              </Button>
-            </div>
-          </div>
-
-          <div>
-            <p className="text-sm font-medium mb-1">Edge Function - Atualizar Histórico (Callback)</p>
-            <div className="flex gap-2">
-              <code className="flex-1 bg-background p-2 rounded text-xs break-all">
-                {projectUrl}/functions/v1/update-followup-history
-              </code>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => copyToClipboard(`${projectUrl}/functions/v1/update-followup-history`, "Callback URL")}
-              >
-                {copiedField === "Callback URL" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-              </Button>
-            </div>
-          </div>
-
-          <Button 
-            onClick={downloadWorkflowJSON} 
-            variant="default" 
-            className="w-full mt-4"
-          >
-            <Download className="h-4 w-4 mr-2" />
-            Baixar Workflow n8n (JSON)
-          </Button>
-        </div>
-      </Card>
-
       {/* Tabs */}
-      <Tabs defaultValue="config" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="config">Fluxo n8n</TabsTrigger>
+      <Tabs defaultValue="setup" className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="setup">Setup Rápido</TabsTrigger>
+          <TabsTrigger value="credentials">Credenciais</TabsTrigger>
           <TabsTrigger value="json">JSON Workflow</TabsTrigger>
           <TabsTrigger value="reference">Referência</TabsTrigger>
         </TabsList>
 
-        {/* Tab: Configuração do Fluxo */}
-        <TabsContent value="config" className="space-y-4">
-          
-          <Alert>
-            <Info className="h-4 w-4" />
-            <AlertTitle>Arquitetura: Tendenci → n8n</AlertTitle>
-            <AlertDescription>
-              O Tendenci envia dados via webhook POST para o n8n. O n8n usa suas próprias credenciais 
-              da Evolution API para enviar as mensagens. Após envio, n8n chama o callback para atualizar 
-              o histórico no CRM.
-            </AlertDescription>
-          </Alert>
-
-          {/* Passo 1 */}
+        {/* Tab: Setup Rápido */}
+        <TabsContent value="setup" className="space-y-4">
           <Card className="p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">1</div>
-              <h3 className="font-semibold text-lg">Webhook Trigger</h3>
-              <Badge variant="outline">Trigger</Badge>
+            <h3 className="font-semibold text-lg mb-4">🚀 Setup em 5 Passos</h3>
+            
+            <div className="space-y-4">
+              <div className="flex gap-3 items-start p-3 bg-muted rounded-lg">
+                <div className="h-6 w-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold shrink-0">1</div>
+                <div>
+                  <p className="font-medium">Baixar workflow JSON</p>
+                  <p className="text-sm text-muted-foreground">Clique no botão acima para baixar o arquivo</p>
+                </div>
+              </div>
+
+              <div className="flex gap-3 items-start p-3 bg-muted rounded-lg">
+                <div className="h-6 w-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold shrink-0">2</div>
+                <div>
+                  <p className="font-medium">Importar no n8n</p>
+                  <p className="text-sm text-muted-foreground">No n8n: Menu → Import from File → selecione o JSON</p>
+                </div>
+              </div>
+
+              <div className="flex gap-3 items-start p-3 bg-muted rounded-lg">
+                <div className="h-6 w-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold shrink-0">3</div>
+                <div>
+                  <p className="font-medium">Configurar credencial OpenAI</p>
+                  <p className="text-sm text-muted-foreground">Clique no nó "Gerar Mensagem IA" → Credential → Create New</p>
+                </div>
+              </div>
+
+              <div className="flex gap-3 items-start p-3 bg-muted rounded-lg">
+                <div className="h-6 w-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold shrink-0">4</div>
+                <div>
+                  <p className="font-medium">Configurar Evolution API</p>
+                  <p className="text-sm text-muted-foreground">
+                    No nó "Enviar WhatsApp", substitua:<br/>
+                    • <code className="bg-background px-1 rounded text-xs">SUA-EVOLUTION-API.com</code> pela URL da sua Evolution<br/>
+                    • <code className="bg-background px-1 rounded text-xs">SUA-INSTANCIA</code> pelo nome da instância<br/>
+                    • <code className="bg-background px-1 rounded text-xs">SUA_API_KEY_EVOLUTION</code> pela sua API key
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-3 items-start p-3 bg-muted rounded-lg">
+                <div className="h-6 w-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold shrink-0">5</div>
+                <div>
+                  <p className="font-medium">Ativar e testar</p>
+                  <p className="text-sm text-muted-foreground">
+                    Ative o workflow no n8n, copie a URL do webhook e cole no campo acima. 
+                    Clique em "Testar Conexão".
+                  </p>
+                </div>
+              </div>
             </div>
-            <div className="space-y-3 ml-11">
-              <p className="text-sm text-muted-foreground">
-                Recebe dados do lead enviados pelo Tendenci
-              </p>
-              <div className="bg-muted p-3 rounded-lg text-sm">
-                <p><strong>Method:</strong> POST</p>
-                <p><strong>Path:</strong> /tendenci-followup</p>
-                <p><strong>Response:</strong> Using "Respond to Webhook" node</p>
+
+            <Alert className="mt-4 bg-orange-500/10 border-orange-500/50">
+              <AlertTriangle className="h-4 w-4 text-orange-600" />
+              <AlertDescription className="text-sm">
+                <strong>Importante:</strong> O Wait de 3 minutos é obrigatório para evitar bloqueio da conta WhatsApp.
+                Não remova este nó!
+              </AlertDescription>
+            </Alert>
+          </Card>
+        </TabsContent>
+
+        {/* Tab: Credenciais */}
+        <TabsContent value="credentials" className="space-y-4">
+          <Card className="p-6">
+            <h3 className="font-semibold text-lg mb-4">🔐 Configuração de Credenciais no n8n</h3>
+
+            <div className="space-y-6">
+              {/* OpenAI */}
+              <div className="p-4 border rounded-lg">
+                <h4 className="font-medium flex items-center gap-2 mb-3">
+                  <Bot className="h-4 w-4 text-purple-500" />
+                  Credencial OpenAI
+                </h4>
+                <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
+                  <li>No n8n, clique no nó "Gerar Mensagem IA"</li>
+                  <li>Em "Credential to connect with", clique em "Create New"</li>
+                  <li>Selecione "OpenAI API"</li>
+                  <li>Cole sua API Key da OpenAI</li>
+                  <li>Salve a credencial</li>
+                </ol>
+                <div className="mt-3 p-3 bg-muted rounded">
+                  <p className="text-xs text-muted-foreground">
+                    💡 Obtenha sua API Key em: <a href="https://platform.openai.com/api-keys" target="_blank" className="text-primary hover:underline">platform.openai.com/api-keys</a>
+                  </p>
+                </div>
+              </div>
+
+              {/* Evolution API */}
+              <div className="p-4 border rounded-lg">
+                <h4 className="font-medium flex items-center gap-2 mb-3">
+                  <Smartphone className="h-4 w-4 text-green-500" />
+                  Evolution API (WhatsApp)
+                </h4>
+                <p className="text-sm text-muted-foreground mb-3">
+                  No nó "Enviar WhatsApp", edite diretamente os valores:
+                </p>
+                <div className="space-y-2 font-mono text-xs bg-muted p-3 rounded">
+                  <div className="flex justify-between items-center">
+                    <span>URL:</span>
+                    <code className="bg-background px-2 py-1 rounded">https://sua-evolution.com</code>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>Instância:</span>
+                    <code className="bg-background px-2 py-1 rounded">nome-da-instancia</code>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>API Key:</span>
+                    <code className="bg-background px-2 py-1 rounded">sua-api-key-aqui</code>
+                  </div>
+                </div>
               </div>
             </div>
           </Card>
 
-          {/* Passo 2 */}
-          <Card className="p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">2</div>
-              <h3 className="font-semibold text-lg">Gerar Mensagem IA</h3>
-              <Badge>AI Agent</Badge>
-            </div>
-            <div className="space-y-3 ml-11">
-              <p className="text-sm text-muted-foreground">
-                Usa o histórico de conversa para gerar mensagem personalizada
-              </p>
-              <div className="bg-muted p-3 rounded-lg text-sm">
-                <p><strong>Input:</strong> <code>{"{{$json.conversation_history}}"}</code></p>
-                <p><strong>System Prompt:</strong> Instrução para gerar follow-up casual</p>
+          {/* Endpoints Tendenci */}
+          <Card className="p-6 bg-muted/50">
+            <h3 className="font-semibold text-lg mb-4">🔗 Endpoints do Tendenci</h3>
+            <div className="space-y-3">
+              <div>
+                <p className="text-sm font-medium mb-1">Edge Function - Disparar Follow-ups</p>
+                <div className="flex gap-2">
+                  <code className="flex-1 bg-background p-2 rounded text-xs break-all">
+                    {projectUrl}/functions/v1/dispatch-followup
+                  </code>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => copyToClipboard(`${projectUrl}/functions/v1/dispatch-followup`, "Dispatch URL")}
+                  >
+                    {copiedField === "Dispatch URL" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </div>
               </div>
-              <Alert>
-                <AlertTriangle className="h-4 w-4" />
-                <AlertDescription className="text-xs">
-                  Configure suas credenciais de IA (OpenAI, Gemini, etc) nas Credentials do n8n
-                </AlertDescription>
-              </Alert>
-            </div>
-          </Card>
 
-          {/* Passo 3 */}
-          <Card className="p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">3</div>
-              <h3 className="font-semibold text-lg">Enviar WhatsApp</h3>
-              <Badge>HTTP Request</Badge>
-            </div>
-            <div className="space-y-3 ml-11">
-              <p className="text-sm text-muted-foreground">
-                Envia mensagem via Evolution API usando credenciais do n8n
-              </p>
-              <div className="bg-muted p-3 rounded-lg text-sm">
-                <p><strong>URL:</strong> <code>{"={{$credentials.evolutionUrl}}/message/sendText/={{$credentials.evolutionInstance}}"}</code></p>
-                <p><strong>API Key:</strong> <code>{"={{$credentials.evolutionApiKey}}"}</code></p>
-              </div>
-              <Alert>
-                <Info className="h-4 w-4" />
-                <AlertDescription className="text-xs">
-                  Crie uma Credential "HTTP Header Auth" no n8n com: evolutionUrl, evolutionApiKey, evolutionInstance
-                </AlertDescription>
-              </Alert>
-            </div>
-          </Card>
-
-          {/* Passo 4 */}
-          <Card className="p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">4</div>
-              <h3 className="font-semibold text-lg">Atualizar Histórico CRM</h3>
-              <Badge>HTTP Request</Badge>
-            </div>
-            <div className="space-y-3 ml-11">
-              <p className="text-sm text-muted-foreground">
-                Chama callback do Tendenci para registrar mensagem enviada
-              </p>
-              <div className="bg-muted p-3 rounded-lg text-sm">
-                <p><strong>URL:</strong> <code>{"={{$json.callback_url}}"}</code></p>
-                <p><strong>Body:</strong></p>
-                <pre className="bg-background p-2 rounded text-xs mt-1">
-{`{
-  "deal_id": "{{$json.deal_id}}",
-  "new_message": "{{$('Gerar Mensagem IA').output}}"
-}`}
-                </pre>
+              <div>
+                <p className="text-sm font-medium mb-1">Edge Function - Callback (atualizar histórico)</p>
+                <div className="flex gap-2">
+                  <code className="flex-1 bg-background p-2 rounded text-xs break-all">
+                    {projectUrl}/functions/v1/update-followup-history
+                  </code>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => copyToClipboard(`${projectUrl}/functions/v1/update-followup-history`, "Callback URL")}
+                  >
+                    {copiedField === "Callback URL" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </div>
               </div>
             </div>
           </Card>
-
         </TabsContent>
 
         {/* Tab: JSON Workflow */}
@@ -791,7 +1002,7 @@ export function N8nFollowupGuide() {
                 </Button>
               </div>
             </div>
-            <pre className="bg-muted p-4 rounded-lg text-xs overflow-auto max-h-96">
+            <pre className="bg-muted p-4 rounded-lg text-xs overflow-auto max-h-[500px]">
               {JSON.stringify(getWorkflowJSON(), null, 2)}
             </pre>
           </Card>
@@ -801,7 +1012,7 @@ export function N8nFollowupGuide() {
         <TabsContent value="reference" className="space-y-4">
           
           <Card className="p-6">
-            <h3 className="font-semibold mb-4">Payload enviado pelo Tendenci</h3>
+            <h3 className="font-semibold mb-4">📤 Payload enviado pelo Tendenci</h3>
             <p className="text-sm text-muted-foreground mb-3">
               O Tendenci envia POST para seu webhook com este formato:
             </p>
@@ -812,6 +1023,7 @@ export function N8nFollowupGuide() {
   "client_phone": "5534999999999",
   "conversation_history": "Histórico completo da conversa IA...",
   "followup_count": 0,
+  "followup_number": 1,
   "product_type": "Sofá",
   "categoria": "Móveis Soltos",
   "last_interaction": "2025-12-03T10:30:00Z",
@@ -821,7 +1033,7 @@ export function N8nFollowupGuide() {
           </Card>
 
           <Card className="p-6">
-            <h3 className="font-semibold mb-4">Callback - Atualizar Histórico</h3>
+            <h3 className="font-semibold mb-4">📥 Callback - Atualizar Histórico</h3>
             <p className="text-sm text-muted-foreground mb-3">
               Após enviar a mensagem, n8n deve chamar o callback:
             </p>
@@ -831,13 +1043,45 @@ export function N8nFollowupGuide() {
             <pre className="bg-muted p-4 rounded-lg text-xs overflow-auto">
 {`{
   "deal_id": "uuid-do-negocio",
-  "new_message": "Mensagem gerada pela IA e enviada"
+  "new_message": "Mensagem gerada pela IA e enviada",
+  "followup_number": 1
 }`}
             </pre>
+            <Alert className="mt-3">
+              <Info className="h-4 w-4" />
+              <AlertDescription className="text-xs">
+                O <code>followup_number</code> é importante para registrar corretamente qual número de follow-up foi enviado.
+              </AlertDescription>
+            </Alert>
           </Card>
 
           <Card className="p-6">
-            <h3 className="font-semibold mb-4">Detecção de Opt-out</h3>
+            <h3 className="font-semibold mb-4">📋 Variáveis Disponíveis no n8n</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-muted">
+                  <tr>
+                    <th className="p-2 text-left">Variável</th>
+                    <th className="p-2 text-left">Descrição</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  <tr><td className="p-2"><code>{"{{ $json.deal_id }}"}</code></td><td className="p-2">ID do negócio</td></tr>
+                  <tr><td className="p-2"><code>{"{{ $json.client_name }}"}</code></td><td className="p-2">Nome do cliente</td></tr>
+                  <tr><td className="p-2"><code>{"{{ $json.client_phone }}"}</code></td><td className="p-2">Telefone formatado</td></tr>
+                  <tr><td className="p-2"><code>{"{{ $json.conversation_history }}"}</code></td><td className="p-2">Histórico completo</td></tr>
+                  <tr><td className="p-2"><code>{"{{ $json.followup_count }}"}</code></td><td className="p-2">Contador atual</td></tr>
+                  <tr><td className="p-2"><code>{"{{ $json.followup_number }}"}</code></td><td className="p-2">Número do follow-up</td></tr>
+                  <tr><td className="p-2"><code>{"{{ $json.product_type }}"}</code></td><td className="p-2">Tipo de produto</td></tr>
+                  <tr><td className="p-2"><code>{"{{ $json.categoria }}"}</code></td><td className="p-2">Categoria</td></tr>
+                  <tr><td className="p-2"><code>{"{{ $json.callback_url }}"}</code></td><td className="p-2">URL do callback</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </Card>
+
+          <Card className="p-6">
+            <h3 className="font-semibold mb-4">🛑 Detecção de Opt-out</h3>
             <p className="text-sm text-muted-foreground mb-3">
               Quando o cliente responde com palavras de opt-out, o sistema automaticamente:
             </p>
@@ -854,47 +1098,16 @@ export function N8nFollowupGuide() {
             </div>
           </Card>
 
-          <Card className="p-6">
-            <h3 className="font-semibold mb-4">Variáveis Disponíveis no n8n</h3>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-muted">
-                  <tr>
-                    <th className="p-2 text-left">Variável</th>
-                    <th className="p-2 text-left">Descrição</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  <tr><td className="p-2"><code>{"{{$json.deal_id}}"}</code></td><td className="p-2">ID do negócio</td></tr>
-                  <tr><td className="p-2"><code>{"{{$json.client_name}}"}</code></td><td className="p-2">Nome do cliente</td></tr>
-                  <tr><td className="p-2"><code>{"{{$json.client_phone}}"}</code></td><td className="p-2">Telefone formatado</td></tr>
-                  <tr><td className="p-2"><code>{"{{$json.conversation_history}}"}</code></td><td className="p-2">Histórico completo</td></tr>
-                  <tr><td className="p-2"><code>{"{{$json.followup_count}}"}</code></td><td className="p-2">Número do follow-up</td></tr>
-                  <tr><td className="p-2"><code>{"{{$json.product_type}}"}</code></td><td className="p-2">Tipo de produto</td></tr>
-                  <tr><td className="p-2"><code>{"{{$json.categoria}}"}</code></td><td className="p-2">Categoria</td></tr>
-                  <tr><td className="p-2"><code>{"{{$json.callback_url}}"}</code></td><td className="p-2">URL do callback</td></tr>
-                </tbody>
-              </table>
-            </div>
-          </Card>
-
         </TabsContent>
       </Tabs>
 
       {/* Resumo Final */}
       <Alert className="bg-green-500/10 border-green-500/50">
         <CheckCircle className="h-4 w-4 text-green-600" />
-        <AlertTitle>Resumo do Fluxo</AlertTitle>
+        <AlertTitle>Workflow Pronto!</AlertTitle>
         <AlertDescription className="text-sm">
-          <ol className="list-decimal list-inside space-y-1 mt-2">
-            <li>Configure a URL do webhook n8n acima</li>
-            <li>Importe o workflow JSON no seu n8n</li>
-            <li>Configure credenciais da Evolution API no n8n</li>
-            <li>Clique em "Disparar Follow-ups" para enviar leads elegíveis</li>
-            <li>n8n gera mensagem com IA e envia via WhatsApp</li>
-            <li>Histórico é atualizado automaticamente no CRM</li>
-            <li>Cliente pode pedir para parar a qualquer momento</li>
-          </ol>
+          Baixe o JSON, importe no n8n, configure suas credenciais (OpenAI + Evolution API), e comece a disparar follow-ups automáticos.
+          O workflow inclui delay de 3 minutos entre envios para proteção da conta WhatsApp.
         </AlertDescription>
       </Alert>
     </div>
