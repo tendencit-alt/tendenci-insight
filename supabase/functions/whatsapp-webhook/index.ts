@@ -91,7 +91,10 @@ Deno.serve(async (req) => {
       // Filtrar deals cujo telefone contém os dígitos do cliente
       const matchingDeals = (deals || []).filter(deal => {
         const dealPhone = (deal.leads as any)?.clients?.phone?.replace(/\D/g, '') || ''
-        return dealPhone.includes(phoneDigits) || phoneDigits.includes(dealPhone.slice(-9))
+        // Evitar falso positivo quando dealPhone é vazio
+        if (!dealPhone || dealPhone.length < 8) return false
+        const dealPhoneDigits = dealPhone.slice(-9)
+        return dealPhone.includes(phoneDigits) || phoneDigits.includes(dealPhoneDigits)
       })
 
       if (!dealsError && matchingDeals.length > 0) {

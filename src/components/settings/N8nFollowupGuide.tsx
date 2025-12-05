@@ -107,20 +107,22 @@ export function N8nFollowupGuide() {
           id,
           last_interaction,
           last_followup_at,
-          leads!inner(
-            clients!inner(phone)
+          leads(
+            clients(phone)
           )
         `)
         .eq('followup_enabled', true)
-        .eq('status', 'aberto')
-        .not('leads.clients.phone', 'is', null);
+        .eq('status', 'aberto');
 
       if (error) throw error;
 
-      // Filtrar por última interação > 48h
+      // Filtrar por última interação > 48h E que tenha telefone válido
       const eligible = (data || []).filter(deal => {
         const lastInteraction = deal.last_interaction || deal.last_followup_at;
-        return !lastInteraction || lastInteraction < now48hAgo;
+        const hasValidTime = !lastInteraction || lastInteraction < now48hAgo;
+        const phone = (deal.leads as any)?.clients?.phone;
+        const hasPhone = phone && phone.replace(/\D/g, '').length >= 10;
+        return hasValidTime && hasPhone;
       });
 
       setEligibleCount(eligible.length);
