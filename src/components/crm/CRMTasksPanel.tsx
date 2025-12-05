@@ -86,9 +86,9 @@ export function CRMTasksPanel({
       dealsQuery = dealsQuery.eq("owner_id", ownerFilter);
     }
 
-    // Filtrar por busca (título do deal ou nome do cliente)
+    // Filtrar por busca (título do deal apenas - busca por cliente será feita no frontend)
     if (searchQuery && searchQuery.trim()) {
-      dealsQuery = dealsQuery.or(`title.ilike.%${searchQuery}%,lead.client.name.ilike.%${searchQuery}%`);
+      dealsQuery = dealsQuery.ilike("title", `%${searchQuery}%`);
     }
 
     // Filtrar por data de criação do deal
@@ -129,7 +129,23 @@ export function CRMTasksPanel({
       return;
     }
 
-    const dealIds = deals.map((d) => d.id);
+    // Filtro adicional no frontend para busca por nome de cliente (não suportado em nested queries)
+    let filteredDeals = deals;
+    if (searchQuery && searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filteredDeals = deals.filter(d => 
+        d.title?.toLowerCase().includes(query) ||
+        d.lead?.client?.name?.toLowerCase().includes(query)
+      );
+    }
+
+    if (filteredDeals.length === 0) {
+      setTasks([]);
+      setLoading(false);
+      return;
+    }
+
+    const dealIds = filteredDeals.map((d) => d.id);
 
     // Buscar todas as tarefas abertas
     const { data, error } = await supabase

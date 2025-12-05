@@ -228,15 +228,21 @@ export function DealTasks({ dealId }: DealTasksProps) {
     }
 
     // VALIDAÇÃO: Verificar observação nas últimas 24h (apenas para novas tarefas)
+    // Exceção: se o deal foi criado nas últimas 24h, não exigir observação
     if (!editingTaskId) {
-      const hasRecentObservation = await checkRecentObservations();
-      if (!hasRecentObservation) {
-        toast({
-          title: "Atualização obrigatória",
-          description: "Você precisa adicionar uma observação nas últimas 24 horas antes de criar uma tarefa. Vá até a aba 'Observações' e registre uma atualização do status do negócio.",
-          variant: "destructive",
-        });
-        return;
+      const dealCreatedAt = dealInfo?.created_at ? new Date(dealInfo.created_at) : null;
+      const isDealNew = dealCreatedAt && (Date.now() - dealCreatedAt.getTime()) < 24 * 60 * 60 * 1000;
+      
+      if (!isDealNew) {
+        const hasRecentObservation = await checkRecentObservations();
+        if (!hasRecentObservation) {
+          toast({
+            title: "Atualização obrigatória",
+            description: "Você precisa adicionar uma observação nas últimas 24 horas antes de criar uma tarefa. Vá até a aba 'Observações' e registre uma atualização do status do negócio.",
+            variant: "destructive",
+          });
+          return;
+        }
       }
     }
 

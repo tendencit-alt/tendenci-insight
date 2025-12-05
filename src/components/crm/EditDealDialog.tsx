@@ -271,10 +271,10 @@ export function EditDealDialog({
       if (!user) throw new Error("Usuário não autenticado");
 
       for (const file of Array.from(files)) {
-        if (file.size > 20 * 1024 * 1024) {
+        if (file.size > 100 * 1024 * 1024) {
           toast({
             title: "Arquivo muito grande",
-            description: `${file.name} excede o limite de 20MB`,
+            description: `${file.name} excede o limite de 100MB`,
             variant: "destructive",
           });
           continue;

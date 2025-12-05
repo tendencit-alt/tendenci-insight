@@ -95,7 +95,7 @@ export function DealFileUpload({ dealId, files, onFilesChange }: DealFileUploadP
           
           try {
             const { data, error } = await supabase.storage
-              .from("deal-files")
+              .from("crm-files")
               .upload(fileName, file, {
                 contentType: contentType || 'application/octet-stream',
                 upsert: false,
@@ -172,7 +172,7 @@ export function DealFileUpload({ dealId, files, onFilesChange }: DealFileUploadP
   const handleDownload = async (file: any) => {
     try {
       const { data, error } = await supabase.storage
-        .from("deal-files")
+        .from("crm-files")
         .download(file.file_path);
 
       if (error) throw error;
@@ -198,7 +198,7 @@ export function DealFileUpload({ dealId, files, onFilesChange }: DealFileUploadP
     try {
       // Deletar do storage
       const { error: storageError } = await supabase.storage
-        .from("deal-files")
+        .from("crm-files")
         .remove([filePath]);
 
       if (storageError) throw storageError;
