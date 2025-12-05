@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { getMostRecentDate, get48HoursCutoffUTC } from "@/utils/timezone";
 
 interface FollowupStats {
   queueSize: number;
@@ -95,17 +96,6 @@ export function N8nFollowupGuide() {
     }
   };
 
-  // FASE 1 & 2: Função para obter a data mais recente entre duas
-  const getMostRecentDate = (date1: string | null, date2: string | null): Date | null => {
-    if (!date1 && !date2) return null;
-    if (!date1) return new Date(date2!);
-    if (!date2) return new Date(date1!);
-    
-    const d1 = new Date(date1).getTime();
-    const d2 = new Date(date2).getTime();
-    return new Date(Math.max(d1, d2));
-  };
-
   const checkEligibleLeads = async () => {
     setLoadingEligible(true);
     try {
@@ -145,8 +135,8 @@ export function N8nFollowupGuide() {
 
       if (error) throw error;
 
-      // Cutoff de 48h usando timestamp UTC consistente
-      const cutoffTimestamp = Date.now() - (48 * 60 * 60 * 1000);
+      // Cutoff de 48h usando timestamp UTC consistente (utilitário centralizado)
+      const cutoffTimestamp = get48HoursCutoffUTC();
 
       // Filtrar por última interação > 48h E que tenha telefone válido
       const eligible = (data || []).filter(deal => {
