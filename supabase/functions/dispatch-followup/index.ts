@@ -72,6 +72,17 @@ function toBrasilTime(date: Date): Date {
   return new Date(date.getTime() + (utcOffset + brasilOffset) * 60 * 1000)
 }
 
+// FASE 1: Função para obter a data mais recente entre duas strings ISO
+function getMostRecentDate(date1: string | null, date2: string | null): Date | null {
+  if (!date1 && !date2) return null
+  if (!date1) return new Date(date2!)
+  if (!date2) return new Date(date1!)
+  
+  const d1 = new Date(date1).getTime()
+  const d2 = new Date(date2).getTime()
+  return new Date(Math.max(d1, d2))
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -113,7 +124,7 @@ Deno.serve(async (req) => {
       )
     }
 
-    // FASE 2: Buscar ID da etapa "Follow Up (I.A)" para filtrar corretamente
+    // Buscar ID da etapa "Follow Up (I.A)" para filtrar corretamente
     const { data: followupStage, error: stageError } = await supabase
       .from('crm_stages')
       .select('id, name')
@@ -127,8 +138,6 @@ Deno.serve(async (req) => {
     }
 
     // Buscar leads elegíveis para follow-up
-    // Critérios: followup_enabled, status aberto, tem telefone, última interação > 48h
-    // FASE 2: Adicionar filtro de stage_id se etapa existir
     let query = supabase
       .from('crm_deals')
       .select(`
@@ -168,17 +177,34 @@ Deno.serve(async (req) => {
 
     console.log(`📊 Total de leads com follow-up ativo${followupStage ? ' na etapa Follow Up' : ''}: ${leads?.length || 0}`)
 
-    // Filtrar leads elegíveis (última interação > 48h)
-    const now48hAgo = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString()
+    // FASE 1 & 2: Filtrar leads elegíveis usando Math.max para comparação correta
+    // Cutoff de 48h em timestamp (usando Brasil time para consistência)
+    const brasilNow = toBrasilTime(new Date())
+    const cutoffTimestamp = brasilNow.getTime() - (48 * 60 * 60 * 1000)
+    
+    console.log(`⏰ Cutoff Brasil: ${new Date(cutoffTimestamp).toISOString()}`)
     
     const eligibleLeads = (leads || [])
       .filter(deal => {
-        const lastInteraction = deal.last_interaction || deal.last_followup_at
-        // Se nunca teve interação ou última interação foi há mais de 48h
-        return !lastInteraction || lastInteraction < now48hAgo
+        // FASE 1: Usar Math.max para pegar a data mais recente
+        const mostRecentDate = getMostRecentDate(deal.last_interaction, deal.last_followup_at)
+        
+        // Se nunca teve interação, é elegível
+        if (!mostRecentDate) {
+          console.log(`✅ Deal ${deal.id}: Nunca teve interação, elegível`)
+          return true
+        }
+        
+        // FASE 3: Comparar timestamps numéricos, não strings
+        const mostRecentTimestamp = mostRecentDate.getTime()
+        const isEligible = mostRecentTimestamp < cutoffTimestamp
+        
+        console.log(`📅 Deal ${deal.id}: Última atividade em ${mostRecentDate.toISOString()}, elegível: ${isEligible}`)
+        
+        return isEligible
       })
       .map(deal => {
-        // FASE 5: Corrigir acesso a leads (pode ser array ou objeto)
+        // Corrigir acesso: leads pode ser array ou objeto
         const leadsData = deal.leads
         const clientData = Array.isArray(leadsData) 
           ? leadsData[0]?.clients 
@@ -256,13 +282,13 @@ Deno.serve(async (req) => {
           console.log(`✅ Lead ${lead.client_name} enviado com sucesso`)
           results.success++
           
-          // FASE 8: Registrar log com status 'pending' (aguardando confirmação do n8n)
+          // Registrar log com status 'pending' (aguardando confirmação do n8n)
           await supabase
             .from('followup_logs')
             .insert({
               deal_id: lead.deal_id,
               followup_number: lead.followup_count + 1,
-              status: 'pending', // Alterado de 'dispatched' para 'pending'
+              status: 'pending',
               message_sent: 'Enviado para n8n via webhook - aguardando processamento'
             })
         } else {
@@ -281,9 +307,6 @@ Deno.serve(async (req) => {
               error_message: errorText.substring(0, 500)
             })
         }
-
-        // NOTA: Delay de 3 minutos deve ser controlado pelo n8n, não aqui
-        // Edge Functions têm timeout de ~60s, então não podemos aguardar aqui
 
       } catch (error: any) {
         console.error(`❌ Erro ao processar lead ${lead.client_name}:`, error.message)

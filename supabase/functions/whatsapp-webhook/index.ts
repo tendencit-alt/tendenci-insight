@@ -71,7 +71,7 @@ Deno.serve(async (req) => {
         console.log('🛑 OPT-OUT DETECTADO na mensagem do cliente:', messageText)
       }
       
-      // FASE 6: Usar função simplificada para comparação
+      // Usar função simplificada para comparação
       const clientLast8 = getPhoneDigits(clientPhone)
       
       if (clientLast8.length < 8) {
@@ -79,7 +79,7 @@ Deno.serve(async (req) => {
       } else {
         console.log('🔍 Buscando deals com últimos 8 dígitos:', clientLast8)
         
-        // Buscar deals com follow-up ativo para esse telefone
+        // FASE 6: Adicionar LIMIT para evitar timeout com muitos deals
         const { data: deals, error: dealsError } = await supabase
           .from('crm_deals')
           .select(`
@@ -96,11 +96,12 @@ Deno.serve(async (req) => {
           `)
           .eq('status', 'aberto')
           .eq('followup_enabled', true)
+          .limit(200) // FASE 6: Limitar resultado para evitar timeout
         
         if (dealsError) {
           console.error('❌ Erro ao buscar deals:', dealsError)
         } else {
-          // FASE 6: Comparação simplificada de telefone
+          // Comparação simplificada de telefone
           const matchingDeals = (deals || []).filter(deal => {
             // Corrigir acesso: leads pode ser array ou objeto
             const leadsData = deal.leads
@@ -123,11 +124,9 @@ Deno.serve(async (req) => {
             for (const deal of matchingDeals) {
               console.log(`🔄 Processing deal: ${deal.title}`)
               
-              // FASE 4: Dados para atualização - NÃO resetar followup_count para 0
-              // Apenas atualizar last_interaction para marcar que o cliente respondeu
+              // FASE 4: Apenas atualizar last_interaction, NÃO resetar followup_count
               const updateData: any = {
                 last_interaction: new Date().toISOString()
-                // REMOVIDO: followup_count: 0 - mantemos o contador para histórico
               }
               
               // Se opt-out detectado, desabilitar follow-ups
@@ -147,10 +146,10 @@ Deno.serve(async (req) => {
               } else {
                 console.log('✅ Deal updated successfully')
                 
-                // Registrar na timeline
+                // FASE 7: Mensagem de timeline mais genérica, sem referência ao número de follow-up
                 const timelineMessage = hasOptOut 
                   ? '🛑 Cliente solicitou PARAR follow-ups. Sistema desativado.'
-                  : `🎉 Cliente respondeu! Follow-up #${deal.followup_count} encerrado. Próximo follow-up em 48h se não houver nova interação.`
+                  : '🎉 Cliente respondeu! Ciclo de follow-up pausado. Próximo follow-up em 48h se não houver nova interação.'
                 
                 await supabase
                   .from('crm_timeline')
