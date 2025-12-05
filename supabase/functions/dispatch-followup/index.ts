@@ -84,10 +84,16 @@ Deno.serve(async (req) => {
     console.log('🚀 Iniciando disparo de follow-ups...')
     console.log('📡 Webhook URL:', webhook_url)
 
-    // Verificar horário comercial (9h-18h, seg-sex) - opcional via parâmetro
+    // Verificar horário comercial (9h-18h, seg-sex) - usando timezone Brasil
     const now = new Date()
-    const hour = now.getHours()
-    const day = now.getDay() // 0=Dom, 6=Sab
+    // Converter para horário de Brasília (UTC-3)
+    const brasilOffset = -3 * 60 // -3 horas em minutos
+    const utcOffset = now.getTimezoneOffset() // offset do servidor em minutos
+    const brasilTime = new Date(now.getTime() + (utcOffset + brasilOffset) * 60 * 1000)
+    const hour = brasilTime.getHours()
+    const day = brasilTime.getDay() // 0=Dom, 6=Sab
+    
+    console.log(`🕐 Horário Brasil: ${brasilTime.toISOString()}, hora: ${hour}, dia: ${day}`)
     
     if (!ignore_time_filter && (hour < 9 || hour >= 18 || day === 0 || day === 6)) {
       console.log('⏰ Fora do horário comercial. Abortando.')
