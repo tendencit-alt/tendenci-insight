@@ -1,5 +1,12 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
 import { corsHeaders } from '../_shared/cors.ts'
+import { 
+  isBusinessHoursBrasil, 
+  getCurrentHourBrasil, 
+  getCurrentDayOfWeekBrasil,
+  get48HoursCutoffUTC,
+  getMostRecentDate
+} from '../_shared/timezone.ts'
 
 interface DispatchRequest {
   webhook_url: string
@@ -13,6 +20,8 @@ interface LeadForFollowup {
   client_phone: string
   conversation_history: string | null
   followup_count: number
+  max_followups: number
+  followup_number: number // Número do follow-up que será enviado
   owner_id: string | null
   owner_name: string | null
   product_type: string | null
@@ -31,12 +40,12 @@ function formatBrazilianPhone(phone: string | null): string | null {
     cleaned = cleaned.substring(2)
   }
   
-  // Remove 0 inicial antes do DDD (ex: 034... -> 34...)
+  // Remove 0 inicial antes do DDD
   if (cleaned.startsWith('0')) {
     cleaned = cleaned.substring(1)
   }
   
-  // Se começa com 55 e tem 0 depois, remover o 0 (ex: 550... -> 55...)
+  // Se começa com 55 e tem 0 depois, remover o 0
   if (cleaned.startsWith('550')) {
     cleaned = '55' + cleaned.substring(3)
   }
@@ -46,7 +55,7 @@ function formatBrazilianPhone(phone: string | null): string | null {
     cleaned = cleaned.substring(0, 2) + '9' + cleaned.substring(2)
   }
   
-  // Se tem 12 dígitos e começa com 55, adicionar o 9 (55 + DDD + 8 dígitos)
+  // Se tem 12 dígitos e começa com 55, adicionar o 9
   if (cleaned.length === 12 && cleaned.startsWith('55')) {
     cleaned = cleaned.substring(0, 4) + '9' + cleaned.substring(4)
   }
@@ -63,24 +72,6 @@ function formatBrazilianPhone(phone: string | null): string | null {
   }
   
   return cleaned
-}
-
-// Converte data para horário de Brasília (UTC-3)
-function toBrasilTime(date: Date): Date {
-  const brasilOffset = -3 * 60 // -3 horas em minutos
-  const utcOffset = date.getTimezoneOffset() // offset do servidor em minutos
-  return new Date(date.getTime() + (utcOffset + brasilOffset) * 60 * 1000)
-}
-
-// FASE 1: Função para obter a data mais recente entre duas strings ISO
-function getMostRecentDate(date1: string | null, date2: string | null): Date | null {
-  if (!date1 && !date2) return null
-  if (!date1) return new Date(date2!)
-  if (!date2) return new Date(date1!)
-  
-  const d1 = new Date(date1).getTime()
-  const d2 = new Date(date2).getTime()
-  return new Date(Math.max(d1, d2))
 }
 
 Deno.serve(async (req) => {
@@ -103,15 +94,14 @@ Deno.serve(async (req) => {
     console.log('🚀 Iniciando disparo de follow-ups...')
     console.log('📡 Webhook URL:', webhook_url)
 
-    // Verificar horário comercial (9h-18h, seg-sex) - usando timezone Brasil
-    const now = new Date()
-    const brasilTime = toBrasilTime(now)
-    const hour = brasilTime.getHours()
-    const day = brasilTime.getDay() // 0=Dom, 6=Sab
+    // Verificar horário comercial usando timezone compartilhado
+    const hour = getCurrentHourBrasil()
+    const day = getCurrentDayOfWeekBrasil()
+    const isBusinessHours = isBusinessHoursBrasil()
     
-    console.log(`🕐 Horário Brasil: ${brasilTime.toISOString()}, hora: ${hour}, dia: ${day}`)
+    console.log(`🕐 Horário Brasil: ${hour}h, dia: ${day}, comercial: ${isBusinessHours}`)
     
-    if (!ignore_time_filter && (hour < 9 || hour >= 18 || day === 0 || day === 6)) {
+    if (!ignore_time_filter && !isBusinessHours) {
       console.log('⏰ Fora do horário comercial. Abortando.')
       return new Response(
         JSON.stringify({ 
@@ -124,17 +114,19 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Buscar ID da etapa "Follow Up (I.A)" para filtrar corretamente
+    // Buscar ID da etapa "Follow Up (I.A)" - usando maybeSingle para não dar erro
     const { data: followupStage, error: stageError } = await supabase
       .from('crm_stages')
       .select('id, name')
       .ilike('name', '%Follow Up%')
-      .single()
+      .maybeSingle()
 
     if (stageError) {
-      console.warn('⚠️ Etapa "Follow Up" não encontrada, buscando sem filtro de etapa:', stageError.message)
-    } else {
+      console.warn('⚠️ Erro ao buscar etapa Follow Up:', stageError.message)
+    } else if (followupStage) {
       console.log(`✅ Etapa Follow Up encontrada: ${followupStage.name} (${followupStage.id})`)
+    } else {
+      console.log('ℹ️ Etapa "Follow Up" não encontrada, buscando sem filtro de etapa')
     }
 
     // Buscar leads elegíveis para follow-up
@@ -145,6 +137,7 @@ Deno.serve(async (req) => {
         lead_id,
         conversation_history,
         followup_count,
+        max_followups,
         owner_id,
         product_type,
         categoria,
@@ -177,16 +170,22 @@ Deno.serve(async (req) => {
 
     console.log(`📊 Total de leads com follow-up ativo${followupStage ? ' na etapa Follow Up' : ''}: ${leads?.length || 0}`)
 
-    // FASE 1 & 2: Filtrar leads elegíveis usando Math.max para comparação correta
-    // Cutoff de 48h em timestamp (usando Brasil time para consistência)
-    const brasilNow = toBrasilTime(new Date())
-    const cutoffTimestamp = brasilNow.getTime() - (48 * 60 * 60 * 1000)
-    
-    console.log(`⏰ Cutoff Brasil: ${new Date(cutoffTimestamp).toISOString()}`)
+    // Cutoff de 48h em UTC (consistente)
+    const cutoffTimestamp = get48HoursCutoffUTC()
+    console.log(`⏰ Cutoff 48h UTC: ${new Date(cutoffTimestamp).toISOString()}`)
     
     const eligibleLeads = (leads || [])
       .filter(deal => {
-        // FASE 1: Usar Math.max para pegar a data mais recente
+        // Verificar max_followups ANTES de enviar
+        const currentCount = deal.followup_count || 0
+        const maxFollowups = deal.max_followups || 999 // Se não definido, continua indefinidamente
+        
+        if (currentCount >= maxFollowups) {
+          console.log(`⛔ Deal ${deal.id}: Atingiu limite de follow-ups (${currentCount}/${maxFollowups})`)
+          return false
+        }
+        
+        // Usar Math.max para pegar a data mais recente entre last_interaction e last_followup_at
         const mostRecentDate = getMostRecentDate(deal.last_interaction, deal.last_followup_at)
         
         // Se nunca teve interação, é elegível
@@ -195,11 +194,11 @@ Deno.serve(async (req) => {
           return true
         }
         
-        // FASE 3: Comparar timestamps numéricos, não strings
+        // Comparar timestamps em UTC (ambos são UTC)
         const mostRecentTimestamp = mostRecentDate.getTime()
         const isEligible = mostRecentTimestamp < cutoffTimestamp
         
-        console.log(`📅 Deal ${deal.id}: Última atividade em ${mostRecentDate.toISOString()}, elegível: ${isEligible}`)
+        console.log(`📅 Deal ${deal.id}: Última atividade ${mostRecentDate.toISOString()}, cutoff ${new Date(cutoffTimestamp).toISOString()}, elegível: ${isEligible}`)
         
         return isEligible
       })
@@ -214,6 +213,9 @@ Deno.serve(async (req) => {
         const phone = formatBrazilianPhone(leadPhone)
         const clientName = clientData?.name || 'Cliente'
         
+        // Calcular o número do follow-up que será enviado
+        const followupNumber = (deal.followup_count || 0) + 1
+        
         return {
           deal_id: deal.id,
           lead_id: deal.lead_id,
@@ -221,6 +223,8 @@ Deno.serve(async (req) => {
           client_phone: phone,
           conversation_history: deal.conversation_history,
           followup_count: deal.followup_count || 0,
+          max_followups: deal.max_followups || 999,
+          followup_number: followupNumber, // Enviar no payload para n8n
           owner_id: deal.owner_id,
           owner_name: (deal.profiles as any)?.full_name || null,
           product_type: deal.product_type,
@@ -228,7 +232,7 @@ Deno.serve(async (req) => {
           last_interaction: deal.last_interaction
         }
       })
-      .filter((lead): lead is LeadForFollowup => lead.client_phone !== null) // Apenas com telefone válido
+      .filter((lead): lead is LeadForFollowup => lead.client_phone !== null)
 
     console.log(`✅ Leads elegíveis para follow-up: ${eligibleLeads.length}`)
 
@@ -256,7 +260,7 @@ Deno.serve(async (req) => {
 
     for (const lead of eligibleLeads) {
       try {
-        console.log(`📤 Enviando lead ${lead.client_name} para webhook...`)
+        console.log(`📤 Enviando lead ${lead.client_name} (follow-up #${lead.followup_number}) para webhook...`)
         
         const payload = {
           deal_id: lead.deal_id,
@@ -264,6 +268,7 @@ Deno.serve(async (req) => {
           client_phone: lead.client_phone,
           conversation_history: lead.conversation_history || '',
           followup_count: lead.followup_count,
+          followup_number: lead.followup_number, // SINCRONIZAR com update-followup-history
           product_type: lead.product_type,
           categoria: lead.categoria,
           last_interaction: lead.last_interaction,
@@ -282,15 +287,19 @@ Deno.serve(async (req) => {
           console.log(`✅ Lead ${lead.client_name} enviado com sucesso`)
           results.success++
           
-          // Registrar log com status 'pending' (aguardando confirmação do n8n)
-          await supabase
+          // Registrar log com status 'pending' e followup_number correto
+          const { error: logError } = await supabase
             .from('followup_logs')
             .insert({
               deal_id: lead.deal_id,
-              followup_number: lead.followup_count + 1,
+              followup_number: lead.followup_number,
               status: 'pending',
               message_sent: 'Enviado para n8n via webhook - aguardando processamento'
             })
+          
+          if (logError) {
+            console.warn(`⚠️ Erro ao criar log pending: ${logError.message}`)
+          }
         } else {
           const errorText = await response.text()
           console.error(`❌ Erro ao enviar lead ${lead.client_name}:`, errorText)
@@ -302,7 +311,7 @@ Deno.serve(async (req) => {
             .from('followup_logs')
             .insert({
               deal_id: lead.deal_id,
-              followup_number: lead.followup_count + 1,
+              followup_number: lead.followup_number,
               status: 'failed',
               error_message: errorText.substring(0, 500)
             })
