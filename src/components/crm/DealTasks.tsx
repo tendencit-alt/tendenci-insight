@@ -98,7 +98,14 @@ export function DealTasks({ dealId }: DealTasksProps) {
       .eq("id", dealId)
       .single();
 
-    if (error) return;
+    if (error) {
+      toast({
+        title: "Erro ao carregar informações",
+        description: "Não foi possível carregar os dados do negócio.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setDealInfo(data);
   };
@@ -186,8 +193,8 @@ export function DealTasks({ dealId }: DealTasksProps) {
       return;
     }
 
-    // Validação para tarefas automatizadas - APENAS na criação
-    if (newTask.tipo_tarefa === "automatizada" && !editingTaskId) {
+    // Validação para tarefas automatizadas - criação E edição quando muda para automatizada
+    if (newTask.tipo_tarefa === "automatizada") {
       if (!newTask.whatsapp_number || !newTask.note) {
         toast({
           title: "Campos obrigatórios para Tarefa Automatizada",

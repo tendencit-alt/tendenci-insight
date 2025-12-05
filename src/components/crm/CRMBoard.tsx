@@ -232,10 +232,6 @@ export function CRMBoard({ pipelineId, onRefresh, autoOpenDealId, onDealOpened, 
       }
     }
 
-    if (filters?.search) {
-      const searchLower = filters.search.toLowerCase();
-    }
-
     const { data: dealsData, error: dealsError } = await dealsQuery.order("stage_position", { ascending: true });
 
     if (dealsError) {

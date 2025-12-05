@@ -155,6 +155,7 @@ export function CRMTasksPanel({
         deal:crm_deals(
           title,
           categoria,
+          stage_id,
           lead:leads(
             client:clients(name)
           )
