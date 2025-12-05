@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.get-followup-stats]
 verify_jwt = false
+
+[functions.dispatch-followup]
+verify_jwt = false

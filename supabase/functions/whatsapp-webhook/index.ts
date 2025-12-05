@@ -49,68 +49,104 @@ Deno.serve(async (req) => {
       // Extrair número do cliente
       const clientPhone = data.key.remoteJid.replace('@s.whatsapp.net', '')
       console.log('📱 Client phone:', clientPhone)
+
+      // Extrair texto da mensagem para detectar opt-out
+      const messageText = (payload as any).data?.message?.conversation || 
+                         (payload as any).data?.message?.extendedTextMessage?.text || ''
       
-      // Buscar deals na etapa "Follow Up (I.A)" com esse telefone
+      // Palavras de opt-out
+      const optOutKeywords = ['pare', 'parar', 'não quero', 'sair', 'cancelar', 'desinscrever', 'stop', 'para']
+      const hasOptOut = optOutKeywords.some(keyword => 
+        messageText.toLowerCase().includes(keyword.toLowerCase())
+      )
+      
+      if (hasOptOut) {
+        console.log('🛑 OPT-OUT DETECTADO na mensagem do cliente:', messageText)
+      }
+      
+      // Buscar deals com follow-up ativo para esse telefone
       const { data: deals, error: dealsError } = await supabase
         .from('crm_deals')
         .select(`
           id,
           title,
           followup_count,
+          followup_enabled,
           owner_id,
           stage_id,
-          crm_stages!inner(name),
           leads!inner(
             client_id,
             clients!inner(phone)
           )
         `)
         .eq('status', 'aberto')
-        .eq('crm_stages.name', 'Follow Up (I.A)')
+        .eq('followup_enabled', true)
         .like('leads.clients.phone', `%${clientPhone}%`)
 
       if (!dealsError && deals && deals.length > 0) {
         console.log(`✅ Found ${deals.length} follow-up deal(s) for this client`)
         
         for (const deal of deals) {
-          console.log(`🔄 Resetting follow-up counter for deal: ${deal.title}`)
+          console.log(`🔄 Processing deal: ${deal.title}`)
           
-          // Resetar contador de follow-up
+          // Dados para atualização
+          const updateData: any = {
+            followup_count: 0,
+            last_interaction: new Date().toISOString()
+          }
+          
+          // Se opt-out detectado, desabilitar follow-ups
+          if (hasOptOut) {
+            updateData.followup_enabled = false
+            console.log('🛑 Desabilitando follow-ups para deal:', deal.id)
+          }
+          
+          // Atualizar deal
           const { error: updateError } = await supabase
             .from('crm_deals')
-            .update({
-              followup_count: 0,
-              last_interaction: new Date().toISOString()
-            })
+            .update(updateData)
             .eq('id', deal.id)
           
           if (updateError) {
             console.error('❌ Error updating deal:', updateError)
           } else {
-            console.log('✅ Follow-up counter reset successfully')
+            console.log('✅ Deal updated successfully')
             
             // Registrar na timeline
+            const timelineMessage = hasOptOut 
+              ? '🛑 Cliente solicitou PARAR follow-ups. Sistema desativado.'
+              : '🎉 Cliente respondeu! Contador de follow-up resetado.'
+            
             await supabase
               .from('crm_timeline')
               .insert({
                 deal_id: deal.id,
-                message: '🎉 Cliente respondeu! Contador de follow-up resetado.',
+                message: timelineMessage,
                 update_type: 'Sistema - Follow-up'
               })
             
             // Notificar vendedor responsável
             if (deal.owner_id) {
+              const notificationTitle = hasOptOut 
+                ? 'Cliente pediu para parar!'
+                : 'Cliente respondeu!'
+              
+              const notificationMessage = hasOptOut
+                ? `O cliente no negócio "${deal.title}" pediu para PARAR os follow-ups. Sistema desativado.`
+                : `O cliente respondeu no negócio "${deal.title}". Verifique a conversa.`
+              
               await supabase
                 .from('notifications')
                 .insert({
                   user_id: deal.owner_id,
-                  type: 'followup_response',
-                  title: 'Cliente respondeu!',
-                  message: `O cliente respondeu no negócio "${deal.title}". Verifique a conversa.`,
+                  type: hasOptOut ? 'followup_optout' : 'followup_response',
+                  title: notificationTitle,
+                  message: notificationMessage,
                   link: `/crm?deal=${deal.id}`,
                   metadata: {
                     deal_id: deal.id,
-                    client_phone: clientPhone
+                    client_phone: clientPhone,
+                    opt_out: hasOptOut
                   }
                 })
             }
