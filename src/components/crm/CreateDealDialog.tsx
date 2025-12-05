@@ -461,6 +461,7 @@ export function CreateDealDialog({
           due_at: task.due_at,
           note: task.note || null,
           status: "open",
+          created_by: user?.id || null,
         }));
 
         await supabase.from("crm_tasks").insert(tasksToInsert);

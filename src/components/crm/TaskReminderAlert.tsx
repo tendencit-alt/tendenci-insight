@@ -107,7 +107,7 @@ export function TaskReminderAlert({ pipelineId }: TaskReminderAlertProps) {
         setShowAlert(false);
       }
     } catch (error) {
-      // Silenciar erro
+      console.error('TaskReminderAlert checkDealsWithoutTasks error:', error);
     }
   };
 
