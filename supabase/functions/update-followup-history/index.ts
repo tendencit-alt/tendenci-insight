@@ -19,16 +19,19 @@ Deno.serve(async (req) => {
 
     const { deal_id, new_message }: UpdateFollowupRequest = await req.json()
 
-    // FASE 10: Validações adicionais
+    // FASE 11: Validações robustas
     if (!deal_id) {
+      console.error('❌ deal_id é obrigatório')
       throw new Error('deal_id é obrigatório')
     }
     
     if (!new_message || new_message.trim().length === 0) {
+      console.error('❌ new_message é obrigatório e não pode ser vazio')
       throw new Error('new_message é obrigatório e não pode ser vazio')
     }
 
     console.log('📝 Updating follow-up history for deal:', deal_id)
+    console.log('📝 Message length:', new_message.length)
 
     // 1️⃣ Buscar deal atual
     const { data: deal, error: fetchError } = await supabase
@@ -42,6 +45,8 @@ Deno.serve(async (req) => {
       throw new Error('Deal not found')
     }
 
+    console.log('✅ Deal encontrado:', deal.title, 'followup_count atual:', deal.followup_count)
+
     // 2️⃣ Adicionar nova mensagem ao histórico
     const timestamp = new Date().toLocaleString('pt-BR', {
       day: '2-digit',
@@ -49,7 +54,7 @@ Deno.serve(async (req) => {
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
-      timeZone: 'America/Sao_Paulo' // FASE 3: Usar timezone Brasil
+      timeZone: 'America/Sao_Paulo'
     })
     
     const followupNumber = (deal.followup_count || 0) + 1
@@ -60,12 +65,11 @@ Deno.serve(async (req) => {
       : newEntry
 
     // 3️⃣ Atualizar deal no banco
-    // FASE 7: Atualizar last_followup_at (não last_interaction, que é para cliente)
+    // FASE 7: last_followup_at = quando sistema enviou, last_interaction = quando cliente respondeu
     const updateData: any = {
       conversation_history: updatedHistory,
       followup_count: followupNumber,
       last_followup_at: new Date().toISOString()
-      // NOTA: last_interaction é atualizado apenas quando o CLIENTE responde
     }
 
     const { error: updateError } = await supabase
@@ -78,34 +82,42 @@ Deno.serve(async (req) => {
       throw updateError
     }
 
-    // 4️⃣ FASE 8: Atualizar log de 'pending' para 'sent' (confirmação do callback)
-    const { error: logUpdateError } = await supabase
+    console.log('✅ Deal updated, followup_count agora:', followupNumber)
+
+    // 4️⃣ FASE 5: Verificar se já existe log com QUALQUER status para este followup_number
+    const { data: existingLog, error: existingLogError } = await supabase
       .from('followup_logs')
-      .update({
-        status: 'sent', // Confirmado pelo callback
-        message_sent: new_message,
-        sent_at: new Date().toISOString()
-      })
+      .select('id, status')
       .eq('deal_id', deal_id)
       .eq('followup_number', followupNumber)
-      .eq('status', 'pending') // Apenas logs pendentes
+      .maybeSingle() // Usar maybeSingle para não dar erro se não encontrar
 
-    if (logUpdateError) {
-      console.warn('⚠️ Error updating followup log status:', logUpdateError)
-      // Não lançar erro, apenas log - pode ser que já foi atualizado
-    } else {
-      console.log('✅ Follow-up log status updated to sent')
+    if (existingLogError) {
+      console.warn('⚠️ Error checking existing log:', existingLogError)
     }
 
-    // 5️⃣ Se não encontrou log pending, criar novo com status 'sent'
-    const { data: existingLog } = await supabase
-      .from('followup_logs')
-      .select('id')
-      .eq('deal_id', deal_id)
-      .eq('followup_number', followupNumber)
-      .single()
+    if (existingLog) {
+      // Log existe - atualizar para 'sent' independente do status anterior
+      console.log(`📝 Log existente encontrado (status: ${existingLog.status}), atualizando para sent...`)
+      
+      const { error: logUpdateError, count } = await supabase
+        .from('followup_logs')
+        .update({
+          status: 'sent',
+          message_sent: new_message,
+          sent_at: new Date().toISOString()
+        })
+        .eq('id', existingLog.id)
 
-    if (!existingLog) {
+      if (logUpdateError) {
+        console.warn('⚠️ Error updating followup log:', logUpdateError)
+      } else {
+        console.log('✅ Follow-up log atualizado para sent')
+      }
+    } else {
+      // 5️⃣ Não existe log - criar novo com status 'sent'
+      console.log('📝 Nenhum log existente, criando novo com status sent...')
+      
       const { error: logError } = await supabase
         .from('followup_logs')
         .insert({
@@ -118,6 +130,8 @@ Deno.serve(async (req) => {
 
       if (logError) {
         console.warn('⚠️ Error creating followup log:', logError)
+      } else {
+        console.log('✅ Novo log criado com status sent')
       }
     }
 
@@ -132,9 +146,11 @@ Deno.serve(async (req) => {
 
     if (timelineError) {
       console.warn('⚠️ Error creating timeline entry:', timelineError)
+    } else {
+      console.log('✅ Timeline entry created')
     }
 
-    console.log('✅ Follow-up history updated successfully')
+    console.log('🏁 Follow-up history updated successfully')
 
     return new Response(
       JSON.stringify({ 

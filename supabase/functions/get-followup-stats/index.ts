@@ -1,7 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
 import { corsHeaders } from '../_shared/cors.ts'
 
-// FASE 3: Função para converter para horário de Brasília
+// Função para converter para horário de Brasília
 function toBrasilTime(date: Date): Date {
   const brasilOffset = -3 * 60 // -3 horas em minutos
   const utcOffset = date.getTimezoneOffset() // offset do servidor em minutos
@@ -16,8 +16,8 @@ function getStartOfDayBrasil(): Date {
   return brasil
 }
 
-// Função para obter início da semana em Brasília
-function getStartOfWeekBrasil(): Date {
+// FASE 7: Renomeado para clareza - retorna data de 7 dias atrás, não "início da semana"
+function getLast7DaysBrasil(): Date {
   const now = new Date()
   const brasil = toBrasilTime(now)
   brasil.setDate(brasil.getDate() - 7)
@@ -61,7 +61,7 @@ Deno.serve(async (req) => {
     const userEspec = profile?.especializacao
     const isAdmin = profile?.role === 'admin'
 
-    console.log('👤 User especialização:', userEspec)
+    console.log('👤 User especialização:', userEspec, 'isAdmin:', isAdmin)
 
     // Buscar o ID da etapa "Follow Up (I.A)"
     const { data: followupStage, error: stageError } = await supabase
@@ -77,6 +77,17 @@ Deno.serve(async (req) => {
 
     console.log('✅ Follow Up stage found:', followupStage.id)
 
+    // Determinar filtro de categoria baseado na especialização
+    let categoryFilter: string | null = null
+    if (!isAdmin && userEspec !== 'todos') {
+      if (userEspec === 'moveis_soltos') {
+        categoryFilter = 'Móveis Soltos'
+      } else if (userEspec === 'moveis_planejados') {
+        categoryFilter = 'Planejados'
+      }
+    }
+    console.log('📂 Category filter:', categoryFilter || 'ALL')
+
     // Total na fila (deals na etapa "Follow Up (I.A)" com status aberto e followup_enabled=true)
     let queueQuery = supabase
       .from('crm_deals')
@@ -85,81 +96,123 @@ Deno.serve(async (req) => {
       .eq('status', 'aberto')
       .eq('followup_enabled', true)
 
-    // Aplicar filtro de categoria baseado na especialização
-    if (!isAdmin && userEspec !== 'todos') {
-      if (userEspec === 'moveis_soltos') {
-        queueQuery = queueQuery.eq('categoria', 'Móveis Soltos')
-      } else if (userEspec === 'moveis_planejados') {
-        queueQuery = queueQuery.eq('categoria', 'Planejados')
-      }
+    // Aplicar filtro de categoria
+    if (categoryFilter) {
+      queueQuery = queueQuery.eq('categoria', categoryFilter)
     }
 
     const { count: queueCount } = await queueQuery
 
-    // FASE 3: Enviados hoje - usando horário Brasil
+    // Datas para filtros
     const todayBrasil = getStartOfDayBrasil()
+    const last7Days = getLast7DaysBrasil()
     console.log('📅 Início do dia Brasil:', todayBrasil.toISOString())
-    
-    // FASE 8: Contar status 'sent' (confirmado pelo callback) para métricas precisas
-    const { count: sentToday } = await supabase
-      .from('followup_logs')
-      .select('*', { count: 'exact', head: true })
-      .eq('status', 'sent')
-      .gte('sent_at', todayBrasil.toISOString())
+    console.log('📅 Últimos 7 dias:', last7Days.toISOString())
 
-    // FASE 3: Enviados última semana - usando horário Brasil
-    const lastWeekBrasil = getStartOfWeekBrasil()
-    console.log('📅 Início da semana Brasil:', lastWeekBrasil.toISOString())
+    // FASE 4: Enviados hoje - filtrar por especialização via JOIN com crm_deals
+    // Primeiro buscar IDs de deals que correspondem à especialização
+    let dealsForStatsQuery = supabase
+      .from('crm_deals')
+      .select('id')
 
-    const { count: sentWeek } = await supabase
-      .from('followup_logs')
-      .select('*', { count: 'exact', head: true })
-      .eq('status', 'sent')
-      .gte('sent_at', lastWeekBrasil.toISOString())
+    if (categoryFilter) {
+      dealsForStatsQuery = dealsForStatsQuery.eq('categoria', categoryFilter)
+    }
 
-    // FASE 9: Taxa de resposta - query corrigida sem FK sintaxe problemática
-    // Buscar logs primeiro
-    const { data: logsData, error: logsError } = await supabase
-      .from('followup_logs')
-      .select('deal_id, sent_at')
-      .eq('status', 'sent')
-      .gte('sent_at', lastWeekBrasil.toISOString())
+    const { data: eligibleDeals } = await dealsForStatsQuery
+    const eligibleDealIds = (eligibleDeals || []).map(d => d.id)
 
-    let responseRate = 0
-    if (!logsError && logsData && logsData.length > 0) {
-      // Buscar deals correspondentes com last_interaction
-      const dealIds = [...new Set(logsData.map(log => log.deal_id).filter(Boolean))]
+    console.log(`📊 Deals elegíveis para stats: ${eligibleDealIds.length}`)
+
+    // Enviados hoje - com filtro de especialização
+    let sentTodayCount = 0
+    if (eligibleDealIds.length > 0) {
+      const { count } = await supabase
+        .from('followup_logs')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'sent')
+        .gte('sent_at', todayBrasil.toISOString())
+        .in('deal_id', eligibleDealIds)
       
-      if (dealIds.length > 0) {
-        const { data: dealsData } = await supabase
-          .from('crm_deals')
-          .select('id, last_interaction')
-          .in('id', dealIds)
+      sentTodayCount = count || 0
+    }
 
-        // Criar mapa de deals para acesso rápido
-        const dealsMap = new Map((dealsData || []).map(d => [d.id, d.last_interaction]))
+    // Enviados últimos 7 dias - com filtro de especialização
+    let sentWeekCount = 0
+    if (eligibleDealIds.length > 0) {
+      const { count } = await supabase
+        .from('followup_logs')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'sent')
+        .gte('sent_at', last7Days.toISOString())
+        .in('deal_id', eligibleDealIds)
+      
+      sentWeekCount = count || 0
+    }
 
-        let responseCount = 0
-        for (const log of logsData) {
-          if (!log.deal_id) continue
-          const dealLastInteraction = dealsMap.get(log.deal_id)
-          if (dealLastInteraction && new Date(dealLastInteraction) > new Date(log.sent_at)) {
-            responseCount++
+    // Taxa de resposta - buscar logs primeiro, filtrados por especialização
+    let responseRate = 0
+    if (eligibleDealIds.length > 0) {
+      const { data: logsData, error: logsError } = await supabase
+        .from('followup_logs')
+        .select('deal_id, sent_at')
+        .eq('status', 'sent')
+        .gte('sent_at', last7Days.toISOString())
+        .in('deal_id', eligibleDealIds)
+
+      if (!logsError && logsData && logsData.length > 0) {
+        // Buscar deals correspondentes com last_interaction
+        const dealIds = [...new Set(logsData.map(log => log.deal_id).filter(Boolean))]
+        
+        if (dealIds.length > 0) {
+          const { data: dealsData } = await supabase
+            .from('crm_deals')
+            .select('id, last_interaction')
+            .in('id', dealIds)
+
+          // Criar mapa de deals para acesso rápido
+          const dealsMap = new Map((dealsData || []).map(d => [d.id, d.last_interaction]))
+
+          let responseCount = 0
+          for (const log of logsData) {
+            if (!log.deal_id || !log.sent_at) continue
+            const dealLastInteraction = dealsMap.get(log.deal_id)
+            if (dealLastInteraction && new Date(dealLastInteraction) > new Date(log.sent_at)) {
+              responseCount++
+            }
           }
-        }
 
-        responseRate = Math.round((responseCount / logsData.length) * 100)
+          responseRate = logsData.length > 0 ? Math.round((responseCount / logsData.length) * 100) : 0
+        }
       }
     }
 
     console.log('📊 Taxa de resposta calculada:', responseRate, '%')
 
-    // Falhas recentes (inclui 'failed' e 'pending' não confirmados)
-    const { count: failedCount } = await supabase
+    // Falhas recentes - com filtro de especialização
+    let failedCount = 0
+    if (eligibleDealIds.length > 0) {
+      const { count } = await supabase
+        .from('followup_logs')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'failed')
+        .gte('created_at', last7Days.toISOString())
+        .in('deal_id', eligibleDealIds)
+      
+      failedCount = count || 0
+    }
+
+    // FASE 8: Identificar logs órfãos (pending há mais de 1 hora)
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString()
+    const { count: orphanedLogsCount } = await supabase
       .from('followup_logs')
       .select('*', { count: 'exact', head: true })
-      .eq('status', 'failed')
-      .gte('created_at', lastWeekBrasil.toISOString())
+      .eq('status', 'pending')
+      .lt('created_at', oneHourAgo)
+
+    if (orphanedLogsCount && orphanedLogsCount > 0) {
+      console.warn(`⚠️ ${orphanedLogsCount} logs órfãos (pending há mais de 1h) detectados`)
+    }
 
     console.log('✅ Statistics fetched successfully')
 
@@ -168,10 +221,11 @@ Deno.serve(async (req) => {
         success: true,
         stats: {
           queueSize: queueCount || 0,
-          sentToday: sentToday || 0,
-          sentWeek: sentWeek || 0,
+          sentToday: sentTodayCount,
+          sentWeek: sentWeekCount,
           responseRate,
-          failedRecent: failedCount || 0
+          failedRecent: failedCount,
+          orphanedLogs: orphanedLogsCount || 0
         }
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

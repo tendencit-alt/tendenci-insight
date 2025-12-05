@@ -95,6 +95,17 @@ export function N8nFollowupGuide() {
     }
   };
 
+  // FASE 1 & 2: Função para obter a data mais recente entre duas
+  const getMostRecentDate = (date1: string | null, date2: string | null): Date | null => {
+    if (!date1 && !date2) return null;
+    if (!date1) return new Date(date2!);
+    if (!date2) return new Date(date1!);
+    
+    const d1 = new Date(date1).getTime();
+    const d2 = new Date(date2).getTime();
+    return new Date(Math.max(d1, d2));
+  };
+
   const checkEligibleLeads = async () => {
     setLoadingEligible(true);
     try {
@@ -106,8 +117,6 @@ export function N8nFollowupGuide() {
         .single();
 
       // Buscar leads elegíveis diretamente
-      const now48hAgo = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
-      
       let query = supabase
         .from('crm_deals')
         .select(`
@@ -130,16 +139,27 @@ export function N8nFollowupGuide() {
 
       if (error) throw error;
 
+      // FASE 1 & 3: Cutoff de 48h usando timestamp numérico
+      const cutoffTimestamp = Date.now() - (48 * 60 * 60 * 1000);
+
       // Filtrar por última interação > 48h E que tenha telefone válido
       const eligible = (data || []).filter(deal => {
-        const lastInteraction = deal.last_interaction || deal.last_followup_at;
-        const hasValidTime = !lastInteraction || lastInteraction < now48hAgo;
+        // FASE 1: Usar Math.max para pegar a data mais recente
+        const mostRecentDate = getMostRecentDate(deal.last_interaction, deal.last_followup_at);
+        
+        // Se nunca teve interação, é elegível
+        if (!mostRecentDate) return true;
+        
+        // FASE 3: Comparar timestamps numéricos, não strings
+        const hasValidTime = mostRecentDate.getTime() < cutoffTimestamp;
+        
         // Corrigir acesso: leads pode ser objeto ou array
         const leadsData = deal.leads;
         const clientPhone = Array.isArray(leadsData) 
           ? leadsData[0]?.clients?.phone 
           : (leadsData as any)?.clients?.phone;
         const hasPhone = clientPhone && clientPhone.replace(/\D/g, '').length >= 10;
+        
         return hasValidTime && hasPhone;
       });
 
