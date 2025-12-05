@@ -220,6 +220,7 @@ export function DealDetailSheet({
         from_stage_id: deal.stage_id,
         to_stage_id: stageId,
         moved_at: new Date().toISOString(),
+        moved_by: user?.id || null,
       });
 
       toast({
