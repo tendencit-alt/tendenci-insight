@@ -4,6 +4,7 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { SellerDashboard } from "@/components/goals/seller/SellerDashboard";
+import { useGoalStatus } from "@/hooks/useGoalStatus";
 
 interface GoalData {
   meta_ativa: {
@@ -29,6 +30,7 @@ interface GoalData {
 export default function Goals() {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
+  const goalStatus = useGoalStatus();
   const [loading, setLoading] = useState(true);
   const [goalData, setGoalData] = useState<GoalData | null>(null);
   const [companyGoal, setCompanyGoal] = useState<any>(null);
@@ -66,36 +68,47 @@ export default function Goals() {
 
   const fetchCompanyGoal = async () => {
     try {
+      const now = new Date().toISOString();
       const { data: goals, error } = await supabase
         .from("tendenci_company_goals" as any)
         .select("*, tendenci_goal_progress(*)")
         .eq("status", "ativa")
-        .gte("data_fim", new Date().toISOString())
+        .lte("data_inicio", now)
+        .gte("data_fim", now)
         .order("created_at", { ascending: false })
         .limit(1);
 
       if (error) throw error;
       if (goals && goals.length > 0) {
         setCompanyGoal(goals[0]);
+      } else {
+        setCompanyGoal(null);
       }
     } catch (error) {
       console.error("Erro ao buscar meta da empresa:", error);
+      setCompanyGoal(null);
     }
   };
 
   const fetchTeamAverage = async () => {
     try {
+      const now = new Date().toISOString();
       const { data, error } = await supabase
         .from("tendenci_seller_ranking" as any)
-        .select("percentual_meta_atualizado");
+        .select("percentual_meta_atualizado, periodo_inicio, periodo_fim")
+        .lte("periodo_inicio", now)
+        .gte("periodo_fim", now);
 
       if (error) throw error;
       if (data && data.length > 0) {
         const avg = data.reduce((acc: number, curr: any) => acc + (curr.percentual_meta_atualizado || 0), 0) / data.length;
         setTeamAverage(avg);
+      } else {
+        setTeamAverage(0);
       }
     } catch (error) {
       console.error("Erro ao buscar média da equipe:", error);
+      setTeamAverage(0);
     }
   };
 
@@ -123,6 +136,7 @@ export default function Goals() {
           goalData={goalData}
           companyGoal={companyGoal}
           teamAverage={teamAverage}
+          goalStatus={goalStatus}
         />
       </div>
     </DashboardLayout>

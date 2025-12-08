@@ -7,9 +7,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Target, TrendingUp, Trophy, Award } from "lucide-react";
 import { ComparisonCards } from "@/components/goals/seller/ComparisonCards";
+import { NoActiveGoalAlert } from "@/components/goals/NoActiveGoalAlert";
+import { useGoalStatus } from "@/hooks/useGoalStatus";
 
 export function SellerPerformancePanel() {
   const { user } = useAuth();
+  const goalStatus = useGoalStatus();
   const [loading, setLoading] = useState(true);
   const [salesGoal, setSalesGoal] = useState<any>(null);
   const [dailyGoals, setDailyGoals] = useState<any>(null);
@@ -115,6 +118,7 @@ export function SellerPerformancePanel() {
 
   const fetchSalesGoal = async () => {
     try {
+      const now = new Date().toISOString();
       const { data, error } = await supabase
         .from("tendenci_seller_goals")
         .select(`
@@ -123,12 +127,18 @@ export function SellerPerformancePanel() {
         `)
         .eq("vendedor_id", user?.id)
         .eq("status", "ativa")
-        .single();
+        .lte("data_inicio", now)
+        .gte("data_fim", now)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-      if (error) return;
+      if (error) {
+        setSalesGoal(null);
+        return;
+      }
 
       if (data) {
-        // O relacionamento one-to-one retorna objeto, não array
         const progress = Array.isArray(data.tendenci_goal_progress) 
           ? data.tendenci_goal_progress[0] 
           : data.tendenci_goal_progress;
@@ -139,9 +149,11 @@ export function SellerPerformancePanel() {
           percentage: Number(progress?.percentual) || 0
         };
         setSalesGoal(goalData);
+      } else {
+        setSalesGoal(null);
       }
     } catch (error) {
-      // Silenciar erro
+      setSalesGoal(null);
     }
   };
 
@@ -205,7 +217,7 @@ export function SellerPerformancePanel() {
 
   const fetchRanking = async () => {
     try {
-      // Buscar dados de todos os vendedores
+      const now = new Date().toISOString();
       const { data: allSellers, error } = await supabase
         .from("tendenci_seller_goals")
         .select(`
@@ -213,12 +225,13 @@ export function SellerPerformancePanel() {
           valor_meta,
           tendenci_goal_progress(valor_vendido, percentual)
         `)
-        .eq("status", "ativa");
+        .eq("status", "ativa")
+        .lte("data_inicio", now)
+        .gte("data_fim", now);
 
       if (error) return;
 
       if (allSellers && allSellers.length > 0) {
-        // Calcular média da equipe
         const percentages = allSellers.map(s => {
           const progress = Array.isArray(s.tendenci_goal_progress) 
             ? s.tendenci_goal_progress[0] 
@@ -229,7 +242,6 @@ export function SellerPerformancePanel() {
         const avg = percentages.reduce((sum, p) => sum + p, 0) / percentages.length;
         setTeamAverage(avg);
 
-        // Ordenar por percentual
         const sorted = allSellers.sort((a, b) => {
           const aProgress = Array.isArray(a.tendenci_goal_progress) 
             ? a.tendenci_goal_progress[0] 
@@ -241,10 +253,8 @@ export function SellerPerformancePanel() {
           return (bProgress?.percentual || 0) - (aProgress?.percentual || 0);
         });
 
-        // Encontrar posição do usuário
         const position = sorted.findIndex(s => s.vendedor_id === user?.id) + 1;
         
-        // Buscar percentual do usuário atual
         const userSeller = sorted.find(s => s.vendedor_id === user?.id);
         const userProgress = userSeller 
           ? (Array.isArray(userSeller.tendenci_goal_progress) 
@@ -253,14 +263,15 @@ export function SellerPerformancePanel() {
           : null;
         const userPercentage = userProgress?.percentual || 0;
 
-        console.log("Ranking Data:", { position, total: allSellers.length, userPercentage, avg });
-
         setRanking({
           position,
           total: allSellers.length,
           topPercentage: userPercentage,
           teamAveragePercentage: avg
         });
+      } else {
+        setRanking(null);
+        setTeamAverage(0);
       }
     } catch (error) {
       // Silenciar erro
@@ -314,12 +325,23 @@ export function SellerPerformancePanel() {
         Meu Desempenho
       </h3>
 
-      {/* Cards de Comparação */}
-      <ComparisonCards 
-        ranking={ranking}
-        trend={trend}
-        pace={pace}
-      />
+      {/* Alerta quando não há meta de vendas configurada */}
+      {!salesGoal && !goalStatus.loading && (
+        <NoActiveGoalAlert 
+          type="sales" 
+          currentMonth={goalStatus.currentMonth}
+          sellersWithoutGoals={goalStatus.sellersWithoutGoals}
+        />
+      )}
+
+      {/* Cards de Comparação - só mostra se há meta */}
+      {salesGoal && (
+        <ComparisonCards 
+          ranking={ranking}
+          trend={trend}
+          pace={pace}
+        />
+      )}
 
       <div className="grid gap-3 md:grid-cols-3">
         {/* Metas de Vendas */}
