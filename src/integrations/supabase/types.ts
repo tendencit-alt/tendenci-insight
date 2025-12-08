@@ -3108,49 +3108,33 @@ export type Database = {
       calculate_seller_rankings: { Args: never; Returns: undefined }
       check_and_update_inactive_architects: { Args: never; Returns: undefined }
       create_daily_architect_goals: { Args: never; Returns: undefined }
-      crm_agg:
-        | {
-            Args: {
-              p_category?: string
-              p_date_from?: string
-              p_date_to?: string
-              p_owner_id?: string
-              p_pipeline_id: string
-            }
-            Returns: Json
-          }
-        | {
-            Args: { p_end?: string; p_pipeline_id: string; p_start?: string }
-            Returns: Json
-          }
-      crm_sla_alerts:
-        | {
-            Args: {
-              p_category?: string
-              p_max_delay_days?: number
-              p_owner_id?: string
-              p_pipeline_id: string
-            }
-            Returns: {
-              deal_id: string
-              delay_h: number
-              lead_name: string
-              owner_name: string
-              stage_name: string
-              title: string
-            }[]
-          }
-        | {
-            Args: { p_pipeline_id: string }
-            Returns: {
-              deal_id: string
-              delay_h: number
-              lead_name: string
-              owner_name: string
-              stage_name: string
-              title: string
-            }[]
-          }
+      crm_agg: {
+        Args: {
+          p_category?: string
+          p_date_from?: string
+          p_date_to?: string
+          p_owner_id?: string
+          p_pipeline_id: string
+        }
+        Returns: Json
+      }
+      crm_sla_alerts: {
+        Args: {
+          p_category?: string
+          p_max_delay_days?: number
+          p_owner_id?: string
+          p_pipeline_id: string
+        }
+        Returns: {
+          deal_id: string
+          delay_h: number
+          lead_name: string
+          owner_name: string
+          sla_hours: number
+          stage_name: string
+          title: string
+        }[]
+      }
       crm_stage_funnel: {
         Args: { p_end?: string; p_pipeline_id: string; p_start?: string }
         Returns: {
