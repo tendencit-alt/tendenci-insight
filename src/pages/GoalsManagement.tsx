@@ -3,7 +3,7 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, TrendingUp, Users, Target, Award, Settings } from "lucide-react";
+import { Plus, TrendingUp, Users, Target, Award, Settings, AlertTriangle } from "lucide-react";
 import { CreateSellerGoalDialog } from "@/components/goals/CreateSellerGoalDialog";
 import { CreateCompanyGoalDialog } from "@/components/goals/CreateCompanyGoalDialog";
 import { EditDailyGoalsDialog } from "@/components/goals/EditDailyGoalsDialog";
@@ -11,13 +11,16 @@ import { GoalsTable } from "@/components/goals/GoalsTable";
 import { GoalsAnalytics } from "@/components/goals/GoalsAnalytics";
 import { AdvancedAnalytics } from "@/components/goals/AdvancedAnalytics";
 import { DailyArchitectGoals } from "@/components/goals/DailyArchitectGoals";
+import { NoActiveGoalAlert } from "@/components/goals/NoActiveGoalAlert";
 import { supabase } from "@/integrations/supabase/client";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useAuth } from "@/contexts/AuthContext";
+import { useGoalStatus } from "@/hooks/useGoalStatus";
 
 export default function GoalsManagement() {
   const { isMaster } = usePermissions();
   const { user } = useAuth();
+  const goalStatus = useGoalStatus();
   const [showSellerDialog, setShowSellerDialog] = useState(false);
   const [showCompanyDialog, setShowCompanyDialog] = useState(false);
   const [showDailyGoalsDialog, setShowDailyGoalsDialog] = useState(false);
@@ -31,26 +34,33 @@ export default function GoalsManagement() {
 
   useEffect(() => {
     fetchStats();
+    goalStatus.refetch();
   }, [refreshTrigger]);
 
   const fetchStats = async () => {
     try {
+      const now = new Date().toISOString();
+      
       if (isMaster) {
-        // Masters veem estatísticas de todos
+        // Masters veem estatísticas de metas ATIVAS no período atual
         const { count: totalSellers } = await supabase
           .from("tendenci_seller_goals" as any)
           .select("vendedor_id", { count: "exact", head: true })
-          .eq("status", "ativa");
+          .eq("status", "ativa")
+          .lte("data_inicio", now)
+          .gte("data_fim", now);
 
         const { count: activeGoals } = await supabase
           .from("tendenci_seller_goals" as any)
           .select("*", { count: "exact", head: true })
-          .eq("status", "ativa");
+          .eq("status", "ativa")
+          .lte("data_inicio", now)
+          .gte("data_fim", now);
 
         const { count: completedGoals } = await supabase
           .from("tendenci_seller_goals" as any)
           .select("*", { count: "exact", head: true })
-          .eq("status", "concluída");
+          .eq("status", "concluida");
 
         const { data: progressData } = await supabase
           .from("tendenci_goal_progress" as any)
@@ -143,6 +153,16 @@ export default function GoalsManagement() {
             </div>
           )}
         </div>
+
+        {/* Alerta quando há vendedores sem metas no mês atual */}
+        {isMaster && goalStatus.sellersWithoutGoals > 0 && !goalStatus.loading && (
+          <NoActiveGoalAlert 
+            type="sales" 
+            currentMonth={goalStatus.currentMonth}
+            sellersWithoutGoals={goalStatus.sellersWithoutGoals}
+            onCreateClick={() => setShowSellerDialog(true)}
+          />
+        )}
 
         {/* KPIs */}
         <div className="grid gap-4 md:grid-cols-4">

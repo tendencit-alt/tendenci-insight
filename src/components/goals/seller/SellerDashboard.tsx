@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Building2 } from "lucide-react";
+import { NoActiveGoalAlert } from "../NoActiveGoalAlert";
 
 interface GoalData {
   meta_ativa: {
@@ -29,12 +30,21 @@ interface GoalData {
   }> | null;
 }
 
+interface GoalStatus {
+  hasActiveSellerGoal: boolean;
+  hasActiveCompanyGoal: boolean;
+  currentMonth: string;
+  sellersWithoutGoals: number;
+  loading: boolean;
+}
+
 interface SellerDashboardProps {
   userName: string;
   userAvatar?: string;
   goalData: GoalData | null;
   companyGoal: any;
   teamAverage: number;
+  goalStatus?: GoalStatus;
 }
 
 export function SellerDashboard({ 
@@ -42,7 +52,8 @@ export function SellerDashboard({
   userAvatar, 
   goalData, 
   companyGoal,
-  teamAverage 
+  teamAverage,
+  goalStatus
 }: SellerDashboardProps) {
   const getMotivationalMessage = (percentual: number, teamAvg: number) => {
     if (percentual >= 100) {
@@ -103,6 +114,14 @@ export function SellerDashboard({
         motivationalMessage={motivationalMessage}
       />
 
+      {/* Alerta quando não há meta ativa */}
+      {goalStatus && !goalStatus.hasActiveSellerGoal && !goalStatus.loading && (
+        <NoActiveGoalAlert 
+          type="sales" 
+          currentMonth={goalStatus.currentMonth}
+        />
+      )}
+
       <Tabs defaultValue="performance" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="performance">Meu Desempenho</TabsTrigger>
@@ -114,23 +133,37 @@ export function SellerDashboard({
           {/* Meta Diária de Captação */}
           <DailyArchitectGoals />
 
-          {/* Cards Principais */}
-          <div>
-            <h2 className="text-xl font-semibold mb-4">Metas Principais</h2>
-            <SellerGoalCards 
-              salesGoal={salesGoal}
-            />
-          </div>
+          {/* Cards Principais - só mostra se há meta */}
+          {metaAtiva && (
+            <div>
+              <h2 className="text-xl font-semibold mb-4">Metas Principais</h2>
+              <SellerGoalCards 
+                salesGoal={salesGoal}
+              />
+            </div>
+          )}
 
-          {/* Cards de Comparação */}
-          <div>
-            <h2 className="text-xl font-semibold mb-4">Análise de Performance</h2>
-            <ComparisonCards 
-              ranking={ranking}
-              trend={trend}
-              pace={pace}
-            />
-          </div>
+          {!metaAtiva && (
+            <Card className="border-muted">
+              <CardContent className="pt-6 text-center">
+                <p className="text-muted-foreground">
+                  Quando sua meta for configurada, você verá seus dados aqui.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Cards de Comparação - só mostra se há meta */}
+          {metaAtiva && (
+            <div>
+              <h2 className="text-xl font-semibold mb-4">Análise de Performance</h2>
+              <ComparisonCards 
+                ranking={ranking}
+                trend={trend}
+                pace={pace}
+              />
+            </div>
+          )}
 
           {/* Rodapé motivacional */}
           {metaAtiva && (
