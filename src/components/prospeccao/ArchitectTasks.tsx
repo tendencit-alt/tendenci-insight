@@ -9,6 +9,7 @@ import { Plus, Trash2, CheckCircle, Clock, Calendar, Edit, Mic, Play, Pause } fr
 import { AudioRecorder } from "@/components/prospeccao/AudioRecorder";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { usePermissions } from "@/hooks/usePermissions";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -25,6 +26,7 @@ interface ArchitectTasksProps {
 
 export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
   const { toast } = useToast();
+  const { isMaster } = usePermissions();
   const [tasks, setTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
@@ -100,16 +102,21 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
       return;
     }
 
-    // Query simplificada - buscar apenas tarefas do arquiteto criadas pelo usuário
-    const { data, error } = await supabase
+    // Query base - buscar tarefas do arquiteto
+    let query = supabase
       .from("tendenci_prospec_arq_agendamentos")
       .select(`
         *,
         vendedor:profiles!tendenci_prospec_arq_agendamentos_vendedor_id_fkey(full_name, email)
       `)
-      .eq("architect_id", architectId)
-      .eq("vendedor_id", user.id)
-      .order("data_agendamento", { ascending: true });
+      .eq("architect_id", architectId);
+
+    // Vendedores só veem suas próprias tarefas; MASTER vê todas
+    if (!isMaster) {
+      query = query.eq("vendedor_id", user.id);
+    }
+
+    const { data, error } = await query.order("data_agendamento", { ascending: true });
 
     if (error) {
       toast({

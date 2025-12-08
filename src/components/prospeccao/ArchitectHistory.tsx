@@ -60,17 +60,34 @@ export function ArchitectHistory({ architectId }: ArchitectHistoryProps) {
   const fetchHistory = async () => {
     setLoading(true);
     
+    // Buscar histórico sem JOIN (FK pode não existir)
     const { data, error } = await supabase
       .from("architect_history")
-      .select(`
-        *,
-        created_by_profile:profiles!architect_history_created_by_fkey(full_name, email)
-      `)
+      .select("*")
       .eq("architect_id", architectId)
       .order("created_at", { ascending: false });
 
     if (!error && data) {
-      setHistory(data as any);
+      // Buscar profiles separadamente para os created_by
+      const creatorIds = [...new Set(data.filter(h => h.created_by).map(h => h.created_by))];
+      
+      if (creatorIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, full_name, email")
+          .in("id", creatorIds);
+        
+        // Mapear profiles aos registros
+        const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+        const historyWithProfiles = data.map(h => ({
+          ...h,
+          created_by_profile: h.created_by ? profileMap.get(h.created_by) || null : null
+        }));
+        
+        setHistory(historyWithProfiles as any);
+      } else {
+        setHistory(data.map(h => ({ ...h, created_by_profile: null })) as any);
+      }
     }
     
     setLoading(false);
