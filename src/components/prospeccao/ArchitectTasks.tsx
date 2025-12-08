@@ -78,7 +78,7 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
       clearTimeout(debounceTimer);
       supabase.removeChannel(channel);
     };
-  }, [architectId]);
+  }, [architectId, isMaster]);
 
   const fetchArchitectInfo = async () => {
     const { data, error } = await supabase
