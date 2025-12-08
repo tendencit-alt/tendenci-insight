@@ -3106,8 +3106,10 @@ export type Database = {
       }
       architects_aggregates: { Args: never; Returns: Json }
       calculate_seller_rankings: { Args: never; Returns: undefined }
+      check_and_expire_goals: { Args: never; Returns: undefined }
       check_and_update_inactive_architects: { Args: never; Returns: undefined }
       create_daily_architect_goals: { Args: never; Returns: undefined }
+      create_goal_reminder_notifications: { Args: never; Returns: undefined }
       crm_agg: {
         Args: {
           p_category?: string
@@ -3208,6 +3210,22 @@ export type Database = {
           valor_total: number
         }[]
       }
+      get_current_goals_status: {
+        Args: { p_user_id?: string }
+        Returns: {
+          company_goal_current: number
+          company_goal_id: string
+          company_goal_percentage: number
+          company_goal_target: number
+          current_month: string
+          has_active_company_goal: boolean
+          has_active_seller_goal: boolean
+          seller_goal_current: number
+          seller_goal_id: string
+          seller_goal_percentage: number
+          seller_goal_target: number
+        }[]
+      }
       get_daily_architect_goal_progress: {
         Args: { p_date?: string; p_vendedor_id: string }
         Returns: Json
@@ -3300,6 +3318,14 @@ export type Database = {
       get_seller_performance_by_goal: {
         Args: { p_seller_goal_id: string }
         Returns: Json
+      }
+      get_sellers_without_goals: {
+        Args: never
+        Returns: {
+          seller_email: string
+          seller_id: string
+          seller_name: string
+        }[]
       }
       get_user_role: {
         Args: { user_id: string }
