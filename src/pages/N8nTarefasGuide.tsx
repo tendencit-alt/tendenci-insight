@@ -248,9 +248,48 @@ export default function N8nTarefasGuide() {
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-4">Integração n8n - Tarefas Automatizadas</h1>
           <p className="text-lg text-muted-foreground">
-            Documentação completa para configurar o envio automático de mensagens WhatsApp via n8n baseado em tarefas agendadas no CRM
+            Documentação completa para configurar o envio automático de mensagens WhatsApp via n8n baseado em tarefas agendadas no CRM e módulo de Arquitetos
           </p>
         </div>
+
+        {/* Módulos Suportados */}
+        <Card className="mb-6 border-primary/20 bg-primary/5">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-primary" />
+              Módulos Suportados
+            </CardTitle>
+            <CardDescription>O sistema suporta tarefas automatizadas de dois módulos</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="p-4 bg-background rounded-lg border">
+                <div className="flex items-center gap-2 mb-2">
+                  <Badge variant="default">CRM</Badge>
+                  <span className="font-medium">Tarefas de Clientes</span>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Tarefas criadas em negócios do CRM. Tabela: <code className="text-xs bg-muted px-1 py-0.5 rounded">crm_tasks</code>
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  origem_modulo: <code className="bg-muted px-1 py-0.5 rounded">"crm"</code>
+                </p>
+              </div>
+              <div className="p-4 bg-background rounded-lg border">
+                <div className="flex items-center gap-2 mb-2">
+                  <Badge variant="secondary">Prospecção</Badge>
+                  <span className="font-medium">Tarefas de Arquitetos</span>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Tarefas criadas para arquitetos no módulo de prospecção. Tabela: <code className="text-xs bg-muted px-1 py-0.5 rounded">tendenci_prospec_arq_agendamentos</code>
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  origem_modulo: <code className="bg-muted px-1 py-0.5 rounded">"prospeccao"</code>
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Visão Geral */}
         <Card className="mb-6">
@@ -268,7 +307,7 @@ export default function N8nTarefasGuide() {
                 <div>
                   <p className="font-medium">Criação da Tarefa Automatizada</p>
                   <p className="text-sm text-muted-foreground">
-                    Usuário cria uma tarefa no CRM com tipo "Tarefa Automatizada", definindo data/hora, número WhatsApp e mensagem
+                    Usuário cria uma tarefa com tipo "Tarefa Automatizada" no CRM (negócios) ou no módulo de Arquitetos, definindo data/hora, número WhatsApp e mensagem
                   </p>
                 </div>
               </div>
@@ -277,34 +316,34 @@ export default function N8nTarefasGuide() {
                 <div>
                   <p className="font-medium">Armazenamento no Banco</p>
                   <p className="text-sm text-muted-foreground">
-                    Tarefa é salva na tabela <code className="text-xs bg-muted px-1 py-0.5 rounded">crm_tasks</code> com status "open" e tipo_tarefa "automatizada"
+                    Tarefa é salva na tabela correspondente: <code className="text-xs bg-muted px-1 py-0.5 rounded">crm_tasks</code> (CRM) ou <code className="text-xs bg-muted px-1 py-0.5 rounded">tendenci_prospec_arq_agendamentos</code> (Arquitetos)
                   </p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <Badge className="mt-1">3</Badge>
                 <div>
-                  <p className="font-medium">Detecção pelo n8n</p>
+                  <p className="font-medium">Detecção pelo n8n via RPC Unificada</p>
                   <p className="text-sm text-muted-foreground">
-                    Workflow n8n consulta periodicamente o banco buscando tarefas automatizadas com due_at próximo ou vencido
+                    Workflow n8n consulta a RPC <code className="text-xs bg-muted px-1 py-0.5 rounded">get_pending_automated_tasks</code> que retorna tarefas de AMBOS os módulos
                   </p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <Badge className="mt-1">4</Badge>
                 <div>
-                  <p className="font-medium">Disparo Automático</p>
+                  <p className="font-medium">Processamento pela Edge Function</p>
                   <p className="text-sm text-muted-foreground">
-                    Na data/hora programada, n8n envia a mensagem via Evolution API WhatsApp
+                    Edge Function <code className="text-xs bg-muted px-1 py-0.5 rounded">process-automated-task</code> detecta o módulo de origem e processa adequadamente
                   </p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <Badge className="mt-1">5</Badge>
                 <div>
-                  <p className="font-medium">Atualização de Status</p>
+                  <p className="font-medium">Disparo e Atualização</p>
                   <p className="text-sm text-muted-foreground">
-                    Após envio bem-sucedido, n8n atualiza o status da tarefa para "done" no banco
+                    Mensagem enviada via Evolution API WhatsApp, status atualizado e log registrado na timeline do arquiteto (se aplicável)
                   </p>
                 </div>
               </div>
@@ -317,22 +356,51 @@ export default function N8nTarefasGuide() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Code className="h-5 w-5" />
-              Estrutura da Tabela crm_tasks
+              Estrutura das Tabelas
             </CardTitle>
-            <CardDescription>Campos relevantes para tarefas automatizadas</CardDescription>
+            <CardDescription>Campos relevantes para tarefas automatizadas em cada módulo</CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="bg-muted p-4 rounded-lg font-mono text-sm space-y-2">
-              <div><span className="text-primary">id</span> <span className="text-muted-foreground">UUID</span> - Identificador único da tarefa</div>
-              <div><span className="text-primary">deal_id</span> <span className="text-muted-foreground">UUID</span> - Referência ao negócio no CRM</div>
-              <div><span className="text-primary">title</span> <span className="text-muted-foreground">TEXT</span> - Título da tarefa</div>
-              <div><span className="text-primary">note</span> <span className="text-muted-foreground">TEXT</span> - Mensagem que será enviada</div>
-              <div><span className="text-primary">due_at</span> <span className="text-muted-foreground">TIMESTAMP</span> - Data e hora para envio</div>
-              <div><span className="text-primary">status</span> <span className="text-muted-foreground">TEXT</span> - Status: "open" ou "done"</div>
-              <div><span className="text-primary">tipo_tarefa</span> <span className="text-muted-foreground">TEXT</span> - "interna" ou "automatizada"</div>
-              <div><span className="text-primary">whatsapp_number</span> <span className="text-muted-foreground">TEXT</span> - Número do destinatário</div>
-              <div><span className="text-primary">origem_modulo</span> <span className="text-muted-foreground">TEXT</span> - "crm" ou "prospeccao"</div>
+          <CardContent className="space-y-6">
+            <div>
+              <h4 className="font-semibold mb-2 flex items-center gap-2">
+                <Badge>CRM</Badge> crm_tasks
+              </h4>
+              <div className="bg-muted p-4 rounded-lg font-mono text-sm space-y-2">
+                <div><span className="text-primary">id</span> <span className="text-muted-foreground">UUID</span> - Identificador único da tarefa</div>
+                <div><span className="text-primary">deal_id</span> <span className="text-muted-foreground">UUID</span> - Referência ao negócio no CRM</div>
+                <div><span className="text-primary">title</span> <span className="text-muted-foreground">TEXT</span> - Título da tarefa</div>
+                <div><span className="text-primary">note</span> <span className="text-muted-foreground">TEXT</span> - Mensagem que será enviada</div>
+                <div><span className="text-primary">due_at</span> <span className="text-muted-foreground">TIMESTAMP</span> - Data e hora para envio</div>
+                <div><span className="text-primary">status</span> <span className="text-muted-foreground">TEXT</span> - Status: "open" ou "done"</div>
+                <div><span className="text-primary">tipo_tarefa</span> <span className="text-muted-foreground">TEXT</span> - "interna" ou "automatizada"</div>
+                <div><span className="text-primary">whatsapp_number</span> <span className="text-muted-foreground">TEXT</span> - Número do destinatário</div>
+                <div><span className="text-primary">processed_at</span> <span className="text-muted-foreground">TIMESTAMP</span> - Data/hora do processamento (evita duplicatas)</div>
+              </div>
             </div>
+
+            <div>
+              <h4 className="font-semibold mb-2 flex items-center gap-2">
+                <Badge variant="secondary">Prospecção</Badge> tendenci_prospec_arq_agendamentos
+              </h4>
+              <div className="bg-muted p-4 rounded-lg font-mono text-sm space-y-2">
+                <div><span className="text-primary">id</span> <span className="text-muted-foreground">UUID</span> - Identificador único da tarefa</div>
+                <div><span className="text-primary">architect_id</span> <span className="text-muted-foreground">UUID</span> - Referência ao arquiteto</div>
+                <div><span className="text-primary">observacoes</span> <span className="text-muted-foreground">JSONB</span> - JSON com título e nota (mensagem)</div>
+                <div><span className="text-primary">data_agendamento</span> <span className="text-muted-foreground">TIMESTAMP</span> - Data e hora para envio</div>
+                <div><span className="text-primary">status</span> <span className="text-muted-foreground">TEXT</span> - Status: "pendente" ou "concluida"</div>
+                <div><span className="text-primary">tipo_tarefa</span> <span className="text-muted-foreground">TEXT</span> - "retorno" ou "automatizada"</div>
+                <div><span className="text-primary">whatsapp_number</span> <span className="text-muted-foreground">TEXT</span> - Número do destinatário</div>
+                <div><span className="text-primary">vendedor_id</span> <span className="text-muted-foreground">UUID</span> - Vendedor responsável</div>
+                <div><span className="text-primary">processed_at</span> <span className="text-muted-foreground">TIMESTAMP</span> - Data/hora do processamento (evita duplicatas)</div>
+              </div>
+            </div>
+
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription className="text-xs">
+                <strong>Diferenças de Status:</strong> CRM usa "open"/"done", Arquitetos usa "pendente"/"concluida". A RPC unifica isso automaticamente.
+              </AlertDescription>
+            </Alert>
           </CardContent>
         </Card>
 
@@ -468,20 +536,24 @@ export default function N8nTarefasGuide() {
                   <pre className="bg-background p-3 rounded text-xs overflow-x-auto">
 {`[
   {
-    "tarefa_id": "uuid...",
-    "deal_id": "uuid...",
-    "lead_id": "uuid...",
-    "arquiteto_id": "uuid...",
-    "nome": "Cliente ou Arquiteto",
-    "telefone": "5511999999999",
-    "tipo_envio": "texto",
-    "conteudo_texto": "Mensagem automática...",
-    "whatsapp_connection_id": "uuid...",
+    "id": "uuid-tarefa-crm...",
+    "whatsapp_number": "5511999999999",
+    "mensagem": "Olá! Sua mensagem automática...",
     "instance_name": "tendenci-prod",
     "instance_id": "12345",
     "due_at": "2025-01-15T10:00:00Z",
-    "created_by": "uuid...",
+    "created_by": "uuid-vendedor...",
     "origem_modulo": "crm"
+  },
+  {
+    "id": "uuid-tarefa-arquiteto...",
+    "whatsapp_number": "5521988888888",
+    "mensagem": "Olá Arquiteto! Mensagem...",
+    "instance_name": "tendenci-vendedor2",
+    "instance_id": "67890",
+    "due_at": "2025-01-15T11:00:00Z",
+    "created_by": "uuid-vendedor2...",
+    "origem_modulo": "prospeccao"
   }
 ]`}
                   </pre>
@@ -489,7 +561,7 @@ export default function N8nTarefasGuide() {
                   <Alert className="mt-3">
                     <CheckCircle className="h-4 w-4" />
                     <AlertDescription className="text-xs">
-                      <strong>✨ Isolamento por Vendedor:</strong> A função RPC garante que apenas tarefas de vendedores com instância WhatsApp conectada sejam processadas. Cada tarefa usa automaticamente a instância específica do vendedor que a criou.
+                      <strong>✨ RPC Unificada:</strong> A função <code>get_pending_automated_tasks</code> usa UNION ALL para retornar tarefas de AMBOS os módulos (CRM e Arquitetos), com o campo <code>origem_modulo</code> para identificação. Cada tarefa usa automaticamente a instância WhatsApp específica do vendedor que a criou.
                     </AlertDescription>
                   </Alert>
                 </div>
@@ -567,23 +639,42 @@ export default function N8nTarefasGuide() {
               </div>
 
               <div>
-                <h3 className="font-semibold mb-2">6. Supabase Node (Update)</h3>
+                <h3 className="font-semibold mb-2">6. HTTP Request - Edge Function (Recomendado)</h3>
                 <div className="bg-muted p-4 rounded-lg space-y-3">
-                  <p className="text-sm mb-2">Atualize o status da tarefa após envio bem-sucedido:</p>
-                  
+                  <Alert className="mb-3">
+                    <CheckCircle className="h-4 w-4" />
+                    <AlertDescription className="text-xs">
+                      <strong>✨ Método Recomendado:</strong> Use a Edge Function <code>process-automated-task</code> que processa automaticamente tarefas de AMBOS os módulos (CRM e Arquitetos).
+                    </AlertDescription>
+                  </Alert>
+
                   <div className="bg-background p-3 rounded text-xs font-mono space-y-1">
-                    <div><span className="text-muted-foreground">Operation:</span> Update</div>
-                    <div><span className="text-muted-foreground">Table:</span> crm_tasks</div>
-                    <div><span className="text-muted-foreground">Filter:</span> id = {'{{ $("Loop Over Items").item.json.id }}'}</div>
+                    <div><span className="text-muted-foreground">Method:</span> POST</div>
+                    <div><span className="text-muted-foreground">URL:</span> {apiUrl}/functions/v1/process-automated-task</div>
+                    <div><span className="text-muted-foreground">Headers:</span> Authorization: Bearer {'{'}apiKey{'}'}</div>
                   </div>
 
-                  <p className="text-sm font-medium mt-3">Campos a Atualizar:</p>
+                  <p className="text-sm font-medium mt-3">Body (JSON):</p>
                   <pre className="bg-background p-3 rounded text-xs overflow-x-auto">
 {`{
-  "status": "done",
-  "updated_at": "{{ $now.toISO() }}"
+  "taskId": "{{ $("Loop Over Items").item.json.id }}"
 }`}
                   </pre>
+
+                  <Alert className="mt-3">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription className="text-xs">
+                      <strong>A Edge Function faz tudo automaticamente:</strong>
+                      <ul className="list-disc ml-4 mt-2 space-y-1">
+                        <li>Detecta se é tarefa CRM ou Arquiteto via <code>origem_modulo</code></li>
+                        <li>Busca dados do cliente/arquiteto</li>
+                        <li>Identifica instância WhatsApp do vendedor</li>
+                        <li>Envia mensagem via Evolution API</li>
+                        <li>Atualiza status para "done" ou "concluida"</li>
+                        <li>Registra log na timeline (arquitetos)</li>
+                      </ul>
+                    </AlertDescription>
+                  </Alert>
                 </div>
               </div>
 
@@ -594,11 +685,11 @@ export default function N8nTarefasGuide() {
                   <Alert>
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription className="text-xs">
-                      Se o envio falhar, você pode:
+                      Se o envio falhar, a Edge Function:
                       <ul className="list-disc ml-4 mt-2 space-y-1">
-                        <li>Registrar o erro em uma tabela de logs</li>
-                        <li>Enviar notificação para a equipe</li>
-                        <li>Manter o status "open" para nova tentativa</li>
+                        <li>Mantém status original para nova tentativa automática</li>
+                        <li>Cria notificação para o vendedor responsável</li>
+                        <li>Retorna erro 500 com detalhes para o n8n</li>
                       </ul>
                     </AlertDescription>
                   </Alert>
