@@ -2251,6 +2251,7 @@ export type Database = {
           id: string
           metadata: Json | null
           observacoes: string | null
+          processed_at: string | null
           status: string | null
           tipo_tarefa: string
           updated_at: string | null
@@ -2269,6 +2270,7 @@ export type Database = {
           id?: string
           metadata?: Json | null
           observacoes?: string | null
+          processed_at?: string | null
           status?: string | null
           tipo_tarefa?: string
           updated_at?: string | null
@@ -2287,6 +2289,7 @@ export type Database = {
           id?: string
           metadata?: Json | null
           observacoes?: string | null
+          processed_at?: string | null
           status?: string | null
           tipo_tarefa?: string
           updated_at?: string | null
