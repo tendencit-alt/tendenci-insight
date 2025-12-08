@@ -12,6 +12,7 @@ import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@
 import { AudioRecorder } from "@/components/prospeccao/AudioRecorder";
 import { Progress } from "@/components/ui/progress";
 import { validateFileType, validateFileSize, ALLOWED_FILE_TYPES_ACCEPT, MAX_FILE_SIZE_MB, formatFileSize } from "@/lib/utils";
+import { usePermissions } from "@/hooks/usePermissions";
 
 interface ProjectNotesProps {
   projectId: string;
@@ -19,6 +20,7 @@ interface ProjectNotesProps {
 
 export function ProjectNotes({ projectId }: ProjectNotesProps) {
   const { toast } = useToast();
+  const { isMaster } = usePermissions();
   const [note, setNote] = useState("");
   const [showAudioRecorder, setShowAudioRecorder] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -33,6 +35,7 @@ export function ProjectNotes({ projectId }: ProjectNotesProps) {
   const [mentionStartPos, setMentionStartPos] = useState<number>(0);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editingNoteText, setEditingNoteText] = useState("");
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const audioRefs = useRef<Map<string, HTMLAudioElement>>(new Map());
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -40,7 +43,15 @@ export function ProjectNotes({ projectId }: ProjectNotesProps) {
     fetchAttachments();
     fetchNoteHistory();
     fetchAvailableUsers();
+    fetchCurrentUser();
   }, [projectId]);
+
+  const fetchCurrentUser = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      setCurrentUserId(user.id);
+    }
+  };
 
   const fetchAvailableUsers = async () => {
     const { data, error } = await supabase
@@ -569,21 +580,27 @@ export function ProjectNotes({ projectId }: ProjectNotesProps) {
                     </div>
                     {editingNoteId !== entry.id && (
                       <div className="flex gap-1">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleStartEdit(entry)}
-                        >
-                          <Edit2 className="w-3 h-3" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleDeleteNote(entry.id)}
-                          className="text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
+                        {/* Botão Editar - apenas para o autor */}
+                        {entry.author_id === currentUserId && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleStartEdit(entry)}
+                          >
+                            <Edit2 className="w-3 h-3" />
+                          </Button>
+                        )}
+                        {/* Botão Excluir - apenas para admins */}
+                        {isMaster && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleDeleteNote(entry.id)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        )}
                       </div>
                     )}
                   </div>
