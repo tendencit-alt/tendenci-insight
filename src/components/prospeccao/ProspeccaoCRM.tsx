@@ -27,9 +27,6 @@ export function ProspeccaoCRM({ onManageStages }: ProspeccaoCRMProps) {
         <p className="text-muted-foreground">Gerencie o funil de prospecção dos arquitetos</p>
       </div>
 
-      {/* Painel de Tarefas */}
-      <ArchitectTasksPanel filters={filters} />
-
       {/* Toggle de visualização */}
       <div className="flex items-center gap-2 p-1 bg-muted rounded-lg w-fit">
         <Button
@@ -70,6 +67,9 @@ export function ProspeccaoCRM({ onManageStages }: ProspeccaoCRMProps) {
         showNaoContactados={showNaoContactados}
         onToggleNaoContactados={() => setShowNaoContactados(!showNaoContactados)}
       />
+
+      {/* Tasks Panel - após filtros */}
+      <ArchitectTasksPanel filters={filters} />
 
       {/* Conteúdo baseado na visualização */}
       {viewMode === "kanban" ? (
