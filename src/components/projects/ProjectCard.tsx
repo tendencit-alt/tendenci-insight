@@ -1,6 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Eye, Trash2, Calendar, User, AlertTriangle } from "lucide-react";
+import { Eye, Trash2, Calendar, User, AlertTriangle, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { format, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -83,10 +83,11 @@ export function ProjectCard({
   const deadlineInfo = getDeadlineInfo();
   const daysSinceSent = getDaysSinceSent();
   const hasNoArchitect = !project.architect && !project.architect_id;
+  const hasNoDeadline = !project.deadline && !DELIVERED_STAGES.includes(project.stage);
 
   return (
     <Card
-      className={`p-4 hover:shadow-lg transition-all ${draggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'} ${hasNoArchitect ? 'border-l-4 border-l-orange-400' : ''}`}
+      className={`p-4 hover:shadow-lg transition-all ${draggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'} ${hasNoArchitect ? 'border-l-4 border-l-orange-400' : ''} ${hasNoDeadline && !hasNoArchitect ? 'border-l-4 border-l-yellow-400' : ''}`}
       draggable={draggable}
       onDragStart={(e) => onDragStart?.(e, project)}
       onClick={() => onView(project)}
@@ -99,12 +100,20 @@ export function ProjectCard({
               {project.name || "Sem título"}
             </h4>
           </div>
-          {hasNoArchitect && (
-            <Badge variant="outline" className="shrink-0 text-orange-600 border-orange-400 text-xs">
-              <AlertTriangle className="w-3 h-3 mr-1" />
-              Sem Arq.
-            </Badge>
-          )}
+          <div className="flex flex-col gap-1 shrink-0">
+            {hasNoArchitect && (
+              <Badge variant="outline" className="text-orange-600 border-orange-400 text-xs">
+                <AlertTriangle className="w-3 h-3 mr-1" />
+                Sem Arq.
+              </Badge>
+            )}
+            {hasNoDeadline && !hasNoArchitect && (
+              <Badge variant="outline" className="text-yellow-600 border-yellow-400 text-xs">
+                <Clock className="w-3 h-3 mr-1" />
+                Sem Prazo
+              </Badge>
+            )}
+          </div>
         </div>
         
         {/* Client info */}

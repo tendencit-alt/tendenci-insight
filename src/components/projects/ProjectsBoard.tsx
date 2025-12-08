@@ -1,72 +1,44 @@
-import { useEffect, useState } from "react";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { format, differenceInDays } from "date-fns";
-import { ptBR } from "date-fns/locale";
-
-// Helper para formatar datas de forma consistente
-const formatDate = (date: string | null | undefined): string => {
-  if (!date) return "-";
-  return format(new Date(date), "dd/MM/yy", { locale: ptBR });
-};
-
-// Estágios onde o projeto já foi "entregue/trabalhado" - não mostrar como vencido
-const DELIVERED_STAGES = ['orcado', 'apresentado', 'em_negociacao', 'aprovado'];
-
-// Helper para calcular dias restantes até o prazo
-const getDaysRemaining = (deadline: string | null | undefined, stage: string | null | undefined): { days: number | null; label: string; isUrgent: boolean; isOverdue: boolean } => {
-  // Se o projeto já avançou para estágios de entrega, mostrar "Entregue" independente do prazo
-  if (stage && DELIVERED_STAGES.includes(stage)) {
-    return { days: null, label: "Entregue", isUrgent: false, isOverdue: false };
-  }
-  
-  if (!deadline) return { days: null, label: "Sem prazo", isUrgent: false, isOverdue: false };
-  
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const deadlineDate = new Date(deadline);
-  deadlineDate.setHours(0, 0, 0, 0);
-  
-  const days = differenceInDays(deadlineDate, today);
-  
-  // Para estágios iniciais (recebido, em_orcamento) ou perdido, aplicar lógica de prazo
-  if (days < 0) {
-    return { days, label: `Vencido há ${Math.abs(days)} dia${Math.abs(days) !== 1 ? 's' : ''}`, isUrgent: true, isOverdue: true };
-  } else if (days === 0) {
-    return { days, label: "Vence hoje", isUrgent: true, isOverdue: false };
-  } else if (days <= 3) {
-    return { days, label: `${days} dia${days !== 1 ? 's' : ''}`, isUrgent: true, isOverdue: false };
-  } else {
-    return { days, label: `${days} dias`, isUrgent: false, isOverdue: false };
-  }
-};
-
-// Helper para ordenar projetos (vencidos primeiro, depois por dias restantes)
-const sortByDeadlinePriority = (projects: any[]): any[] => {
-  return [...projects].sort((a, b) => {
-    const aInfo = getDaysRemaining(a.deadline, a.stage);
-    const bInfo = getDaysRemaining(b.deadline, b.stage);
-    
-    // Projetos sem prazo vão por último
-    if (aInfo.days === null && bInfo.days === null) return 0;
-    if (aInfo.days === null) return 1;
-    if (bInfo.days === null) return -1;
-    
-    // Ordenar por dias (menores/vencidos primeiro)
-    return aInfo.days - bInfo.days;
-  });
-};
+import { subDays } from "date-fns";
 import { ProjectDetailSheet } from "./ProjectDetailSheet";
+import { ProjectCard } from "./ProjectCard";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { X } from "lucide-react";
 import { toast } from "sonner";
 import { usePermissions } from "@/hooks/usePermissions";
 
 interface ProjectsBoardProps {
   filters: any;
 }
+
+const STAGE_CONFIG = [
+  { key: 'recebido', label: 'Recebido', icon: '📥', color: 'bg-blue-500/10', textColor: 'text-blue-700 dark:text-blue-400', borderColor: 'border-l-blue-500' },
+  { key: 'em_orcamento', label: 'Em Orçamento', icon: '📝', color: 'bg-purple-500/10', textColor: 'text-purple-700 dark:text-purple-400', borderColor: 'border-l-purple-500' },
+  { key: 'orcado', label: 'Orçado', icon: '💰', color: 'bg-indigo-500/10', textColor: 'text-indigo-700 dark:text-indigo-400', borderColor: 'border-l-indigo-500' },
+  { key: 'apresentado', label: 'Apresentado', icon: '📊', color: 'bg-cyan-500/10', textColor: 'text-cyan-700 dark:text-cyan-400', borderColor: 'border-l-cyan-500' },
+  { key: 'em_negociacao', label: 'Em Negociação', icon: '🤝', color: 'bg-orange-500/10', textColor: 'text-orange-700 dark:text-orange-400', borderColor: 'border-l-orange-500' },
+  { key: 'aprovado', label: 'Aprovado', icon: '✅', color: 'bg-green-500/10', textColor: 'text-green-700 dark:text-green-400', borderColor: 'border-l-green-500' },
+  { key: 'perdido', label: 'Perdido', icon: '❌', color: 'bg-red-500/10', textColor: 'text-red-700 dark:text-red-400', borderColor: 'border-l-red-500' }
+];
+
+// Helper para ordenar projetos (vencidos primeiro, depois por dias restantes)
+const sortByDeadlinePriority = (projects: any[]): any[] => {
+  return [...projects].sort((a, b) => {
+    const DELIVERED_STAGES = ['orcado', 'apresentado', 'em_negociacao', 'aprovado'];
+    
+    const getDays = (project: any) => {
+      if (project.stage && DELIVERED_STAGES.includes(project.stage)) return Infinity;
+      if (!project.deadline) return Infinity - 1;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const deadlineDate = new Date(project.deadline);
+      deadlineDate.setHours(0, 0, 0, 0);
+      return Math.floor((deadlineDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    };
+    
+    return getDays(a) - getDays(b);
+  });
+};
 
 export function ProjectsBoard({ filters }: ProjectsBoardProps) {
   const [projects, setProjects] = useState<any[]>([]);
@@ -77,22 +49,18 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
   const [projectToDelete, setProjectToDelete] = useState<any>(null);
   const { isMaster } = usePermissions();
 
-  useEffect(() => {
-    fetchProjects();
-  }, [filters]);
-
-  const fetchProjects = async () => {
+  const fetchProjects = useCallback(async () => {
     setLoading(true);
     let query = supabase
       .from("projects")
       .select(`
         *,
         client:clients(name, phone),
-        architect:architects(name),
-        deal:deals(title)
+        architect:architects(name)
       `)
       .order("sent_date", { ascending: true });
 
+    // Filtro de estágio
     if (filters.stage && filters.stage !== "Todos") {
       query = query.eq("stage", filters.stage);
     }
@@ -106,47 +74,72 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
       }
     }
 
-    if (filters.search) {
-      query = query.or(`name.ilike.%${filters.search}%`);
+    // Filtro de período
+    if (filters.period && filters.period !== "all") {
+      const days = parseInt(filters.period);
+      if (!isNaN(days)) {
+        const startDate = subDays(new Date(), days).toISOString();
+        query = query.gte("created_at", startDate);
+      }
     }
+
+    // Busca em nome, cliente e arquiteto
+    if (filters.search) {
+      // Primeiro buscamos todos os dados e filtramos no cliente
+      // porque Supabase não suporta busca em relações diretamente no .or()
+    }
+
     const { data, error } = await query;
     
     if (!error && data) {
-      setProjects(data);
+      let filteredData = data;
+      
+      // Filtro de busca client-side para incluir cliente e arquiteto
+      if (filters.search) {
+        const searchLower = filters.search.toLowerCase();
+        filteredData = data.filter(p => 
+          (p.name?.toLowerCase().includes(searchLower)) ||
+          (p.client?.name?.toLowerCase().includes(searchLower)) ||
+          (p.architect?.name?.toLowerCase().includes(searchLower))
+        );
+      }
+      
+      setProjects(filteredData);
     }
     setLoading(false);
-  };
+  }, [filters]);
 
-  const getStageColor = (stage: string) => {
-    const colors: Record<string, string> = {
-      recebido: "bg-blue-500",
-      em_orcamento: "bg-purple-500",
-      orcado: "bg-indigo-500",
-      apresentado: "bg-cyan-500",
-      em_negociacao: "bg-orange-500",
-      aprovado: "bg-green-500",
-      perdido: "bg-red-500"
+  // Fetch inicial e quando filtros mudam
+  useEffect(() => {
+    fetchProjects();
+  }, [fetchProjects]);
+
+  // Realtime subscription
+  useEffect(() => {
+    const channel = supabase
+      .channel('projects-board-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'projects' },
+        () => {
+          // Debounce simples para evitar múltiplos refetches
+          const timeout = setTimeout(() => fetchProjects(), 500);
+          return () => clearTimeout(timeout);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
     };
-    return colors[stage] || "bg-gray-500";
-  };
-
-  const groupedProjects = {
-    recebido: sortByDeadlinePriority(projects.filter(p => p.stage === "recebido")),
-    em_orcamento: sortByDeadlinePriority(projects.filter(p => p.stage === "em_orcamento")),
-    orcado: sortByDeadlinePriority(projects.filter(p => p.stage === "orcado")),
-    apresentado: sortByDeadlinePriority(projects.filter(p => p.stage === "apresentado")),
-    em_negociacao: sortByDeadlinePriority(projects.filter(p => p.stage === "em_negociacao")),
-    aprovado: sortByDeadlinePriority(projects.filter(p => p.stage === "aprovado")),
-    perdido: sortByDeadlinePriority(projects.filter(p => p.stage === "perdido"))
-  };
+  }, [fetchProjects]);
 
   const handleCardClick = (project: any) => {
     setSelectedProject(project);
     setDetailOpen(true);
   };
 
-  const handleDeleteClick = (e: React.MouseEvent, project: any) => {
-    e.stopPropagation();
+  const handleDeleteClick = (project: any) => {
     setProjectToDelete(project);
     setDeleteOpen(true);
   };
@@ -184,6 +177,12 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
     }
   };
 
+  // Agrupar projetos por estágio
+  const groupedProjects = STAGE_CONFIG.reduce((acc, stage) => {
+    acc[stage.key] = sortByDeadlinePriority(projects.filter(p => p.stage === stage.key));
+    return acc;
+  }, {} as Record<string, any[]>);
+
   if (loading) {
     return <div className="text-center py-8">Carregando projetos...</div>;
   }
@@ -192,436 +191,57 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
     <>
       <div className="overflow-x-auto pb-4">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-7 gap-4 lg:gap-6 min-w-max lg:min-w-0">
-        {/* Recebido */}
-        <div className="space-y-4 min-w-[280px] lg:min-w-0">
-          <div className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 rounded-lg">
-            <span className="text-2xl">📥</span>
-            <h3 className="font-semibold text-blue-700 dark:text-blue-400">
-              Recebido ({groupedProjects.recebido.length})
-            </h3>
-          </div>
-          <div className="space-y-3">
-            {groupedProjects.recebido.map((project) => (
-              <Card
-                key={project.id}
-                className="p-4 cursor-pointer hover:shadow-lg transition-all duration-200 border-l-4 border-l-blue-500 relative group"
-                onClick={() => handleCardClick(project)}
-              >
-                {isMaster && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10"
-                    onClick={(e) => handleDeleteClick(e, project)}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
+          {STAGE_CONFIG.map((stage) => (
+            <div key={stage.key} className="space-y-4 min-w-[280px] lg:min-w-0">
+              <div className={`flex items-center gap-2 px-4 py-2 ${stage.color} rounded-lg`}>
+                <span className="text-2xl">{stage.icon}</span>
+                <h3 className={`font-semibold ${stage.textColor}`}>
+                  {stage.label} ({groupedProjects[stage.key]?.length || 0})
+                </h3>
+              </div>
+              <div className="space-y-3">
+                {groupedProjects[stage.key]?.map((project) => (
+                  <ProjectCard
+                    key={project.id}
+                    project={project}
+                    onView={handleCardClick}
+                    onDelete={handleDeleteClick}
+                    showDeleteButton={isMaster}
+                  />
+                ))}
+                {(!groupedProjects[stage.key] || groupedProjects[stage.key].length === 0) && (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    Nenhum projeto {stage.label.toLowerCase()}
+                  </p>
                 )}
-                <h4 className="font-semibold mb-2">{project.name || "Sem título"}</h4>
-                <p className="text-sm text-muted-foreground mb-2">
-                  {project.client?.name || "Cliente não definido"}
-                </p>
-                <div className="flex items-center justify-between mb-2">
-                  <Badge className={getStageColor(project.stage)}>
-                    R$ {project.value?.toLocaleString('pt-BR') || "0"}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>Cadastro: {formatDate(project.created_at)}</span>
-                  {(() => {
-                    const deadlineInfo = getDaysRemaining(project.deadline, project.stage);
-                    return (
-                      <span className={deadlineInfo.isUrgent ? "text-red-600 font-semibold" : ""}>
-                        {deadlineInfo.label}
-                      </span>
-                    );
-                  })()}
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  {project.architect?.name || "Sem responsável"}
-                </p>
-              </Card>
-            ))}
-            {groupedProjects.recebido.length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                Nenhum projeto recebido
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* Em Orçamento */}
-        <div className="space-y-4 min-w-[280px] lg:min-w-0">
-          <div className="flex items-center gap-2 px-4 py-2 bg-purple-500/10 rounded-lg">
-            <span className="text-2xl">📝</span>
-            <h3 className="font-semibold text-purple-700 dark:text-purple-400">
-              Em Orçamento ({groupedProjects.em_orcamento.length})
-            </h3>
-          </div>
-          <div className="space-y-3">
-            {groupedProjects.em_orcamento.map((project) => (
-              <Card
-                key={project.id}
-                className="p-4 cursor-pointer hover:shadow-lg transition-all duration-200 border-l-4 border-l-purple-500 relative group"
-                onClick={() => handleCardClick(project)}
-              >
-                {isMaster && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10"
-                    onClick={(e) => handleDeleteClick(e, project)}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                )}
-                <h4 className="font-semibold mb-2">{project.name || "Sem título"}</h4>
-                <p className="text-sm text-muted-foreground mb-2">
-                  {project.client?.name || "Cliente não definido"}
-                </p>
-                <div className="flex items-center justify-between mb-2">
-                  <Badge className={getStageColor(project.stage)}>
-                    R$ {project.value?.toLocaleString('pt-BR') || "0"}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>Cadastro: {formatDate(project.created_at)}</span>
-                  {(() => {
-                    const deadlineInfo = getDaysRemaining(project.deadline, project.stage);
-                    return (
-                      <span className={deadlineInfo.isUrgent ? "text-red-600 font-semibold" : ""}>
-                        {deadlineInfo.label}
-                      </span>
-                    );
-                  })()}
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  {project.architect?.name || "Sem responsável"}
-                </p>
-              </Card>
-            ))}
-            {groupedProjects.em_orcamento.length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                Nenhum projeto em orçamento
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* Orçado */}
-        <div className="space-y-4 min-w-[280px] lg:min-w-0">
-          <div className="flex items-center gap-2 px-4 py-2 bg-indigo-500/10 rounded-lg">
-            <span className="text-2xl">💰</span>
-            <h3 className="font-semibold text-indigo-700 dark:text-indigo-400">
-              Orçado ({groupedProjects.orcado.length})
-            </h3>
-          </div>
-          <div className="space-y-3">
-            {groupedProjects.orcado.map((project) => (
-              <Card
-                key={project.id}
-                className="p-4 cursor-pointer hover:shadow-lg transition-all duration-200 border-l-4 border-l-indigo-500 relative group"
-                onClick={() => handleCardClick(project)}
-              >
-                {isMaster && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10"
-                    onClick={(e) => handleDeleteClick(e, project)}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                )}
-                <h4 className="font-semibold mb-2">{project.name || "Sem título"}</h4>
-                <p className="text-sm text-muted-foreground mb-2">
-                  {project.client?.name || "Cliente não definido"}
-                </p>
-                <div className="flex items-center justify-between mb-2">
-                  <Badge className={getStageColor(project.stage)}>
-                    R$ {project.value?.toLocaleString('pt-BR') || "0"}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>Cadastro: {formatDate(project.created_at)}</span>
-                  {(() => {
-                    const deadlineInfo = getDaysRemaining(project.deadline, project.stage);
-                    return (
-                      <span className={deadlineInfo.isUrgent ? "text-red-600 font-semibold" : ""}>
-                        {deadlineInfo.label}
-                      </span>
-                    );
-                  })()}
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  {project.architect?.name || "Sem responsável"}
-                </p>
-              </Card>
-            ))}
-            {groupedProjects.orcado.length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                Nenhum projeto orçado
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* Apresentado */}
-        <div className="space-y-4 min-w-[280px] lg:min-w-0">
-          <div className="flex items-center gap-2 px-4 py-2 bg-cyan-500/10 rounded-lg">
-            <span className="text-2xl">📊</span>
-            <h3 className="font-semibold text-cyan-700 dark:text-cyan-400">
-              Apresentado ({groupedProjects.apresentado.length})
-            </h3>
-          </div>
-          <div className="space-y-3">
-            {groupedProjects.apresentado.map((project) => (
-              <Card
-                key={project.id}
-                className="p-4 cursor-pointer hover:shadow-lg transition-all duration-200 border-l-4 border-l-cyan-500 relative group"
-                onClick={() => handleCardClick(project)}
-              >
-                {isMaster && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10"
-                    onClick={(e) => handleDeleteClick(e, project)}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                )}
-                <h4 className="font-semibold mb-2">{project.name || "Sem título"}</h4>
-                <p className="text-sm text-muted-foreground mb-2">
-                  {project.client?.name || "Cliente não definido"}
-                </p>
-                <div className="flex items-center justify-between mb-2">
-                  <Badge className={getStageColor(project.stage)}>
-                    R$ {project.value?.toLocaleString('pt-BR') || "0"}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>Cadastro: {formatDate(project.created_at)}</span>
-                  {(() => {
-                    const deadlineInfo = getDaysRemaining(project.deadline, project.stage);
-                    return (
-                      <span className={deadlineInfo.isUrgent ? "text-red-600 font-semibold" : ""}>
-                        {deadlineInfo.label}
-                      </span>
-                    );
-                  })()}
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  {project.architect?.name || "Sem responsável"}
-                </p>
-              </Card>
-            ))}
-            {groupedProjects.apresentado.length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                Nenhum projeto apresentado
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* Em Negociação */}
-        <div className="space-y-4 min-w-[280px] lg:min-w-0">
-          <div className="flex items-center gap-2 px-4 py-2 bg-orange-500/10 rounded-lg">
-            <span className="text-2xl">🤝</span>
-            <h3 className="font-semibold text-orange-700 dark:text-orange-400">
-              Em Negociação ({groupedProjects.em_negociacao.length})
-            </h3>
-          </div>
-          <div className="space-y-3">
-            {groupedProjects.em_negociacao.map((project) => (
-              <Card
-                key={project.id}
-                className="p-4 cursor-pointer hover:shadow-lg transition-all duration-200 border-l-4 border-l-orange-500 relative group"
-                onClick={() => handleCardClick(project)}
-              >
-                {isMaster && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10"
-                    onClick={(e) => handleDeleteClick(e, project)}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                )}
-                <h4 className="font-semibold mb-2">{project.name || "Sem título"}</h4>
-                <p className="text-sm text-muted-foreground mb-2">
-                  {project.client?.name || "Cliente não definido"}
-                </p>
-                <div className="flex items-center justify-between mb-2">
-                  <Badge className={getStageColor(project.stage)}>
-                    R$ {project.value?.toLocaleString('pt-BR') || "0"}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>Cadastro: {formatDate(project.created_at)}</span>
-                  {(() => {
-                    const deadlineInfo = getDaysRemaining(project.deadline, project.stage);
-                    return (
-                      <span className={deadlineInfo.isUrgent ? "text-red-600 font-semibold" : ""}>
-                        {deadlineInfo.label}
-                      </span>
-                    );
-                  })()}
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  {project.architect?.name || "Sem responsável"}
-                </p>
-              </Card>
-            ))}
-            {groupedProjects.em_negociacao.length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                Nenhum projeto em negociação
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* Aprovado */}
-        <div className="space-y-4 min-w-[280px] lg:min-w-0">
-          <div className="flex items-center gap-2 px-4 py-2 bg-green-500/10 rounded-lg">
-            <span className="text-2xl">✅</span>
-            <h3 className="font-semibold text-green-700 dark:text-green-400">
-              Aprovado ({groupedProjects.aprovado.length})
-            </h3>
-          </div>
-          <div className="space-y-3">
-            {groupedProjects.aprovado.map((project) => (
-              <Card
-                key={project.id}
-                className="p-4 cursor-pointer hover:shadow-lg transition-all duration-200 border-l-4 border-l-green-500 relative group"
-                onClick={() => handleCardClick(project)}
-              >
-                {isMaster && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10"
-                    onClick={(e) => handleDeleteClick(e, project)}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                )}
-                <h4 className="font-semibold mb-2">{project.name || "Sem título"}</h4>
-                <p className="text-sm text-muted-foreground mb-2">
-                  {project.client?.name || "Cliente não definido"}
-                </p>
-                <div className="flex items-center justify-between mb-2">
-                  <Badge className={getStageColor(project.stage)}>
-                    R$ {project.value?.toLocaleString('pt-BR') || "0"}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>Cadastro: {formatDate(project.created_at)}</span>
-                  {(() => {
-                    const deadlineInfo = getDaysRemaining(project.deadline, project.stage);
-                    return (
-                      <span className={deadlineInfo.isUrgent ? "text-red-600 font-semibold" : ""}>
-                        {deadlineInfo.label}
-                      </span>
-                    );
-                  })()}
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  {project.architect?.name || "Sem responsável"}
-                </p>
-              </Card>
-            ))}
-            {groupedProjects.aprovado.length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                Nenhum projeto aprovado
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* Perdido */}
-        <div className="space-y-4 min-w-[280px] lg:min-w-0">
-          <div className="flex items-center gap-2 px-4 py-2 bg-red-500/10 rounded-lg">
-            <span className="text-2xl">❌</span>
-            <h3 className="font-semibold text-red-700 dark:text-red-400">
-              Perdido ({groupedProjects.perdido.length})
-            </h3>
-          </div>
-          <div className="space-y-3">
-            {groupedProjects.perdido.map((project) => (
-              <Card
-                key={project.id}
-                className="p-4 cursor-pointer hover:shadow-lg transition-all duration-200 border-l-4 border-l-red-500 relative group"
-                onClick={() => handleCardClick(project)}
-              >
-                {isMaster && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10"
-                    onClick={(e) => handleDeleteClick(e, project)}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                )}
-                <h4 className="font-semibold mb-2">{project.name || "Sem título"}</h4>
-                <p className="text-sm text-muted-foreground mb-2">
-                  {project.client?.name || "Cliente não definido"}
-                </p>
-                <div className="flex items-center justify-between mb-2">
-                  <Badge className={getStageColor(project.stage)}>
-                    R$ {project.value?.toLocaleString('pt-BR') || "0"}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>Cadastro: {formatDate(project.created_at)}</span>
-                  {(() => {
-                    const deadlineInfo = getDaysRemaining(project.deadline, project.stage);
-                    return (
-                      <span className={deadlineInfo.isUrgent ? "text-red-600 font-semibold" : ""}>
-                        {deadlineInfo.label}
-                      </span>
-                    );
-                  })()}
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  {project.architect?.name || "Sem responsável"}
-                </p>
-              </Card>
-            ))}
-            {groupedProjects.perdido.length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                Nenhum projeto perdido
-              </p>
-            )}
-          </div>
-        </div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
-      {selectedProject && (
-        <ProjectDetailSheet
-          project={selectedProject}
-          open={detailOpen}
-          onOpenChange={setDetailOpen}
-          onSuccess={fetchProjects}
-        />
-      )}
+      {/* Project Detail Sheet */}
+      <ProjectDetailSheet
+        project={selectedProject}
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        onSuccess={fetchProjects}
+      />
 
+      {/* Delete Confirmation */}
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogTitle>Excluir Projeto</AlertDialogTitle>
             <AlertDialogDescription>
-              Deseja realmente excluir o projeto <strong>{projectToDelete?.name}</strong>? 
-              Esta ação não pode ser desfeita e todos os arquivos e histórico serão removidos permanentemente.
+              Tem certeza que deseja excluir o projeto "{projectToDelete?.name}"? 
+              Esta ação não pode ser desfeita e todos os arquivos anexados serão removidos.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-destructive hover:bg-destructive/90">
-              Excluir Definitivamente
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Excluir
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
