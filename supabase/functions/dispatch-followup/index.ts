@@ -269,9 +269,10 @@ Deno.serve(async (req) => {
       try {
         console.log(`📤 Enviando lead ${lead.client_name} (follow-up #${lead.followup_number}) para webhook...`)
         
-        const payload = {
-          deal_id: lead.deal_id,
-          client_name: lead.client_name,
+      const payload = {
+        deal_id: lead.deal_id,
+        sessionId: lead.deal_id,
+        client_name: lead.client_name,
           client_phone: lead.client_phone,
           conversation_history: lead.conversation_history || '',
           followup_count: lead.followup_count,
