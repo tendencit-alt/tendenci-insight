@@ -101,6 +101,7 @@ export function CRMFilters({
           <SelectItem value="today">Hoje</SelectItem>
           <SelectItem value="yesterday">Ontem</SelectItem>
           <SelectItem value="last7days">7 dias</SelectItem>
+          <SelectItem value="thisMonth">Este mês</SelectItem>
           <SelectItem value="last30days">30 dias</SelectItem>
           <SelectItem value="custom">Customizar</SelectItem>
         </SelectContent>
