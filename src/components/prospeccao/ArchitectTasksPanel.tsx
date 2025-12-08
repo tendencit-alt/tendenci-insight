@@ -10,6 +10,7 @@ import { format, isToday, isTomorrow, isPast, differenceInDays, startOfDay } fro
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { ArchitectProspeccaoSheet } from "./ArchitectProspeccaoSheet";
+import { usePermissions } from "@/hooks/usePermissions";
 
 interface ArchitectTasksPanelProps {
   filters?: any;
@@ -43,9 +44,12 @@ export function ArchitectTasksPanel({ filters }: ArchitectTasksPanelProps) {
     diarias: false,
     futuras: false,
   });
+  const { isMaster } = usePermissions();
 
   const fetchTasks = useCallback(async () => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
       let query = supabase
         .from("tendenci_prospec_arq_agendamentos")
         .select(`
@@ -61,8 +65,12 @@ export function ArchitectTasksPanel({ filters }: ArchitectTasksPanelProps) {
         .eq("status", "pendente")
         .order("data_agendamento", { ascending: true });
 
-      // Apply vendor filter
-      if (filters?.vendedor && filters.vendedor !== "todos") {
+      // CORREÇÃO: Vendedores veem apenas suas tarefas; MASTER vê todas
+      if (!isMaster && user?.id) {
+        // Vendedor comum: vê apenas suas próprias tarefas
+        query = query.eq("vendedor_id", user.id);
+      } else if (filters?.vendedor && filters.vendedor !== "todos") {
+        // MASTER pode filtrar por vendedor específico
         query = query.eq("vendedor_id", filters.vendedor);
       }
 
@@ -87,7 +95,7 @@ export function ArchitectTasksPanel({ filters }: ArchitectTasksPanelProps) {
     } finally {
       setLoading(false);
     }
-  }, [filters?.vendedor, filters?.search]);
+  }, [filters?.vendedor, filters?.search, isMaster]);
 
   useEffect(() => {
     fetchTasks();
