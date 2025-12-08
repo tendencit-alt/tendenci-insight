@@ -169,36 +169,23 @@ export function CRMKPIs({
     const { data: allDeals } = await allDealsQuery;
 
     if (allDeals) {
-      // Calcular Ticket Médio (média apenas dos negócios ganhos)
+      // Calcular Ticket Médio (média apenas dos negócios ganhos no período)
       const dealsGanhos = allDeals.filter(d => d.status === "won" && d.value && d.value > 0);
       const somaValores = dealsGanhos.reduce((acc, d) => acc + (d.value || 0), 0);
       const ticketMedioCalculado = dealsGanhos.length > 0 ? somaValores / dealsGanhos.length : 0;
       setTicketMedio(ticketMedioCalculado);
 
-      // Calcular Taxa de Conversão por período
-      const now = new Date();
-      const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-      const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+      // Calcular Taxa de Conversão do período filtrado (não do mês atual fixo)
+      const totalDeals = allDeals.length;
+      const wonDeals = allDeals.filter(d => d.status === "won").length;
+      const periodConversion = totalDeals > 0 ? (wonDeals / totalDeals) * 100 : 0;
 
-      // Deals do mês atual
-      const currentMonthDeals = allDeals.filter(d => new Date(d.created_at) >= currentMonthStart);
-      const currentMonthWon = currentMonthDeals.filter(d => d.status === "won").length;
-      const currentMonthConversion = currentMonthDeals.length > 0 
-        ? (currentMonthWon / currentMonthDeals.length) * 100 
-        : 0;
+      // Para comparação, buscar período anterior equivalente
+      let previousPeriodConversion = 0;
+      let bestMonth = 0;
+      let bestMonthDate = "";
 
-      // Deals do mês passado
-      const lastMonthDeals = allDeals.filter(d => {
-        const date = new Date(d.created_at);
-        return date >= lastMonthStart && date <= lastMonthEnd;
-      });
-      const lastMonthWon = lastMonthDeals.filter(d => d.status === "won").length;
-      const lastMonthConversion = lastMonthDeals.length > 0 
-        ? (lastMonthWon / lastMonthDeals.length) * 100 
-        : 0;
-
-      // Calcular melhor mês histórico
+      // Calcular melhor período histórico por mês
       const dealsByMonth = allDeals.reduce((acc: any, deal) => {
         const date = new Date(deal.created_at);
         const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
@@ -212,8 +199,6 @@ export function CRMKPIs({
         return acc;
       }, {});
 
-      let bestMonth = 0;
-      let bestMonthDate = "";
       Object.entries(dealsByMonth).forEach(([month, data]: [string, any]) => {
         const conversion = data.total > 0 ? (data.won / data.total) * 100 : 0;
         if (conversion > bestMonth) {
@@ -223,8 +208,8 @@ export function CRMKPIs({
       });
 
       setConversionMetrics({
-        currentMonth: currentMonthConversion,
-        lastMonth: lastMonthConversion,
+        currentMonth: periodConversion,
+        lastMonth: previousPeriodConversion,
         bestMonth,
         bestMonthDate
       });
@@ -240,10 +225,24 @@ export function CRMKPIs({
     }).format(value);
   };
 
+  // Get period label for KPIs
+  const getPeriodLabel = () => {
+    switch (dateFilter) {
+      case "today": return "Hoje";
+      case "yesterday": return "Ontem";
+      case "last7days": return "7 dias";
+      case "last30days": return "30 dias";
+      case "custom": return "Período";
+      default: return "Total";
+    }
+  };
+
+  const periodLabel = getPeriodLabel();
+
   const kpis = [
     {
       icon: UserPlus,
-      label: "Novos (Período)",
+      label: `Novos (${periodLabel})`,
       value: metrics?.new_deals || 0,
       color: "text-blue-500",
       subtitle: null
@@ -257,31 +256,31 @@ export function CRMKPIs({
     },
     {
       icon: TrendingUp,
-      label: "Taxa de Conversão",
+      label: `Conversão (${periodLabel})`,
       value: `${conversionMetrics.currentMonth.toFixed(1)}%`,
       color: "text-green-500",
-      subtitle: `Último mês: ${conversionMetrics.lastMonth.toFixed(1)}% | Melhor: ${conversionMetrics.bestMonth.toFixed(1)}% (${conversionMetrics.bestMonthDate})`
+      subtitle: conversionMetrics.bestMonth > 0 ? `Melhor: ${conversionMetrics.bestMonth.toFixed(1)}% (${conversionMetrics.bestMonthDate})` : null
     },
     {
       icon: DollarSign,
-      label: "Ticket Médio",
+      label: `Ticket Médio (${periodLabel})`,
       value: formatCurrency(ticketMedio),
       color: "text-purple-500",
       subtitle: null
     },
     {
       icon: CheckCircle,
-      label: "Ganhou",
+      label: `Ganhou (${periodLabel})`,
       value: formatCurrency(metrics?.won_value || 0),
       color: "text-green-600",
-      subtitle: null
+      subtitle: `${metrics?.won_count || 0} negócios`
     },
     {
       icon: XCircle,
-      label: "Perdeu",
+      label: `Perdeu (${periodLabel})`,
       value: formatCurrency(metrics?.lost_value || 0),
       color: "text-red-500",
-      subtitle: null
+      subtitle: `${metrics?.lost_count || 0} negócios`
     },
   ];
 
