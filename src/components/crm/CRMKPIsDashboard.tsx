@@ -148,6 +148,10 @@ export function CRMKPIsDashboard({
             last7days.setDate(last7days.getDate() - 7);
             query = query.gte("created_at", last7days.toISOString());
             break;
+          case "thisMonth":
+            const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+            query = query.gte("created_at", firstDayOfMonth.toISOString());
+            break;
           case "last30days":
             const last30days = new Date(today);
             last30days.setDate(last30days.getDate() - 30);

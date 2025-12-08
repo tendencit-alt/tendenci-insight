@@ -65,6 +65,9 @@ export function CRMKPIs({
       case "last7days":
         startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
         break;
+      case "thisMonth":
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        break;
       case "last30days":
         startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
         break;
@@ -231,6 +234,7 @@ export function CRMKPIs({
       case "today": return "Hoje";
       case "yesterday": return "Ontem";
       case "last7days": return "7 dias";
+      case "thisMonth": return "Este mês";
       case "last30days": return "30 dias";
       case "custom": return "Período";
       default: return "Total";

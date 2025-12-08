@@ -108,6 +108,9 @@ export function CRMTasksPanel({
         case "last7days":
           startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
           break;
+        case "thisMonth":
+          startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+          break;
         case "last30days":
           startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
           break;
