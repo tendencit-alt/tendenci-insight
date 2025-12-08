@@ -3,13 +3,51 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { format } from "date-fns";
+import { format, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 // Helper para formatar datas de forma consistente
 const formatDate = (date: string | null | undefined): string => {
   if (!date) return "-";
   return format(new Date(date), "dd/MM/yy", { locale: ptBR });
+};
+
+// Helper para calcular dias restantes até o prazo
+const getDaysRemaining = (deadline: string | null | undefined): { days: number | null; label: string; isUrgent: boolean; isOverdue: boolean } => {
+  if (!deadline) return { days: null, label: "Sem prazo", isUrgent: false, isOverdue: false };
+  
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const deadlineDate = new Date(deadline);
+  deadlineDate.setHours(0, 0, 0, 0);
+  
+  const days = differenceInDays(deadlineDate, today);
+  
+  if (days < 0) {
+    return { days, label: `Vencido há ${Math.abs(days)} dia${Math.abs(days) !== 1 ? 's' : ''}`, isUrgent: true, isOverdue: true };
+  } else if (days === 0) {
+    return { days, label: "Vence hoje", isUrgent: true, isOverdue: false };
+  } else if (days <= 3) {
+    return { days, label: `${days} dia${days !== 1 ? 's' : ''}`, isUrgent: true, isOverdue: false };
+  } else {
+    return { days, label: `${days} dias`, isUrgent: false, isOverdue: false };
+  }
+};
+
+// Helper para ordenar projetos (vencidos primeiro, depois por dias restantes)
+const sortByDeadlinePriority = (projects: any[]): any[] => {
+  return [...projects].sort((a, b) => {
+    const aInfo = getDaysRemaining(a.deadline);
+    const bInfo = getDaysRemaining(b.deadline);
+    
+    // Projetos sem prazo vão por último
+    if (aInfo.days === null && bInfo.days === null) return 0;
+    if (aInfo.days === null) return 1;
+    if (bInfo.days === null) return -1;
+    
+    // Ordenar por dias (menores/vencidos primeiro)
+    return aInfo.days - bInfo.days;
+  });
 };
 import { ProjectDetailSheet } from "./ProjectDetailSheet";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -76,13 +114,13 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
   };
 
   const groupedProjects = {
-    recebido: projects.filter(p => p.stage === "recebido"),
-    em_orcamento: projects.filter(p => p.stage === "em_orcamento"),
-    orcado: projects.filter(p => p.stage === "orcado"),
-    apresentado: projects.filter(p => p.stage === "apresentado"),
-    em_negociacao: projects.filter(p => p.stage === "em_negociacao"),
-    aprovado: projects.filter(p => p.stage === "aprovado"),
-    perdido: projects.filter(p => p.stage === "perdido")
+    recebido: sortByDeadlinePriority(projects.filter(p => p.stage === "recebido")),
+    em_orcamento: sortByDeadlinePriority(projects.filter(p => p.stage === "em_orcamento")),
+    orcado: sortByDeadlinePriority(projects.filter(p => p.stage === "orcado")),
+    apresentado: sortByDeadlinePriority(projects.filter(p => p.stage === "apresentado")),
+    em_negociacao: sortByDeadlinePriority(projects.filter(p => p.stage === "em_negociacao")),
+    aprovado: sortByDeadlinePriority(projects.filter(p => p.stage === "aprovado")),
+    perdido: sortByDeadlinePriority(projects.filter(p => p.stage === "perdido"))
   };
 
   const handleCardClick = (project: any) => {
@@ -173,7 +211,14 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
                 </div>
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>Cadastro: {formatDate(project.created_at)}</span>
-                  <span>Prazo: {formatDate(project.deadline)}</span>
+                  {(() => {
+                    const deadlineInfo = getDaysRemaining(project.deadline);
+                    return (
+                      <span className={deadlineInfo.isUrgent ? "text-red-600 font-semibold" : ""}>
+                        {deadlineInfo.label}
+                      </span>
+                    );
+                  })()}
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
                   {project.architect?.name || "Sem responsável"}
@@ -224,7 +269,14 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
                 </div>
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>Cadastro: {formatDate(project.created_at)}</span>
-                  <span>Prazo: {formatDate(project.deadline)}</span>
+                  {(() => {
+                    const deadlineInfo = getDaysRemaining(project.deadline);
+                    return (
+                      <span className={deadlineInfo.isUrgent ? "text-red-600 font-semibold" : ""}>
+                        {deadlineInfo.label}
+                      </span>
+                    );
+                  })()}
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
                   {project.architect?.name || "Sem responsável"}
@@ -275,7 +327,14 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
                 </div>
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>Cadastro: {formatDate(project.created_at)}</span>
-                  <span>Prazo: {formatDate(project.deadline)}</span>
+                  {(() => {
+                    const deadlineInfo = getDaysRemaining(project.deadline);
+                    return (
+                      <span className={deadlineInfo.isUrgent ? "text-red-600 font-semibold" : ""}>
+                        {deadlineInfo.label}
+                      </span>
+                    );
+                  })()}
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
                   {project.architect?.name || "Sem responsável"}
@@ -326,7 +385,14 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
                 </div>
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>Cadastro: {formatDate(project.created_at)}</span>
-                  <span>Prazo: {formatDate(project.deadline)}</span>
+                  {(() => {
+                    const deadlineInfo = getDaysRemaining(project.deadline);
+                    return (
+                      <span className={deadlineInfo.isUrgent ? "text-red-600 font-semibold" : ""}>
+                        {deadlineInfo.label}
+                      </span>
+                    );
+                  })()}
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
                   {project.architect?.name || "Sem responsável"}
@@ -377,7 +443,14 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
                 </div>
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>Cadastro: {formatDate(project.created_at)}</span>
-                  <span>Prazo: {formatDate(project.deadline)}</span>
+                  {(() => {
+                    const deadlineInfo = getDaysRemaining(project.deadline);
+                    return (
+                      <span className={deadlineInfo.isUrgent ? "text-red-600 font-semibold" : ""}>
+                        {deadlineInfo.label}
+                      </span>
+                    );
+                  })()}
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
                   {project.architect?.name || "Sem responsável"}
@@ -428,7 +501,14 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
                 </div>
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>Cadastro: {formatDate(project.created_at)}</span>
-                  <span>Prazo: {formatDate(project.deadline)}</span>
+                  {(() => {
+                    const deadlineInfo = getDaysRemaining(project.deadline);
+                    return (
+                      <span className={deadlineInfo.isUrgent ? "text-red-600 font-semibold" : ""}>
+                        {deadlineInfo.label}
+                      </span>
+                    );
+                  })()}
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
                   {project.architect?.name || "Sem responsável"}
@@ -479,7 +559,14 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
                 </div>
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>Cadastro: {formatDate(project.created_at)}</span>
-                  <span>Prazo: {formatDate(project.deadline)}</span>
+                  {(() => {
+                    const deadlineInfo = getDaysRemaining(project.deadline);
+                    return (
+                      <span className={deadlineInfo.isUrgent ? "text-red-600 font-semibold" : ""}>
+                        {deadlineInfo.label}
+                      </span>
+                    );
+                  })()}
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
                   {project.architect?.name || "Sem responsável"}
