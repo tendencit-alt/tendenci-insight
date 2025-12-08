@@ -17,6 +17,11 @@ const DELIVERED_STAGES = ['orcado', 'apresentado', 'em_negociacao', 'aprovado'];
 
 // Helper para calcular dias restantes até o prazo
 const getDaysRemaining = (deadline: string | null | undefined, stage: string | null | undefined): { days: number | null; label: string; isUrgent: boolean; isOverdue: boolean } => {
+  // Se o projeto já avançou para estágios de entrega, mostrar "Entregue" independente do prazo
+  if (stage && DELIVERED_STAGES.includes(stage)) {
+    return { days: null, label: "Entregue", isUrgent: false, isOverdue: false };
+  }
+  
   if (!deadline) return { days: null, label: "Sem prazo", isUrgent: false, isOverdue: false };
   
   const today = new Date();
@@ -25,11 +30,6 @@ const getDaysRemaining = (deadline: string | null | undefined, stage: string | n
   deadlineDate.setHours(0, 0, 0, 0);
   
   const days = differenceInDays(deadlineDate, today);
-  
-  // Se o projeto já avançou para estágios de entrega, mostrar "Entregue" ao invés de vencido
-  if (stage && DELIVERED_STAGES.includes(stage)) {
-    return { days, label: "Entregue", isUrgent: false, isOverdue: false };
-  }
   
   // Para estágios iniciais (recebido, em_orcamento) ou perdido, aplicar lógica de prazo
   if (days < 0) {
