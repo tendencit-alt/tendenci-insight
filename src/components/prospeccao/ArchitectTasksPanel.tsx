@@ -61,25 +61,33 @@ export function ArchitectTasksPanel({ filters }: ArchitectTasksPanelProps) {
         .eq("status", "pendente")
         .order("data_agendamento", { ascending: true });
 
-      // Apply filters
-      if (filters?.vendedorFilter) {
-        query = query.eq("vendedor_id", filters.vendedorFilter);
-      }
-
-      if (filters?.searchQuery) {
-        query = query.or(`observacoes.ilike.%${filters.searchQuery}%`);
+      // Apply vendor filter
+      if (filters?.vendedor && filters.vendedor !== "todos") {
+        query = query.eq("vendedor_id", filters.vendedor);
       }
 
       const { data, error } = await query;
 
       if (error) throw error;
-      setTasks((data as Task[]) || []);
+      
+      // Client-side search filter to include architect name/company
+      let filteredData = (data as Task[]) || [];
+      if (filters?.search) {
+        const searchLower = filters.search.toLowerCase();
+        filteredData = filteredData.filter(task => 
+          task.architect?.name?.toLowerCase().includes(searchLower) ||
+          task.architect?.company?.toLowerCase().includes(searchLower) ||
+          task.observacoes?.toLowerCase().includes(searchLower)
+        );
+      }
+      
+      setTasks(filteredData);
     } catch (error) {
       console.error("Error fetching architect tasks:", error);
     } finally {
       setLoading(false);
     }
-  }, [filters]);
+  }, [filters?.vendedor, filters?.search]);
 
   useEffect(() => {
     fetchTasks();
