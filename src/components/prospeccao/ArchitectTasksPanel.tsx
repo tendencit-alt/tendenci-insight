@@ -178,10 +178,31 @@ export function ArchitectTasksPanel({ filters }: ArchitectTasksPanelProps) {
     return taskDate > today;
   });
 
+  // Parse observações JSON ou texto simples
+  const parseObservacoes = (observacoes: string | null) => {
+    if (!observacoes) return { titulo: "", nota: "" };
+    
+    try {
+      const parsed = JSON.parse(observacoes);
+      return {
+        titulo: parsed.titulo || "",
+        nota: parsed.nota || ""
+      };
+    } catch {
+      // Fallback para texto simples
+      const parts = observacoes.split('\n\n');
+      return {
+        titulo: parts.length > 1 ? parts[0] : "",
+        nota: parts.length > 1 ? parts.slice(1).join('\n\n') : observacoes
+      };
+    }
+  };
+
   const TaskCard = ({ task }: { task: Task }) => {
     const dueInfo = getDaysUntilDue(task.data_agendamento);
     const DueIcon = dueInfo.icon;
     const isOverdue = dueInfo.text === "Atrasada";
+    const { titulo, nota } = parseObservacoes(task.observacoes);
 
     return (
       <div
@@ -212,9 +233,14 @@ export function ArchitectTasksPanel({ filters }: ArchitectTasksPanelProps) {
                 {task.architect.company}
               </p>
             )}
-            {task.observacoes && (
+            {titulo && (
+              <p className="text-xs font-medium text-foreground mb-0.5">
+                {titulo}
+              </p>
+            )}
+            {nota && (
               <p className="text-xs text-muted-foreground line-clamp-2">
-                {task.observacoes}
+                {nota}
               </p>
             )}
             <div className="flex items-center gap-2 mt-2">
