@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Mic, Square, Play, RotateCcw, Loader2 } from "lucide-react";
@@ -10,6 +10,36 @@ interface AudioRecorderProps {
   onSave: (audioBlob: Blob) => Promise<void>;
 }
 
+// Detect best supported audio format for cross-browser compatibility
+const getSupportedMimeType = (): string => {
+  const types = [
+    'audio/webm;codecs=opus',
+    'audio/webm',
+    'audio/mp4',
+    'audio/ogg;codecs=opus',
+    'audio/ogg',
+    'audio/wav'
+  ];
+  
+  for (const type of types) {
+    if (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported(type)) {
+      return type;
+    }
+  }
+  
+  // Fallback for Safari/iOS which may not report support correctly
+  return 'audio/mp4';
+};
+
+// Get file extension based on MIME type
+const getFileExtension = (mimeType: string): string => {
+  if (mimeType.includes('webm')) return 'webm';
+  if (mimeType.includes('mp4') || mimeType.includes('m4a')) return 'm4a';
+  if (mimeType.includes('ogg')) return 'ogg';
+  if (mimeType.includes('wav')) return 'wav';
+  return 'webm';
+};
+
 export function AudioRecorder({ isOpen, onClose, onSave }: AudioRecorderProps) {
   const { toast } = useToast();
   const [isRecording, setIsRecording] = useState(false);
@@ -18,11 +48,21 @@ export function AudioRecorder({ isOpen, onClose, onSave }: AudioRecorderProps) {
   const [isSaving, setIsSaving] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  const mimeTypeRef = useRef<string>('audio/webm');
 
-  const startRecording = async () => {
+  const startRecording = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
+      
+      // Detect supported MIME type
+      mimeTypeRef.current = getSupportedMimeType();
+      
+      const options: MediaRecorderOptions = {};
+      if (MediaRecorder.isTypeSupported(mimeTypeRef.current)) {
+        options.mimeType = mimeTypeRef.current;
+      }
+      
+      const mediaRecorder = new MediaRecorder(stream, options);
       mediaRecorderRef.current = mediaRecorder;
       chunksRef.current = [];
 
@@ -33,7 +73,8 @@ export function AudioRecorder({ isOpen, onClose, onSave }: AudioRecorderProps) {
       };
 
       mediaRecorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
+        const actualMimeType = mediaRecorder.mimeType || mimeTypeRef.current;
+        const blob = new Blob(chunksRef.current, { type: actualMimeType });
         setAudioBlob(blob);
         setAudioUrl(URL.createObjectURL(blob));
         stream.getTracks().forEach(track => track.stop());
@@ -48,7 +89,7 @@ export function AudioRecorder({ isOpen, onClose, onSave }: AudioRecorderProps) {
         variant: "destructive",
       });
     }
-  };
+  }, [toast]);
 
   const stopRecording = () => {
     if (mediaRecorderRef.current && isRecording) {
