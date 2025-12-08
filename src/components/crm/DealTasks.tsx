@@ -1,11 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, CheckCircle, Clock, Loader2, Edit } from "lucide-react";
+import { Plus, Trash2, CheckCircle, Clock, Loader2, Edit, Mic, Play, Pause } from "lucide-react";
+import { AudioRecorder } from "@/components/prospeccao/AudioRecorder";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -45,12 +46,16 @@ export function DealTasks({ dealId }: DealTasksProps) {
   const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
   const [errors, setErrors] = useState({ title: "", due_at: "" });
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [showAudioRecorder, setShowAudioRecorder] = useState(false);
+  const [playingAudio, setPlayingAudio] = useState<string | null>(null);
+  const audioRefs = useRef<Map<string, HTMLAudioElement>>(new Map());
   const [newTask, setNewTask] = useState({
     title: "",
     note: "",
     due_at: "",
     tipo_tarefa: "interna" as "interna" | "automatizada",
     whatsapp_number: "",
+    audio_url: "",
   });
 
   useEffect(() => {
@@ -165,6 +170,7 @@ export function DealTasks({ dealId }: DealTasksProps) {
       due_at: localISOTime,
       tipo_tarefa: task.tipo_tarefa || "interna",
       whatsapp_number: task.whatsapp_number || "",
+      audio_url: task.audio_url || "",
     });
     setIsAdding(true);
   };
@@ -177,6 +183,7 @@ export function DealTasks({ dealId }: DealTasksProps) {
       due_at: "", 
       tipo_tarefa: "interna",
       whatsapp_number: "",
+      audio_url: "",
     });
     setErrors({ title: "", due_at: "" });
     setIsAdding(false);
@@ -332,6 +339,7 @@ export function DealTasks({ dealId }: DealTasksProps) {
           note: "",
           tipo_tarefa: "interna",
           whatsapp_number: "",
+          audio_url: "",
         });
         setErrors({ title: "", due_at: "" });
         setEditingTaskId(null);
@@ -381,6 +389,7 @@ export function DealTasks({ dealId }: DealTasksProps) {
           due_at: "", 
           tipo_tarefa: "interna",
           whatsapp_number: "",
+          audio_url: "",
         });
         setErrors({ title: "", due_at: "" });
         setIsAdding(false);
@@ -647,6 +656,23 @@ export function DealTasks({ dealId }: DealTasksProps) {
               />
             </div>
 
+            {/* Botão Gravar Áudio */}
+            <div className="space-y-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowAudioRecorder(true)}
+                className="gap-2"
+              >
+                <Mic className="w-4 h-4" />
+                Gravar Áudio
+              </Button>
+              {newTask.audio_url && (
+                <p className="text-xs text-green-600">✓ Áudio anexado</p>
+              )}
+            </div>
+
             <div className="flex gap-2">
               <Button onClick={handleSaveTask} size="sm" disabled={isSubmitting}>
                 {isSubmitting ? (
@@ -774,6 +800,22 @@ export function DealTasks({ dealId }: DealTasksProps) {
                           {task.note}
                         </p>
                       )}
+                      
+                      {task.audio_url && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => togglePlayAudio(task.audio_url, task.id)}
+                          className="gap-2 mt-2"
+                        >
+                          {playingAudio === task.id ? (
+                            <Pause className="w-4 h-4" />
+                          ) : (
+                            <Play className="w-4 h-4" />
+                          )}
+                          {playingAudio === task.id ? "Pausar" : "Ouvir Áudio"}
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -803,6 +845,82 @@ export function DealTasks({ dealId }: DealTasksProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Audio Recorder Modal */}
+      <AudioRecorder
+        isOpen={showAudioRecorder}
+        onClose={() => setShowAudioRecorder(false)}
+        onSave={handleSaveAudio}
+      />
     </Card>
   );
+
+  async function handleSaveAudio(audioBlob: Blob) {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
+
+      const fileName = `task_audio_${Date.now()}.webm`;
+      const filePath = `${dealId}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("crm-files")
+        .upload(filePath, audioBlob);
+
+      if (uploadError) throw uploadError;
+
+      setNewTask({ ...newTask, audio_url: filePath });
+      
+      toast({
+        title: "Áudio gravado",
+        description: "O áudio foi anexado à tarefa.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao salvar áudio",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  }
+
+  async function togglePlayAudio(audioUrl: string, taskId: string) {
+    if (playingAudio === taskId) {
+      const audio = audioRefs.current.get(taskId);
+      if (audio) {
+        audio.pause();
+        setPlayingAudio(null);
+      }
+      return;
+    }
+
+    audioRefs.current.forEach((audio) => audio.pause());
+    setPlayingAudio(null);
+
+    try {
+      let audio = audioRefs.current.get(taskId);
+      
+      if (!audio) {
+        const { data, error } = await supabase.storage
+          .from("crm-files")
+          .download(audioUrl);
+
+        if (error) throw error;
+
+        const url = URL.createObjectURL(data);
+        audio = new Audio(url);
+        audio.onended = () => setPlayingAudio(null);
+        audioRefs.current.set(taskId, audio);
+      }
+
+      audio.play();
+      setPlayingAudio(taskId);
+    } catch (error: any) {
+      toast({
+        title: "Erro ao reproduzir áudio",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  }
 }

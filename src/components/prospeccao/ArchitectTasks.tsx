@@ -1,11 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, CheckCircle, Clock, Calendar, Edit } from "lucide-react";
+import { Plus, Trash2, CheckCircle, Clock, Calendar, Edit, Mic, Play, Pause } from "lucide-react";
+import { AudioRecorder } from "@/components/prospeccao/AudioRecorder";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
@@ -30,12 +31,16 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [architectInfo, setArchitectInfo] = useState<any>(null);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [showAudioRecorder, setShowAudioRecorder] = useState(false);
+  const [playingAudio, setPlayingAudio] = useState<string | null>(null);
+  const audioRefs = useRef<Map<string, HTMLAudioElement>>(new Map());
   const [newTask, setNewTask] = useState({
     title: "",
     note: "",
     due_at: "",
     tipo_tarefa: "interna" as "interna" | "automatizada",
     whatsapp_number: "",
+    audio_url: "",
   });
 
   useEffect(() => {
@@ -145,6 +150,7 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
       due_at: localISOTime,
       tipo_tarefa: task.tipo_tarefa || "interna",
       whatsapp_number: task.whatsapp_number || "",
+      audio_url: task.audio_url || "",
     });
     setIsAdding(true);
   };
@@ -157,6 +163,7 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
       due_at: "", 
       tipo_tarefa: "interna",
       whatsapp_number: "",
+      audio_url: "",
     });
     setIsAdding(false);
   };
@@ -309,6 +316,7 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
             due_at: "", 
             tipo_tarefa: "interna",
             whatsapp_number: "",
+            audio_url: "",
           });
           setEditingTaskId(null);
           setIsAdding(false);
@@ -346,6 +354,7 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
             due_at: "", 
             tipo_tarefa: "interna",
             whatsapp_number: "",
+            audio_url: "",
           });
           setIsAdding(false);
           fetchTasks();
@@ -530,6 +539,23 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
               />
             </div>
 
+            {/* Botão Gravar Áudio */}
+            <div className="space-y-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowAudioRecorder(true)}
+                className="gap-2"
+              >
+                <Mic className="w-4 h-4" />
+                Gravar Áudio
+              </Button>
+              {newTask.audio_url && (
+                <p className="text-xs text-green-600">✓ Áudio anexado</p>
+              )}
+            </div>
+
             <div className="flex gap-2">
               <Button
                 onClick={handleAddTask}
@@ -549,6 +575,40 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
           </div>
         </Card>
       )}
+
+      {/* Audio Recorder Modal */}
+      <AudioRecorder
+        isOpen={showAudioRecorder}
+        onClose={() => setShowAudioRecorder(false)}
+        onSave={async (audioBlob: Blob) => {
+          try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) throw new Error("Usuário não autenticado");
+
+            const fileName = `task_audio_${Date.now()}.webm`;
+            const filePath = `${architectId}/${fileName}`;
+
+            const { error: uploadError } = await supabase.storage
+              .from("architect-files")
+              .upload(filePath, audioBlob);
+
+            if (uploadError) throw uploadError;
+
+            setNewTask({ ...newTask, audio_url: filePath });
+            
+            toast({
+              title: "Áudio gravado",
+              description: "O áudio foi anexado à tarefa.",
+            });
+          } catch (error: any) {
+            toast({
+              title: "Erro ao salvar áudio",
+              description: error.message,
+              variant: "destructive",
+            });
+          }
+        }}
+      />
 
       {/* Lista de tarefas */}
       <div className="space-y-3">
