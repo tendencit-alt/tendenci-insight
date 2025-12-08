@@ -11,6 +11,7 @@ import { CreateProjectDialog } from "@/components/projects/CreateProjectDialog";
 import { ProjectsFilters } from "@/components/projects/ProjectsFilters";
 import { DeadlineAlerts } from "@/components/projects/DeadlineAlerts";
 import { ArchitectPerformance } from "@/components/projects/ArchitectPerformance";
+import { ProjectDetailSheet } from "@/components/projects/ProjectDetailSheet";
 
 const Projects = () => {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -33,6 +34,11 @@ const Projects = () => {
     near_due_count: 0,
     overdue_count: 0
   });
+  
+  // Estado para DeadlineAlerts click
+  const [alertProjectId, setAlertProjectId] = useState<string | null>(null);
+  const [alertProject, setAlertProject] = useState<any>(null);
+  const [alertDetailOpen, setAlertDetailOpen] = useState(false);
 
   useEffect(() => {
     fetchMetrics();
@@ -55,6 +61,27 @@ const Projects = () => {
 
   const handleCreateSuccess = () => {
     setRefreshKey(prev => prev + 1);
+  };
+
+  // Handler para clique no DeadlineAlerts
+  const handleAlertProjectClick = async (projectId: string) => {
+    setAlertProjectId(projectId);
+    
+    // Buscar dados completos do projeto
+    const { data, error } = await supabase
+      .from('projects')
+      .select(`
+        *,
+        client:clients(name, phone),
+        architect:architects(name)
+      `)
+      .eq('id', projectId)
+      .single();
+    
+    if (!error && data) {
+      setAlertProject(data);
+      setAlertDetailOpen(true);
+    }
   };
 
   return (
@@ -158,8 +185,8 @@ const Projects = () => {
           </Card>
         </div>
 
-        {/* Deadline Alerts */}
-        <DeadlineAlerts refreshKey={refreshKey} />
+        {/* Deadline Alerts - agora com click funcional */}
+        <DeadlineAlerts refreshKey={refreshKey} onProjectClick={handleAlertProjectClick} />
 
         {/* Tabs */}
         <Tabs defaultValue="board" className="space-y-6">
@@ -194,6 +221,14 @@ const Projects = () => {
           open={isCreateOpen} 
           onOpenChange={setIsCreateOpen}
           onSuccess={handleCreateSuccess}
+        />
+
+        {/* Project Detail Sheet para Deadline Alerts */}
+        <ProjectDetailSheet
+          project={alertProject}
+          open={alertDetailOpen}
+          onOpenChange={setAlertDetailOpen}
+          onSuccess={handleRefresh}
         />
       </div>
     </DashboardLayout>
