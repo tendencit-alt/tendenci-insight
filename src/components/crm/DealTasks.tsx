@@ -304,6 +304,7 @@ export function DealTasks({ dealId }: DealTasksProps) {
             due_at: localISOTime,
             tipo_tarefa: newTask.tipo_tarefa,
             whatsapp_number: newTask.whatsapp_number || null,
+            audio_url: newTask.audio_url || null,
             updated_at: new Date().toISOString(),
           })
           .eq("id", editingTaskId)
@@ -365,6 +366,7 @@ export function DealTasks({ dealId }: DealTasksProps) {
             origem_modulo: "crm",
             tipo_tarefa: newTask.tipo_tarefa,
             whatsapp_number: newTask.whatsapp_number || null,
+            audio_url: newTask.audio_url || null,
             created_by: user.id,
           })
           .select()

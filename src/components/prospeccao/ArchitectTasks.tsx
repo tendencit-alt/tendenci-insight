@@ -295,6 +295,7 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
             observacoes: observacoesJSON,
             tipo_tarefa: newTask.tipo_tarefa,
             whatsapp_number: newTask.whatsapp_number || null,
+            audio_url: newTask.audio_url || null,
             updated_at: new Date().toISOString(),
           })
           .eq("id", editingTaskId);
@@ -334,6 +335,7 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
             status: "pendente",
             tipo_tarefa: newTask.tipo_tarefa,
             whatsapp_number: newTask.whatsapp_number || null,
+            audio_url: newTask.audio_url || null,
             vendedor_id: user.id,
           });
 
@@ -713,6 +715,72 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
                           <p className="text-xs text-muted-foreground mt-1">
                             📱 WhatsApp: {task.whatsapp_number}
                           </p>
+                        )}
+                        {task.audio_url && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              const taskId = task.id;
+                              if (playingAudio === taskId) {
+                                const existingAudio = audioRefs.current.get(taskId);
+                                if (existingAudio) {
+                                  existingAudio.pause();
+                                  existingAudio.currentTime = 0;
+                                }
+                                setPlayingAudio(null);
+                              } else {
+                                // Pausar qualquer outro áudio tocando
+                                audioRefs.current.forEach((audio, id) => {
+                                  if (id !== taskId) {
+                                    audio.pause();
+                                    audio.currentTime = 0;
+                                  }
+                                });
+
+                                // Tocar novo áudio
+                                const playAudio = async () => {
+                                  try {
+                                    const { data } = await supabase.storage
+                                      .from("architect-files")
+                                      .createSignedUrl(task.audio_url, 3600);
+                                    
+                                    if (data?.signedUrl) {
+                                      let audio = audioRefs.current.get(taskId);
+                                      if (!audio) {
+                                        audio = new Audio();
+                                        audioRefs.current.set(taskId, audio);
+                                      }
+                                      audio.src = data.signedUrl;
+                                      audio.onended = () => setPlayingAudio(null);
+                                      audio.play();
+                                      setPlayingAudio(taskId);
+                                    }
+                                  } catch (error) {
+                                    toast({
+                                      title: "Erro",
+                                      description: "Não foi possível reproduzir o áudio.",
+                                      variant: "destructive",
+                                    });
+                                  }
+                                };
+                                playAudio();
+                              }
+                            }}
+                            className="gap-2 mt-1 h-7"
+                          >
+                            {playingAudio === task.id ? (
+                              <>
+                                <Pause className="h-3 w-3" />
+                                Pausar
+                              </>
+                            ) : (
+                              <>
+                                <Play className="h-3 w-3" />
+                                Ouvir Áudio
+                              </>
+                            )}
+                          </Button>
                         )}
                         {task.vendedor && (
                           <p className="text-xs text-muted-foreground mt-1">
