@@ -95,16 +95,21 @@ export function CRMTasksPanel({
     if (dateFilter && dateFilter !== "all") {
       const now = new Date();
       let startDate: Date | undefined;
+      let endDate: Date | undefined;
       
       switch(dateFilter) {
         case "today":
           startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
           break;
-        case "week":
-          startDate = new Date(now.setDate(now.getDate() - 7));
+        case "yesterday":
+          startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+          endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
           break;
-        case "month":
-          startDate = new Date(now.setMonth(now.getMonth() - 1));
+        case "last7days":
+          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          break;
+        case "last30days":
+          startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
           break;
         case "custom":
           if (customDateRange?.from) {
@@ -118,6 +123,9 @@ export function CRMTasksPanel({
       
       if (startDate && dateFilter !== "custom") {
         dealsQuery = dealsQuery.gte("created_at", startDate.toISOString());
+      }
+      if (endDate && dateFilter !== "custom") {
+        dealsQuery = dealsQuery.lte("created_at", endDate.toISOString());
       }
     }
     

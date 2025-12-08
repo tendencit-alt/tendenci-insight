@@ -261,6 +261,9 @@ export default function CRM() {
             <CRMKPIs 
               pipelineId={selectedPipeline} 
               categoryFilter={selectedCategory}
+              ownerFilter={selectedOwner}
+              dateFilter={dateFilter}
+              customDateRange={customDateRange}
               key={`kpi-${refreshKey}`} 
             />
 
@@ -268,6 +271,7 @@ export default function CRM() {
             <CRMSLAAlerts 
               pipelineId={selectedPipeline} 
               categoryFilter={selectedCategory}
+              ownerFilter={selectedOwner}
               key={`sla-${refreshKey}`} 
             />
 
