@@ -255,9 +255,21 @@ export function ProjectDetailSheet({ project, open, onOpenChange, onSuccess }: P
     }
   };
 
+  if (!project) {
+    return (
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent className="w-full sm:max-w-3xl">
+          <SheetHeader>
+            <SheetTitle>Carregando...</SheetTitle>
+          </SheetHeader>
+        </SheetContent>
+      </Sheet>
+    );
+  }
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent 
+      <SheetContent
         className="w-full sm:max-w-3xl overflow-y-auto"
         onPointerDownOutside={(e) => e.preventDefault()}
         onInteractOutside={(e) => {
