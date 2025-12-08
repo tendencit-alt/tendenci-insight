@@ -39,6 +39,20 @@ export function ProspeccaoFilters({
     },
   });
 
+  // Buscar stages ativos (status do funil) - dinâmico do banco
+  const { data: statusOptions } = useQuery({
+    queryKey: ["prospec-stages-filter"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("tendenci_prospec_arq_stages")
+        .select("slug, nome")
+        .eq("ativa", true)
+        .order("position");
+      if (error) throw error;
+      return data;
+    },
+  });
+
   // Buscar cidades únicas
   const { data: cidades } = useQuery({
     queryKey: ["cidades-prospeccao"],
@@ -132,13 +146,11 @@ export function ProspeccaoFilters({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="todos">Todos</SelectItem>
-              <SelectItem value="novo_arquiteto">Novo Arquiteto</SelectItem>
-              <SelectItem value="contato_iniciado">Contato Iniciado</SelectItem>
-              <SelectItem value="em_conversa">Em Conversa</SelectItem>
-              <SelectItem value="interessado">Interessado</SelectItem>
-              <SelectItem value="reuniao_agendada">Reunião Agendada</SelectItem>
-              <SelectItem value="parceiro_ativo">Parceiro Ativo</SelectItem>
-              <SelectItem value="sem_interesse">Sem Interesse</SelectItem>
+              {statusOptions?.map((status) => (
+                <SelectItem key={status.slug} value={status.slug}>
+                  {status.nome}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
