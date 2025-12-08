@@ -974,6 +974,7 @@ export type Database = {
       }
       crm_tasks: {
         Row: {
+          audio_url: string | null
           created_at: string | null
           created_by: string | null
           deal_id: string
@@ -989,6 +990,7 @@ export type Database = {
           whatsapp_number: string | null
         }
         Insert: {
+          audio_url?: string | null
           created_at?: string | null
           created_by?: string | null
           deal_id: string
@@ -1004,6 +1006,7 @@ export type Database = {
           whatsapp_number?: string | null
         }
         Update: {
+          audio_url?: string | null
           created_at?: string | null
           created_by?: string | null
           deal_id?: string
@@ -1686,6 +1689,54 @@ export type Database = {
           },
         ]
       }
+      project_notes: {
+        Row: {
+          audio_url: string | null
+          author_id: string | null
+          created_at: string | null
+          id: string
+          mentioned_users: string[] | null
+          message: string | null
+          project_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          audio_url?: string | null
+          author_id?: string | null
+          created_at?: string | null
+          id?: string
+          mentioned_users?: string[] | null
+          message?: string | null
+          project_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          audio_url?: string | null
+          author_id?: string | null
+          created_at?: string | null
+          id?: string
+          mentioned_users?: string[] | null
+          message?: string | null
+          project_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_notes_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_notes_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_quotes: {
         Row: {
           created_at: string | null
@@ -2190,6 +2241,7 @@ export type Database = {
       tendenci_prospec_arq_agendamentos: {
         Row: {
           architect_id: string
+          audio_url: string | null
           campanha_id: string | null
           canal: string | null
           client_id: string | null
@@ -2207,6 +2259,7 @@ export type Database = {
         }
         Insert: {
           architect_id: string
+          audio_url?: string | null
           campanha_id?: string | null
           canal?: string | null
           client_id?: string | null
@@ -2224,6 +2277,7 @@ export type Database = {
         }
         Update: {
           architect_id?: string
+          audio_url?: string | null
           campanha_id?: string | null
           canal?: string | null
           client_id?: string | null

@@ -14,6 +14,7 @@ import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useWebhookSync } from "@/hooks/useWebhookSync";
 import { EditProjectDialog } from "./EditProjectDialog";
+import { ProjectNotes } from "./ProjectNotes";
 import { 
   validateFileType, 
   validateFileSize, 
@@ -451,6 +452,9 @@ export function ProjectDetailSheet({ project, open, onOpenChange, onSuccess }: P
               </p>
             )}
           </Card>
+
+          {/* Observações do Projeto */}
+          <ProjectNotes projectId={project.id} />
 
           {/* Histórico */}
           <Card className="p-6 space-y-4">
