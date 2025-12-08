@@ -53,11 +53,9 @@ Deno.serve(async (req) => {
     if (event === 'messages.upsert' && data?.key?.remoteJid && data?.key?.fromMe === false) {
       console.log('💬 Message received from client, checking for follow-up deals...')
       
-      // Extrair número do cliente
       const clientPhone = data.key.remoteJid.replace('@s.whatsapp.net', '')
       console.log('📱 Client phone:', clientPhone)
 
-      // Extrair texto da mensagem para detectar opt-out
       const messageText = (payload as any).data?.message?.conversation || 
                          (payload as any).data?.message?.extendedTextMessage?.text || ''
       
@@ -78,14 +76,19 @@ Deno.serve(async (req) => {
       } else {
         console.log('🔍 Buscando deals com últimos 8 dígitos:', clientLast8)
         
-        // Buscar ID da etapa "Follow Up" para filtrar corretamente
-        const { data: followupStage } = await supabase
+        // Buscar etapas Follow Up e Lead
+        const { data: stages } = await supabase
           .from('crm_stages')
-          .select('id')
-          .ilike('name', '%Follow Up%')
-          .maybeSingle()
+          .select('id, name, pipeline_id')
+          .or('name.ilike.%Follow Up%,name.ilike.%Lead%')
         
-        // Construir query com filtro de stage se disponível
+        const followupStage = stages?.find(s => s.name.toLowerCase().includes('follow up'))
+        const leadStage = stages?.find(s => s.name.toLowerCase() === 'lead')
+        
+        console.log('📂 Etapa Follow Up:', followupStage?.id)
+        console.log('📂 Etapa Lead:', leadStage?.id)
+        
+        // Buscar deals na etapa Follow Up
         let dealsQuery = supabase
           .from('crm_deals')
           .select(`
@@ -95,6 +98,7 @@ Deno.serve(async (req) => {
             followup_enabled,
             owner_id,
             stage_id,
+            pipeline_id,
             leads(
               client_id,
               clients(phone)
@@ -104,7 +108,6 @@ Deno.serve(async (req) => {
           .eq('followup_enabled', true)
           .limit(200)
         
-        // Filtrar por stage_id se encontrado
         if (followupStage?.id) {
           dealsQuery = dealsQuery.eq('stage_id', followupStage.id)
           console.log('📂 Filtrando por stage Follow Up:', followupStage.id)
@@ -135,8 +138,16 @@ Deno.serve(async (req) => {
             for (const deal of matchingDeals) {
               console.log(`🔄 Processing deal: ${deal.title}`)
               
+              // ========== MOVER PARA ETAPA "LEAD" SE CLIENTE RESPONDEU ==========
               const updateData: any = {
                 last_interaction: new Date().toISOString()
+              }
+              
+              // Se cliente respondeu (não opt-out), mover para Lead
+              if (!hasOptOut && leadStage?.id) {
+                updateData.stage_id = leadStage.id
+                updateData.stage_entered_at = new Date().toISOString()
+                console.log('🔄 Movendo deal para etapa Lead:', leadStage.id)
               }
               
               // Se opt-out detectado, desabilitar follow-ups
@@ -176,9 +187,14 @@ Deno.serve(async (req) => {
                 }
                 
                 // Timeline message
-                const timelineMessage = hasOptOut 
-                  ? '🛑 Cliente solicitou PARAR follow-ups. Sistema desativado.'
-                  : '🎉 Cliente respondeu! Ciclo de follow-up pausado. Próximo follow-up em 48h se não houver nova interação.'
+                let timelineMessage: string
+                if (hasOptOut) {
+                  timelineMessage = '🛑 Cliente solicitou PARAR follow-ups. Sistema desativado.'
+                } else if (leadStage?.id) {
+                  timelineMessage = '🎉 Cliente respondeu! Movido automaticamente para etapa "Lead" para atendimento humano.'
+                } else {
+                  timelineMessage = '🎉 Cliente respondeu! Ciclo de follow-up pausado.'
+                }
                 
                 await supabase
                   .from('crm_timeline')
@@ -188,15 +204,28 @@ Deno.serve(async (req) => {
                     update_type: 'Sistema - Follow-up'
                   })
                 
+                // Registrar mudança de etapa no histórico se moveu para Lead
+                if (!hasOptOut && leadStage?.id && followupStage?.id) {
+                  await supabase
+                    .from('crm_deal_history')
+                    .insert({
+                      deal_id: deal.id,
+                      action_type: 'stage_change',
+                      from_stage_id: followupStage.id,
+                      to_stage_id: leadStage.id,
+                      description: 'Movido automaticamente: Cliente respondeu ao follow-up'
+                    })
+                }
+                
                 // Notificar vendedor responsável
                 if (deal.owner_id) {
                   const notificationTitle = hasOptOut 
-                    ? 'Cliente pediu para parar!'
-                    : 'Cliente respondeu!'
+                    ? '🛑 Cliente pediu para parar!'
+                    : '🎉 Cliente respondeu ao follow-up!'
                   
                   const notificationMessage = hasOptOut
                     ? `O cliente no negócio "${deal.title}" pediu para PARAR os follow-ups. Sistema desativado.`
-                    : `O cliente respondeu no negócio "${deal.title}". Verifique a conversa.`
+                    : `O cliente respondeu no negócio "${deal.title}" e foi movido para a etapa Lead. Atenda agora!`
                   
                   await supabase
                     .from('notifications')
@@ -210,6 +239,7 @@ Deno.serve(async (req) => {
                         deal_id: deal.id,
                         client_phone: clientPhone,
                         opt_out: hasOptOut,
+                        moved_to_lead: !hasOptOut && !!leadStage?.id,
                         followup_count: deal.followup_count
                       }
                     })
@@ -226,7 +256,6 @@ Deno.serve(async (req) => {
     if (connectionEvents.includes(event)) {
       console.log('📡 Processing connection event:', event)
 
-      // Determinar status baseado no evento e state
       let status = 'connecting'
       if (event === 'open' || event === 'connection.open' || data?.state === 'open') {
         status = 'connected'
@@ -236,7 +265,6 @@ Deno.serve(async (req) => {
         console.log('❌ Connection is CLOSED')
       }
 
-      // Extrair número de telefone
       const phoneNumber = 
         data?.remoteJid?.replace('@s.whatsapp.net', '') ||
         data?.key?.remoteJid?.replace('@s.whatsapp.net', '') ||
@@ -245,7 +273,6 @@ Deno.serve(async (req) => {
 
       console.log('📱 Phone number:', phoneNumber)
 
-      // Preparar dados para atualização
       const updateData: any = {
         status,
         last_sync: new Date().toISOString(),
@@ -256,7 +283,6 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Se conectado, adicionar phone e data de conexão
       if (status === 'connected' && phoneNumber) {
         updateData.phone_number = phoneNumber
         updateData.connected_at = new Date().toISOString()
@@ -265,7 +291,6 @@ Deno.serve(async (req) => {
         console.log('✅ Setting connected state with phone:', phoneNumber)
       }
 
-      // Se desconectado, limpar dados
       if (status === 'disconnected') {
         updateData.phone_number = null
         updateData.qr_code = null
@@ -273,16 +298,14 @@ Deno.serve(async (req) => {
         console.log('🔌 Clearing disconnected state')
       }
 
-      // Atualizar QR code se disponível
       if (data?.qrcode?.base64) {
         updateData.qr_code_base64 = data.qrcode.base64
         updateData.qr_code = data.qrcode.base64
         console.log('📱 Updating QR code')
       }
 
-      console.log('💾 Updating database with:', JSON.stringify(updateData, null, 2))
+      console.log('💾 Updating database...')
 
-      // Atualizar banco de dados
       const { error: updateError } = await supabase
         .from('tendenci_whatsapp_connections')
         .update(updateData)

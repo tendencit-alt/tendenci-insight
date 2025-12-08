@@ -9,7 +9,7 @@ import {
 } from '../_shared/timezone.ts'
 
 interface DispatchRequest {
-  webhook_url: string
+  webhook_url?: string // Agora opcional - usa variável de ambiente se não fornecido
   ignore_time_filter?: boolean
 }
 
@@ -21,7 +21,7 @@ interface LeadForFollowup {
   conversation_history: string | null
   followup_count: number
   max_followups: number
-  followup_number: number // Número do follow-up que será enviado
+  followup_number: number
   owner_id: string | null
   owner_name: string | null
   product_type: string | null
@@ -35,37 +35,30 @@ function formatBrazilianPhone(phone: string | null): string | null {
   
   let cleaned = phone.replace(/\D/g, '')
   
-  // Remove 55 duplicado no início
   if (cleaned.startsWith('5555')) {
     cleaned = cleaned.substring(2)
   }
   
-  // Remove 0 inicial antes do DDD
   if (cleaned.startsWith('0')) {
     cleaned = cleaned.substring(1)
   }
   
-  // Se começa com 55 e tem 0 depois, remover o 0
   if (cleaned.startsWith('550')) {
     cleaned = '55' + cleaned.substring(3)
   }
   
-  // Adicionar 9 se número tem 10 dígitos (DDD + 8 dígitos) e não começa com 55
   if (cleaned.length === 10 && !cleaned.startsWith('55')) {
     cleaned = cleaned.substring(0, 2) + '9' + cleaned.substring(2)
   }
   
-  // Se tem 12 dígitos e começa com 55, adicionar o 9
   if (cleaned.length === 12 && cleaned.startsWith('55')) {
     cleaned = cleaned.substring(0, 4) + '9' + cleaned.substring(4)
   }
   
-  // Adicionar 55 se não tem
   if (!cleaned.startsWith('55') && cleaned.length >= 10) {
     cleaned = '55' + cleaned
   }
   
-  // Validar tamanho final (13 dígitos: 55 + DDD + 9 + número)
   if (cleaned.length < 12 || cleaned.length > 13) {
     console.warn(`⚠️ Telefone inválido após formatação: ${phone} -> ${cleaned}`)
     return null
@@ -85,23 +78,46 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const { webhook_url, ignore_time_filter = false }: DispatchRequest = await req.json()
-
-    if (!webhook_url) {
-      throw new Error('webhook_url é obrigatório')
+    // Tentar parsear body, mas pode vir vazio do CRON
+    let body: DispatchRequest = {}
+    try {
+      const text = await req.text()
+      if (text) {
+        body = JSON.parse(text)
+      }
+    } catch {
+      // Body vazio ou inválido - ok para chamadas CRON
     }
 
-    console.log('🚀 Iniciando disparo de follow-ups...')
-    console.log('📡 Webhook URL:', webhook_url)
+    // Usar webhook_url do body OU da variável de ambiente
+    const webhookUrl = body.webhook_url || Deno.env.get('N8N_FOLLOWUP_WEBHOOK_URL')
+    const ignoreTimeFilter = body.ignore_time_filter || false
 
-    // Verificar horário comercial usando timezone compartilhado
+    if (!webhookUrl) {
+      console.error('❌ Nenhum webhook_url configurado (body ou env)')
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Webhook URL não configurado. Configure N8N_FOLLOWUP_WEBHOOK_URL nas secrets.' 
+        }),
+        { 
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+
+    console.log('🚀 Iniciando disparo AUTOMÁTICO de follow-ups...')
+    console.log('📡 Webhook URL:', webhookUrl.substring(0, 50) + '...')
+
+    // Verificar horário comercial
     const hour = getCurrentHourBrasil()
     const day = getCurrentDayOfWeekBrasil()
     const isBusinessHours = isBusinessHoursBrasil()
     
     console.log(`🕐 Horário Brasil: ${hour}h, dia: ${day}, comercial: ${isBusinessHours}`)
     
-    if (!ignore_time_filter && !isBusinessHours) {
+    if (!ignoreTimeFilter && !isBusinessHours) {
       console.log('⏰ Fora do horário comercial. Abortando.')
       return new Response(
         JSON.stringify({ 
@@ -114,7 +130,7 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Buscar ID da etapa "Follow Up (I.A)" - usando maybeSingle para não dar erro
+    // Buscar ID da etapa "Follow Up (I.A)"
     const { data: followupStage, error: stageError } = await supabase
       .from('crm_stages')
       .select('id, name')
@@ -126,7 +142,7 @@ Deno.serve(async (req) => {
     } else if (followupStage) {
       console.log(`✅ Etapa Follow Up encontrada: ${followupStage.name} (${followupStage.id})`)
     } else {
-      console.log('ℹ️ Etapa "Follow Up" não encontrada, buscando sem filtro de etapa')
+      console.log('ℹ️ Etapa "Follow Up" não encontrada')
     }
 
     // Buscar leads elegíveis para follow-up
@@ -168,42 +184,37 @@ Deno.serve(async (req) => {
       throw leadsError
     }
 
-    console.log(`📊 Total de leads com follow-up ativo${followupStage ? ' na etapa Follow Up' : ''}: ${leads?.length || 0}`)
+    console.log(`📊 Total de leads com follow-up ativo: ${leads?.length || 0}`)
 
-    // Cutoff de 48h em UTC (consistente)
+    // Cutoff de 48h em UTC
     const cutoffTimestamp = get48HoursCutoffUTC()
     console.log(`⏰ Cutoff 48h UTC: ${new Date(cutoffTimestamp).toISOString()}`)
     
     const eligibleLeads = (leads || [])
       .filter(deal => {
-        // Verificar max_followups ANTES de enviar
         const currentCount = deal.followup_count || 0
-        const maxFollowups = deal.max_followups || 999 // Se não definido, continua indefinidamente
+        const maxFollowups = deal.max_followups || 999
         
         if (currentCount >= maxFollowups) {
-          console.log(`⛔ Deal ${deal.id}: Atingiu limite de follow-ups (${currentCount}/${maxFollowups})`)
+          console.log(`⛔ Deal ${deal.id}: Atingiu limite (${currentCount}/${maxFollowups})`)
           return false
         }
         
-        // Usar Math.max para pegar a data mais recente entre last_interaction e last_followup_at
         const mostRecentDate = getMostRecentDate(deal.last_interaction, deal.last_followup_at)
         
-        // Se nunca teve interação, é elegível
         if (!mostRecentDate) {
           console.log(`✅ Deal ${deal.id}: Nunca teve interação, elegível`)
           return true
         }
         
-        // Comparar timestamps em UTC (ambos são UTC)
         const mostRecentTimestamp = mostRecentDate.getTime()
         const isEligible = mostRecentTimestamp < cutoffTimestamp
         
-        console.log(`📅 Deal ${deal.id}: Última atividade ${mostRecentDate.toISOString()}, cutoff ${new Date(cutoffTimestamp).toISOString()}, elegível: ${isEligible}`)
+        console.log(`📅 Deal ${deal.id}: Última atividade ${mostRecentDate.toISOString()}, elegível: ${isEligible}`)
         
         return isEligible
       })
       .map(deal => {
-        // Corrigir acesso: leads pode ser array ou objeto
         const leadsData = deal.leads
         const clientData = Array.isArray(leadsData) 
           ? leadsData[0]?.clients 
@@ -212,8 +223,6 @@ Deno.serve(async (req) => {
         const leadPhone = clientData?.phone
         const phone = formatBrazilianPhone(leadPhone)
         const clientName = clientData?.name || 'Cliente'
-        
-        // Calcular o número do follow-up que será enviado
         const followupNumber = (deal.followup_count || 0) + 1
         
         return {
@@ -224,7 +233,7 @@ Deno.serve(async (req) => {
           conversation_history: deal.conversation_history,
           followup_count: deal.followup_count || 0,
           max_followups: deal.max_followups || 999,
-          followup_number: followupNumber, // Enviar no payload para n8n
+          followup_number: followupNumber,
           owner_id: deal.owner_id,
           owner_name: (deal.profiles as any)?.full_name || null,
           product_type: deal.product_type,
@@ -248,10 +257,8 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Callback URL para n8n atualizar histórico após envio
     const callbackUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/update-followup-history`
 
-    // Enviar para webhook n8n
     const results = {
       success: 0,
       failed: 0,
@@ -268,14 +275,14 @@ Deno.serve(async (req) => {
           client_phone: lead.client_phone,
           conversation_history: lead.conversation_history || '',
           followup_count: lead.followup_count,
-          followup_number: lead.followup_number, // SINCRONIZAR com update-followup-history
+          followup_number: lead.followup_number,
           product_type: lead.product_type,
           categoria: lead.categoria,
           last_interaction: lead.last_interaction,
           callback_url: callbackUrl
         }
 
-        const response = await fetch(webhook_url, {
+        const response = await fetch(webhookUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -287,14 +294,13 @@ Deno.serve(async (req) => {
           console.log(`✅ Lead ${lead.client_name} enviado com sucesso`)
           results.success++
           
-          // Registrar log com status 'pending' e followup_number correto
           const { error: logError } = await supabase
             .from('followup_logs')
             .insert({
               deal_id: lead.deal_id,
               followup_number: lead.followup_number,
               status: 'pending',
-              message_sent: 'Enviado para n8n via webhook - aguardando processamento'
+              message_sent: 'Enviado para n8n - aguardando processamento'
             })
           
           if (logError) {
@@ -306,7 +312,6 @@ Deno.serve(async (req) => {
           results.failed++
           results.errors.push(`${lead.client_name}: ${errorText}`)
           
-          // Registrar falha
           await supabase
             .from('followup_logs')
             .insert({
