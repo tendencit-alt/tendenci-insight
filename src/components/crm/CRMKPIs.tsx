@@ -7,6 +7,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 interface CRMKPIsProps {
   pipelineId: string;
   categoryFilter?: string;
+  ownerFilter?: string;
+  dateFilter?: string;
+  customDateRange?: { from: Date | undefined; to: Date | undefined };
 }
 
 interface ConversionMetrics {
@@ -16,7 +19,13 @@ interface ConversionMetrics {
   bestMonthDate: string;
 }
 
-export function CRMKPIs({ pipelineId, categoryFilter }: CRMKPIsProps) {
+export function CRMKPIs({ 
+  pipelineId, 
+  categoryFilter, 
+  ownerFilter, 
+  dateFilter, 
+  customDateRange 
+}: CRMKPIsProps) {
   const [loading, setLoading] = useState(true);
   const [metrics, setMetrics] = useState<any>(null);
   const [conversionMetrics, setConversionMetrics] = useState<ConversionMetrics>({
@@ -32,14 +41,57 @@ export function CRMKPIs({ pipelineId, categoryFilter }: CRMKPIsProps) {
   useEffect(() => {
     if (!pipelineId) return;
     fetchMetrics();
-  }, [pipelineId, categoryFilter]);
+  }, [pipelineId, categoryFilter, ownerFilter, dateFilter, customDateRange]);
+
+  // Calcular datas baseado no dateFilter
+  const getDateRange = () => {
+    if (dateFilter === "custom" && customDateRange) {
+      return {
+        from: customDateRange.from?.toISOString() || null,
+        to: customDateRange.to?.toISOString() || null
+      };
+    }
+
+    const now = new Date();
+    let startDate: Date | null = null;
+    
+    switch(dateFilter) {
+      case "today":
+        startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        break;
+      case "yesterday":
+        startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+        break;
+      case "last7days":
+        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        break;
+      case "last30days":
+        startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        break;
+      default:
+        return { from: null, to: null };
+    }
+    
+    return {
+      from: startDate?.toISOString() || null,
+      to: dateFilter === "yesterday" 
+        ? new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
+        : null
+    };
+  };
 
   const fetchMetrics = async () => {
     setLoading(true);
     
-    // Buscar dados básicos usando RPC existente
+    const dateRange = getDateRange();
+    
+    // Buscar dados básicos usando RPC atualizada com todos os parâmetros
     const { data, error } = await supabase.rpc("crm_agg", {
       p_pipeline_id: pipelineId,
+      p_category: categoryFilter && categoryFilter !== "all" ? categoryFilter : null,
+      p_owner_id: ownerFilter && ownerFilter !== "all" ? ownerFilter : null,
+      p_date_from: dateRange.from,
+      p_date_to: dateRange.to,
     });
 
     if (!error && data) {
@@ -68,6 +120,19 @@ export function CRMKPIs({ pipelineId, categoryFilter }: CRMKPIsProps) {
         negociacaoQuery = negociacaoQuery.eq("categoria", categoryFilter);
       }
       
+      // Filtrar por responsável
+      if (ownerFilter && ownerFilter !== "all") {
+        negociacaoQuery = negociacaoQuery.eq("owner_id", ownerFilter);
+      }
+
+      // Filtrar por data
+      if (dateRange.from) {
+        negociacaoQuery = negociacaoQuery.gte("created_at", dateRange.from);
+      }
+      if (dateRange.to) {
+        negociacaoQuery = negociacaoQuery.lte("created_at", dateRange.to);
+      }
+      
       const { data: negociacaoDeals } = await negociacaoQuery;
       
       const count = negociacaoDeals?.length || 0;
@@ -86,6 +151,19 @@ export function CRMKPIs({ pipelineId, categoryFilter }: CRMKPIsProps) {
     // Filtrar por categoria se especificado
     if (categoryFilter && categoryFilter !== "all") {
       allDealsQuery = allDealsQuery.eq("categoria", categoryFilter);
+    }
+
+    // Filtrar por responsável
+    if (ownerFilter && ownerFilter !== "all") {
+      allDealsQuery = allDealsQuery.eq("owner_id", ownerFilter);
+    }
+
+    // Filtrar por data
+    if (dateRange.from) {
+      allDealsQuery = allDealsQuery.gte("created_at", dateRange.from);
+    }
+    if (dateRange.to) {
+      allDealsQuery = allDealsQuery.lte("created_at", dateRange.to);
     }
     
     const { data: allDeals } = await allDealsQuery;

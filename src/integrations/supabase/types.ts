@@ -3110,20 +3110,27 @@ export type Database = {
       create_daily_architect_goals: { Args: never; Returns: undefined }
       crm_agg:
         | {
-            Args: { p_end?: string; p_pipeline_id: string; p_start?: string }
+            Args: {
+              p_category?: string
+              p_date_from?: string
+              p_date_to?: string
+              p_owner_id?: string
+              p_pipeline_id: string
+            }
             Returns: Json
           }
         | {
-            Args: { p_pipeline_id: string }
-            Returns: {
-              lost_value: number
-              new_value: number
-              won_value: number
-            }[]
+            Args: { p_end?: string; p_pipeline_id: string; p_start?: string }
+            Returns: Json
           }
       crm_sla_alerts:
         | {
-            Args: { p_max_delay_days?: number; p_pipeline_id: string }
+            Args: {
+              p_category?: string
+              p_max_delay_days?: number
+              p_owner_id?: string
+              p_pipeline_id: string
+            }
             Returns: {
               deal_id: string
               delay_h: number

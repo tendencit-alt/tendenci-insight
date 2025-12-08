@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertTriangle, ShieldCheck, ChevronDown, Clock, Filter } from "lucide-react";
+import { AlertTriangle, ShieldCheck, ChevronDown, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 interface CRMSLAAlertsProps {
   pipelineId: string;
   categoryFilter?: string;
+  ownerFilter?: string;
 }
 
 const getUrgencyConfig = (delayHours: number) => {
@@ -35,7 +36,7 @@ const getUrgencyConfig = (delayHours: number) => {
   }
 };
 
-export function CRMSLAAlerts({ pipelineId, categoryFilter }: CRMSLAAlertsProps) {
+export function CRMSLAAlerts({ pipelineId, categoryFilter, ownerFilter }: CRMSLAAlertsProps) {
   const [alerts, setAlerts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isOpen, setIsOpen] = useState(false);
@@ -46,39 +47,28 @@ export function CRMSLAAlerts({ pipelineId, categoryFilter }: CRMSLAAlertsProps) 
   const fetchAlerts = useCallback(async () => {
     if (!pipelineId) return;
     
-    // Buscar com filtro de dias se ativo
+    // Buscar com todos os filtros aplicados diretamente na RPC
     const { data, error } = await supabase.rpc("crm_sla_alerts", {
       p_pipeline_id: pipelineId,
       p_max_delay_days: showRecentOnly ? 7 : null,
+      p_category: categoryFilter && categoryFilter !== "all" ? categoryFilter : null,
+      p_owner_id: ownerFilter && ownerFilter !== "all" ? ownerFilter : null,
     });
 
-    // Buscar total sem filtro para mostrar contador
+    // Buscar total sem filtro de dias para mostrar contador
     const { data: allData } = await supabase.rpc("crm_sla_alerts", {
       p_pipeline_id: pipelineId,
       p_max_delay_days: null,
+      p_category: categoryFilter && categoryFilter !== "all" ? categoryFilter : null,
+      p_owner_id: ownerFilter && ownerFilter !== "all" ? ownerFilter : null,
     });
 
     if (!error && data) {
-      let filteredAlerts = data;
-      if (categoryFilter && categoryFilter !== "all") {
-        const dealIds = data.map((alert: any) => alert.deal_id);
-        if (dealIds.length > 0) {
-          const { data: dealsData } = await supabase
-            .from("crm_deals")
-            .select("id, categoria")
-            .in("id", dealIds);
-          
-          const dealCategories = new Map(dealsData?.map(d => [d.id, d.categoria]));
-          filteredAlerts = data.filter((alert: any) => 
-            dealCategories.get(alert.deal_id) === categoryFilter
-          );
-        }
-      }
-      setAlerts(filteredAlerts);
+      setAlerts(data);
       setTotalAlerts(allData?.length || 0);
     }
     setLoading(false);
-  }, [pipelineId, categoryFilter, showRecentOnly]);
+  }, [pipelineId, categoryFilter, ownerFilter, showRecentOnly]);
 
   useEffect(() => {
     if (!pipelineId) return;
@@ -126,7 +116,7 @@ export function CRMSLAAlerts({ pipelineId, categoryFilter }: CRMSLAAlertsProps) 
       supabase.removeChannel(channel);
       clearInterval(pollingInterval);
     };
-  }, [pipelineId, categoryFilter, fetchAlerts, showRecentOnly]);
+  }, [pipelineId, categoryFilter, ownerFilter, fetchAlerts, showRecentOnly]);
 
   if (loading) return null;
 
