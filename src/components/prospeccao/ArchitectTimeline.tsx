@@ -124,18 +124,37 @@ export function ArchitectTimeline({ architectId }: ArchitectTimelineProps) {
   const fetchTimeline = async () => {
     setLoading(true);
     
+    // Buscar timeline sem JOIN (FK pode não existir)
     const { data, error } = await supabase
       .from("architect_timeline")
       .select(`
         *,
-        profiles!architect_timeline_author_id_fkey(full_name, email),
         attachments:architect_timeline_attachments(*)
       `)
       .eq("architect_id", architectId)
       .order("created_at", { ascending: false });
 
     if (!error && data) {
-      setTimeline(data as any);
+      // Buscar profiles separadamente para os author_id
+      const authorIds = [...new Set(data.filter(t => t.author_id).map(t => t.author_id))];
+      
+      if (authorIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, full_name, email")
+          .in("id", authorIds);
+        
+        // Mapear profiles aos registros
+        const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+        const timelineWithProfiles = data.map(t => ({
+          ...t,
+          profiles: t.author_id ? profileMap.get(t.author_id) || null : null
+        }));
+        
+        setTimeline(timelineWithProfiles as any);
+      } else {
+        setTimeline(data.map(t => ({ ...t, profiles: null })) as any);
+      }
     }
     
     setLoading(false);
