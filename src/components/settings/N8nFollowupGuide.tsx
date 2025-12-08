@@ -742,7 +742,7 @@ export function N8nFollowupGuide() {
 
           <Button 
             onClick={dispatchFollowups}
-            disabled={!webhookUrl || dispatching || eligibleCount === 0}
+            disabled={!webhookUrl || dispatching}
             className="w-full"
             size="lg"
           >
@@ -754,10 +754,19 @@ export function N8nFollowupGuide() {
             ) : (
               <>
                 <Send className="h-4 w-4 mr-2" />
-                Disparar Follow-ups Agora
+                Disparar Follow-ups Agora {eligibleCount !== null && eligibleCount > 0 && `(${eligibleCount})`}
               </>
             )}
           </Button>
+
+          {!webhookUrl && (
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                Configure a URL do webhook acima para habilitar o disparo.
+              </AlertDescription>
+            </Alert>
+          )}
         </CardContent>
       </Card>
 
