@@ -16,10 +16,9 @@ const Projects = () => {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [filters, setFilters] = useState({
-    period: "last_30_days",
+    period: "all",
     stage: "Todos",
     architect: "Todos",
-    origin: "Todas",
     search: ""
   });
   const [metrics, setMetrics] = useState({

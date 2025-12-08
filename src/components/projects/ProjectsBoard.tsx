@@ -93,14 +93,22 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
       `)
       .order("sent_date", { ascending: true });
 
-    if (filters.stage !== "Todos") {
+    if (filters.stage && filters.stage !== "Todos") {
       query = query.eq("stage", filters.stage);
+    }
+
+    // Filtro de arquiteto
+    if (filters.architect && filters.architect !== "Todos") {
+      if (filters.architect === "sem-arquiteto") {
+        query = query.is("architect_id", null);
+      } else {
+        query = query.eq("architect_id", filters.architect);
+      }
     }
 
     if (filters.search) {
       query = query.or(`name.ilike.%${filters.search}%`);
     }
-
     const { data, error } = await query;
     
     if (!error && data) {
