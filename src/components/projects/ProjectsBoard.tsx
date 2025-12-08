@@ -12,8 +12,11 @@ const formatDate = (date: string | null | undefined): string => {
   return format(new Date(date), "dd/MM/yy", { locale: ptBR });
 };
 
+// Estágios onde o projeto já foi "entregue/trabalhado" - não mostrar como vencido
+const DELIVERED_STAGES = ['orcado', 'apresentado', 'em_negociacao', 'aprovado'];
+
 // Helper para calcular dias restantes até o prazo
-const getDaysRemaining = (deadline: string | null | undefined): { days: number | null; label: string; isUrgent: boolean; isOverdue: boolean } => {
+const getDaysRemaining = (deadline: string | null | undefined, stage: string | null | undefined): { days: number | null; label: string; isUrgent: boolean; isOverdue: boolean } => {
   if (!deadline) return { days: null, label: "Sem prazo", isUrgent: false, isOverdue: false };
   
   const today = new Date();
@@ -23,6 +26,12 @@ const getDaysRemaining = (deadline: string | null | undefined): { days: number |
   
   const days = differenceInDays(deadlineDate, today);
   
+  // Se o projeto já avançou para estágios de entrega, mostrar "Entregue" ao invés de vencido
+  if (stage && DELIVERED_STAGES.includes(stage)) {
+    return { days, label: "Entregue", isUrgent: false, isOverdue: false };
+  }
+  
+  // Para estágios iniciais (recebido, em_orcamento) ou perdido, aplicar lógica de prazo
   if (days < 0) {
     return { days, label: `Vencido há ${Math.abs(days)} dia${Math.abs(days) !== 1 ? 's' : ''}`, isUrgent: true, isOverdue: true };
   } else if (days === 0) {
@@ -37,8 +46,8 @@ const getDaysRemaining = (deadline: string | null | undefined): { days: number |
 // Helper para ordenar projetos (vencidos primeiro, depois por dias restantes)
 const sortByDeadlinePriority = (projects: any[]): any[] => {
   return [...projects].sort((a, b) => {
-    const aInfo = getDaysRemaining(a.deadline);
-    const bInfo = getDaysRemaining(b.deadline);
+    const aInfo = getDaysRemaining(a.deadline, a.stage);
+    const bInfo = getDaysRemaining(b.deadline, b.stage);
     
     // Projetos sem prazo vão por último
     if (aInfo.days === null && bInfo.days === null) return 0;
@@ -212,7 +221,7 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>Cadastro: {formatDate(project.created_at)}</span>
                   {(() => {
-                    const deadlineInfo = getDaysRemaining(project.deadline);
+                    const deadlineInfo = getDaysRemaining(project.deadline, project.stage);
                     return (
                       <span className={deadlineInfo.isUrgent ? "text-red-600 font-semibold" : ""}>
                         {deadlineInfo.label}
@@ -270,7 +279,7 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>Cadastro: {formatDate(project.created_at)}</span>
                   {(() => {
-                    const deadlineInfo = getDaysRemaining(project.deadline);
+                    const deadlineInfo = getDaysRemaining(project.deadline, project.stage);
                     return (
                       <span className={deadlineInfo.isUrgent ? "text-red-600 font-semibold" : ""}>
                         {deadlineInfo.label}
@@ -328,7 +337,7 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>Cadastro: {formatDate(project.created_at)}</span>
                   {(() => {
-                    const deadlineInfo = getDaysRemaining(project.deadline);
+                    const deadlineInfo = getDaysRemaining(project.deadline, project.stage);
                     return (
                       <span className={deadlineInfo.isUrgent ? "text-red-600 font-semibold" : ""}>
                         {deadlineInfo.label}
@@ -386,7 +395,7 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>Cadastro: {formatDate(project.created_at)}</span>
                   {(() => {
-                    const deadlineInfo = getDaysRemaining(project.deadline);
+                    const deadlineInfo = getDaysRemaining(project.deadline, project.stage);
                     return (
                       <span className={deadlineInfo.isUrgent ? "text-red-600 font-semibold" : ""}>
                         {deadlineInfo.label}
@@ -444,7 +453,7 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>Cadastro: {formatDate(project.created_at)}</span>
                   {(() => {
-                    const deadlineInfo = getDaysRemaining(project.deadline);
+                    const deadlineInfo = getDaysRemaining(project.deadline, project.stage);
                     return (
                       <span className={deadlineInfo.isUrgent ? "text-red-600 font-semibold" : ""}>
                         {deadlineInfo.label}
@@ -502,7 +511,7 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>Cadastro: {formatDate(project.created_at)}</span>
                   {(() => {
-                    const deadlineInfo = getDaysRemaining(project.deadline);
+                    const deadlineInfo = getDaysRemaining(project.deadline, project.stage);
                     return (
                       <span className={deadlineInfo.isUrgent ? "text-red-600 font-semibold" : ""}>
                         {deadlineInfo.label}
@@ -560,7 +569,7 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>Cadastro: {formatDate(project.created_at)}</span>
                   {(() => {
-                    const deadlineInfo = getDaysRemaining(project.deadline);
+                    const deadlineInfo = getDaysRemaining(project.deadline, project.stage);
                     return (
                       <span className={deadlineInfo.isUrgent ? "text-red-600 font-semibold" : ""}>
                         {deadlineInfo.label}
