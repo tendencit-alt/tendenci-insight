@@ -3,8 +3,14 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { formatDistanceToNow } from "date-fns";
+import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+
+// Helper para formatar datas de forma consistente
+const formatDate = (date: string | null | undefined): string => {
+  if (!date) return "-";
+  return format(new Date(date), "dd/MM/yy", { locale: ptBR });
+};
 import { ProjectDetailSheet } from "./ProjectDetailSheet";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { X } from "lucide-react";
@@ -160,13 +166,14 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
                 <p className="text-sm text-muted-foreground mb-2">
                   {project.client?.name || "Cliente não definido"}
                 </p>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between mb-2">
                   <Badge className={getStageColor(project.stage)}>
                     R$ {project.value?.toLocaleString('pt-BR') || "0"}
                   </Badge>
-                  <span className="text-xs text-muted-foreground">
-                    {project.deadline ? formatDistanceToNow(new Date(project.deadline), { addSuffix: true, locale: ptBR }) : "Sem prazo"}
-                  </span>
+                </div>
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>Cadastro: {formatDate(project.created_at)}</span>
+                  <span>Prazo: {formatDate(project.deadline)}</span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
                   {project.architect?.name || "Sem responsável"}
@@ -210,13 +217,14 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
                 <p className="text-sm text-muted-foreground mb-2">
                   {project.client?.name || "Cliente não definido"}
                 </p>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between mb-2">
                   <Badge className={getStageColor(project.stage)}>
                     R$ {project.value?.toLocaleString('pt-BR') || "0"}
                   </Badge>
-                  <span className="text-xs text-muted-foreground">
-                    {project.sent_at ? formatDistanceToNow(new Date(project.sent_at), { addSuffix: true, locale: ptBR }) : "Sem prazo"}
-                  </span>
+                </div>
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>Cadastro: {formatDate(project.created_at)}</span>
+                  <span>Prazo: {formatDate(project.deadline)}</span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
                   {project.architect?.name || "Sem responsável"}
@@ -260,13 +268,14 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
                 <p className="text-sm text-muted-foreground mb-2">
                   {project.client?.name || "Cliente não definido"}
                 </p>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between mb-2">
                   <Badge className={getStageColor(project.stage)}>
                     R$ {project.value?.toLocaleString('pt-BR') || "0"}
                   </Badge>
-                  <span className="text-xs text-muted-foreground">
-                    {project.deadline ? formatDistanceToNow(new Date(project.deadline), { addSuffix: true, locale: ptBR }) : "Sem prazo"}
-                  </span>
+                </div>
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>Cadastro: {formatDate(project.created_at)}</span>
+                  <span>Prazo: {formatDate(project.deadline)}</span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
                   {project.architect?.name || "Sem responsável"}
@@ -310,13 +319,14 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
                 <p className="text-sm text-muted-foreground mb-2">
                   {project.client?.name || "Cliente não definido"}
                 </p>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between mb-2">
                   <Badge className={getStageColor(project.stage)}>
                     R$ {project.value?.toLocaleString('pt-BR') || "0"}
                   </Badge>
-                  <span className="text-xs text-muted-foreground">
-                    {project.deadline ? formatDistanceToNow(new Date(project.deadline), { addSuffix: true, locale: ptBR }) : "Sem prazo"}
-                  </span>
+                </div>
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>Cadastro: {formatDate(project.created_at)}</span>
+                  <span>Prazo: {formatDate(project.deadline)}</span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
                   {project.architect?.name || "Sem responsável"}
@@ -360,13 +370,14 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
                 <p className="text-sm text-muted-foreground mb-2">
                   {project.client?.name || "Cliente não definido"}
                 </p>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between mb-2">
                   <Badge className={getStageColor(project.stage)}>
                     R$ {project.value?.toLocaleString('pt-BR') || "0"}
                   </Badge>
-                  <span className="text-xs text-muted-foreground">
-                    {project.deadline ? formatDistanceToNow(new Date(project.deadline), { addSuffix: true, locale: ptBR }) : "Sem prazo"}
-                  </span>
+                </div>
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>Cadastro: {formatDate(project.created_at)}</span>
+                  <span>Prazo: {formatDate(project.deadline)}</span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
                   {project.architect?.name || "Sem responsável"}
@@ -410,13 +421,14 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
                 <p className="text-sm text-muted-foreground mb-2">
                   {project.client?.name || "Cliente não definido"}
                 </p>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between mb-2">
                   <Badge className={getStageColor(project.stage)}>
                     R$ {project.value?.toLocaleString('pt-BR') || "0"}
                   </Badge>
-                  <span className="text-xs text-muted-foreground">
-                    {project.sent_at ? formatDistanceToNow(new Date(project.sent_at), { addSuffix: true, locale: ptBR }) : "Sem prazo"}
-                  </span>
+                </div>
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>Cadastro: {formatDate(project.created_at)}</span>
+                  <span>Prazo: {formatDate(project.deadline)}</span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
                   {project.architect?.name || "Sem responsável"}
@@ -460,13 +472,14 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
                 <p className="text-sm text-muted-foreground mb-2">
                   {project.client?.name || "Cliente não definido"}
                 </p>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between mb-2">
                   <Badge className={getStageColor(project.stage)}>
                     R$ {project.value?.toLocaleString('pt-BR') || "0"}
                   </Badge>
-                  <span className="text-xs text-muted-foreground">
-                    {project.sent_at ? formatDistanceToNow(new Date(project.sent_at), { addSuffix: true, locale: ptBR }) : "Sem prazo"}
-                  </span>
+                </div>
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>Cadastro: {formatDate(project.created_at)}</span>
+                  <span>Prazo: {formatDate(project.deadline)}</span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
                   {project.architect?.name || "Sem responsável"}
