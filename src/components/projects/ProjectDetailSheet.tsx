@@ -15,6 +15,7 @@ import { ptBR } from "date-fns/locale";
 import { useWebhookSync } from "@/hooks/useWebhookSync";
 import { EditProjectDialog } from "./EditProjectDialog";
 import { ProjectNotes } from "./ProjectNotes";
+import { usePermissions } from "@/hooks/usePermissions";
 import { 
   validateFileType, 
   validateFileSize, 
@@ -42,6 +43,7 @@ export function ProjectDetailSheet({ project, open, onOpenChange, onSuccess }: P
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { notifyFileUploaded, notifyStageChanged } = useWebhookSync();
+  const { hasModuleAccess } = usePermissions();
 
   useEffect(() => {
     if (open && project) {
@@ -281,15 +283,17 @@ export function ProjectDetailSheet({ project, open, onOpenChange, onSuccess }: P
         <SheetHeader>
           <div className="flex items-center justify-between">
             <SheetTitle className="text-2xl">Detalhes do Projeto</SheetTitle>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => setEditDialogOpen(true)}
-              className="gap-2"
-            >
-              <Edit className="w-4 h-4" />
-              Editar Projeto
-            </Button>
+            {hasModuleAccess('projetos', 'edit') && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setEditDialogOpen(true)}
+                className="gap-2"
+              >
+                <Edit className="w-4 h-4" />
+                Editar Projeto
+              </Button>
+            )}
           </div>
         </SheetHeader>
 
