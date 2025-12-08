@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Eye, Edit, Trash2 } from "lucide-react";
+import { Eye, Edit, Trash2, ChevronLeft, ChevronRight, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { formatDistanceToNow, format } from "date-fns";
+import { format, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ProjectDetailSheet } from "./ProjectDetailSheet";
 import { EditProjectDialog } from "./EditProjectDialog";
@@ -17,6 +17,19 @@ interface ProjectsTableProps {
   filters: any;
 }
 
+const ITEMS_PER_PAGE = 20;
+
+// Mapeamento de estágios para exibição
+const STAGE_CONFIG: Record<string, { label: string; variant: "default" | "secondary" | "outline" | "destructive" }> = {
+  recebido: { label: "Recebido", variant: "default" },
+  em_orcamento: { label: "Em Orçamento", variant: "secondary" },
+  orcado: { label: "Orçado", variant: "outline" },
+  apresentado: { label: "Apresentado", variant: "outline" },
+  em_negociacao: { label: "Em Negociação", variant: "secondary" },
+  aprovado: { label: "Aprovado", variant: "default" },
+  perdido: { label: "Perdido", variant: "destructive" }
+};
+
 export function ProjectsTable({ filters }: ProjectsTableProps) {
   const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,10 +38,12 @@ export function ProjectsTable({ filters }: ProjectsTableProps) {
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<any>(null);
+  const [currentPage, setCurrentPage] = useState(1);
   const { isMaster } = usePermissions();
 
   useEffect(() => {
     fetchProjects();
+    setCurrentPage(1); // Reset page when filters change
   }, [filters]);
 
   const fetchProjects = async () => {
@@ -41,12 +56,38 @@ export function ProjectsTable({ filters }: ProjectsTableProps) {
         architect:architects(name),
         deal:deals(title)
       `)
-      .order("created_at", { ascending: false });
+      .order("sent_date", { ascending: true, nullsFirst: false });
 
-    if (filters.stage !== "Todos") {
+    // Filtro de estágio
+    if (filters.stage && filters.stage !== "Todos") {
       query = query.eq("stage", filters.stage);
     }
 
+    // Filtro de arquiteto
+    if (filters.architect && filters.architect !== "Todos") {
+      if (filters.architect === "sem-arquiteto") {
+        query = query.is("architect_id", null);
+      } else {
+        query = query.eq("architect_id", filters.architect);
+      }
+    }
+
+    // Filtro de período
+    if (filters.period && filters.period !== "all") {
+      const periodDays: Record<string, number> = {
+        last_7_days: 7,
+        last_30_days: 30,
+        last_60_days: 60,
+        last_90_days: 90
+      };
+      const days = periodDays[filters.period];
+      if (days) {
+        const startDate = subDays(new Date(), days).toISOString();
+        query = query.gte("created_at", startDate);
+      }
+    }
+
+    // Filtro de busca
     if (filters.search) {
       query = query.or(`name.ilike.%${filters.search}%`);
     }
@@ -59,14 +100,17 @@ export function ProjectsTable({ filters }: ProjectsTableProps) {
     setLoading(false);
   };
 
+  // Paginação
+  const paginatedProjects = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return projects.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [projects, currentPage]);
+
+  const totalPages = Math.ceil(projects.length / ITEMS_PER_PAGE);
+
   const getStageBadge = (stage: string) => {
-    const variants: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
-      captado: "default",
-      orçamento: "secondary",
-      aprovado: "outline",
-      perdido: "destructive"
-    };
-    return <Badge variant={variants[stage] || "default"}>{stage}</Badge>;
+    const config = STAGE_CONFIG[stage] || { label: stage, variant: "default" as const };
+    return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
   const handleView = (project: any) => {
@@ -122,8 +166,11 @@ export function ProjectsTable({ filters }: ProjectsTableProps) {
   return (
     <>
       <Card className="overflow-hidden">
-        <div className="p-6 border-b bg-gradient-to-r from-background to-muted/20">
+        <div className="p-6 border-b bg-gradient-to-r from-background to-muted/20 flex items-center justify-between">
           <h2 className="text-xl font-semibold">Todos os Projetos</h2>
+          <span className="text-sm text-muted-foreground">
+            {projects.length} projeto(s) encontrado(s)
+          </span>
         </div>
         <div className="overflow-x-auto">
           <Table>
@@ -135,36 +182,53 @@ export function ProjectsTable({ filters }: ProjectsTableProps) {
                 <TableHead>Estágio</TableHead>
                 <TableHead>Valor (R$)</TableHead>
                 <TableHead>Prazo</TableHead>
-                <TableHead>Criado</TableHead>
-                <TableHead>Atualizado</TableHead>
+                <TableHead>Enviado em</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                     Carregando projetos...
                   </TableCell>
                 </TableRow>
-              ) : projects.length === 0 ? (
+              ) : paginatedProjects.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                     Nenhum projeto encontrado
                   </TableCell>
                 </TableRow>
               ) : (
-                projects.map((project) => (
+                paginatedProjects.map((project) => (
                   <TableRow key={project.id} className="hover:bg-muted/50 transition-colors">
-                    <TableCell className="font-medium">{project.name || "Sem título"}</TableCell>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-2">
+                        {project.name || "Sem título"}
+                        {!project.architect_id && (
+                          <span title="Sem arquiteto">
+                            <AlertTriangle className="w-4 h-4 text-orange-500" />
+                          </span>
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell>{project.client?.name || "N/A"}</TableCell>
-                    <TableCell>{project.architect?.name || "Não atribuído"}</TableCell>
+                    <TableCell>{project.architect?.name || <span className="text-orange-500">Não atribuído</span>}</TableCell>
                     <TableCell>{getStageBadge(project.stage)}</TableCell>
                     <TableCell>R$ {project.value?.toLocaleString('pt-BR') || "0"}</TableCell>
-                    <TableCell>{project.deadline ? format(new Date(project.deadline), "dd/MM/yyyy", { locale: ptBR }) : "Sem prazo"}</TableCell>
-                    <TableCell>{format(new Date(project.created_at), "dd/MM/yyyy", { locale: ptBR })}</TableCell>
-                    <TableCell className="text-muted-foreground text-sm">
-                      {formatDistanceToNow(new Date(project.created_at), { addSuffix: true, locale: ptBR })}
+                    <TableCell>
+                      {project.deadline 
+                        ? format(new Date(project.deadline), "dd/MM/yyyy", { locale: ptBR }) 
+                        : "Sem prazo"
+                      }
+                    </TableCell>
+                    <TableCell>
+                      {project.sent_date 
+                        ? format(new Date(project.sent_date), "dd/MM/yyyy", { locale: ptBR })
+                        : project.created_at
+                          ? format(new Date(project.created_at), "dd/MM/yyyy", { locale: ptBR })
+                          : "-"
+                      }
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex gap-2 justify-end">
@@ -192,6 +256,35 @@ export function ProjectsTable({ filters }: ProjectsTableProps) {
             </TableBody>
           </Table>
         </div>
+
+        {/* Paginação */}
+        {totalPages > 1 && (
+          <div className="p-4 border-t flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">
+              Página {currentPage} de {totalPages}
+            </span>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Anterior
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+              >
+                Próxima
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        )}
       </Card>
 
       {selectedProject && (

@@ -3,7 +3,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -44,7 +43,7 @@ export function EditProjectDialog({ project, open, onOpenChange, onSuccess }: Ed
     if (project) {
       setFormData({
         name: project.name || "",
-        architect_id: project.architect_id || "",
+        architect_id: project.architect_id || "sem-arquiteto",
         stage: project.stage || "recebido",
         value: project.value?.toString() || "",
         deadline: project.deadline ? project.deadline.split('T')[0] : ""
@@ -76,7 +75,7 @@ export function EditProjectDialog({ project, open, onOpenChange, onSuccess }: Ed
         .from("projects")
         .update({
           name: formData.name,
-          architect_id: formData.architect_id || null,
+          architect_id: formData.architect_id && formData.architect_id !== "sem-arquiteto" ? formData.architect_id : null,
           stage: formData.stage,
           value: formData.value ? parseFloat(formData.value) : 0,
           deadline: formData.deadline || null
@@ -139,6 +138,7 @@ export function EditProjectDialog({ project, open, onOpenChange, onSuccess }: Ed
                   <SelectValue placeholder="Selecione o arquiteto" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="sem-arquiteto">Cliente sem arquiteto</SelectItem>
                   {architects.map((arch) => (
                     <SelectItem key={arch.id} value={arch.id}>
                       {arch.name}
