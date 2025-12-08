@@ -4,6 +4,7 @@ import { LayoutGrid, Table as TableIcon, List } from "lucide-react";
 import { ProspeccaoKanban } from "./ProspeccaoKanban";
 import { ProspeccaoTable } from "./ProspeccaoTable";
 import { ProspeccaoFilters } from "./ProspeccaoFilters";
+import { ArchitectTasksPanel } from "./ArchitectTasksPanel";
 import { usePermissions } from "@/hooks/usePermissions";
 
 type ViewMode = "kanban" | "table";
@@ -25,6 +26,9 @@ export function ProspeccaoCRM({ onManageStages }: ProspeccaoCRMProps) {
         <h2 className="text-2xl font-bold">CRM de Arquitetos</h2>
         <p className="text-muted-foreground">Gerencie o funil de prospecção dos arquitetos</p>
       </div>
+
+      {/* Painel de Tarefas */}
+      <ArchitectTasksPanel filters={filters} />
 
       {/* Toggle de visualização */}
       <div className="flex items-center gap-2 p-1 bg-muted rounded-lg w-fit">
