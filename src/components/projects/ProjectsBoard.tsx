@@ -38,7 +38,7 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
         architect:architects(name),
         deal:deals(title)
       `)
-      .order("created_at", { ascending: false });
+      .order("sent_date", { ascending: true });
 
     if (filters.stage !== "Todos") {
       query = query.eq("stage", filters.stage);
