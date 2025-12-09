@@ -3318,6 +3318,7 @@ export type Database = {
           vendedor_full_name: string
           vendedor_responsavel: string
           vendedor_username: string
+          whatsapp_valido: boolean
         }[]
       }
       get_seller_goal_stats: { Args: { p_vendedor_id: string }; Returns: Json }

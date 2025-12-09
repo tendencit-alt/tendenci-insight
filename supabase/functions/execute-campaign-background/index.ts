@@ -20,6 +20,41 @@ interface ProcessNextRequest {
 async function processNextInQueue(supabase: any) {
   console.log('🔍 [PROCESS] Buscando próximo arquiteto pendente...')
   
+  // 🕐 FASE 5: Verificar e corrigir dispatches travados (>6 horas em_andamento sem progresso)
+  const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString()
+  const { data: stuckDispatches } = await supabase
+    .from('tendenci_campaign_dispatches')
+    .select('id, campanha_id')
+    .eq('status', 'em_andamento')
+    .lt('updated_at', sixHoursAgo)
+  
+  if (stuckDispatches && stuckDispatches.length > 0) {
+    console.log(`⚠️ [TIMEOUT] Encontrados ${stuckDispatches.length} dispatches travados (>6h)`)
+    for (const stuck of stuckDispatches) {
+      await supabase
+        .from('tendenci_campaign_dispatches')
+        .update({ 
+          status: 'erro',
+          erro_mensagem: 'Timeout: sem progresso por mais de 6 horas',
+          concluido_em: new Date().toISOString()
+        })
+        .eq('id', stuck.id)
+      
+      // Cancelar itens pendentes na fila
+      await supabase
+        .from('tendenci_campaign_queue')
+        .update({ status: 'cancelado' })
+        .eq('dispatch_id', stuck.id)
+        .eq('status', 'pendente')
+      
+      // Marcar campanha como erro
+      await supabase
+        .from('tendenci_prospec_arq_campaigns')
+        .update({ status: 'erro' })
+        .eq('id', stuck.campanha_id)
+    }
+  }
+  
   // Buscar próximo arquiteto pendente ordenado por agendado_para
   const { data: nextInQueue, error: queueError } = await supabase
     .from('tendenci_campaign_queue')
@@ -35,7 +70,7 @@ async function processNextInQueue(supabase: any) {
         whatsapp_connection_id,
         tendenci_whatsapp_connections(instance_name, instance_id)
       ),
-      architects(id, name, phone)
+      architects(id, name, phone, whatsapp_valido)
     `)
     .eq('status', 'pendente')
     .eq('tendenci_campaign_dispatches.status', 'em_andamento')
