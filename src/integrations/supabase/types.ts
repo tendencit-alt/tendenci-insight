@@ -394,6 +394,7 @@ export type Database = {
           ultimo_projeto_data: string | null
           updated_at: string | null
           vendedor_responsavel: string | null
+          whatsapp_valido: boolean | null
         }
         Insert: {
           active?: boolean | null
@@ -420,6 +421,7 @@ export type Database = {
           ultimo_projeto_data?: string | null
           updated_at?: string | null
           vendedor_responsavel?: string | null
+          whatsapp_valido?: boolean | null
         }
         Update: {
           active?: boolean | null
@@ -446,6 +448,7 @@ export type Database = {
           ultimo_projeto_data?: string | null
           updated_at?: string | null
           vendedor_responsavel?: string | null
+          whatsapp_valido?: boolean | null
         }
         Relationships: [
           {
