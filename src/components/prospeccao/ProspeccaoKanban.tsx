@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Building, MapPin, Phone, Package, Plus, User, Target } from "lucide-react";
+import { Building, MapPin, Phone, Package, Plus, User, Target, PhoneOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format, differenceInDays } from "date-fns";
 import { ArchitectProspeccaoSheet } from "./ArchitectProspeccaoSheet";
@@ -68,6 +68,7 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
           username: architect.ultimo_vendedor_username,
           full_name: architect.ultimo_vendedor_full_name,
         } : null,
+        whatsapp_valido: architect.whatsapp_valido,
       }));
     },
   });
@@ -272,6 +273,14 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
 
                   {/* Badges - Indicações, Produtos e Projetos */}
                   <div className="flex gap-1.5 flex-wrap">
+                    {/* Badge 0: WhatsApp Inválido */}
+                    {architect.whatsapp_valido === false && (
+                      <Badge variant="destructive" className="text-xs flex items-center gap-1">
+                        <PhoneOff className="h-3 w-3" />
+                        Sem WhatsApp
+                      </Badge>
+                    )}
+
                     {/* Badge 1: Status de Contato */}
                     {architect.status_funil === 'adicionar_epata' ? (
                       <Badge variant="outline" className="text-xs bg-purple-50 dark:bg-purple-950 border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300">
