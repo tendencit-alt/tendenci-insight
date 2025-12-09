@@ -211,7 +211,7 @@ export function N8nFollowupGuide() {
                 { id: "a6", name: "product_type", value: "={{ $json.product_type || 'móveis' }}", type: "string" },
                 { id: "a7", name: "categoria", value: "={{ $json.categoria || '' }}", type: "string" },
                 { id: "a8", name: "last_interaction", value: "={{ $json.last_interaction }}", type: "string" },
-                { id: "a9", name: "callback_url", value: "={{ $json.callback_url }}", type: "string" },
+                // callback_url removido - usando URL fixa no nó Atualizar CRM
                 { id: "a10", name: "evolution_url", value: "SUA_EVOLUTION_URL_AQUI", type: "string" },
                 { id: "a11", name: "instance_name", value: "SUA_INSTANCIA_AQUI", type: "string" },
                 { id: "a12", name: "evolution_apikey", value: "SUA_APIKEY_AQUI", type: "string" }
@@ -273,7 +273,7 @@ export function N8nFollowupGuide() {
                 { id: "b2", name: "client_name", value: "={{ $('Preparar Dados').item.json.client_name }}", type: "string" },
                 { id: "b3", name: "client_phone", value: "={{ $('Preparar Dados').item.json.client_phone }}", type: "string" },
                 { id: "b4", name: "followup_number", value: "={{ $('Preparar Dados').item.json.followup_number }}", type: "number" },
-                { id: "b5", name: "callback_url", value: "={{ $('Preparar Dados').item.json.callback_url }}", type: "string" },
+                // callback_url removido - usando URL fixa
                 { id: "b6", name: "evolution_url", value: "={{ $('Preparar Dados').item.json.evolution_url }}", type: "string" },
                 { id: "b7", name: "instance_name", value: "={{ $('Preparar Dados').item.json.instance_name }}", type: "string" },
                 { id: "b8", name: "evolution_apikey", value: "={{ $('Preparar Dados').item.json.evolution_apikey }}", type: "string" },
@@ -351,13 +351,18 @@ export function N8nFollowupGuide() {
         {
           parameters: {
             method: "POST",
-            url: "={{ $('Juntar Dados + Mensagem').item.json.callback_url }}",
+            // URL FIXA - não depende mais de callback_url
+            url: "https://emnwuzrysqoiwapzmnbv.supabase.co/functions/v1/update-followup-history",
             sendHeaders: true,
             headerParameters: {
               parameters: [
                 {
                   name: "Content-Type",
                   value: "application/json"
+                },
+                {
+                  name: "Authorization",
+                  value: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtbnd1enJ5c3FvaXdhcHptbmJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI1MjkxMjMsImV4cCI6MjA3ODEwNTEyM30.tzEXZQShQWgyyJHxvCVYIGQg0gal-LuO4jlKQDFjq-c"
                 }
               ]
             },
@@ -370,13 +375,8 @@ export function N8nFollowupGuide() {
           name: "Atualizar CRM",
           type: "n8n-nodes-base.httpRequest",
           typeVersion: 4.2,
-          position: [1780, 200],
-          credentials: {
-            httpHeaderAuth: {
-              id: "CONFIGURE_SUPABASE_AUTH",
-              name: "Supabase Auth"
-            }
-          }
+          position: [1780, 200]
+          // SEM credentials externas - Authorization já embutido nos headers
         },
         {
           parameters: {
@@ -406,7 +406,7 @@ export function N8nFollowupGuide() {
         },
         {
           parameters: {
-            content: "## Workflow Follow-up Tendenci v5\n\n### Configurações Necessárias:\n\n1. **Preparar Dados** - Substitua:\n   - SUA_EVOLUTION_URL_AQUI\n   - SUA_INSTANCIA_AQUI\n   - SUA_APIKEY_AQUI\n\n2. **OpenAI API** - Configure credencial\n\n3. **Supabase Auth** - Configure:\n   - Header Name: Authorization\n   - Header Value: Bearer SEU_ANON_KEY\n\n### Fluxo:\n1. Recebe webhook do Tendenci\n2. Aguarda 3 minutos\n3. Gera mensagem com IA\n4. Envia via Evolution API\n5. Atualiza CRM via callback"
+            content: "## Workflow Follow-up Tendenci v6\n\n### Configurações Necessárias:\n\n1. **Preparar Dados** - Substitua:\n   - SUA_EVOLUTION_URL_AQUI\n   - SUA_INSTANCIA_AQUI\n   - SUA_APIKEY_AQUI\n\n2. **OpenAI API** - Configure credencial\n\n### ✅ Já Configurado Automaticamente:\n- URL do Atualizar CRM (fixa)\n- Authorization do Supabase (embutido)\n\n### Fluxo:\n1. Recebe webhook do Tendenci\n2. Aguarda 3 minutos\n3. Gera mensagem com IA\n4. Envia via Evolution API\n5. Atualiza CRM (URL fixa)"
           },
           id: "sticky-note",
           name: "Instruções",
