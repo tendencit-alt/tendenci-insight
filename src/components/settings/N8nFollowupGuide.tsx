@@ -183,7 +183,7 @@ export function N8nFollowupGuide() {
 
   const getWorkflowJSON = () => {
     return {
-      name: "Tendenci - Follow-up Completo v4",
+      name: "Tendenci - Follow-up Completo v5",
       nodes: [
         {
           parameters: {
@@ -201,8 +201,22 @@ export function N8nFollowupGuide() {
         },
         {
           parameters: {
-            mode: "raw",
-            jsonOutput: "={{ JSON.stringify({ deal_id: $json.deal_id, client_name: $json.client_name, client_phone: $json.client_phone, conversation_history: $json.conversation_history, followup_number: $json.followup_number, product_type: $json.product_type, categoria: $json.categoria, last_interaction: $json.last_interaction, callback_url: $json.callback_url, evolution_url: 'SUA_EVOLUTION_URL_AQUI', instance_name: 'SUA_INSTANCIA_AQUI', evolution_apikey: 'SUA_APIKEY_AQUI' }) }}",
+            assignments: {
+              assignments: [
+                { id: "a1", name: "deal_id", value: "={{ $json.deal_id }}", type: "string" },
+                { id: "a2", name: "client_name", value: "={{ $json.client_name }}", type: "string" },
+                { id: "a3", name: "client_phone", value: "={{ $json.client_phone }}", type: "string" },
+                { id: "a4", name: "conversation_history", value: "={{ $json.conversation_history || '' }}", type: "string" },
+                { id: "a5", name: "followup_number", value: "={{ $json.followup_number }}", type: "number" },
+                { id: "a6", name: "product_type", value: "={{ $json.product_type || 'móveis' }}", type: "string" },
+                { id: "a7", name: "categoria", value: "={{ $json.categoria || '' }}", type: "string" },
+                { id: "a8", name: "last_interaction", value: "={{ $json.last_interaction }}", type: "string" },
+                { id: "a9", name: "callback_url", value: "={{ $json.callback_url }}", type: "string" },
+                { id: "a10", name: "evolution_url", value: "SUA_EVOLUTION_URL_AQUI", type: "string" },
+                { id: "a11", name: "instance_name", value: "SUA_INSTANCIA_AQUI", type: "string" },
+                { id: "a12", name: "evolution_apikey", value: "SUA_APIKEY_AQUI", type: "string" }
+              ]
+            },
             options: {}
           },
           id: "set-fields",
@@ -233,7 +247,7 @@ export function N8nFollowupGuide() {
             messages: {
               values: [
                 {
-                  content: "=Você é um especialista em vendas de móveis. Gere uma mensagem de follow-up curta e personalizada (máximo 2 parágrafos) para o cliente.\n\nNome do cliente: {{ $json.client_name }}\nProduto de interesse: {{ $json.product_type || 'móveis' }}\nNúmero do follow-up: {{ $json.followup_number }}\nÚltima interação: {{ $json.last_interaction }}\n\nHistórico da conversa:\n{{ $json.conversation_history || 'Primeira interação' }}\n\nRegras:\n- Seja cordial e profissional\n- Não seja invasivo\n- Mencione o produto de interesse\n- Se for follow-up 2+, seja mais breve\n- Termine com uma pergunta aberta"
+                  content: "=Você é um especialista em vendas de móveis. Gere uma mensagem de follow-up curta e personalizada (máximo 2 parágrafos) para o cliente.\n\nNome do cliente: {{ $json.client_name }}\nProduto de interesse: {{ $json.product_type }}\nNúmero do follow-up: {{ $json.followup_number }}\nÚltima interação: {{ $json.last_interaction }}\n\nHistórico da conversa:\n{{ $json.conversation_history || 'Primeira interação' }}\n\nRegras:\n- Seja cordial e profissional\n- Não seja invasivo\n- Mencione o produto de interesse\n- Se for follow-up 2+, seja mais breve\n- Termine com uma pergunta aberta"
                 }
               ]
             },
@@ -253,8 +267,19 @@ export function N8nFollowupGuide() {
         },
         {
           parameters: {
-            mode: "raw",
-            jsonOutput: "={{ JSON.stringify({ ...JSON.parse($('Preparar Dados').item.json), ai_message: $json.text || $json.message?.content || $json.content || '' }) }}",
+            assignments: {
+              assignments: [
+                { id: "b1", name: "deal_id", value: "={{ $('Preparar Dados').item.json.deal_id }}", type: "string" },
+                { id: "b2", name: "client_name", value: "={{ $('Preparar Dados').item.json.client_name }}", type: "string" },
+                { id: "b3", name: "client_phone", value: "={{ $('Preparar Dados').item.json.client_phone }}", type: "string" },
+                { id: "b4", name: "followup_number", value: "={{ $('Preparar Dados').item.json.followup_number }}", type: "number" },
+                { id: "b5", name: "callback_url", value: "={{ $('Preparar Dados').item.json.callback_url }}", type: "string" },
+                { id: "b6", name: "evolution_url", value: "={{ $('Preparar Dados').item.json.evolution_url }}", type: "string" },
+                { id: "b7", name: "instance_name", value: "={{ $('Preparar Dados').item.json.instance_name }}", type: "string" },
+                { id: "b8", name: "evolution_apikey", value: "={{ $('Preparar Dados').item.json.evolution_apikey }}", type: "string" },
+                { id: "b9", name: "ai_message", value: "={{ $json.text || $json.message?.content || $json.content || '' }}", type: "string" }
+              ]
+            },
             options: {}
           },
           id: "merge-message",
@@ -267,20 +292,22 @@ export function N8nFollowupGuide() {
           parameters: {
             method: "POST",
             url: "={{ $json.evolution_url }}/message/sendText/{{ $json.instance_name }}",
-            authentication: "genericCredentialType",
-            genericAuthType: "httpHeaderAuth",
             sendHeaders: true,
             headerParameters: {
               parameters: [
                 {
                   name: "apikey",
                   value: "={{ $json.evolution_apikey }}"
+                },
+                {
+                  name: "Content-Type",
+                  value: "application/json"
                 }
               ]
             },
             sendBody: true,
             specifyBody: "json",
-            jsonBody: "={\n  \"number\": \"{{ $json.client_phone }}@s.whatsapp.net\",\n  \"text\": \"{{ $json.ai_message }}\"\n}",
+            jsonBody: "={{ JSON.stringify({ number: $json.client_phone, text: $json.ai_message }) }}",
             options: {
               timeout: 30000
             }
@@ -325,15 +352,22 @@ export function N8nFollowupGuide() {
           parameters: {
             method: "POST",
             url: "={{ $('Juntar Dados + Mensagem').item.json.callback_url }}",
-            authentication: "genericCredentialType",
-            genericAuthType: "httpHeaderAuth",
+            sendHeaders: true,
+            headerParameters: {
+              parameters: [
+                {
+                  name: "Content-Type",
+                  value: "application/json"
+                }
+              ]
+            },
             sendBody: true,
             specifyBody: "json",
-            jsonBody: "={\n  \"deal_id\": \"{{ $('Juntar Dados + Mensagem').item.json.deal_id }}\",\n  \"new_message\": \"🤖 IA (Follow-up {{ $('Juntar Dados + Mensagem').item.json.followup_number }}): {{ $('Juntar Dados + Mensagem').item.json.ai_message }}\",\n  \"followup_number\": {{ $('Juntar Dados + Mensagem').item.json.followup_number }}\n}",
+            jsonBody: "={{ JSON.stringify({ deal_id: $('Juntar Dados + Mensagem').item.json.deal_id, new_message: '🤖 IA (Follow-up ' + $('Juntar Dados + Mensagem').item.json.followup_number + '): ' + $('Juntar Dados + Mensagem').item.json.ai_message, followup_number: $('Juntar Dados + Mensagem').item.json.followup_number }) }}",
             options: {}
           },
           id: "callback-success",
-          name: "Atualizar Supabase (Sucesso)",
+          name: "Atualizar CRM",
           type: "n8n-nodes-base.httpRequest",
           typeVersion: 4.2,
           position: [1780, 200],
@@ -347,7 +381,7 @@ export function N8nFollowupGuide() {
         {
           parameters: {
             respondWith: "json",
-            responseBody: "={\n  \"success\": true,\n  \"deal_id\": \"{{ $('Juntar Dados + Mensagem').item.json.deal_id }}\",\n  \"message_sent\": true\n}",
+            responseBody: "={{ JSON.stringify({ success: true, deal_id: $('Juntar Dados + Mensagem').item.json.deal_id, message_sent: true }) }}",
             options: {}
           },
           id: "respond-success",
@@ -359,7 +393,7 @@ export function N8nFollowupGuide() {
         {
           parameters: {
             respondWith: "json",
-            responseBody: "={\n  \"success\": false,\n  \"deal_id\": \"{{ $('Juntar Dados + Mensagem').item.json.deal_id }}\",\n  \"error\": \"Falha no envio WhatsApp\",\n  \"details\": {{ JSON.stringify($json) }}\n}",
+            responseBody: "={{ JSON.stringify({ success: false, deal_id: $('Juntar Dados + Mensagem').item.json.deal_id, error: 'Falha no envio WhatsApp', details: $json }) }}",
             options: {
               responseCode: 500
             }
@@ -372,7 +406,7 @@ export function N8nFollowupGuide() {
         },
         {
           parameters: {
-            content: "## Workflow Follow-up Tendenci v4\n\n### Configurações Necessárias:\n\n1. **Preparar Dados** - Substitua:\n   - SUA_EVOLUTION_URL_AQUI\n   - SUA_INSTANCIA_AQUI\n   - SUA_APIKEY_AQUI\n\n2. **OpenAI API** - Configure credencial\n\n3. **Supabase Auth** - Configure:\n   - Header Name: Authorization\n   - Header Value: Bearer SEU_ANON_KEY\n\n### Fluxo:\n1. Recebe webhook do Tendenci\n2. Aguarda 3 minutos\n3. Gera mensagem com IA\n4. Envia via Evolution API\n5. Atualiza Supabase via callback"
+            content: "## Workflow Follow-up Tendenci v5\n\n### Configurações Necessárias:\n\n1. **Preparar Dados** - Substitua:\n   - SUA_EVOLUTION_URL_AQUI\n   - SUA_INSTANCIA_AQUI\n   - SUA_APIKEY_AQUI\n\n2. **OpenAI API** - Configure credencial\n\n3. **Supabase Auth** - Configure:\n   - Header Name: Authorization\n   - Header Value: Bearer SEU_ANON_KEY\n\n### Fluxo:\n1. Recebe webhook do Tendenci\n2. Aguarda 3 minutos\n3. Gera mensagem com IA\n4. Envia via Evolution API\n5. Atualiza CRM via callback"
           },
           id: "sticky-note",
           name: "Instruções",
@@ -402,11 +436,11 @@ export function N8nFollowupGuide() {
         },
         "Envio OK?": {
           main: [
-            [{ node: "Atualizar Supabase (Sucesso)", type: "main", index: 0 }],
+            [{ node: "Atualizar CRM", type: "main", index: 0 }],
             [{ node: "Responder Erro", type: "main", index: 0 }]
           ]
         },
-        "Atualizar Supabase (Sucesso)": {
+        "Atualizar CRM": {
           main: [[{ node: "Responder Sucesso", type: "main", index: 0 }]]
         }
       },
