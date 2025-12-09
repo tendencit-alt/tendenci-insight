@@ -670,15 +670,16 @@ export function CreateDealDialog({
                 </Button>
               </div>
               <Select
-                value={formData.project_id}
+                value={formData.project_id || "sem-projeto"}
                 onValueChange={(value) =>
-                  setFormData({ ...formData, project_id: value })
+                  setFormData({ ...formData, project_id: value === "sem-projeto" ? "" : value })
                 }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione um projeto" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="sem-projeto">Sem projeto vinculado</SelectItem>
                   {projects.map((project) => (
                     <SelectItem key={project.id} value={project.id}>
                       {project.name}
