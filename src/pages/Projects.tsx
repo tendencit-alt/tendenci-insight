@@ -206,6 +206,17 @@ const Projects = () => {
           </div>
         </div>
 
+        {/* KPI Valor Total - Destaque */}
+        <Card className="p-6 space-y-2 hover:shadow-xl transition-all duration-300 border-2 border-primary bg-gradient-to-r from-primary/10 via-primary/5 to-transparent">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-muted-foreground">Valor Total dos Projetos {getPeriodLabel()}</span>
+            <span className="text-2xl">💎</span>
+          </div>
+          <p className="text-3xl font-bold text-primary">
+            R$ {(metrics.total_value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+          </p>
+        </Card>
+
         {/* KPIs */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-8 gap-4">
           <Card className="p-6 space-y-2 hover:shadow-xl transition-all duration-300 border-l-4 border-l-blue-500">
