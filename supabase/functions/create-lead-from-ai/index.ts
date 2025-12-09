@@ -685,13 +685,33 @@ Deno.serve(async (req) => {
         // Lead existente: atualizar deals existentes E criar em pipelines faltantes
         const { data: existingDeals } = await supabase
           .from('crm_deals')
-          .select('id, conversation_history, pipeline_id')
+          .select('id, conversation_history, pipeline_id, stage_id')
           .eq('lead_id', leadId)
           .eq('status', 'aberto')
         
         // Identificar pipelines que já possuem deal
         const pipelinesWithDeal = new Set(existingDeals?.map(d => d.pipeline_id) || [])
         console.log(`📊 Lead existente possui deals em ${pipelinesWithDeal.size} pipeline(s)`)
+        
+        // Buscar nome da etapa atual do primeiro deal existente para manter consistência
+        let currentStageName = 'Lead' // fallback padrão
+        
+        if (existingDeals && existingDeals.length > 0) {
+          const firstDealStageId = existingDeals[0].stage_id
+          
+          if (firstDealStageId) {
+            const { data: currentStage } = await supabase
+              .from('crm_stages')
+              .select('name')
+              .eq('id', firstDealStageId)
+              .single()
+            
+            if (currentStage) {
+              currentStageName = currentStage.name
+              console.log(`📊 Etapa atual do lead existente: "${currentStageName}"`)
+            }
+          }
+        }
         
         // Atualizar deals existentes
         if (existingDeals && existingDeals.length > 0) {
@@ -744,9 +764,18 @@ Deno.serve(async (req) => {
               .order('position', { ascending: true })
             
             if (stages && stages.length > 0) {
-              // Priorizar etapa "Lead", senão usar a primeira
-              const leadStage = stages.find(s => s.name.toLowerCase() === 'lead')
-              const stageToUse = leadStage || stages[0]
+              // Tentar encontrar etapa com mesmo nome da etapa atual do deal existente
+              let matchingStage = stages.find(s => 
+                s.name.toLowerCase() === currentStageName.toLowerCase()
+              )
+              
+              // Se não encontrar, usar "Lead" ou primeira etapa como fallback
+              if (!matchingStage) {
+                matchingStage = stages.find(s => s.name.toLowerCase() === 'lead')
+              }
+              
+              const stageToUse = matchingStage || stages[0]
+              console.log(`📊 Usando etapa "${stageToUse.name}" no funil "${pipeline.name}" (baseado em "${currentStageName}")`)
               
               console.log(`✅ Criando deal no funil "${pipeline.name}" para lead existente`)
               
