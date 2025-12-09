@@ -14,42 +14,48 @@ interface DispatchStatus {
   id: string;
   architect_id: string;
   status: string;
-  enviado_em: string | null;
-  mensagem_erro: string | null;
+  data_envio: string | null;
+  erro_mensagem: string | null;
   tentativas: number;
   architects: {
     name: string;
     phone: string;
-  };
+  } | null;
 }
 
 export function CampanhaRelatorio({ campanhaId }: RelatorioProps) {
   const { data: dispatches, isLoading } = useQuery({
     queryKey: ['campaign-report', campanhaId],
     queryFn: async () => {
+      // Usa a tabela correta: tendenci_prospec_arq_campaign_architects
       const { data, error } = await supabase
-        .from('tendenci_prospec_arq_campaign_dispatches')
+        .from('tendenci_prospec_arq_campaign_architects')
         .select(`
-          *,
+          id,
+          architect_id,
+          status,
+          data_envio,
+          erro_mensagem,
+          tentativas,
           architects:architect_id (
             name,
             phone
           )
         `)
         .eq('campanha_id', campanhaId)
-        .order('enviado_em', { ascending: false });
+        .order('data_envio', { ascending: false, nullsFirst: false });
 
       if (error) throw error;
       return data as DispatchStatus[];
     },
-    refetchInterval: 10000, // Atualizar a cada 10 segundos
+    refetchInterval: 10000,
   });
 
   if (isLoading) {
     return <div className="text-muted-foreground">Carregando relatório...</div>;
   }
 
-  const successCount = dispatches?.filter(d => d.status === 'sucesso').length || 0;
+  const successCount = dispatches?.filter(d => d.status === 'enviado').length || 0;
   const errorCount = dispatches?.filter(d => d.status === 'erro').length || 0;
   const pendingCount = dispatches?.filter(d => d.status === 'pendente').length || 0;
 
@@ -115,17 +121,17 @@ export function CampanhaRelatorio({ campanhaId }: RelatorioProps) {
                     <div className="flex items-center gap-3">
                       <User className="h-4 w-4 text-muted-foreground" />
                       <div>
-                        <p className="font-medium">{dispatch.architects.name}</p>
+                        <p className="font-medium">{dispatch.architects?.name || 'Arquiteto não encontrado'}</p>
                         <p className="text-sm text-muted-foreground">
-                          {dispatch.architects.phone}
+                          {dispatch.architects?.phone || 'Sem telefone'}
                         </p>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-3">
-                      {dispatch.enviado_em && (
+                      {dispatch.data_envio && (
                         <span className="text-sm text-muted-foreground">
-                          {format(new Date(dispatch.enviado_em), "dd/MM 'às' HH:mm", {
+                          {format(new Date(dispatch.data_envio), "dd/MM 'às' HH:mm", {
                             locale: ptBR,
                           })}
                         </span>
@@ -133,25 +139,25 @@ export function CampanhaRelatorio({ campanhaId }: RelatorioProps) {
                       
                       <Badge
                         variant={
-                          dispatch.status === 'sucesso'
+                          dispatch.status === 'enviado'
                             ? 'default'
                             : dispatch.status === 'erro'
                             ? 'destructive'
                             : 'secondary'
                         }
                       >
-                        {dispatch.status === 'sucesso' && <CheckCircle2 className="h-3 w-3 mr-1" />}
+                        {dispatch.status === 'enviado' && <CheckCircle2 className="h-3 w-3 mr-1" />}
                         {dispatch.status === 'erro' && <XCircle className="h-3 w-3 mr-1" />}
                         {dispatch.status === 'pendente' && <Clock className="h-3 w-3 mr-1" />}
-                        {dispatch.status === 'sucesso' ? 'Enviado' : 
+                        {dispatch.status === 'enviado' ? 'Enviado' : 
                          dispatch.status === 'erro' ? 'Falhou' : 'Pendente'}
                       </Badge>
                     </div>
                   </div>
 
-                  {dispatch.mensagem_erro && (
+                  {dispatch.erro_mensagem && (
                     <div className="text-xs text-destructive bg-destructive/10 p-2 rounded">
-                      <strong>Erro:</strong> {dispatch.mensagem_erro}
+                      <strong>Erro:</strong> {dispatch.erro_mensagem}
                     </div>
                   )}
                 </div>

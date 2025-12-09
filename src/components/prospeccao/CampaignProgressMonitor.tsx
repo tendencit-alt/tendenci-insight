@@ -155,7 +155,7 @@ export function CampaignProgressMonitor() {
         intervalRef.current = null;
       }
     };
-  }, [dispatches.length, isProcessing]); // Dependência em dispatches.length para evitar loops
+  }, [dispatches.some(d => d.status === 'em_andamento')]); // Dependência estável: apenas quando há dispatch ativo
 
   useEffect(() => {
     fetchDispatches();
