@@ -10,7 +10,7 @@ import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useFormPersistence } from "@/hooks/useFormPersistence";
-import { Plus, Send, Save, Trash2, Image, FileAudio, MessageSquare, Loader2, CheckCircle, XCircle, Upload, Mic, X, BookOpen, Eye } from "lucide-react";
+import { Plus, Send, Save, Trash2, Image, FileAudio, MessageSquare, Loader2, CheckCircle, XCircle, Upload, Mic, X, BookOpen, Eye, AlertTriangle } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -134,17 +134,51 @@ export function CampanhasManager() {
     }
   };
 
-  const fetchArquitetosDisponiveis = async () => {
+  const [arquitetosEmOutrasCampanhas, setArquitetosEmOutrasCampanhas] = useState(0);
+
+  const fetchArquitetosDisponiveis = async (editingCampaignId?: string) => {
     // 1. Buscar IDs de arquitetos que JÁ receberam campanhas com sucesso
     const { data: jaDisparados } = await supabase
       .from('tendenci_prospec_arq_campaign_architects')
       .select('architect_id')
       .eq('status', 'enviado');
 
-    const idsJaDisparados = [...new Set(jaDisparados?.map(d => d.architect_id) || [])];
-    console.log(`🚫 Arquitetos já disparados (excluídos): ${idsJaDisparados.length}`);
+    // 2. Buscar IDs de arquitetos em CAMPANHAS PENDENTES (rascunho/pendente/enviando)
+    const { data: campanhasPendentes } = await supabase
+      .from('tendenci_prospec_arq_campaigns')
+      .select('id')
+      .in('status', ['rascunho', 'pendente', 'enviando']);
 
-    // 2. Buscar arquitetos disponíveis EXCLUINDO os já disparados
+    const campanhasPendentesIds = campanhasPendentes?.map(c => c.id) || [];
+    
+    let emCampanhasPendentes: { architect_id: string; campanha_id: string }[] = [];
+    if (campanhasPendentesIds.length > 0) {
+      const { data: arquitetosEmPendentes } = await supabase
+        .from('tendenci_prospec_arq_campaign_architects')
+        .select('architect_id, campanha_id')
+        .in('campanha_id', campanhasPendentesIds);
+      
+      emCampanhasPendentes = arquitetosEmPendentes || [];
+    }
+
+    // 3. Se estiver editando, não excluir arquitetos da PRÓPRIA campanha
+    let arquitetosParaExcluirDePendentes = emCampanhasPendentes;
+    if (editingCampaignId) {
+      arquitetosParaExcluirDePendentes = emCampanhasPendentes.filter(
+        a => a.campanha_id !== editingCampaignId
+      );
+    }
+
+    // 4. Combinar listas de exclusão (já disparados + em campanhas pendentes de outros)
+    const idsJaDisparados = [...new Set(jaDisparados?.map(d => d.architect_id) || [])];
+    const idsEmPendentes = [...new Set(arquitetosParaExcluirDePendentes.map(d => d.architect_id))];
+    const todosIdsParaExcluir = [...new Set([...idsJaDisparados, ...idsEmPendentes])];
+
+    console.log(`🚫 Arquitetos já disparados: ${idsJaDisparados.length}`);
+    console.log(`⏳ Arquitetos em campanhas pendentes (outras): ${idsEmPendentes.length}`);
+    setArquitetosEmOutrasCampanhas(idsEmPendentes.length);
+
+    // 5. Buscar arquitetos disponíveis EXCLUINDO todos
     let query = supabase
       .from('architects')
       .select('id, name, phone, tier, tag_prospeccao')
@@ -152,9 +186,8 @@ export function CampanhasManager() {
       .is('data_ultimo_contato', null)
       .eq('active', true);
 
-    // 3. Aplicar filtro de exclusão se houver IDs para excluir
-    if (idsJaDisparados.length > 0) {
-      query = query.not('id', 'in', `(${idsJaDisparados.join(',')})`);
+    if (todosIdsParaExcluir.length > 0) {
+      query = query.not('id', 'in', `(${todosIdsParaExcluir.join(',')})`);
     }
 
     const { data, error } = await query.order('name');
@@ -194,8 +227,11 @@ export function CampanhasManager() {
         webhookN8n: campanha.webhook_n8n || "",
         whatsappConnectionId: campanha.whatsapp_connection_id || "",
       });
+      // Recarregar arquitetos disponíveis considerando esta campanha em edição
+      fetchArquitetosDisponiveis(campanha.id);
     } else {
       resetForm();
+      fetchArquitetosDisponiveis();
     }
     setIsDialogOpen(true);
   };
@@ -869,6 +905,16 @@ export function CampanhasManager() {
 
             <div className="space-y-2">
               <Label>Arquitetos (Tag: "Nunca Contactado") *</Label>
+              {arquitetosEmOutrasCampanhas > 0 && (
+                <Card className="border-orange-200 bg-orange-50/50 dark:border-orange-800 dark:bg-orange-950/20">
+                  <CardContent className="p-3 flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                    <p className="text-sm text-orange-800 dark:text-orange-200">
+                      {arquitetosEmOutrasCampanhas} arquiteto(s) estão em outras campanhas pendentes e não aparecem na lista.
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
               {arquitetosDisponiveis.length === 0 ? (
                 <Card className="border-yellow-200 bg-yellow-50/50 dark:border-yellow-800 dark:bg-yellow-950/20">
                   <CardContent className="p-4">
