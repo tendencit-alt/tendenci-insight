@@ -219,7 +219,82 @@ Deno.serve(async (req) => {
     }
     
     const formattedNumber = phoneResult.formatted
-    console.log(`📱 Enviando para ${nome} (${formattedNumber}) via ${instance_name}`)
+    console.log(`📱 Verificando número de ${nome} (${formattedNumber}) via ${instance_name}`)
+
+    // FASE 1: Verificar se número existe no WhatsApp ANTES de enviar
+    try {
+      const checkResponse = await fetch(`${evolutionUrl}/chat/whatsappNumbers/${instance_name}`, {
+        method: 'POST',
+        headers: {
+          'apikey': evolutionApiKey,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          numbers: [formattedNumber]
+        })
+      })
+
+      if (checkResponse.ok) {
+        const checkResult = await checkResponse.json()
+        console.log(`🔍 Verificação WhatsApp:`, JSON.stringify(checkResult))
+        
+        // Se retornou array e o primeiro elemento tem exists: false
+        if (Array.isArray(checkResult) && checkResult.length > 0 && checkResult[0]?.exists === false) {
+          console.error(`❌ Número ${formattedNumber} não está registrado no WhatsApp`)
+          
+          // Registrar erro específico
+          await supabase
+            .from('tendenci_prospec_arq_logs')
+            .insert({
+              architect_id: arquiteto_id,
+              campanha_id: campanha_id,
+              tipo: 'numero_inexistente',
+              canal: 'whatsapp',
+              mensagem: `Número não registrado no WhatsApp`,
+              metadata: {
+                original_phone: phoneResult.original,
+                formatted_phone: formattedNumber,
+                evolution_check: checkResult[0]
+              }
+            })
+          
+          // Registrar na campaign_architects
+          await supabase
+            .from('tendenci_prospec_arq_campaign_architects')
+            .upsert({
+              campanha_id,
+              architect_id: arquiteto_id,
+              status: 'erro',
+              data_envio: new Date().toISOString(),
+              metadata: { 
+                error: 'Número não registrado no WhatsApp',
+                tipo_erro: 'numero_inexistente'
+              }
+            })
+          
+          return new Response(
+            JSON.stringify({ 
+              status: 'failed',
+              error: 'Número não registrado no WhatsApp',
+              error_type: 'numero_inexistente',
+              details: { phone: formattedNumber, exists: false }
+            }),
+            {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 200
+            }
+          )
+        }
+        
+        console.log(`✅ Número ${formattedNumber} verificado - existe no WhatsApp`)
+      } else {
+        console.warn(`⚠️ Não foi possível verificar número (${checkResponse.status}) - continuando com envio`)
+      }
+    } catch (checkError) {
+      console.warn(`⚠️ Erro ao verificar número:`, checkError, `- continuando com envio`)
+    }
+
+    console.log(`📱 Enviando mensagem para ${nome} (${formattedNumber}) via ${instance_name}`)
 
     let evolutionResponse
 
