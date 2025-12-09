@@ -135,15 +135,32 @@ export function CampanhasManager() {
   };
 
   const fetchArquitetosDisponiveis = async () => {
-    const { data, error } = await supabase
+    // 1. Buscar IDs de arquitetos que JÁ receberam campanhas com sucesso
+    const { data: jaDisparados } = await supabase
+      .from('tendenci_prospec_arq_campaign_architects')
+      .select('architect_id')
+      .eq('status', 'enviado');
+
+    const idsJaDisparados = [...new Set(jaDisparados?.map(d => d.architect_id) || [])];
+    console.log(`🚫 Arquitetos já disparados (excluídos): ${idsJaDisparados.length}`);
+
+    // 2. Buscar arquitetos disponíveis EXCLUINDO os já disparados
+    let query = supabase
       .from('architects')
       .select('id, name, phone, tier, tag_prospeccao')
       .is('data_primeiro_contato', null)
       .is('data_ultimo_contato', null)
-      .eq('active', true)
-      .order('name');
+      .eq('active', true);
+
+    // 3. Aplicar filtro de exclusão se houver IDs para excluir
+    if (idsJaDisparados.length > 0) {
+      query = query.not('id', 'in', `(${idsJaDisparados.join(',')})`);
+    }
+
+    const { data, error } = await query.order('name');
 
     if (!error && data) {
+      console.log(`✅ Arquitetos disponíveis para campanha: ${data.length}`);
       setArquitetosDisponiveis(data);
     }
   };
