@@ -135,6 +135,7 @@ export function CampanhasManager() {
   };
 
   const [arquitetosEmOutrasCampanhas, setArquitetosEmOutrasCampanhas] = useState(0);
+  const [arquitetosComErroTelefone, setArquitetosComErroTelefone] = useState(0);
 
   const fetchArquitetosDisponiveis = async (editingCampaignId?: string) => {
     // 1. Buscar IDs de arquitetos que JÁ receberam campanhas com sucesso
@@ -161,7 +162,17 @@ export function CampanhasManager() {
       emCampanhasPendentes = arquitetosEmPendentes || [];
     }
 
-    // 3. Se estiver editando, não excluir arquitetos da PRÓPRIA campanha
+    // 3. Buscar IDs de arquitetos com ERROS de telefone (número inexistente/formatação/envio)
+    const { data: arquitetosComErros } = await supabase
+      .from('tendenci_prospec_arq_logs')
+      .select('architect_id')
+      .in('tipo', ['numero_inexistente', 'erro_formatacao', 'erro_envio'])
+      .not('architect_id', 'is', null);
+
+    const idsComErroTelefone = [...new Set(arquitetosComErros?.map(d => d.architect_id).filter(Boolean) || [])];
+    setArquitetosComErroTelefone(idsComErroTelefone.length);
+
+    // 4. Se estiver editando, não excluir arquitetos da PRÓPRIA campanha
     let arquitetosParaExcluirDePendentes = emCampanhasPendentes;
     if (editingCampaignId) {
       arquitetosParaExcluirDePendentes = emCampanhasPendentes.filter(
@@ -169,16 +180,17 @@ export function CampanhasManager() {
       );
     }
 
-    // 4. Combinar listas de exclusão (já disparados + em campanhas pendentes de outros)
+    // 5. Combinar listas de exclusão (já disparados + em campanhas pendentes + com erro de telefone)
     const idsJaDisparados = [...new Set(jaDisparados?.map(d => d.architect_id) || [])];
     const idsEmPendentes = [...new Set(arquitetosParaExcluirDePendentes.map(d => d.architect_id))];
-    const todosIdsParaExcluir = [...new Set([...idsJaDisparados, ...idsEmPendentes])];
+    const todosIdsParaExcluir = [...new Set([...idsJaDisparados, ...idsEmPendentes, ...idsComErroTelefone])];
 
     console.log(`🚫 Arquitetos já disparados: ${idsJaDisparados.length}`);
     console.log(`⏳ Arquitetos em campanhas pendentes (outras): ${idsEmPendentes.length}`);
+    console.log(`📵 Arquitetos com erro de telefone: ${idsComErroTelefone.length}`);
     setArquitetosEmOutrasCampanhas(idsEmPendentes.length);
 
-    // 5. Buscar arquitetos disponíveis EXCLUINDO todos
+    // 6. Buscar arquitetos disponíveis EXCLUINDO todos
     let query = supabase
       .from('architects')
       .select('id, name, phone, tier, tag_prospeccao')
@@ -550,10 +562,25 @@ export function CampanhasManager() {
     }
 
     const arquitetosSelecionados = campanha.arquitetos_selecionados || [];
-    const arquitetosValidos = arquitetosSelecionados.filter(id => {
-      const arq = arquitetosDisponiveis.find(a => a.id === id);
-      return arq && validateBrazilianPhone(arq.phone).valid;
-    });
+    
+    // Buscar dados atualizados dos arquitetos diretamente do banco
+    const { data: arquitetosData, error: arquitetosError } = await supabase
+      .from('architects')
+      .select('id, name, phone')
+      .in('id', arquitetosSelecionados);
+
+    if (arquitetosError || !arquitetosData) {
+      toast({
+        title: "Erro",
+        description: "Erro ao buscar dados dos arquitetos",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const arquitetosValidos = arquitetosData.filter(arq => 
+      validateBrazilianPhone(arq.phone).valid
+    );
 
     if (arquitetosValidos.length === 0) {
       toast({
@@ -581,10 +608,12 @@ export function CampanhasManager() {
     setDispatchStatuses([]);
 
     try {
+      const arquitetosValidosIds = arquitetosValidos.map(a => a.id);
+      
       const { data, error } = await supabase.functions.invoke('execute-campaign-background', {
         body: {
           campanha_id: campanha.id,
-          arquiteto_ids: arquitetosValidos,
+          arquiteto_ids: arquitetosValidosIds,
         },
       });
 
@@ -905,13 +934,25 @@ export function CampanhasManager() {
 
             <div className="space-y-2">
               <Label>Arquitetos (Tag: "Nunca Contactado") *</Label>
-              {arquitetosEmOutrasCampanhas > 0 && (
+              {(arquitetosEmOutrasCampanhas > 0 || arquitetosComErroTelefone > 0) && (
                 <Card className="border-orange-200 bg-orange-50/50 dark:border-orange-800 dark:bg-orange-950/20">
-                  <CardContent className="p-3 flex items-center gap-2">
-                    <AlertTriangle className="w-4 h-4 text-orange-600 dark:text-orange-400" />
-                    <p className="text-sm text-orange-800 dark:text-orange-200">
-                      {arquitetosEmOutrasCampanhas} arquiteto(s) estão em outras campanhas pendentes e não aparecem na lista.
-                    </p>
+                  <CardContent className="p-3 space-y-1">
+                    {arquitetosEmOutrasCampanhas > 0 && (
+                      <div className="flex items-center gap-2">
+                        <AlertTriangle className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                        <p className="text-sm text-orange-800 dark:text-orange-200">
+                          {arquitetosEmOutrasCampanhas} arquiteto(s) estão em outras campanhas pendentes.
+                        </p>
+                      </div>
+                    )}
+                    {arquitetosComErroTelefone > 0 && (
+                      <div className="flex items-center gap-2">
+                        <XCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
+                        <p className="text-sm text-red-800 dark:text-red-200">
+                          {arquitetosComErroTelefone} arquiteto(s) com telefone inválido/inexistente foram excluídos.
+                        </p>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               )}
