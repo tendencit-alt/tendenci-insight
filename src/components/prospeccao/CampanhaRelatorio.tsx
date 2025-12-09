@@ -15,8 +15,6 @@ interface DispatchStatus {
   architect_id: string;
   status: string;
   data_envio: string | null;
-  erro_mensagem: string | null;
-  tentativas: number;
   architects: {
     name: string;
     phone: string;
@@ -35,8 +33,6 @@ export function CampanhaRelatorio({ campanhaId }: RelatorioProps) {
           architect_id,
           status,
           data_envio,
-          erro_mensagem,
-          tentativas,
           architects:architect_id (
             name,
             phone
@@ -154,12 +150,6 @@ export function CampanhaRelatorio({ campanhaId }: RelatorioProps) {
                       </Badge>
                     </div>
                   </div>
-
-                  {dispatch.erro_mensagem && (
-                    <div className="text-xs text-destructive bg-destructive/10 p-2 rounded">
-                      <strong>Erro:</strong> {dispatch.erro_mensagem}
-                    </div>
-                  )}
                 </div>
               ))
             )}
