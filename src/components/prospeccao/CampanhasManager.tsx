@@ -29,6 +29,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { AudioRecorder } from "./AudioRecorder";
 import { CampanhaRelatorio } from "./CampanhaRelatorio";
+import { CampaignProgressMonitor } from "./CampaignProgressMonitor";
 
 interface Campanha {
   id: string;
@@ -1117,6 +1118,9 @@ export function CampanhasManager() {
         </TabsContent>
 
         <TabsContent value="andamento" className="space-y-4">
+          {/* Monitor de Progresso em Tempo Real */}
+          <CampaignProgressMonitor />
+          
           {campanhasEmAndamento.length === 0 ? (
             <Card>
               <CardContent className="p-6 text-center text-muted-foreground">
