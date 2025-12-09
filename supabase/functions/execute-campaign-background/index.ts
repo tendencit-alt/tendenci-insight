@@ -24,19 +24,26 @@ async function processNextInQueue(supabase: any) {
   const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString()
   const { data: stuckDispatches } = await supabase
     .from('tendenci_campaign_dispatches')
-    .select('id, campanha_id')
+    .select('id, campanha_id, total_arquitetos, enviados_sucesso, enviados_erro')
     .eq('status', 'em_andamento')
     .lt('updated_at', sixHoursAgo)
   
   if (stuckDispatches && stuckDispatches.length > 0) {
     console.log(`⚠️ [TIMEOUT] Encontrados ${stuckDispatches.length} dispatches travados (>6h)`)
     for (const stuck of stuckDispatches) {
+      // Verificar se houve ALGUM sucesso - se sim, não marcar campanha inteira como erro
+      const hadSomeSuccess = (stuck.enviados_sucesso || 0) > 0
+      const allFailed = (stuck.enviados_erro || 0) === (stuck.total_arquitetos || 0)
+      
       await supabase
         .from('tendenci_campaign_dispatches')
         .update({ 
-          status: 'erro',
-          erro_mensagem: 'Timeout: sem progresso por mais de 6 horas',
-          concluido_em: new Date().toISOString()
+          status: allFailed ? 'erro' : 'concluido',
+          erro_mensagem: allFailed 
+            ? 'Timeout: sem progresso por mais de 6 horas - todos falharam'
+            : `Timeout: concluído com ${stuck.enviados_sucesso} sucessos e ${stuck.enviados_erro} erros`,
+          concluido_em: new Date().toISOString(),
+          progresso_percentual: 100
         })
         .eq('id', stuck.id)
       
@@ -47,11 +54,19 @@ async function processNextInQueue(supabase: any) {
         .eq('dispatch_id', stuck.id)
         .eq('status', 'pendente')
       
-      // Marcar campanha como erro
-      await supabase
-        .from('tendenci_prospec_arq_campaigns')
-        .update({ status: 'erro' })
-        .eq('id', stuck.campanha_id)
+      // Só marcar campanha como erro se TODOS falharam
+      if (allFailed) {
+        await supabase
+          .from('tendenci_prospec_arq_campaigns')
+          .update({ status: 'erro' })
+          .eq('id', stuck.campanha_id)
+      } else {
+        // Se teve algum sucesso, marcar como enviado (parcialmente)
+        await supabase
+          .from('tendenci_prospec_arq_campaigns')
+          .update({ status: 'enviado' })
+          .eq('id', stuck.campanha_id)
+      }
     }
   }
   
@@ -77,9 +92,20 @@ async function processNextInQueue(supabase: any) {
     .lte('agendado_para', new Date().toISOString())
     .order('agendado_para', { ascending: true })
     .limit(1)
-    .single()
+    .maybeSingle() // Usar maybeSingle ao invés de single para evitar erro quando não há resultados
 
   if (queueError) {
+    console.error('❌ [PROCESS] Erro ao buscar fila:', queueError)
+    return { 
+      success: false, 
+      processed: false, 
+      has_more: false,
+      message: 'Erro ao buscar fila',
+      error: queueError.message
+    }
+  }
+
+  if (!nextInQueue) {
     console.log('⚠️ [PROCESS] Nenhum item pendente encontrado')
     return { 
       success: true, 

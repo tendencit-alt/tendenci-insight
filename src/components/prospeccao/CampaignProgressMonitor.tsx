@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -80,13 +80,41 @@ export function CampaignProgressMonitor() {
   };
 
   // 🔄 CONTROLE AUTOMÁTICO: Processar próximo item a cada 3 minutos
+  // Usando useRef para evitar múltiplos intervalos
+  const intervalRef = React.useRef<NodeJS.Timeout | null>(null);
+  const lastProcessTimeRef = React.useRef<number>(0);
+  
   useEffect(() => {
     const activeDispatch = dispatches.find(d => d.status === 'em_andamento');
     
-    if (!activeDispatch || isProcessing) return;
+    // Limpar intervalo anterior se não há dispatch ativo
+    if (!activeDispatch) {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      return;
+    }
+    
+    // Evitar criar múltiplos intervalos
+    if (intervalRef.current) return;
 
     const processNext = async () => {
+      // Evitar processamento duplo
+      const now = Date.now();
+      if (now - lastProcessTimeRef.current < 30000) { // Mínimo 30s entre chamadas
+        console.log('⏳ [FRONTEND] Aguardando intervalo mínimo...');
+        return;
+      }
+      
+      if (isProcessing) {
+        console.log('⏳ [FRONTEND] Já processando, ignorando...');
+        return;
+      }
+      
       setIsProcessing(true);
+      lastProcessTimeRef.current = now;
+      
       try {
         console.log('⏰ [FRONTEND] Chamando process_next automaticamente...');
         
@@ -99,9 +127,13 @@ export function CampaignProgressMonitor() {
         } else {
           console.log('✅ [FRONTEND] Próximo item processado:', data);
           
-          // Se não há mais itens, parar o loop
+          // Se não há mais itens, limpar intervalo
           if (!data.has_more) {
             console.log('🏁 [FRONTEND] Campanha concluída');
+            if (intervalRef.current) {
+              clearInterval(intervalRef.current);
+              intervalRef.current = null;
+            }
           }
         }
       } catch (err) {
@@ -115,10 +147,15 @@ export function CampaignProgressMonitor() {
     processNext();
 
     // Repetir a cada 3 minutos
-    const interval = setInterval(processNext, 3 * 60 * 1000);
+    intervalRef.current = setInterval(processNext, 3 * 60 * 1000);
 
-    return () => clearInterval(interval);
-  }, [dispatches, isProcessing]);
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+  }, [dispatches.length, isProcessing]); // Dependência em dispatches.length para evitar loops
 
   useEffect(() => {
     fetchDispatches();
