@@ -1,6 +1,6 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { subDays } from "date-fns";
+import { subDays, startOfDay, endOfDay, startOfMonth } from "date-fns";
 import { ProjectDetailSheet } from "./ProjectDetailSheet";
 import { ProjectCard } from "./ProjectCard";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -49,6 +49,50 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
   const [projectToDelete, setProjectToDelete] = useState<any>(null);
   const { isMaster } = usePermissions();
 
+  const getDateRange = useCallback(() => {
+    const now = new Date();
+    let dateFrom: Date | null = null;
+    let dateTo: Date | null = null;
+
+    switch (filters.period) {
+      case "today":
+        dateFrom = startOfDay(now);
+        dateTo = endOfDay(now);
+        break;
+      case "yesterday":
+        const yesterday = subDays(now, 1);
+        dateFrom = startOfDay(yesterday);
+        dateTo = endOfDay(yesterday);
+        break;
+      case "last_7_days":
+        dateFrom = subDays(now, 7);
+        break;
+      case "thisMonth":
+        dateFrom = startOfMonth(now);
+        break;
+      case "last_30_days":
+        dateFrom = subDays(now, 30);
+        break;
+      case "last_60_days":
+        dateFrom = subDays(now, 60);
+        break;
+      case "last_90_days":
+        dateFrom = subDays(now, 90);
+        break;
+      case "custom":
+        if (filters.customDateRange?.from) {
+          dateFrom = filters.customDateRange.from;
+          dateTo = filters.customDateRange.to || undefined;
+        }
+        break;
+      case "all":
+      default:
+        break;
+    }
+
+    return { dateFrom, dateTo };
+  }, [filters.period, filters.customDateRange]);
+
   const fetchProjects = useCallback(async () => {
     setLoading(true);
     let query = supabase
@@ -60,9 +104,9 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
       `)
       .order("sent_date", { ascending: true });
 
-    // Filtro de estágio
-    if (filters.stage && filters.stage !== "Todos") {
-      query = query.eq("stage", filters.stage);
+    // Filtro de estágios (multi-select)
+    if (filters.stages && filters.stages.length > 0) {
+      query = query.in("stage", filters.stages);
     }
 
     // Filtro de arquiteto
@@ -75,18 +119,14 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
     }
 
     // Filtro de período
-    if (filters.period && filters.period !== "all") {
-      const days = parseInt(filters.period);
-      if (!isNaN(days)) {
-        const startDate = subDays(new Date(), days).toISOString();
-        query = query.gte("created_at", startDate);
-      }
+    const { dateFrom, dateTo } = getDateRange();
+    const dateField = filters.filterByDeadline ? "deadline" : "created_at";
+    
+    if (dateFrom) {
+      query = query.gte(dateField, dateFrom.toISOString());
     }
-
-    // Busca em nome, cliente e arquiteto
-    if (filters.search) {
-      // Primeiro buscamos todos os dados e filtramos no cliente
-      // porque Supabase não suporta busca em relações diretamente no .or()
+    if (dateTo) {
+      query = query.lte(dateField, dateTo.toISOString());
     }
 
     const { data, error } = await query;
@@ -107,7 +147,7 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
       setProjects(filteredData);
     }
     setLoading(false);
-  }, [filters]);
+  }, [filters, getDateRange]);
 
   // Fetch inicial e quando filtros mudam
   useEffect(() => {
@@ -177,11 +217,20 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
     }
   };
 
-  // Agrupar projetos por estágio
-  const groupedProjects = STAGE_CONFIG.reduce((acc, stage) => {
-    acc[stage.key] = sortByDeadlinePriority(projects.filter(p => p.stage === stage.key));
-    return acc;
-  }, {} as Record<string, any[]>);
+  // Agrupar projetos por estágio e calcular totais
+  const { groupedProjects, stageTotals } = useMemo(() => {
+    const grouped = STAGE_CONFIG.reduce((acc, stage) => {
+      acc[stage.key] = sortByDeadlinePriority(projects.filter(p => p.stage === stage.key));
+      return acc;
+    }, {} as Record<string, any[]>);
+
+    const totals = STAGE_CONFIG.reduce((acc, stage) => {
+      acc[stage.key] = grouped[stage.key]?.reduce((sum, p) => sum + (p.value || 0), 0) || 0;
+      return acc;
+    }, {} as Record<string, number>);
+
+    return { groupedProjects: grouped, stageTotals: totals };
+  }, [projects]);
 
   if (loading) {
     return <div className="text-center py-8">Carregando projetos...</div>;
@@ -193,11 +242,16 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-7 gap-4 lg:gap-6 min-w-max lg:min-w-0">
           {STAGE_CONFIG.map((stage) => (
             <div key={stage.key} className="space-y-4 min-w-[280px] lg:min-w-0">
-              <div className={`flex items-center gap-2 px-4 py-2 ${stage.color} rounded-lg`}>
-                <span className="text-2xl">{stage.icon}</span>
-                <h3 className={`font-semibold ${stage.textColor}`}>
-                  {stage.label} ({groupedProjects[stage.key]?.length || 0})
-                </h3>
+              <div className={`flex flex-col gap-1 px-4 py-2 ${stage.color} rounded-lg`}>
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">{stage.icon}</span>
+                  <h3 className={`font-semibold ${stage.textColor}`}>
+                    {stage.label} ({groupedProjects[stage.key]?.length || 0})
+                  </h3>
+                </div>
+                <div className={`text-sm font-medium ${stage.textColor} opacity-80`}>
+                  R$ {stageTotals[stage.key].toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </div>
               </div>
               <div className="space-y-3">
                 {groupedProjects[stage.key]?.map((project) => (

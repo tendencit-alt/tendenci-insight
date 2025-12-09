@@ -1,11 +1,11 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Eye, Edit, Trash2, ChevronLeft, ChevronRight, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { format, subDays } from "date-fns";
+import { format, subDays, startOfDay, endOfDay, startOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ProjectDetailSheet } from "./ProjectDetailSheet";
 import { EditProjectDialog } from "./EditProjectDialog";
@@ -41,12 +41,51 @@ export function ProjectsTable({ filters }: ProjectsTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const { isMaster } = usePermissions();
 
-  useEffect(() => {
-    fetchProjects();
-    setCurrentPage(1); // Reset page when filters change
-  }, [filters]);
+  const getDateRange = useCallback(() => {
+    const now = new Date();
+    let dateFrom: Date | null = null;
+    let dateTo: Date | null = null;
 
-  const fetchProjects = async () => {
+    switch (filters.period) {
+      case "today":
+        dateFrom = startOfDay(now);
+        dateTo = endOfDay(now);
+        break;
+      case "yesterday":
+        const yesterday = subDays(now, 1);
+        dateFrom = startOfDay(yesterday);
+        dateTo = endOfDay(yesterday);
+        break;
+      case "last_7_days":
+        dateFrom = subDays(now, 7);
+        break;
+      case "thisMonth":
+        dateFrom = startOfMonth(now);
+        break;
+      case "last_30_days":
+        dateFrom = subDays(now, 30);
+        break;
+      case "last_60_days":
+        dateFrom = subDays(now, 60);
+        break;
+      case "last_90_days":
+        dateFrom = subDays(now, 90);
+        break;
+      case "custom":
+        if (filters.customDateRange?.from) {
+          dateFrom = filters.customDateRange.from;
+          dateTo = filters.customDateRange.to || undefined;
+        }
+        break;
+      case "all":
+      default:
+        break;
+    }
+
+    return { dateFrom, dateTo };
+  }, [filters.period, filters.customDateRange]);
+
+  const fetchProjects = useCallback(async () => {
     setLoading(true);
     let query = supabase
       .from("projects")
@@ -58,9 +97,9 @@ export function ProjectsTable({ filters }: ProjectsTableProps) {
       `)
       .order("sent_date", { ascending: true, nullsFirst: false });
 
-    // Filtro de estágio
-    if (filters.stage && filters.stage !== "Todos") {
-      query = query.eq("stage", filters.stage);
+    // Filtro de estágios (multi-select)
+    if (filters.stages && filters.stages.length > 0) {
+      query = query.in("stage", filters.stages);
     }
 
     // Filtro de arquiteto
@@ -73,18 +112,14 @@ export function ProjectsTable({ filters }: ProjectsTableProps) {
     }
 
     // Filtro de período
-    if (filters.period && filters.period !== "all") {
-      const periodDays: Record<string, number> = {
-        last_7_days: 7,
-        last_30_days: 30,
-        last_60_days: 60,
-        last_90_days: 90
-      };
-      const days = periodDays[filters.period];
-      if (days) {
-        const startDate = subDays(new Date(), days).toISOString();
-        query = query.gte("created_at", startDate);
-      }
+    const { dateFrom, dateTo } = getDateRange();
+    const dateField = filters.filterByDeadline ? "deadline" : "created_at";
+    
+    if (dateFrom) {
+      query = query.gte(dateField, dateFrom.toISOString());
+    }
+    if (dateTo) {
+      query = query.lte(dateField, dateTo.toISOString());
     }
 
     // Filtro de busca
@@ -98,7 +133,12 @@ export function ProjectsTable({ filters }: ProjectsTableProps) {
       setProjects(data);
     }
     setLoading(false);
-  };
+  }, [filters, getDateRange]);
+
+  useEffect(() => {
+    fetchProjects();
+    setCurrentPage(1); // Reset page when filters change
+  }, [fetchProjects]);
 
   // Paginação
   const paginatedProjects = useMemo(() => {
