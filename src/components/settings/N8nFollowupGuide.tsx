@@ -368,7 +368,8 @@ export function N8nFollowupGuide() {
             },
             sendBody: true,
             specifyBody: "json",
-            jsonBody: "={{ JSON.stringify({ deal_id: $('Juntar Dados + Mensagem').item.json.deal_id, new_message: '🤖 IA (Follow-up ' + $('Juntar Dados + Mensagem').item.json.followup_number + '): ' + $('Juntar Dados + Mensagem').item.json.ai_message, followup_number: $('Juntar Dados + Mensagem').item.json.followup_number }) }}",
+            // Referência direta aos nós originais para garantir que dados existam
+            jsonBody: "={{ JSON.stringify({ deal_id: $('Preparar Dados').item.json.deal_id, new_message: '🤖 IA (Follow-up ' + $('Preparar Dados').item.json.followup_number + '): ' + $('AI Agent').item.json.output, followup_number: $('Preparar Dados').item.json.followup_number }) }}",
             options: {}
           },
           id: "callback-success",
