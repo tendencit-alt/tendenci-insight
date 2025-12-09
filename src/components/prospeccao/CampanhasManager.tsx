@@ -502,25 +502,38 @@ export function CampanhasManager() {
     setLoading(false);
   };
 
+  // ✅ Função sincronizada com backend (dispatch-campaign/index.ts)
   const formatBrazilianPhone = (phone: string | null): string | null => {
     if (!phone) return null;
     
     let cleaned = phone.replace(/\D/g, '');
     
-    if (cleaned.startsWith('5555')) {
+    // Remove prefixo 55 duplicado do início
+    while (cleaned.startsWith('55') && cleaned.length > 11) {
       cleaned = cleaned.substring(2);
     }
     
-    if (cleaned.length === 10 && !cleaned.startsWith('55')) {
-      const ddd = cleaned.substring(0, 2);
-      const numero = cleaned.substring(2);
-      cleaned = ddd + '9' + numero;
+    // Número muito curto (falta DDD)
+    if (cleaned.length < 10) {
+      return null;
     }
     
+    // Se tem 10 dígitos (DDD + 8 dígitos formato antigo), adiciona o 9
+    if (cleaned.length === 10) {
+      cleaned = cleaned.slice(0, 2) + '9' + cleaned.slice(2);
+    }
+    
+    // Se tem 12 dígitos (55 + DDD + 8), adiciona o 9
+    if (cleaned.length === 12 && cleaned.startsWith('55')) {
+      cleaned = cleaned.slice(0, 4) + '9' + cleaned.slice(4);
+    }
+    
+    // Garante que começa com 55
     if (!cleaned.startsWith('55')) {
       cleaned = '55' + cleaned;
     }
     
+    // Validação final: deve ter 13 dígitos (55 + DDD + 9 + 8)
     if (cleaned.length !== 13) {
       return null;
     }
@@ -625,11 +638,11 @@ export function CampanhasManager() {
         throw new Error(data.error || 'Erro ao iniciar campanha');
       }
 
-      const tempo = Math.round((campanha.arquitetos_selecionados.length * 3) / 60);
+      const tempoHoras = Math.round((arquitetosValidosIds.length * 3) / 60);
 
       toast({
         title: "✅ Campanha Enfileirada!",
-        description: `${campanha.arquitetos_selecionados.length} mensagens enfileiradas. Tempo estimado: ~${tempo} horas. Processamento em background.`,
+        description: `${arquitetosValidosIds.length} mensagens enfileiradas. Tempo estimado: ~${tempoHoras > 0 ? tempoHoras + ' horas' : arquitetosValidosIds.length * 3 + ' minutos'}. Processamento em background.`,
       });
 
       setDispatching(false);
@@ -687,7 +700,9 @@ export function CampanhasManager() {
   };
 
   const campanhasRascunho = campanhas.filter(c => c.status === 'rascunho');
+  const campanhasEmAndamento = campanhas.filter(c => ['pendente', 'enviando'].includes(c.status));
   const campanhasEnviadas = campanhas.filter(c => c.status === 'enviado');
+  const campanhasComErro = campanhas.filter(c => c.status === 'erro');
 
   return (
     <div className="space-y-6">
@@ -1070,10 +1085,21 @@ export function CampanhasManager() {
 
       {/* Tabs and other UI */}
       <Tabs defaultValue="criar" className="space-y-6">
-        <TabsList>
+        <TabsList className="flex flex-wrap">
           <TabsTrigger value="criar">Criar Campanha</TabsTrigger>
+          <TabsTrigger value="andamento">
+            Em Andamento ({campanhasEmAndamento.length})
+            {campanhasEmAndamento.length > 0 && (
+              <span className="ml-1 w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+            )}
+          </TabsTrigger>
           <TabsTrigger value="rascunhos">Rascunhos ({campanhasRascunho.length})</TabsTrigger>
           <TabsTrigger value="enviadas">Enviadas ({campanhasEnviadas.length})</TabsTrigger>
+          {campanhasComErro.length > 0 && (
+            <TabsTrigger value="erros" className="text-destructive">
+              Com Erros ({campanhasComErro.length})
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="criar">
@@ -1088,6 +1114,103 @@ export function CampanhasManager() {
               </Button>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="andamento" className="space-y-4">
+          {campanhasEmAndamento.length === 0 ? (
+            <Card>
+              <CardContent className="p-6 text-center text-muted-foreground">
+                Nenhuma campanha em andamento
+              </CardContent>
+            </Card>
+          ) : (
+            campanhasEmAndamento.map((campanha) => (
+              <Card key={campanha.id} className="border-blue-200 bg-blue-50/30 dark:border-blue-800 dark:bg-blue-950/20">
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        {getTipoIcon(campanha.tipo_envio)}
+                        <CardTitle>{campanha.nome}</CardTitle>
+                        <Badge className="bg-blue-500 gap-1">
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                          {campanha.status === 'pendente' ? 'Aguardando' : 'Enviando'}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {campanha.arquitetos_selecionados?.length || 0} arquitetos selecionados
+                      </p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setViewingCampanha(campanha);
+                        setDetailsOpen(true);
+                      }}
+                      className="gap-2"
+                    >
+                      <Eye className="h-4 w-4" />
+                      Ver Progresso
+                    </Button>
+                  </div>
+                </CardHeader>
+              </Card>
+            ))
+          )}
+        </TabsContent>
+
+        <TabsContent value="erros" className="space-y-4">
+          {campanhasComErro.length === 0 ? (
+            <Card>
+              <CardContent className="p-6 text-center text-muted-foreground">
+                Nenhuma campanha com erro
+              </CardContent>
+            </Card>
+          ) : (
+            campanhasComErro.map((campanha) => (
+              <Card key={campanha.id} className="border-red-200 bg-red-50/30 dark:border-red-800 dark:bg-red-950/20">
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        {getTipoIcon(campanha.tipo_envio)}
+                        <CardTitle>{campanha.nome}</CardTitle>
+                        <Badge variant="destructive" className="gap-1">
+                          <XCircle className="w-3 h-3" />
+                          Erro
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {campanha.arquitetos_selecionados?.length || 0} arquitetos
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleOpenDialog(campanha)}
+                      >
+                        Editar e Retentar
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setViewingCampanha(campanha);
+                          setDetailsOpen(true);
+                        }}
+                        className="gap-2"
+                      >
+                        <Eye className="h-4 w-4" />
+                        Ver Erros
+                      </Button>
+                    </div>
+                  </div>
+                </CardHeader>
+              </Card>
+            ))
+          )}
         </TabsContent>
 
         <TabsContent value="rascunhos" className="space-y-4">

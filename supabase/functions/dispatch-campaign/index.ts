@@ -359,24 +359,50 @@ Deno.serve(async (req) => {
       const errorText = await evolutionResponse.text()
       console.error('❌ Erro Evolution API:', errorText)
       
-      // Registrar erro mas NÃO falhar completamente - continuar campanha
+      // Detectar se é erro de número inexistente no body do erro
+      let tipoErro = 'erro_envio'
+      let errorParsed: any = null
+      try {
+        errorParsed = JSON.parse(errorText)
+        // Evolution API retorna exists: false quando número não existe
+        if (errorParsed?.exists === false || 
+            errorText.includes('exists') && errorText.includes('false') ||
+            errorText.includes('not registered') ||
+            errorText.includes('não registrado')) {
+          tipoErro = 'numero_inexistente'
+          console.log(`📵 Número ${formattedNumber} identificado como inexistente via resposta de erro`)
+          
+          // Marcar arquiteto com whatsapp_valido = false
+          await supabase
+            .from('architects')
+            .update({ whatsapp_valido: false })
+            .eq('id', arquiteto_id)
+        }
+      } catch (e) {
+        // errorText não é JSON válido, manter como erro_envio
+      }
+      
+      // Registrar erro com tipo correto
       await supabase
         .from('tendenci_prospec_arq_logs')
         .insert({
           architect_id: arquiteto_id,
           campanha_id: campanha_id,
-          tipo: 'erro_envio',
+          tipo: tipoErro,
           canal: 'whatsapp',
-          mensagem: `Erro ao enviar: ${errorText}`,
+          mensagem: tipoErro === 'numero_inexistente' 
+            ? 'Número não registrado no WhatsApp' 
+            : `Erro ao enviar: ${errorText}`,
           metadata: {
             instance_name,
             phone_number: formattedNumber,
             tipo_envio,
-            error_response: errorText
+            error_response: errorText,
+            error_parsed: errorParsed
           }
         })
       
-      // Registrar falha na campanha
+      // Registrar falha na campanha com tipo correto
       await supabase
         .from('tendenci_prospec_arq_campaign_architects')
         .upsert({
@@ -384,14 +410,20 @@ Deno.serve(async (req) => {
           architect_id: arquiteto_id,
           status: 'erro',
           data_envio: new Date().toISOString(),
-          metadata: { error: errorText }
+          metadata: { 
+            error: errorText,
+            tipo_erro: tipoErro
+          }
         })
       
       // Retornar SUCESSO com status de erro (não bloqueia campanha)
       return new Response(
         JSON.stringify({ 
           status: 'failed',
-          error: `Evolution API error: ${evolutionResponse.status}`,
+          error: tipoErro === 'numero_inexistente' 
+            ? 'Número não registrado no WhatsApp'
+            : `Evolution API error: ${evolutionResponse.status}`,
+          error_type: tipoErro,
           details: errorText
         }),
         {
@@ -479,8 +511,9 @@ Deno.serve(async (req) => {
 
     // Atualizar dados do arquiteto após envio bem-sucedido
     const updateData: any = {
-      status_funil: 'adicionar_epata',
+      status_funil: 'contato_iniciado',
       tag_prospeccao: 'contactado',
+      whatsapp_valido: true,
       data_ultimo_contato: new Date().toISOString(),
       updated_at: new Date().toISOString()
     }
