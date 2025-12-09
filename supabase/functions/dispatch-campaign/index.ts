@@ -362,24 +362,61 @@ Deno.serve(async (req) => {
       // Detectar se é erro de número inexistente no body do erro
       let tipoErro = 'erro_envio'
       let errorParsed: any = null
+      let isNumeroInexistente = false
+      
       try {
         errorParsed = JSON.parse(errorText)
-        // Evolution API retorna exists: false quando número não existe
-        if (errorParsed?.exists === false || 
-            errorText.includes('exists') && errorText.includes('false') ||
+        
+        // CORREÇÃO: Verificar estrutura REAL da Evolution API
+        // Formato: {"status":400,"error":"Bad Request","response":{"message":[{"jid":"...","exists":false,"number":"..."}]}}
+        const messageArray = errorParsed?.response?.message
+        if (Array.isArray(messageArray) && messageArray.length > 0) {
+          if (messageArray[0]?.exists === false) {
+            isNumeroInexistente = true
+            console.log(`📵 Número ${formattedNumber} identificado como inexistente via response.message[0].exists === false`)
+          }
+        }
+        
+        // Fallback: verificar outras estruturas possíveis
+        if (!isNumeroInexistente && errorParsed?.exists === false) {
+          isNumeroInexistente = true
+          console.log(`📵 Número ${formattedNumber} identificado como inexistente via exists === false`)
+        }
+        
+        // Fallback: verificar texto bruto
+        if (!isNumeroInexistente && (
+          errorText.includes('"exists":false') || 
+          errorText.includes('"exists": false') ||
+          errorText.includes('not registered') ||
+          errorText.includes('não registrado')
+        )) {
+          isNumeroInexistente = true
+          console.log(`📵 Número ${formattedNumber} identificado como inexistente via texto`)
+        }
+        
+      } catch (e) {
+        // errorText não é JSON válido, verificar texto bruto
+        if (errorText.includes('"exists":false') || 
             errorText.includes('not registered') ||
             errorText.includes('não registrado')) {
-          tipoErro = 'numero_inexistente'
-          console.log(`📵 Número ${formattedNumber} identificado como inexistente via resposta de erro`)
-          
-          // Marcar arquiteto com whatsapp_valido = false
-          await supabase
-            .from('architects')
-            .update({ whatsapp_valido: false })
-            .eq('id', arquiteto_id)
+          isNumeroInexistente = true
         }
-      } catch (e) {
-        // errorText não é JSON válido, manter como erro_envio
+      }
+      
+      if (isNumeroInexistente) {
+        tipoErro = 'numero_inexistente'
+        
+        // Marcar arquiteto IMEDIATAMENTE como whatsapp_valido = false
+        const { error: updateError } = await supabase
+          .from('architects')
+          .update({ whatsapp_valido: false })
+          .eq('id', arquiteto_id)
+          
+        if (updateError) {
+          console.error('❌ Erro ao marcar whatsapp_valido = false:', updateError)
+        } else {
+          console.log(`✅ Arquiteto ${arquiteto_id} marcado como whatsapp_valido = false`)
+        }
       }
       
       // Registrar erro com tipo correto
