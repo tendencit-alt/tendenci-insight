@@ -183,53 +183,235 @@ export function N8nFollowupGuide() {
 
   const getWorkflowJSON = () => {
     return {
-      name: "Tendenci - Follow-up Automático v3",
+      name: "Tendenci - Follow-up Completo v4",
       nodes: [
         {
           parameters: {
-            rule: {
-              interval: [{ field: "hours", hoursInterval: 2 }]
-            }
+            httpMethod: "POST",
+            path: "tendenci-followup",
+            responseMode: "responseNode",
+            options: {}
           },
-          name: "Schedule Trigger",
-          type: "n8n-nodes-base.scheduleTrigger",
-          typeVersion: 1.1,
-          position: [240, 300]
+          id: "webhook-trigger",
+          name: "Webhook Tendenci",
+          type: "n8n-nodes-base.webhook",
+          typeVersion: 2,
+          position: [240, 300],
+          webhookId: "tendenci-followup-webhook"
         },
         {
           parameters: {
-            method: "POST",
-            url: "https://emnwuzrysqoiwapzmnbv.supabase.co/functions/v1/dispatch-followup",
-            authentication: "genericCredentialType",
-            genericAuthType: "httpHeaderAuth",
-            sendBody: true,
-            bodyParameters: {
-              parameters: [{ name: "ignore_time_filter", value: "=false" }]
+            mode: "raw",
+            jsonOutput: "={{ JSON.stringify({ deal_id: $json.deal_id, client_name: $json.client_name, client_phone: $json.client_phone, conversation_history: $json.conversation_history, followup_number: $json.followup_number, product_type: $json.product_type, categoria: $json.categoria, last_interaction: $json.last_interaction, callback_url: $json.callback_url, evolution_url: 'SUA_EVOLUTION_URL_AQUI', instance_name: 'SUA_INSTANCIA_AQUI', evolution_apikey: 'SUA_APIKEY_AQUI' }) }}",
+            options: {}
+          },
+          id: "set-fields",
+          name: "Preparar Dados",
+          type: "n8n-nodes-base.set",
+          typeVersion: 3.4,
+          position: [460, 300]
+        },
+        {
+          parameters: {
+            amount: 3,
+            unit: "minutes"
+          },
+          id: "wait-node",
+          name: "Aguardar 3min",
+          type: "n8n-nodes-base.wait",
+          typeVersion: 1.1,
+          position: [680, 300]
+        },
+        {
+          parameters: {
+            modelId: {
+              __rl: true,
+              value: "gpt-4o-mini",
+              mode: "list",
+              cachedResultName: "GPT-4O-MINI"
+            },
+            messages: {
+              values: [
+                {
+                  content: "=Você é um especialista em vendas de móveis. Gere uma mensagem de follow-up curta e personalizada (máximo 2 parágrafos) para o cliente.\n\nNome do cliente: {{ $json.client_name }}\nProduto de interesse: {{ $json.product_type || 'móveis' }}\nNúmero do follow-up: {{ $json.followup_number }}\nÚltima interação: {{ $json.last_interaction }}\n\nHistórico da conversa:\n{{ $json.conversation_history || 'Primeira interação' }}\n\nRegras:\n- Seja cordial e profissional\n- Não seja invasivo\n- Mencione o produto de interesse\n- Se for follow-up 2+, seja mais breve\n- Termine com uma pergunta aberta"
+                }
+              ]
             },
             options: {}
           },
-          name: "Dispatch Follow-ups",
-          type: "n8n-nodes-base.httpRequest",
-          typeVersion: 4.1,
-          position: [460, 300],
+          id: "openai-chat",
+          name: "Gerar Mensagem IA",
+          type: "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+          typeVersion: 1,
+          position: [900, 300],
           credentials: {
-            httpHeaderAuth: { id: "CONFIGURE_SUPABASE_AUTH", name: "Supabase Auth" }
+            openAiApi: {
+              id: "CONFIGURE_OPENAI",
+              name: "OpenAI API"
+            }
           }
         },
         {
           parameters: {
-            content: "## Workflow de Follow-up Automático v3\n\n### Fluxo:\n1. Schedule Trigger executa a cada 2 horas\n2. Chama dispatch-followup Edge Function\n3. Edge Function envia leads para N8N_FOLLOWUP_WEBHOOK_URL (configurado no Supabase)\n4. Seu outro workflow de follow-up processa e envia via WhatsApp\n\n### Configuração:\n- HTTP Header Auth: Authorization = Bearer YOUR_ANON_KEY"
+            mode: "raw",
+            jsonOutput: "={{ JSON.stringify({ ...JSON.parse($('Preparar Dados').item.json), ai_message: $json.text || $json.message?.content || $json.content || '' }) }}",
+            options: {}
           },
-          name: "Sticky Note",
+          id: "merge-message",
+          name: "Juntar Dados + Mensagem",
+          type: "n8n-nodes-base.set",
+          typeVersion: 3.4,
+          position: [1120, 300]
+        },
+        {
+          parameters: {
+            method: "POST",
+            url: "={{ $json.evolution_url }}/message/sendText/{{ $json.instance_name }}",
+            authentication: "genericCredentialType",
+            genericAuthType: "httpHeaderAuth",
+            sendHeaders: true,
+            headerParameters: {
+              parameters: [
+                {
+                  name: "apikey",
+                  value: "={{ $json.evolution_apikey }}"
+                }
+              ]
+            },
+            sendBody: true,
+            specifyBody: "json",
+            jsonBody: "={\n  \"number\": \"{{ $json.client_phone }}@s.whatsapp.net\",\n  \"text\": \"{{ $json.ai_message }}\"\n}",
+            options: {
+              timeout: 30000
+            }
+          },
+          id: "send-whatsapp",
+          name: "Enviar WhatsApp",
+          type: "n8n-nodes-base.httpRequest",
+          typeVersion: 4.2,
+          position: [1340, 300]
+        },
+        {
+          parameters: {
+            conditions: {
+              options: {
+                version: 2,
+                caseSensitive: true,
+                leftValue: "",
+                typeValidation: "loose"
+              },
+              combinator: "and",
+              conditions: [
+                {
+                  id: "check-key-exists",
+                  leftValue: "={{ $json.key }}",
+                  rightValue: "",
+                  operator: {
+                    type: "object",
+                    operation: "exists"
+                  }
+                }
+              ]
+            },
+            options: {}
+          },
+          id: "check-success",
+          name: "Envio OK?",
+          type: "n8n-nodes-base.if",
+          typeVersion: 2.2,
+          position: [1560, 300]
+        },
+        {
+          parameters: {
+            method: "POST",
+            url: "={{ $('Juntar Dados + Mensagem').item.json.callback_url }}",
+            authentication: "genericCredentialType",
+            genericAuthType: "httpHeaderAuth",
+            sendBody: true,
+            specifyBody: "json",
+            jsonBody: "={\n  \"deal_id\": \"{{ $('Juntar Dados + Mensagem').item.json.deal_id }}\",\n  \"new_message\": \"🤖 IA (Follow-up {{ $('Juntar Dados + Mensagem').item.json.followup_number }}): {{ $('Juntar Dados + Mensagem').item.json.ai_message }}\",\n  \"followup_number\": {{ $('Juntar Dados + Mensagem').item.json.followup_number }}\n}",
+            options: {}
+          },
+          id: "callback-success",
+          name: "Atualizar Supabase (Sucesso)",
+          type: "n8n-nodes-base.httpRequest",
+          typeVersion: 4.2,
+          position: [1780, 200],
+          credentials: {
+            httpHeaderAuth: {
+              id: "CONFIGURE_SUPABASE_AUTH",
+              name: "Supabase Auth"
+            }
+          }
+        },
+        {
+          parameters: {
+            respondWith: "json",
+            responseBody: "={\n  \"success\": true,\n  \"deal_id\": \"{{ $('Juntar Dados + Mensagem').item.json.deal_id }}\",\n  \"message_sent\": true\n}",
+            options: {}
+          },
+          id: "respond-success",
+          name: "Responder Sucesso",
+          type: "n8n-nodes-base.respondToWebhook",
+          typeVersion: 1.1,
+          position: [2000, 200]
+        },
+        {
+          parameters: {
+            respondWith: "json",
+            responseBody: "={\n  \"success\": false,\n  \"deal_id\": \"{{ $('Juntar Dados + Mensagem').item.json.deal_id }}\",\n  \"error\": \"Falha no envio WhatsApp\",\n  \"details\": {{ JSON.stringify($json) }}\n}",
+            options: {
+              responseCode: 500
+            }
+          },
+          id: "respond-error",
+          name: "Responder Erro",
+          type: "n8n-nodes-base.respondToWebhook",
+          typeVersion: 1.1,
+          position: [1780, 400]
+        },
+        {
+          parameters: {
+            content: "## Workflow Follow-up Tendenci v4\n\n### Configurações Necessárias:\n\n1. **Preparar Dados** - Substitua:\n   - SUA_EVOLUTION_URL_AQUI\n   - SUA_INSTANCIA_AQUI\n   - SUA_APIKEY_AQUI\n\n2. **OpenAI API** - Configure credencial\n\n3. **Supabase Auth** - Configure:\n   - Header Name: Authorization\n   - Header Value: Bearer SEU_ANON_KEY\n\n### Fluxo:\n1. Recebe webhook do Tendenci\n2. Aguarda 3 minutos\n3. Gera mensagem com IA\n4. Envia via Evolution API\n5. Atualiza Supabase via callback"
+          },
+          id: "sticky-note",
+          name: "Instruções",
           type: "n8n-nodes-base.stickyNote",
           typeVersion: 1,
-          position: [140, 80]
+          position: [100, 80]
         }
       ],
       connections: {
-        "Schedule Trigger": {
-          main: [[{ node: "Dispatch Follow-ups", type: "main", index: 0 }]]
+        "Webhook Tendenci": {
+          main: [[{ node: "Preparar Dados", type: "main", index: 0 }]]
+        },
+        "Preparar Dados": {
+          main: [[{ node: "Aguardar 3min", type: "main", index: 0 }]]
+        },
+        "Aguardar 3min": {
+          main: [[{ node: "Gerar Mensagem IA", type: "main", index: 0 }]]
+        },
+        "Gerar Mensagem IA": {
+          main: [[{ node: "Juntar Dados + Mensagem", type: "main", index: 0 }]]
+        },
+        "Juntar Dados + Mensagem": {
+          main: [[{ node: "Enviar WhatsApp", type: "main", index: 0 }]]
+        },
+        "Enviar WhatsApp": {
+          main: [[{ node: "Envio OK?", type: "main", index: 0 }]]
+        },
+        "Envio OK?": {
+          main: [
+            [{ node: "Atualizar Supabase (Sucesso)", type: "main", index: 0 }],
+            [{ node: "Responder Erro", type: "main", index: 0 }]
+          ]
+        },
+        "Atualizar Supabase (Sucesso)": {
+          main: [[{ node: "Responder Sucesso", type: "main", index: 0 }]]
         }
+      },
+      settings: {
+        executionOrder: "v1"
       }
     };
   };
@@ -478,28 +660,78 @@ export function N8nFollowupGuide() {
         <TabsContent value="workflow" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Workflow n8n</CardTitle>
+              <CardTitle>Workflow n8n Completo</CardTitle>
               <CardDescription>
-                Baixe o workflow base para importar no seu n8n
+                Workflow completo com todos os nodes configurados para Evolution API
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Button onClick={downloadWorkflow} className="w-full">
+              <Button onClick={downloadWorkflow} className="w-full" size="lg">
                 <Download className="h-4 w-4 mr-2" />
-                Baixar Workflow JSON
+                Baixar Workflow JSON Completo (v4)
               </Button>
 
               <Alert>
-                <AlertTriangle className="h-4 w-4" />
+                <Info className="h-4 w-4" />
                 <AlertDescription>
-                  Após importar, configure a credencial HTTP Header Auth com seu SUPABASE_ANON_KEY
+                  Este workflow inclui <strong>todos os nodes</strong> já configurados: Webhook, Wait 3min, OpenAI, Envio WhatsApp, IF de verificação e Callbacks.
                 </AlertDescription>
               </Alert>
 
               <Separator />
 
+              <div className="space-y-4">
+                <h4 className="font-semibold">Após importar, configure:</h4>
+                
+                <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg space-y-2">
+                  <h5 className="font-medium flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 text-amber-500" />
+                    1. Node "Preparar Dados" - Substitua os valores:
+                  </h5>
+                  <ul className="text-sm text-muted-foreground space-y-1 ml-6">
+                    <li>• <code>SUA_EVOLUTION_URL_AQUI</code> → URL da sua Evolution API</li>
+                    <li>• <code>SUA_INSTANCIA_AQUI</code> → Nome da sua instância WhatsApp</li>
+                    <li>• <code>SUA_APIKEY_AQUI</code> → API Key da Evolution</li>
+                  </ul>
+                </div>
+
+                <div className="p-4 bg-muted/50 rounded-lg space-y-2">
+                  <h5 className="font-medium">2. Credencial OpenAI API</h5>
+                  <p className="text-sm text-muted-foreground">
+                    Configure no node "Gerar Mensagem IA" com sua API Key OpenAI
+                  </p>
+                </div>
+
+                <div className="p-4 bg-muted/50 rounded-lg space-y-2">
+                  <h5 className="font-medium">3. Credencial Supabase Auth</h5>
+                  <p className="text-sm text-muted-foreground">
+                    Configure no node "Atualizar Supabase":
+                  </p>
+                  <ul className="text-sm text-muted-foreground space-y-1 ml-4">
+                    <li>• Header Name: <code>Authorization</code></li>
+                    <li>• Header Value: <code>Bearer SEU_ANON_KEY</code></li>
+                  </ul>
+                </div>
+              </div>
+
+              <Separator />
+
               <div className="space-y-2">
-                <Label>URL da Edge Function (para referência)</Label>
+                <Label>URL do Webhook (copie para o secret N8N_FOLLOWUP_WEBHOOK_URL)</Label>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Após ativar o workflow, copie a URL do webhook e adicione como secret no Supabase
+                </p>
+                <div className="flex gap-2">
+                  <Input 
+                    value="https://SEU_N8N.app/webhook/tendenci-followup"
+                    readOnly 
+                    className="text-muted-foreground"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>URL da Edge Function dispatch-followup</Label>
                 <div className="flex gap-2">
                   <Input 
                     value="https://emnwuzrysqoiwapzmnbv.supabase.co/functions/v1/dispatch-followup"
@@ -512,6 +744,64 @@ export function N8nFollowupGuide() {
                     {copiedField === "url" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                   </Button>
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>URL da Edge Function update-followup-history (callback)</Label>
+                <div className="flex gap-2">
+                  <Input 
+                    value="https://emnwuzrysqoiwapzmnbv.supabase.co/functions/v1/update-followup-history"
+                    readOnly 
+                  />
+                  <Button 
+                    variant="outline" 
+                    onClick={() => copyToClipboard("https://emnwuzrysqoiwapzmnbv.supabase.co/functions/v1/update-followup-history", "callback")}
+                  >
+                    {copiedField === "callback" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Diagrama do Fluxo</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="bg-muted/30 p-4 rounded-lg font-mono text-sm overflow-x-auto">
+                <pre className="whitespace-pre">{`
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│ Webhook Tendenci│───▶│ Preparar Dados  │───▶│ Aguardar 3min   │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+                                                       │
+                                                       ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│ Enviar WhatsApp │◀───│Juntar Dados+Msg │◀───│ Gerar Msg IA    │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │
+         ▼
+┌─────────────────┐
+│   Envio OK?     │
+└─────────────────┘
+    │         │
+    ▼         ▼
+┌───────┐ ┌───────┐
+│Sucesso│ │ Erro  │
+└───────┘ └───────┘
+    │         │
+    ▼         ▼
+┌───────┐ ┌───────┐
+│Callback│ │Respond│
+│Supabase│ │ Error │
+└───────┘ └───────┘
+    │
+    ▼
+┌───────┐
+│Respond│
+│Success│
+└───────┘
+`}</pre>
               </div>
             </CardContent>
           </Card>
