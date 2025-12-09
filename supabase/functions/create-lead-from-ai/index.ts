@@ -682,13 +682,18 @@ Deno.serve(async (req) => {
           }
         }
       } else {
-        // Lead existente: atualizar conversation_history em todos os deals
+        // Lead existente: atualizar deals existentes E criar em pipelines faltantes
         const { data: existingDeals } = await supabase
           .from('crm_deals')
-          .select('id, conversation_history')
+          .select('id, conversation_history, pipeline_id')
           .eq('lead_id', leadId)
           .eq('status', 'aberto')
         
+        // Identificar pipelines que já possuem deal
+        const pipelinesWithDeal = new Set(existingDeals?.map(d => d.pipeline_id) || [])
+        console.log(`📊 Lead existente possui deals em ${pipelinesWithDeal.size} pipeline(s)`)
+        
+        // Atualizar deals existentes
         if (existingDeals && existingDeals.length > 0) {
           console.log(`🔄 Atualizando ${existingDeals.length} deal(s) existente(s)`)
           
@@ -717,6 +722,59 @@ Deno.serve(async (req) => {
               }
             } else {
               console.log(`ℹ️ Deal ${deal.id} já possui esta mensagem, pulando...`)
+            }
+          }
+        }
+        
+        // Buscar todos os pipelines e criar deals nos que estão faltando
+        const { data: allPipelines } = await supabase
+          .from('crm_pipelines')
+          .select('id, name')
+        
+        if (allPipelines && allPipelines.length > 0) {
+          const missingPipelines = allPipelines.filter(p => !pipelinesWithDeal.has(p.id))
+          console.log(`📊 Pipelines faltando deal: ${missingPipelines.length}`)
+          
+          for (const pipeline of missingPipelines) {
+            // Buscar etapas do pipeline
+            const { data: stages } = await supabase
+              .from('crm_stages')
+              .select('id, name, position')
+              .eq('pipeline_id', pipeline.id)
+              .order('position', { ascending: true })
+            
+            if (stages && stages.length > 0) {
+              // Priorizar etapa "Lead", senão usar a primeira
+              const leadStage = stages.find(s => s.name.toLowerCase() === 'lead')
+              const stageToUse = leadStage || stages[0]
+              
+              console.log(`✅ Criando deal no funil "${pipeline.name}" para lead existente`)
+              
+              const { data: newDeal, error: dealError } = await supabase
+                .from('crm_deals')
+                .insert({
+                  pipeline_id: pipeline.id,
+                  stage_id: stageToUse.id,
+                  lead_id: leadId,
+                  title: `Lead ${cleanedName}`,
+                  value: 0,
+                  categoria: 'Móveis Soltos',
+                  centro_custo: 'Industrial',
+                  tipo_produto: detectedProductType,
+                  product_type: detectedProductType,
+                  conversation_history: newMessages,
+                  status: 'aberto',
+                  from_ai: true
+                })
+                .select()
+                .single()
+              
+              if (dealError) {
+                console.error(`❌ Erro ao criar deal no funil "${pipeline.name}":`, dealError)
+              } else {
+                console.log(`✅ Deal criado no funil "${pipeline.name}":`, newDeal.id)
+                dealIds.push(newDeal.id)
+              }
             }
           }
         }
