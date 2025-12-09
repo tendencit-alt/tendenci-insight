@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Plus, RefreshCw, Download, TrendingUp } from "lucide-react";
@@ -12,15 +12,18 @@ import { ProjectsFilters } from "@/components/projects/ProjectsFilters";
 import { DeadlineAlerts } from "@/components/projects/DeadlineAlerts";
 import { ArchitectPerformance } from "@/components/projects/ArchitectPerformance";
 import { ProjectDetailSheet } from "@/components/projects/ProjectDetailSheet";
+import { subDays, startOfDay, endOfDay, startOfMonth } from "date-fns";
 
 const Projects = () => {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [filters, setFilters] = useState({
-    period: "all",
-    stage: "Todos",
+    period: "last_30_days",
+    stages: [] as string[],
     architect: "Todos",
-    search: ""
+    search: "",
+    customDateRange: { from: undefined as Date | undefined, to: undefined as Date | undefined },
+    filterByDeadline: false
   });
   const [metrics, setMetrics] = useState({
     recebido_count: 0,
@@ -32,7 +35,8 @@ const Projects = () => {
     aprovado_value: 0,
     perdido_count: 0,
     near_due_count: 0,
-    overdue_count: 0
+    overdue_count: 0,
+    total_value: 0
   });
   
   // Estado para DeadlineAlerts click
@@ -40,16 +44,87 @@ const Projects = () => {
   const [alertProject, setAlertProject] = useState<any>(null);
   const [alertDetailOpen, setAlertDetailOpen] = useState(false);
 
-  useEffect(() => {
-    fetchMetrics();
-  }, [refreshKey]);
+  const getDateRange = useCallback(() => {
+    const now = new Date();
+    let dateFrom: Date | null = null;
+    let dateTo: Date | null = null;
 
-  const fetchMetrics = async () => {
-    const { data, error } = await supabase.rpc('projects_metrics');
+    switch (filters.period) {
+      case "today":
+        dateFrom = startOfDay(now);
+        dateTo = endOfDay(now);
+        break;
+      case "yesterday":
+        const yesterday = subDays(now, 1);
+        dateFrom = startOfDay(yesterday);
+        dateTo = endOfDay(yesterday);
+        break;
+      case "last_7_days":
+        dateFrom = subDays(now, 7);
+        break;
+      case "thisMonth":
+        dateFrom = startOfMonth(now);
+        break;
+      case "last_30_days":
+        dateFrom = subDays(now, 30);
+        break;
+      case "last_60_days":
+        dateFrom = subDays(now, 60);
+        break;
+      case "last_90_days":
+        dateFrom = subDays(now, 90);
+        break;
+      case "custom":
+        if (filters.customDateRange?.from) {
+          dateFrom = filters.customDateRange.from;
+          dateTo = filters.customDateRange.to || undefined;
+        }
+        break;
+      case "all":
+      default:
+        break;
+    }
+
+    return { dateFrom, dateTo };
+  }, [filters.period, filters.customDateRange]);
+
+  const fetchMetrics = useCallback(async () => {
+    const { dateFrom, dateTo } = getDateRange();
+    
+    // Build RPC params
+    const params: any = {
+      p_filter_by_deadline: filters.filterByDeadline
+    };
+
+    if (filters.stages && filters.stages.length > 0) {
+      params.p_stages = filters.stages;
+    }
+
+    if (filters.architect && filters.architect !== "Todos") {
+      if (filters.architect === "sem-arquiteto") {
+        params.p_architect_id = "00000000-0000-0000-0000-000000000000";
+      } else {
+        params.p_architect_id = filters.architect;
+      }
+    }
+
+    if (dateFrom) {
+      params.p_date_from = dateFrom.toISOString();
+    }
+    if (dateTo) {
+      params.p_date_to = dateTo.toISOString();
+    }
+
+    const { data, error } = await supabase.rpc('projects_metrics_filtered', params);
+    
     if (!error && data && data.length > 0) {
       setMetrics(data[0] as any);
     }
-  };
+  }, [filters, getDateRange]);
+
+  useEffect(() => {
+    fetchMetrics();
+  }, [fetchMetrics, refreshKey]);
 
   const handleRefresh = () => {
     setRefreshKey(prev => prev + 1);
@@ -81,6 +156,21 @@ const Projects = () => {
     if (!error && data) {
       setAlertProject(data);
       setAlertDetailOpen(true);
+    }
+  };
+
+  const getPeriodLabel = () => {
+    switch (filters.period) {
+      case "today": return "(Hoje)";
+      case "yesterday": return "(Ontem)";
+      case "last_7_days": return "(7 dias)";
+      case "thisMonth": return "(Este mês)";
+      case "last_30_days": return "(30 dias)";
+      case "last_60_days": return "(60 dias)";
+      case "last_90_days": return "(90 dias)";
+      case "custom": return "(Personalizado)";
+      case "all": return "(Total)";
+      default: return "";
     }
   };
 
@@ -120,7 +210,7 @@ const Projects = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-8 gap-4">
           <Card className="p-6 space-y-2 hover:shadow-xl transition-all duration-300 border-l-4 border-l-blue-500">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-muted-foreground">Recebidos</span>
+              <span className="text-sm font-medium text-muted-foreground">Recebidos {getPeriodLabel()}</span>
               <span className="text-2xl">📥</span>
             </div>
             <p className="text-3xl font-bold text-blue-600">{metrics.recebido_count}</p>
@@ -128,7 +218,7 @@ const Projects = () => {
 
           <Card className="p-6 space-y-2 hover:shadow-xl transition-all duration-300 border-l-4 border-l-purple-500">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-muted-foreground">Em Orçamento</span>
+              <span className="text-sm font-medium text-muted-foreground">Em Orçamento {getPeriodLabel()}</span>
               <span className="text-2xl">📝</span>
             </div>
             <p className="text-3xl font-bold text-purple-600">{metrics.em_orcamento_count}</p>
@@ -136,7 +226,7 @@ const Projects = () => {
 
           <Card className="p-6 space-y-2 hover:shadow-xl transition-all duration-300 border-l-4 border-l-indigo-500">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-muted-foreground">Orçado</span>
+              <span className="text-sm font-medium text-muted-foreground">Orçado {getPeriodLabel()}</span>
               <span className="text-2xl">💰</span>
             </div>
             <p className="text-3xl font-bold text-indigo-600">{metrics.orcado_count}</p>
@@ -144,7 +234,7 @@ const Projects = () => {
 
           <Card className="p-6 space-y-2 hover:shadow-xl transition-all duration-300 border-l-4 border-l-cyan-500">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-muted-foreground">Apresentado</span>
+              <span className="text-sm font-medium text-muted-foreground">Apresentado {getPeriodLabel()}</span>
               <span className="text-2xl">📊</span>
             </div>
             <p className="text-3xl font-bold text-cyan-600">{metrics.apresentado_count}</p>
@@ -152,7 +242,7 @@ const Projects = () => {
 
           <Card className="p-6 space-y-2 hover:shadow-xl transition-all duration-300 border-l-4 border-l-orange-500">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-muted-foreground">Em Negociação</span>
+              <span className="text-sm font-medium text-muted-foreground">Em Negociação {getPeriodLabel()}</span>
               <span className="text-2xl">🤝</span>
             </div>
             <p className="text-3xl font-bold text-orange-600">{metrics.em_negociacao_count}</p>
@@ -160,7 +250,7 @@ const Projects = () => {
 
           <Card className="p-6 space-y-2 hover:shadow-xl transition-all duration-300 border-l-4 border-l-green-500">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-muted-foreground">Aprovados</span>
+              <span className="text-sm font-medium text-muted-foreground">Aprovados {getPeriodLabel()}</span>
               <span className="text-2xl">✅</span>
             </div>
             <p className="text-3xl font-bold text-green-600">{metrics.aprovado_count}</p>
@@ -168,7 +258,7 @@ const Projects = () => {
 
           <Card className="p-6 space-y-2 hover:shadow-xl transition-all duration-300 border-l-4 border-l-green-700">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-muted-foreground">Valor Aprovado</span>
+              <span className="text-sm font-medium text-muted-foreground">Valor Aprovado {getPeriodLabel()}</span>
               <span className="text-2xl">💵</span>
             </div>
             <p className="text-2xl font-bold text-green-700">
@@ -178,7 +268,7 @@ const Projects = () => {
 
           <Card className="p-6 space-y-2 hover:shadow-xl transition-all duration-300 border-l-4 border-l-red-500">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-muted-foreground">Perdidos</span>
+              <span className="text-sm font-medium text-muted-foreground">Perdidos {getPeriodLabel()}</span>
               <span className="text-2xl">❌</span>
             </div>
             <p className="text-3xl font-bold text-red-600">{metrics.perdido_count}</p>
