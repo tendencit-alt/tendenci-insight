@@ -27,39 +27,84 @@ interface LeadData {
 function cleanPhone(raw: string): string {
   console.log('📞 Limpando telefone. Input:', raw)
   
-  // Remove @s.whatsapp.net e caracteres não numéricos
-  let phone = raw.replace('@s.whatsapp.net', '').replace(/\D/g, '')
+  // Remove @lid, @s.whatsapp.net e caracteres especiais
+  let cleaned = raw
+    .replace(/@lid/gi, '')
+    .replace(/@s\.whatsapp\.net/gi, '')
+    .replace(/\n/g, '')
+    .trim()
+  
+  // Extrai apenas números
+  let phone = cleaned.replace(/\D/g, '')
   console.log('📞 Após remover não-numéricos:', phone)
   
-  // Se tem mais de 13 dígitos, é provavelmente um JID do WhatsApp
+  // Se é muito longo, tenta várias abordagens para extrair número válido
   if (phone.length > 13) {
-    console.log('⚠️ Número muito longo (JID detectado), tentando extrair número brasileiro válido...')
+    console.log('⚠️ Número muito longo, tentando extrair número brasileiro válido...')
     
-    // Tenta extrair número brasileiro válido (55 + DDD + 8 ou 9 dígitos)
-    const match = phone.match(/55\d{10,11}$/)
+    // Abordagem 1: Procura padrão brasileiro 55 + DDD(2) + 9 + 8dígitos
+    let match = phone.match(/55[1-9]\d9\d{8}/)
     if (match) {
       phone = match[0]
-      console.log('✅ Número brasileiro extraído:', phone)
+      console.log('✅ Padrão 55+DDD+9+8 encontrado:', phone)
     } else {
-      // Fallback: pega os últimos 11-13 dígitos
-      phone = phone.slice(-13)
-      console.log('⚠️ Usando fallback (últimos 13 dígitos):', phone)
+      // Abordagem 2: Procura padrão 55 + 10-11 dígitos
+      match = phone.match(/55\d{10,11}/)
+      if (match) {
+        phone = match[0]
+        console.log('✅ Padrão 55+10-11 encontrado:', phone)
+      } else {
+        // Abordagem 3: Procura DDD válido + 8-9 dígitos (DDDs válidos: 11-99)
+        match = phone.match(/([1-9][1-9])(9?\d{8})/)
+        if (match) {
+          phone = '55' + match[1] + match[2]
+          console.log('✅ Padrão DDD+número encontrado, adicionado 55:', phone)
+        } else {
+          // Fallback: últimos 11 dígitos (DDD + número)
+          const last11 = phone.slice(-11)
+          if (last11.length === 11 && /^[1-9][1-9]/.test(last11)) {
+            phone = '55' + last11
+            console.log('⚠️ Usando últimos 11 dígitos + 55:', phone)
+          } else {
+            // Último recurso: últimos 10-11 dígitos
+            phone = phone.slice(-11)
+            if (!phone.startsWith('55')) {
+              phone = '55' + phone.slice(-10)
+            }
+            console.log('⚠️ Fallback final:', phone)
+          }
+        }
+      }
     }
   }
   
   // Remove prefixo 55 duplicado
-  if (phone.startsWith('5555')) {
+  while (phone.startsWith('5555')) {
     phone = phone.slice(2)
     console.log('📞 Removido 55 duplicado:', phone)
   }
   
-  // Adiciona 55 se não tiver
-  if (!phone.startsWith('55') && phone.length >= 10) {
+  // Adiciona 55 se não tiver e tem tamanho válido
+  if (!phone.startsWith('55') && phone.length >= 10 && phone.length <= 11) {
     phone = '55' + phone
     console.log('📞 Adicionado prefixo 55:', phone)
   }
   
-  console.log('✅ Telefone final:', phone)
+  // Validação final: deve ter 12-13 dígitos (55 + DDD + 8-9)
+  if (phone.length < 12 || phone.length > 13) {
+    console.log(`⚠️ Telefone com comprimento inválido (${phone.length}), tentando ajustar...`)
+    
+    // Se tem 10 dígitos, adiciona 55
+    if (phone.length === 10 && !phone.startsWith('55')) {
+      phone = '55' + phone
+    }
+    // Se tem 11 dígitos e não começa com 55, adiciona 55
+    else if (phone.length === 11 && !phone.startsWith('55')) {
+      phone = '55' + phone
+    }
+  }
+  
+  console.log('✅ Telefone final:', phone, '| Comprimento:', phone.length)
   return phone
 }
 
@@ -411,18 +456,33 @@ Deno.serve(async (req) => {
       )
     }
     
-    // Validar formato de telefone brasileiro (11-13 dígitos com 55)
-    if (data.phone.length < 11 || data.phone.length > 13) {
-      console.error('❌ Telefone com comprimento inválido:', data.phone.length)
+    // Validar formato de telefone brasileiro (10-13 dígitos)
+    // 10 = DDD + 8 dígitos (fixo antigo)
+    // 11 = DDD + 9 dígitos (celular)
+    // 12 = 55 + DDD + 8 dígitos
+    // 13 = 55 + DDD + 9 dígitos
+    const phoneDigits = data.phone.replace(/\D/g, '')
+    if (phoneDigits.length < 10 || phoneDigits.length > 13) {
+      console.error('❌ Telefone com comprimento inválido:', phoneDigits.length)
+      console.log('⚠️ AVISO: Telefone rejeitado, mas continuando para log do problema')
       return new Response(
         JSON.stringify({ 
           error: 'Telefone brasileiro inválido',
           received: data.phone,
-          expectedLength: '11-13 dígitos',
-          tip: 'Formato esperado: 5511999999999 (55 + DDD + número)'
+          originalReceived: rawPhone,
+          expectedLength: '10-13 dígitos',
+          tip: 'Formato esperado: 5511999999999 (55 + DDD + número). Verifique se está enviando o número real e não o LID do WhatsApp.'
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
+    }
+    
+    // Garantir que telefone tenha prefixo 55
+    if (phoneDigits.length === 10 || phoneDigits.length === 11) {
+      data.phone = '55' + phoneDigits
+      console.log('📞 Adicionado 55 ao telefone final:', data.phone)
+    } else {
+      data.phone = phoneDigits
     }
     
     console.log('✅ Validação passou')
