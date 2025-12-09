@@ -144,40 +144,45 @@ function detectProductType(conversation: string): string {
 
 // ============= FUNÇÕES AUXILIARES DE DETECÇÃO =============
 
-// Padrões de junção Cliente→IA (onde mensagem curta do cliente termina e IA responde)
-function findJunctionPoint(text: string): number {
-  const junctionPatterns = [
-    // "Mesa de jantar 2.20Certo, vou ajudar..." → separa antes de "Certo"
-    /(\w{2,}(?:\s+\w+){0,6})(Certo|Claro|Ok|Entendi|Perfeito|Com certeza|Ótimo|Maravilha)/gi,
-    
-    // "Poltrona verdeCom certeza! Temos..." → separa antes de "Com certeza"
-    /(\w+)(Com certeza|Sem problema|Vou verificar|Deixa eu ver|Vamos lá)/gi,
-    
-    // "Sofá 3 lugaresOlá|Oi|Bom dia" → separa antes de saudação
-    /(\w+\s*\d*)(Olá|Oi,?\s|Bom dia|Boa tarde|Boa noite)/gi,
-    
-    // "2.20mAqui na Tendenci..." → separa antes de "Aqui"
-    /(\d+(?:\.\d+)?m?)(Aqui|Temos|Possuímos|Oferecemos|Trabalhamos)/gi,
-    
-    // "Mesa retangularVou" → separa palavras coladas
-    /([a-záéíóúãõç]+)([A-ZÁÉÍÓÚÃÕÇ][a-z]{3,})/g
+// Detecta padrões onde mensagem do cliente colou com resposta da IA
+function findAllJunctionPoints(text: string): number[] {
+  const points: number[] = []
+  
+  // Padrões de resposta da IA que geralmente seguem mensagem do cliente
+  const aiResponsePatterns = [
+    /(?<=[a-záéíóúãõç]{2,}\d*m?)(?=Tudo bem|Olá|Oi,?\s|Certo|Claro|Ok,?\s|Entendi|Perfeito|Com certeza|Ótimo|Maravilha|Aqui na|Vou|Posso|Deixa eu|Vamos|Temos|Nossa|Excelente|Legal|Que bom)/gi,
+    /(?<=\?|!|\.)(?=\s*[A-ZÁÉÍÓÚÃÕÇ][a-záéíóúãõç]+)/g,
+    /(?<=[0-9]+(?:\.\d+)?m?\s*)(?=[A-ZÁÉÍÓÚÃÕÇ][a-z]{3,})/g,
+    /(?<=bemmm?|simm?|nãoo?|okk?)(?=[A-ZÁÉÍÓÚÃÕÇ])/gi
   ]
   
-  let earliestMatch = -1
-  
-  for (const pattern of junctionPatterns) {
-    const match = pattern.exec(text)
-    if (match && match.index > 0) {
-      // Ponto de separação é entre grupo 1 e grupo 2
-      const separationPoint = match.index + (match[1]?.length || 0)
-      
-      if (earliestMatch === -1 || separationPoint < earliestMatch) {
-        earliestMatch = separationPoint
+  for (const pattern of aiResponsePatterns) {
+    let match
+    const regex = new RegExp(pattern.source, pattern.flags)
+    while ((match = regex.exec(text)) !== null) {
+      if (match.index > 2 && !points.includes(match.index)) {
+        points.push(match.index)
       }
     }
   }
   
-  return earliestMatch
+  // Padrões de resposta do cliente após IA
+  const clientResponsePatterns = [
+    /(?<=\?)\s*(?=[a-záéíóúãõç]{2,})/gi,
+    /(?<=ambiente\?|planta\?|referência\?|projeto\?|medida\?)\s*(?=[A-Za-záéíóúãõç])/gi
+  ]
+  
+  for (const pattern of clientResponsePatterns) {
+    let match
+    const regex = new RegExp(pattern.source, pattern.flags)
+    while ((match = regex.exec(text)) !== null) {
+      if (match.index > 2 && !points.includes(match.index)) {
+        points.push(match.index)
+      }
+    }
+  }
+  
+  return points.sort((a, b) => a - b)
 }
 
 // Detecta se texto parece ser início de mensagem de cliente
@@ -186,7 +191,8 @@ function seemsClientStart(text: string): boolean {
     /^(olá|oi|bom dia|boa tarde|boa noite)/i,
     /^(quero|preciso|gostaria|quanto|qual|tem|vocês|posso)/i,
     /^(me\s+|como\s+|quando\s+|onde\s+)/i,
-    /\?$/,  // Termina com pergunta
+    /^(sim|não|ok|pode|metalon|madeira|branco|preto)/i,
+    /^[a-z]/,  // Começa com minúscula (cliente responde informalmente)
     /^\d+(\.\d+)?m?\s*$/  // Apenas medida (ex: "2.20m")
   ]
   
@@ -196,82 +202,96 @@ function seemsClientStart(text: string): boolean {
 // Detecta se texto parece ser início de mensagem da IA
 function seemsAIStart(text: string): boolean {
   const aiIndicators = [
-    /^(certo|claro|ok|entendi|perfeito|com certeza|ótimo|maravilha)/i,
-    /^(olá!?\s+aqui|oi!?\s+aqui|bom dia!?\s+aqui)/i,
-    /^(temos|possuímos|oferecemos|trabalhamos|aqui na)/i,
-    /^(posso|vou|deixa eu|deixe-me|vamos)/i,
-    /(tendenci|nossa loja|nossos produtos|nosso catálogo)/i
+    /^(Certo|Claro|Ok,?\s|Entendi|Perfeito|Com certeza|Ótimo|Maravilha|Excelente)/i,
+    /^(Olá!?\s+[A-Z]|Oi!?\s+[A-Z]|Bom dia!?\s+[A-Z])/i,
+    /^(Temos|Possuímos|Oferecemos|Trabalhamos|Aqui na|Vou|Para)/i,
+    /^(Posso|Deixa eu|Deixe-me|Vamos|Pra gente|Você tem)/i,
+    /^(Tudo bem)/i,
+    /(tendenci|nossa loja|nossos produtos|nosso catálogo)/i,
+    /^[A-ZÁÉÍÓÚÃÕÇ][a-z]{4,}/  // Começa com maiúscula seguida de minúsculas
   ]
   
   return aiIndicators.some(pattern => pattern.test(text.trim()))
 }
 
-// Algoritmo de separação inteligente
+// Algoritmo de separação inteligente melhorado
 function smartSplitConversation(text: string): {sender: string, message: string}[] {
-  console.log('🧠 Iniciando separação inteligente...')
-  console.log('📝 Texto original:', text)
+  console.log('🧠 Iniciando separação inteligente v2...')
+  console.log('📝 Texto original (primeiros 500):', text.slice(0, 500))
   
   const messages: {sender: string, message: string}[] = []
-  let remaining = text.trim()
-  let lastSender = 'client' // Assume que cliente inicia
-  let iterationCount = 0
-  const maxIterations = 10 // Prevenir loop infinito
   
-  while (remaining.length > 0 && iterationCount < maxIterations) {
-    iterationCount++
-    console.log(`\n🔄 Iteração ${iterationCount}`)
-    console.log('📏 Texto restante (${remaining.length} chars):', remaining.slice(0, 100))
-    
-    // 1. Tentar encontrar ponto de junção
-    const splitPoint = findJunctionPoint(remaining)
-    console.log('🎯 Ponto de junção detectado:', splitPoint)
-    
-    if (splitPoint > 0 && splitPoint < remaining.length - 10) {
-      // Encontrou ponto de junção válido
-      const firstPart = remaining.slice(0, splitPoint).trim()
-      remaining = remaining.slice(splitPoint).trim()
+  // Encontrar todos os pontos de junção
+  const junctionPoints = findAllJunctionPoints(text)
+  console.log('🎯 Pontos de junção encontrados:', junctionPoints)
+  
+  if (junctionPoints.length === 0) {
+    // Sem pontos de junção, verificar se tem quebras de linha
+    if (text.includes('\n')) {
+      const lines = text.split('\n').filter(l => l.trim())
+      let lastSender = 'client'
       
-      console.log('✂️ Primeira parte extraída:', firstPart)
-      console.log('📄 Texto restante após corte:', remaining.slice(0, 50))
-      
-      if (firstPart) {
-        messages.push({ sender: lastSender, message: firstPart })
-        lastSender = lastSender === 'client' ? 'ai' : 'client'
-      }
-    } else {
-      // Não encontrou junção clara
-      console.log('⚠️ Junção não detectada, aplicando heurística...')
-      
-      // Se tem quebras de linha naturais, tenta usar
-      if (remaining.includes('\n')) {
-        const lines = remaining.split('\n').filter(l => l.trim())
+      for (const line of lines) {
+        const trimmed = line.trim()
+        if (!trimmed) continue
         
-        if (lines.length > 1) {
-          // Pega primeira linha como mensagem
-          const firstLine = lines[0].trim()
-          remaining = lines.slice(1).join('\n').trim()
-          
-          console.log('📋 Usando primeira linha:', firstLine)
-          messages.push({ sender: lastSender, message: firstLine })
-          lastSender = lastSender === 'client' ? 'ai' : 'client'
-          continue
-        }
+        // Detectar quem está falando
+        const isAI = seemsAIStart(trimmed)
+        const sender = isAI ? 'ai' : lastSender
+        
+        messages.push({ sender, message: trimmed })
+        lastSender = sender === 'ai' ? 'client' : 'ai'
       }
       
-      // Último recurso: todo o texto restante
-      console.log('🏁 Finalizando com texto restante completo')
-      
-      if (remaining.length > 200 && messages.length === 0) {
-        // Texto longo sem mensagens anteriores - provavelmente só IA
-        messages.push({ sender: 'ai', message: remaining })
-      } else {
-        messages.push({ sender: lastSender, message: remaining })
-      }
-      break
+      return messages
     }
+    
+    // Texto contínuo sem separações - assume que é tudo misturado
+    return [{ sender: 'ai', message: text }]
   }
   
-  console.log(`✅ Separação concluída: ${messages.length} mensagens detectadas`)
+  // Separar pelos pontos encontrados
+  let lastEnd = 0
+  let currentSender = 'client' // Cliente geralmente inicia
+  
+  for (let i = 0; i < junctionPoints.length; i++) {
+    const point = junctionPoints[i]
+    const segment = text.slice(lastEnd, point).trim()
+    
+    if (segment) {
+      // Verificar se o conteúdo parece ser de IA ou cliente
+      const segmentIsAI = seemsAIStart(segment)
+      const segmentIsClient = seemsClientStart(segment) && !segmentIsAI
+      
+      // Usar detecção ou alternância
+      if (segmentIsAI) {
+        currentSender = 'ai'
+      } else if (segmentIsClient) {
+        currentSender = 'client'
+      }
+      
+      messages.push({ sender: currentSender, message: segment })
+      
+      // Alternar para próximo
+      currentSender = currentSender === 'ai' ? 'client' : 'ai'
+    }
+    
+    lastEnd = point
+  }
+  
+  // Adicionar segmento final
+  const lastSegment = text.slice(lastEnd).trim()
+  if (lastSegment) {
+    const lastIsAI = seemsAIStart(lastSegment)
+    messages.push({ 
+      sender: lastIsAI ? 'ai' : currentSender, 
+      message: lastSegment 
+    })
+  }
+  
+  console.log(`✅ Separação v2 concluída: ${messages.length} mensagens detectadas`)
+  messages.forEach((m, i) => console.log(`  ${i+1}. [${m.sender}]: ${m.message.slice(0, 60)}...`))
+  
   return messages
 }
 
