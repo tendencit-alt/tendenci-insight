@@ -20,17 +20,21 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const evolutionUrl = Deno.env.get('EVOLUTION_API_URL')
+    const evolutionUrlRaw = Deno.env.get('EVOLUTION_API_URL')
     const evolutionApiKey = Deno.env.get('EVOLUTION_API_KEY')
 
-    if (!evolutionUrl || !evolutionApiKey) {
+    if (!evolutionUrlRaw || !evolutionApiKey) {
       throw new Error('Evolution API credentials not configured')
     }
+
+    // Normalizar URL da Evolution API (remover barra final) - APLICAR EM TODAS AS ACTIONS
+    const evolutionUrl = evolutionUrlRaw.replace(/\/$/, '')
 
     // Parsear body UMA ÚNICA VEZ e reutilizar (evita erro "Body is unusable")
     const body: EvolutionRequest = await req.json()
     const { action, instanceName, user_id: requestUserId } = body
     console.log(`🔧 Action: ${action} | Instance: ${instanceName} | User: ${requestUserId || 'not provided'}`)
+    console.log(`🔧 Evolution URL (normalized): ${evolutionUrl}`)
 
     // ========== CHECK STATUS ==========
     if (action === 'check-status') {
@@ -299,12 +303,9 @@ Deno.serve(async (req) => {
       const iaInstanceName = instanceName || 'IA-Atendimento'
       const n8nWebhookUrl = body.webhookUrl || 'https://n8n.agendacorretor.online/webhook/receber-mensagens'
       
-      // Normalizar URL da Evolution API (remover barra final se existir)
-      const normalizedEvolutionUrl = evolutionUrl.replace(/\/$/, '')
-      
       console.log('🤖 ========== CREATING IA INSTANCE ==========')
       console.log('🔧 DIAGNOSTIC INFO:')
-      console.log('- Evolution URL:', normalizedEvolutionUrl)
+      console.log('- Evolution URL:', evolutionUrl)
       console.log('- Instance Name:', iaInstanceName)
       console.log('- Webhook URL:', n8nWebhookUrl)
       console.log('- API Key valid:', evolutionApiKey ? 'YES' : 'NO')
@@ -313,7 +314,7 @@ Deno.serve(async (req) => {
       // 1️⃣ Deletar instância existente na Evolution API (se existir)
       console.log('1️⃣ Checking for existing instance to delete...')
       try {
-        const deleteResp = await fetch(`${normalizedEvolutionUrl}/instance/delete/${iaInstanceName}`, {
+        const deleteResp = await fetch(`${evolutionUrl}/instance/delete/${iaInstanceName}`, {
           method: 'DELETE',
           headers: { 'apikey': evolutionApiKey }
         })
@@ -362,7 +363,7 @@ Deno.serve(async (req) => {
       }
       console.log('📤 Create payload:', JSON.stringify(createPayload))
       
-      const createResp = await fetch(`${normalizedEvolutionUrl}/instance/create`, {
+      const createResp = await fetch(`${evolutionUrl}/instance/create`, {
         method: 'POST',
         headers: {
           'apikey': evolutionApiKey,
@@ -415,7 +416,7 @@ Deno.serve(async (req) => {
           await new Promise(resolve => setTimeout(resolve, 2000))
           
           try {
-            const connectResp = await fetch(`${normalizedEvolutionUrl}/instance/connect/${iaInstanceName}`, {
+            const connectResp = await fetch(`${evolutionUrl}/instance/connect/${iaInstanceName}`, {
               method: 'GET',
               headers: { 'apikey': evolutionApiKey }
             })
@@ -476,7 +477,7 @@ Deno.serve(async (req) => {
       try {
         console.log('📤 Trying /webhook/set/ with wrapper payload...')
         
-        let webhookResp = await fetch(`${normalizedEvolutionUrl}/webhook/set/${iaInstanceName}`, {
+        let webhookResp = await fetch(`${evolutionUrl}/webhook/set/${iaInstanceName}`, {
           method: 'POST',
           headers: {
             'apikey': evolutionApiKey,
@@ -493,7 +494,7 @@ Deno.serve(async (req) => {
         } else {
           // Tentar mesmo endpoint com formato 2
           console.log('📤 Trying /webhook/set/ without wrapper...')
-          webhookResp = await fetch(`${normalizedEvolutionUrl}/webhook/set/${iaInstanceName}`, {
+          webhookResp = await fetch(`${evolutionUrl}/webhook/set/${iaInstanceName}`, {
             method: 'POST',
             headers: {
               'apikey': evolutionApiKey,
@@ -510,7 +511,7 @@ Deno.serve(async (req) => {
           } else {
             // Tentar endpoint alternativo /webhook/instance/{instance}
             console.log('📤 Trying alternative /webhook/instance/ endpoint...')
-            const altResp = await fetch(`${normalizedEvolutionUrl}/webhook/instance/${iaInstanceName}`, {
+            const altResp = await fetch(`${evolutionUrl}/webhook/instance/${iaInstanceName}`, {
               method: 'POST',
               headers: {
                 'apikey': evolutionApiKey,
