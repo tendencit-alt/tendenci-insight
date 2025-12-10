@@ -100,17 +100,17 @@ Deno.serve(async (req) => {
             if (!updateError) {
               console.log('✅ Resposta de campanha registrada!')
 
-              // Mover arquiteto para contato_efetivado se ainda não estiver em estágio avançado
+              // Mover arquiteto para parceiro_ativo se ainda não estiver em estágio avançado
               if (arquitetoData.status_funil === 'contato_iniciado' || arquitetoData.status_funil === 'novo_arquiteto') {
                 await supabase
                   .from('architects')
                   .update({
-                    status_funil: 'contato_efetivado',
+                    status_funil: 'parceiro_ativo',
                     data_ultimo_contato: new Date().toISOString()
                   })
                   .eq('id', arquitetoData.id)
 
-                console.log('📍 Arquiteto movido para contato_efetivado')
+                console.log('📍 Arquiteto movido para parceiro_ativo')
               }
 
               // Registrar log
