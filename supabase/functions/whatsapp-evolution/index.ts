@@ -2,7 +2,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
 import { corsHeaders } from '../_shared/cors.ts'
 
 interface EvolutionRequest {
-  action: 'check-status' | 'create' | 'create-ia' | 'qrcode' | 'delete' | 'disconnect' | 'list-all' | 'delete-orphans'
+  action: 'check-status' | 'create' | 'create-ia' | 'qrcode' | 'delete' | 'disconnect' | 'list-all' | 'delete-orphans' | 'verify-webhook' | 'reconfigure-webhook'
   instanceName?: string
   instanceNames?: string[] // Para delete-orphans
   user_id?: string
@@ -896,6 +896,187 @@ Deno.serve(async (req) => {
           results,
           totalDeleted,
           totalFailed: results.filter(r => !r.success).length
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // ========== VERIFY WEBHOOK ==========
+    if (action === 'verify-webhook') {
+      console.log('🔍 ========== VERIFYING WEBHOOK CONFIG ==========')
+      console.log('Instance:', instanceName)
+      
+      // Buscar conexão no banco
+      const { data: connection, error: connError } = await supabase
+        .from('tendenci_whatsapp_connections')
+        .select('id, instance_name, webhook_url, is_ia_instance')
+        .eq('instance_name', instanceName)
+        .single()
+      
+      if (connError || !connection) {
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: 'Instance not found in database',
+            instanceName 
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+      
+      // Buscar webhook atual na Evolution API
+      let evolutionWebhook = null
+      let evolutionError = null
+      
+      try {
+        const webhookResp = await fetch(`${evolutionUrl}/webhook/find/${instanceName}`, {
+          headers: { 'apikey': evolutionApiKey }
+        })
+        
+        if (webhookResp.ok) {
+          evolutionWebhook = await webhookResp.json()
+          console.log('📡 Evolution webhook config:', JSON.stringify(evolutionWebhook, null, 2))
+        } else {
+          evolutionError = `HTTP ${webhookResp.status}`
+        }
+      } catch (err: any) {
+        evolutionError = err.message
+      }
+      
+      // Determinar URL esperada
+      const expectedUrl = connection.is_ia_instance 
+        ? 'https://n8n.agendacorretor.online/webhook/receber-mensagens'
+        : `${Deno.env.get('SUPABASE_URL')}/functions/v1/whatsapp-webhook`
+      
+      // Verificar se webhook está correto
+      const currentUrl = evolutionWebhook?.webhook?.url || evolutionWebhook?.url || null
+      const isEnabled = evolutionWebhook?.webhook?.enabled ?? evolutionWebhook?.enabled ?? false
+      const isCorrect = currentUrl === expectedUrl && isEnabled
+      
+      return new Response(
+        JSON.stringify({
+          success: true,
+          instanceName,
+          is_ia_instance: connection.is_ia_instance,
+          database: {
+            webhook_url: connection.webhook_url
+          },
+          evolution: {
+            url: currentUrl,
+            enabled: isEnabled,
+            events: evolutionWebhook?.webhook?.events || evolutionWebhook?.events || [],
+            raw: evolutionWebhook
+          },
+          expected: {
+            url: expectedUrl
+          },
+          status: {
+            isCorrect,
+            needsReconfiguration: !isCorrect,
+            error: evolutionError
+          }
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // ========== RECONFIGURE WEBHOOK ==========
+    if (action === 'reconfigure-webhook') {
+      console.log('🔧 ========== RECONFIGURING WEBHOOK ==========')
+      console.log('Instance:', instanceName)
+      
+      // Buscar conexão no banco
+      const { data: connection, error: connError } = await supabase
+        .from('tendenci_whatsapp_connections')
+        .select('id, instance_name, is_ia_instance')
+        .eq('instance_name', instanceName)
+        .single()
+      
+      if (connError || !connection) {
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: 'Instance not found in database' 
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+      
+      // Determinar URL correta
+      const webhookUrl = connection.is_ia_instance 
+        ? 'https://n8n.agendacorretor.online/webhook/receber-mensagens'
+        : `${Deno.env.get('SUPABASE_URL')}/functions/v1/whatsapp-webhook`
+      
+      console.log('📡 Target webhook URL:', webhookUrl)
+      console.log('📡 Is IA instance:', connection.is_ia_instance)
+      
+      // Tentar diferentes formatos de payload
+      let configured = false
+      let lastError = null
+      
+      // Formato 1: Com wrapper webhook
+      const payloads = [
+        {
+          webhook: {
+            url: webhookUrl,
+            enabled: true,
+            webhookByEvents: false,
+            events: ['MESSAGES_UPSERT', 'CONNECTION_UPDATE', 'QRCODE_UPDATED']
+          }
+        },
+        {
+          url: webhookUrl,
+          enabled: true,
+          webhookByEvents: false,
+          events: ['MESSAGES_UPSERT', 'CONNECTION_UPDATE', 'QRCODE_UPDATED']
+        }
+      ]
+      
+      for (const payload of payloads) {
+        if (configured) break
+        
+        try {
+          console.log('📤 Trying payload:', JSON.stringify(payload))
+          
+          const webhookResp = await fetch(`${evolutionUrl}/webhook/set/${instanceName}`, {
+            method: 'POST',
+            headers: {
+              'apikey': evolutionApiKey,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+          })
+          
+          console.log('📥 Response status:', webhookResp.status)
+          
+          if (webhookResp.ok) {
+            configured = true
+            console.log('✅ Webhook configured successfully!')
+          } else {
+            lastError = `HTTP ${webhookResp.status}`
+          }
+        } catch (err: any) {
+          lastError = err.message
+        }
+      }
+      
+      // Atualizar banco
+      if (configured) {
+        await supabase
+          .from('tendenci_whatsapp_connections')
+          .update({ 
+            webhook_url: webhookUrl,
+            webhook_configured: true
+          })
+          .eq('id', connection.id)
+      }
+      
+      return new Response(
+        JSON.stringify({
+          success: configured,
+          instanceName,
+          webhookUrl,
+          error: configured ? null : lastError
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )

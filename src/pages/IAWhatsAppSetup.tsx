@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { ArrowLeft, Bot, Loader2, QrCode, Wifi, WifiOff, RefreshCw, CheckCircle2, ExternalLink, AlertCircle, RotateCcw } from "lucide-react";
+import { ArrowLeft, Bot, Loader2, QrCode, Wifi, WifiOff, RefreshCw, CheckCircle2, ExternalLink, AlertCircle, RotateCcw, Settings2, AlertTriangle } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 const N8N_WEBHOOK_URL = "https://n8n.agendacorretor.online/webhook/receber-mensagens";
@@ -30,6 +30,8 @@ export default function IAWhatsAppSetup() {
   const [existingConnection, setExistingConnection] = useState<any>(null);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [qrCountdown, setQrCountdown] = useState(30);
+  const [isVerifyingWebhook, setIsVerifyingWebhook] = useState(false);
+  const [webhookStatus, setWebhookStatus] = useState<any>(null);
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
   const qrRefreshRef = useRef<NodeJS.Timeout | null>(null);
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
@@ -364,6 +366,82 @@ export default function IAWhatsAppSetup() {
     }, 600000); // 10 minutos
   };
 
+  const handleVerifyWebhook = async () => {
+    const currentInstanceName = existingConnection?.instance_name || instanceName;
+    if (!currentInstanceName) {
+      toast.error("Nenhuma instância configurada");
+      return;
+    }
+
+    setIsVerifyingWebhook(true);
+    addLog('🔧 Verificando configuração do webhook...', 'info');
+
+    try {
+      const { data, error } = await supabase.functions.invoke('whatsapp-evolution', {
+        body: {
+          action: 'verify-webhook',
+          instanceName: currentInstanceName
+        }
+      });
+
+      if (error) throw error;
+
+      setWebhookStatus(data);
+      
+      if (data?.status?.isCorrect) {
+        addLog('✅ Webhook configurado corretamente!', 'success');
+        toast.success("Webhook está funcionando corretamente!");
+      } else {
+        addLog(`⚠️ Webhook incorreto: ${data?.evolution?.url || 'não configurado'}`, 'warning');
+        addLog(`📌 URL esperada: ${data?.expected?.url}`, 'info');
+        toast.warning("Webhook precisa ser reconfigurado");
+      }
+    } catch (err: any) {
+      addLog(`❌ Erro ao verificar: ${err.message}`, 'error');
+      toast.error("Erro ao verificar webhook");
+    } finally {
+      setIsVerifyingWebhook(false);
+    }
+  };
+
+  const handleReconfigureWebhook = async () => {
+    const currentInstanceName = existingConnection?.instance_name || instanceName;
+    if (!currentInstanceName) {
+      toast.error("Nenhuma instância configurada");
+      return;
+    }
+
+    setIsVerifyingWebhook(true);
+    addLog('🔧 Reconfigurando webhook...', 'info');
+
+    try {
+      const { data, error } = await supabase.functions.invoke('whatsapp-evolution', {
+        body: {
+          action: 'reconfigure-webhook',
+          instanceName: currentInstanceName
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        addLog('✅ Webhook reconfigurado com sucesso!', 'success');
+        toast.success("Webhook reconfigurado!");
+        setWebhookStatus(null);
+        // Verificar novamente
+        setTimeout(() => handleVerifyWebhook(), 1000);
+      } else {
+        addLog(`❌ Falha ao reconfigurar: ${data?.error}`, 'error');
+        toast.error(data?.error || "Erro ao reconfigurar");
+      }
+    } catch (err: any) {
+      addLog(`❌ Erro: ${err.message}`, 'error');
+      toast.error("Erro ao reconfigurar webhook");
+    } finally {
+      setIsVerifyingWebhook(false);
+    }
+  };
+
   const getStatusBadge = () => {
     switch (status) {
       case 'connected':
@@ -563,10 +641,71 @@ export default function IAWhatsAppSetup() {
                 </p>
               </div>
 
-              <Button variant="outline" onClick={checkStatus} disabled={isCheckingStatus} className="w-full">
-                <RefreshCw className={`h-4 w-4 mr-2 ${isCheckingStatus ? 'animate-spin' : ''}`} />
-                Atualizar Status
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={checkStatus} disabled={isCheckingStatus} className="flex-1">
+                  <RefreshCw className={`h-4 w-4 mr-2 ${isCheckingStatus ? 'animate-spin' : ''}`} />
+                  Atualizar Status
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={handleVerifyWebhook} 
+                  disabled={isVerifyingWebhook}
+                  className="flex-1"
+                >
+                  <Settings2 className={`h-4 w-4 mr-2 ${isVerifyingWebhook ? 'animate-spin' : ''}`} />
+                  Verificar Webhook
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Card de Diagnóstico do Webhook */}
+        {webhookStatus && (
+          <Card className={webhookStatus.status?.isCorrect ? 'border-green-500' : 'border-yellow-500'}>
+            <CardHeader className="py-3">
+              <CardTitle className="text-sm flex items-center gap-2">
+                {webhookStatus.status?.isCorrect ? (
+                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                ) : (
+                  <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                )}
+                Diagnóstico do Webhook
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid gap-2 text-xs">
+                <div className="p-2 rounded bg-muted">
+                  <span className="text-muted-foreground">URL Atual (Evolution):</span>
+                  <p className="font-mono break-all">{webhookStatus.evolution?.url || 'Não configurado'}</p>
+                </div>
+                <div className="p-2 rounded bg-muted">
+                  <span className="text-muted-foreground">URL Esperada:</span>
+                  <p className="font-mono break-all">{webhookStatus.expected?.url}</p>
+                </div>
+                <div className="flex gap-2 items-center">
+                  <span className="text-muted-foreground">Habilitado:</span>
+                  <Badge variant={webhookStatus.evolution?.enabled ? 'default' : 'destructive'}>
+                    {webhookStatus.evolution?.enabled ? 'Sim' : 'Não'}
+                  </Badge>
+                </div>
+                <div className="flex gap-2 items-center">
+                  <span className="text-muted-foreground">Eventos:</span>
+                  <span className="font-mono text-xs">{webhookStatus.evolution?.events?.join(', ') || 'Nenhum'}</span>
+                </div>
+              </div>
+
+              {!webhookStatus.status?.isCorrect && (
+                <Button 
+                  onClick={handleReconfigureWebhook} 
+                  disabled={isVerifyingWebhook}
+                  className="w-full"
+                  variant="default"
+                >
+                  <Settings2 className={`h-4 w-4 mr-2 ${isVerifyingWebhook ? 'animate-spin' : ''}`} />
+                  Reconfigurar Webhook
+                </Button>
+              )}
             </CardContent>
           </Card>
         )}
