@@ -585,13 +585,21 @@ Deno.serve(async (req) => {
 
     // ========== QRCODE ==========
     if (action === 'qrcode') {
+      if (!instanceName) {
+        throw new Error('instanceName is required for qrcode action')
+      }
+      
       console.log('📱 Generating new QR Code for:', instanceName)
       
-      // Desconectar primeiro
-      await fetch(`${evolutionUrl}/instance/logout/${instanceName}`, {
-        method: 'DELETE',
-        headers: { 'apikey': evolutionApiKey }
-      })
+      // Desconectar primeiro (com try-catch para não quebrar se instância não existir)
+      try {
+        await fetch(`${evolutionUrl}/instance/logout/${instanceName}`, {
+          method: 'DELETE',
+          headers: { 'apikey': evolutionApiKey }
+        })
+      } catch (err) {
+        console.log('⚠️ Logout failed (continuing):', err)
+      }
       
       await new Promise(resolve => setTimeout(resolve, 2000))
       

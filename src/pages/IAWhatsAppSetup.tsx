@@ -272,6 +272,9 @@ export default function IAWhatsAppSetup() {
   };
 
   const checkStatus = async () => {
+    const currentInstanceName = existingConnection?.instance_name || instanceName;
+    if (!currentInstanceName) return;
+    
     setIsCheckingStatus(true);
     addLog('🔍 Verificando status...', 'info');
     
@@ -279,7 +282,7 @@ export default function IAWhatsAppSetup() {
       const { data, error } = await supabase.functions.invoke('whatsapp-evolution', {
         body: {
           action: 'check-status',
-          instanceName
+          instanceName: currentInstanceName
         }
       });
 
@@ -322,12 +325,15 @@ export default function IAWhatsAppSetup() {
       clearInterval(pollingRef.current);
     }
     
+    const currentInstanceName = existingConnection?.instance_name || instanceName;
     addLog('⏱️ Polling iniciado (10 min)', 'info');
     
     pollingRef.current = setInterval(async () => {
+      if (!isMountedRef.current) return;
+      
       try {
         const { data } = await supabase.functions.invoke('whatsapp-evolution', {
-          body: { action: 'check-status', instanceName }
+          body: { action: 'check-status', instanceName: currentInstanceName }
         });
 
         if (data?.isConnected) {
@@ -486,7 +492,13 @@ export default function IAWhatsAppSetup() {
               <div className="relative">
                 <div className="p-4 bg-white rounded-lg shadow-inner">
                   <img
-                    src={qrCode.startsWith('data:') ? qrCode : `data:image/png;base64,${qrCode}`}
+                    src={
+                      qrCode.startsWith('data:') 
+                        ? qrCode 
+                        : qrCode.startsWith('<svg') || qrCode.startsWith('<?xml')
+                          ? `data:image/svg+xml;base64,${btoa(qrCode)}`
+                          : `data:image/png;base64,${qrCode}`
+                    }
                     alt="QR Code WhatsApp"
                     className="w-64 h-64"
                   />
