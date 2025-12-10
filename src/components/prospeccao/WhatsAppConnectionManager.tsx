@@ -7,8 +7,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2, QrCode, Trash2, RefreshCw, Plus, Phone, Calendar, PowerOff } from "lucide-react";
+import { Loader2, QrCode, Trash2, RefreshCw, Plus, Phone, Calendar, PowerOff, Wrench, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface WhatsAppConnection {
   id: string;
@@ -32,6 +33,11 @@ interface QRCodeDialog {
 export default function WhatsAppConnectionManager() {
   const [newInstanceName, setNewInstanceName] = useState("");
   const [qrCodeDialog, setQrCodeDialog] = useState<QRCodeDialog | null>(null);
+  const [orphanDialog, setOrphanDialog] = useState<{
+    open: boolean;
+    orphans: { instanceName: string; status: string }[];
+    loading: boolean;
+  }>({ open: false, orphans: [], loading: false });
   const queryClient = useQueryClient();
 
   // 1️⃣ Query com polling para conexões
@@ -316,6 +322,69 @@ export default function WhatsAppConnectionManager() {
     },
   });
 
+  // 🧹 Mutation para listar órfãs
+  const listOrphansMutation = useMutation({
+    mutationFn: async () => {
+      console.log('🔍 Listing all instances to find orphans...');
+      
+      const { data, error } = await supabase.functions.invoke("whatsapp-evolution", {
+        body: { action: "list-all" },
+      });
+      
+      if (error) {
+        console.error('❌ List orphans error:', error);
+        throw error;
+      }
+      
+      console.log('📊 Orphans found:', data);
+      return data;
+    },
+    onSuccess: (data) => {
+      if (data.orphans && data.orphans.length > 0) {
+        setOrphanDialog({
+          open: true,
+          orphans: data.orphans,
+          loading: false
+        });
+      } else {
+        toast.success("✅ Nenhuma instância órfã encontrada!");
+      }
+    },
+    onError: (error: any) => {
+      console.error('💥 List orphans error:', error);
+      toast.error(error.message || "Erro ao listar instâncias");
+    },
+  });
+
+  // 🗑️ Mutation para deletar órfãs
+  const deleteOrphansMutation = useMutation({
+    mutationFn: async (instanceNames: string[]) => {
+      console.log('🗑️ Deleting orphans:', instanceNames);
+      
+      const { data, error } = await supabase.functions.invoke("whatsapp-evolution", {
+        body: { action: "delete-orphans", instanceNames },
+      });
+      
+      if (error) {
+        console.error('❌ Delete orphans error:', error);
+        throw error;
+      }
+      
+      console.log('✅ Delete orphans result:', data);
+      return data;
+    },
+    onSuccess: (data) => {
+      toast.success(`✅ ${data.totalDeleted} instância(s) órfã(s) deletada(s)!`);
+      setOrphanDialog({ open: false, orphans: [], loading: false });
+      queryClient.invalidateQueries({ queryKey: ["whatsapp-connections"] });
+    },
+    onError: (error: any) => {
+      console.error('💥 Delete orphans error:', error);
+      toast.error(error.message || "Erro ao deletar órfãs");
+      setOrphanDialog(prev => ({ ...prev, loading: false }));
+    },
+  });
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'connected':
@@ -363,6 +432,24 @@ export default function WhatsAppConnectionManager() {
                 <>
                   <Plus className="mr-2 h-4 w-4" />
                   Criar Conexão
+                </>
+              )}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => listOrphansMutation.mutate()}
+              disabled={listOrphansMutation.isPending}
+              title="Verificar e limpar instâncias órfãs na Evolution API"
+            >
+              {listOrphansMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Verificando...
+                </>
+              ) : (
+                <>
+                  <Wrench className="mr-2 h-4 w-4" />
+                  🧹 Limpar Órfãs
                 </>
               )}
             </Button>
@@ -494,6 +581,59 @@ export default function WhatsAppConnectionManager() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Dialog de Confirmação para Deletar Órfãs */}
+      <AlertDialog open={orphanDialog.open} onOpenChange={(open) => !open && setOrphanDialog({ open: false, orphans: [], loading: false })}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-yellow-500" />
+              Instâncias Órfãs Encontradas
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-4">
+              <p>
+                Foram encontradas <strong>{orphanDialog.orphans.length}</strong> instância(s) na Evolution API que NÃO estão no banco de dados:
+              </p>
+              <ul className="list-disc pl-6 space-y-1 max-h-48 overflow-y-auto">
+                {orphanDialog.orphans.map((orphan, idx) => (
+                  <li key={idx} className="text-sm">
+                    <strong>{orphan.instanceName}</strong>
+                    <span className="text-muted-foreground ml-2">({orphan.status || 'unknown'})</span>
+                  </li>
+                ))}
+              </ul>
+              <p className="text-sm text-muted-foreground">
+                Deseja deletar essas instâncias da Evolution API? Isso liberará recursos e permitirá criar novas conexões sem conflitos.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteOrphansMutation.isPending}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                const instanceNames = orphanDialog.orphans.map(o => o.instanceName);
+                deleteOrphansMutation.mutate(instanceNames);
+              }}
+              disabled={deleteOrphansMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteOrphansMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deletando...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Deletar {orphanDialog.orphans.length} Órfã(s)
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
