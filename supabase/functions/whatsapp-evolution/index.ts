@@ -2,8 +2,9 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
 import { corsHeaders } from '../_shared/cors.ts'
 
 interface EvolutionRequest {
-  action: 'check-status' | 'create' | 'qrcode' | 'delete' | 'disconnect'
-  instanceName: string
+  action: 'check-status' | 'create' | 'qrcode' | 'delete' | 'disconnect' | 'list-all' | 'delete-orphans'
+  instanceName?: string
+  instanceNames?: string[] // Para delete-orphans
   user_id?: string
 }
 
@@ -454,6 +455,122 @@ Deno.serve(async (req) => {
 
       return new Response(
         JSON.stringify({ success: true, message: 'Instance disconnected and offline' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // ========== LIST-ALL (Listar todas instâncias e identificar órfãs) ==========
+    if (action === 'list-all') {
+      console.log('📋 Listing ALL instances from Evolution API...')
+      
+      // 1️⃣ Buscar TODAS instâncias da Evolution API
+      const listResp = await fetch(`${evolutionUrl}/instance/fetchInstances`, {
+        headers: { 'apikey': evolutionApiKey }
+      })
+      
+      if (!listResp.ok) {
+        const errorText = await listResp.text()
+        console.error('❌ Evolution API list error:', errorText)
+        throw new Error(`Failed to list instances: ${listResp.status}`)
+      }
+      
+      const evolutionInstances = await listResp.json()
+      console.log('📊 Evolution instances found:', evolutionInstances.length)
+      
+      // 2️⃣ Buscar todas conexões do banco
+      const { data: dbConnections, error: dbError } = await supabase
+        .from('tendenci_whatsapp_connections')
+        .select('id, instance_name, status, phone_number, user_id')
+      
+      if (dbError) {
+        console.error('❌ Database error:', dbError)
+        throw new Error(`Database query failed: ${dbError.message}`)
+      }
+      
+      console.log('📊 DB connections found:', dbConnections?.length || 0)
+      
+      // 3️⃣ Encontrar instâncias órfãs (existem na Evolution mas NÃO no banco)
+      const dbNames = new Set(dbConnections?.map(c => c.instance_name) || [])
+      const orphans = evolutionInstances.filter((inst: any) => !dbNames.has(inst.instanceName || inst.instance?.instanceName))
+      
+      console.log('🔍 Orphan instances found:', orphans.length)
+      orphans.forEach((o: any) => {
+        console.log(`  - ${o.instanceName || o.instance?.instanceName}`)
+      })
+      
+      return new Response(
+        JSON.stringify({
+          evolutionInstances: evolutionInstances.map((i: any) => ({
+            instanceName: i.instanceName || i.instance?.instanceName,
+            status: i.connectionStatus || i.instance?.status,
+            ownerJid: i.ownerJid || i.instance?.ownerJid
+          })),
+          dbConnections: dbConnections || [],
+          orphans: orphans.map((o: any) => ({
+            instanceName: o.instanceName || o.instance?.instanceName,
+            status: o.connectionStatus || o.instance?.status
+          })),
+          summary: {
+            totalEvolution: evolutionInstances.length,
+            totalDatabase: dbConnections?.length || 0,
+            totalOrphans: orphans.length
+          }
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // ========== DELETE-ORPHANS (Deletar instâncias órfãs) ==========
+    if (action === 'delete-orphans') {
+      const instanceNamesToDelete = body.instanceNames || []
+      console.log('🗑️ Deleting orphan instances:', instanceNamesToDelete)
+      
+      if (instanceNamesToDelete.length === 0) {
+        return new Response(
+          JSON.stringify({ success: true, message: 'No instances to delete', results: [] }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+      
+      const results: { name: string; success: boolean; error?: string }[] = []
+      
+      for (const name of instanceNamesToDelete) {
+        try {
+          console.log(`🗑️ Deleting orphan: ${name}`)
+          
+          const deleteResp = await fetch(`${evolutionUrl}/instance/delete/${name}`, {
+            method: 'DELETE',
+            headers: { 'apikey': evolutionApiKey }
+          })
+          
+          if (deleteResp.ok || deleteResp.status === 404) {
+            console.log(`✅ Orphan deleted: ${name}`)
+            results.push({ name, success: true })
+          } else {
+            const errorText = await deleteResp.text()
+            console.error(`❌ Failed to delete ${name}:`, errorText)
+            results.push({ name, success: false, error: errorText })
+          }
+          
+          // Pequeno delay entre deleções
+          await new Promise(resolve => setTimeout(resolve, 500))
+        } catch (err) {
+          const errorMsg = err instanceof Error ? err.message : String(err)
+          console.error(`❌ Error deleting ${name}:`, errorMsg)
+          results.push({ name, success: false, error: errorMsg })
+        }
+      }
+      
+      const totalDeleted = results.filter(r => r.success).length
+      console.log(`✅ Cleanup complete: ${totalDeleted}/${instanceNamesToDelete.length} deleted`)
+      
+      return new Response(
+        JSON.stringify({
+          success: true,
+          results,
+          totalDeleted,
+          totalFailed: results.filter(r => !r.success).length
+        }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
