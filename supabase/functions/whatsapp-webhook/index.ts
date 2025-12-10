@@ -49,15 +49,85 @@ Deno.serve(async (req) => {
     const { instance, event, data } = payload
     const connectionEvents = ['connection.update', 'qrcode.updated', 'open', 'messages.upsert', 'connection.open']
 
-    // ========== DETECTAR RESPOSTA DE CLIENTE PARA FOLLOW-UP ==========
+    // ========== DETECTAR RESPOSTA DE CLIENTE/ARQUITETO ==========
     if (event === 'messages.upsert' && data?.key?.remoteJid && data?.key?.fromMe === false) {
-      console.log('💬 Message received from client, checking for follow-up deals...')
+      console.log('💬 Message received, checking for campaign architects and follow-up deals...')
       
       const clientPhone = data.key.remoteJid.replace('@s.whatsapp.net', '')
       console.log('📱 Client phone:', clientPhone)
 
       const messageText = (payload as any).data?.message?.conversation || 
                          (payload as any).data?.message?.extendedTextMessage?.text || ''
+      
+      const clientLast8 = getPhoneDigits(clientPhone)
+
+      // ========== VERIFICAR RESPOSTA DE ARQUITETO DE CAMPANHA ==========
+      if (clientLast8.length >= 8) {
+        // Buscar arquiteto pelo telefone
+        const { data: arquitetoData } = await supabase
+          .from('architects')
+          .select('id, name, phone, status_funil')
+          .or(`phone.ilike.%${clientLast8}`)
+          .limit(1)
+          .single()
+
+        if (arquitetoData) {
+          console.log('🎯 Arquiteto encontrado:', arquitetoData.name)
+
+          // Verificar se tem campanha pendente de resposta
+          const { data: campanhaArq, error: campanhaError } = await supabase
+            .from('tendenci_prospec_arq_campaign_architects')
+            .select('id, campanha_id, status, respondeu')
+            .eq('architect_id', arquitetoData.id)
+            .eq('status', 'enviado')
+            .eq('respondeu', false)
+            .order('data_envio', { ascending: false })
+            .limit(1)
+            .single()
+
+          if (campanhaArq && !campanhaError) {
+            console.log('📬 Campanha encontrada para arquiteto, marcando resposta...')
+
+            // Marcar como respondeu
+            const { error: updateError } = await supabase
+              .from('tendenci_prospec_arq_campaign_architects')
+              .update({
+                respondeu: true,
+                data_resposta: new Date().toISOString()
+              })
+              .eq('id', campanhaArq.id)
+
+            if (!updateError) {
+              console.log('✅ Resposta de campanha registrada!')
+
+              // Mover arquiteto para contato_efetivado se ainda não estiver em estágio avançado
+              if (arquitetoData.status_funil === 'contato_iniciado' || arquitetoData.status_funil === 'novo_arquiteto') {
+                await supabase
+                  .from('architects')
+                  .update({
+                    status_funil: 'contato_efetivado',
+                    data_ultimo_contato: new Date().toISOString()
+                  })
+                  .eq('id', arquitetoData.id)
+
+                console.log('📍 Arquiteto movido para contato_efetivado')
+              }
+
+              // Registrar log
+              await supabase
+                .from('tendenci_prospec_arq_logs')
+                .insert({
+                  architect_id: arquitetoData.id,
+                  campanha_id: campanhaArq.campanha_id,
+                  tipo: 'resposta_campanha',
+                  canal: 'whatsapp',
+                  mensagem: `✅ Arquiteto respondeu à campanha: "${messageText.substring(0, 100)}${messageText.length > 100 ? '...' : ''}"`,
+                  enviado_por: null
+                })
+            }
+          }
+        }
+      }
       
       // Palavras de opt-out
       const optOutKeywords = ['pare', 'parar', 'não quero', 'sair', 'cancelar', 'desinscrever', 'stop', 'para']
@@ -69,7 +139,6 @@ Deno.serve(async (req) => {
         console.log('🛑 OPT-OUT DETECTADO na mensagem do cliente:', messageText)
       }
       
-      const clientLast8 = getPhoneDigits(clientPhone)
       
       if (clientLast8.length < 8) {
         console.log('⚠️ Número do cliente muito curto para comparação:', clientPhone)
