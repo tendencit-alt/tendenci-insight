@@ -294,6 +294,161 @@ Deno.serve(async (req) => {
       )
     }
 
+    // ========== CREATE-IA (Instância da IA com webhook n8n) ==========
+    if (action === 'create-ia') {
+      const iaInstanceName = instanceName || 'IA-Atendimento'
+      const n8nWebhookUrl = body.webhookUrl || 'https://n8n.agendacorretor.online/webhook/receber-mensagens'
+      
+      console.log('🤖 Creating IA instance:', iaInstanceName)
+      console.log('🔗 N8N Webhook URL:', n8nWebhookUrl)
+      
+      // 1️⃣ Deletar instância existente na Evolution API (se existir)
+      try {
+        const deleteResp = await fetch(`${evolutionUrl}/instance/delete/${iaInstanceName}`, {
+          method: 'DELETE',
+          headers: { 'apikey': evolutionApiKey }
+        })
+        if (deleteResp.ok) {
+          console.log('🗑️ Deleted existing IA instance from Evolution API')
+          await new Promise(resolve => setTimeout(resolve, 2000))
+        }
+      } catch (err) {
+        console.log('ℹ️ No existing IA instance to delete')
+      }
+      
+      // 2️⃣ Deletar registro do banco (se existir)
+      await supabase
+        .from('tendenci_whatsapp_connections')
+        .delete()
+        .eq('instance_name', iaInstanceName)
+      console.log('🗑️ Cleaned IA database records')
+      
+      // 3️⃣ Criar nova instância na Evolution API
+      const createResp = await fetch(`${evolutionUrl}/instance/create`, {
+        method: 'POST',
+        headers: {
+          'apikey': evolutionApiKey,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          instanceName: iaInstanceName,
+          qrcode: true,
+          integration: 'WHATSAPP-BAILEYS'
+        })
+      })
+      
+      if (!createResp.ok) {
+        const errorText = await createResp.text()
+        console.error('❌ Evolution API error:', errorText)
+        throw new Error(`Evolution API failed: ${createResp.status} - ${errorText}`)
+      }
+      
+      const createData = await createResp.json()
+      console.log('✅ IA Instance created:', JSON.stringify(createData, null, 2))
+      
+      // 4️⃣ Extrair instance_id
+      const instanceId = 
+        createData?.instance?.instanceId || 
+        createData?.instanceId || 
+        createData?.instance?.instanceName ||
+        iaInstanceName
+      
+      // 5️⃣ Aguardar e obter QR Code
+      await new Promise(resolve => setTimeout(resolve, 3000))
+      
+      let qrCodeBase64 = null
+      try {
+        const connectResp = await fetch(`${evolutionUrl}/instance/connect/${iaInstanceName}`, {
+          method: 'GET',
+          headers: { 'apikey': evolutionApiKey }
+        })
+        
+        if (connectResp.ok) {
+          const connectData = await connectResp.json()
+          qrCodeBase64 = 
+            connectData?.base64 || 
+            connectData?.qrcode?.base64 || 
+            connectData?.qrcode?.code ||
+            null
+          
+          console.log('📱 IA QR Code obtained:', qrCodeBase64 ? 'YES ✅' : 'NO ❌')
+        }
+      } catch (err) {
+        console.error('❌ Error getting IA QR code:', err)
+      }
+      
+      // 6️⃣ Configurar webhook para N8N (NÃO Supabase!)
+      try {
+        const webhookResp = await fetch(`${evolutionUrl}/webhook/set/${iaInstanceName}`, {
+          method: 'POST',
+          headers: {
+            'apikey': evolutionApiKey,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            webhook: {
+              url: n8nWebhookUrl,
+              enabled: true,
+              webhookByEvents: false,
+              events: ['MESSAGES_UPSERT', 'CONNECTION_UPDATE', 'QRCODE_UPDATED']
+            }
+          })
+        })
+        
+        if (webhookResp.ok) {
+          console.log('✅ IA Webhook configured for N8N:', n8nWebhookUrl)
+        } else {
+          console.warn('⚠️ IA Webhook config failed:', webhookResp.status)
+        }
+      } catch (err) {
+        console.error('❌ IA Webhook error:', err)
+      }
+      
+      // 7️⃣ INSERIR no banco com is_ia_instance = true
+      const insertData = {
+        instance_name: iaInstanceName,
+        instance_id: instanceId,
+        status: 'connecting',
+        qr_code: qrCodeBase64,
+        qr_code_base64: qrCodeBase64,
+        phone_number: null,
+        connected_at: null,
+        created_by: null,
+        user_id: null,
+        webhook_configured: true,
+        webhook_url: n8nWebhookUrl,
+        is_ia_instance: true
+      }
+      
+      console.log('💾 Inserting IA instance into database')
+      
+      const { data: insertedData, error: insertError } = await supabase
+        .from('tendenci_whatsapp_connections')
+        .insert(insertData)
+        .select()
+        .single()
+      
+      if (insertError) {
+        console.error('❌ DATABASE INSERT ERROR:', insertError)
+        throw new Error(`Database insert failed: ${insertError.message}`)
+      }
+      
+      console.log('✅ IA Database insert SUCCESS')
+      
+      return new Response(
+        JSON.stringify({
+          success: true,
+          instanceId,
+          instanceName: iaInstanceName,
+          qrCode: qrCodeBase64,
+          databaseId: insertedData.id,
+          webhookUrl: n8nWebhookUrl,
+          status: 'connecting'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     // ========== QRCODE ==========
     if (action === 'qrcode') {
       console.log('📱 Generating new QR Code for:', instanceName)

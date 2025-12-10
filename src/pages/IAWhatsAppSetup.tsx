@@ -29,10 +29,11 @@ export default function IAWhatsAppSetup() {
 
   const checkExistingConnection = async () => {
     try {
+      // Buscar instância com nome padrão de IA
       const { data, error } = await supabase
         .from('tendenci_whatsapp_connections')
-        .select('id, instance_name, status, phone_number, qr_code_base64, is_ia_instance')
-        .eq('is_ia_instance', true)
+        .select('id, instance_name, status, phone_number, qr_code_base64')
+        .ilike('instance_name', 'IA-%')
         .maybeSingle();
 
       if (data && !error) {
