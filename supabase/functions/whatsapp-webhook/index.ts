@@ -49,6 +49,27 @@ Deno.serve(async (req) => {
     const { instance, event, data } = payload
     const connectionEvents = ['connection.update', 'qrcode.updated', 'open', 'messages.upsert', 'connection.open']
 
+    // ========== LOGGING PERSISTENTE PARA DIAGNÓSTICO ==========
+    const clientPhone = data?.key?.remoteJid?.replace('@s.whatsapp.net', '') || null
+    const messageText = (payload as any).data?.message?.conversation || 
+                       (payload as any).data?.message?.extendedTextMessage?.text || null
+    
+    try {
+      await supabase
+        .from('tendenci_webhook_logs')
+        .insert({
+          event_type: event,
+          instance_name: instance,
+          phone_from: clientPhone,
+          message_content: messageText?.substring(0, 500),
+          raw_payload: payload,
+          processing_status: 'received'
+        })
+      console.log('📝 Webhook logged to database')
+    } catch (logError) {
+      console.warn('⚠️ Failed to log webhook:', logError)
+    }
+
     // ========== DETECTAR RESPOSTA DE CLIENTE/ARQUITETO ==========
     if (event === 'messages.upsert' && data?.key?.remoteJid && data?.key?.fromMe === false) {
       console.log('💬 Message received, checking for campaign architects and follow-up deals...')

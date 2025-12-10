@@ -2910,6 +2910,48 @@ export type Database = {
         }
         Relationships: []
       }
+      tendenci_webhook_logs: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          event_type: string | null
+          id: string
+          instance_name: string | null
+          message_content: string | null
+          phone_from: string | null
+          phone_to: string | null
+          processed_at: string | null
+          processing_status: string | null
+          raw_payload: Json | null
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          event_type?: string | null
+          id?: string
+          instance_name?: string | null
+          message_content?: string | null
+          phone_from?: string | null
+          phone_to?: string | null
+          processed_at?: string | null
+          processing_status?: string | null
+          raw_payload?: Json | null
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          event_type?: string | null
+          id?: string
+          instance_name?: string | null
+          message_content?: string | null
+          phone_from?: string | null
+          phone_to?: string | null
+          processed_at?: string | null
+          processing_status?: string | null
+          raw_payload?: Json | null
+        }
+        Relationships: []
+      }
       tendenci_whatsapp_connections: {
         Row: {
           connected_at: string | null
