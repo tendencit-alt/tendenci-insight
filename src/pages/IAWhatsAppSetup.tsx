@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
@@ -8,9 +8,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { ArrowLeft, Bot, Loader2, QrCode, Wifi, WifiOff, RefreshCw, CheckCircle2, ExternalLink } from "lucide-react";
+import { ArrowLeft, Bot, Loader2, QrCode, Wifi, WifiOff, RefreshCw, CheckCircle2, ExternalLink, AlertCircle, RotateCcw } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const N8N_WEBHOOK_URL = "https://n8n.agendacorretor.online/webhook/receber-mensagens";
+
+type LogEntry = {
+  time: string;
+  message: string;
+  type: 'info' | 'success' | 'error' | 'warning';
+};
 
 export default function IAWhatsAppSetup() {
   const navigate = useNavigate();
@@ -21,19 +28,35 @@ export default function IAWhatsAppSetup() {
   const [phoneNumber, setPhoneNumber] = useState<string | null>(null);
   const [isCheckingStatus, setIsCheckingStatus] = useState(false);
   const [existingConnection, setExistingConnection] = useState<any>(null);
+  const [logs, setLogs] = useState<LogEntry[]>([]);
+  const pollingRef = useRef<NodeJS.Timeout | null>(null);
+
+  const addLog = (message: string, type: LogEntry['type'] = 'info') => {
+    const time = new Date().toLocaleTimeString('pt-BR');
+    setLogs(prev => [...prev, { time, message, type }]);
+  };
 
   // Buscar conexão existente da IA ao carregar
   useEffect(() => {
     checkExistingConnection();
+    
+    // Cleanup polling on unmount
+    return () => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+      }
+    };
   }, []);
 
   const checkExistingConnection = async () => {
     try {
-      // Buscar instância com nome padrão de IA
+      addLog('Verificando conexão existente...', 'info');
+      
+      // Buscar instância usando is_ia_instance = true (mais robusto que ilike)
       const { data, error } = await supabase
         .from('tendenci_whatsapp_connections')
-        .select('id, instance_name, status, phone_number, qr_code_base64')
-        .ilike('instance_name', 'IA-%')
+        .select('id, instance_name, status, phone_number, qr_code_base64, is_ia_instance')
+        .eq('is_ia_instance', true)
         .maybeSingle();
 
       if (data && !error) {
@@ -44,9 +67,17 @@ export default function IAWhatsAppSetup() {
         if (data.qr_code_base64) {
           setQrCode(data.qr_code_base64);
         }
+        addLog(`Conexão encontrada: ${data.instance_name} (${data.status})`, 'success');
+        
+        // Se está conectando, iniciar polling
+        if (data.status === 'connecting') {
+          startStatusPolling();
+        }
+      } else {
+        addLog('Nenhuma conexão de IA encontrada', 'info');
       }
     } catch (err) {
-      // Sem conexão existente
+      addLog('Erro ao verificar conexão existente', 'error');
     }
   };
 
@@ -59,8 +90,13 @@ export default function IAWhatsAppSetup() {
     setIsCreating(true);
     setQrCode(null);
     setStatus('connecting');
+    setLogs([]);
 
     try {
+      addLog('🚀 Iniciando criação da instância...', 'info');
+      addLog(`📝 Nome: ${instanceName}`, 'info');
+      addLog(`🔗 Webhook: ${N8N_WEBHOOK_URL}`, 'info');
+      
       const { data, error } = await supabase.functions.invoke('whatsapp-evolution', {
         body: {
           action: 'create-ia',
@@ -69,15 +105,22 @@ export default function IAWhatsAppSetup() {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        addLog(`❌ Erro: ${error.message}`, 'error');
+        throw error;
+      }
+
+      addLog('✅ Instância criada na Evolution API', 'success');
 
       if (data?.qrCode) {
         setQrCode(data.qrCode);
+        addLog('📱 QR Code gerado com sucesso!', 'success');
         toast.success("QR Code gerado! Escaneie com o WhatsApp da IA.");
         
         // Iniciar polling de status
         startStatusPolling();
       } else {
+        addLog('⏳ Aguardando QR Code...', 'warning');
         toast.warning("Instância criada, aguardando QR Code...");
         // Tentar buscar QR Code após delay
         setTimeout(() => refreshQRCode(), 3000);
@@ -86,6 +129,7 @@ export default function IAWhatsAppSetup() {
       await checkExistingConnection();
     } catch (err: any) {
       console.error('Erro ao criar IA:', err);
+      addLog(`❌ Falha na criação: ${err.message || 'Erro desconhecido'}`, 'error');
       toast.error(err.message || "Erro ao criar instância da IA");
       setStatus('disconnected');
     } finally {
@@ -93,8 +137,45 @@ export default function IAWhatsAppSetup() {
     }
   };
 
+  const handleReconnect = async () => {
+    if (!existingConnection) return;
+    
+    setIsCheckingStatus(true);
+    addLog('🔄 Tentando reconectar...', 'info');
+    
+    try {
+      // Primeiro tenta só gerar novo QR code
+      const { data, error } = await supabase.functions.invoke('whatsapp-evolution', {
+        body: {
+          action: 'qrcode',
+          instanceName: existingConnection.instance_name
+        }
+      });
+
+      if (data?.qrCode) {
+        setQrCode(data.qrCode);
+        setStatus('connecting');
+        addLog('📱 Novo QR Code gerado!', 'success');
+        toast.success("Novo QR Code gerado! Escaneie novamente.");
+        startStatusPolling();
+      } else {
+        addLog('⚠️ Não foi possível gerar QR Code', 'warning');
+        // Se falhou, recreate a instância
+        addLog('🔄 Recriando instância...', 'info');
+        await handleCreateIA();
+      }
+    } catch (err: any) {
+      addLog(`❌ Erro ao reconectar: ${err.message}`, 'error');
+      toast.error("Erro ao reconectar. Tente criar novamente.");
+    } finally {
+      setIsCheckingStatus(false);
+    }
+  };
+
   const refreshQRCode = async () => {
     setIsCheckingStatus(true);
+    addLog('🔄 Atualizando QR Code...', 'info');
+    
     try {
       const { data, error } = await supabase.functions.invoke('whatsapp-evolution', {
         body: {
@@ -103,12 +184,21 @@ export default function IAWhatsAppSetup() {
         }
       });
 
+      if (error) {
+        addLog(`❌ Erro: ${error.message}`, 'error');
+        throw error;
+      }
+
       if (data?.qrCode) {
         setQrCode(data.qrCode);
+        addLog('✅ Novo QR Code gerado!', 'success');
         toast.success("Novo QR Code gerado!");
+      } else {
+        addLog('⚠️ QR Code não retornado', 'warning');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Erro ao atualizar QR Code:', err);
+      addLog(`❌ Falha ao atualizar QR Code`, 'error');
     } finally {
       setIsCheckingStatus(false);
     }
@@ -116,6 +206,8 @@ export default function IAWhatsAppSetup() {
 
   const checkStatus = async () => {
     setIsCheckingStatus(true);
+    addLog('🔍 Verificando status...', 'info');
+    
     try {
       const { data, error } = await supabase.functions.invoke('whatsapp-evolution', {
         body: {
@@ -124,25 +216,48 @@ export default function IAWhatsAppSetup() {
         }
       });
 
+      if (error) {
+        addLog(`❌ Erro: ${error.message}`, 'error');
+        throw error;
+      }
+
       if (data) {
+        addLog(`📊 Status: ${data.status || data.isConnected ? 'conectado' : 'aguardando'}`, 'info');
+        
         if (data.isConnected) {
           setStatus('connected');
           setPhoneNumber(data.phoneNumber);
           setQrCode(null);
+          addLog('✅ IA conectada com sucesso!', 'success');
           toast.success("✅ IA conectada com sucesso!");
+          
+          // Parar polling
+          if (pollingRef.current) {
+            clearInterval(pollingRef.current);
+            pollingRef.current = null;
+          }
         } else {
           setStatus('connecting');
+          addLog('⏳ Aguardando conexão...', 'warning');
         }
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Erro ao verificar status:', err);
+      addLog(`❌ Erro ao verificar status`, 'error');
     } finally {
       setIsCheckingStatus(false);
     }
   };
 
   const startStatusPolling = () => {
-    const interval = setInterval(async () => {
+    // Limpar polling anterior se existir
+    if (pollingRef.current) {
+      clearInterval(pollingRef.current);
+    }
+    
+    addLog('⏱️ Polling iniciado (10 min)', 'info');
+    
+    pollingRef.current = setInterval(async () => {
       try {
         const { data } = await supabase.functions.invoke('whatsapp-evolution', {
           body: { action: 'check-status', instanceName }
@@ -152,7 +267,13 @@ export default function IAWhatsAppSetup() {
           setStatus('connected');
           setPhoneNumber(data.phoneNumber);
           setQrCode(null);
-          clearInterval(interval);
+          
+          if (pollingRef.current) {
+            clearInterval(pollingRef.current);
+            pollingRef.current = null;
+          }
+          
+          addLog('✅ IA conectada com sucesso!', 'success');
           toast.success("✅ IA conectada com sucesso!");
         }
       } catch (err) {
@@ -160,8 +281,14 @@ export default function IAWhatsAppSetup() {
       }
     }, 5000);
 
-    // Parar após 5 minutos
-    setTimeout(() => clearInterval(interval), 300000);
+    // Parar após 10 minutos (extendido de 5)
+    setTimeout(() => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+        pollingRef.current = null;
+        addLog('⏱️ Polling expirado (10 min)', 'warning');
+      }
+    }, 600000); // 10 minutos
   };
 
   const getStatusBadge = () => {
@@ -172,6 +299,15 @@ export default function IAWhatsAppSetup() {
         return <Badge variant="secondary" className="bg-yellow-500 text-white"><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Aguardando</Badge>;
       default:
         return <Badge variant="outline" className="text-muted-foreground"><WifiOff className="h-3 w-3 mr-1" /> Desconectado</Badge>;
+    }
+  };
+
+  const getLogIcon = (type: LogEntry['type']) => {
+    switch (type) {
+      case 'success': return <CheckCircle2 className="h-3 w-3 text-green-500" />;
+      case 'error': return <AlertCircle className="h-3 w-3 text-red-500" />;
+      case 'warning': return <AlertCircle className="h-3 w-3 text-yellow-500" />;
+      default: return <Bot className="h-3 w-3 text-muted-foreground" />;
     }
   };
 
@@ -229,26 +365,40 @@ export default function IAWhatsAppSetup() {
               </Badge>
             </div>
 
-            {status !== 'connected' && (
-              <Button
-                onClick={handleCreateIA}
-                disabled={isCreating || !instanceName.trim()}
-                className="w-full"
-                size="lg"
-              >
-                {isCreating ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Criando instância...
-                  </>
-                ) : (
-                  <>
-                    <Bot className="h-4 w-4 mr-2" />
-                    🚀 Conectar IA
-                  </>
-                )}
-              </Button>
-            )}
+            <div className="flex gap-2">
+              {status !== 'connected' && (
+                <Button
+                  onClick={handleCreateIA}
+                  disabled={isCreating || !instanceName.trim()}
+                  className="flex-1"
+                  size="lg"
+                >
+                  {isCreating ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Criando instância...
+                    </>
+                  ) : (
+                    <>
+                      <Bot className="h-4 w-4 mr-2" />
+                      🚀 Conectar IA
+                    </>
+                  )}
+                </Button>
+              )}
+              
+              {existingConnection && status !== 'connected' && (
+                <Button
+                  onClick={handleReconnect}
+                  disabled={isCheckingStatus || isCreating}
+                  variant="outline"
+                  size="lg"
+                >
+                  <RotateCcw className={`h-4 w-4 mr-2 ${isCheckingStatus ? 'animate-spin' : ''}`} />
+                  Reconectar
+                </Button>
+              )}
+            </div>
           </CardContent>
         </Card>
 
@@ -332,6 +482,36 @@ export default function IAWhatsAppSetup() {
           </Card>
         )}
 
+        {/* Log Visual do Processo */}
+        {logs.length > 0 && (
+          <Card>
+            <CardHeader className="py-3">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Bot className="h-4 w-4" />
+                Log de Conexão
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <ScrollArea className="h-40 px-4 pb-4">
+                <div className="space-y-1.5">
+                  {logs.map((log, i) => (
+                    <div key={i} className="flex items-start gap-2 text-xs">
+                      <span className="text-muted-foreground font-mono shrink-0">{log.time}</span>
+                      {getLogIcon(log.type)}
+                      <span className={
+                        log.type === 'error' ? 'text-red-600' :
+                        log.type === 'success' ? 'text-green-600' :
+                        log.type === 'warning' ? 'text-yellow-600' :
+                        'text-muted-foreground'
+                      }>{log.message}</span>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Informações Técnicas */}
         <Card>
           <CardHeader>
@@ -342,6 +522,7 @@ export default function IAWhatsAppSetup() {
             <p><strong>Webhook:</strong> {N8N_WEBHOOK_URL}</p>
             <p><strong>Eventos:</strong> MESSAGES_UPSERT, CONNECTION_UPDATE</p>
             <p><strong>Status:</strong> {status}</p>
+            <p><strong>Polling:</strong> {pollingRef.current ? 'Ativo (10 min)' : 'Inativo'}</p>
           </CardContent>
         </Card>
       </div>
