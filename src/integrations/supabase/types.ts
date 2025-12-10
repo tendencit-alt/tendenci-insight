@@ -3379,14 +3379,7 @@ export type Database = {
         Args: { p_seller_goal_id: string }
         Returns: Json
       }
-      get_sellers_without_goals: {
-        Args: never
-        Returns: {
-          seller_email: string
-          seller_id: string
-          seller_name: string
-        }[]
-      }
+      get_sellers_without_goals: { Args: never; Returns: number }
       get_user_role: {
         Args: { user_id: string }
         Returns: Database["public"]["Enums"]["user_role"]
@@ -3466,6 +3459,7 @@ export type Database = {
           total_value: number
         }[]
       }
+      recalculate_all_goal_progress: { Args: never; Returns: undefined }
       user_can_access_module: {
         Args: {
           _module: Database["public"]["Enums"]["app_module"]
