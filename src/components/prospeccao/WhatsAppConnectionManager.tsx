@@ -35,9 +35,9 @@ export default function WhatsAppConnectionManager() {
   const [qrCodeDialog, setQrCodeDialog] = useState<QRCodeDialog | null>(null);
   const [orphanDialog, setOrphanDialog] = useState<{
     open: boolean;
-    orphans: { instanceName: string; status: string }[];
+    allInstances: { instanceName: string; status: string; inDatabase: boolean; selected: boolean }[];
     loading: boolean;
-  }>({ open: false, orphans: [], loading: false });
+  }>({ open: false, allInstances: [], loading: false });
   const queryClient = useQueryClient();
 
   // 1️⃣ Query com polling para conexões
@@ -322,68 +322,84 @@ export default function WhatsAppConnectionManager() {
     },
   });
 
-  // 🧹 Mutation para listar órfãs
+  // 🧹 Mutation para listar TODAS as instâncias (para seleção manual)
   const listOrphansMutation = useMutation({
     mutationFn: async () => {
-      console.log('🔍 Listing all instances to find orphans...');
+      console.log('🔍 Listing all instances...');
       
       const { data, error } = await supabase.functions.invoke("whatsapp-evolution", {
         body: { action: "list-all" },
       });
       
       if (error) {
-        console.error('❌ List orphans error:', error);
+        console.error('❌ List error:', error);
         throw error;
       }
       
-      console.log('📊 Orphans found:', data);
+      console.log('📊 All instances:', data);
       return data;
     },
     onSuccess: (data) => {
-      if (data.orphans && data.orphans.length > 0) {
-        setOrphanDialog({
-          open: true,
-          orphans: data.orphans,
-          loading: false
-        });
-      } else {
-        toast.success("✅ Nenhuma instância órfã encontrada!");
-      }
+      // Combinar todas instâncias com flag de seleção
+      const allInstances = data.evolutionInstances.map((inst: any) => ({
+        instanceName: inst.instanceName,
+        status: inst.status,
+        inDatabase: data.dbConnections?.some((db: any) => db.instance_name === inst.instanceName) || false,
+        selected: false // Por padrão, nada selecionado
+      }));
+      
+      setOrphanDialog({
+        open: true,
+        allInstances,
+        loading: false
+      });
     },
     onError: (error: any) => {
-      console.error('💥 List orphans error:', error);
+      console.error('💥 List error:', error);
       toast.error(error.message || "Erro ao listar instâncias");
     },
   });
 
-  // 🗑️ Mutation para deletar órfãs
+  // 🗑️ Mutation para deletar instâncias selecionadas
   const deleteOrphansMutation = useMutation({
     mutationFn: async (instanceNames: string[]) => {
-      console.log('🗑️ Deleting orphans:', instanceNames);
+      console.log('🗑️ Deleting selected instances:', instanceNames);
       
       const { data, error } = await supabase.functions.invoke("whatsapp-evolution", {
         body: { action: "delete-orphans", instanceNames },
       });
       
       if (error) {
-        console.error('❌ Delete orphans error:', error);
+        console.error('❌ Delete error:', error);
         throw error;
       }
       
-      console.log('✅ Delete orphans result:', data);
+      console.log('✅ Delete result:', data);
       return data;
     },
     onSuccess: (data) => {
-      toast.success(`✅ ${data.totalDeleted} instância(s) órfã(s) deletada(s)!`);
-      setOrphanDialog({ open: false, orphans: [], loading: false });
+      toast.success(`✅ ${data.totalDeleted} instância(s) deletada(s)!`);
+      setOrphanDialog({ open: false, allInstances: [], loading: false });
       queryClient.invalidateQueries({ queryKey: ["whatsapp-connections"] });
     },
     onError: (error: any) => {
-      console.error('💥 Delete orphans error:', error);
-      toast.error(error.message || "Erro ao deletar órfãs");
+      console.error('💥 Delete error:', error);
+      toast.error(error.message || "Erro ao deletar");
       setOrphanDialog(prev => ({ ...prev, loading: false }));
     },
   });
+
+  // Toggle seleção de instância
+  const toggleInstanceSelection = (instanceName: string) => {
+    setOrphanDialog(prev => ({
+      ...prev,
+      allInstances: prev.allInstances.map(inst => 
+        inst.instanceName === instanceName 
+          ? { ...inst, selected: !inst.selected }
+          : inst
+      )
+    }));
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -582,29 +598,52 @@ export default function WhatsAppConnectionManager() {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog de Confirmação para Deletar Órfãs */}
-      <AlertDialog open={orphanDialog.open} onOpenChange={(open) => !open && setOrphanDialog({ open: false, orphans: [], loading: false })}>
-        <AlertDialogContent>
+      {/* Dialog para Gerenciar Instâncias */}
+      <AlertDialog open={orphanDialog.open} onOpenChange={(open) => !open && setOrphanDialog({ open: false, allInstances: [], loading: false })}>
+        <AlertDialogContent className="max-w-lg">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-yellow-500" />
-              Instâncias Órfãs Encontradas
+              <Wrench className="h-5 w-5 text-primary" />
+              Gerenciar Instâncias Evolution API
             </AlertDialogTitle>
-            <AlertDialogDescription className="space-y-4">
-              <p>
-                Foram encontradas <strong>{orphanDialog.orphans.length}</strong> instância(s) na Evolution API que NÃO estão no banco de dados:
-              </p>
-              <ul className="list-disc pl-6 space-y-1 max-h-48 overflow-y-auto">
-                {orphanDialog.orphans.map((orphan, idx) => (
-                  <li key={idx} className="text-sm">
-                    <strong>{orphan.instanceName}</strong>
-                    <span className="text-muted-foreground ml-2">({orphan.status || 'unknown'})</span>
-                  </li>
-                ))}
-              </ul>
-              <p className="text-sm text-muted-foreground">
-                Deseja deletar essas instâncias da Evolution API? Isso liberará recursos e permitirá criar novas conexões sem conflitos.
-              </p>
+            <AlertDialogDescription asChild>
+              <div className="space-y-4">
+                <p className="text-sm">
+                  Selecione as instâncias que deseja <strong className="text-destructive">DELETAR</strong> da Evolution API.
+                  <br />
+                  <span className="text-yellow-600 font-medium">⚠️ Cuidado: esta ação é irreversível!</span>
+                </p>
+                <div className="border rounded-lg max-h-64 overflow-y-auto">
+                  {orphanDialog.allInstances.map((inst, idx) => (
+                    <div 
+                      key={idx} 
+                      className={`flex items-center gap-3 p-3 border-b last:border-b-0 cursor-pointer hover:bg-muted/50 ${inst.selected ? 'bg-destructive/10' : ''}`}
+                      onClick={() => toggleInstanceSelection(inst.instanceName)}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={inst.selected}
+                        onChange={() => toggleInstanceSelection(inst.instanceName)}
+                        className="h-4 w-4"
+                      />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{inst.instanceName}</span>
+                          {inst.inDatabase && (
+                            <Badge variant="outline" className="text-xs">No Tendenci</Badge>
+                          )}
+                        </div>
+                        <span className="text-xs text-muted-foreground">
+                          Status: {inst.status || 'unknown'}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {orphanDialog.allInstances.filter(i => i.selected).length} instância(s) selecionada(s) para deletar
+                </p>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -613,10 +652,14 @@ export default function WhatsAppConnectionManager() {
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
-                const instanceNames = orphanDialog.orphans.map(o => o.instanceName);
-                deleteOrphansMutation.mutate(instanceNames);
+                const selectedNames = orphanDialog.allInstances.filter(i => i.selected).map(i => i.instanceName);
+                if (selectedNames.length === 0) {
+                  toast.warning("Selecione pelo menos uma instância para deletar");
+                  return;
+                }
+                deleteOrphansMutation.mutate(selectedNames);
               }}
-              disabled={deleteOrphansMutation.isPending}
+              disabled={deleteOrphansMutation.isPending || orphanDialog.allInstances.filter(i => i.selected).length === 0}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {deleteOrphansMutation.isPending ? (
@@ -627,7 +670,7 @@ export default function WhatsAppConnectionManager() {
               ) : (
                 <>
                   <Trash2 className="mr-2 h-4 w-4" />
-                  Deletar {orphanDialog.orphans.length} Órfã(s)
+                  Deletar Selecionadas
                 </>
               )}
             </AlertDialogAction>
