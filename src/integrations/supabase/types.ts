@@ -2920,6 +2920,7 @@ export type Database = {
           id: string
           instance_id: string | null
           instance_name: string
+          is_ia_instance: boolean | null
           last_sync: string | null
           metadata: Json | null
           n8n_webhook_url: string | null
@@ -2941,6 +2942,7 @@ export type Database = {
           id?: string
           instance_id?: string | null
           instance_name: string
+          is_ia_instance?: boolean | null
           last_sync?: string | null
           metadata?: Json | null
           n8n_webhook_url?: string | null
@@ -2962,6 +2964,7 @@ export type Database = {
           id?: string
           instance_id?: string | null
           instance_name?: string
+          is_ia_instance?: boolean | null
           last_sync?: string | null
           metadata?: Json | null
           n8n_webhook_url?: string | null
