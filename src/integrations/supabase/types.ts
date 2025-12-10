@@ -3219,6 +3219,14 @@ export type Database = {
           valor_total: number
         }[]
       }
+      get_campaign_evolution: {
+        Args: { p_date_from: string; p_date_to: string }
+        Returns: Json
+      }
+      get_campaign_metrics: {
+        Args: { p_date_from: string; p_date_to: string }
+        Returns: Json
+      }
       get_current_goals_status: {
         Args: { p_user_id?: string }
         Returns: {
