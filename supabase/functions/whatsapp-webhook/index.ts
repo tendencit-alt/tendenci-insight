@@ -49,6 +49,75 @@ Deno.serve(async (req) => {
     const { instance, event, data } = payload
     const connectionEvents = ['connection.update', 'qrcode.updated', 'open', 'messages.upsert', 'connection.open']
 
+    // ========== VERIFICAR SE É INSTÂNCIA IA E FAZER PROXY PARA N8N ==========
+    const { data: connectionData } = await supabase
+      .from('tendenci_whatsapp_connections')
+      .select('id, is_ia_instance, webhook_url, user_id')
+      .eq('instance_name', instance)
+      .single()
+
+    if (connectionData?.is_ia_instance && connectionData?.webhook_url && event === 'messages.upsert') {
+      console.log('🤖 Instância IA detectada! Fazendo proxy para n8n...')
+      console.log('🔗 N8N Webhook URL:', connectionData.webhook_url)
+      
+      try {
+        const n8nResponse = await fetch(connectionData.webhook_url, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'User-Agent': 'Tendenci-Webhook-Proxy/1.0'
+          },
+          body: JSON.stringify(payload)
+        })
+        
+        const n8nStatus = n8nResponse.status
+        const n8nOk = n8nResponse.ok
+        
+        console.log('📤 N8N Response Status:', n8nStatus, n8nOk ? '✅' : '❌')
+        
+        // Logar resultado do forward
+        await supabase
+          .from('tendenci_webhook_logs')
+          .insert({
+            event_type: 'ia_proxy_forward',
+            instance_name: instance,
+            phone_from: data?.key?.remoteJid?.replace('@s.whatsapp.net', '') || null,
+            message_content: `Forward para n8n: ${n8nOk ? 'SUCESSO' : 'FALHA'} (HTTP ${n8nStatus})`,
+            raw_payload: { 
+              original_event: event,
+              n8n_url: connectionData.webhook_url,
+              n8n_status: n8nStatus,
+              n8n_ok: n8nOk 
+            },
+            processing_status: n8nOk ? 'forwarded' : 'forward_failed'
+          })
+        
+        if (!n8nOk) {
+          console.error('❌ Falha no forward para n8n:', n8nStatus)
+        } else {
+          console.log('✅ Mensagem encaminhada para n8n com sucesso!')
+        }
+      } catch (forwardError: any) {
+        console.error('💥 Erro ao fazer forward para n8n:', forwardError.message)
+        
+        // Logar erro
+        await supabase
+          .from('tendenci_webhook_logs')
+          .insert({
+            event_type: 'ia_proxy_error',
+            instance_name: instance,
+            phone_from: data?.key?.remoteJid?.replace('@s.whatsapp.net', '') || null,
+            message_content: `Erro no forward: ${forwardError.message}`,
+            raw_payload: { 
+              original_event: event,
+              n8n_url: connectionData.webhook_url,
+              error: forwardError.message 
+            },
+            processing_status: 'forward_error'
+          })
+      }
+    }
+
     // ========== LOGGING PERSISTENTE PARA DIAGNÓSTICO ==========
     const clientPhone = data?.key?.remoteJid?.replace('@s.whatsapp.net', '') || null
     const messageText = (payload as any).data?.message?.conversation || 
