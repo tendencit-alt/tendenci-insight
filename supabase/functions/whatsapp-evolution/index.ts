@@ -4,6 +4,7 @@ import { corsHeaders } from '../_shared/cors.ts'
 interface EvolutionRequest {
   action: 'check-status' | 'create' | 'qrcode' | 'delete' | 'disconnect'
   instanceName: string
+  user_id?: string
 }
 
 Deno.serve(async (req) => {
@@ -24,8 +25,10 @@ Deno.serve(async (req) => {
       throw new Error('Evolution API credentials not configured')
     }
 
-    const { action, instanceName }: EvolutionRequest = await req.json()
-    console.log(`🔧 Action: ${action} | Instance: ${instanceName}`)
+    // Parsear body UMA ÚNICA VEZ e reutilizar (evita erro "Body is unusable")
+    const body: EvolutionRequest = await req.json()
+    const { action, instanceName, user_id: requestUserId } = body
+    console.log(`🔧 Action: ${action} | Instance: ${instanceName} | User: ${requestUserId || 'not provided'}`)
 
     // ========== CHECK STATUS ==========
     if (action === 'check-status') {
@@ -242,9 +245,8 @@ Deno.serve(async (req) => {
         console.error('❌ Webhook error:', err)
       }
       
-      // 7️⃣ Buscar user_id do request body (enviado pelo frontend)
-      const reqBody = await req.clone().json()
-      const userId = reqBody.user_id || null
+      // 7️⃣ Usar user_id já extraído do body no início (evita "Body is unusable")
+      const userId = requestUserId || null
       
       // INSERIR no banco (com todos os campos necessários)
       const insertData = {
