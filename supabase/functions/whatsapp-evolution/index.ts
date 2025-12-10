@@ -490,39 +490,48 @@ Deno.serve(async (req) => {
       
       console.log('📊 DB connections found:', dbConnections?.length || 0)
       
-      // 3️⃣ Extrair nome da instância de forma robusta (Evolution API pode ter estruturas diferentes)
-      const getInstanceName = (inst: any): string | null => {
-        // Tentar várias estruturas possíveis da Evolution API
-        return inst.instanceName || 
-               inst.name || 
-               inst.instance?.instanceName || 
+      // 3️⃣ Extrair nome da instância EXATAMENTE como vem da API (NÃO fazer trim!)
+      // Isso é crítico porque a Evolution API usa o nome exato para deletar
+      const getInstanceNameExact = (inst: any): string | null => {
+        // Priorizar 'name' que é o campo exato da Evolution API
+        // NÃO fazer .trim() - manter espaços exatamente como estão
+        const name = inst.name || 
+               inst.instanceName || 
                inst.instance?.name ||
+               inst.instance?.instanceName ||
                (typeof inst === 'string' ? inst : null)
+        return name // Retornar exatamente como veio, com espaços se houver
       }
       
       // 4️⃣ Encontrar instâncias órfãs (existem na Evolution mas NÃO no banco)
-      const dbNames = new Set(dbConnections?.map(c => c.instance_name) || [])
+      // Comparar com trim para identificar, mas retornar nome exato
+      const dbNames = new Set(dbConnections?.map(c => c.instance_name?.trim()) || [])
       const orphans = evolutionInstances.filter((inst: any) => {
-        const name = getInstanceName(inst)
-        console.log(`  Checking instance: ${name} (in DB: ${dbNames.has(name || '')})`)
-        return name && !dbNames.has(name)
+        const name = getInstanceNameExact(inst)
+        const nameTrimmed = name?.trim() || ''
+        const isInDb = dbNames.has(nameTrimmed)
+        console.log(`  Checking instance: "${name}" (trimmed: "${nameTrimmed}") (in DB: ${isInDb})`)
+        return name && !isInDb
       })
       
       console.log('🔍 Orphan instances found:', orphans.length)
       orphans.forEach((o: any) => {
-        console.log(`  - Orphan: ${getInstanceName(o)}`)
+        const name = getInstanceNameExact(o)
+        console.log(`  - Orphan: "${name}" (length: ${name?.length})`)
       })
       
       return new Response(
         JSON.stringify({
           evolutionInstances: evolutionInstances.map((i: any) => ({
-            instanceName: getInstanceName(i),
+            instanceName: getInstanceNameExact(i), // Nome EXATO com espaços
+            instanceNameDisplay: getInstanceNameExact(i)?.trim(), // Para exibição
             status: i.connectionStatus || i.state || i.instance?.status || 'unknown',
             ownerJid: i.ownerJid || i.owner || i.instance?.ownerJid
           })),
           dbConnections: dbConnections || [],
           orphans: orphans.map((o: any) => ({
-            instanceName: getInstanceName(o),
+            instanceName: getInstanceNameExact(o), // Nome EXATO para deletar
+            instanceNameDisplay: getInstanceNameExact(o)?.trim(), // Para exibição
             status: o.connectionStatus || o.state || o.instance?.status || 'unknown'
           })),
           summary: {
@@ -538,7 +547,7 @@ Deno.serve(async (req) => {
     // ========== DELETE-ORPHANS (Deletar instâncias órfãs) ==========
     if (action === 'delete-orphans') {
       const instanceNamesToDelete = body.instanceNames || []
-      console.log('🗑️ Deleting orphan instances:', instanceNamesToDelete)
+      console.log('🗑️ Deleting orphan instances:', JSON.stringify(instanceNamesToDelete))
       
       if (instanceNamesToDelete.length === 0) {
         return new Response(
@@ -551,27 +560,31 @@ Deno.serve(async (req) => {
       
       for (const name of instanceNamesToDelete) {
         try {
-          console.log(`🗑️ Deleting orphan: ${name}`)
+          // Usar encodeURIComponent para lidar com espaços e caracteres especiais
+          const encodedName = encodeURIComponent(name)
+          console.log(`🗑️ Deleting orphan: "${name}" (encoded: "${encodedName}", length: ${name.length})`)
           
-          const deleteResp = await fetch(`${evolutionUrl}/instance/delete/${name}`, {
+          const deleteResp = await fetch(`${evolutionUrl}/instance/delete/${encodedName}`, {
             method: 'DELETE',
             headers: { 'apikey': evolutionApiKey }
           })
           
+          console.log(`📊 Delete response status for "${name}": ${deleteResp.status}`)
+          
           if (deleteResp.ok || deleteResp.status === 404) {
-            console.log(`✅ Orphan deleted: ${name}`)
+            console.log(`✅ Orphan deleted: "${name}"`)
             results.push({ name, success: true })
           } else {
             const errorText = await deleteResp.text()
-            console.error(`❌ Failed to delete ${name}:`, errorText)
-            results.push({ name, success: false, error: errorText })
+            console.error(`❌ Failed to delete "${name}":`, deleteResp.status, errorText)
+            results.push({ name, success: false, error: `${deleteResp.status}: ${errorText}` })
           }
           
           // Pequeno delay entre deleções
           await new Promise(resolve => setTimeout(resolve, 500))
         } catch (err) {
           const errorMsg = err instanceof Error ? err.message : String(err)
-          console.error(`❌ Error deleting ${name}:`, errorMsg)
+          console.error(`❌ Error deleting "${name}":`, errorMsg)
           results.push({ name, success: false, error: errorMsg })
         }
       }
