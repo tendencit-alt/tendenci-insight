@@ -29,7 +29,10 @@ export default function IAWhatsAppSetup() {
   const [isCheckingStatus, setIsCheckingStatus] = useState(false);
   const [existingConnection, setExistingConnection] = useState<any>(null);
   const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [qrCountdown, setQrCountdown] = useState(30);
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
+  const qrRefreshRef = useRef<NodeJS.Timeout | null>(null);
+  const countdownRef = useRef<NodeJS.Timeout | null>(null);
 
   const addLog = (message: string, type: LogEntry['type'] = 'info') => {
     const time = new Date().toLocaleTimeString('pt-BR');
@@ -45,8 +48,48 @@ export default function IAWhatsAppSetup() {
       if (pollingRef.current) {
         clearInterval(pollingRef.current);
       }
+      if (qrRefreshRef.current) {
+        clearInterval(qrRefreshRef.current);
+      }
+      if (countdownRef.current) {
+        clearInterval(countdownRef.current);
+      }
     };
   }, []);
+
+  // Auto-refresh QR Code a cada 30 segundos quando conectando
+  useEffect(() => {
+    if (status === 'connecting' && qrCode) {
+      // Iniciar countdown
+      setQrCountdown(30);
+      
+      countdownRef.current = setInterval(() => {
+        setQrCountdown(prev => {
+          if (prev <= 1) {
+            return 30; // Reset quando chega a 0
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      
+      // Auto-refresh QR a cada 30 segundos
+      qrRefreshRef.current = setInterval(() => {
+        addLog('🔄 QR Code renovado automaticamente', 'info');
+        refreshQRCode();
+      }, 30000);
+      
+      return () => {
+        if (qrRefreshRef.current) {
+          clearInterval(qrRefreshRef.current);
+          qrRefreshRef.current = null;
+        }
+        if (countdownRef.current) {
+          clearInterval(countdownRef.current);
+          countdownRef.current = null;
+        }
+      };
+    }
+  }, [status, qrCode]);
 
   const checkExistingConnection = async () => {
     try {
@@ -410,12 +453,13 @@ export default function IAWhatsAppSetup() {
                 <QrCode className="h-5 w-5" />
                 QR Code
               </CardTitle>
-              <CardDescription>
-                Escaneie o código abaixo com o WhatsApp que será usado pela IA
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col items-center gap-4">
-              {qrCode ? (
+            <CardDescription>
+              Escaneie o código abaixo com o WhatsApp que será usado pela IA
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col items-center gap-4">
+            {qrCode ? (
+              <div className="relative">
                 <div className="p-4 bg-white rounded-lg shadow-inner">
                   <img
                     src={qrCode.startsWith('data:') ? qrCode : `data:image/png;base64,${qrCode}`}
@@ -423,11 +467,20 @@ export default function IAWhatsAppSetup() {
                     className="w-64 h-64"
                   />
                 </div>
-              ) : (
-                <div className="w-64 h-64 bg-muted rounded-lg flex items-center justify-center">
-                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                </div>
-              )}
+                {/* Badge de countdown */}
+                <Badge 
+                  variant="outline" 
+                  className="absolute -top-2 -right-2 bg-background border-primary text-primary"
+                >
+                  <RefreshCw className="h-3 w-3 mr-1" />
+                  {qrCountdown}s
+                </Badge>
+              </div>
+            ) : (
+              <div className="w-64 h-64 bg-muted rounded-lg flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            )}
 
               <div className="flex gap-2">
                 <Button variant="outline" onClick={refreshQRCode} disabled={isCheckingStatus}>

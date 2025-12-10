@@ -299,15 +299,21 @@ Deno.serve(async (req) => {
       const iaInstanceName = instanceName || 'IA-Atendimento'
       const n8nWebhookUrl = body.webhookUrl || 'https://n8n.agendacorretor.online/webhook/receber-mensagens'
       
+      // Normalizar URL da Evolution API (remover barra final se existir)
+      const normalizedEvolutionUrl = evolutionUrl.replace(/\/$/, '')
+      
       console.log('🤖 ========== CREATING IA INSTANCE ==========')
-      console.log('🤖 Instance Name:', iaInstanceName)
-      console.log('🔗 N8N Webhook URL:', n8nWebhookUrl)
-      console.log('🌐 Evolution API URL:', evolutionUrl)
+      console.log('🔧 DIAGNOSTIC INFO:')
+      console.log('- Evolution URL:', normalizedEvolutionUrl)
+      console.log('- Instance Name:', iaInstanceName)
+      console.log('- Webhook URL:', n8nWebhookUrl)
+      console.log('- API Key valid:', evolutionApiKey ? 'YES' : 'NO')
+      console.log('- API Key length:', evolutionApiKey?.length || 0)
       
       // 1️⃣ Deletar instância existente na Evolution API (se existir)
       console.log('1️⃣ Checking for existing instance to delete...')
       try {
-        const deleteResp = await fetch(`${evolutionUrl}/instance/delete/${iaInstanceName}`, {
+        const deleteResp = await fetch(`${normalizedEvolutionUrl}/instance/delete/${iaInstanceName}`, {
           method: 'DELETE',
           headers: { 'apikey': evolutionApiKey }
         })
@@ -322,15 +328,27 @@ Deno.serve(async (req) => {
         console.log('ℹ️ No existing IA instance to delete (error caught)')
       }
       
-      // 2️⃣ Deletar registro do banco (se existir) - usando is_ia_instance para ser mais específico
+      // 2️⃣ Deletar registro do banco (se existir) - duas queries separadas para evitar erro de sintaxe OR
       console.log('2️⃣ Cleaning database records...')
-      const { error: deleteDbError } = await supabase
+      
+      // Delete por instance_name
+      const { error: deleteDbError1 } = await supabase
         .from('tendenci_whatsapp_connections')
         .delete()
-        .or(`instance_name.eq.${iaInstanceName},is_ia_instance.eq.true`)
+        .eq('instance_name', iaInstanceName)
       
-      if (deleteDbError) {
-        console.warn('⚠️ Database cleanup warning:', deleteDbError.message)
+      if (deleteDbError1) {
+        console.warn('⚠️ Database cleanup (by name) warning:', deleteDbError1.message)
+      }
+      
+      // Delete por is_ia_instance
+      const { error: deleteDbError2 } = await supabase
+        .from('tendenci_whatsapp_connections')
+        .delete()
+        .eq('is_ia_instance', true)
+      
+      if (deleteDbError2) {
+        console.warn('⚠️ Database cleanup (by is_ia) warning:', deleteDbError2.message)
       } else {
         console.log('🗑️ ✅ Cleaned IA database records')
       }
@@ -344,7 +362,7 @@ Deno.serve(async (req) => {
       }
       console.log('📤 Create payload:', JSON.stringify(createPayload))
       
-      const createResp = await fetch(`${evolutionUrl}/instance/create`, {
+      const createResp = await fetch(`${normalizedEvolutionUrl}/instance/create`, {
         method: 'POST',
         headers: {
           'apikey': evolutionApiKey,
@@ -362,6 +380,12 @@ Deno.serve(async (req) => {
       }
       
       const createData = await createResp.json()
+      
+      // Validar resposta antes de usar
+      if (!createData || typeof createData !== 'object') {
+        throw new Error('Evolution API returned invalid response')
+      }
+      
       console.log('✅ IA Instance created successfully!')
       console.log('📝 Create response data:', JSON.stringify(createData, null, 2))
       
@@ -373,94 +397,137 @@ Deno.serve(async (req) => {
         iaInstanceName
       console.log('4️⃣ Instance ID extracted:', instanceId)
       
-      // 5️⃣ Aguardar e obter QR Code
-      console.log('5️⃣ Waiting 3s before fetching QR Code...')
-      await new Promise(resolve => setTimeout(resolve, 3000))
+      // 5️⃣ Obter QR Code - tentar da resposta de criação primeiro, depois retry 3x
+      let qrCodeBase64 = 
+        createData?.qrcode?.base64 || 
+        createData?.base64 || 
+        createData?.instance?.qrcode?.base64 ||
+        null
       
-      let qrCodeBase64 = null
-      console.log('📱 Fetching QR Code from:', `${evolutionUrl}/instance/connect/${iaInstanceName}`)
-      
-      try {
-        const connectResp = await fetch(`${evolutionUrl}/instance/connect/${iaInstanceName}`, {
-          method: 'GET',
-          headers: { 'apikey': evolutionApiKey }
-        })
+      if (qrCodeBase64) {
+        console.log('📱 QR Code obtained from create response! ✅')
+      } else {
+        console.log('5️⃣ QR not in create response, fetching from connect endpoint...')
         
-        console.log('📱 Connect response status:', connectResp.status)
-        
-        if (connectResp.ok) {
-          const connectData = await connectResp.json()
-          console.log('📱 Connect response keys:', Object.keys(connectData))
+        // Retry 3 vezes com delay de 2 segundos
+        for (let attempt = 1; attempt <= 3 && !qrCodeBase64; attempt++) {
+          console.log(`📱 QR Code attempt ${attempt}/3...`)
+          await new Promise(resolve => setTimeout(resolve, 2000))
           
-          qrCodeBase64 = 
-            connectData?.base64 || 
-            connectData?.qrcode?.base64 || 
-            connectData?.qrcode?.code ||
-            connectData?.code ||
-            null
-          
-          console.log('📱 IA QR Code obtained:', qrCodeBase64 ? `YES ✅ (${qrCodeBase64.substring(0, 50)}...)` : 'NO ❌')
-        } else {
-          const errorText = await connectResp.text()
-          console.warn('⚠️ Connect endpoint failed:', connectResp.status, errorText)
+          try {
+            const connectResp = await fetch(`${normalizedEvolutionUrl}/instance/connect/${iaInstanceName}`, {
+              method: 'GET',
+              headers: { 'apikey': evolutionApiKey }
+            })
+            
+            console.log(`📱 Connect response status (attempt ${attempt}):`, connectResp.status)
+            
+            if (connectResp.ok) {
+              const connectData = await connectResp.json()
+              console.log('📱 Connect response keys:', Object.keys(connectData))
+              
+              qrCodeBase64 = 
+                connectData?.base64 || 
+                connectData?.qrcode?.base64 || 
+                connectData?.qrcode?.code ||
+                connectData?.code ||
+                null
+              
+              if (qrCodeBase64) {
+                console.log(`📱 IA QR Code obtained on attempt ${attempt}! ✅`)
+              }
+            } else {
+              const errorText = await connectResp.text()
+              console.warn(`⚠️ Connect endpoint failed (attempt ${attempt}):`, connectResp.status, errorText)
+            }
+          } catch (err) {
+            console.error(`❌ Error getting IA QR code (attempt ${attempt}):`, err)
+          }
         }
-      } catch (err) {
-        console.error('❌ Error getting IA QR code:', err)
       }
       
-      // 6️⃣ Configurar webhook para N8N
+      if (!qrCodeBase64) {
+        console.warn('⚠️ Could not obtain QR Code after 3 attempts')
+      }
+      
+      // 6️⃣ Configurar webhook para N8N - testar múltiplos formatos de payload
       console.log('6️⃣ Configuring webhook for N8N...')
       let webhookConfigured = false
       
-      // Tentar primeiro /webhook/set/{instance}
-      try {
-        const webhookPayload = {
-          webhook: {
-            url: n8nWebhookUrl,
-            enabled: true,
-            webhookByEvents: false,
-            events: ['MESSAGES_UPSERT', 'CONNECTION_UPDATE', 'QRCODE_UPDATED']
-          }
+      // Formato 1: Com wrapper webhook
+      const webhookPayload1 = {
+        webhook: {
+          url: n8nWebhookUrl,
+          enabled: true,
+          webhookByEvents: false,
+          events: ['MESSAGES_UPSERT', 'CONNECTION_UPDATE', 'QRCODE_UPDATED']
         }
-        console.log('📤 Webhook payload:', JSON.stringify(webhookPayload))
+      }
+      
+      // Formato 2: Sem wrapper (fallback)
+      const webhookPayload2 = {
+        url: n8nWebhookUrl,
+        enabled: true,
+        webhookByEvents: false,
+        events: ['MESSAGES_UPSERT', 'CONNECTION_UPDATE', 'QRCODE_UPDATED']
+      }
+      
+      // Tentar primeiro /webhook/set/{instance} com formato 1
+      try {
+        console.log('📤 Trying /webhook/set/ with wrapper payload...')
         
-        const webhookResp = await fetch(`${evolutionUrl}/webhook/set/${iaInstanceName}`, {
+        let webhookResp = await fetch(`${normalizedEvolutionUrl}/webhook/set/${iaInstanceName}`, {
           method: 'POST',
           headers: {
             'apikey': evolutionApiKey,
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify(webhookPayload)
+          body: JSON.stringify(webhookPayload1)
         })
         
-        console.log('📥 Webhook response status:', webhookResp.status)
+        console.log('📥 Webhook /set/ (format 1) status:', webhookResp.status)
         
         if (webhookResp.ok) {
-          console.log('✅ IA Webhook configured successfully via /webhook/set/')
+          console.log('✅ IA Webhook configured via /webhook/set/ (format 1)')
           webhookConfigured = true
         } else {
-          const errorText = await webhookResp.text()
-          console.warn('⚠️ Webhook /set/ failed, trying alternative endpoint...', webhookResp.status, errorText)
-          
-          // Tentar endpoint alternativo /webhook/instance/{instance}
-          const altResp = await fetch(`${evolutionUrl}/webhook/instance/${iaInstanceName}`, {
+          // Tentar mesmo endpoint com formato 2
+          console.log('📤 Trying /webhook/set/ without wrapper...')
+          webhookResp = await fetch(`${normalizedEvolutionUrl}/webhook/set/${iaInstanceName}`, {
             method: 'POST',
             headers: {
               'apikey': evolutionApiKey,
               'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
-              url: n8nWebhookUrl,
-              enabled: true,
-              events: ['MESSAGES_UPSERT', 'CONNECTION_UPDATE', 'QRCODE_UPDATED']
-            })
+            body: JSON.stringify(webhookPayload2)
           })
           
-          if (altResp.ok) {
-            console.log('✅ IA Webhook configured via alternative endpoint')
+          console.log('📥 Webhook /set/ (format 2) status:', webhookResp.status)
+          
+          if (webhookResp.ok) {
+            console.log('✅ IA Webhook configured via /webhook/set/ (format 2)')
             webhookConfigured = true
           } else {
-            console.error('❌ Both webhook endpoints failed')
+            // Tentar endpoint alternativo /webhook/instance/{instance}
+            console.log('📤 Trying alternative /webhook/instance/ endpoint...')
+            const altResp = await fetch(`${normalizedEvolutionUrl}/webhook/instance/${iaInstanceName}`, {
+              method: 'POST',
+              headers: {
+                'apikey': evolutionApiKey,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify(webhookPayload2)
+            })
+            
+            console.log('📥 Webhook /instance/ status:', altResp.status)
+            
+            if (altResp.ok) {
+              console.log('✅ IA Webhook configured via /webhook/instance/')
+              webhookConfigured = true
+            } else {
+              const errorText = await altResp.text()
+              console.error('❌ All webhook endpoints failed. Last error:', errorText)
+            }
           }
         }
       } catch (err) {
