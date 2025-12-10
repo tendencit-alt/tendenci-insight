@@ -476,6 +476,7 @@ Deno.serve(async (req) => {
       
       const evolutionInstances = await listResp.json()
       console.log('📊 Evolution instances found:', evolutionInstances.length)
+      console.log('📊 Raw Evolution data:', JSON.stringify(evolutionInstances, null, 2))
       
       // 2️⃣ Buscar todas conexões do banco
       const { data: dbConnections, error: dbError } = await supabase
@@ -489,26 +490,40 @@ Deno.serve(async (req) => {
       
       console.log('📊 DB connections found:', dbConnections?.length || 0)
       
-      // 3️⃣ Encontrar instâncias órfãs (existem na Evolution mas NÃO no banco)
+      // 3️⃣ Extrair nome da instância de forma robusta (Evolution API pode ter estruturas diferentes)
+      const getInstanceName = (inst: any): string | null => {
+        // Tentar várias estruturas possíveis da Evolution API
+        return inst.instanceName || 
+               inst.name || 
+               inst.instance?.instanceName || 
+               inst.instance?.name ||
+               (typeof inst === 'string' ? inst : null)
+      }
+      
+      // 4️⃣ Encontrar instâncias órfãs (existem na Evolution mas NÃO no banco)
       const dbNames = new Set(dbConnections?.map(c => c.instance_name) || [])
-      const orphans = evolutionInstances.filter((inst: any) => !dbNames.has(inst.instanceName || inst.instance?.instanceName))
+      const orphans = evolutionInstances.filter((inst: any) => {
+        const name = getInstanceName(inst)
+        console.log(`  Checking instance: ${name} (in DB: ${dbNames.has(name || '')})`)
+        return name && !dbNames.has(name)
+      })
       
       console.log('🔍 Orphan instances found:', orphans.length)
       orphans.forEach((o: any) => {
-        console.log(`  - ${o.instanceName || o.instance?.instanceName}`)
+        console.log(`  - Orphan: ${getInstanceName(o)}`)
       })
       
       return new Response(
         JSON.stringify({
           evolutionInstances: evolutionInstances.map((i: any) => ({
-            instanceName: i.instanceName || i.instance?.instanceName,
-            status: i.connectionStatus || i.instance?.status,
-            ownerJid: i.ownerJid || i.instance?.ownerJid
+            instanceName: getInstanceName(i),
+            status: i.connectionStatus || i.state || i.instance?.status || 'unknown',
+            ownerJid: i.ownerJid || i.owner || i.instance?.ownerJid
           })),
           dbConnections: dbConnections || [],
           orphans: orphans.map((o: any) => ({
-            instanceName: o.instanceName || o.instance?.instanceName,
-            status: o.connectionStatus || o.instance?.status
+            instanceName: getInstanceName(o),
+            status: o.connectionStatus || o.state || o.instance?.status || 'unknown'
           })),
           summary: {
             totalEvolution: evolutionInstances.length,
