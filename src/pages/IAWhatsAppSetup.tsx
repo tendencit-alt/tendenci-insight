@@ -33,18 +33,28 @@ export default function IAWhatsAppSetup() {
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
   const qrRefreshRef = useRef<NodeJS.Timeout | null>(null);
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
+  const isMountedRef = useRef(true); // Flag para evitar updates após unmount
+  const statusRef = useRef(status); // Ref para status atual (evitar closure stale)
+
+  // Manter statusRef sincronizado
+  useEffect(() => {
+    statusRef.current = status;
+  }, [status]);
 
   const addLog = (message: string, type: LogEntry['type'] = 'info') => {
+    if (!isMountedRef.current) return;
     const time = new Date().toLocaleTimeString('pt-BR');
     setLogs(prev => [...prev, { time, message, type }]);
   };
 
   // Buscar conexão existente da IA ao carregar
   useEffect(() => {
+    isMountedRef.current = true;
     checkExistingConnection();
     
     // Cleanup polling on unmount
     return () => {
+      isMountedRef.current = false;
       if (pollingRef.current) {
         clearInterval(pollingRef.current);
       }
@@ -64,6 +74,7 @@ export default function IAWhatsAppSetup() {
       setQrCountdown(30);
       
       countdownRef.current = setInterval(() => {
+        if (!isMountedRef.current) return;
         setQrCountdown(prev => {
           if (prev <= 1) {
             return 30; // Reset quando chega a 0
@@ -72,10 +83,14 @@ export default function IAWhatsAppSetup() {
         });
       }, 1000);
       
-      // Auto-refresh QR a cada 30 segundos
+      // Auto-refresh QR a cada 30 segundos - verificar status atual via ref
       qrRefreshRef.current = setInterval(() => {
-        addLog('🔄 QR Code renovado automaticamente', 'info');
-        refreshQRCode();
+        if (!isMountedRef.current) return;
+        // Verificar status atual para não sobrescrever se já conectado
+        if (statusRef.current === 'connecting') {
+          addLog('🔄 QR Code renovado automaticamente', 'info');
+          refreshQRCode();
+        }
       }, 30000);
       
       return () => {
@@ -216,14 +231,18 @@ export default function IAWhatsAppSetup() {
   };
 
   const refreshQRCode = async () => {
+    if (!isMountedRef.current) return;
     setIsCheckingStatus(true);
     addLog('🔄 Atualizando QR Code...', 'info');
+    
+    // Usar nome consistente: da conexão existente ou do state
+    const currentInstanceName = existingConnection?.instance_name || instanceName;
     
     try {
       const { data, error } = await supabase.functions.invoke('whatsapp-evolution', {
         body: {
           action: 'qrcode',
-          instanceName
+          instanceName: currentInstanceName
         }
       });
 
@@ -232,6 +251,8 @@ export default function IAWhatsAppSetup() {
         throw error;
       }
 
+      if (!isMountedRef.current) return;
+      
       if (data?.qrCode) {
         setQrCode(data.qrCode);
         addLog('✅ Novo QR Code gerado!', 'success');
@@ -240,10 +261,13 @@ export default function IAWhatsAppSetup() {
         addLog('⚠️ QR Code não retornado', 'warning');
       }
     } catch (err: any) {
+      if (!isMountedRef.current) return;
       console.error('Erro ao atualizar QR Code:', err);
       addLog(`❌ Falha ao atualizar QR Code`, 'error');
     } finally {
-      setIsCheckingStatus(false);
+      if (isMountedRef.current) {
+        setIsCheckingStatus(false);
+      }
     }
   };
 
