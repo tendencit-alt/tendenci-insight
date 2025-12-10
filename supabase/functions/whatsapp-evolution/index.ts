@@ -2,10 +2,11 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
 import { corsHeaders } from '../_shared/cors.ts'
 
 interface EvolutionRequest {
-  action: 'check-status' | 'create' | 'qrcode' | 'delete' | 'disconnect' | 'list-all' | 'delete-orphans'
+  action: 'check-status' | 'create' | 'create-ia' | 'qrcode' | 'delete' | 'disconnect' | 'list-all' | 'delete-orphans'
   instanceName?: string
   instanceNames?: string[] // Para delete-orphans
   user_id?: string
+  webhookUrl?: string // Para create-ia customizado
 }
 
 Deno.serve(async (req) => {
