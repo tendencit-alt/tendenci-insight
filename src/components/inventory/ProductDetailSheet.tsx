@@ -1,16 +1,20 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Edit, Package, AlertTriangle, TrendingUp, DollarSign, BarChart3 } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Edit, Package, AlertTriangle, TrendingUp, DollarSign, BarChart3, Trash2, Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { usePermissions } from "@/hooks/usePermissions";
 import EditProductDialog from "./EditProductDialog";
 import ProductMovements from "./ProductMovements";
 import ProductSuppliers from "./ProductSuppliers";
 import ProductBOMManager from "./ProductBOMManager";
+import ProductPriceChart from "./ProductPriceChart";
 
 interface ProductDetailSheetProps {
   product: any;
@@ -20,8 +24,38 @@ interface ProductDetailSheetProps {
 }
 
 export default function ProductDetailSheet({ product, open, onOpenChange, onUpdate }: ProductDetailSheetProps) {
+  const { toast } = useToast();
+  const { isMaster } = usePermissions();
+  const queryClient = useQueryClient();
   const [editOpen, setEditOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      const { error } = await supabase
+        .from("products")
+        .delete()
+        .eq("id", product.id);
+
+      if (error) throw error;
+
+      toast({ title: "Produto excluído com sucesso!" });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      onOpenChange(false);
+      onUpdate();
+    } catch (error: any) {
+      toast({ 
+        title: "Erro ao excluir produto", 
+        description: error.message.includes("violates foreign key") 
+          ? "Este produto possui movimentações ou está vinculado a outros registros. Considere desativá-lo." 
+          : error.message, 
+        variant: "destructive" 
+      });
+    } finally {
+      setDeleting(false);
+    }
+  };
   if (!product) return null;
 
   const isLowStock = product.min_stock > 0 && product.current_stock <= product.min_stock;
@@ -44,6 +78,31 @@ export default function ProductDetailSheet({ product, open, onOpenChange, onUpda
                 <Edit className="h-4 w-4 mr-1" />
                 Editar
               </Button>
+              {isMaster && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" size="sm">
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Excluir Produto</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Tem certeza que deseja excluir "{product.name}"? Esta ação não pode ser desfeita.
+                        Se o produto possui movimentações, considere desativá-lo ao invés de excluir.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleDelete} disabled={deleting}>
+                        {deleting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                        Excluir
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
             </div>
           </SheetHeader>
 
@@ -163,12 +222,17 @@ export default function ProductDetailSheet({ product, open, onOpenChange, onUpda
             <Tabs defaultValue="movements">
               <TabsList className="w-full">
                 <TabsTrigger value="movements" className="flex-1">Movimentações</TabsTrigger>
+                <TabsTrigger value="prices" className="flex-1">Histórico Preços</TabsTrigger>
                 <TabsTrigger value="suppliers" className="flex-1">Fornecedores</TabsTrigger>
                 <TabsTrigger value="bom" className="flex-1">Composição</TabsTrigger>
               </TabsList>
 
               <TabsContent value="movements">
                 <ProductMovements productId={product.id} />
+              </TabsContent>
+
+              <TabsContent value="prices">
+                <ProductPriceChart productId={product.id} />
               </TabsContent>
 
               <TabsContent value="suppliers">
