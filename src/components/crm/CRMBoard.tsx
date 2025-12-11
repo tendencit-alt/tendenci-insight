@@ -161,10 +161,11 @@ export function CRMBoard({ pipelineId, onRefresh, autoOpenDealId, onDealOpened, 
       .select(`
         *,
         lead:leads(
-          id, 
+          id,
+          client_id,
           temperature,
           source:lead_sources(id, name),
-          client:clients(name, phone, email, city, state)
+          client:clients(id, name, phone, email, city, state)
         ),
         architect:architects(name),
         owner:profiles(id, full_name, email),

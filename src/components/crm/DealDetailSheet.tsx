@@ -342,8 +342,19 @@ export function DealDetailSheet({
       new_value: 'won',
     });
 
-    // Criar pedido automaticamente
-    const clientId = deal.lead?.client?.id || deal.lead?.client_id;
+    // Criar pedido automaticamente - buscar clientId com fallback robusto
+    let clientId = deal.lead?.client?.id || deal.lead?.client_id;
+    
+    // Se não tiver clientId, buscar diretamente do lead
+    if (!clientId && deal.lead_id) {
+      const { data: leadData } = await supabase
+        .from("leads")
+        .select("client_id")
+        .eq("id", deal.lead_id)
+        .single();
+      
+      clientId = leadData?.client_id;
+    }
     
     if (clientId) {
       const { data: order, error: orderError } = await supabase
