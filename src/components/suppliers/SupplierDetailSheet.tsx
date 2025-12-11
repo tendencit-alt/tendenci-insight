@@ -1,12 +1,23 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Phone, Mail, MapPin, Globe, Edit, Package, History } from "lucide-react";
+import { 
+  AlertDialog, 
+  AlertDialogAction, 
+  AlertDialogCancel, 
+  AlertDialogContent, 
+  AlertDialogDescription, 
+  AlertDialogFooter, 
+  AlertDialogHeader, 
+  AlertDialogTitle 
+} from "@/components/ui/alert-dialog";
+import { Phone, Mail, MapPin, Globe, Edit, Trash2, Loader2 } from "lucide-react";
+import { usePermissions } from "@/hooks/usePermissions";
+import { useToast } from "@/hooks/use-toast";
 import EditSupplierDialog from "./EditSupplierDialog";
 import SupplierContacts from "./SupplierContacts";
 import SupplierProducts from "./SupplierProducts";
@@ -21,8 +32,39 @@ interface SupplierDetailSheetProps {
 
 export default function SupplierDetailSheet({ supplier, open, onOpenChange, onUpdate }: SupplierDetailSheetProps) {
   const [editOpen, setEditOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const { isMaster } = usePermissions();
+  const { toast } = useToast();
 
   if (!supplier) return null;
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      const { error } = await supabase
+        .from("suppliers")
+        .delete()
+        .eq("id", supplier.id);
+
+      if (error) throw error;
+
+      toast({ title: "Fornecedor excluído com sucesso!" });
+      onOpenChange(false);
+      onUpdate();
+    } catch (error: any) {
+      toast({ 
+        title: "Erro ao excluir fornecedor", 
+        description: error.message?.includes("violates foreign key") 
+          ? "Este fornecedor possui registros vinculados. Considere desativá-lo em vez de excluir."
+          : error.message, 
+        variant: "destructive" 
+      });
+    } finally {
+      setDeleting(false);
+      setDeleteOpen(false);
+    }
+  };
 
   return (
     <>
@@ -43,6 +85,16 @@ export default function SupplierDetailSheet({ supplier, open, onOpenChange, onUp
                 <Edit className="h-4 w-4 mr-1" />
                 Editar
               </Button>
+              {isMaster && (
+                <Button 
+                  variant="destructive" 
+                  size="sm" 
+                  onClick={() => setDeleteOpen(true)}
+                >
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  Excluir
+                </Button>
+              )}
             </div>
           </SheetHeader>
 
@@ -146,6 +198,35 @@ export default function SupplierDetailSheet({ supplier, open, onOpenChange, onUp
           setEditOpen(false);
         }}
       />
+
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir Fornecedor</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>Tem certeza que deseja excluir o fornecedor <strong>{supplier.name}</strong>?</p>
+              <p className="text-destructive">
+                Esta ação não pode ser desfeita. Se o fornecedor possuir registros vinculados 
+                (contatos, produtos, pedidos de compra), a exclusão falhará.
+              </p>
+              <p className="text-muted-foreground">
+                💡 Dica: Considere desativar o fornecedor em vez de excluir para manter o histórico.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDelete} 
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
