@@ -15,6 +15,9 @@ import CreateProductDialog from "@/components/inventory/CreateProductDialog";
 import ProductDetailSheet from "@/components/inventory/ProductDetailSheet";
 import CreateMovementDialog from "@/components/inventory/CreateMovementDialog";
 import LowStockAlerts from "@/components/inventory/LowStockAlerts";
+import PurchaseSuggestions from "@/components/inventory/PurchaseSuggestions";
+import InventoryAdvancedKPIs from "@/components/inventory/InventoryAdvancedKPIs";
+import ABCAnalysis from "@/components/inventory/ABCAnalysis";
 
 export default function Inventory() {
   const [activeTab, setActiveTab] = useState("products");
@@ -110,6 +113,9 @@ export default function Inventory() {
           <TabsList>
             <TabsTrigger value="products">Produtos</TabsTrigger>
             <TabsTrigger value="movements">Movimentações</TabsTrigger>
+            <TabsTrigger value="suggestions">Sugestão Compras</TabsTrigger>
+            <TabsTrigger value="abc">Curva ABC</TabsTrigger>
+            <TabsTrigger value="advanced">KPIs Avançados</TabsTrigger>
             <TabsTrigger value="categories">Categorias</TabsTrigger>
             <TabsTrigger value="locations">Locais</TabsTrigger>
           </TabsList>
@@ -128,6 +134,18 @@ export default function Inventory() {
               movements={movements} 
               isLoading={loadingMovements}
             />
+          </TabsContent>
+
+          <TabsContent value="suggestions">
+            <PurchaseSuggestions />
+          </TabsContent>
+
+          <TabsContent value="abc">
+            <ABCAnalysis />
+          </TabsContent>
+
+          <TabsContent value="advanced">
+            <InventoryAdvancedKPIs />
           </TabsContent>
 
           <TabsContent value="categories">
