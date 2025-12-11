@@ -59,12 +59,15 @@ interface SLAMetric {
   in_progress: number;
 }
 
-export function ProductionKPIs({ productionTypeId }: ProductionKPIsProps) {
+export function ProductionKPIs({ productionTypeId, filters }: ProductionKPIsProps) {
   const { data: metrics, isLoading: metricsLoading } = useQuery({
-    queryKey: ['production-metrics', productionTypeId],
+    queryKey: ['production-metrics', productionTypeId, filters],
     queryFn: async () => {
       const { data, error } = await supabase.rpc('production_metrics', {
-        p_type_id: productionTypeId || null
+        p_type_id: productionTypeId || null,
+        p_status: filters?.status || null,
+        p_priority: filters?.priority || null,
+        p_responsible_id: filters?.responsible && filters.responsible !== 'all' ? filters.responsible : null
       });
       if (error) throw error;
       return data as unknown as ProductionMetrics;
