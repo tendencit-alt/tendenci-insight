@@ -451,14 +451,20 @@ Deno.serve(async (req) => {
         console.warn('⚠️ Could not obtain QR Code after 3 attempts')
       }
       
-      // 6️⃣ Configurar webhook para N8N - testar múltiplos formatos de payload
-      console.log('6️⃣ Configuring webhook for N8N...')
+      // 6️⃣ Configurar webhook para SUPABASE (proxy) - NÃO direto para n8n
+      // A URL do n8n fica armazenada no banco para o whatsapp-webhook fazer forward
+      console.log('6️⃣ Configuring webhook for Supabase (proxy to n8n)...')
       let webhookConfigured = false
+      
+      // URL do Supabase - TODAS as instâncias usam esta URL
+      const supabaseWebhookUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/whatsapp-webhook`
+      console.log('📡 Supabase webhook URL:', supabaseWebhookUrl)
+      console.log('📡 N8N URL (stored in DB for proxy):', n8nWebhookUrl)
       
       // Formato 1: Com wrapper webhook
       const webhookPayload1 = {
         webhook: {
-          url: n8nWebhookUrl,
+          url: supabaseWebhookUrl, // Aponta para Supabase, NÃO n8n
           enabled: true,
           webhookByEvents: false,
           events: ['MESSAGES_UPSERT', 'CONNECTION_UPDATE', 'QRCODE_UPDATED']
@@ -467,7 +473,7 @@ Deno.serve(async (req) => {
       
       // Formato 2: Sem wrapper (fallback)
       const webhookPayload2 = {
-        url: n8nWebhookUrl,
+        url: supabaseWebhookUrl, // Aponta para Supabase, NÃO n8n
         enabled: true,
         webhookByEvents: false,
         events: ['MESSAGES_UPSERT', 'CONNECTION_UPDATE', 'QRCODE_UPDATED']
@@ -943,10 +949,9 @@ Deno.serve(async (req) => {
         evolutionError = err.message
       }
       
-      // Determinar URL esperada
-      const expectedUrl = connection.is_ia_instance 
-        ? 'https://n8n.agendacorretor.online/webhook/receber-mensagens'
-        : `${Deno.env.get('SUPABASE_URL')}/functions/v1/whatsapp-webhook`
+      // Determinar URL esperada - TODAS as instâncias usam Supabase como webhook
+      // A URL do n8n fica no banco para proxy, não na Evolution API
+      const expectedUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/whatsapp-webhook`
       
       // Verificar se webhook está correto
       const currentUrl = evolutionWebhook?.webhook?.url || evolutionWebhook?.url || null
@@ -1002,10 +1007,9 @@ Deno.serve(async (req) => {
         )
       }
       
-      // Determinar URL correta
-      const webhookUrl = connection.is_ia_instance 
-        ? 'https://n8n.agendacorretor.online/webhook/receber-mensagens'
-        : `${Deno.env.get('SUPABASE_URL')}/functions/v1/whatsapp-webhook`
+      // Determinar URL correta - TODAS as instâncias usam Supabase como webhook
+      // A URL do n8n fica armazenada no campo webhook_url do banco para proxy
+      const webhookUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/whatsapp-webhook`
       
       console.log('📡 Target webhook URL:', webhookUrl)
       console.log('📡 Is IA instance:', connection.is_ia_instance)
