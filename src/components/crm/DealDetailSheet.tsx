@@ -342,53 +342,40 @@ export function DealDetailSheet({
       new_value: 'won',
     });
 
-    // Criar pedido automaticamente - buscar clientId com fallback robusto
-    let clientId = deal.lead?.client?.id || deal.lead?.client_id;
+    // Verificar se tem cliente vinculado para informar usuário
+    // O TRIGGER no banco cria o pedido automaticamente
+    let hasClient = deal.lead?.client?.id || deal.lead?.client_id;
     
-    // Se não tiver clientId, buscar diretamente do lead
-    if (!clientId && deal.lead_id) {
+    if (!hasClient && deal.lead_id) {
       const { data: leadData } = await supabase
         .from("leads")
         .select("client_id")
         .eq("id", deal.lead_id)
         .single();
-      
-      clientId = leadData?.client_id;
+      hasClient = !!leadData?.client_id;
     }
-    
-    if (clientId) {
-      const { data: order, error: orderError } = await supabase
-        .from("orders")
-        .insert({
-          client_id: clientId,
-          deal_id: deal.id,
-          architect_id: deal.architect_id || null,
-          vendedor_id: user?.id || null,
-          created_by: user?.id || null,
-          valor_total: deal.value || 0,
-          subtotal: deal.value || 0,
-          status: "rascunho",
-        })
-        .select("order_number")
-        .single();
 
-      if (orderError) {
-        console.error("Erro ao criar pedido:", orderError);
-        toast({
-          title: "🎉 Negócio ganho!",
-          description: "Mas houve erro ao criar pedido automaticamente.",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "🎉 Negócio ganho!",
-          description: `Pedido #${order.order_number} criado automaticamente em rascunho.`,
-        });
-      }
-    } else {
+    // Buscar o pedido criado pelo trigger
+    const { data: order } = await supabase
+      .from("orders")
+      .select("order_number")
+      .eq("deal_id", deal.id)
+      .maybeSingle();
+
+    if (order) {
+      toast({
+        title: "🎉 Negócio ganho!",
+        description: `Pedido #${order.order_number} criado automaticamente em rascunho.`,
+      });
+    } else if (!hasClient) {
       toast({
         title: "🎉 Negócio ganho!",
         description: "Pedido não criado: cliente não vinculado ao negócio.",
+      });
+    } else {
+      toast({
+        title: "🎉 Negócio ganho!",
+        description: "Negócio marcado como ganho com sucesso.",
       });
     }
 
