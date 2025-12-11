@@ -224,14 +224,14 @@ export function EditProductionOrderDialog({ open, onOpenChange, orderId }: EditP
           <div className="space-y-2">
             <Label>Cliente</Label>
             <Select
-              value={formData.client_id}
-              onValueChange={(value) => setFormData(prev => ({ ...prev, client_id: value }))}
+              value={formData.client_id || "_none"}
+              onValueChange={(value) => setFormData(prev => ({ ...prev, client_id: value === "_none" ? "" : value }))}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione o cliente" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Sem cliente</SelectItem>
+                <SelectItem value="_none">Sem cliente</SelectItem>
                 {clients.map((client) => (
                   <SelectItem key={client.id} value={client.id}>
                     {client.name}
@@ -245,14 +245,14 @@ export function EditProductionOrderDialog({ open, onOpenChange, orderId }: EditP
           <div className="space-y-2">
             <Label>Negócio Vinculado</Label>
             <Select
-              value={formData.deal_id}
-              onValueChange={(value) => setFormData(prev => ({ ...prev, deal_id: value }))}
+              value={formData.deal_id || "_none"}
+              onValueChange={(value) => setFormData(prev => ({ ...prev, deal_id: value === "_none" ? "" : value }))}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Vincular a um negócio ganho" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Sem vínculo</SelectItem>
+                <SelectItem value="_none">Sem vínculo</SelectItem>
                 {deals.map((deal) => (
                   <SelectItem key={deal.id} value={deal.id}>
                     {deal.title}
@@ -285,14 +285,14 @@ export function EditProductionOrderDialog({ open, onOpenChange, orderId }: EditP
             <div className="space-y-2">
               <Label>Responsável</Label>
               <Select
-                value={formData.responsible_id}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, responsible_id: value }))}
+                value={formData.responsible_id || "_none"}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, responsible_id: value === "_none" ? "" : value }))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Sem responsável</SelectItem>
+                  <SelectItem value="_none">Sem responsável</SelectItem>
                   {users.map((user) => (
                     <SelectItem key={user.id} value={user.id}>
                       {user.full_name || 'Sem nome'}
