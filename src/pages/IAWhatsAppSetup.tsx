@@ -641,19 +641,32 @@ export default function IAWhatsAppSetup() {
                 </p>
               </div>
 
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={checkStatus} disabled={isCheckingStatus} className="flex-1">
-                  <RefreshCw className={`h-4 w-4 mr-2 ${isCheckingStatus ? 'animate-spin' : ''}`} />
-                  Atualizar Status
-                </Button>
+              <div className="flex flex-col gap-2">
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={checkStatus} disabled={isCheckingStatus} className="flex-1">
+                    <RefreshCw className={`h-4 w-4 mr-2 ${isCheckingStatus ? 'animate-spin' : ''}`} />
+                    Atualizar Status
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={handleVerifyWebhook} 
+                    disabled={isVerifyingWebhook}
+                    className="flex-1"
+                  >
+                    <Settings2 className={`h-4 w-4 mr-2 ${isVerifyingWebhook ? 'animate-spin' : ''}`} />
+                    Verificar Webhook
+                  </Button>
+                </div>
+                
+                {/* Botão direto para reconfigurar webhook para usar proxy Supabase */}
                 <Button 
-                  variant="outline" 
-                  onClick={handleVerifyWebhook} 
+                  onClick={handleReconfigureWebhook} 
                   disabled={isVerifyingWebhook}
-                  className="flex-1"
+                  className="w-full"
+                  variant="default"
                 >
                   <Settings2 className={`h-4 w-4 mr-2 ${isVerifyingWebhook ? 'animate-spin' : ''}`} />
-                  Verificar Webhook
+                  🔧 Corrigir Webhook (Usar Proxy Supabase)
                 </Button>
               </div>
             </CardContent>
