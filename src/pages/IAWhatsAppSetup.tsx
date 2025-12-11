@@ -442,6 +442,51 @@ export default function IAWhatsAppSetup() {
     }
   };
 
+  // Conexão DIRETA Evolution → n8n (bypass Supabase)
+  const handleDirectN8nConnection = async () => {
+    const currentInstanceName = existingConnection?.instance_name || instanceName;
+    if (!currentInstanceName) {
+      toast.error("Nenhuma instância configurada");
+      return;
+    }
+
+    setIsVerifyingWebhook(true);
+    addLog('🚀 Configurando conexão DIRETA Evolution → n8n...', 'info');
+    addLog(`📡 URL destino: ${N8N_WEBHOOK_URL}`, 'info');
+
+    try {
+      const { data, error } = await supabase.functions.invoke('whatsapp-evolution', {
+        body: {
+          action: 'reconfigure-webhook-direct',
+          instanceName: currentInstanceName,
+          directWebhookUrl: N8N_WEBHOOK_URL
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        addLog('✅ Conexão DIRETA configurada com sucesso!', 'success');
+        addLog(`📡 Webhook agora aponta diretamente para: ${data.webhookUrl}`, 'success');
+        if (data.verification) {
+          addLog(`✅ Verificação: URL = ${data.verification.url || data.verification.webhook?.url}`, 'success');
+        }
+        toast.success("🎉 Conexão direta Evolution → n8n ativada!");
+        setWebhookStatus(null);
+        // Verificar novamente
+        setTimeout(() => handleVerifyWebhook(), 1000);
+      } else {
+        addLog(`❌ Falha ao configurar: ${data?.error}`, 'error');
+        toast.error(data?.error || "Erro ao configurar conexão direta");
+      }
+    } catch (err: any) {
+      addLog(`❌ Erro: ${err.message}`, 'error');
+      toast.error("Erro ao configurar conexão direta");
+    } finally {
+      setIsVerifyingWebhook(false);
+    }
+  };
+
   const getStatusBadge = () => {
     switch (status) {
       case 'connected':
@@ -658,15 +703,25 @@ export default function IAWhatsAppSetup() {
                   </Button>
                 </div>
                 
-                {/* Botão direto para reconfigurar webhook para usar proxy Supabase */}
+                {/* Botão para conexão DIRETA Evolution → n8n */}
+                <Button 
+                  onClick={handleDirectN8nConnection} 
+                  disabled={isVerifyingWebhook}
+                  className="w-full bg-green-600 hover:bg-green-700"
+                >
+                  <ExternalLink className={`h-4 w-4 mr-2 ${isVerifyingWebhook ? 'animate-spin' : ''}`} />
+                  🚀 Conectar DIRETO ao n8n (Recomendado)
+                </Button>
+                
+                {/* Botão alternativo para proxy Supabase */}
                 <Button 
                   onClick={handleReconfigureWebhook} 
                   disabled={isVerifyingWebhook}
                   className="w-full"
-                  variant="default"
+                  variant="outline"
                 >
                   <Settings2 className={`h-4 w-4 mr-2 ${isVerifyingWebhook ? 'animate-spin' : ''}`} />
-                  🔧 Corrigir Webhook (Usar Proxy Supabase)
+                  Usar Proxy Supabase (alternativo)
                 </Button>
               </div>
             </CardContent>

@@ -2,11 +2,12 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
 import { corsHeaders } from '../_shared/cors.ts'
 
 interface EvolutionRequest {
-  action: 'check-status' | 'create' | 'create-ia' | 'qrcode' | 'delete' | 'disconnect' | 'list-all' | 'delete-orphans' | 'verify-webhook' | 'reconfigure-webhook'
+  action: 'check-status' | 'create' | 'create-ia' | 'qrcode' | 'delete' | 'disconnect' | 'list-all' | 'delete-orphans' | 'verify-webhook' | 'reconfigure-webhook' | 'reconfigure-webhook-direct'
   instanceName?: string
   instanceNames?: string[] // Para delete-orphans
   user_id?: string
   webhookUrl?: string // Para create-ia customizado
+  directWebhookUrl?: string // Para reconfigure-webhook-direct
 }
 
 Deno.serve(async (req) => {
@@ -1080,6 +1081,134 @@ Deno.serve(async (req) => {
           success: configured,
           instanceName,
           webhookUrl,
+          error: configured ? null : lastError
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // ========== RECONFIGURE WEBHOOK DIRECT (bypass Supabase) ==========
+    if (action === 'reconfigure-webhook-direct') {
+      console.log('🔧 ========== RECONFIGURE WEBHOOK DIRECT ==========')
+      console.log('Instance:', instanceName)
+      
+      if (!instanceName) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Instance name required' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+      
+      // Buscar conexão no banco para pegar a URL do n8n
+      const { data: connection, error: connError } = await supabase
+        .from('tendenci_whatsapp_connections')
+        .select('id, instance_name, webhook_url, is_ia_instance')
+        .eq('instance_name', instanceName)
+        .single()
+      
+      if (connError || !connection) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Instance not found in database' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+      
+      // URL direta para n8n (do body ou do banco)
+      const directUrl = body.directWebhookUrl || connection.webhook_url
+      
+      if (!directUrl) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'No webhook URL configured for this instance' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+      
+      console.log('📡 Configuring DIRECT webhook to n8n:', directUrl)
+      console.log('📡 Is IA instance:', connection.is_ia_instance)
+      
+      // Configurar webhook DIRETAMENTE para n8n (sem proxy Supabase)
+      let configured = false
+      let lastError = null
+      
+      const payloads = [
+        {
+          webhook: {
+            url: directUrl,
+            enabled: true,
+            webhookByEvents: false,
+            events: ['MESSAGES_UPSERT', 'CONNECTION_UPDATE', 'QRCODE_UPDATED']
+          }
+        },
+        {
+          url: directUrl,
+          enabled: true,
+          webhookByEvents: false,
+          events: ['MESSAGES_UPSERT', 'CONNECTION_UPDATE', 'QRCODE_UPDATED']
+        }
+      ]
+      
+      for (const payload of payloads) {
+        if (configured) break
+        
+        try {
+          console.log('📤 Trying payload:', JSON.stringify(payload))
+          
+          const webhookResp = await fetch(`${evolutionUrl}/webhook/set/${instanceName}`, {
+            method: 'POST',
+            headers: {
+              'apikey': evolutionApiKey,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+          })
+          
+          console.log('📥 Response status:', webhookResp.status)
+          const respText = await webhookResp.text()
+          console.log('📥 Response body:', respText)
+          
+          if (webhookResp.ok) {
+            configured = true
+            console.log('✅ Direct webhook configured successfully!')
+          } else {
+            lastError = `HTTP ${webhookResp.status}: ${respText}`
+          }
+        } catch (err: any) {
+          lastError = err.message
+          console.error('❌ Error configuring webhook:', err.message)
+        }
+      }
+      
+      // Atualizar banco marcando webhook configurado
+      if (configured) {
+        await supabase
+          .from('tendenci_whatsapp_connections')
+          .update({ 
+            webhook_configured: true
+          })
+          .eq('id', connection.id)
+      }
+      
+      // Verificar configuração após aplicar
+      let verificationResult = null
+      try {
+        const verifyResp = await fetch(`${evolutionUrl}/webhook/find/${instanceName}`, {
+          headers: { 'apikey': evolutionApiKey }
+        })
+        if (verifyResp.ok) {
+          verificationResult = await verifyResp.json()
+          console.log('📡 Verification result:', JSON.stringify(verificationResult))
+        }
+      } catch (err) {
+        console.log('⚠️ Could not verify webhook config')
+      }
+      
+      return new Response(
+        JSON.stringify({
+          success: configured,
+          instanceName,
+          webhookUrl: directUrl,
+          method: 'DIRECT_TO_N8N',
+          verification: verificationResult,
           error: configured ? null : lastError
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
