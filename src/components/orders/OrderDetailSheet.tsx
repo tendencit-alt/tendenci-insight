@@ -11,6 +11,7 @@ import { Separator } from '@/components/ui/separator';
 import { OrderItemsTable } from './OrderItemsTable';
 import { EditOrderDialog } from './EditOrderDialog';
 import { OrderExportDialog } from './OrderExportDialog';
+import { CancelOrderDialog } from './CancelOrderDialog';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -42,6 +43,7 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
   const [loading, setLoading] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
+  const [cancelOpen, setCancelOpen] = useState(false);
 
   const { data: order, refetch } = useQuery({
     queryKey: ['order-detail', orderId],
@@ -430,10 +432,20 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
                         {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                         Aprovar
                       </Button>
-                      <Button variant="destructive" className="flex-1" onClick={() => handleStatusChange('cancelado')} disabled={loading}>
+                      <Button variant="destructive" className="flex-1" onClick={() => setCancelOpen(true)} disabled={loading}>
                         Rejeitar
                       </Button>
                     </div>
+                  )}
+
+                  {(order.status === 'rascunho' || order.status === 'aguardando_aprovacao') && (
+                    <Button 
+                      variant="outline" 
+                      className="w-full mt-3 text-destructive border-destructive/50 hover:bg-destructive/10"
+                      onClick={() => setCancelOpen(true)}
+                    >
+                      Cancelar Pedido
+                    </Button>
                   )}
 
                   {order.status === 'aprovado' && (
@@ -574,6 +586,17 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
         items={items || []}
         open={exportOpen}
         onOpenChange={setExportOpen}
+      />
+
+      <CancelOrderDialog
+        orderId={orderId}
+        orderNumber={order?.order_number || 0}
+        open={cancelOpen}
+        onOpenChange={setCancelOpen}
+        onSuccess={() => {
+          refetch();
+          onUpdate();
+        }}
       />
     </>
   );
