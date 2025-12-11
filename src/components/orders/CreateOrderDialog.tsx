@@ -57,6 +57,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     observacoes_internas: '',
     observacoes_nf: '',
     desconto_percentual: 0,
+    desconto_valor: 0,
     valor_frete: 0,
   });
 
@@ -113,8 +114,9 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
   const selectedClient = clients?.find(c => c.id === formData.client_id);
 
   const subtotal = items.reduce((sum, item) => sum + item.valor_total, 0);
-  const desconto = subtotal * (formData.desconto_percentual / 100);
-  const total = subtotal - desconto + Number(formData.valor_frete || 0);
+  const descontoPercentual = subtotal * (formData.desconto_percentual / 100);
+  const descontoTotal = descontoPercentual + Number(formData.desconto_valor || 0);
+  const total = subtotal - descontoTotal + Number(formData.valor_frete || 0);
 
   const handleSubmit = async () => {
     if (!formData.client_id) {
@@ -154,6 +156,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
           observacoes_internas: formData.observacoes_internas,
           observacoes_nf: formData.observacoes_nf,
           desconto_percentual: formData.desconto_percentual,
+          desconto_valor: formData.desconto_valor,
           valor_frete: formData.valor_frete,
           subtotal,
           valor_total: total,
@@ -276,22 +279,65 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
             </div>
 
             {selectedClient && (
-              <div className="p-4 bg-muted rounded-lg space-y-2">
-                <p className="font-medium">{selectedClient.name}</p>
-                {selectedClient.cpf_cnpj && <p className="text-sm">CPF/CNPJ: {selectedClient.cpf_cnpj}</p>}
-                {selectedClient.phone && <p className="text-sm">Telefone: {selectedClient.phone}</p>}
-                {selectedClient.email && <p className="text-sm">Email: {selectedClient.email}</p>}
-                {(selectedClient.logradouro || selectedClient.city) && (
-                  <p className="text-sm">
-                    Endereço: {[selectedClient.logradouro, selectedClient.numero, selectedClient.bairro, selectedClient.city, selectedClient.state].filter(Boolean).join(', ')}
-                  </p>
-                )}
-              </div>
+              <Card className="p-4 bg-muted/50 border-primary/20">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <p className="font-bold text-lg">{selectedClient.name}</p>
+                    {selectedClient.tipo_pessoa === 'pj' && selectedClient.razao_social && (
+                      <p className="text-sm text-muted-foreground">{selectedClient.razao_social}</p>
+                    )}
+                    {selectedClient.cpf_cnpj && (
+                      <p className="text-sm font-mono">
+                        <span className="text-muted-foreground">{selectedClient.tipo_pessoa === 'pj' ? 'CNPJ: ' : 'CPF: '}</span>
+                        {selectedClient.cpf_cnpj}
+                      </p>
+                    )}
+                    {selectedClient.tipo_pessoa === 'pj' && (
+                      <p className="text-sm font-mono">
+                        <span className="text-muted-foreground">IE: </span>
+                        {selectedClient.isento_ie ? 'ISENTO' : selectedClient.inscricao_estadual || 'Não informada'}
+                      </p>
+                    )}
+                    {selectedClient.tipo_pessoa === 'pj' && (
+                      <p className="text-sm">
+                        <span className="text-muted-foreground">Contribuinte ICMS: </span>
+                        {selectedClient.contribuinte_icms ? 'Sim' : 'Não'}
+                      </p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    {selectedClient.phone && (
+                      <p className="text-sm">
+                        <span className="text-muted-foreground">Telefone: </span>
+                        {selectedClient.phone}
+                      </p>
+                    )}
+                    {selectedClient.email && (
+                      <p className="text-sm">
+                        <span className="text-muted-foreground">Email: </span>
+                        {selectedClient.email}
+                      </p>
+                    )}
+                    {(selectedClient.logradouro || selectedClient.city) && (
+                      <p className="text-sm">
+                        <span className="text-muted-foreground">Endereço: </span>
+                        {[selectedClient.logradouro, selectedClient.numero, selectedClient.bairro, selectedClient.city, selectedClient.state].filter(Boolean).join(', ')}
+                      </p>
+                    )}
+                    {selectedClient.cep && (
+                      <p className="text-sm font-mono">
+                        <span className="text-muted-foreground">CEP: </span>
+                        {selectedClient.cep}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </Card>
             )}
           </TabsContent>
 
           <TabsContent value="itens" className="space-y-4">
-            <OrderItemsTable items={items} onItemsChange={setItems} />
+            <OrderItemsTable items={items} onItemsChange={setItems} showFiscalFields={true} />
 
             <div className="flex justify-end">
               <div className="w-64 space-y-2 text-sm">
@@ -300,19 +346,30 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                   <span>{formatCurrency(subtotal)}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span>Desconto (%):</span>
+                  <span className="text-xs">Desconto (%):</span>
                   <Input
                     type="number"
-                    className="w-20 h-8"
+                    className="w-16 h-8"
                     value={formData.desconto_percentual}
                     onChange={(e) => setFormData({ ...formData, desconto_percentual: Number(e.target.value) })}
                     min={0}
                     max={100}
                   />
-                  <span className="text-muted-foreground">-{formatCurrency(desconto)}</span>
+                  <span className="text-muted-foreground text-xs">-{formatCurrency(descontoPercentual)}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span>Frete:</span>
+                  <span className="text-xs">Desconto (R$):</span>
+                  <Input
+                    type="number"
+                    className="w-24 h-8"
+                    value={formData.desconto_valor}
+                    onChange={(e) => setFormData({ ...formData, desconto_valor: Number(e.target.value) })}
+                    min={0}
+                    step={0.01}
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs">Frete:</span>
                   <Input
                     type="number"
                     className="w-24 h-8"
@@ -321,6 +378,12 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                     min={0}
                   />
                 </div>
+                {descontoTotal > 0 && (
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Total Descontos:</span>
+                    <span>-{formatCurrency(descontoTotal)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between font-bold text-lg border-t pt-2">
                   <span>Total:</span>
                   <span>{formatCurrency(total)}</span>
