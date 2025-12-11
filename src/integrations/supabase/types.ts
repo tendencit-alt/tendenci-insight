@@ -1447,6 +1447,42 @@ export type Database = {
           },
         ]
       }
+      leads_whatsapp: {
+        Row: {
+          conversa_whatsapp: string | null
+          created_at: string | null
+          id: string
+          nome: string | null
+          origem: string | null
+          session_id: string | null
+          status: string | null
+          telefone: string
+          updated_at: string | null
+        }
+        Insert: {
+          conversa_whatsapp?: string | null
+          created_at?: string | null
+          id?: string
+          nome?: string | null
+          origem?: string | null
+          session_id?: string | null
+          status?: string | null
+          telefone: string
+          updated_at?: string | null
+        }
+        Update: {
+          conversa_whatsapp?: string | null
+          created_at?: string | null
+          id?: string
+          nome?: string | null
+          origem?: string | null
+          session_id?: string | null
+          status?: string | null
+          telefone?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       menu_items: {
         Row: {
           created_at: string | null
