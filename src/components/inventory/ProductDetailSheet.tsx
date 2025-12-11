@@ -6,10 +6,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Edit, Package, AlertTriangle, TrendingUp, TrendingDown } from "lucide-react";
+import { Edit, Package, AlertTriangle, TrendingUp, DollarSign, BarChart3 } from "lucide-react";
 import EditProductDialog from "./EditProductDialog";
 import ProductMovements from "./ProductMovements";
 import ProductSuppliers from "./ProductSuppliers";
+import ProductBOMManager from "./ProductBOMManager";
 
 interface ProductDetailSheetProps {
   product: any;
@@ -57,6 +58,9 @@ export default function ProductDetailSheet({ product, open, onOpenChange, onUpda
                     <div>
                       <p className="text-sm text-muted-foreground">Estoque Atual</p>
                       <p className="text-xl font-bold">{product.current_stock} {product.unit}</p>
+                      {product.reserved_stock > 0 && (
+                        <p className="text-xs text-muted-foreground">({product.reserved_stock} reservado)</p>
+                      )}
                     </div>
                   </div>
                 </CardContent>
@@ -72,8 +76,39 @@ export default function ProductDetailSheet({ product, open, onOpenChange, onUpda
                       <p className="text-sm text-muted-foreground">Valor em Estoque</p>
                       <p className="text-xl font-bold">
                         {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" })
-                          .format(product.current_stock * (product.cost_price || 0))}
+                          .format(product.current_stock * (product.average_cost || product.cost_price || 0))}
                       </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-purple-100 text-purple-600">
+                      <DollarSign className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Custo Médio</p>
+                      <p className="text-xl font-bold">
+                        {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" })
+                          .format(product.average_cost || product.cost_price || 0)}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-amber-100 text-amber-600">
+                      <BarChart3 className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Ponto Reposição</p>
+                      <p className="text-xl font-bold">{product.reorder_point || product.min_stock || 0} {product.unit}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -129,6 +164,7 @@ export default function ProductDetailSheet({ product, open, onOpenChange, onUpda
               <TabsList className="w-full">
                 <TabsTrigger value="movements" className="flex-1">Movimentações</TabsTrigger>
                 <TabsTrigger value="suppliers" className="flex-1">Fornecedores</TabsTrigger>
+                <TabsTrigger value="bom" className="flex-1">Composição</TabsTrigger>
               </TabsList>
 
               <TabsContent value="movements">
@@ -137,6 +173,10 @@ export default function ProductDetailSheet({ product, open, onOpenChange, onUpda
 
               <TabsContent value="suppliers">
                 <ProductSuppliers productId={product.id} />
+              </TabsContent>
+
+              <TabsContent value="bom">
+                <ProductBOMManager productId={product.id} productName={product.name} />
               </TabsContent>
             </Tabs>
           </div>

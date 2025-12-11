@@ -1956,6 +1956,54 @@ export type Database = {
         }
         Relationships: []
       }
+      product_bom: {
+        Row: {
+          component_id: string
+          created_at: string | null
+          id: string
+          notes: string | null
+          product_id: string
+          quantity: number
+          unit: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          component_id: string
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          product_id: string
+          quantity?: number
+          unit?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          component_id?: string
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          product_id?: string
+          quantity?: number
+          unit?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_bom_component_id_fkey"
+            columns: ["component_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_bom_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_categories: {
         Row: {
           active: boolean | null
@@ -1985,6 +2033,61 @@ export type Database = {
           position?: number | null
         }
         Relationships: []
+      }
+      product_price_history: {
+        Row: {
+          cost_price: number
+          created_at: string | null
+          id: string
+          product_id: string
+          purchase_order_id: string | null
+          quantity: number
+          supplier_id: string | null
+          total_value: number
+        }
+        Insert: {
+          cost_price: number
+          created_at?: string | null
+          id?: string
+          product_id: string
+          purchase_order_id?: string | null
+          quantity: number
+          supplier_id?: string | null
+          total_value: number
+        }
+        Update: {
+          cost_price?: number
+          created_at?: string | null
+          id?: string
+          product_id?: string
+          purchase_order_id?: string | null
+          quantity?: number
+          supplier_id?: string | null
+          total_value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_price_history_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_price_history_purchase_order_id_fkey"
+            columns: ["purchase_order_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_price_history_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       product_suppliers: {
         Row: {
@@ -2459,6 +2562,8 @@ export type Database = {
       products: {
         Row: {
           active: boolean | null
+          average_cost: number | null
+          barcode: string | null
           category_id: string | null
           cfop_entrada: string | null
           cfop_saida: string | null
@@ -2474,12 +2579,17 @@ export type Database = {
           min_stock: number | null
           name: string
           ncm: string | null
+          reorder_point: number | null
+          reorder_quantity: number | null
+          reserved_stock: number | null
           sale_price: number | null
           unit: string | null
           updated_at: string | null
         }
         Insert: {
           active?: boolean | null
+          average_cost?: number | null
+          barcode?: string | null
           category_id?: string | null
           cfop_entrada?: string | null
           cfop_saida?: string | null
@@ -2495,12 +2605,17 @@ export type Database = {
           min_stock?: number | null
           name: string
           ncm?: string | null
+          reorder_point?: number | null
+          reorder_quantity?: number | null
+          reserved_stock?: number | null
           sale_price?: number | null
           unit?: string | null
           updated_at?: string | null
         }
         Update: {
           active?: boolean | null
+          average_cost?: number | null
+          barcode?: string | null
           category_id?: string | null
           cfop_entrada?: string | null
           cfop_saida?: string | null
@@ -2516,6 +2631,9 @@ export type Database = {
           min_stock?: number | null
           name?: string
           ncm?: string | null
+          reorder_point?: number | null
+          reorder_quantity?: number | null
+          reserved_stock?: number | null
           sale_price?: number | null
           unit?: string | null
           updated_at?: string | null
@@ -3012,6 +3130,50 @@ export type Database = {
           name?: string
         }
         Relationships: []
+      }
+      stock_alerts_config: {
+        Row: {
+          alert_high_stock: boolean | null
+          alert_low_stock: boolean | null
+          alert_zero_stock: boolean | null
+          created_at: string | null
+          high_stock_threshold: number | null
+          id: string
+          notify_user_ids: string[] | null
+          product_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          alert_high_stock?: boolean | null
+          alert_low_stock?: boolean | null
+          alert_zero_stock?: boolean | null
+          created_at?: string | null
+          high_stock_threshold?: number | null
+          id?: string
+          notify_user_ids?: string[] | null
+          product_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          alert_high_stock?: boolean | null
+          alert_low_stock?: boolean | null
+          alert_zero_stock?: boolean | null
+          created_at?: string | null
+          high_stock_threshold?: number | null
+          id?: string
+          notify_user_ids?: string[] | null
+          product_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_alerts_config_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       stock_locations: {
         Row: {
@@ -4713,6 +4875,10 @@ export type Database = {
         Returns: Json
       }
       inventory_metrics: { Args: never; Returns: Json }
+      inventory_metrics_advanced: {
+        Args: { p_date_from?: string; p_date_to?: string }
+        Returns: Json
+      }
       is_admin: { Args: never; Returns: boolean }
       is_user_admin: { Args: { _user_id: string }; Returns: boolean }
       is_user_master: { Args: { _user_id: string }; Returns: boolean }
@@ -4838,6 +5004,36 @@ export type Database = {
       }
       purchases_metrics: { Args: never; Returns: Json }
       recalculate_all_goal_progress: { Args: never; Returns: undefined }
+      stock_abc_analysis: {
+        Args: never
+        Returns: {
+          abc_class: string
+          cumulative_percentage: number
+          product_code: string
+          product_id: string
+          product_name: string
+          stock_value: number
+        }[]
+      }
+      suggest_purchase_orders: {
+        Args: never
+        Returns: {
+          available_stock: number
+          current_stock: number
+          estimated_total: number
+          last_cost: number
+          preferred_supplier_id: string
+          preferred_supplier_name: string
+          product_code: string
+          product_id: string
+          product_name: string
+          reorder_point: number
+          reorder_quantity: number
+          reserved_stock: number
+          suggested_quantity: number
+          urgency: string
+        }[]
+      }
       suppliers_metrics: { Args: never; Returns: Json }
       user_can_access_module: {
         Args: {
