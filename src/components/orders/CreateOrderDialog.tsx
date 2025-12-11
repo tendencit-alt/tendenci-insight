@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -11,10 +11,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
 import { OrderItemsTable } from './OrderItemsTable';
 import { AddressForm } from './AddressForm';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertTriangle, Link } from 'lucide-react';
 
 interface CreateOrderDialogProps {
   open: boolean;
@@ -31,6 +33,10 @@ interface OrderItem {
   valor_unitario: number;
   valor_total: number;
   especificacoes?: string;
+  codigo_produto?: string;
+  ncm?: string;
+  cfop?: string;
+  unidade?: string;
 }
 
 export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clientId }: CreateOrderDialogProps) {
@@ -63,6 +69,36 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
   });
 
   const [items, setItems] = useState<OrderItem[]>([]);
+
+  // Query para buscar dados do deal quando vem do CRM
+  const { data: linkedDeal } = useQuery({
+    queryKey: ['linked-deal', dealId],
+    queryFn: async () => {
+      if (!dealId) return null;
+      const { data } = await supabase
+        .from('crm_deals')
+        .select(`
+          id, title, value, architect_id,
+          lead:leads(client_id)
+        `)
+        .eq('id', dealId)
+        .single();
+      return data;
+    },
+    enabled: !!dealId && open,
+  });
+
+  // Pré-preencher dados do deal quando disponível
+  useEffect(() => {
+    if (linkedDeal && open) {
+      setFormData(prev => ({
+        ...prev,
+        deal_id: linkedDeal.id,
+        client_id: linkedDeal.lead?.client_id || clientId || prev.client_id,
+        architect_id: linkedDeal.architect_id || prev.architect_id,
+      }));
+    }
+  }, [linkedDeal, open, clientId]);
 
   const { data: clients } = useQuery({
     queryKey: ['clients-for-order'],
@@ -113,6 +149,12 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
   });
 
   const selectedClient = clients?.find(c => c.id === formData.client_id);
+
+  // Validação de dados fiscais para PJ
+  const hasFiscalWarning = selectedClient?.tipo_pessoa === 'pj' && (
+    !selectedClient.cpf_cnpj || 
+    (!selectedClient.inscricao_estadual && !selectedClient.isento_ie)
+  );
 
   const subtotal = items.reduce((sum, item) => sum + item.valor_total, 0);
   const descontoPercentual = subtotal * (formData.desconto_percentual / 100);
@@ -168,7 +210,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
 
       if (orderError) throw orderError;
 
-      // Create order items
+      // Create order items with fiscal fields
       const itemsToInsert = items.map((item, index) => ({
         order_id: order.id,
         descricao: item.descricao,
@@ -176,6 +218,10 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
         valor_unitario: item.valor_unitario,
         valor_total: item.valor_total,
         especificacoes: item.especificacoes,
+        codigo_produto: item.codigo_produto || null,
+        ncm: item.ncm || null,
+        cfop: item.cfop || null,
+        unidade: item.unidade || 'UN',
         position: index,
       }));
 
@@ -206,7 +252,15 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Novo Pedido</DialogTitle>
+          <div className="flex items-center gap-2">
+            <DialogTitle>Novo Pedido</DialogTitle>
+            {linkedDeal && (
+              <Badge variant="secondary" className="gap-1">
+                <Link className="h-3 w-3" />
+                Vinculado: {linkedDeal.title}
+              </Badge>
+            )}
+          </div>
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -334,6 +388,17 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                   </div>
                 </div>
               </Card>
+            )}
+
+            {hasFiscalWarning && (
+              <Alert variant="destructive" className="border-orange-500/50 bg-orange-500/10">
+                <AlertTriangle className="h-4 w-4 text-orange-500" />
+                <AlertDescription className="text-orange-700 dark:text-orange-400">
+                  <strong>Atenção:</strong> Cliente PJ com dados fiscais incompletos. 
+                  {!selectedClient?.cpf_cnpj && ' CNPJ não informado.'}
+                  {!selectedClient?.inscricao_estadual && !selectedClient?.isento_ie && ' Inscrição Estadual não informada.'}
+                </AlertDescription>
+              </Alert>
             )}
           </TabsContent>
 
