@@ -36,7 +36,8 @@ const MODULE_LABELS: Record<AppModule, string> = {
   'leads': 'Leads',
   'dashboards_personalizados': 'Dashboards Personalizados',
   'configuracoes': 'Configurações',
-  'gestao_usuarios': 'Gestão de Usuários'
+  'gestao_usuarios': 'Gestão de Usuários',
+  'producao': 'Produção'
 };
 
 const ALL_MODULES: AppModule[] = [
@@ -45,6 +46,7 @@ const ALL_MODULES: AppModule[] = [
   'arquitetos',
   'crm',
   'projetos',
+  'producao',
   'metas',
   'leads',
   'dashboards_personalizados',
