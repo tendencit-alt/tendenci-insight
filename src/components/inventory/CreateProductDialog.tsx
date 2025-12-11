@@ -33,7 +33,10 @@ export default function CreateProductDialog({ open, onOpenChange, onSuccess }: C
     sale_price: 0,
     ncm: "",
     cfop_entrada: "",
-    cfop_saida: ""
+    cfop_saida: "",
+    barcode: "",
+    reorder_point: null as number | null,
+    reorder_quantity: null as number | null
   });
 
   const { data: categories = [] } = useQuery({
@@ -85,7 +88,8 @@ export default function CreateProductDialog({ open, onOpenChange, onSuccess }: C
       setForm({
         code: "", name: "", description: "", category_id: "", location_id: "",
         unit: "UN", current_stock: 0, min_stock: 0, max_stock: null,
-        cost_price: 0, sale_price: 0, ncm: "", cfop_entrada: "", cfop_saida: ""
+        cost_price: 0, sale_price: 0, ncm: "", cfop_entrada: "", cfop_saida: "",
+        barcode: "", reorder_point: null, reorder_quantity: null
       });
     } catch (error: any) {
       toast({ title: "Erro ao criar produto", description: error.message, variant: "destructive" });
@@ -210,6 +214,41 @@ export default function CreateProductDialog({ open, onOpenChange, onSuccess }: C
                 onChange={(e) => setForm({ ...form, max_stock: e.target.value ? parseFloat(e.target.value) : null })}
               />
             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="reorder_point">Ponto de Reposição</Label>
+              <Input
+                id="reorder_point"
+                type="number"
+                step="0.01"
+                value={form.reorder_point || ""}
+                onChange={(e) => setForm({ ...form, reorder_point: e.target.value ? parseFloat(e.target.value) : null })}
+                placeholder="Qtd para recompra automática"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="reorder_quantity">Quantidade de Reposição</Label>
+              <Input
+                id="reorder_quantity"
+                type="number"
+                step="0.01"
+                value={form.reorder_quantity || ""}
+                onChange={(e) => setForm({ ...form, reorder_quantity: e.target.value ? parseFloat(e.target.value) : null })}
+                placeholder="Qtd sugerida para comprar"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="barcode">Código de Barras</Label>
+            <Input
+              id="barcode"
+              value={form.barcode}
+              onChange={(e) => setForm({ ...form, barcode: e.target.value })}
+              placeholder="EAN/GTIN"
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-4">

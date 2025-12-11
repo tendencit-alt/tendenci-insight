@@ -35,7 +35,10 @@ export default function EditProductDialog({ product, open, onOpenChange, onSucce
     ncm: "",
     cfop_entrada: "",
     cfop_saida: "",
-    active: true
+    active: true,
+    barcode: "",
+    reorder_point: null as number | null,
+    reorder_quantity: null as number | null
   });
 
   const { data: categories = [] } = useQuery({
@@ -80,7 +83,10 @@ export default function EditProductDialog({ product, open, onOpenChange, onSucce
         ncm: product.ncm || "",
         cfop_entrada: product.cfop_entrada || "",
         cfop_saida: product.cfop_saida || "",
-        active: product.active ?? true
+        active: product.active ?? true,
+        barcode: product.barcode || "",
+        reorder_point: product.reorder_point,
+        reorder_quantity: product.reorder_quantity
       });
     }
   }, [product]);
@@ -253,6 +259,41 @@ export default function EditProductDialog({ product, open, onOpenChange, onSucce
                 onChange={(e) => setForm({ ...form, sale_price: parseFloat(e.target.value) || 0 })}
               />
             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="reorder_point">Ponto de Reposição</Label>
+              <Input
+                id="reorder_point"
+                type="number"
+                step="0.01"
+                value={form.reorder_point || ""}
+                onChange={(e) => setForm({ ...form, reorder_point: e.target.value ? parseFloat(e.target.value) : null })}
+                placeholder="Qtd para recompra automática"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="reorder_quantity">Quantidade de Reposição</Label>
+              <Input
+                id="reorder_quantity"
+                type="number"
+                step="0.01"
+                value={form.reorder_quantity || ""}
+                onChange={(e) => setForm({ ...form, reorder_quantity: e.target.value ? parseFloat(e.target.value) : null })}
+                placeholder="Qtd sugerida para comprar"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="barcode">Código de Barras</Label>
+            <Input
+              id="barcode"
+              value={form.barcode}
+              onChange={(e) => setForm({ ...form, barcode: e.target.value })}
+              placeholder="EAN/GTIN"
+            />
           </div>
 
           <div className="grid grid-cols-3 gap-4">
