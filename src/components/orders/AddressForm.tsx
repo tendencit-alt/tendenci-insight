@@ -19,6 +19,7 @@ interface Address {
 interface AddressFormProps {
   address: Address;
   onAddressChange: (address: Address) => void;
+  disabled?: boolean;
 }
 
 const ESTADOS = [
@@ -26,7 +27,7 @@ const ESTADOS = [
   'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'
 ];
 
-export function AddressForm({ address, onAddressChange }: AddressFormProps) {
+export function AddressForm({ address, onAddressChange, disabled = false }: AddressFormProps) {
   const [loadingCep, setLoadingCep] = useState(false);
 
   const handleCepSearch = async () => {
@@ -80,8 +81,9 @@ export function AddressForm({ address, onAddressChange }: AddressFormProps) {
             onChange={(e) => onAddressChange({ ...address, cep: formatCep(e.target.value) })}
             placeholder="00000-000"
             maxLength={9}
+            disabled={disabled}
           />
-          <Button type="button" variant="outline" size="icon" onClick={handleCepSearch} disabled={loadingCep}>
+          <Button type="button" variant="outline" size="icon" onClick={handleCepSearch} disabled={loadingCep || disabled}>
             {loadingCep ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
           </Button>
         </div>
@@ -89,7 +91,7 @@ export function AddressForm({ address, onAddressChange }: AddressFormProps) {
 
       <div className="space-y-2">
         <Label>UF</Label>
-        <Select value={address.uf} onValueChange={(v) => onAddressChange({ ...address, uf: v })}>
+        <Select value={address.uf} onValueChange={(v) => onAddressChange({ ...address, uf: v })} disabled={disabled}>
           <SelectTrigger>
             <SelectValue placeholder="Selecione" />
           </SelectTrigger>
@@ -107,6 +109,7 @@ export function AddressForm({ address, onAddressChange }: AddressFormProps) {
           value={address.logradouro}
           onChange={(e) => onAddressChange({ ...address, logradouro: e.target.value })}
           placeholder="Rua, Avenida, etc."
+          disabled={disabled}
         />
       </div>
 
@@ -116,6 +119,7 @@ export function AddressForm({ address, onAddressChange }: AddressFormProps) {
           value={address.numero}
           onChange={(e) => onAddressChange({ ...address, numero: e.target.value })}
           placeholder="Nº"
+          disabled={disabled}
         />
       </div>
 
@@ -125,6 +129,7 @@ export function AddressForm({ address, onAddressChange }: AddressFormProps) {
           value={address.complemento}
           onChange={(e) => onAddressChange({ ...address, complemento: e.target.value })}
           placeholder="Apto, Sala, etc."
+          disabled={disabled}
         />
       </div>
 
@@ -134,6 +139,7 @@ export function AddressForm({ address, onAddressChange }: AddressFormProps) {
           value={address.bairro}
           onChange={(e) => onAddressChange({ ...address, bairro: e.target.value })}
           placeholder="Bairro"
+          disabled={disabled}
         />
       </div>
 
@@ -143,6 +149,7 @@ export function AddressForm({ address, onAddressChange }: AddressFormProps) {
           value={address.cidade}
           onChange={(e) => onAddressChange({ ...address, cidade: e.target.value })}
           placeholder="Cidade"
+          disabled={disabled}
         />
       </div>
     </div>

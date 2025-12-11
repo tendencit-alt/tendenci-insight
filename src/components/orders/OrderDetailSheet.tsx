@@ -9,12 +9,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { OrderItemsTable } from './OrderItemsTable';
+import { EditOrderDialog } from './EditOrderDialog';
+import { OrderExportDialog } from './OrderExportDialog';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
   User, Building2, Phone, Mail, MapPin, Calendar, DollarSign,
-  Truck, FileText, Clock, CheckCircle, AlertCircle, Loader2, Factory
+  Truck, FileText, Clock, CheckCircle, AlertCircle, Loader2, Factory,
+  Edit, Copy, Download, Printer, MessageSquare, ExternalLink
 } from 'lucide-react';
 
 interface OrderDetailSheetProps {
@@ -37,6 +40,8 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }>
 export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: OrderDetailSheetProps) {
   const { isMaster } = usePermissions();
   const [loading, setLoading] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
 
   const { data: order, refetch } = useQuery({
     queryKey: ['order-detail', orderId],
@@ -47,8 +52,8 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
           *,
           client:clients(*),
           vendedor:profiles!orders_vendedor_id_fkey(id, full_name, email),
-          architect:architects(id, name, company),
-          deal:crm_deals(id, title),
+          architect:architects(id, name, company, phone),
+          deal:crm_deals(id, title, value),
           approved_by_user:profiles!orders_approved_by_fkey(id, full_name)
         `)
         .eq('id', orderId)
@@ -78,10 +83,7 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
     queryFn: async () => {
       const { data, error } = await supabase
         .from('order_history')
-        .select(`
-          *,
-          user:profiles!order_history_created_by_fkey(full_name)
-        `)
+        .select(`*, user:profiles!order_history_created_by_fkey(full_name)`)
         .eq('order_id', orderId)
         .order('created_at', { ascending: false });
       if (error) throw error;
@@ -91,10 +93,7 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
   });
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(value || 0);
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value || 0);
   };
 
   const handleStatusChange = async (newStatus: string) => {
@@ -107,11 +106,7 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
         updates.approved_by = (await supabase.auth.getUser()).data.user?.id;
       }
 
-      const { error } = await supabase
-        .from('orders')
-        .update(updates)
-        .eq('id', orderId);
-
+      const { error } = await supabase.from('orders').update(updates).eq('id', orderId);
       if (error) throw error;
 
       toast.success(`Status alterado para ${STATUS_CONFIG[newStatus]?.label}`);
@@ -132,12 +127,7 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
 
     setLoading(true);
     try {
-      // Get production types
-      const { data: productionTypes } = await supabase
-        .from('production_types')
-        .select('id')
-        .eq('active', true)
-        .limit(1);
+      const { data: productionTypes } = await supabase.from('production_types').select('id').eq('active', true).limit(1);
 
       if (!productionTypes || productionTypes.length === 0) {
         toast.error('Nenhum tipo de produção configurado');
@@ -146,7 +136,6 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
 
       const productionTypeId = productionTypes[0].id;
 
-      // Create production orders for each item
       for (const item of items) {
         const { data: op, error } = await supabase
           .from('production_orders')
@@ -164,18 +153,10 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
 
         if (error) throw error;
 
-        // Link item to production order
-        await supabase
-          .from('order_items')
-          .update({ production_order_id: op.id })
-          .eq('id', item.id);
+        await supabase.from('order_items').update({ production_order_id: op.id }).eq('id', item.id);
       }
 
-      // Update order status
-      await supabase
-        .from('orders')
-        .update({ status: 'em_producao' })
-        .eq('id', orderId);
+      await supabase.from('orders').update({ status: 'em_producao' }).eq('id', orderId);
 
       toast.success('Ordens de produção criadas com sucesso!');
       refetch();
@@ -187,264 +168,413 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
     }
   };
 
+  const handleDuplicate = async () => {
+    if (!order || !items) return;
+    
+    setLoading(true);
+    try {
+      const { data: newOrder, error: orderError } = await supabase
+        .from('orders')
+        .insert({
+          client_id: order.client_id,
+          deal_id: null, // Don't duplicate deal link
+          architect_id: order.architect_id,
+          vendedor_id: order.vendedor_id,
+          created_by: (await supabase.auth.getUser()).data.user?.id,
+          forma_pagamento: order.forma_pagamento,
+          condicao_pagamento: order.condicao_pagamento,
+          tipo_entrega: order.tipo_entrega,
+          entrega_mesmo_endereco: order.entrega_mesmo_endereco,
+          entrega_cep: order.entrega_cep,
+          entrega_logradouro: order.entrega_logradouro,
+          entrega_numero: order.entrega_numero,
+          entrega_complemento: order.entrega_complemento,
+          entrega_bairro: order.entrega_bairro,
+          entrega_cidade: order.entrega_cidade,
+          entrega_uf: order.entrega_uf,
+          entrega_observacoes: order.entrega_observacoes,
+          observacoes_internas: order.observacoes_internas,
+          observacoes_nf: order.observacoes_nf,
+          desconto_percentual: order.desconto_percentual,
+          desconto_valor: order.desconto_valor,
+          valor_frete: order.valor_frete,
+          subtotal: order.subtotal,
+          valor_total: order.valor_total,
+          status: 'rascunho',
+        })
+        .select()
+        .single();
+
+      if (orderError) throw orderError;
+
+      const itemsToInsert = items.map((item, index) => ({
+        order_id: newOrder.id,
+        descricao: item.descricao,
+        quantidade: item.quantidade,
+        valor_unitario: item.valor_unitario,
+        valor_total: item.valor_total,
+        especificacoes: item.especificacoes,
+        codigo_produto: item.codigo_produto,
+        ncm: item.ncm,
+        cfop: item.cfop,
+        unidade: item.unidade,
+        position: index,
+      }));
+
+      await supabase.from('order_items').insert(itemsToInsert);
+
+      toast.success(`Pedido duplicado! Novo pedido #${newOrder.order_number}`);
+      onUpdate();
+    } catch (error: any) {
+      toast.error('Erro ao duplicar: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (!order) return null;
 
   const statusConfig = STATUS_CONFIG[order.status] || { label: order.status, color: 'bg-gray-500', icon: FileText };
   const StatusIcon = statusConfig.icon;
+  const canEdit = order.status === 'rascunho' || order.status === 'aguardando_aprovacao';
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
-        <SheetHeader>
-          <div className="flex items-center justify-between">
-            <SheetTitle className="flex items-center gap-2">
-              Pedido #{order.order_number}
-              <Badge className={statusConfig.color}>{statusConfig.label}</Badge>
-            </SheetTitle>
-          </div>
-        </SheetHeader>
-
-        <Tabs defaultValue="info" className="mt-4">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="info">Info</TabsTrigger>
-            <TabsTrigger value="itens">Itens</TabsTrigger>
-            <TabsTrigger value="entrega">Entrega</TabsTrigger>
-            <TabsTrigger value="historico">Histórico</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="info" className="space-y-4">
-            {/* Cliente */}
-            <Card>
-              <CardHeader className="py-3">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <User className="h-4 w-4" />
-                  Cliente
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="py-2 space-y-1 text-sm">
-                <p className="font-medium">{order.client?.name || 'Sem cliente'}</p>
-                {order.client?.cpf_cnpj && <p className="text-muted-foreground">CPF/CNPJ: {order.client.cpf_cnpj}</p>}
-                {order.client?.phone && (
-                  <p className="flex items-center gap-1">
-                    <Phone className="h-3 w-3" />
-                    {order.client.phone}
-                  </p>
-                )}
-                {order.client?.email && (
-                  <p className="flex items-center gap-1">
-                    <Mail className="h-3 w-3" />
-                    {order.client.email}
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Valores */}
-            <Card>
-              <CardHeader className="py-3">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <DollarSign className="h-4 w-4" />
-                  Valores
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="py-2 space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span>Subtotal:</span>
-                  <span>{formatCurrency(order.subtotal)}</span>
-                </div>
-                {(order.desconto_percentual > 0 || order.desconto_valor > 0) && (
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>Desconto {order.desconto_percentual > 0 && `(${order.desconto_percentual}%)`}:</span>
-                    <span>-{formatCurrency(order.desconto_valor || (order.subtotal * order.desconto_percentual / 100))}</span>
-                  </div>
-                )}
-                {order.valor_frete > 0 && (
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>Frete:</span>
-                    <span>{formatCurrency(order.valor_frete)}</span>
-                  </div>
-                )}
-                <Separator />
-                <div className="flex justify-between font-bold text-lg">
-                  <span>Total:</span>
-                  <span>{formatCurrency(order.valor_total)}</span>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Pagamento */}
-            <Card>
-              <CardHeader className="py-3">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <FileText className="h-4 w-4" />
-                  Pagamento
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="py-2 space-y-1 text-sm">
-                <p>Forma: {order.forma_pagamento || 'Não definida'}</p>
-                <p>Condição: {order.condicao_pagamento || 'Não definida'}</p>
-              </CardContent>
-            </Card>
-
-            {/* Ações */}
-            <Card>
-              <CardHeader className="py-3">
-                <CardTitle className="text-sm">Ações</CardTitle>
-              </CardHeader>
-              <CardContent className="py-2 space-y-2">
-                {order.status === 'rascunho' && (
-                  <Button
-                    className="w-full"
-                    onClick={() => handleStatusChange('aguardando_aprovacao')}
-                    disabled={loading}
-                  >
-                    {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                    Enviar para Aprovação
+    <>
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
+          <SheetHeader>
+            <div className="flex items-center justify-between">
+              <SheetTitle className="flex items-center gap-2">
+                Pedido #{order.order_number}
+                <Badge className={statusConfig.color}>{statusConfig.label}</Badge>
+              </SheetTitle>
+              <div className="flex items-center gap-2">
+                {canEdit && (
+                  <Button size="sm" variant="outline" onClick={() => setEditOpen(true)}>
+                    <Edit className="h-4 w-4 mr-1" />
+                    Editar
                   </Button>
                 )}
-
-                {order.status === 'aguardando_aprovacao' && isMaster && (
-                  <div className="flex gap-2">
-                    <Button
-                      className="flex-1"
-                      onClick={() => handleStatusChange('aprovado')}
-                      disabled={loading}
-                    >
-                      {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                      Aprovar
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      className="flex-1"
-                      onClick={() => handleStatusChange('cancelado')}
-                      disabled={loading}
-                    >
-                      Rejeitar
-                    </Button>
-                  </div>
-                )}
-
-                {order.status === 'aprovado' && (
-                  <Button
-                    className="w-full"
-                    onClick={handleCreateProductionOrders}
-                    disabled={loading}
-                  >
-                    {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                    <Factory className="h-4 w-4 mr-2" />
-                    Criar Ordens de Produção
-                  </Button>
-                )}
-
-                {order.status === 'em_producao' && (
-                  <Button
-                    className="w-full"
-                    onClick={() => handleStatusChange('faturado')}
-                    disabled={loading}
-                  >
-                    Marcar como Faturado
-                  </Button>
-                )}
-
-                {order.status === 'faturado' && (
-                  <Button
-                    className="w-full"
-                    onClick={() => handleStatusChange('entregue')}
-                    disabled={loading}
-                  >
-                    <Truck className="h-4 w-4 mr-2" />
-                    Marcar como Entregue
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="itens">
-            <OrderItemsTable
-              items={items?.map(i => ({
-                id: i.id,
-                descricao: i.descricao,
-                quantidade: Number(i.quantidade),
-                valor_unitario: Number(i.valor_unitario),
-                valor_total: Number(i.valor_total),
-                especificacoes: i.especificacoes || undefined,
-              })) || []}
-              onItemsChange={() => {}}
-              readOnly
-            />
-          </TabsContent>
-
-          <TabsContent value="entrega" className="space-y-4">
-            <Card>
-              <CardHeader className="py-3">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <Truck className="h-4 w-4" />
-                  Entrega
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="py-2 space-y-2 text-sm">
-                <p>Tipo: {order.tipo_entrega === 'entrega' ? 'Entrega' : order.tipo_entrega === 'retirada' ? 'Retirada' : 'Transportadora'}</p>
-                
-                {order.data_entrega_prevista && (
-                  <p className="flex items-center gap-1">
-                    <Calendar className="h-3 w-3" />
-                    Previsão: {format(new Date(order.data_entrega_prevista), 'dd/MM/yyyy', { locale: ptBR })}
-                  </p>
-                )}
-
-                {order.data_entrega_realizada && (
-                  <p className="flex items-center gap-1 text-green-600">
-                    <CheckCircle className="h-3 w-3" />
-                    Entregue em: {format(new Date(order.data_entrega_realizada), 'dd/MM/yyyy', { locale: ptBR })}
-                  </p>
-                )}
-
-                <Separator />
-
-                <div className="flex items-start gap-1">
-                  <MapPin className="h-3 w-3 mt-1" />
-                  <div>
-                    {order.entrega_mesmo_endereco ? (
-                      <p>Mesmo endereço do cliente</p>
-                    ) : (
-                      <>
-                        <p>{order.entrega_logradouro}, {order.entrega_numero}</p>
-                        {order.entrega_complemento && <p>{order.entrega_complemento}</p>}
-                        <p>{order.entrega_bairro} - {order.entrega_cidade}/{order.entrega_uf}</p>
-                        <p>CEP: {order.entrega_cep}</p>
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                {order.entrega_observacoes && (
-                  <>
-                    <Separator />
-                    <p className="text-muted-foreground">{order.entrega_observacoes}</p>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="historico" className="space-y-2">
-            {history?.map((h) => (
-              <div key={h.id} className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg text-sm">
-                <div className="flex-1">
-                  <p className="font-medium">{h.description}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {h.user?.full_name || 'Sistema'} • {format(new Date(h.created_at), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
-                  </p>
-                </div>
+                <Button size="sm" variant="outline" onClick={() => setExportOpen(true)}>
+                  <Download className="h-4 w-4 mr-1" />
+                  Exportar
+                </Button>
+                <Button size="sm" variant="outline" onClick={handleDuplicate} disabled={loading}>
+                  <Copy className="h-4 w-4 mr-1" />
+                  Duplicar
+                </Button>
               </div>
-            ))}
-            {(!history || history.length === 0) && (
-              <p className="text-center text-muted-foreground py-4">Nenhum histórico</p>
-            )}
-          </TabsContent>
-        </Tabs>
-      </SheetContent>
-    </Sheet>
+            </div>
+          </SheetHeader>
+
+          <Tabs defaultValue="info" className="mt-4">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="info">Info</TabsTrigger>
+              <TabsTrigger value="itens">Itens</TabsTrigger>
+              <TabsTrigger value="entrega">Entrega</TabsTrigger>
+              <TabsTrigger value="historico">Histórico</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="info" className="space-y-4">
+              {/* Cliente */}
+              <Card>
+                <CardHeader className="py-3">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    Cliente
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="py-2 space-y-2 text-sm">
+                  <p className="font-medium">{order.client?.name || 'Sem cliente'}</p>
+                  {order.client?.tipo_pessoa === 'pj' && order.client?.razao_social && (
+                    <p className="text-muted-foreground">{order.client.razao_social}</p>
+                  )}
+                  {order.client?.cpf_cnpj && <p className="font-mono text-xs">CPF/CNPJ: {order.client.cpf_cnpj}</p>}
+                  {order.client?.inscricao_estadual && (
+                    <p className="font-mono text-xs">IE: {order.client.isento_ie ? 'ISENTO' : order.client.inscricao_estadual}</p>
+                  )}
+                  {order.client?.phone && (
+                    <a href={`https://wa.me/55${order.client.phone.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-primary hover:underline">
+                      <Phone className="h-3 w-3" />
+                      {order.client.phone}
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                  )}
+                  {order.client?.email && (
+                    <p className="flex items-center gap-1"><Mail className="h-3 w-3" />{order.client.email}</p>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Arquiteto */}
+              {order.architect && (
+                <Card>
+                  <CardHeader className="py-3">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Building2 className="h-4 w-4" />
+                      Arquiteto
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="py-2 space-y-1 text-sm">
+                    <p className="font-medium">{order.architect.name}</p>
+                    {order.architect.company && <p className="text-muted-foreground">{order.architect.company}</p>}
+                    {order.architect.phone && (
+                      <a href={`https://wa.me/55${order.architect.phone.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-primary hover:underline">
+                        <Phone className="h-3 w-3" />
+                        {order.architect.phone}
+                      </a>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Vendedor */}
+              <Card>
+                <CardHeader className="py-3">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    Vendedor
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="py-2 space-y-1 text-sm">
+                  <p className="font-medium">{order.vendedor?.full_name || 'Não atribuído'}</p>
+                  {order.vendedor?.email && <p className="text-muted-foreground">{order.vendedor.email}</p>}
+                </CardContent>
+              </Card>
+
+              {/* Negócio Vinculado */}
+              {order.deal && (
+                <Card>
+                  <CardHeader className="py-3">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <MessageSquare className="h-4 w-4" />
+                      Negócio Vinculado
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="py-2 space-y-1 text-sm">
+                    <p className="font-medium">{order.deal.title}</p>
+                    {order.deal.value && <p className="text-muted-foreground">Valor: {formatCurrency(order.deal.value)}</p>}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Valores */}
+              <Card>
+                <CardHeader className="py-3">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <DollarSign className="h-4 w-4" />
+                    Valores
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="py-2 space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span>Subtotal:</span>
+                    <span>{formatCurrency(order.subtotal)}</span>
+                  </div>
+                  {(order.desconto_percentual > 0 || order.desconto_valor > 0) && (
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>Desconto {order.desconto_percentual > 0 && `(${order.desconto_percentual}%)`}:</span>
+                      <span>-{formatCurrency(order.desconto_valor || (order.subtotal * order.desconto_percentual / 100))}</span>
+                    </div>
+                  )}
+                  {order.valor_frete > 0 && (
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>Frete:</span>
+                      <span>{formatCurrency(order.valor_frete)}</span>
+                    </div>
+                  )}
+                  <Separator />
+                  <div className="flex justify-between font-bold text-lg">
+                    <span>Total:</span>
+                    <span>{formatCurrency(order.valor_total)}</span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Pagamento */}
+              <Card>
+                <CardHeader className="py-3">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    Pagamento
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="py-2 space-y-1 text-sm">
+                  <p>Forma: {order.forma_pagamento || 'Não definida'}</p>
+                  <p>Condição: {order.condicao_pagamento || 'Não definida'}</p>
+                  {order.observacoes_nf && (
+                    <>
+                      <Separator className="my-2" />
+                      <p className="text-muted-foreground"><strong>Obs. NF:</strong> {order.observacoes_nf}</p>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Ações */}
+              <Card>
+                <CardHeader className="py-3">
+                  <CardTitle className="text-sm">Ações</CardTitle>
+                </CardHeader>
+                <CardContent className="py-2 space-y-2">
+                  {order.status === 'rascunho' && (
+                    <Button className="w-full" onClick={() => handleStatusChange('aguardando_aprovacao')} disabled={loading}>
+                      {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                      Enviar para Aprovação
+                    </Button>
+                  )}
+
+                  {order.status === 'aguardando_aprovacao' && isMaster && (
+                    <div className="flex gap-2">
+                      <Button className="flex-1" onClick={() => handleStatusChange('aprovado')} disabled={loading}>
+                        {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                        Aprovar
+                      </Button>
+                      <Button variant="destructive" className="flex-1" onClick={() => handleStatusChange('cancelado')} disabled={loading}>
+                        Rejeitar
+                      </Button>
+                    </div>
+                  )}
+
+                  {order.status === 'aprovado' && (
+                    <Button className="w-full" onClick={handleCreateProductionOrders} disabled={loading}>
+                      {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                      <Factory className="h-4 w-4 mr-2" />
+                      Criar Ordens de Produção
+                    </Button>
+                  )}
+
+                  {order.status === 'em_producao' && (
+                    <Button className="w-full" onClick={() => handleStatusChange('faturado')} disabled={loading}>
+                      Marcar como Faturado
+                    </Button>
+                  )}
+
+                  {order.status === 'faturado' && (
+                    <Button className="w-full" onClick={() => handleStatusChange('entregue')} disabled={loading}>
+                      <Truck className="h-4 w-4 mr-2" />
+                      Marcar como Entregue
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="itens">
+              <OrderItemsTable
+                items={items?.map(i => ({
+                  id: i.id,
+                  descricao: i.descricao,
+                  quantidade: Number(i.quantidade),
+                  valor_unitario: Number(i.valor_unitario),
+                  valor_total: Number(i.valor_total),
+                  especificacoes: i.especificacoes || undefined,
+                  codigo_produto: i.codigo_produto || undefined,
+                  ncm: i.ncm || undefined,
+                  cfop: i.cfop || undefined,
+                  unidade: i.unidade || undefined,
+                })) || []}
+                onItemsChange={() => {}}
+                readOnly
+                showFiscalFields
+              />
+            </TabsContent>
+
+            <TabsContent value="entrega" className="space-y-4">
+              <Card>
+                <CardHeader className="py-3">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Truck className="h-4 w-4" />
+                    Entrega
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="py-2 space-y-2 text-sm">
+                  <p>Tipo: {order.tipo_entrega === 'entrega' ? 'Entrega' : order.tipo_entrega === 'retirada' ? 'Retirada' : 'Transportadora'}</p>
+                  
+                  {order.tipo_entrega === 'transportadora' && (order.transportadora_nome || order.transportadora_cnpj) && (
+                    <div className="bg-muted/50 p-2 rounded">
+                      <p className="font-medium">Transportadora: {order.transportadora_nome || '-'}</p>
+                      {order.transportadora_cnpj && <p className="font-mono text-xs">CNPJ: {order.transportadora_cnpj}</p>}
+                    </div>
+                  )}
+
+                  {order.data_entrega_prevista && (
+                    <p className="flex items-center gap-1">
+                      <Calendar className="h-3 w-3" />
+                      Previsão: {format(new Date(order.data_entrega_prevista), 'dd/MM/yyyy', { locale: ptBR })}
+                    </p>
+                  )}
+
+                  {order.data_entrega_realizada && (
+                    <p className="flex items-center gap-1 text-green-600">
+                      <CheckCircle className="h-3 w-3" />
+                      Entregue em: {format(new Date(order.data_entrega_realizada), 'dd/MM/yyyy', { locale: ptBR })}
+                    </p>
+                  )}
+
+                  <Separator />
+
+                  <div className="flex items-start gap-1">
+                    <MapPin className="h-3 w-3 mt-1" />
+                    <div>
+                      {order.entrega_mesmo_endereco ? (
+                        <p>Mesmo endereço do cliente</p>
+                      ) : (
+                        <>
+                          <p>{order.entrega_logradouro}, {order.entrega_numero}</p>
+                          {order.entrega_complemento && <p>{order.entrega_complemento}</p>}
+                          <p>{order.entrega_bairro} - {order.entrega_cidade}/{order.entrega_uf}</p>
+                          <p>CEP: {order.entrega_cep}</p>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {order.entrega_observacoes && (
+                    <>
+                      <Separator />
+                      <p className="text-muted-foreground">{order.entrega_observacoes}</p>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="historico" className="space-y-2">
+              {history?.map((h) => (
+                <div key={h.id} className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg text-sm">
+                  <div className="flex-1">
+                    <p className="font-medium">{h.description}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {h.user?.full_name || 'Sistema'} • {format(new Date(h.created_at), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
+                    </p>
+                  </div>
+                </div>
+              ))}
+              {(!history || history.length === 0) && (
+                <p className="text-center text-muted-foreground py-4">Nenhum histórico</p>
+              )}
+            </TabsContent>
+          </Tabs>
+        </SheetContent>
+      </Sheet>
+
+      <EditOrderDialog
+        orderId={orderId}
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        onSuccess={() => {
+          refetch();
+          onUpdate();
+        }}
+      />
+
+      <OrderExportDialog
+        order={order}
+        items={items || []}
+        open={exportOpen}
+        onOpenChange={setExportOpen}
+      />
+    </>
   );
 }
