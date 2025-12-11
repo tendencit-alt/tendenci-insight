@@ -4,24 +4,23 @@ import { supabase } from '@/integrations/supabase/client';
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { ProductionCard } from './ProductionCard';
 import { DroppableColumn } from './DroppableColumn';
-import { ProductionOrderDetailSheet } from './ProductionOrderDetailSheet';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 
 interface ProductionKanbanProps {
   productionTypeId?: string;
-  filters: {
+  filters?: {
     status: string;
     priority: string;
     search: string;
     responsible: string;
   };
+  onOrderClick?: (orderId: string) => void;
 }
 
-export function ProductionKanban({ productionTypeId, filters }: ProductionKanbanProps) {
+export function ProductionKanban({ productionTypeId, filters, onOrderClick }: ProductionKanbanProps) {
   const queryClient = useQueryClient();
-  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [activeOrder, setActiveOrder] = useState<any>(null);
 
   const sensors = useSensors(
@@ -74,19 +73,19 @@ export function ProductionKanban({ productionTypeId, filters }: ProductionKanban
         query = query.eq('production_type_id', productionTypeId);
       }
 
-      if (filters.status !== 'all') {
+      if (filters?.status && filters.status !== 'all') {
         query = query.eq('status', filters.status);
       }
 
-      if (filters.priority !== 'all') {
+      if (filters?.priority && filters.priority !== 'all') {
         query = query.eq('priority', filters.priority);
       }
 
-      if (filters.responsible !== 'all') {
+      if (filters?.responsible && filters.responsible !== 'all') {
         query = query.eq('responsible_id', filters.responsible);
       }
 
-      if (filters.search) {
+      if (filters?.search) {
         query = query.or(`title.ilike.%${filters.search}%,order_number.eq.${parseInt(filters.search) || 0}`);
       }
       
@@ -283,6 +282,10 @@ export function ProductionKanban({ productionTypeId, filters }: ProductionKanban
     }
   };
 
+  const handleCardClick = (orderId: string) => {
+    onOrderClick?.(orderId);
+  };
+
   if (phasesLoading || ordersLoading) {
     return (
       <div className="flex gap-4 overflow-x-auto pb-4">
@@ -298,62 +301,53 @@ export function ProductionKanban({ productionTypeId, filters }: ProductionKanban
   }
 
   return (
-    <>
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-      >
-        <ScrollArea className="w-full">
-          <div className="flex gap-4 pb-4 min-w-max">
-            {/* Coluna de Aguardando */}
-            <DroppableColumn
-              id="waiting"
-              title="Aguardando"
-              color="#9ca3af"
-              orders={ordersWithoutPhase}
-              onCardClick={setSelectedOrderId}
-            />
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
+      <ScrollArea className="w-full">
+        <div className="flex gap-4 pb-4 min-w-max">
+          {/* Coluna de Aguardando */}
+          <DroppableColumn
+            id="waiting"
+            title="Aguardando"
+            color="#9ca3af"
+            orders={ordersWithoutPhase}
+            onCardClick={handleCardClick}
+          />
 
-            {/* Colunas por fase */}
-            {uniquePhases.map((phase) => {
-              const phaseOrders = productionTypeId 
-                ? ordersByPhase[phase.id] || []
-                : orders.filter(order => order.current_phase?.phase_template?.name === phase.name);
-              
-              return (
-                <DroppableColumn
-                  key={phase.id}
-                  id={phase.id}
-                  title={phase.name}
-                  color={phase.color}
-                  orders={phaseOrders}
-                  onCardClick={setSelectedOrderId}
-                />
-              );
-            })}
-          </div>
-          <ScrollBar orientation="horizontal" />
-        </ScrollArea>
+          {/* Colunas por fase */}
+          {uniquePhases.map((phase) => {
+            const phaseOrders = productionTypeId 
+              ? ordersByPhase[phase.id] || []
+              : orders.filter(order => order.current_phase?.phase_template?.name === phase.name);
+            
+            return (
+              <DroppableColumn
+                key={phase.id}
+                id={phase.id}
+                title={phase.name}
+                color={phase.color}
+                orders={phaseOrders}
+                onCardClick={handleCardClick}
+              />
+            );
+          })}
+        </div>
+        <ScrollBar orientation="horizontal" />
+      </ScrollArea>
 
-        <DragOverlay>
-          {activeOrder ? (
-            <ProductionCard 
-              order={activeOrder}
-              onClick={() => {}}
-              isDragging
-            />
-          ) : null}
-        </DragOverlay>
-      </DndContext>
-
-      {/* Sheet de detalhes */}
-      <ProductionOrderDetailSheet
-        orderId={selectedOrderId}
-        open={!!selectedOrderId}
-        onOpenChange={(open) => !open && setSelectedOrderId(null)}
-      />
-    </>
+      <DragOverlay>
+        {activeOrder ? (
+          <ProductionCard 
+            order={activeOrder}
+            onClick={() => {}}
+            isDragging
+          />
+        ) : null}
+      </DragOverlay>
+    </DndContext>
   );
 }
