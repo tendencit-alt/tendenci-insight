@@ -23,3 +23,12 @@ verify_jwt = false
 
 [functions.dispatch-followup]
 verify_jwt = false
+
+[functions.whatsapp-webhook]
+verify_jwt = false
+
+[functions.whatsapp-evolution]
+verify_jwt = false
+
+[functions.whatsapp-send-message]
+verify_jwt = false
