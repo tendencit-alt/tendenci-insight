@@ -87,7 +87,7 @@ export default function Production() {
               <TabsTrigger key={type.id} value={type.id} className="min-w-fit gap-2">
                 <span 
                   className="w-2 h-2 rounded-full" 
-                  style={{ backgroundColor: type.color?.replace('bg-', '') || '#6b7280' }}
+                  style={{ backgroundColor: getTailwindColor(type.color) }}
                 />
                 {type.name}
               </TabsTrigger>
