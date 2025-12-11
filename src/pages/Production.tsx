@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Plus, Factory } from 'lucide-react';
+import { Plus, Factory, Settings } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { ProductionKanban } from '@/components/production/ProductionKanban';
@@ -11,11 +11,13 @@ import { ProductionFilters } from '@/components/production/ProductionFilters';
 import { ProductionKPIs } from '@/components/production/ProductionKPIs';
 import { ProductionSLAAlerts } from '@/components/production/ProductionSLAAlerts';
 import { ProductionOrderDetailSheet } from '@/components/production/ProductionOrderDetailSheet';
+import { ManageProductionStagesDialog } from '@/components/production/ManageProductionStagesDialog';
 import { getTailwindColor } from '@/utils/tailwindColors';
 
 export default function Production() {
   const [selectedType, setSelectedType] = useState<string>('all');
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [configDialogOpen, setConfigDialogOpen] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [filters, setFilters] = useState({
     status: 'all',
@@ -57,10 +59,16 @@ export default function Production() {
             </div>
           </div>
           
-          <Button onClick={() => setCreateDialogOpen(true)} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Nova OP
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setConfigDialogOpen(true)} className="gap-2">
+              <Settings className="h-4 w-4" />
+              Configurar Etapas
+            </Button>
+            <Button onClick={() => setCreateDialogOpen(true)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Nova OP
+            </Button>
+          </div>
         </div>
 
         {/* KPIs Dashboard */}
@@ -125,6 +133,12 @@ export default function Production() {
           orderId={selectedOrderId}
           open={!!selectedOrderId}
           onOpenChange={(open) => !open && setSelectedOrderId(null)}
+        />
+
+        {/* Dialog de configuração de etapas */}
+        <ManageProductionStagesDialog
+          open={configDialogOpen}
+          onOpenChange={setConfigDialogOpen}
         />
       </div>
     </DashboardLayout>
