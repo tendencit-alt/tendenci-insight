@@ -37,7 +37,10 @@ const MODULE_LABELS: Record<AppModule, string> = {
   'dashboards_personalizados': 'Dashboards Personalizados',
   'configuracoes': 'Configurações',
   'gestao_usuarios': 'Gestão de Usuários',
-  'producao': 'Produção'
+  'producao': 'Produção',
+  'fornecedores': 'Fornecedores',
+  'estoque': 'Estoque',
+  'compras': 'Compras'
 };
 
 const ALL_MODULES: AppModule[] = [
@@ -51,7 +54,10 @@ const ALL_MODULES: AppModule[] = [
   'leads',
   'dashboards_personalizados',
   'configuracoes',
-  'gestao_usuarios'
+  'gestao_usuarios',
+  'fornecedores',
+  'estoque',
+  'compras'
 ];
 
 export function UserPermissionsDialog({
