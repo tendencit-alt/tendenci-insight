@@ -1,8 +1,9 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, User, Package, GripVertical, Clock, Timer, Link2, AlertTriangle } from 'lucide-react';
+import { Calendar, User, Package, GripVertical, Clock, Timer, Link2, AlertTriangle, Hourglass } from 'lucide-react';
 import { format, differenceInDays, differenceInHours, isPast } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { getTailwindColor } from '@/utils/tailwindColors';
 
 interface ProductionCardProps {
   order: {
@@ -126,7 +127,7 @@ export function ProductionCard({ order, onClick, isDragging }: ProductionCardPro
           <Badge variant="outline" className="text-xs">
             <span 
               className="w-1.5 h-1.5 rounded-full mr-1" 
-              style={{ backgroundColor: order.production_type.color }}
+              style={{ backgroundColor: getTailwindColor(order.production_type.color) }}
             />
             {order.production_type.name}
           </Badge>
@@ -157,44 +158,61 @@ export function ProductionCard({ order, onClick, isDragging }: ProductionCardPro
         </div>
 
         {/* Phase Time & SLA Section */}
-        {order.current_phase?.started_at && (
+        {order.current_phase && (
           <div className={cn(
             "rounded-md p-2 text-xs space-y-1",
-            slaStatus === 'exceeded' && "bg-destructive/10 border border-destructive/20",
-            slaStatus === 'warning' && "bg-amber-500/10 border border-amber-500/20",
-            slaStatus === 'ok' && "bg-emerald-500/10 border border-emerald-500/20",
-            !slaStatus && "bg-muted/50"
+            !order.current_phase.started_at && "bg-muted/50 border border-dashed border-muted-foreground/30",
+            order.current_phase.started_at && slaStatus === 'exceeded' && "bg-destructive/10 border border-destructive/20",
+            order.current_phase.started_at && slaStatus === 'warning' && "bg-amber-500/10 border border-amber-500/20",
+            order.current_phase.started_at && slaStatus === 'ok' && "bg-emerald-500/10 border border-emerald-500/20",
+            order.current_phase.started_at && !slaStatus && "bg-muted/50"
           )}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1">
-                <Timer className="h-3 w-3" />
-                <span className="font-medium">
-                  {daysInPhase === 0 ? 'Hoje' : `${daysInPhase}d nesta fase`}
-                </span>
-              </div>
-              {slaDays && (
-                <Badge 
-                  variant="outline" 
-                  className={cn(
-                    "text-[10px] px-1.5 py-0",
-                    slaStatus === 'exceeded' && "border-destructive text-destructive",
-                    slaStatus === 'warning' && "border-amber-500 text-amber-600",
-                    slaStatus === 'ok' && "border-emerald-500 text-emerald-600"
+            {order.current_phase.started_at ? (
+              <>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1">
+                    <Timer className="h-3 w-3" />
+                    <span className="font-medium">
+                      {daysInPhase === 0 ? 'Hoje' : `${daysInPhase}d nesta fase`}
+                    </span>
+                  </div>
+                  {slaDays && (
+                    <Badge 
+                      variant="outline" 
+                      className={cn(
+                        "text-[10px] px-1.5 py-0",
+                        slaStatus === 'exceeded' && "border-destructive text-destructive",
+                        slaStatus === 'warning' && "border-amber-500 text-amber-600",
+                        slaStatus === 'ok' && "border-emerald-500 text-emerald-600"
+                      )}
+                    >
+                      SLA: {slaDays}d
+                    </Badge>
                   )}
-                >
-                  SLA: {slaDays}d
-                </Badge>
-              )}
-            </div>
-            {slaStatus === 'exceeded' && slaExceededHours > 0 && (
-              <div className="flex items-center gap-1 text-destructive">
-                <AlertTriangle className="h-3 w-3" />
-                <span>
-                  {slaExceededHours >= 24 
-                    ? `${Math.floor(slaExceededHours / 24)}d ${slaExceededHours % 24}h acima`
-                    : `${slaExceededHours}h acima`
-                  }
-                </span>
+                </div>
+                {slaStatus === 'exceeded' && slaExceededHours > 0 && (
+                  <div className="flex items-center gap-1 text-destructive">
+                    <AlertTriangle className="h-3 w-3" />
+                    <span>
+                      {slaExceededHours >= 24 
+                        ? `${Math.floor(slaExceededHours / 24)}d ${slaExceededHours % 24}h acima`
+                        : `${slaExceededHours}h acima`
+                      }
+                    </span>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1 text-muted-foreground">
+                  <Hourglass className="h-3 w-3" />
+                  <span>Aguardando início</span>
+                </div>
+                {slaDays && (
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-muted-foreground/50 text-muted-foreground">
+                    SLA: {slaDays}d
+                  </Badge>
+                )}
               </div>
             )}
           </div>
