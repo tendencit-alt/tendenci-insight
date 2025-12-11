@@ -1,0 +1,391 @@
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
+import { Progress } from '@/components/ui/progress';
+import { Skeleton } from '@/components/ui/skeleton';
+import { toast } from 'sonner';
+import { 
+  Calendar, 
+  User, 
+  Package, 
+  ArrowRight, 
+  CheckCircle2, 
+  Clock,
+  FileText,
+  DollarSign
+} from 'lucide-react';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+
+interface ProductionOrderDetailSheetProps {
+  orderId: string | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+const statusLabels: Record<string, string> = {
+  aguardando: 'Aguardando',
+  em_andamento: 'Em Andamento',
+  pausado: 'Pausado',
+  concluido: 'Concluído',
+  cancelado: 'Cancelado'
+};
+
+const statusColors: Record<string, string> = {
+  aguardando: 'bg-gray-100 text-gray-800',
+  em_andamento: 'bg-blue-100 text-blue-800',
+  pausado: 'bg-yellow-100 text-yellow-800',
+  concluido: 'bg-green-100 text-green-800',
+  cancelado: 'bg-red-100 text-red-800'
+};
+
+export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: ProductionOrderDetailSheetProps) {
+  const queryClient = useQueryClient();
+
+  // Buscar detalhes da OP
+  const { data: order, isLoading } = useQuery({
+    queryKey: ['production-order-detail', orderId],
+    queryFn: async () => {
+      if (!orderId) return null;
+      
+      const { data, error } = await supabase
+        .from('production_orders')
+        .select(`
+          *,
+          production_type:production_types(name, color),
+          responsible:profiles!production_orders_responsible_id_fkey(full_name, email),
+          client:clients(name, phone),
+          deal:crm_deals(title, value),
+          phases:production_phases(
+            id,
+            status,
+            started_at,
+            completed_at,
+            notes,
+            phase_template:production_phase_templates(id, name, color, position)
+          )
+        `)
+        .eq('id', orderId)
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!orderId
+  });
+
+  // Buscar logs da OP
+  const { data: logs = [] } = useQuery({
+    queryKey: ['production-order-logs', orderId],
+    queryFn: async () => {
+      if (!orderId) return [];
+      
+      const { data, error } = await supabase
+        .from('production_logs')
+        .select(`
+          *,
+          created_by_profile:profiles!production_logs_created_by_fkey(full_name)
+        `)
+        .eq('production_order_id', orderId)
+        .order('created_at', { ascending: false })
+        .limit(10);
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!orderId
+  });
+
+  // Mutation para avançar fase
+  const advancePhaseMutation = useMutation({
+    mutationFn: async () => {
+      if (!order) return;
+      
+      const phasesArr = Array.isArray(order.phases) ? order.phases : [];
+      const sortedPhasesInner = [...phasesArr].sort(
+        (a, b) => (a.phase_template?.position || 0) - (b.phase_template?.position || 0)
+      );
+      
+      const currentPhaseIndex = sortedPhasesInner.findIndex(p => p.status === 'em_andamento');
+      const nextPhase = sortedPhasesInner[currentPhaseIndex + 1];
+      
+      if (!nextPhase) {
+        // Última fase - concluir OP
+        await supabase
+          .from('production_orders')
+          .update({ status: 'concluido', actual_end_date: new Date().toISOString() })
+          .eq('id', orderId);
+        return;
+      }
+
+      // Concluir fase atual
+      if (currentPhaseIndex >= 0) {
+        await supabase
+          .from('production_phases')
+          .update({ status: 'concluido', completed_at: new Date().toISOString() })
+          .eq('id', sortedPhasesInner[currentPhaseIndex].id);
+      }
+
+      // Iniciar próxima fase
+      await supabase
+        .from('production_phases')
+        .update({ status: 'em_andamento', started_at: new Date().toISOString() })
+        .eq('id', nextPhase.id);
+
+      // Atualizar OP
+      await supabase
+        .from('production_orders')
+        .update({ 
+          current_phase_id: nextPhase.id,
+          status: 'em_andamento',
+          actual_start_date: order.actual_start_date || new Date().toISOString()
+        })
+        .eq('id', orderId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['production-order-detail', orderId] });
+      queryClient.invalidateQueries({ queryKey: ['production-orders'] });
+      toast.success('Fase avançada com sucesso');
+    },
+    onError: () => {
+      toast.error('Erro ao avançar fase');
+    }
+  });
+
+  if (!orderId) return null;
+
+  const phasesArray = Array.isArray(order?.phases) ? order.phases : [];
+  const sortedPhases = [...phasesArray].sort(
+    (a, b) => (a.phase_template?.position || 0) - (b.phase_template?.position || 0)
+  );
+
+  const completedPhases = sortedPhases.filter(p => p.status === 'concluido').length;
+  const totalPhases = sortedPhases.length;
+  const progress = totalPhases > 0 ? (completedPhases / totalPhases) * 100 : 0;
+
+  const currentPhase = sortedPhases.find(p => p.status === 'em_andamento');
+  const nextPhase = currentPhase 
+    ? sortedPhases[sortedPhases.findIndex(p => p.id === currentPhase.id) + 1]
+    : sortedPhases[0];
+
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
+        {isLoading ? (
+          <div className="space-y-4">
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-32 w-full" />
+          </div>
+        ) : order ? (
+          <>
+            <SheetHeader className="pb-4">
+              <div className="flex items-start justify-between">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-sm font-mono text-muted-foreground">
+                      OP-{String(order.order_number).padStart(4, '0')}
+                    </span>
+                    <Badge className={statusColors[order.status] || statusColors.aguardando}>
+                      {statusLabels[order.status] || order.status}
+                    </Badge>
+                  </div>
+                  <SheetTitle className="text-xl">{order.title}</SheetTitle>
+                  {order.production_type && (
+                    <Badge variant="outline" className="mt-2">
+                      {order.production_type.name}
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            </SheetHeader>
+
+            <div className="space-y-6">
+              {/* Progresso */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Progresso</span>
+                  <span className="font-medium">{completedPhases}/{totalPhases} fases</span>
+                </div>
+                <Progress value={progress} className="h-2" />
+              </div>
+
+              {/* Fase atual e botão avançar */}
+              {order.status !== 'concluido' && (
+                <div className="p-4 rounded-lg bg-muted/50 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Fase Atual</p>
+                      <p className="font-medium">
+                        {currentPhase?.phase_template?.name || 'Aguardando início'}
+                      </p>
+                    </div>
+                    {nextPhase && (
+                      <div className="text-right">
+                        <p className="text-sm text-muted-foreground">Próxima</p>
+                        <p className="font-medium text-primary">
+                          {nextPhase.phase_template?.name}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  <Button 
+                    className="w-full gap-2"
+                    onClick={() => advancePhaseMutation.mutate()}
+                    disabled={advancePhaseMutation.isPending}
+                  >
+                    {nextPhase ? (
+                      <>
+                        Avançar para {nextPhase.phase_template?.name}
+                        <ArrowRight className="h-4 w-4" />
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="h-4 w-4" />
+                        Concluir Produção
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
+
+              <Separator />
+
+              {/* Informações */}
+              <div className="grid gap-4">
+                {order.client && (
+                  <div className="flex items-center gap-3">
+                    <Package className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">Cliente</p>
+                      <p className="font-medium">{order.client.name}</p>
+                    </div>
+                  </div>
+                )}
+
+                {order.responsible && (
+                  <div className="flex items-center gap-3">
+                    <User className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">Responsável</p>
+                      <p className="font-medium">{order.responsible.full_name}</p>
+                    </div>
+                  </div>
+                )}
+
+                {order.value && order.value > 0 && (
+                  <div className="flex items-center gap-3">
+                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">Valor</p>
+                      <p className="font-medium">
+                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(order.value)}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {order.planned_end_date && (
+                  <div className="flex items-center gap-3">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">Prazo</p>
+                      <p className="font-medium">
+                        {format(new Date(order.planned_end_date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {order.description && (
+                  <div className="flex items-start gap-3">
+                    <FileText className="h-4 w-4 text-muted-foreground mt-0.5" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">Descrição</p>
+                      <p className="text-sm">{order.description}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <Separator />
+
+              {/* Timeline de fases */}
+              <div>
+                <h3 className="font-medium mb-3">Fases da Produção</h3>
+                <div className="space-y-3">
+                  {sortedPhases.map((phase, index) => (
+                    <div 
+                      key={phase.id}
+                      className={`flex items-center gap-3 p-3 rounded-lg border ${
+                        phase.status === 'em_andamento' 
+                          ? 'border-primary bg-primary/5' 
+                          : phase.status === 'concluido'
+                          ? 'border-green-500 bg-green-50 dark:bg-green-950/20'
+                          : 'border-border'
+                      }`}
+                    >
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                        phase.status === 'concluido' 
+                          ? 'bg-green-500 text-white'
+                          : phase.status === 'em_andamento'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted text-muted-foreground'
+                      }`}>
+                        {phase.status === 'concluido' ? (
+                          <CheckCircle2 className="h-4 w-4" />
+                        ) : (
+                          index + 1
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-medium text-sm">{phase.phase_template?.name}</p>
+                        {phase.started_at && (
+                          <p className="text-xs text-muted-foreground">
+                            {phase.status === 'concluido' && phase.completed_at
+                              ? `Concluído em ${format(new Date(phase.completed_at), 'dd/MM HH:mm')}`
+                              : `Iniciado em ${format(new Date(phase.started_at), 'dd/MM HH:mm')}`
+                            }
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Histórico */}
+              {logs.length > 0 && (
+                <>
+                  <Separator />
+                  <div>
+                    <h3 className="font-medium mb-3">Histórico</h3>
+                    <div className="space-y-2">
+                      {logs.map((log) => (
+                        <div key={log.id} className="flex items-start gap-2 text-sm">
+                          <Clock className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                          <div>
+                            <p>{log.description}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {format(new Date(log.created_at), "dd/MM 'às' HH:mm", { locale: ptBR })}
+                              {log.created_by_profile?.full_name && ` • ${log.created_by_profile.full_name}`}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </>
+        ) : (
+          <p className="text-muted-foreground">Ordem não encontrada</p>
+        )}
+      </SheetContent>
+    </Sheet>
+  );
+}

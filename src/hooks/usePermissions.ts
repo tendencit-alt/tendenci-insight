@@ -12,7 +12,8 @@ export type AppModule =
   | 'leads'
   | 'dashboards_personalizados'
   | 'configuracoes'
-  | 'gestao_usuarios';
+  | 'gestao_usuarios'
+  | 'producao';
 
 export interface ModulePermission {
   module: AppModule;
@@ -66,7 +67,8 @@ export function usePermissions() {
             'leads',
             'dashboards_personalizados',
             'configuracoes',
-            'gestao_usuarios'
+            'gestao_usuarios',
+            'producao'
           ];
 
           setPermissions({
@@ -155,7 +157,8 @@ export function usePermissions() {
               'leads',
               'dashboards_personalizados',
               'configuracoes',
-              'gestao_usuarios'
+              'gestao_usuarios',
+              'producao'
             ];
 
             setPermissions({
