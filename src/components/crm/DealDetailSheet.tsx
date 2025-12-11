@@ -333,22 +333,56 @@ export function DealDetailSheet({
         description: error.message,
         variant: "destructive",
       });
-    } else {
-      await logDealChange(deal.id, {
-        field_name: 'status',
-        old_value: deal.status || 'aberto',
-        new_value: 'won',
-      });
-
-      toast({
-        title: "Negócio ganho!",
-        description: "O negócio foi marcado como ganho.",
-      });
-      onSuccess();
-      
-      // Prompt to create order
-      setShowCreateOrderPrompt(true);
+      return;
     }
+
+    await logDealChange(deal.id, {
+      field_name: 'status',
+      old_value: deal.status || 'aberto',
+      new_value: 'won',
+    });
+
+    // Criar pedido automaticamente
+    const clientId = deal.lead?.client?.id || deal.lead?.client_id;
+    
+    if (clientId) {
+      const { data: order, error: orderError } = await supabase
+        .from("orders")
+        .insert({
+          client_id: clientId,
+          deal_id: deal.id,
+          architect_id: deal.architect_id || null,
+          vendedor_id: user?.id || null,
+          created_by: user?.id || null,
+          valor_total: deal.value || 0,
+          subtotal: deal.value || 0,
+          status: "rascunho",
+        })
+        .select("order_number")
+        .single();
+
+      if (orderError) {
+        console.error("Erro ao criar pedido:", orderError);
+        toast({
+          title: "🎉 Negócio ganho!",
+          description: "Mas houve erro ao criar pedido automaticamente.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "🎉 Negócio ganho!",
+          description: `Pedido #${order.order_number} criado automaticamente em rascunho.`,
+        });
+      }
+    } else {
+      toast({
+        title: "🎉 Negócio ganho!",
+        description: "Pedido não criado: cliente não vinculado ao negócio.",
+      });
+    }
+
+    onSuccess();
+    onOpenChange(false);
   };
 
   const handleLostDeal = async () => {
