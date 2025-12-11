@@ -69,7 +69,7 @@ export function ProductionKanban({ productionTypeId, filters, onOrderClick }: Pr
           ),
           responsible:profiles!production_orders_responsible_id_fkey(full_name),
           client:clients(name),
-          deal:crm_deals(id, title)
+          deal:crm_deals!production_orders_deal_id_fkey(id, title)
         `)
         .neq('status', 'cancelado');
       
