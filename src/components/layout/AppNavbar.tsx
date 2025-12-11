@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { LogOut, User, Menu, Edit2 } from "lucide-react";
+import { LogOut, User, Menu, Edit2, ChevronDown, Package } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,6 +34,9 @@ interface MenuItem {
   position: number;
   visible: boolean;
 }
+
+// Módulos que serão agrupados no dropdown "Operacional"
+const OPERATIONAL_MODULES = ['estoque', 'compras', 'fornecedores', 'producao', 'pedidos'];
 
 export function AppNavbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -103,6 +106,15 @@ export function AppNavbar() {
     return true;
   });
 
+  // Separar itens regulares dos operacionais
+  const regularItems = visibleMenuItems.filter(
+    item => !OPERATIONAL_MODULES.includes(item.module)
+  );
+  
+  const operationalItems = visibleMenuItems.filter(
+    item => OPERATIONAL_MODULES.includes(item.module)
+  );
+
   const getRoleColor = (role: string) => {
     const colors: Record<string, string> = {
       admin: 'bg-red-500',
@@ -123,21 +135,22 @@ export function AppNavbar() {
 
   return (
     <nav className="sticky top-0 z-50 h-14 border-b border-border/40 bg-card/95 backdrop-blur-[12px] supports-[backdrop-filter]:bg-card/95 shadow-sm">
-      <div className="flex items-center h-full px-4 max-w-[1800px] mx-auto gap-4">
+      <div className="flex items-center h-full px-3 max-w-[1800px] mx-auto gap-2">
         {/* Logo */}
-        <img src={tendenciLogo} alt="Tendenci" className="h-8 w-auto flex-shrink-0" />
+        <img src={tendenciLogo} alt="Tendenci" className="h-7 w-auto flex-shrink-0" />
         
         {/* Desktop Menu Items */}
-        <div className="hidden lg:flex items-center gap-1 flex-1">
-          {visibleMenuItems.map((item) => {
+        <div className="hidden xl:flex items-center gap-0.5 flex-1">
+          {/* Itens regulares */}
+          {regularItems.map((item) => {
             const IconComponent = getIconComponent(item.icon);
             return (
               <div key={item.id} className="relative group">
                 <NavLink
                   to={item.route}
                   end={item.route === "/"}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg transition-all duration-300 hover:bg-muted/50"
-                  activeClassName="bg-primary text-primary-foreground font-semibold shadow-[0_0_8px_rgba(212,30,30,0.4)]"
+                  className="flex items-center gap-1 px-2 py-1.5 text-[11px] rounded-md transition-all duration-300 hover:bg-muted/50"
+                  activeClassName="bg-primary text-primary-foreground font-semibold shadow-sm"
                 >
                   <IconComponent className="h-3.5 w-3.5 flex-shrink-0" />
                   <span className="whitespace-nowrap">{item.label}</span>
@@ -148,17 +161,59 @@ export function AppNavbar() {
                     className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity bg-primary text-primary-foreground rounded-full p-0.5 shadow-lg hover:scale-110"
                     title="Editar item do menu"
                   >
-                    <Edit2 className="h-2.5 w-2.5" />
+                    <Edit2 className="h-2 w-2" />
                   </button>
                 )}
               </div>
             );
           })}
+
+          {/* Dropdown Operacional */}
+          {operationalItems.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  className="flex items-center gap-1 px-2 py-1.5 h-auto text-[11px] rounded-md hover:bg-muted/50"
+                >
+                  <Package className="h-3.5 w-3.5 flex-shrink-0" />
+                  <span className="whitespace-nowrap">Operacional</span>
+                  <ChevronDown className="h-3 w-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-48 bg-card border border-border shadow-lg">
+                {operationalItems.map((item) => {
+                  const IconComponent = getIconComponent(item.icon);
+                  return (
+                    <DropdownMenuItem key={item.id} asChild className="cursor-pointer">
+                      <NavLink
+                        to={item.route}
+                        className="flex items-center gap-2 w-full px-2 py-2"
+                        activeClassName="bg-primary/10 text-primary font-medium"
+                      >
+                        <IconComponent className="h-4 w-4" />
+                        <span>{item.label}</span>
+                        {isMaster && (
+                          <button
+                            onClick={(e) => handleEditMenuItem(item, e)}
+                            className="ml-auto opacity-50 hover:opacity-100 transition-opacity"
+                            title="Editar"
+                          >
+                            <Edit2 className="h-3 w-3" />
+                          </button>
+                        )}
+                      </NavLink>
+                    </DropdownMenuItem>
+                  );
+                })}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
 
         {/* Mobile Menu Button */}
         <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-          <SheetTrigger asChild className="lg:hidden">
+          <SheetTrigger asChild className="xl:hidden">
             <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
               <Menu className="h-5 w-5" />
             </Button>
@@ -196,29 +251,29 @@ export function AppNavbar() {
         </Sheet>
 
         {/* Spacer */}
-        <div className="flex-1 lg:flex-none" />
+        <div className="flex-1 xl:flex-none" />
         
         {/* Notifications + User Dropdown */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <NotificationBell />
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="gap-2 h-auto py-1.5 px-2">
-                <Avatar className="h-7 w-7">
-                  <AvatarFallback className={`${getRoleColor(profile?.role)} text-white text-xs`}>
+              <Button variant="ghost" className="gap-1.5 h-auto py-1 px-1.5">
+                <Avatar className="h-6 w-6">
+                  <AvatarFallback className={`${getRoleColor(profile?.role)} text-white text-[10px]`}>
                     {profile?.full_name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}
                   </AvatarFallback>
                 </Avatar>
-                <div className="hidden md:flex flex-col items-start">
-                  <span className="text-xs font-medium leading-tight">{profile?.full_name || user?.email}</span>
-                  <Badge variant="outline" className="text-[10px] h-4 px-1">
+                <div className="hidden lg:flex flex-col items-start">
+                  <span className="text-[11px] font-medium leading-tight">{profile?.full_name || user?.email}</span>
+                  <Badge variant="outline" className="text-[9px] h-3.5 px-1">
                     {getRoleLabel(profile?.role)}
                   </Badge>
                 </div>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuContent align="end" className="w-56 bg-card border border-border">
               <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem disabled>
