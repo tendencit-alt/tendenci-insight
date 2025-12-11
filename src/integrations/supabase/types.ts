@@ -3819,6 +3819,35 @@ export type Database = {
       is_user_master: { Args: { _user_id: string }; Returns: boolean }
       leads_aggregates: { Args: never; Returns: Json }
       mark_inactive_architects: { Args: never; Returns: undefined }
+      production_metrics: {
+        Args: { p_date_from?: string; p_date_to?: string; p_type_id?: string }
+        Returns: Json
+      }
+      production_sla_alerts: {
+        Args: { p_type_id?: string }
+        Returns: {
+          alert_type: string
+          hours_overdue: number
+          order_id: string
+          order_number: number
+          phase_name: string
+          planned_end_date: string
+          priority: string
+          title: string
+        }[]
+      }
+      production_sla_metrics: {
+        Args: { p_type_id?: string }
+        Returns: {
+          avg_hours: number
+          in_progress: number
+          phase_color: string
+          phase_name: string
+          sla_hours: number
+          sla_violations: number
+          total_orders: number
+        }[]
+      }
       project_deadline_alerts: { Args: never; Returns: Json }
       project_deadline_alerts_detailed: {
         Args: never

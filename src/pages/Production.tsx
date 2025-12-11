@@ -8,10 +8,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { ProductionKanban } from '@/components/production/ProductionKanban';
 import { CreateProductionOrderDialog } from '@/components/production/CreateProductionOrderDialog';
 import { ProductionFilters } from '@/components/production/ProductionFilters';
+import { ProductionKPIs } from '@/components/production/ProductionKPIs';
+import { ProductionSLAAlerts } from '@/components/production/ProductionSLAAlerts';
+import { ProductionOrderDetailSheet } from '@/components/production/ProductionOrderDetailSheet';
 
 export default function Production() {
   const [selectedType, setSelectedType] = useState<string>('all');
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [filters, setFilters] = useState({
     status: 'all',
     priority: 'all',
@@ -32,6 +36,8 @@ export default function Production() {
       return data;
     }
   });
+
+  const currentTypeId = selectedType !== 'all' ? selectedType : undefined;
 
   return (
     <DashboardLayout>
@@ -56,6 +62,18 @@ export default function Production() {
           </Button>
         </div>
 
+        {/* KPIs Dashboard */}
+        <ProductionKPIs 
+          productionTypeId={currentTypeId}
+          filters={filters}
+        />
+
+        {/* Alertas de SLA */}
+        <ProductionSLAAlerts 
+          productionTypeId={currentTypeId}
+          onOrderClick={(orderId) => setSelectedOrderId(orderId)}
+        />
+
         {/* Filtros */}
         <ProductionFilters filters={filters} onFiltersChange={setFilters} />
 
@@ -77,12 +95,19 @@ export default function Production() {
           </TabsList>
 
           <TabsContent value="all" className="mt-4">
-            <ProductionKanban filters={filters} />
+            <ProductionKanban 
+              filters={filters} 
+              onOrderClick={(orderId) => setSelectedOrderId(orderId)}
+            />
           </TabsContent>
 
           {productionTypes.map((type) => (
             <TabsContent key={type.id} value={type.id} className="mt-4">
-              <ProductionKanban productionTypeId={type.id} filters={filters} />
+              <ProductionKanban 
+                productionTypeId={type.id} 
+                filters={filters}
+                onOrderClick={(orderId) => setSelectedOrderId(orderId)}
+              />
             </TabsContent>
           ))}
         </Tabs>
@@ -92,6 +117,13 @@ export default function Production() {
           open={createDialogOpen} 
           onOpenChange={setCreateDialogOpen}
           productionTypes={productionTypes}
+        />
+
+        {/* Sheet de detalhes */}
+        <ProductionOrderDetailSheet
+          orderId={selectedOrderId}
+          open={!!selectedOrderId}
+          onOpenChange={(open) => !open && setSelectedOrderId(null)}
         />
       </div>
     </DashboardLayout>
