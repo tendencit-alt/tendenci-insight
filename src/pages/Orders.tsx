@@ -18,6 +18,7 @@ export default function Orders() {
     status: '',
     vendedorId: '',
     clientId: '',
+    architectId: '',
     period: 'last30days',
     dateFrom: subDays(new Date(), 30),
     dateTo: new Date(),
@@ -45,6 +46,9 @@ export default function Orders() {
       }
       if (filters.clientId) {
         query = query.eq('client_id', filters.clientId);
+      }
+      if (filters.architectId) {
+        query = query.eq('architect_id', filters.architectId);
       }
       if (filters.dateFrom) {
         query = query.gte('data_emissao', filters.dateFrom.toISOString());

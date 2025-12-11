@@ -11,6 +11,7 @@ interface OrdersFiltersProps {
     status: string;
     vendedorId: string;
     clientId: string;
+    architectId: string;
     period: string;
     dateFrom: Date;
     dateTo: Date;
@@ -62,6 +63,18 @@ export function OrdersFilters({ filters, onFiltersChange }: OrdersFiltersProps) 
     },
   });
 
+  const { data: architects } = useQuery({
+    queryKey: ['architects-list'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('architects')
+        .select('id, name, company')
+        .eq('active', true)
+        .order('name');
+      return data || [];
+    },
+  });
+
   const handlePeriodChange = (period: string) => {
     const now = new Date();
     let dateFrom: Date;
@@ -95,13 +108,14 @@ export function OrdersFilters({ filters, onFiltersChange }: OrdersFiltersProps) 
       status: '',
       vendedorId: '',
       clientId: '',
+      architectId: '',
       period: 'last30days',
       dateFrom: subDays(new Date(), 30),
       dateTo: new Date(),
     });
   };
 
-  const hasFilters = filters.status || filters.vendedorId || filters.clientId || filters.period !== 'last30days';
+  const hasFilters = filters.status || filters.vendedorId || filters.clientId || filters.architectId || filters.period !== 'last30days';
 
   return (
     <Card>
@@ -144,6 +158,20 @@ export function OrdersFilters({ filters, onFiltersChange }: OrdersFiltersProps) 
               {clients?.map((c) => (
                 <SelectItem key={c.id} value={c.id}>
                   {c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={filters.architectId || "all"} onValueChange={(v) => onFiltersChange({ ...filters, architectId: v === "all" ? "" : v })}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue placeholder="Arquiteto" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              {architects?.map((a) => (
+                <SelectItem key={a.id} value={a.id}>
+                  {a.name} {a.company && `- ${a.company}`}
                 </SelectItem>
               ))}
             </SelectContent>
