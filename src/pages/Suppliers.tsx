@@ -1,0 +1,87 @@
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
+import SuppliersKPIs from "@/components/suppliers/SuppliersKPIs";
+import SuppliersFilters from "@/components/suppliers/SuppliersFilters";
+import SuppliersTable from "@/components/suppliers/SuppliersTable";
+import CreateSupplierDialog from "@/components/suppliers/CreateSupplierDialog";
+import SupplierDetailSheet from "@/components/suppliers/SupplierDetailSheet";
+
+export default function Suppliers() {
+  const [createOpen, setCreateOpen] = useState(false);
+  const [selectedSupplier, setSelectedSupplier] = useState<any>(null);
+  const [filters, setFilters] = useState({
+    search: "",
+    status: "all",
+    city: ""
+  });
+
+  const { data: suppliers = [], isLoading, refetch } = useQuery({
+    queryKey: ["suppliers", filters],
+    queryFn: async () => {
+      let query = supabase
+        .from("suppliers")
+        .select("*")
+        .order("name");
+
+      if (filters.search) {
+        query = query.or(`name.ilike.%${filters.search}%,cpf_cnpj.ilike.%${filters.search}%,email.ilike.%${filters.search}%`);
+      }
+
+      if (filters.status !== "all") {
+        query = query.eq("active", filters.status === "active");
+      }
+
+      if (filters.city) {
+        query = query.ilike("city", `%${filters.city}%`);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  return (
+    <DashboardLayout>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Fornecedores</h1>
+            <p className="text-sm text-muted-foreground">Gerencie seus fornecedores e parceiros comerciais</p>
+          </div>
+          <Button onClick={() => setCreateOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Novo Fornecedor
+          </Button>
+        </div>
+
+        <SuppliersKPIs />
+
+        <SuppliersFilters filters={filters} setFilters={setFilters} />
+
+        <SuppliersTable 
+          suppliers={suppliers} 
+          isLoading={isLoading}
+          onSelect={setSelectedSupplier}
+        />
+
+        <CreateSupplierDialog 
+          open={createOpen} 
+          onOpenChange={setCreateOpen}
+          onSuccess={refetch}
+        />
+
+        <SupplierDetailSheet
+          supplier={selectedSupplier}
+          open={!!selectedSupplier}
+          onOpenChange={(open) => !open && setSelectedSupplier(null)}
+          onUpdate={refetch}
+        />
+      </div>
+    </DashboardLayout>
+  );
+}
