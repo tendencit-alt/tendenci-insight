@@ -1580,6 +1580,418 @@ export type Database = {
         }
         Relationships: []
       }
+      production_attachments: {
+        Row: {
+          file_name: string
+          file_path: string
+          file_size: number
+          file_type: string
+          id: string
+          production_order_id: string
+          uploaded_at: string | null
+          uploaded_by: string | null
+        }
+        Insert: {
+          file_name: string
+          file_path: string
+          file_size: number
+          file_type: string
+          id?: string
+          production_order_id: string
+          uploaded_at?: string | null
+          uploaded_by?: string | null
+        }
+        Update: {
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          file_type?: string
+          id?: string
+          production_order_id?: string
+          uploaded_at?: string | null
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_attachments_production_order_id_fkey"
+            columns: ["production_order_id"]
+            isOneToOne: false
+            referencedRelation: "production_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_attachments_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      production_logs: {
+        Row: {
+          action_type: string
+          created_at: string | null
+          created_by: string | null
+          description: string
+          from_phase_id: string | null
+          from_status: string | null
+          id: string
+          metadata: Json | null
+          production_order_id: string
+          production_phase_id: string | null
+          to_phase_id: string | null
+          to_status: string | null
+        }
+        Insert: {
+          action_type: string
+          created_at?: string | null
+          created_by?: string | null
+          description: string
+          from_phase_id?: string | null
+          from_status?: string | null
+          id?: string
+          metadata?: Json | null
+          production_order_id: string
+          production_phase_id?: string | null
+          to_phase_id?: string | null
+          to_status?: string | null
+        }
+        Update: {
+          action_type?: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string
+          from_phase_id?: string | null
+          from_status?: string | null
+          id?: string
+          metadata?: Json | null
+          production_order_id?: string
+          production_phase_id?: string | null
+          to_phase_id?: string | null
+          to_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_logs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_logs_from_phase_id_fkey"
+            columns: ["from_phase_id"]
+            isOneToOne: false
+            referencedRelation: "production_phase_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_logs_production_order_id_fkey"
+            columns: ["production_order_id"]
+            isOneToOne: false
+            referencedRelation: "production_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_logs_production_phase_id_fkey"
+            columns: ["production_phase_id"]
+            isOneToOne: false
+            referencedRelation: "production_phases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_logs_to_phase_id_fkey"
+            columns: ["to_phase_id"]
+            isOneToOne: false
+            referencedRelation: "production_phase_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      production_orders: {
+        Row: {
+          actual_end_date: string | null
+          actual_start_date: string | null
+          client_id: string | null
+          created_at: string | null
+          created_by: string | null
+          current_phase_id: string | null
+          deal_id: string | null
+          description: string | null
+          id: string
+          notes: string | null
+          order_number: number
+          planned_end_date: string | null
+          planned_start_date: string | null
+          priority: string
+          production_type_id: string
+          responsible_id: string | null
+          specifications: Json | null
+          status: string
+          title: string
+          updated_at: string | null
+          value: number | null
+        }
+        Insert: {
+          actual_end_date?: string | null
+          actual_start_date?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          current_phase_id?: string | null
+          deal_id?: string | null
+          description?: string | null
+          id?: string
+          notes?: string | null
+          order_number?: number
+          planned_end_date?: string | null
+          planned_start_date?: string | null
+          priority?: string
+          production_type_id: string
+          responsible_id?: string | null
+          specifications?: Json | null
+          status?: string
+          title: string
+          updated_at?: string | null
+          value?: number | null
+        }
+        Update: {
+          actual_end_date?: string | null
+          actual_start_date?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          current_phase_id?: string | null
+          deal_id?: string | null
+          description?: string | null
+          id?: string
+          notes?: string | null
+          order_number?: number
+          planned_end_date?: string | null
+          planned_start_date?: string | null
+          priority?: string
+          production_type_id?: string
+          responsible_id?: string | null
+          specifications?: Json | null
+          status?: string
+          title?: string
+          updated_at?: string | null
+          value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_orders_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_orders_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_orders_current_phase_id_fkey"
+            columns: ["current_phase_id"]
+            isOneToOne: false
+            referencedRelation: "production_phases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_orders_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "crm_deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_orders_production_type_id_fkey"
+            columns: ["production_type_id"]
+            isOneToOne: false
+            referencedRelation: "production_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_orders_responsible_id_fkey"
+            columns: ["responsible_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      production_phase_templates: {
+        Row: {
+          active: boolean
+          color: string
+          created_at: string | null
+          description: string | null
+          id: string
+          is_end_phase: boolean
+          is_start_phase: boolean
+          name: string
+          position: number
+          production_type_id: string
+          sla_hours: number | null
+          slug: string
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean
+          color?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_end_phase?: boolean
+          is_start_phase?: boolean
+          name: string
+          position?: number
+          production_type_id: string
+          sla_hours?: number | null
+          slug: string
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean
+          color?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_end_phase?: boolean
+          is_start_phase?: boolean
+          name?: string
+          position?: number
+          production_type_id?: string
+          sla_hours?: number | null
+          slug?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_phase_templates_production_type_id_fkey"
+            columns: ["production_type_id"]
+            isOneToOne: false
+            referencedRelation: "production_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      production_phases: {
+        Row: {
+          actual_hours: number | null
+          completed_at: string | null
+          created_at: string | null
+          estimated_hours: number | null
+          id: string
+          notes: string | null
+          phase_template_id: string
+          position: number
+          production_order_id: string
+          responsible_id: string | null
+          started_at: string | null
+          status: string
+          team_ids: string[] | null
+          updated_at: string | null
+        }
+        Insert: {
+          actual_hours?: number | null
+          completed_at?: string | null
+          created_at?: string | null
+          estimated_hours?: number | null
+          id?: string
+          notes?: string | null
+          phase_template_id: string
+          position?: number
+          production_order_id: string
+          responsible_id?: string | null
+          started_at?: string | null
+          status?: string
+          team_ids?: string[] | null
+          updated_at?: string | null
+        }
+        Update: {
+          actual_hours?: number | null
+          completed_at?: string | null
+          created_at?: string | null
+          estimated_hours?: number | null
+          id?: string
+          notes?: string | null
+          phase_template_id?: string
+          position?: number
+          production_order_id?: string
+          responsible_id?: string | null
+          started_at?: string | null
+          status?: string
+          team_ids?: string[] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_phases_phase_template_id_fkey"
+            columns: ["phase_template_id"]
+            isOneToOne: false
+            referencedRelation: "production_phase_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_phases_production_order_id_fkey"
+            columns: ["production_order_id"]
+            isOneToOne: false
+            referencedRelation: "production_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_phases_responsible_id_fkey"
+            columns: ["responsible_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      production_types: {
+        Row: {
+          active: boolean
+          color: string
+          created_at: string | null
+          description: string | null
+          icon: string | null
+          id: string
+          name: string
+          position: number
+          slug: string
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean
+          color?: string
+          created_at?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name: string
+          position?: number
+          slug: string
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean
+          color?: string
+          created_at?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name?: string
+          position?: number
+          slug?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
