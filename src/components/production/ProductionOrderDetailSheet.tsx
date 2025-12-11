@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -15,10 +16,12 @@ import {
   CheckCircle2, 
   Clock,
   FileText,
-  DollarSign
+  DollarSign,
+  Pencil
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { EditProductionOrderDialog } from './EditProductionOrderDialog';
 
 interface ProductionOrderDetailSheetProps {
   orderId: string | null;
@@ -44,6 +47,7 @@ const statusColors: Record<string, string> = {
 
 export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: ProductionOrderDetailSheetProps) {
   const queryClient = useQueryClient();
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   // Buscar detalhes da OP
   const { data: order, isLoading } = useQuery({
@@ -200,6 +204,15 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
                     </Badge>
                   )}
                 </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setEditDialogOpen(true)}
+                  className="shrink-0"
+                >
+                  <Pencil className="h-4 w-4 mr-1" />
+                  Editar
+                </Button>
               </div>
             </SheetHeader>
 
@@ -386,6 +399,12 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
           <p className="text-muted-foreground">Ordem não encontrada</p>
         )}
       </SheetContent>
+
+      <EditProductionOrderDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        orderId={orderId}
+      />
     </Sheet>
   );
 }
