@@ -71,7 +71,10 @@ export function usePermissions() {
             'dashboards_personalizados',
             'configuracoes',
             'gestao_usuarios',
-            'producao'
+            'producao',
+            'fornecedores',
+            'estoque',
+            'compras'
           ];
 
           setPermissions({
@@ -161,7 +164,10 @@ export function usePermissions() {
               'dashboards_personalizados',
               'configuracoes',
               'gestao_usuarios',
-              'producao'
+              'producao',
+              'fornecedores',
+              'estoque',
+              'compras'
             ];
 
             setPermissions({
