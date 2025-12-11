@@ -29,6 +29,7 @@ import N8nTarefasGuide from "./pages/N8nTarefasGuide";
 import N8nFollowupGuide from "./pages/N8nFollowupGuide";
 import IAWhatsAppSetup from "./pages/IAWhatsAppSetup";
 import Production from "./pages/Production";
+import Orders from "./pages/Orders";
 
 const queryClient = new QueryClient();
 
@@ -51,6 +52,7 @@ const App = () => (
             <Route path="/settings/users" element={<ProtectedRoute><PermissionGuard module="configuracoes"><UserManagement /></PermissionGuard></ProtectedRoute>} />
             <Route path="/prospeccao" element={<ProtectedRoute><PermissionGuard module="arquitetos"><Prospeccao /></PermissionGuard></ProtectedRoute>} />
             <Route path="/producao" element={<ProtectedRoute><PermissionGuard module="producao"><Production /></PermissionGuard></ProtectedRoute>} />
+            <Route path="/pedidos" element={<ProtectedRoute><PermissionGuard module="pedidos"><Orders /></PermissionGuard></ProtectedRoute>} />
             <Route path="/metas" element={<ProtectedRoute><PermissionGuard module="metas"><Goals /></PermissionGuard></ProtectedRoute>} />
             <Route path="/metas/gestao" element={<ProtectedRoute><PermissionGuard module="metas"><GoalsManagement /></PermissionGuard></ProtectedRoute>} />
             <Route path="/metas/desempenho/:goalId" element={<ProtectedRoute><PermissionGuard module="metas"><SellerPerformance /></PermissionGuard></ProtectedRoute>} />

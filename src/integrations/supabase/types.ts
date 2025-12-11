@@ -522,40 +522,88 @@ export type Database = {
           attachment_name: string | null
           attachment_path: string | null
           attachment_type: string | null
+          bairro: string | null
+          cep: string | null
           city: string | null
+          complemento: string | null
+          contato_financeiro: string | null
+          contribuinte_icms: boolean | null
+          cpf_cnpj: string | null
           created_at: string | null
           email: string | null
+          email_financeiro: string | null
           id: string
+          inscricao_estadual: string | null
+          inscricao_municipal: string | null
+          isento_ie: boolean | null
+          logradouro: string | null
           name: string
+          nome_fantasia: string | null
           notes: string | null
+          numero: string | null
           phone: string | null
+          razao_social: string | null
           state: string | null
+          telefone_fixo: string | null
+          tipo_pessoa: string | null
         }
         Insert: {
           attachment_name?: string | null
           attachment_path?: string | null
           attachment_type?: string | null
+          bairro?: string | null
+          cep?: string | null
           city?: string | null
+          complemento?: string | null
+          contato_financeiro?: string | null
+          contribuinte_icms?: boolean | null
+          cpf_cnpj?: string | null
           created_at?: string | null
           email?: string | null
+          email_financeiro?: string | null
           id?: string
+          inscricao_estadual?: string | null
+          inscricao_municipal?: string | null
+          isento_ie?: boolean | null
+          logradouro?: string | null
           name: string
+          nome_fantasia?: string | null
           notes?: string | null
+          numero?: string | null
           phone?: string | null
+          razao_social?: string | null
           state?: string | null
+          telefone_fixo?: string | null
+          tipo_pessoa?: string | null
         }
         Update: {
           attachment_name?: string | null
           attachment_path?: string | null
           attachment_type?: string | null
+          bairro?: string | null
+          cep?: string | null
           city?: string | null
+          complemento?: string | null
+          contato_financeiro?: string | null
+          contribuinte_icms?: boolean | null
+          cpf_cnpj?: string | null
           created_at?: string | null
           email?: string | null
+          email_financeiro?: string | null
           id?: string
+          inscricao_estadual?: string | null
+          inscricao_municipal?: string | null
+          isento_ie?: boolean | null
+          logradouro?: string | null
           name?: string
+          nome_fantasia?: string | null
           notes?: string | null
+          numero?: string | null
           phone?: string | null
+          razao_social?: string | null
           state?: string | null
+          telefone_fixo?: string | null
+          tipo_pessoa?: string | null
         }
         Relationships: []
       }
@@ -1535,6 +1583,331 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      order_history: {
+        Row: {
+          action_type: string
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          field_name: string | null
+          id: string
+          new_value: string | null
+          old_value: string | null
+          order_id: string | null
+        }
+        Insert: {
+          action_type: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          field_name?: string | null
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          order_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          field_name?: string | null
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          order_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_history_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_history_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_items: {
+        Row: {
+          cfop: string | null
+          codigo_produto: string | null
+          created_at: string | null
+          desconto_percentual: number | null
+          desconto_valor: number | null
+          descricao: string
+          especificacoes: string | null
+          id: string
+          ncm: string | null
+          observacoes: string | null
+          order_id: string | null
+          position: number | null
+          production_order_id: string | null
+          quantidade: number
+          unidade: string | null
+          valor_total: number
+          valor_unitario: number
+        }
+        Insert: {
+          cfop?: string | null
+          codigo_produto?: string | null
+          created_at?: string | null
+          desconto_percentual?: number | null
+          desconto_valor?: number | null
+          descricao: string
+          especificacoes?: string | null
+          id?: string
+          ncm?: string | null
+          observacoes?: string | null
+          order_id?: string | null
+          position?: number | null
+          production_order_id?: string | null
+          quantidade?: number
+          unidade?: string | null
+          valor_total?: number
+          valor_unitario?: number
+        }
+        Update: {
+          cfop?: string | null
+          codigo_produto?: string | null
+          created_at?: string | null
+          desconto_percentual?: number | null
+          desconto_valor?: number | null
+          descricao?: string
+          especificacoes?: string | null
+          id?: string
+          ncm?: string | null
+          observacoes?: string | null
+          order_id?: string | null
+          position?: number | null
+          production_order_id?: string | null
+          quantidade?: number
+          unidade?: string | null
+          valor_total?: number
+          valor_unitario?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_production_order_id_fkey"
+            columns: ["production_order_id"]
+            isOneToOne: false
+            referencedRelation: "production_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          approved_by: string | null
+          architect_id: string | null
+          client_id: string | null
+          condicao_pagamento: string | null
+          created_at: string | null
+          created_by: string | null
+          data_aprovacao: string | null
+          data_emissao: string | null
+          data_entrega_prevista: string | null
+          data_entrega_realizada: string | null
+          data_primeiro_vencimento: string | null
+          deal_id: string | null
+          desconto_percentual: number | null
+          desconto_valor: number | null
+          entrega_bairro: string | null
+          entrega_cep: string | null
+          entrega_cidade: string | null
+          entrega_complemento: string | null
+          entrega_logradouro: string | null
+          entrega_mesmo_endereco: boolean | null
+          entrega_numero: string | null
+          entrega_observacoes: string | null
+          entrega_uf: string | null
+          forma_pagamento: string | null
+          id: string
+          observacoes_internas: string | null
+          observacoes_nf: string | null
+          order_number: number
+          parcelas: number | null
+          status: string | null
+          subtotal: number | null
+          tipo_entrega: string | null
+          transportadora_cnpj: string | null
+          transportadora_nome: string | null
+          updated_at: string | null
+          valor_frete: number | null
+          valor_total: number | null
+          vendedor_id: string | null
+        }
+        Insert: {
+          approved_by?: string | null
+          architect_id?: string | null
+          client_id?: string | null
+          condicao_pagamento?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          data_aprovacao?: string | null
+          data_emissao?: string | null
+          data_entrega_prevista?: string | null
+          data_entrega_realizada?: string | null
+          data_primeiro_vencimento?: string | null
+          deal_id?: string | null
+          desconto_percentual?: number | null
+          desconto_valor?: number | null
+          entrega_bairro?: string | null
+          entrega_cep?: string | null
+          entrega_cidade?: string | null
+          entrega_complemento?: string | null
+          entrega_logradouro?: string | null
+          entrega_mesmo_endereco?: boolean | null
+          entrega_numero?: string | null
+          entrega_observacoes?: string | null
+          entrega_uf?: string | null
+          forma_pagamento?: string | null
+          id?: string
+          observacoes_internas?: string | null
+          observacoes_nf?: string | null
+          order_number?: number
+          parcelas?: number | null
+          status?: string | null
+          subtotal?: number | null
+          tipo_entrega?: string | null
+          transportadora_cnpj?: string | null
+          transportadora_nome?: string | null
+          updated_at?: string | null
+          valor_frete?: number | null
+          valor_total?: number | null
+          vendedor_id?: string | null
+        }
+        Update: {
+          approved_by?: string | null
+          architect_id?: string | null
+          client_id?: string | null
+          condicao_pagamento?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          data_aprovacao?: string | null
+          data_emissao?: string | null
+          data_entrega_prevista?: string | null
+          data_entrega_realizada?: string | null
+          data_primeiro_vencimento?: string | null
+          deal_id?: string | null
+          desconto_percentual?: number | null
+          desconto_valor?: number | null
+          entrega_bairro?: string | null
+          entrega_cep?: string | null
+          entrega_cidade?: string | null
+          entrega_complemento?: string | null
+          entrega_logradouro?: string | null
+          entrega_mesmo_endereco?: boolean | null
+          entrega_numero?: string | null
+          entrega_observacoes?: string | null
+          entrega_uf?: string | null
+          forma_pagamento?: string | null
+          id?: string
+          observacoes_internas?: string | null
+          observacoes_nf?: string | null
+          order_number?: number
+          parcelas?: number | null
+          status?: string | null
+          subtotal?: number | null
+          tipo_entrega?: string | null
+          transportadora_cnpj?: string | null
+          transportadora_nome?: string | null
+          updated_at?: string | null
+          valor_frete?: number | null
+          valor_total?: number | null
+          vendedor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_architect_id_fkey"
+            columns: ["architect_id"]
+            isOneToOne: false
+            referencedRelation: "architects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "crm_deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_vendedor_id_fkey"
+            columns: ["vendedor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_conditions: {
+        Row: {
+          ativo: boolean | null
+          created_at: string | null
+          descricao: string | null
+          dias_primeiro_vencimento: number | null
+          id: string
+          intervalo_parcelas: number | null
+          nome: string
+          parcelas: number | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string | null
+          descricao?: string | null
+          dias_primeiro_vencimento?: number | null
+          id?: string
+          intervalo_parcelas?: number | null
+          nome: string
+          parcelas?: number | null
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string | null
+          descricao?: string | null
+          dias_primeiro_vencimento?: number | null
+          id?: string
+          intervalo_parcelas?: number | null
+          nome?: string
+          parcelas?: number | null
+        }
+        Relationships: []
       }
       pipeline_stages: {
         Row: {
@@ -3826,6 +4199,15 @@ export type Database = {
       is_user_master: { Args: { _user_id: string }; Returns: boolean }
       leads_aggregates: { Args: never; Returns: Json }
       mark_inactive_architects: { Args: never; Returns: undefined }
+      orders_metrics: {
+        Args: {
+          p_date_from?: string
+          p_date_to?: string
+          p_status?: string
+          p_vendedor_id?: string
+        }
+        Returns: Json
+      }
       production_metrics:
         | {
             Args: {
