@@ -107,12 +107,12 @@ export function OrdersFilters({ filters, onFiltersChange }: OrdersFiltersProps) 
     <Card>
       <CardContent className="p-3">
         <div className="flex flex-wrap items-center gap-3">
-          <Select value={filters.status} onValueChange={(v) => onFiltersChange({ ...filters, status: v })}>
+          <Select value={filters.status || "all"} onValueChange={(v) => onFiltersChange({ ...filters, status: v === "all" ? "" : v })}>
             <SelectTrigger className="w-[160px]">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todos</SelectItem>
+              <SelectItem value="all">Todos</SelectItem>
               {ORDER_STATUSES.map((s) => (
                 <SelectItem key={s.value} value={s.value}>
                   {s.label}
@@ -121,12 +121,12 @@ export function OrdersFilters({ filters, onFiltersChange }: OrdersFiltersProps) 
             </SelectContent>
           </Select>
 
-          <Select value={filters.vendedorId} onValueChange={(v) => onFiltersChange({ ...filters, vendedorId: v })}>
+          <Select value={filters.vendedorId || "all"} onValueChange={(v) => onFiltersChange({ ...filters, vendedorId: v === "all" ? "" : v })}>
             <SelectTrigger className="w-[160px]">
               <SelectValue placeholder="Vendedor" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todos</SelectItem>
+              <SelectItem value="all">Todos</SelectItem>
               {vendedores?.map((v) => (
                 <SelectItem key={v.id} value={v.id}>
                   {v.full_name}
@@ -135,12 +135,12 @@ export function OrdersFilters({ filters, onFiltersChange }: OrdersFiltersProps) 
             </SelectContent>
           </Select>
 
-          <Select value={filters.clientId} onValueChange={(v) => onFiltersChange({ ...filters, clientId: v })}>
+          <Select value={filters.clientId || "all"} onValueChange={(v) => onFiltersChange({ ...filters, clientId: v === "all" ? "" : v })}>
             <SelectTrigger className="w-[160px]">
               <SelectValue placeholder="Cliente" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todos</SelectItem>
+              <SelectItem value="all">Todos</SelectItem>
               {clients?.map((c) => (
                 <SelectItem key={c.id} value={c.id}>
                   {c.name}

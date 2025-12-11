@@ -237,14 +237,14 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
               <div className="space-y-2">
                 <Label>Arquiteto</Label>
                 <Select
-                  value={formData.architect_id}
-                  onValueChange={(v) => setFormData({ ...formData, architect_id: v })}
+                  value={formData.architect_id || "none"}
+                  onValueChange={(v) => setFormData({ ...formData, architect_id: v === "none" ? "" : v })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione o arquiteto" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Sem arquiteto</SelectItem>
+                    <SelectItem value="none">Sem arquiteto</SelectItem>
                     {architects?.map((arch) => (
                       <SelectItem key={arch.id} value={arch.id}>
                         {arch.name} {arch.company && `- ${arch.company}`}
@@ -257,14 +257,14 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
               <div className="space-y-2">
                 <Label>Negócio Vinculado</Label>
                 <Select
-                  value={formData.deal_id}
-                  onValueChange={(v) => setFormData({ ...formData, deal_id: v })}
+                  value={formData.deal_id || "none"}
+                  onValueChange={(v) => setFormData({ ...formData, deal_id: v === "none" ? "" : v })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Vincular a negócio (opcional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Nenhum</SelectItem>
+                    <SelectItem value="none">Nenhum</SelectItem>
                     {deals?.map((deal) => (
                       <SelectItem key={deal.id} value={deal.id}>
                         {deal.title} {deal.value && `- ${formatCurrency(deal.value)}`}
