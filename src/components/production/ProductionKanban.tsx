@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { ProductionCard } from './ProductionCard';
+import { DroppableColumn } from './DroppableColumn';
 import { ProductionOrderDetailSheet } from './ProductionOrderDetailSheet';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -20,6 +22,15 @@ interface ProductionKanbanProps {
 export function ProductionKanban({ productionTypeId, filters }: ProductionKanbanProps) {
   const queryClient = useQueryClient();
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [activeOrder, setActiveOrder] = useState<any>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
 
   // Buscar fases (templates) baseado no tipo selecionado
   const { data: phases = [], isLoading: phasesLoading } = useQuery({
@@ -85,38 +96,110 @@ export function ProductionKanban({ productionTypeId, filters }: ProductionKanban
     }
   });
 
-  // Mutation para mover OP para próxima fase
+  // Realtime subscription
+  useEffect(() => {
+    const channel = supabase
+      .channel('production-orders-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'production_orders'
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['production-orders'] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'production_phases'
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['production-orders'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
+  // Mutation para mover OP para uma fase específica
   const moveToPhase = useMutation({
-    mutationFn: async ({ orderId, phaseId }: { orderId: string; phaseId: string }) => {
-      // Buscar a fase atual da OP
+    mutationFn: async ({ orderId, targetPhaseTemplateId, fromWaiting }: { 
+      orderId: string; 
+      targetPhaseTemplateId: string;
+      fromWaiting?: boolean;
+    }) => {
+      // Buscar a ordem atual
       const { data: order } = await supabase
         .from('production_orders')
-        .select('current_phase_id')
+        .select('current_phase_id, production_type_id')
         .eq('id', orderId)
         .single();
 
-      // Atualizar a fase atual para concluída
-      if (order?.current_phase_id) {
+      if (!order) throw new Error('OP não encontrada');
+
+      // Se está vindo do "Aguardando" ou não tem fase atual
+      if (fromWaiting || !order.current_phase_id) {
+        // Buscar a fase alvo para esta OP
+        const { data: targetPhase } = await supabase
+          .from('production_phases')
+          .select('id')
+          .eq('production_order_id', orderId)
+          .eq('phase_template_id', targetPhaseTemplateId)
+          .single();
+
+        if (!targetPhase) throw new Error('Fase não encontrada');
+
+        // Iniciar a fase
         await supabase
           .from('production_phases')
           .update({ 
-            status: 'concluido',
-            completed_at: new Date().toISOString()
+            status: 'em_andamento',
+            started_at: new Date().toISOString()
           })
-          .eq('id', order.current_phase_id);
+          .eq('id', targetPhase.id);
+
+        // Atualizar a OP
+        await supabase
+          .from('production_orders')
+          .update({ 
+            current_phase_id: targetPhase.id,
+            status: 'em_andamento',
+            actual_start_date: new Date().toISOString()
+          })
+          .eq('id', orderId);
+
+        return;
       }
 
-      // Buscar a instância da nova fase para esta OP
+      // Caso normal: movendo entre fases
+      // Concluir fase atual
+      await supabase
+        .from('production_phases')
+        .update({ 
+          status: 'concluido',
+          completed_at: new Date().toISOString()
+        })
+        .eq('id', order.current_phase_id);
+
+      // Buscar a nova fase
       const { data: newPhase } = await supabase
         .from('production_phases')
         .select('id')
         .eq('production_order_id', orderId)
-        .eq('phase_template_id', phaseId)
+        .eq('phase_template_id', targetPhaseTemplateId)
         .single();
 
       if (!newPhase) throw new Error('Fase não encontrada');
 
-      // Atualizar a nova fase para em_andamento
+      // Iniciar nova fase
       await supabase
         .from('production_phases')
         .update({ 
@@ -125,17 +208,15 @@ export function ProductionKanban({ productionTypeId, filters }: ProductionKanban
         })
         .eq('id', newPhase.id);
 
-      // Atualizar a OP com a nova fase atual
-      const { error } = await supabase
+      // Atualizar a OP
+      await supabase
         .from('production_orders')
         .update({ current_phase_id: newPhase.id })
         .eq('id', orderId);
-
-      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['production-orders'] });
-      toast.success('OP movida para nova fase');
+      toast.success('OP movida com sucesso');
     },
     onError: (error) => {
       console.error('Erro ao mover OP:', error);
@@ -144,15 +225,63 @@ export function ProductionKanban({ productionTypeId, filters }: ProductionKanban
   });
 
   // Agrupar OPs por fase atual
-  const ordersByPhase = phases.reduce((acc, phase) => {
-    acc[phase.id] = orders.filter(order => 
-      order.current_phase?.phase_template?.id === phase.id
-    );
-    return acc;
-  }, {} as Record<string, typeof orders>);
+  const ordersByPhase = useMemo(() => {
+    return phases.reduce((acc, phase) => {
+      acc[phase.id] = orders.filter(order => 
+        order.current_phase?.phase_template?.id === phase.id
+      );
+      return acc;
+    }, {} as Record<string, typeof orders>);
+  }, [phases, orders]);
 
   // OPs sem fase (aguardando início)
-  const ordersWithoutPhase = orders.filter(order => !order.current_phase);
+  const ordersWithoutPhase = useMemo(() => {
+    return orders.filter(order => !order.current_phase);
+  }, [orders]);
+
+  const uniquePhases = useMemo(() => {
+    return productionTypeId 
+      ? phases 
+      : phases.reduce((acc, phase) => {
+          if (!acc.find(p => p.name === phase.name)) {
+            acc.push(phase);
+          }
+          return acc;
+        }, [] as typeof phases);
+  }, [phases, productionTypeId]);
+
+  const handleDragStart = (event: DragStartEvent) => {
+    const { active } = event;
+    const order = orders.find(o => o.id === active.id);
+    setActiveOrder(order);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveOrder(null);
+
+    if (!over) return;
+
+    const orderId = active.id as string;
+    const targetId = over.id as string;
+
+    // Verificar se foi solto em uma coluna
+    if (targetId.startsWith('column-')) {
+      const phaseTemplateId = targetId.replace('column-', '');
+      
+      if (phaseTemplateId === 'waiting') return; // Não pode voltar para aguardando
+
+      const order = orders.find(o => o.id === orderId);
+      const currentPhaseId = order?.current_phase?.phase_template?.id;
+
+      // Se já está na mesma fase, não fazer nada
+      if (currentPhaseId === phaseTemplateId) return;
+
+      const fromWaiting = !order?.current_phase;
+
+      moveToPhase.mutate({ orderId, targetPhaseTemplateId: phaseTemplateId, fromWaiting });
+    }
+  };
 
   if (phasesLoading || ordersLoading) {
     return (
@@ -168,79 +297,56 @@ export function ProductionKanban({ productionTypeId, filters }: ProductionKanban
     );
   }
 
-  const uniquePhases = productionTypeId 
-    ? phases 
-    : phases.reduce((acc, phase) => {
-        if (!acc.find(p => p.name === phase.name)) {
-          acc.push(phase);
-        }
-        return acc;
-      }, [] as typeof phases);
-
   return (
     <>
-      <ScrollArea className="w-full">
-        <div className="flex gap-4 pb-4 min-w-max">
-          {/* Coluna de Aguardando */}
-          <div className="flex-shrink-0 w-[280px]">
-            <div className="flex items-center justify-between mb-3 p-2 rounded-lg bg-muted">
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-gray-400" />
-                <span className="font-medium text-sm">Aguardando</span>
-              </div>
-              <span className="text-xs text-muted-foreground bg-background px-2 py-0.5 rounded">
-                {ordersWithoutPhase.length}
-              </span>
-            </div>
-            <div className="space-y-2 min-h-[200px]">
-              {ordersWithoutPhase.map((order) => (
-                <ProductionCard 
-                  key={order.id} 
-                  order={order}
-                  onClick={() => setSelectedOrderId(order.id)}
-                />
-              ))}
-            </div>
-          </div>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
+        <ScrollArea className="w-full">
+          <div className="flex gap-4 pb-4 min-w-max">
+            {/* Coluna de Aguardando */}
+            <DroppableColumn
+              id="waiting"
+              title="Aguardando"
+              color="#9ca3af"
+              orders={ordersWithoutPhase}
+              onCardClick={setSelectedOrderId}
+            />
 
-          {/* Colunas por fase */}
-          {uniquePhases.map((phase) => {
-            const phaseOrders = productionTypeId 
-              ? ordersByPhase[phase.id] || []
-              : orders.filter(order => order.current_phase?.phase_template?.name === phase.name);
-            
-            return (
-              <div key={phase.id} className="flex-shrink-0 w-[280px]">
-                <div 
-                  className="flex items-center justify-between mb-3 p-2 rounded-lg"
-                  style={{ backgroundColor: `${phase.color}20` || '#f3f4f6' }}
-                >
-                  <div className="flex items-center gap-2">
-                    <span 
-                      className="w-2 h-2 rounded-full" 
-                      style={{ backgroundColor: phase.color || '#6b7280' }}
-                    />
-                    <span className="font-medium text-sm">{phase.name}</span>
-                  </div>
-                  <span className="text-xs text-muted-foreground bg-background px-2 py-0.5 rounded">
-                    {phaseOrders.length}
-                  </span>
-                </div>
-                <div className="space-y-2 min-h-[200px]">
-                  {phaseOrders.map((order) => (
-                    <ProductionCard 
-                      key={order.id} 
-                      order={order}
-                      onClick={() => setSelectedOrderId(order.id)}
-                    />
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-        <ScrollBar orientation="horizontal" />
-      </ScrollArea>
+            {/* Colunas por fase */}
+            {uniquePhases.map((phase) => {
+              const phaseOrders = productionTypeId 
+                ? ordersByPhase[phase.id] || []
+                : orders.filter(order => order.current_phase?.phase_template?.name === phase.name);
+              
+              return (
+                <DroppableColumn
+                  key={phase.id}
+                  id={phase.id}
+                  title={phase.name}
+                  color={phase.color}
+                  orders={phaseOrders}
+                  onCardClick={setSelectedOrderId}
+                />
+              );
+            })}
+          </div>
+          <ScrollBar orientation="horizontal" />
+        </ScrollArea>
+
+        <DragOverlay>
+          {activeOrder ? (
+            <ProductionCard 
+              order={activeOrder}
+              onClick={() => {}}
+              isDragging
+            />
+          ) : null}
+        </DragOverlay>
+      </DndContext>
 
       {/* Sheet de detalhes */}
       <ProductionOrderDetailSheet
