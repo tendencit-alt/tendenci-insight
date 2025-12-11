@@ -1064,13 +1064,13 @@ Deno.serve(async (req) => {
         }
       }
       
-      // Atualizar banco
+      // Atualizar banco - NÃO sobrescreve webhook_url para preservar URL do n8n em instâncias IA
       if (configured) {
         await supabase
           .from('tendenci_whatsapp_connections')
           .update({ 
-            webhook_url: webhookUrl,
             webhook_configured: true
+            // NÃO atualiza webhook_url aqui para preservar URL do n8n para instâncias IA
           })
           .eq('id', connection.id)
       }
