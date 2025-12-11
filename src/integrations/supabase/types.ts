@@ -1737,6 +1737,7 @@ export type Database = {
           entrega_uf: string | null
           forma_pagamento: string | null
           id: string
+          motivo_cancelamento: string | null
           observacoes_internas: string | null
           observacoes_nf: string | null
           order_number: number
@@ -1777,6 +1778,7 @@ export type Database = {
           entrega_uf?: string | null
           forma_pagamento?: string | null
           id?: string
+          motivo_cancelamento?: string | null
           observacoes_internas?: string | null
           observacoes_nf?: string | null
           order_number?: number
@@ -1817,6 +1819,7 @@ export type Database = {
           entrega_uf?: string | null
           forma_pagamento?: string | null
           id?: string
+          motivo_cancelamento?: string | null
           observacoes_internas?: string | null
           observacoes_nf?: string | null
           order_number?: number

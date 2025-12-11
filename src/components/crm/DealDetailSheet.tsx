@@ -9,13 +9,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Edit, CheckCircle, XCircle, FileText, User, Users, Phone, Mail, MapPin, Package, TrendingUp, DollarSign, ExternalLink, Calendar, Tag as TagIcon, History, FolderOpen, Plus, Unlink, Building, Repeat } from "lucide-react";
+import { Edit, CheckCircle, XCircle, FileText, User, Users, Phone, Mail, MapPin, Package, TrendingUp, DollarSign, ExternalLink, Calendar, Tag as TagIcon, History, FolderOpen, Plus, Unlink, Building, Repeat, ShoppingCart } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { EditDealDialog } from "./EditDealDialog";
 import { CreateArchitectDialog } from "@/components/architects/CreateArchitectDialog";
+import { CreateOrderDialog } from "@/components/orders/CreateOrderDialog";
 
 import { DealHistory } from "./DealHistory";
 import { DealTasks } from "./DealTasks";
@@ -78,6 +79,8 @@ export function DealDetailSheet({
   const [selectedArchitect, setSelectedArchitect] = useState("");
   const [isEditingArchitect, setIsEditingArchitect] = useState(false);
   const [isArchitectDialogOpen, setIsArchitectDialogOpen] = useState(false);
+  const [isCreateOrderOpen, setIsCreateOrderOpen] = useState(false);
+  const [showCreateOrderPrompt, setShowCreateOrderPrompt] = useState(false);
   const [followupEnabled, setFollowupEnabled] = useState(deal?.followup_enabled ?? true);
   const [isUpdatingFollowup, setIsUpdatingFollowup] = useState(false);
 
@@ -342,7 +345,9 @@ export function DealDetailSheet({
         description: "O negócio foi marcado como ganho.",
       });
       onSuccess();
-      onOpenChange(false);
+      
+      // Prompt to create order
+      setShowCreateOrderPrompt(true);
     }
   };
 
@@ -1013,7 +1018,7 @@ export function DealDetailSheet({
                 <TagIcon className="h-5 w-5 text-primary" />
                 <h3 className="font-semibold text-lg">Ações</h3>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <Button
                   variant="default"
                   className="flex-1 gap-2"
@@ -1039,6 +1044,18 @@ export function DealDetailSheet({
                   Excluir
                 </Button>
               </div>
+              
+              {/* Botão criar pedido para deals ganhos */}
+              {deal.status === "won" && (
+                <Button
+                  variant="outline"
+                  className="w-full mt-3 gap-2 border-primary text-primary hover:bg-primary/10"
+                  onClick={() => setIsCreateOrderOpen(true)}
+                >
+                  <ShoppingCart className="h-4 w-4" />
+                  Criar Pedido
+                </Button>
+              )}
             </Card>
           </TabsContent>
         </Tabs>
@@ -1153,6 +1170,47 @@ export function DealDetailSheet({
           onOpenChange={setIsArchitectDialogOpen}
           onSuccess={handleArchitectCreated}
         />
+
+        {/* Dialog para criar pedido */}
+        <CreateOrderDialog
+          open={isCreateOrderOpen}
+          onOpenChange={setIsCreateOrderOpen}
+          onSuccess={() => {
+            setIsCreateOrderOpen(false);
+            onSuccess();
+          }}
+          dealId={deal?.id}
+          clientId={deal?.lead?.client?.id}
+        />
+
+        {/* Prompt após ganhar negócio */}
+        <AlertDialog open={showCreateOrderPrompt} onOpenChange={setShowCreateOrderPrompt}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <ShoppingCart className="h-5 w-5 text-primary" />
+                Criar Pedido?
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                O negócio foi marcado como ganho! Deseja criar um pedido para este cliente?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => {
+                setShowCreateOrderPrompt(false);
+                onOpenChange(false);
+              }}>
+                Agora Não
+              </AlertDialogCancel>
+              <AlertDialogAction onClick={() => {
+                setShowCreateOrderPrompt(false);
+                setIsCreateOrderOpen(true);
+              }}>
+                Criar Pedido
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </SheetContent>
     </Sheet>
   );
