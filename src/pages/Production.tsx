@@ -11,6 +11,7 @@ import { ProductionFilters } from '@/components/production/ProductionFilters';
 import { ProductionKPIs } from '@/components/production/ProductionKPIs';
 import { ProductionSLAAlerts } from '@/components/production/ProductionSLAAlerts';
 import { ProductionOrderDetailSheet } from '@/components/production/ProductionOrderDetailSheet';
+import { getTailwindColor } from '@/utils/tailwindColors';
 
 export default function Production() {
   const [selectedType, setSelectedType] = useState<string>('all');

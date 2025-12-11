@@ -2,6 +2,7 @@ import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { DraggableProductionCard } from './DraggableProductionCard';
 import { cn } from '@/lib/utils';
+import { getTailwindColor } from '@/utils/tailwindColors';
 
 interface DroppableColumnProps {
   id: string;
@@ -16,23 +17,37 @@ export function DroppableColumn({ id, title, color, orders, onCardClick }: Dropp
     id: `column-${id}`,
   });
 
+  const hexColor = getTailwindColor(color);
+  
+  // Calcular valor total da coluna
+  const totalValue = orders.reduce((sum, order) => sum + (order.value || 0), 0);
+
   return (
     <div className="flex-shrink-0 w-[280px]">
       <div 
         className="flex items-center justify-between mb-3 p-2 rounded-lg"
-        style={{ backgroundColor: color ? `${color}20` : 'hsl(var(--muted))' }}
+        style={{ backgroundColor: `${hexColor}20` }}
       >
         <div className="flex items-center gap-2">
           <span 
             className="w-2 h-2 rounded-full" 
-            style={{ backgroundColor: color || '#6b7280' }}
+            style={{ backgroundColor: hexColor }}
           />
           <span className="font-medium text-sm">{title}</span>
         </div>
-        <span className="text-xs text-muted-foreground bg-background px-2 py-0.5 rounded">
-          {orders.length}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground bg-background px-2 py-0.5 rounded">
+            {orders.length}
+          </span>
+        </div>
       </div>
+      
+      {/* Valor total da coluna */}
+      {totalValue > 0 && (
+        <div className="text-xs text-muted-foreground text-center mb-2 font-medium">
+          {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 }).format(totalValue)}
+        </div>
+      )}
       
       <div
         ref={setNodeRef}

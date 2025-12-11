@@ -1781,6 +1781,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_production_orders_crm_deal"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "crm_deals"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "production_orders_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
@@ -3819,10 +3826,26 @@ export type Database = {
       is_user_master: { Args: { _user_id: string }; Returns: boolean }
       leads_aggregates: { Args: never; Returns: Json }
       mark_inactive_architects: { Args: never; Returns: undefined }
-      production_metrics: {
-        Args: { p_date_from?: string; p_date_to?: string; p_type_id?: string }
-        Returns: Json
-      }
+      production_metrics:
+        | {
+            Args: {
+              p_date_from?: string
+              p_date_to?: string
+              p_type_id?: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_date_from?: string
+              p_date_to?: string
+              p_priority?: string
+              p_responsible_id?: string
+              p_status?: string
+              p_type_id?: string
+            }
+            Returns: Json
+          }
       production_sla_alerts: {
         Args: { p_type_id?: string }
         Returns: {
