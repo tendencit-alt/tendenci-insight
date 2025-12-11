@@ -13,7 +13,10 @@ export type AppModule =
   | 'dashboards_personalizados'
   | 'configuracoes'
   | 'gestao_usuarios'
-  | 'producao';
+  | 'producao'
+  | 'fornecedores'
+  | 'estoque'
+  | 'compras';
 
 export interface ModulePermission {
   module: AppModule;
