@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, Search } from "lucide-react";
 
 interface CreateSupplierDialogProps {
   open: boolean;
@@ -14,9 +14,47 @@ interface CreateSupplierDialogProps {
   onSuccess: () => void;
 }
 
+// Máscaras de formatação
+const formatCNPJ = (value: string) => {
+  const numbers = value.replace(/\D/g, "").slice(0, 14);
+  return numbers
+    .replace(/^(\d{2})(\d)/, "$1.$2")
+    .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
+    .replace(/\.(\d{3})(\d)/, ".$1/$2")
+    .replace(/(\d{4})(\d)/, "$1-$2");
+};
+
+const formatCPF = (value: string) => {
+  const numbers = value.replace(/\D/g, "").slice(0, 11);
+  return numbers
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+};
+
+const formatCPFCNPJ = (value: string) => {
+  const numbers = value.replace(/\D/g, "");
+  if (numbers.length <= 11) return formatCPF(value);
+  return formatCNPJ(value);
+};
+
+const formatPhone = (value: string) => {
+  const numbers = value.replace(/\D/g, "").slice(0, 11);
+  if (numbers.length <= 10) {
+    return numbers.replace(/(\d{2})(\d{4})(\d{0,4})/, "($1) $2-$3").trim();
+  }
+  return numbers.replace(/(\d{2})(\d{5})(\d{0,4})/, "($1) $2-$3").trim();
+};
+
+const formatCEP = (value: string) => {
+  const numbers = value.replace(/\D/g, "").slice(0, 8);
+  return numbers.replace(/(\d{5})(\d{0,3})/, "$1-$2");
+};
+
 export default function CreateSupplierDialog({ open, onOpenChange, onSuccess }: CreateSupplierDialogProps) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [searchingCep, setSearchingCep] = useState(false);
   const [form, setForm] = useState({
     name: "",
     trade_name: "",
@@ -35,6 +73,37 @@ export default function CreateSupplierDialog({ open, onOpenChange, onSuccess }: 
     payment_terms: "",
     notes: ""
   });
+
+  const searchCEP = async (cep: string) => {
+    const cleanCep = cep.replace(/\D/g, "");
+    if (cleanCep.length !== 8) return;
+
+    setSearchingCep(true);
+    try {
+      const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+      const data = await response.json();
+      
+      if (data.erro) {
+        toast({ title: "CEP não encontrado", variant: "destructive" });
+        return;
+      }
+
+      setForm(prev => ({
+        ...prev,
+        logradouro: data.logradouro || "",
+        bairro: data.bairro || "",
+        city: data.localidade || "",
+        state: data.uf || "",
+        complemento: data.complemento || prev.complemento
+      }));
+      
+      toast({ title: "Endereço preenchido automaticamente!" });
+    } catch (error) {
+      toast({ title: "Erro ao buscar CEP", variant: "destructive" });
+    } finally {
+      setSearchingCep(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -99,7 +168,8 @@ export default function CreateSupplierDialog({ open, onOpenChange, onSuccess }: 
               <Input
                 id="cpf_cnpj"
                 value={form.cpf_cnpj}
-                onChange={(e) => setForm({ ...form, cpf_cnpj: e.target.value })}
+                onChange={(e) => setForm({ ...form, cpf_cnpj: formatCPFCNPJ(e.target.value) })}
+                placeholder="00.000.000/0000-00"
               />
             </div>
             <div className="space-y-2">
@@ -118,7 +188,8 @@ export default function CreateSupplierDialog({ open, onOpenChange, onSuccess }: 
               <Input
                 id="phone"
                 value={form.phone}
-                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                onChange={(e) => setForm({ ...form, phone: formatPhone(e.target.value) })}
+                placeholder="(00) 00000-0000"
               />
             </div>
             <div className="space-y-2">
@@ -144,11 +215,23 @@ export default function CreateSupplierDialog({ open, onOpenChange, onSuccess }: 
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="cep">CEP</Label>
-              <Input
-                id="cep"
-                value={form.cep}
-                onChange={(e) => setForm({ ...form, cep: e.target.value })}
-              />
+              <div className="flex gap-1">
+                <Input
+                  id="cep"
+                  value={form.cep}
+                  onChange={(e) => setForm({ ...form, cep: formatCEP(e.target.value) })}
+                  placeholder="00000-000"
+                />
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="icon"
+                  onClick={() => searchCEP(form.cep)}
+                  disabled={searchingCep}
+                >
+                  {searchingCep ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                </Button>
+              </div>
             </div>
             <div className="col-span-2 space-y-2">
               <Label htmlFor="logradouro">Logradouro</Label>
