@@ -137,12 +137,17 @@ export function ProspeccaoTasksManager() {
       });
       return;
     }
+    // Converter datetime-local para ISO corretamente
+    // new Date() interpreta datetime-local como horário local
+    // toISOString() converte automaticamente para UTC
+    const localDate = new Date(newTask.due_at);
+    const dueAtISO = localDate.toISOString();
 
     const { error } = await supabase.from("crm_tasks").insert({
       deal_id: newTask.deal_id,
       title: newTask.title,
       note: newTask.note || null,
-      due_at: newTask.due_at,
+      due_at: dueAtISO,
       status: "open",
       origem_modulo: "prospeccao",
       tipo_tarefa: newTask.tipo_tarefa,
