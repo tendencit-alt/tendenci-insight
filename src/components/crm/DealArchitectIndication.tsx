@@ -53,7 +53,7 @@ export function DealArchitectIndication({
       value: "",
       notes: "",
     },
-    showForm
+    true
   );
 
   useEffect(() => {
