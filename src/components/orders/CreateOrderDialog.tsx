@@ -13,10 +13,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Slider } from '@/components/ui/slider';
 import { toast } from 'sonner';
 import { OrderItemsTable } from './OrderItemsTable';
-import { AddressForm } from './AddressForm';
-import { Loader2, AlertTriangle, Link } from 'lucide-react';
+
+import { CreateClientDialog } from '@/components/crm/CreateClientDialog';
+import { Loader2, AlertTriangle, Link, Plus, ChevronRight, Check } from 'lucide-react';
 
 interface CreateOrderDialogProps {
   open: boolean;
@@ -39,19 +41,43 @@ interface OrderItem {
   unidade?: string;
 }
 
+const FORMAS_PAGAMENTO = [
+  { value: 'pix', label: 'PIX' },
+  { value: 'boleto', label: 'Boleto' },
+  { value: 'cartao_credito', label: 'Cartão Crédito' },
+  { value: 'cartao_debito', label: 'Cartão Débito' },
+  { value: 'transferencia', label: 'Transferência' },
+  { value: 'dinheiro', label: 'Dinheiro' },
+  { value: 'permuta', label: 'Permuta' },
+];
+
+const TIPOS_ENTREGA = [
+  { value: 'a_combinar', label: 'A combinar' },
+  { value: 'entrega_tendenci', label: 'Entrega Tendenci' },
+  { value: 'transportadora', label: 'Transportadora' },
+  { value: 'retirada', label: 'Retirada' },
+  { value: 'terceirizada', label: 'Terceirizada' },
+];
+
 export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clientId }: CreateOrderDialogProps) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('cliente');
+  const [showCreateClient, setShowCreateClient] = useState(false);
+  const [pagamentoFracionado, setPagamentoFracionado] = useState(false);
   
   const [formData, setFormData] = useState({
     client_id: clientId || '',
     deal_id: dealId || '',
     architect_id: '',
     forma_pagamento: '',
+    forma_pagamento_2: '',
+    percentual_forma_1: 100,
+    percentual_forma_2: 0,
     condicao_pagamento: '',
+    observacao_pagamento: '',
     data_entrega_prevista: '',
-    tipo_entrega: 'entrega',
+    tipo_entrega: '',
     entrega_mesmo_endereco: true,
     entrega_cep: '',
     entrega_logradouro: '',
@@ -100,7 +126,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     }
   }, [linkedDeal, open, clientId]);
 
-  const { data: clients } = useQuery({
+  const { data: clients, refetch: refetchClients } = useQuery({
     queryKey: ['clients-for-order'],
     queryFn: async () => {
       const { data } = await supabase
@@ -161,14 +187,38 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
   const descontoTotal = descontoPercentual + Number(formData.desconto_valor || 0);
   const total = subtotal - descontoTotal + Number(formData.valor_frete || 0);
 
-  const handleSubmit = async () => {
-    if (!formData.client_id) {
-      toast.error('Selecione um cliente');
-      return;
-    }
+  // Validações por etapa
+  const isClienteValid = !!formData.client_id;
+  const isItensValid = items.length > 0;
+  const isPagamentoValid = !!formData.forma_pagamento && (!pagamentoFracionado || (formData.percentual_forma_1 + formData.percentual_forma_2 === 100));
+  const isEntregaValid = !!formData.tipo_entrega;
+  const isFormValid = isClienteValid && isItensValid && isPagamentoValid && isEntregaValid;
 
-    if (items.length === 0) {
-      toast.error('Adicione pelo menos um item ao pedido');
+  const handleNext = () => {
+    if (activeTab === 'cliente') {
+      if (!isClienteValid) {
+        toast.error('Selecione um cliente para continuar');
+        return;
+      }
+      setActiveTab('itens');
+    } else if (activeTab === 'itens') {
+      if (!isItensValid) {
+        toast.error('Adicione pelo menos um item ao pedido');
+        return;
+      }
+      setActiveTab('pagamento');
+    } else if (activeTab === 'pagamento') {
+      if (!isPagamentoValid) {
+        toast.error('Selecione a forma de pagamento');
+        return;
+      }
+      setActiveTab('entrega');
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!isFormValid) {
+      toast.error('Preencha todos os campos obrigatórios');
       return;
     }
 
@@ -184,7 +234,11 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
           vendedor_id: user?.id,
           created_by: user?.id,
           forma_pagamento: formData.forma_pagamento,
+          forma_pagamento_2: pagamentoFracionado ? formData.forma_pagamento_2 : null,
+          percentual_forma_1: pagamentoFracionado ? formData.percentual_forma_1 : 100,
+          percentual_forma_2: pagamentoFracionado ? formData.percentual_forma_2 : 0,
           condicao_pagamento: formData.condicao_pagamento,
+          observacao_pagamento: formData.observacao_pagamento || null,
           data_entrega_prevista: formData.data_entrega_prevista || null,
           tipo_entrega: formData.tipo_entrega,
           entrega_mesmo_endereco: formData.entrega_mesmo_endereco,
@@ -248,371 +302,537 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     }).format(value);
   };
 
+  const handleClientCreated = () => {
+    refetchClients();
+    setShowCreateClient(false);
+  };
+
+  const getTabStatus = (tab: string) => {
+    switch (tab) {
+      case 'cliente': return isClienteValid;
+      case 'itens': return isItensValid;
+      case 'pagamento': return isPagamentoValid;
+      case 'entrega': return isEntregaValid;
+      default: return false;
+    }
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <div className="flex items-center gap-2">
-            <DialogTitle>Novo Pedido</DialogTitle>
-            {linkedDeal && (
-              <Badge variant="secondary" className="gap-1">
-                <Link className="h-3 w-3" />
-                Vinculado: {linkedDeal.title}
-              </Badge>
-            )}
-          </div>
-        </DialogHeader>
-
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="cliente">Cliente</TabsTrigger>
-            <TabsTrigger value="itens">Itens</TabsTrigger>
-            <TabsTrigger value="pagamento">Pagamento</TabsTrigger>
-            <TabsTrigger value="entrega">Entrega</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="cliente" className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Cliente *</Label>
-                <Select
-                  value={formData.client_id}
-                  onValueChange={(v) => setFormData({ ...formData, client_id: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o cliente" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {clients?.map((client) => (
-                      <SelectItem key={client.id} value={client.id}>
-                        {client.name} {client.cpf_cnpj && `(${client.cpf_cnpj})`}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Arquiteto</Label>
-                <Select
-                  value={formData.architect_id || "none"}
-                  onValueChange={(v) => setFormData({ ...formData, architect_id: v === "none" ? "" : v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o arquiteto" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Sem arquiteto</SelectItem>
-                    {architects?.map((arch) => (
-                      <SelectItem key={arch.id} value={arch.id}>
-                        {arch.name} {arch.company && `- ${arch.company}`}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Negócio Vinculado</Label>
-                <Select
-                  value={formData.deal_id || "none"}
-                  onValueChange={(v) => setFormData({ ...formData, deal_id: v === "none" ? "" : v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Vincular a negócio (opcional)" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Nenhum</SelectItem>
-                    {deals?.map((deal) => (
-                      <SelectItem key={deal.id} value={deal.id}>
-                        {deal.title} {deal.value && `- ${formatCurrency(deal.value)}`}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <div className="flex items-center gap-2">
+              <DialogTitle>Novo Pedido</DialogTitle>
+              {linkedDeal && (
+                <Badge variant="secondary" className="gap-1">
+                  <Link className="h-3 w-3" />
+                  Vinculado: {linkedDeal.title}
+                </Badge>
+              )}
             </div>
+          </DialogHeader>
 
-            {selectedClient && (
-              <Card className="p-4 bg-muted/50 border-primary/20">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <p className="font-bold text-lg">{selectedClient.name}</p>
-                    {selectedClient.tipo_pessoa === 'pj' && selectedClient.razao_social && (
-                      <p className="text-sm text-muted-foreground">{selectedClient.razao_social}</p>
-                    )}
-                    {selectedClient.cpf_cnpj && (
-                      <p className="text-sm font-mono">
-                        <span className="text-muted-foreground">{selectedClient.tipo_pessoa === 'pj' ? 'CNPJ: ' : 'CPF: '}</span>
-                        {selectedClient.cpf_cnpj}
-                      </p>
-                    )}
-                    {selectedClient.tipo_pessoa === 'pj' && (
-                      <p className="text-sm font-mono">
-                        <span className="text-muted-foreground">IE: </span>
-                        {selectedClient.isento_ie ? 'ISENTO' : selectedClient.inscricao_estadual || 'Não informada'}
-                      </p>
-                    )}
-                    {selectedClient.tipo_pessoa === 'pj' && (
-                      <p className="text-sm">
-                        <span className="text-muted-foreground">Contribuinte ICMS: </span>
-                        {selectedClient.contribuinte_icms ? 'Sim' : 'Não'}
-                      </p>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    {selectedClient.phone && (
-                      <p className="text-sm">
-                        <span className="text-muted-foreground">Telefone: </span>
-                        {selectedClient.phone}
-                      </p>
-                    )}
-                    {selectedClient.email && (
-                      <p className="text-sm">
-                        <span className="text-muted-foreground">Email: </span>
-                        {selectedClient.email}
-                      </p>
-                    )}
-                    {(selectedClient.logradouro || selectedClient.city) && (
-                      <p className="text-sm">
-                        <span className="text-muted-foreground">Endereço: </span>
-                        {[selectedClient.logradouro, selectedClient.numero, selectedClient.bairro, selectedClient.city, selectedClient.state].filter(Boolean).join(', ')}
-                      </p>
-                    )}
-                    {selectedClient.cep && (
-                      <p className="text-sm font-mono">
-                        <span className="text-muted-foreground">CEP: </span>
-                        {selectedClient.cep}
-                      </p>
-                    )}
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="cliente" className="gap-1">
+                {getTabStatus('cliente') && <Check className="h-3 w-3 text-green-500" />}
+                Cliente
+              </TabsTrigger>
+              <TabsTrigger value="itens" className="gap-1">
+                {getTabStatus('itens') && <Check className="h-3 w-3 text-green-500" />}
+                Itens
+              </TabsTrigger>
+              <TabsTrigger value="pagamento" className="gap-1">
+                {getTabStatus('pagamento') && <Check className="h-3 w-3 text-green-500" />}
+                Pagamento
+              </TabsTrigger>
+              <TabsTrigger value="entrega" className="gap-1">
+                {getTabStatus('entrega') && <Check className="h-3 w-3 text-green-500" />}
+                Entrega
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="cliente" className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Cliente *</Label>
+                  <div className="flex gap-2">
+                    <Select
+                      value={formData.client_id || "_placeholder"}
+                      onValueChange={(v) => setFormData({ ...formData, client_id: v === "_placeholder" ? "" : v })}
+                    >
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder="-" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="_placeholder" disabled>-</SelectItem>
+                        {clients?.map((client) => (
+                          <SelectItem key={client.id} value={client.id}>
+                            {client.name} {client.cpf_cnpj && `(${client.cpf_cnpj})`}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="icon"
+                      onClick={() => setShowCreateClient(true)}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
-              </Card>
-            )}
 
-            {hasFiscalWarning && (
-              <Alert variant="destructive" className="border-orange-500/50 bg-orange-500/10">
-                <AlertTriangle className="h-4 w-4 text-orange-500" />
-                <AlertDescription className="text-orange-700 dark:text-orange-400">
-                  <strong>Atenção:</strong> Cliente PJ com dados fiscais incompletos. 
-                  {!selectedClient?.cpf_cnpj && ' CNPJ não informado.'}
-                  {!selectedClient?.inscricao_estadual && !selectedClient?.isento_ie && ' Inscrição Estadual não informada.'}
-                </AlertDescription>
-              </Alert>
-            )}
-          </TabsContent>
+                <div className="space-y-2">
+                  <Label>Arquiteto</Label>
+                  <Select
+                    value={formData.architect_id || "_none"}
+                    onValueChange={(v) => setFormData({ ...formData, architect_id: v === "_none" ? "" : v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="-" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="_none">Sem arquiteto</SelectItem>
+                      {architects?.map((arch) => (
+                        <SelectItem key={arch.id} value={arch.id}>
+                          {arch.name} {arch.company && `- ${arch.company}`}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-          <TabsContent value="itens" className="space-y-4">
-            <OrderItemsTable items={items} onItemsChange={setItems} showFiscalFields={true} />
+                <div className="space-y-2">
+                  <Label>Negócio Vinculado</Label>
+                  <Select
+                    value={formData.deal_id || "_none"}
+                    onValueChange={(v) => setFormData({ ...formData, deal_id: v === "_none" ? "" : v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="-" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="_none">Nenhum</SelectItem>
+                      {deals?.map((deal) => (
+                        <SelectItem key={deal.id} value={deal.id}>
+                          {deal.title} {deal.value && `- ${formatCurrency(deal.value)}`}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
 
-            <div className="flex justify-end">
-              <div className="w-64 space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span>Subtotal:</span>
-                  <span>{formatCurrency(subtotal)}</span>
+              {selectedClient && (
+                <Card className="p-4 bg-muted/50 border-primary/20">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <p className="font-bold text-lg">{selectedClient.name}</p>
+                      {selectedClient.tipo_pessoa === 'pj' && selectedClient.razao_social && (
+                        <p className="text-sm text-muted-foreground">{selectedClient.razao_social}</p>
+                      )}
+                      {selectedClient.cpf_cnpj && (
+                        <p className="text-sm font-mono">
+                          <span className="text-muted-foreground">{selectedClient.tipo_pessoa === 'pj' ? 'CNPJ: ' : 'CPF: '}</span>
+                          {selectedClient.cpf_cnpj}
+                        </p>
+                      )}
+                      {selectedClient.tipo_pessoa === 'pj' && (
+                        <p className="text-sm font-mono">
+                          <span className="text-muted-foreground">IE: </span>
+                          {selectedClient.isento_ie ? 'ISENTO' : selectedClient.inscricao_estadual || 'Não informada'}
+                        </p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      {selectedClient.phone && (
+                        <p className="text-sm">
+                          <span className="text-muted-foreground">Telefone: </span>
+                          {selectedClient.phone}
+                        </p>
+                      )}
+                      {selectedClient.email && (
+                        <p className="text-sm">
+                          <span className="text-muted-foreground">Email: </span>
+                          {selectedClient.email}
+                        </p>
+                      )}
+                      {(selectedClient.logradouro || selectedClient.city) && (
+                        <p className="text-sm">
+                          <span className="text-muted-foreground">Endereço: </span>
+                          {[selectedClient.logradouro, selectedClient.numero, selectedClient.bairro, selectedClient.city, selectedClient.state].filter(Boolean).join(', ')}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </Card>
+              )}
+
+              {hasFiscalWarning && (
+                <Alert variant="destructive" className="border-orange-500/50 bg-orange-500/10">
+                  <AlertTriangle className="h-4 w-4 text-orange-500" />
+                  <AlertDescription className="text-orange-700 dark:text-orange-400">
+                    <strong>Atenção:</strong> Cliente PJ com dados fiscais incompletos. 
+                    {!selectedClient?.cpf_cnpj && ' CNPJ não informado.'}
+                    {!selectedClient?.inscricao_estadual && !selectedClient?.isento_ie && ' Inscrição Estadual não informada.'}
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              <div className="flex justify-end pt-4">
+                <Button onClick={handleNext} disabled={!isClienteValid}>
+                  Avançar <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="itens" className="space-y-4">
+              <OrderItemsTable items={items} onItemsChange={setItems} showFiscalFields={true} />
+
+              <div className="flex justify-end">
+                <div className="w-64 space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span>Subtotal:</span>
+                    <span>{formatCurrency(subtotal)}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs">Desconto (%):</span>
+                    <Input
+                      type="number"
+                      className="w-16 h-8"
+                      value={formData.desconto_percentual}
+                      onChange={(e) => setFormData({ ...formData, desconto_percentual: Number(e.target.value) })}
+                      min={0}
+                      max={100}
+                    />
+                    <span className="text-muted-foreground text-xs">-{formatCurrency(descontoPercentual)}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs">Desconto (R$):</span>
+                    <Input
+                      type="number"
+                      className="w-24 h-8"
+                      value={formData.desconto_valor}
+                      onChange={(e) => setFormData({ ...formData, desconto_valor: Number(e.target.value) })}
+                      min={0}
+                      step={0.01}
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs">Frete:</span>
+                    <Input
+                      type="number"
+                      className="w-24 h-8"
+                      value={formData.valor_frete}
+                      onChange={(e) => setFormData({ ...formData, valor_frete: Number(e.target.value) })}
+                      min={0}
+                    />
+                  </div>
+                  {descontoTotal > 0 && (
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>Total Descontos:</span>
+                      <span>-{formatCurrency(descontoTotal)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between font-bold text-lg border-t pt-2">
+                    <span>Total:</span>
+                    <span>{formatCurrency(total)}</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs">Desconto (%):</span>
-                  <Input
-                    type="number"
-                    className="w-16 h-8"
-                    value={formData.desconto_percentual}
-                    onChange={(e) => setFormData({ ...formData, desconto_percentual: Number(e.target.value) })}
-                    min={0}
-                    max={100}
+              </div>
+
+              <div className="flex justify-between pt-4">
+                <Button variant="outline" onClick={() => setActiveTab('cliente')}>
+                  Voltar
+                </Button>
+                <Button onClick={handleNext} disabled={!isItensValid}>
+                  Avançar <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="pagamento" className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Forma de Pagamento *</Label>
+                  <Select
+                    value={formData.forma_pagamento || "_placeholder"}
+                    onValueChange={(v) => setFormData({ ...formData, forma_pagamento: v === "_placeholder" ? "" : v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="-" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="_placeholder" disabled>-</SelectItem>
+                      {FORMAS_PAGAMENTO.map((f) => (
+                        <SelectItem key={f.value} value={f.value}>
+                          {f.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Condição de Pagamento</Label>
+                  <Select
+                    value={formData.condicao_pagamento || "_none"}
+                    onValueChange={(v) => setFormData({ ...formData, condicao_pagamento: v === "_none" ? "" : v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="-" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="_none">-</SelectItem>
+                      {paymentConditions?.map((cond) => (
+                        <SelectItem key={cond.id} value={cond.nome}>
+                          {cond.nome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Pagamento Fracionado */}
+              <div className="space-y-4 p-4 border rounded-lg">
+                <div className="flex items-center justify-between">
+                  <Label>Pagamento Fracionado</Label>
+                  <Switch
+                    checked={pagamentoFracionado}
+                    onCheckedChange={setPagamentoFracionado}
                   />
-                  <span className="text-muted-foreground text-xs">-{formatCurrency(descontoPercentual)}</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs">Desconto (R$):</span>
-                  <Input
-                    type="number"
-                    className="w-24 h-8"
-                    value={formData.desconto_valor}
-                    onChange={(e) => setFormData({ ...formData, desconto_valor: Number(e.target.value) })}
-                    min={0}
-                    step={0.01}
-                  />
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs">Frete:</span>
-                  <Input
-                    type="number"
-                    className="w-24 h-8"
-                    value={formData.valor_frete}
-                    onChange={(e) => setFormData({ ...formData, valor_frete: Number(e.target.value) })}
-                    min={0}
-                  />
-                </div>
-                {descontoTotal > 0 && (
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>Total Descontos:</span>
-                    <span>-{formatCurrency(descontoTotal)}</span>
+
+                {pagamentoFracionado && (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-xs">Forma 1: {formData.percentual_forma_1}%</Label>
+                        <Slider
+                          value={[formData.percentual_forma_1]}
+                          onValueChange={(v) => setFormData({ 
+                            ...formData, 
+                            percentual_forma_1: v[0],
+                            percentual_forma_2: 100 - v[0]
+                          })}
+                          max={100}
+                          step={5}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          {formatCurrency(total * (formData.percentual_forma_1 / 100))}
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs">Forma 2: {formData.percentual_forma_2}%</Label>
+                        <Select
+                          value={formData.forma_pagamento_2 || "_placeholder"}
+                          onValueChange={(v) => setFormData({ ...formData, forma_pagamento_2: v === "_placeholder" ? "" : v })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="-" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="_placeholder" disabled>-</SelectItem>
+                            {FORMAS_PAGAMENTO.map((f) => (
+                              <SelectItem key={f.value} value={f.value}>
+                                {f.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-muted-foreground">
+                          {formatCurrency(total * (formData.percentual_forma_2 / 100))}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 )}
-                <div className="flex justify-between font-bold text-lg border-t pt-2">
-                  <span>Total:</span>
-                  <span>{formatCurrency(total)}</span>
-                </div>
-              </div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="pagamento" className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Forma de Pagamento</Label>
-                <Select
-                  value={formData.forma_pagamento}
-                  onValueChange={(v) => setFormData({ ...formData, forma_pagamento: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pix">PIX</SelectItem>
-                    <SelectItem value="boleto">Boleto</SelectItem>
-                    <SelectItem value="cartao_credito">Cartão de Crédito</SelectItem>
-                    <SelectItem value="cartao_debito">Cartão de Débito</SelectItem>
-                    <SelectItem value="transferencia">Transferência</SelectItem>
-                    <SelectItem value="dinheiro">Dinheiro</SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
 
               <div className="space-y-2">
-                <Label>Condição de Pagamento</Label>
-                <Select
-                  value={formData.condicao_pagamento}
-                  onValueChange={(v) => setFormData({ ...formData, condicao_pagamento: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {paymentConditions?.map((cond) => (
-                      <SelectItem key={cond.id} value={cond.nome}>
-                        {cond.nome} - {cond.descricao}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Observações para NF</Label>
-              <Textarea
-                value={formData.observacoes_nf}
-                onChange={(e) => setFormData({ ...formData, observacoes_nf: e.target.value })}
-                placeholder="Informações que aparecerão na nota fiscal..."
-                rows={3}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Observações Internas</Label>
-              <Textarea
-                value={formData.observacoes_internas}
-                onChange={(e) => setFormData({ ...formData, observacoes_internas: e.target.value })}
-                placeholder="Observações internas (não aparece na NF)..."
-                rows={3}
-              />
-            </div>
-          </TabsContent>
-
-          <TabsContent value="entrega" className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Tipo de Entrega</Label>
-                <Select
-                  value={formData.tipo_entrega}
-                  onValueChange={(v) => setFormData({ ...formData, tipo_entrega: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="entrega">Entrega</SelectItem>
-                    <SelectItem value="retirada">Retirada</SelectItem>
-                    <SelectItem value="transportadora">Transportadora</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Data de Entrega Prevista</Label>
-                <Input
-                  type="date"
-                  value={formData.data_entrega_prevista}
-                  onChange={(e) => setFormData({ ...formData, data_entrega_prevista: e.target.value })}
+                <Label>Observação de Pagamento</Label>
+                <Textarea
+                  value={formData.observacao_pagamento}
+                  onChange={(e) => setFormData({ ...formData, observacao_pagamento: e.target.value })}
+                  placeholder="Observações sobre o pagamento..."
+                  rows={2}
                 />
               </div>
-            </div>
 
-            {formData.tipo_entrega !== 'retirada' && (
-              <>
-                <div className="flex items-center gap-2">
-                  <Switch
-                    checked={formData.entrega_mesmo_endereco}
-                    onCheckedChange={(checked) => setFormData({ ...formData, entrega_mesmo_endereco: checked })}
-                  />
-                  <Label>Mesmo endereço do cliente</Label>
+              <div className="flex justify-between pt-4">
+                <Button variant="outline" onClick={() => setActiveTab('itens')}>
+                  Voltar
+                </Button>
+                <Button onClick={handleNext} disabled={!isPagamentoValid}>
+                  Avançar <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="entrega" className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Tipo de Entrega *</Label>
+                  <Select
+                    value={formData.tipo_entrega || "_placeholder"}
+                    onValueChange={(v) => setFormData({ ...formData, tipo_entrega: v === "_placeholder" ? "" : v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="-" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="_placeholder" disabled>-</SelectItem>
+                      {TIPOS_ENTREGA.map((t) => (
+                        <SelectItem key={t.value} value={t.value}>
+                          {t.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
-                {!formData.entrega_mesmo_endereco && (
-                  <AddressForm
-                    address={{
-                      cep: formData.entrega_cep,
-                      logradouro: formData.entrega_logradouro,
-                      numero: formData.entrega_numero,
-                      complemento: formData.entrega_complemento,
-                      bairro: formData.entrega_bairro,
-                      cidade: formData.entrega_cidade,
-                      uf: formData.entrega_uf,
-                    }}
-                    onAddressChange={(addr) => setFormData({
-                      ...formData,
-                      entrega_cep: addr.cep,
-                      entrega_logradouro: addr.logradouro,
-                      entrega_numero: addr.numero,
-                      entrega_complemento: addr.complemento,
-                      entrega_bairro: addr.bairro,
-                      entrega_cidade: addr.cidade,
-                      entrega_uf: addr.uf,
-                    })}
+                <div className="space-y-2">
+                  <Label>Data de Entrega Prevista</Label>
+                  <Input
+                    type="date"
+                    value={formData.data_entrega_prevista}
+                    onChange={(e) => setFormData({ ...formData, data_entrega_prevista: e.target.value })}
                   />
-                )}
-              </>
-            )}
+                </div>
+              </div>
 
-            <div className="space-y-2">
-              <Label>Observações de Entrega</Label>
-              <Textarea
-                value={formData.entrega_observacoes}
-                onChange={(e) => setFormData({ ...formData, entrega_observacoes: e.target.value })}
-                placeholder="Instruções especiais de entrega..."
-                rows={3}
-              />
-            </div>
-          </TabsContent>
-        </Tabs>
+              <div className="flex items-center space-x-2 p-3 bg-muted rounded-lg">
+                <Switch
+                  id="mesmo-endereco"
+                  checked={formData.entrega_mesmo_endereco}
+                  onCheckedChange={(checked) => setFormData({ ...formData, entrega_mesmo_endereco: checked })}
+                />
+                <Label htmlFor="mesmo-endereco">Usar endereço do cliente</Label>
+              </div>
 
-        <div className="flex justify-between items-center pt-4 border-t">
-          <div className="text-lg font-bold">
-            Total: {formatCurrency(total)}
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={handleSubmit} disabled={loading}>
-              {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Criar Pedido
-            </Button>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+              {!formData.entrega_mesmo_endereco && (
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label>CEP</Label>
+                    <Input
+                      value={formData.entrega_cep}
+                      onChange={(e) => setFormData({ ...formData, entrega_cep: e.target.value })}
+                      placeholder="00000-000"
+                    />
+                  </div>
+                  <div className="col-span-2 space-y-2">
+                    <Label>Logradouro</Label>
+                    <Input
+                      value={formData.entrega_logradouro}
+                      onChange={(e) => setFormData({ ...formData, entrega_logradouro: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Número</Label>
+                    <Input
+                      value={formData.entrega_numero}
+                      onChange={(e) => setFormData({ ...formData, entrega_numero: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Complemento</Label>
+                    <Input
+                      value={formData.entrega_complemento}
+                      onChange={(e) => setFormData({ ...formData, entrega_complemento: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Bairro</Label>
+                    <Input
+                      value={formData.entrega_bairro}
+                      onChange={(e) => setFormData({ ...formData, entrega_bairro: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Cidade</Label>
+                    <Input
+                      value={formData.entrega_cidade}
+                      onChange={(e) => setFormData({ ...formData, entrega_cidade: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>UF</Label>
+                    <Input
+                      value={formData.entrega_uf}
+                      onChange={(e) => setFormData({ ...formData, entrega_uf: e.target.value })}
+                      maxLength={2}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label>Observações de Entrega</Label>
+                <Textarea
+                  value={formData.entrega_observacoes}
+                  onChange={(e) => setFormData({ ...formData, entrega_observacoes: e.target.value })}
+                  placeholder="Instruções especiais para entrega..."
+                  rows={2}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Observações Internas</Label>
+                <Textarea
+                  value={formData.observacoes_internas}
+                  onChange={(e) => setFormData({ ...formData, observacoes_internas: e.target.value })}
+                  placeholder="Observações internas (não aparece na NF)..."
+                  rows={2}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Observações para Nota Fiscal</Label>
+                <Textarea
+                  value={formData.observacoes_nf}
+                  onChange={(e) => setFormData({ ...formData, observacoes_nf: e.target.value })}
+                  placeholder="Observações que aparecerão na NF..."
+                  rows={2}
+                />
+              </div>
+
+              {/* Resumo Final */}
+              <Card className="p-4 bg-primary/5 border-primary/20">
+                <h4 className="font-semibold mb-2">Resumo do Pedido</h4>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <p><span className="text-muted-foreground">Cliente:</span> {selectedClient?.name}</p>
+                  <p><span className="text-muted-foreground">Itens:</span> {items.length}</p>
+                  <p><span className="text-muted-foreground">Pagamento:</span> {FORMAS_PAGAMENTO.find(f => f.value === formData.forma_pagamento)?.label}</p>
+                  <p><span className="text-muted-foreground">Entrega:</span> {TIPOS_ENTREGA.find(t => t.value === formData.tipo_entrega)?.label}</p>
+                  <p className="col-span-2 font-bold text-lg pt-2 border-t">
+                    <span className="text-muted-foreground">Total:</span> {formatCurrency(total)}
+                  </p>
+                </div>
+              </Card>
+
+              <div className="flex justify-between pt-4">
+                <Button variant="outline" onClick={() => setActiveTab('pagamento')}>
+                  Voltar
+                </Button>
+                <Button onClick={handleSubmit} disabled={loading || !isFormValid}>
+                  {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  Criar Pedido
+                </Button>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </DialogContent>
+      </Dialog>
+
+      <CreateClientDialog
+        open={showCreateClient}
+        onOpenChange={setShowCreateClient}
+        onSuccess={handleClientCreated}
+      />
+    </>
   );
 }

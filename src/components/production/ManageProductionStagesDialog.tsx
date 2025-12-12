@@ -15,7 +15,8 @@ import {
   ChevronDown, 
   Check,
   X,
-  Loader2
+  Loader2,
+  Clock
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -44,6 +45,7 @@ interface PhaseTemplate {
   production_type_id: string;
   position: number;
   sla_hours: number | null;
+  sla_dias_uteis: number | null;
   is_start_phase: boolean;
   is_end_phase: boolean;
   active: boolean;
@@ -96,7 +98,8 @@ export function ManageProductionStagesDialog({ open, onOpenChange }: ManageProdu
   const [editingPhaseId, setEditingPhaseId] = useState<string | null>(null);
   const [newPhaseName, setNewPhaseName] = useState('');
   const [newPhaseColor, setNewPhaseColor] = useState('gray-500');
-  const [newPhaseSLA, setNewPhaseSLA] = useState('24');
+  const [newPhaseSLAHours, setNewPhaseSLAHours] = useState('24');
+  const [newPhaseSLADias, setNewPhaseSLADias] = useState('1');
   const [newPhaseIsStart, setNewPhaseIsStart] = useState(false);
   const [newPhaseIsEnd, setNewPhaseIsEnd] = useState(false);
   const [isCreatingPhase, setIsCreatingPhase] = useState(false);
@@ -283,7 +286,8 @@ export function ManageProductionStagesDialog({ open, onOpenChange }: ManageProdu
       slug: generateSlug(newPhaseName),
       production_type_id: selectedTypeId,
       position: maxPosition + 1,
-      sla_hours: parseInt(newPhaseSLA) || 24,
+      sla_hours: parseInt(newPhaseSLAHours) || 24,
+      sla_dias_uteis: parseInt(newPhaseSLADias) || 1,
       is_start_phase: newPhaseIsStart,
       is_end_phase: newPhaseIsEnd,
       active: true
@@ -314,7 +318,8 @@ export function ManageProductionStagesDialog({ open, onOpenChange }: ManageProdu
         name: newPhaseName.trim(),
         color: newPhaseColor,
         slug: generateSlug(newPhaseName),
-        sla_hours: parseInt(newPhaseSLA) || 24,
+        sla_hours: parseInt(newPhaseSLAHours) || 24,
+        sla_dias_uteis: parseInt(newPhaseSLADias) || 1,
         is_start_phase: newPhaseIsStart,
         is_end_phase: newPhaseIsEnd
       })
@@ -365,7 +370,8 @@ export function ManageProductionStagesDialog({ open, onOpenChange }: ManageProdu
     setEditingPhaseId(phase.id);
     setNewPhaseName(phase.name);
     setNewPhaseColor(phase.color);
-    setNewPhaseSLA(String(phase.sla_hours || 24));
+    setNewPhaseSLAHours(String(phase.sla_hours || 24));
+    setNewPhaseSLADias(String(phase.sla_dias_uteis || 1));
     setNewPhaseIsStart(phase.is_start_phase);
     setNewPhaseIsEnd(phase.is_end_phase);
     setIsCreatingPhase(false);
@@ -375,7 +381,8 @@ export function ManageProductionStagesDialog({ open, onOpenChange }: ManageProdu
     setEditingPhaseId(null);
     setNewPhaseName('');
     setNewPhaseColor('gray-500');
-    setNewPhaseSLA('24');
+    setNewPhaseSLAHours('24');
+    setNewPhaseSLADias('1');
     setNewPhaseIsStart(false);
     setNewPhaseIsEnd(false);
     setIsCreatingPhase(false);
@@ -512,78 +519,59 @@ export function ManageProductionStagesDialog({ open, onOpenChange }: ManageProdu
                         </div>
                       ) : (
                         <div
-                          className={`flex items-center justify-between p-2 rounded-lg border cursor-pointer transition-colors ${
-                            selectedTypeId === type.id ? 'bg-primary/10 border-primary' : 'hover:bg-muted/50'
-                          }`}
+                          className={`
+                            p-3 border rounded-lg cursor-pointer transition-all
+                            ${selectedTypeId === type.id ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'}
+                          `}
                           onClick={() => setSelectedTypeId(type.id)}
                         >
-                          <div className="flex items-center gap-2">
-                            <span
-                              className="w-3 h-3 rounded-full"
-                              style={{ backgroundColor: getTailwindColor(type.color) }}
-                            />
-                            <span className="text-sm font-medium">{type.name}</span>
-                            {!type.active && (
-                              <Badge variant="secondary" className="text-xs">Inativo</Badge>
-                            )}
-                          </div>
-                          <div className="flex gap-1">
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="h-7 w-7"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                startEditType(type);
-                              }}
-                            >
-                              <Pencil className="h-3 w-3" />
-                            </Button>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="h-7 w-7 text-destructive hover:text-destructive"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteType(type.id);
-                              }}
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div 
+                                className="w-3 h-3 rounded-full"
+                                style={{ backgroundColor: getTailwindColor(type.color) }}
+                              />
+                              <span className="font-medium text-sm">{type.name}</span>
+                            </div>
+                            <div className="flex gap-1">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 w-6 p-0"
+                                onClick={(e) => { e.stopPropagation(); startEditType(type); }}
+                              >
+                                <Pencil className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                                onClick={(e) => { e.stopPropagation(); handleDeleteType(type.id); }}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       )}
                     </div>
                   ))}
-                  
-                  {types.length === 0 && !isCreatingType && (
-                    <p className="text-sm text-muted-foreground text-center py-4">
-                      Nenhum tipo cadastrado
-                    </p>
-                  )}
                 </div>
               )}
             </ScrollArea>
           </div>
-          
-          <Separator orientation="vertical" className="hidden md:block" />
-          
+
           {/* Right Column - Phases */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="font-semibold text-sm">
-                Etapas {selectedTypeId && types.find(t => t.id === selectedTypeId)?.name && (
-                  <span className="text-muted-foreground font-normal">
-                    ({types.find(t => t.id === selectedTypeId)?.name})
-                  </span>
-                )}
+                Etapas {selectedTypeId && types.find(t => t.id === selectedTypeId)?.name ? `- ${types.find(t => t.id === selectedTypeId)?.name}` : ''}
               </h3>
               <Button 
                 size="sm" 
                 variant="outline" 
                 onClick={() => {
                   setIsCreatingPhase(true);
-                  setEditingPhaseId(null);
                   resetPhaseForm();
                   setIsCreatingPhase(true);
                 }}
@@ -596,9 +584,9 @@ export function ManageProductionStagesDialog({ open, onOpenChange }: ManageProdu
             
             <ScrollArea className="h-[300px] border rounded-md p-2">
               {!selectedTypeId ? (
-                <p className="text-sm text-muted-foreground text-center py-8">
+                <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">
                   Selecione um tipo de produção
-                </p>
+                </div>
               ) : loadingPhases ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
@@ -607,9 +595,9 @@ export function ManageProductionStagesDialog({ open, onOpenChange }: ManageProdu
                 <div className="space-y-2">
                   {/* Create Phase Form */}
                   {isCreatingPhase && (
-                    <div className="p-3 border rounded-lg bg-muted/50 space-y-2">
+                    <div className="p-3 border rounded-lg bg-muted/50 space-y-3">
                       <Input
-                        placeholder="Nome da fase"
+                        placeholder="Nome da etapa"
                         value={newPhaseName}
                         onChange={(e) => setNewPhaseName(e.target.value)}
                         autoFocus
@@ -620,29 +608,38 @@ export function ManageProductionStagesDialog({ open, onOpenChange }: ManageProdu
                       </div>
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <Label className="text-xs">SLA (horas)</Label>
+                          <Label className="text-xs flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            SLA (horas)
+                          </Label>
                           <Input
                             type="number"
-                            value={newPhaseSLA}
-                            onChange={(e) => setNewPhaseSLA(e.target.value)}
-                            min="1"
+                            value={newPhaseSLAHours}
+                            onChange={(e) => setNewPhaseSLAHours(e.target.value)}
+                            className="h-8"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            SLA (dias úteis)
+                          </Label>
+                          <Input
+                            type="number"
+                            value={newPhaseSLADias}
+                            onChange={(e) => setNewPhaseSLADias(e.target.value)}
+                            className="h-8"
                           />
                         </div>
                       </div>
-                      <div className="flex items-center gap-4">
+                      <div className="flex gap-4">
                         <div className="flex items-center gap-2">
-                          <Switch
-                            checked={newPhaseIsStart}
-                            onCheckedChange={setNewPhaseIsStart}
-                          />
-                          <Label className="text-xs">Inicial</Label>
+                          <Switch checked={newPhaseIsStart} onCheckedChange={setNewPhaseIsStart} />
+                          <Label className="text-xs">Fase Inicial</Label>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Switch
-                            checked={newPhaseIsEnd}
-                            onCheckedChange={setNewPhaseIsEnd}
-                          />
-                          <Label className="text-xs">Final</Label>
+                          <Switch checked={newPhaseIsEnd} onCheckedChange={setNewPhaseIsEnd} />
+                          <Label className="text-xs">Fase Final</Label>
                         </div>
                       </div>
                       <div className="flex gap-2">
@@ -659,7 +656,7 @@ export function ManageProductionStagesDialog({ open, onOpenChange }: ManageProdu
                   {phases.map((phase, index) => (
                     <div key={phase.id}>
                       {editingPhaseId === phase.id ? (
-                        <div className="p-3 border rounded-lg bg-muted/50 space-y-2">
+                        <div className="p-3 border rounded-lg bg-muted/50 space-y-3">
                           <Input
                             value={newPhaseName}
                             onChange={(e) => setNewPhaseName(e.target.value)}
@@ -671,29 +668,38 @@ export function ManageProductionStagesDialog({ open, onOpenChange }: ManageProdu
                           </div>
                           <div className="grid grid-cols-2 gap-2">
                             <div>
-                              <Label className="text-xs">SLA (horas)</Label>
+                              <Label className="text-xs flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                SLA (horas)
+                              </Label>
                               <Input
                                 type="number"
-                                value={newPhaseSLA}
-                                onChange={(e) => setNewPhaseSLA(e.target.value)}
-                                min="1"
+                                value={newPhaseSLAHours}
+                                onChange={(e) => setNewPhaseSLAHours(e.target.value)}
+                                className="h-8"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                SLA (dias úteis)
+                              </Label>
+                              <Input
+                                type="number"
+                                value={newPhaseSLADias}
+                                onChange={(e) => setNewPhaseSLADias(e.target.value)}
+                                className="h-8"
                               />
                             </div>
                           </div>
-                          <div className="flex items-center gap-4">
+                          <div className="flex gap-4">
                             <div className="flex items-center gap-2">
-                              <Switch
-                                checked={newPhaseIsStart}
-                                onCheckedChange={setNewPhaseIsStart}
-                              />
-                              <Label className="text-xs">Inicial</Label>
+                              <Switch checked={newPhaseIsStart} onCheckedChange={setNewPhaseIsStart} />
+                              <Label className="text-xs">Fase Inicial</Label>
                             </div>
                             <div className="flex items-center gap-2">
-                              <Switch
-                                checked={newPhaseIsEnd}
-                                onCheckedChange={setNewPhaseIsEnd}
-                              />
-                              <Label className="text-xs">Final</Label>
+                              <Switch checked={newPhaseIsEnd} onCheckedChange={setNewPhaseIsEnd} />
+                              <Label className="text-xs">Fase Final</Label>
                             </div>
                           </div>
                           <div className="flex gap-2">
@@ -706,70 +712,72 @@ export function ManageProductionStagesDialog({ open, onOpenChange }: ManageProdu
                           </div>
                         </div>
                       ) : (
-                        <div className="flex items-center justify-between p-2 rounded-lg border hover:bg-muted/50">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-muted-foreground w-4">{index + 1}.</span>
-                            <span
-                              className="w-3 h-3 rounded-full"
-                              style={{ backgroundColor: getTailwindColor(phase.color) }}
-                            />
-                            <span className="text-sm">{phase.name}</span>
-                            {phase.is_start_phase && (
-                              <Badge variant="outline" className="text-xs">Início</Badge>
-                            )}
-                            {phase.is_end_phase && (
-                              <Badge variant="outline" className="text-xs">Fim</Badge>
-                            )}
-                            {phase.sla_hours && (
-                              <span className="text-xs text-muted-foreground">{phase.sla_hours}h</span>
-                            )}
+                        <div className="p-3 border rounded-lg hover:bg-muted/50">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div 
+                                className="w-3 h-3 rounded-full"
+                                style={{ backgroundColor: getTailwindColor(phase.color) }}
+                              />
+                              <span className="font-medium text-sm">{phase.name}</span>
+                              {phase.is_start_phase && <Badge variant="outline" className="text-xs">Início</Badge>}
+                              {phase.is_end_phase && <Badge variant="outline" className="text-xs">Fim</Badge>}
+                            </div>
+                            <div className="flex gap-1">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 w-6 p-0"
+                                onClick={() => handleMovePhase(phase.id, 'up')}
+                                disabled={index === 0}
+                              >
+                                <ChevronUp className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 w-6 p-0"
+                                onClick={() => handleMovePhase(phase.id, 'down')}
+                                disabled={index === phases.length - 1}
+                              >
+                                <ChevronDown className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 w-6 p-0"
+                                onClick={() => startEditPhase(phase)}
+                              >
+                                <Pencil className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                                onClick={() => handleDeletePhase(phase.id)}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
                           </div>
-                          <div className="flex gap-1">
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="h-6 w-6"
-                              onClick={() => handleMovePhase(phase.id, 'up')}
-                              disabled={index === 0 || saving}
-                            >
-                              <ChevronUp className="h-3 w-3" />
-                            </Button>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="h-6 w-6"
-                              onClick={() => handleMovePhase(phase.id, 'down')}
-                              disabled={index === phases.length - 1 || saving}
-                            >
-                              <ChevronDown className="h-3 w-3" />
-                            </Button>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="h-6 w-6"
-                              onClick={() => startEditPhase(phase)}
-                            >
-                              <Pencil className="h-3 w-3" />
-                            </Button>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="h-6 w-6 text-destructive hover:text-destructive"
-                              onClick={() => handleDeletePhase(phase.id)}
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
+                          <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
+                            {phase.sla_hours && phase.sla_hours > 0 && (
+                              <span className="flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                {phase.sla_hours}h
+                              </span>
+                            )}
+                            {phase.sla_dias_uteis && phase.sla_dias_uteis > 0 && (
+                              <span className="flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                {phase.sla_dias_uteis}d úteis
+                              </span>
+                            )}
                           </div>
                         </div>
                       )}
                     </div>
                   ))}
-                  
-                  {phases.length === 0 && !isCreatingPhase && (
-                    <p className="text-sm text-muted-foreground text-center py-4">
-                      Nenhuma fase cadastrada
-                    </p>
-                  )}
                 </div>
               )}
             </ScrollArea>

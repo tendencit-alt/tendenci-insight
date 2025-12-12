@@ -38,7 +38,11 @@ export default function EditProductDialog({ product, open, onOpenChange, onSucce
     active: true,
     barcode: "",
     reorder_point: null as number | null,
-    reorder_quantity: null as number | null
+    reorder_quantity: null as number | null,
+    // Novos campos abertos
+    cor: "",
+    medida: "",
+    fornecedor_texto: ""
   });
 
   const { data: categories = [] } = useQuery({
@@ -86,7 +90,10 @@ export default function EditProductDialog({ product, open, onOpenChange, onSucce
         active: product.active ?? true,
         barcode: product.barcode || "",
         reorder_point: product.reorder_point,
-        reorder_quantity: product.reorder_quantity
+        reorder_quantity: product.reorder_quantity,
+        cor: product.cor || "",
+        medida: product.medida || "",
+        fornecedor_texto: product.fornecedor_texto || ""
       });
     }
   }, [product]);
@@ -106,7 +113,10 @@ export default function EditProductDialog({ product, open, onOpenChange, onSucce
         .update({
           ...form,
           category_id: form.category_id || null,
-          location_id: form.location_id || null
+          location_id: form.location_id || null,
+          cor: form.cor || null,
+          medida: form.medida || null,
+          fornecedor_texto: form.fornecedor_texto || null
         })
         .eq("id", product.id);
 
@@ -168,14 +178,16 @@ export default function EditProductDialog({ product, open, onOpenChange, onSucce
             />
           </div>
 
+          {/* Campos Base: Categoria, CFOP, NCM */}
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="category">Categoria</Label>
-              <Select value={form.category_id} onValueChange={(v) => setForm({ ...form, category_id: v })}>
+              <Label htmlFor="category">Categoria *</Label>
+              <Select value={form.category_id || "_placeholder"} onValueChange={(v) => setForm({ ...form, category_id: v === "_placeholder" ? "" : v })}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione" />
+                  <SelectValue placeholder="-" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="_placeholder" disabled>-</SelectItem>
                   {categories.map((cat: any) => (
                     <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
                   ))}
@@ -183,12 +195,67 @@ export default function EditProductDialog({ product, open, onOpenChange, onSucce
               </Select>
             </div>
             <div className="space-y-2">
+              <Label htmlFor="ncm">NCM</Label>
+              <Input
+                id="ncm"
+                value={form.ncm}
+                onChange={(e) => setForm({ ...form, ncm: e.target.value })}
+                maxLength={10}
+                placeholder="Ex: 9403.50.00"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="cfop_saida">CFOP</Label>
+              <Input
+                id="cfop_saida"
+                value={form.cfop_saida}
+                onChange={(e) => setForm({ ...form, cfop_saida: e.target.value })}
+                maxLength={4}
+                placeholder="Ex: 5102"
+              />
+            </div>
+          </div>
+
+          {/* Campos Abertos: Fornecedor, Cor, Medida */}
+          <div className="grid grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="fornecedor_texto">Fornecedor</Label>
+              <Input
+                id="fornecedor_texto"
+                value={form.fornecedor_texto}
+                onChange={(e) => setForm({ ...form, fornecedor_texto: e.target.value })}
+                placeholder="Nome do fornecedor"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="cor">Cor</Label>
+              <Input
+                id="cor"
+                value={form.cor}
+                onChange={(e) => setForm({ ...form, cor: e.target.value })}
+                placeholder="Ex: Branco, Preto, Mogno"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="medida">Medida</Label>
+              <Input
+                id="medida"
+                value={form.medida}
+                onChange={(e) => setForm({ ...form, medida: e.target.value })}
+                placeholder="Ex: 2m x 1,5m, P/M/G"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
+            <div className="space-y-2">
               <Label htmlFor="location">Local</Label>
-              <Select value={form.location_id} onValueChange={(v) => setForm({ ...form, location_id: v })}>
+              <Select value={form.location_id || "_none"} onValueChange={(v) => setForm({ ...form, location_id: v === "_none" ? "" : v })}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione" />
+                  <SelectValue placeholder="-" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="_none">-</SelectItem>
                   {locations.map((loc: any) => (
                     <SelectItem key={loc.id} value={loc.id}>{loc.name}</SelectItem>
                   ))}
@@ -212,6 +279,15 @@ export default function EditProductDialog({ product, open, onOpenChange, onSucce
                   <SelectItem value="CX">CX</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="barcode">Código de Barras</Label>
+              <Input
+                id="barcode"
+                value={form.barcode}
+                onChange={(e) => setForm({ ...form, barcode: e.target.value })}
+                placeholder="EAN/GTIN"
+              />
             </div>
           </div>
 
@@ -286,41 +362,13 @@ export default function EditProductDialog({ product, open, onOpenChange, onSucce
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="barcode">Código de Barras</Label>
-            <Input
-              id="barcode"
-              value={form.barcode}
-              onChange={(e) => setForm({ ...form, barcode: e.target.value })}
-              placeholder="EAN/GTIN"
-            />
-          </div>
-
-          <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="ncm">NCM</Label>
-              <Input
-                id="ncm"
-                value={form.ncm}
-                onChange={(e) => setForm({ ...form, ncm: e.target.value })}
-                maxLength={10}
-              />
-            </div>
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="cfop_entrada">CFOP Entrada</Label>
               <Input
                 id="cfop_entrada"
                 value={form.cfop_entrada}
                 onChange={(e) => setForm({ ...form, cfop_entrada: e.target.value })}
-                maxLength={4}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="cfop_saida">CFOP Saída</Label>
-              <Input
-                id="cfop_saida"
-                value={form.cfop_saida}
-                onChange={(e) => setForm({ ...form, cfop_saida: e.target.value })}
                 maxLength={4}
               />
             </div>
