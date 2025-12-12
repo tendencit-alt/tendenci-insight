@@ -32,3 +32,6 @@ verify_jwt = false
 
 [functions.whatsapp-send-message]
 verify_jwt = false
+
+[functions.update-deal-conversation]
+verify_jwt = false
