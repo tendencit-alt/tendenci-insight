@@ -18,7 +18,7 @@ export default function N8nTarefasGuide() {
 
   const downloadWorkflowJSON = () => {
     const workflowJSON = {
-      "name": "Tarefas Automatizadas WhatsApp",
+      "name": "Tarefas Automatizadas WhatsApp (CRM + Arquitetos)",
       "nodes": [
         {
           "parameters": {
@@ -39,9 +39,9 @@ export default function N8nTarefasGuide() {
         {
           "parameters": {
             "operation": "executeQuery",
-            "query": "SELECT \n  t.id,\n  t.deal_id,\n  t.title,\n  t.note as mensagem,\n  t.whatsapp_number,\n  t.due_at,\n  t.created_by,\n  t.origem_modulo,\n  wc.instance_name,\n  wc.instance_id,\n  wc.id as whatsapp_connection_id\nFROM crm_tasks t\nINNER JOIN profiles p ON t.created_by = p.id\nINNER JOIN tendenci_whatsapp_connections wc \n  ON wc.user_id = p.id \n  AND wc.status = 'connected'\nWHERE t.tipo_tarefa = 'automatizada'\n  AND t.status = 'open'\n  AND t.due_at <= NOW()\nORDER BY t.due_at ASC"
+            "query": "SELECT * FROM get_pending_automated_tasks()"
           },
-          "name": "Buscar Tarefas Pendentes",
+          "name": "Buscar Tarefas (RPC Unificada)",
           "type": "n8n-nodes-base.supabase",
           "typeVersion": 1,
           "position": [450, 300],
@@ -57,7 +57,7 @@ export default function N8nTarefasGuide() {
             "conditions": {
               "number": [
                 {
-                  "value1": "={{Object.keys($json).length}}",
+                  "value1": "={{$json.tarefa_id ? 1 : 0}}",
                   "operation": "larger",
                   "value2": 0
                 }
@@ -82,7 +82,7 @@ export default function N8nTarefasGuide() {
         {
           "parameters": {
             "method": "POST",
-            "url": "={{$env.EVOLUTION_API_URL}}/message/sendText/{{$node[\"Loop Over Items\"].json[\"instance_name\"]}}",
+            "url": `${apiUrl}/functions/v1/process-automated-task`,
             "authentication": "genericCredentialType",
             "genericAuthType": "httpHeaderAuth",
             "sendHeaders": true,
@@ -90,66 +90,40 @@ export default function N8nTarefasGuide() {
               "parameters": [
                 {
                   "name": "apikey",
-                  "value": "={{$env.EVOLUTION_API_KEY}}"
+                  "value": apiKey
+                },
+                {
+                  "name": "Authorization",
+                  "value": `Bearer ${apiKey}`
+                },
+                {
+                  "name": "Content-Type",
+                  "value": "application/json"
                 }
               ]
             },
             "sendBody": true,
-            "bodyParameters": {
-              "parameters": [
-                {
-                  "name": "number",
-                  "value": "={{$node[\"Loop Over Items\"].json[\"whatsapp_number\"]}}"
-                },
-                {
-                  "name": "text",
-                  "value": "={{$node[\"Loop Over Items\"].json[\"mensagem\"]}}"
-                }
-              ]
-            },
+            "specifyBody": "json",
+            "jsonBody": `{
+  "taskId": "{{ $json.tarefa_id }}",
+  "origem_modulo": "{{ $json.origem_modulo }}"
+}`,
             "options": {}
           },
-          "name": "Enviar WhatsApp",
+          "name": "Processar Tarefa (Edge Function)",
           "type": "n8n-nodes-base.httpRequest",
-          "typeVersion": 3,
+          "typeVersion": 4,
           "position": [1050, 200]
         },
         {
           "parameters": {
-            "operation": "update",
-            "tableId": "crm_tasks",
-            "filterType": "manual",
-            "matchCriteria": {
-              "values": [
-                {
-                  "key": "id",
-                  "value": "={{$node[\"Loop Over Items\"].json[\"id\"]}}"
-                }
-              ]
-            },
-            "fieldsUi": {
-              "fieldValues": [
-                {
-                  "fieldId": "status",
-                  "fieldValue": "done"
-                },
-                {
-                  "fieldId": "updated_at",
-                  "fieldValue": "={{$now.toISO()}}"
-                }
-              ]
-            }
+            "amount": 3,
+            "unit": "seconds"
           },
-          "name": "Atualizar Status",
-          "type": "n8n-nodes-base.supabase",
+          "name": "Aguardar 3s",
+          "type": "n8n-nodes-base.wait",
           "typeVersion": 1,
-          "position": [1250, 200],
-          "credentials": {
-            "supabaseApi": {
-              "id": "1",
-              "name": "Supabase account"
-            }
-          }
+          "position": [1250, 200]
         }
       ],
       "connections": {
@@ -157,14 +131,14 @@ export default function N8nTarefasGuide() {
           "main": [
             [
               {
-                "node": "Buscar Tarefas Pendentes",
+                "node": "Buscar Tarefas (RPC Unificada)",
                 "type": "main",
                 "index": 0
               }
             ]
           ]
         },
-        "Buscar Tarefas Pendentes": {
+        "Buscar Tarefas (RPC Unificada)": {
           "main": [
             [
               {
@@ -190,25 +164,25 @@ export default function N8nTarefasGuide() {
           "main": [
             [
               {
-                "node": "Enviar WhatsApp",
+                "node": "Processar Tarefa (Edge Function)",
                 "type": "main",
                 "index": 0
               }
             ]
           ]
         },
-        "Enviar WhatsApp": {
+        "Processar Tarefa (Edge Function)": {
           "main": [
             [
               {
-                "node": "Atualizar Status",
+                "node": "Aguardar 3s",
                 "type": "main",
                 "index": 0
               }
             ]
           ]
         },
-        "Atualizar Status": {
+        "Aguardar 3s": {
           "main": [
             [
               {
@@ -227,7 +201,7 @@ export default function N8nTarefasGuide() {
       "tags": [],
       "triggerCount": 0,
       "updatedAt": "2025-01-21T00:00:00.000Z",
-      "versionId": "1"
+      "versionId": "2"
     };
 
     const blob = new Blob([JSON.stringify(workflowJSON, null, 2)], { type: 'application/json' });
@@ -736,10 +710,10 @@ export default function N8nTarefasGuide() {
               </p>
               <ul className="list-disc ml-6 text-sm space-y-1 text-muted-foreground">
                 <li>Schedule Trigger configurado para executar a cada minuto</li>
-                <li>Query SQL otimizada com isolamento por vendedor</li>
+                <li><strong className="text-primary">RPC Unificada</strong> - Busca tarefas de CRM e Arquitetos em uma única query</li>
                 <li>Loop para processar tarefas individualmente</li>
-                <li>Integração com Evolution API WhatsApp</li>
-                <li>Atualização automática de status no banco</li>
+                <li><strong className="text-primary">Edge Function</strong> - Processa envio, atualiza status e registra logs automaticamente</li>
+                <li>Delay de 3 segundos entre tarefas para evitar rate limiting</li>
               </ul>
 
               <div className="pt-4">
@@ -753,20 +727,29 @@ export default function N8nTarefasGuide() {
                 </Button>
               </div>
 
-              <Alert className="mt-4">
-                <AlertCircle className="h-4 w-4" />
+              <Alert className="mt-4 border-primary bg-primary/5">
+                <CheckCircle className="h-4 w-4 text-primary" />
                 <AlertDescription className="text-xs">
                   <strong>Após importar:</strong>
                   <ol className="list-decimal ml-4 mt-2 space-y-1">
-                    <li>Configure suas credenciais do Supabase no nó "Buscar Tarefas Pendentes" e "Atualizar Status"</li>
-                    <li>Adicione as variáveis de ambiente no n8n:
-                      <ul className="list-disc ml-4 mt-1">
-                        <li><code className="text-xs bg-muted px-1 py-0.5 rounded">EVOLUTION_API_URL</code> - URL base da Evolution API</li>
-                        <li><code className="text-xs bg-muted px-1 py-0.5 rounded">EVOLUTION_API_KEY</code> - Chave de API global</li>
-                      </ul>
-                    </li>
+                    <li>Configure suas credenciais do Supabase no nó "Buscar Tarefas (RPC Unificada)"</li>
+                    <li>O workflow já vem pré-configurado com URL e API Key do Supabase</li>
                     <li>Ative o workflow e teste com uma tarefa automatizada</li>
                   </ol>
+                </AlertDescription>
+              </Alert>
+
+              <Alert className="mt-2">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="text-xs">
+                  <strong>Vantagens da Edge Function:</strong>
+                  <ul className="list-disc ml-4 mt-2 space-y-1">
+                    <li>Detecta automaticamente se é tarefa CRM ou Arquiteto</li>
+                    <li>Busca instância WhatsApp do vendedor responsável</li>
+                    <li>Atualiza status na tabela correta (crm_tasks ou tendenci_prospec_arq_agendamentos)</li>
+                    <li>Registra logs na timeline do negócio/arquiteto</li>
+                    <li>Não precisa configurar Evolution API no n8n</li>
+                  </ul>
                 </AlertDescription>
               </Alert>
             </div>
@@ -788,8 +771,8 @@ export default function N8nTarefasGuide() {
                 </div>
                 <div className="ml-6 text-muted-foreground">↓</div>
                 <div className="flex items-center gap-2">
-                  <Badge variant="outline">2</Badge>
-                  <span>Supabase Query (Buscar tarefas pendentes)</span>
+                  <Badge variant="default" className="bg-primary">2</Badge>
+                  <span className="font-bold">Supabase RPC: get_pending_automated_tasks()</span>
                 </div>
                 <div className="ml-6 text-muted-foreground">↓</div>
                 <div className="flex items-center gap-2">
@@ -803,21 +786,24 @@ export default function N8nTarefasGuide() {
                 </div>
                 <div className="ml-6 text-muted-foreground">↓</div>
                 <div className="flex items-center gap-2">
-                  <Badge variant="outline">5</Badge>
-                  <span>HTTP Request (Enviar via Evolution API)</span>
+                  <Badge variant="default" className="bg-primary">5</Badge>
+                  <span className="font-bold">HTTP POST: Edge Function process-automated-task</span>
                 </div>
                 <div className="ml-6 text-muted-foreground">↓</div>
                 <div className="flex items-center gap-2">
                   <Badge variant="outline">6</Badge>
-                  <span>Supabase Update (Marcar como concluída)</span>
+                  <span>Wait 3s (Evitar rate limiting)</span>
                 </div>
-                <div className="ml-6 text-muted-foreground">↓</div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline">7</Badge>
-                  <span>Error Handler (Se falhar)</span>
-                </div>
+                <div className="ml-6 text-muted-foreground">↓ Loop</div>
               </div>
             </div>
+
+            <Alert className="mt-4 border-primary/30 bg-primary/5">
+              <CheckCircle className="h-4 w-4 text-primary" />
+              <AlertDescription className="text-xs">
+                <strong>A Edge Function faz TUDO automaticamente:</strong> busca dados, formata telefone, identifica instância WhatsApp do vendedor, envia mensagem, atualiza status, registra logs na timeline. Você só precisa configurar o Supabase no n8n!
+              </AlertDescription>
+            </Alert>
           </CardContent>
         </Card>
 
@@ -829,32 +815,56 @@ export default function N8nTarefasGuide() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <h3 className="font-semibold mb-2 text-sm">Dados da Query Supabase:</h3>
+              <h3 className="font-semibold mb-2 text-sm">Dados da RPC get_pending_automated_tasks() - <Badge variant="default">CRM</Badge>:</h3>
               <pre className="bg-muted p-4 rounded-lg text-xs overflow-x-auto">
 {`{
-  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "tarefa_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
   "deal_id": "d4e5f6g7-h8i9-0123-4567-89abcdef0123",
-  "title": "Follow-up Cliente João",
-  "mensagem": "Olá João! Tudo bem? Passando para saber se você já teve tempo de avaliar nossa proposta. Estou à disposição para esclarecer dúvidas. Abraço!",
-  "due_at": "2025-01-21T14:30:00Z",
-  "whatsapp_number": "5511999999999",
-  "created_by": "f9e8d7c6-b5a4-3210-9876-543210fedcba",
+  "arquiteto_id": null,
+  "titulo": "Follow-up Cliente João",
+  "observacoes": "Olá João! Tudo bem? Passando para verificar...",
+  "data_agendamento": "2025-01-21T14:30:00Z",
+  "telefone": "5511999999999",
+  "nome": "João Silva",
+  "vendedor_id": "f9e8d7c6-b5a4-3210-9876-543210fedcba",
   "origem_modulo": "crm",
   "instance_name": "vendedor_maira",
-  "instance_id": "12AB34CD56EF",
-  "whatsapp_connection_id": "c6d7e8f9-a0b1-2345-6789-0abcdef12345"
+  "instance_id": "12AB34CD56EF"
 }`}
               </pre>
             </div>
 
             <div>
-              <h3 className="font-semibold mb-2 text-sm">Payload para Evolution API:</h3>
+              <h3 className="font-semibold mb-2 text-sm">Dados da RPC - <Badge variant="secondary">Arquiteto</Badge>:</h3>
               <pre className="bg-muted p-4 rounded-lg text-xs overflow-x-auto">
 {`{
-  "number": "5511999999999",
-  "text": "Olá João! Tudo bem? Passando para saber se você já teve tempo de avaliar nossa proposta. Estou à disposição para esclarecer dúvidas. Abraço!"
+  "tarefa_id": "b2c3d4e5-f6g7-8901-bcde-f12345678901",
+  "deal_id": null,
+  "arquiteto_id": "c3d4e5f6-g7h8-9012-cdef-123456789012",
+  "titulo": "Follow-up Arquiteto Maria",
+  "observacoes": "Olá Maria! Você viu nosso catálogo novo?",
+  "data_agendamento": "2025-01-21T15:00:00Z",
+  "telefone": "5511988888888",
+  "nome": "Maria Arquiteta",
+  "vendedor_id": "f9e8d7c6-b5a4-3210-9876-543210fedcba",
+  "origem_modulo": "prospeccao",
+  "instance_name": "vendedor_maira",
+  "instance_id": "12AB34CD56EF"
 }`}
               </pre>
+            </div>
+
+            <div>
+              <h3 className="font-semibold mb-2 text-sm">Payload enviado para Edge Function:</h3>
+              <pre className="bg-muted p-4 rounded-lg text-xs overflow-x-auto border-2 border-primary/30">
+{`{
+  "taskId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "origem_modulo": "crm"
+}`}
+              </pre>
+              <p className="text-xs text-muted-foreground mt-2">
+                A Edge Function faz todo o resto: busca dados, formata telefone, envia WhatsApp, atualiza status, registra logs.
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -874,60 +884,47 @@ export default function N8nTarefasGuide() {
                 <input type="checkbox" className="mt-1" />
                 <div>
                   <p className="font-medium text-sm">Credenciais Supabase configuradas no n8n</p>
-                  <p className="text-xs text-muted-foreground">URL do projeto, Anon Key, Service Role Key</p>
+                  <p className="text-xs text-muted-foreground">URL do projeto, Anon Key ou Service Role Key</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <input type="checkbox" className="mt-1" />
                 <div>
-                  <p className="font-medium text-sm">Variáveis de ambiente da Evolution API configuradas</p>
-                  <p className="text-xs text-muted-foreground">EVOLUTION_API_URL, EVOLUTION_API_KEY</p>
-                  <p className="text-xs font-semibold text-muted-foreground mt-1">⚠️ Não precisa de EVOLUTION_INSTANCE fixo - cada tarefa usa a instância do vendedor automaticamente</p>
+                  <p className="font-medium text-sm">Nó Supabase usando RPC correta</p>
+                  <p className="text-xs text-muted-foreground">Query: <code className="bg-muted px-1 py-0.5 rounded">SELECT * FROM get_pending_automated_tasks()</code></p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <input type="checkbox" className="mt-1" />
                 <div>
-                  <p className="font-medium text-sm">Schedule Trigger configurado para executar a cada minuto</p>
-                  <p className="text-xs text-muted-foreground">Cron: * * * * *</p>
+                  <p className="font-medium text-sm">HTTP Request chamando Edge Function</p>
+                  <p className="text-xs text-muted-foreground">URL: <code className="bg-muted px-1 py-0.5 rounded">{apiUrl}/functions/v1/process-automated-task</code></p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <input type="checkbox" className="mt-1" />
                 <div>
-                  <p className="font-medium text-sm">Query Supabase filtrando corretamente tarefas automatizadas</p>
-                  <p className="text-xs text-muted-foreground">tipo_tarefa = 'automatizada' AND status = 'open'</p>
+                  <p className="font-medium text-sm">Payload com taskId e origem_modulo</p>
+                  <p className="text-xs text-muted-foreground">Body: <code className="bg-muted px-1 py-0.5 rounded">{`{"taskId": "{{ $json.tarefa_id }}", "origem_modulo": "{{ $json.origem_modulo }}"}`}</code></p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <input type="checkbox" className="mt-1" />
                 <div>
-                  <p className="font-medium text-sm">HTTP Request para Evolution API configurado</p>
-                  <p className="text-xs text-muted-foreground">POST /message/sendText com headers corretos</p>
+                  <p className="font-medium text-sm">Schedule Trigger configurado</p>
+                  <p className="text-xs text-muted-foreground">Executar a cada 1 minuto</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <input type="checkbox" className="mt-1" />
                 <div>
-                  <p className="font-medium text-sm">Update do Supabase após envio bem-sucedido</p>
-                  <p className="text-xs text-muted-foreground">Atualizar status para "done"</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <input type="checkbox" className="mt-1" />
-                <div>
-                  <p className="font-medium text-sm">Tratamento de erros configurado</p>
-                  <p className="text-xs text-muted-foreground">Error Handler para falhas no envio</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <input type="checkbox" className="mt-1" />
-                <div>
-                  <p className="font-medium text-sm">Workflow ativado no n8n</p>
-                  <p className="text-xs text-muted-foreground">Status: Active</p>
+                  <p className="font-medium text-sm">Wait node de 3 segundos entre iterações</p>
+                  <p className="text-xs text-muted-foreground">Evita rate limiting da Evolution API</p>
                 </div>
               </div>
             </div>
+          </CardContent>
+        </Card>
           </CardContent>
         </Card>
 
