@@ -47,7 +47,7 @@ Deno.serve(async (req) => {
     })
 
     const { instance, event, data } = payload
-    const connectionEvents = ['connection.update', 'qrcode.updated', 'open', 'messages.upsert', 'connection.open']
+    const connectionEvents = ['connection.update', 'qrcode.updated', 'open', 'connection.open']
 
     // ========== VERIFICAR SE É INSTÂNCIA IA E FAZER PROXY PARA N8N ==========
     const { data: connectionData } = await supabase
