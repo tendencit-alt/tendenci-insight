@@ -1,10 +1,12 @@
+import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, User, Package, GripVertical, Clock, Timer, Link2, AlertTriangle, Hourglass } from 'lucide-react';
+import { Calendar, User, Package, GripVertical, Clock, Timer, Link2, AlertTriangle, Hourglass, TrendingUp } from 'lucide-react';
 import { format, differenceInDays, differenceInHours, isPast } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { getTailwindColor } from '@/utils/tailwindColors';
-
+import { supabase } from '@/integrations/supabase/client';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 interface ProductionCardProps {
   order: {
     id: string;
@@ -53,6 +55,25 @@ const priorityLabels: Record<string, string> = {
 };
 
 export function ProductionCard({ order, onClick, isDragging }: ProductionCardProps) {
+  const [prediction, setPrediction] = useState<any>(null);
+
+  // Buscar análise preditiva
+  useEffect(() => {
+    const fetchPrediction = async () => {
+      try {
+        const { data, error } = await supabase.rpc('calcular_previsao_atraso_producao', {
+          p_order_id: order.id
+        });
+        if (!error && data) {
+          setPrediction(data);
+        }
+      } catch (e) {
+        // Silent fail - prediction is optional
+      }
+    };
+    fetchPrediction();
+  }, [order.id]);
+
   const isOverdue = order.planned_end_date && isPast(new Date(order.planned_end_date));
   const daysRemaining = order.planned_end_date 
     ? differenceInDays(new Date(order.planned_end_date), new Date())
@@ -86,6 +107,9 @@ export function ProductionCard({ order, onClick, isDragging }: ProductionCardPro
   const totalDays = order.created_at 
     ? differenceInDays(new Date(), new Date(order.created_at))
     : null;
+
+  // Previsão preditiva
+  const hasPredictiveDelay = prediction?.previsao_atraso === true;
 
   return (
     <Card 
@@ -212,9 +236,34 @@ export function ProductionCard({ order, onClick, isDragging }: ProductionCardPro
                   <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-muted-foreground/50 text-muted-foreground">
                     SLA: {slaDays}d
                   </Badge>
-                )}
-              </div>
             )}
+          </div>
+        )}
+
+        {/* Alerta Preditivo */}
+        {hasPredictiveDelay && prediction?.etapa_prevista_atraso && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-1.5 p-2 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-xs">
+                  <TrendingUp className="h-3 w-3" />
+                  <span className="truncate">⚠️ Risco: {prediction.etapa_prevista_atraso}</span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Análise preditiva indica risco de atraso nesta etapa</p>
+                {prediction.horas_estimadas_extra > 0 && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Tempo extra estimado: {prediction.horas_estimadas_extra < 24 
+                      ? `${prediction.horas_estimadas_extra.toFixed(0)}h`
+                      : `${(prediction.horas_estimadas_extra / 24).toFixed(1)}d`
+                    }
+                  </p>
+                )}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
           </div>
         )}
 
