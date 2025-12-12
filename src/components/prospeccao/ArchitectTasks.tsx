@@ -133,11 +133,12 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
 
   const handleStartEdit = (task: any) => {
     setEditingTaskId(task.id);
-    // Converter ISO para datetime-local format
+    // Converter ISO/UTC para datetime-local format em horário Brasília
     const dueDate = new Date(task.data_agendamento);
-    const localISOTime = new Date(dueDate.getTime() - (dueDate.getTimezoneOffset() * 60000))
-      .toISOString()
-      .slice(0, 16);
+    // Converter para horário de Brasília (UTC-3) para exibição
+    const brasilOffset = -3 * 60; // -3 horas em minutos
+    const brasilDate = new Date(dueDate.getTime() + (brasilOffset * 60000));
+    const localISOTime = brasilDate.toISOString().slice(0, 16);
     
     // Parser de observações JSON
     let taskTitle = "";
@@ -283,10 +284,10 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
       }
 
       // Converter datetime-local para ISO corretamente
-      // new Date() já interpreta datetime-local como horário local
-      // toISOString() converte automaticamente para UTC - não precisa ajuste manual
-      const localDate = new Date(newTask.due_at);
-      const localISOTime = localDate.toISOString();
+      // datetime-local retorna "2025-12-15T14:00" sem timezone
+      // Forçar interpretação como Brasília (UTC-3) anexando o offset
+      const rawDateTime = newTask.due_at; // "2025-12-15T14:00"
+      const localISOTime = new Date(rawDateTime + ":00-03:00").toISOString();
 
       // Estruturar observações como JSON
       const observacoesJSON = JSON.stringify({

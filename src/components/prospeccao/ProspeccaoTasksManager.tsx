@@ -138,10 +138,10 @@ export function ProspeccaoTasksManager() {
       return;
     }
     // Converter datetime-local para ISO corretamente
-    // new Date() interpreta datetime-local como horário local
-    // toISOString() converte automaticamente para UTC
-    const localDate = new Date(newTask.due_at);
-    const dueAtISO = localDate.toISOString();
+    // datetime-local retorna "2025-12-15T14:00" sem timezone
+    // Forçar interpretação como Brasília (UTC-3) anexando o offset
+    const rawDateTime = newTask.due_at; // "2025-12-15T14:00"
+    const dueAtISO = new Date(rawDateTime + ":00-03:00").toISOString();
 
     const { error } = await supabase.from("crm_tasks").insert({
       deal_id: newTask.deal_id,
