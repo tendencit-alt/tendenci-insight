@@ -27,6 +27,7 @@ import FinalBulkImport from "./pages/FinalBulkImport";
 import WhatsAppIntegrationDocs from "./pages/WhatsAppIntegrationDocs";
 import N8nTarefasGuide from "./pages/N8nTarefasGuide";
 import N8nFollowupGuide from "./pages/N8nFollowupGuide";
+import N8nConversationGuide from "./pages/N8nConversationGuide";
 import IAWhatsAppSetup from "./pages/IAWhatsAppSetup";
 import Production from "./pages/Production";
 import Orders from "./pages/Orders";
@@ -71,6 +72,7 @@ const App = () => (
             <Route path="/whatsapp-integration-docs" element={<ProtectedRoute><WhatsAppIntegrationDocs /></ProtectedRoute>} />
             <Route path="/n8n-tarefas" element={<ProtectedRoute><N8nTarefasGuide /></ProtectedRoute>} />
             <Route path="/n8n-followup" element={<ProtectedRoute><N8nFollowupGuide /></ProtectedRoute>} />
+            <Route path="/n8n-conversa" element={<ProtectedRoute><N8nConversationGuide /></ProtectedRoute>} />
             <Route path="/ia-whatsapp" element={<ProtectedRoute><IAWhatsAppSetup /></ProtectedRoute>} />
             {/* Rotas dinâmicas - verificar se é uma rota editada antes de mostrar 404 */}
             <Route path="*" element={
