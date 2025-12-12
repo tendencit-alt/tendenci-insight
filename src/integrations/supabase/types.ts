@@ -1034,6 +1034,7 @@ export type Database = {
           note: string | null
           origem_modulo: string | null
           processed_at: string | null
+          retry_count: number | null
           status: string | null
           tipo_tarefa: string
           title: string
@@ -1050,6 +1051,7 @@ export type Database = {
           note?: string | null
           origem_modulo?: string | null
           processed_at?: string | null
+          retry_count?: number | null
           status?: string | null
           tipo_tarefa?: string
           title: string
@@ -1066,6 +1068,7 @@ export type Database = {
           note?: string | null
           origem_modulo?: string | null
           processed_at?: string | null
+          retry_count?: number | null
           status?: string | null
           tipo_tarefa?: string
           title?: string
@@ -3756,6 +3759,7 @@ export type Database = {
           metadata: Json | null
           observacoes: string | null
           processed_at: string | null
+          retry_count: number | null
           status: string | null
           tipo_tarefa: string
           updated_at: string | null
@@ -3775,6 +3779,7 @@ export type Database = {
           metadata?: Json | null
           observacoes?: string | null
           processed_at?: string | null
+          retry_count?: number | null
           status?: string | null
           tipo_tarefa?: string
           updated_at?: string | null
@@ -3794,6 +3799,7 @@ export type Database = {
           metadata?: Json | null
           observacoes?: string | null
           processed_at?: string | null
+          retry_count?: number | null
           status?: string | null
           tipo_tarefa?: string
           updated_at?: string | null

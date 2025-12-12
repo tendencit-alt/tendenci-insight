@@ -11,6 +11,8 @@ interface ProcessTaskRequest {
   origem_modulo?: string  // 'crm' ou 'prospeccao'
 }
 
+const MAX_RETRIES = 3
+
 // Função para formatar número de telefone brasileiro
 function formatBrazilianPhone(phone: string): { formatted: string | null; error?: string; original: string } {
   const original = phone
@@ -60,7 +62,52 @@ function formatBrazilianPhone(phone: string): { formatted: string | null; error?
   return { formatted, original }
 }
 
-// Função para criar notificação de falha
+// Função para verificar se já existe notificação recente para a mesma tarefa
+async function hasRecentNotification(
+  supabase: any,
+  userId: string,
+  taskId: string,
+  errorType: string,
+  minutesThreshold: number = 30
+): Promise<boolean> {
+  const thresholdTime = new Date(Date.now() - minutesThreshold * 60 * 1000).toISOString()
+  
+  const { data, error } = await supabase
+    .from('notifications')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('type', 'automation_failure')
+    .gte('created_at', thresholdTime)
+    .limit(1)
+  
+  if (error) {
+    console.error('❌ Erro ao verificar notificações existentes:', error)
+    return false
+  }
+  
+  // Verificar se alguma notificação tem o mesmo task_id no metadata
+  if (data && data.length > 0) {
+    const { data: exactMatch } = await supabase
+      .from('notifications')
+      .select('id, metadata')
+      .eq('user_id', userId)
+      .eq('type', 'automation_failure')
+      .gte('created_at', thresholdTime)
+    
+    if (exactMatch) {
+      for (const notif of exactMatch) {
+        if (notif.metadata?.task_id === taskId && notif.metadata?.error_type === errorType) {
+          console.log(`⏭️ Notificação recente já existe para tarefa ${taskId} com erro ${errorType}`)
+          return true
+        }
+      }
+    }
+  }
+  
+  return false
+}
+
+// Função para criar notificação de falha (com verificação de duplicata)
 async function createFailureNotification(
   supabase: any,
   userId: string,
@@ -70,14 +117,29 @@ async function createFailureNotification(
   entityId: string,
   entityTitle: string,
   instanceName?: string,
-  module: string = 'crm'
+  module: string = 'crm',
+  retryCount: number = 0
 ) {
+  // Só criar notificação na primeira tentativa ou se for erro diferente
+  if (retryCount > 0) {
+    console.log(`⏭️ Retry ${retryCount} - pulando criação de notificação duplicada`)
+    return
+  }
+
+  // Verificar se já existe notificação recente para esta tarefa
+  const hasRecent = await hasRecentNotification(supabase, userId, taskId, errorType)
+  if (hasRecent) {
+    console.log(`⏭️ Notificação recente já existe - não criando duplicata`)
+    return
+  }
+
   const notificationMessages: Record<string, string> = {
     'whatsapp_offline': `Sua instância WhatsApp "${instanceName || 'desconhecida'}" não está conectada. Reconecte em Configurações.`,
     'invalid_phone': `O número do ${module === 'crm' ? 'cliente' : 'arquiteto'} está em formato inválido: ${errorMessage}`,
     'api_error': `Erro ao enviar mensagem via WhatsApp. Verifique a conexão.`,
     'missing_phone': `O ${module === 'crm' ? 'cliente deste negócio' : 'arquiteto'} não possui telefone cadastrado.`,
     'no_instance': `Você não possui uma instância WhatsApp conectada. Configure em Configurações.`,
+    'max_retries': `Tarefa falhou após ${MAX_RETRIES} tentativas. Verifique a configuração.`,
     'unknown': errorMessage
   }
 
@@ -97,7 +159,8 @@ async function createFailureNotification(
         error_type: errorType,
         instance_name: instanceName || null,
         entity_title: entityTitle,
-        module: module
+        module: module,
+        retry_count: retryCount
       }
     })
     console.log(`📢 Notificação de falha criada para usuário ${userId}`)
@@ -134,13 +197,43 @@ async function processCRMTask(supabase: any, evolutionUrl: string, evolutionApiK
     throw new Error('Tarefa CRM não encontrada')
   }
 
-  // Verificar se já foi processada
-  if (task.status !== 'open') {
-    console.log(`⏭️ Tarefa já processada (status: ${task.status})`)
+  // Verificar se já foi processada ou falhou permanentemente
+  if (task.status === 'done') {
+    console.log(`⏭️ Tarefa já processada (status: done)`)
     return { success: false, message: 'Tarefa já foi processada' }
   }
 
-  console.log(`✅ Tarefa encontrada - tipo: ${task.tipo_tarefa}, status: ${task.status}`)
+  if (task.status === 'failed') {
+    console.log(`⏭️ Tarefa marcada como falha permanente`)
+    return { success: false, message: 'Tarefa marcada como falha permanente após máximo de tentativas' }
+  }
+
+  const currentRetryCount = task.retry_count || 0
+  console.log(`✅ Tarefa encontrada - tipo: ${task.tipo_tarefa}, status: ${task.status}, retry: ${currentRetryCount}/${MAX_RETRIES}`)
+
+  // Verificar se atingiu máximo de retentativas
+  if (currentRetryCount >= MAX_RETRIES) {
+    console.log(`❌ Tarefa atingiu máximo de ${MAX_RETRIES} tentativas - marcando como failed`)
+    await supabase
+      .from('crm_tasks')
+      .update({ status: 'failed' })
+      .eq('id', taskId)
+    
+    await createFailureNotification(
+      supabase,
+      task.created_by,
+      'max_retries',
+      `Tarefa falhou após ${MAX_RETRIES} tentativas`,
+      taskId,
+      task.deal_id,
+      task.title || 'Tarefa',
+      undefined,
+      'crm',
+      currentRetryCount
+    )
+    
+    return { success: false, message: `Tarefa falhou após ${MAX_RETRIES} tentativas` }
+  }
 
   // Marcar como 'processing'
   await supabase
@@ -169,7 +262,7 @@ async function processCRMTask(supabase: any, evolutionUrl: string, evolutionApiK
 
   if (dealError || !deal) {
     console.error('❌ Deal não encontrado:', dealError)
-    await supabase.from('crm_tasks').update({ status: 'open' }).eq('id', taskId)
+    await handleCRMTaskFailure(supabase, taskId, currentRetryCount)
     throw new Error('Deal não encontrado')
   }
 
@@ -179,7 +272,7 @@ async function processCRMTask(supabase: any, evolutionUrl: string, evolutionApiK
 
   if (!clientPhone) {
     console.error('❌ Telefone do cliente não encontrado')
-    await supabase.from('crm_tasks').update({ status: 'open' }).eq('id', taskId)
+    await handleCRMTaskFailure(supabase, taskId, currentRetryCount)
     
     await createFailureNotification(
       supabase,
@@ -190,7 +283,8 @@ async function processCRMTask(supabase: any, evolutionUrl: string, evolutionApiK
       task.deal_id,
       dealTitle,
       undefined,
-      'crm'
+      'crm',
+      currentRetryCount
     )
     
     throw new Error('Telefone do cliente não encontrado')
@@ -208,7 +302,7 @@ async function processCRMTask(supabase: any, evolutionUrl: string, evolutionApiK
 
   if (connectionError || !connection) {
     console.error('❌ Instância WhatsApp não encontrada para o vendedor:', connectionError)
-    await supabase.from('crm_tasks').update({ status: 'open' }).eq('id', taskId)
+    await handleCRMTaskFailure(supabase, taskId, currentRetryCount)
     
     await createFailureNotification(
       supabase,
@@ -219,7 +313,8 @@ async function processCRMTask(supabase: any, evolutionUrl: string, evolutionApiK
       task.deal_id,
       dealTitle,
       undefined,
-      'crm'
+      'crm',
+      currentRetryCount
     )
     
     throw new Error('Vendedor não possui instância WhatsApp conectada')
@@ -232,7 +327,7 @@ async function processCRMTask(supabase: any, evolutionUrl: string, evolutionApiK
   
   if (!phoneResult.formatted) {
     console.error(`❌ Número inválido:`, phoneResult.error)
-    await supabase.from('crm_tasks').update({ status: 'open' }).eq('id', taskId)
+    await handleCRMTaskFailure(supabase, taskId, currentRetryCount)
     
     await createFailureNotification(
       supabase,
@@ -243,7 +338,8 @@ async function processCRMTask(supabase: any, evolutionUrl: string, evolutionApiK
       task.deal_id,
       dealTitle,
       connection.instance_name,
-      'crm'
+      'crm',
+      currentRetryCount
     )
     
     throw new Error(`Número inválido: ${phoneResult.error}`)
@@ -270,7 +366,7 @@ async function processCRMTask(supabase: any, evolutionUrl: string, evolutionApiK
     const errorText = await sendResponse.text()
     console.error('❌ Erro ao enviar mensagem:', errorText)
     
-    await supabase.from('crm_tasks').update({ status: 'open' }).eq('id', taskId)
+    await handleCRMTaskFailure(supabase, taskId, currentRetryCount)
     
     await createFailureNotification(
       supabase,
@@ -281,7 +377,8 @@ async function processCRMTask(supabase: any, evolutionUrl: string, evolutionApiK
       task.deal_id,
       dealTitle,
       connection.instance_name,
-      'crm'
+      'crm',
+      currentRetryCount
     )
     
     throw new Error('Erro ao enviar mensagem via Evolution API')
@@ -290,12 +387,13 @@ async function processCRMTask(supabase: any, evolutionUrl: string, evolutionApiK
   const responseData = await sendResponse.json()
   console.log('✅ Mensagem enviada com sucesso:', responseData)
 
-  // Marcar tarefa como 'done'
+  // Marcar tarefa como 'done' e resetar retry_count
   await supabase
     .from('crm_tasks')
     .update({ 
       status: 'done',
-      processed_at: new Date().toISOString()
+      processed_at: new Date().toISOString(),
+      retry_count: 0
     })
     .eq('id', taskId)
 
@@ -319,6 +417,22 @@ async function processCRMTask(supabase: any, evolutionUrl: string, evolutionApiK
     taskId,
     messageId: responseData.key?.id || null
   }
+}
+
+// Helper para tratar falha de tarefa CRM com retry
+async function handleCRMTaskFailure(supabase: any, taskId: string, currentRetryCount: number) {
+  const newRetryCount = currentRetryCount + 1
+  const newStatus = newRetryCount >= MAX_RETRIES ? 'failed' : 'open'
+  
+  console.log(`🔄 Incrementando retry_count: ${currentRetryCount} → ${newRetryCount} (status: ${newStatus})`)
+  
+  await supabase
+    .from('crm_tasks')
+    .update({ 
+      status: newStatus,
+      retry_count: newRetryCount
+    })
+    .eq('id', taskId)
 }
 
 // Processar tarefa de Prospecção (Arquitetos)
@@ -349,13 +463,43 @@ async function processProspeccaoTask(supabase: any, evolutionUrl: string, evolut
     throw new Error('Tarefa de prospecção não encontrada')
   }
 
-  // Verificar se já foi processada
-  if (task.status !== 'pendente') {
-    console.log(`⏭️ Tarefa já processada (status: ${task.status})`)
+  // Verificar se já foi processada ou falhou permanentemente
+  if (task.status === 'concluida') {
+    console.log(`⏭️ Tarefa já processada (status: concluida)`)
     return { success: false, message: 'Tarefa já foi processada' }
   }
 
-  console.log(`✅ Tarefa encontrada - tipo: ${task.tipo_tarefa}, status: ${task.status}`)
+  if (task.status === 'falha') {
+    console.log(`⏭️ Tarefa marcada como falha permanente`)
+    return { success: false, message: 'Tarefa marcada como falha permanente após máximo de tentativas' }
+  }
+
+  const currentRetryCount = task.retry_count || 0
+  console.log(`✅ Tarefa encontrada - tipo: ${task.tipo_tarefa}, status: ${task.status}, retry: ${currentRetryCount}/${MAX_RETRIES}`)
+
+  // Verificar se atingiu máximo de retentativas
+  if (currentRetryCount >= MAX_RETRIES) {
+    console.log(`❌ Tarefa atingiu máximo de ${MAX_RETRIES} tentativas - marcando como falha`)
+    await supabase
+      .from('tendenci_prospec_arq_agendamentos')
+      .update({ status: 'falha' })
+      .eq('id', taskId)
+    
+    await createFailureNotification(
+      supabase,
+      task.vendedor_id,
+      'max_retries',
+      `Tarefa falhou após ${MAX_RETRIES} tentativas`,
+      taskId,
+      task.architect_id,
+      task.titulo || 'Tarefa',
+      undefined,
+      'prospeccao',
+      currentRetryCount
+    )
+    
+    return { success: false, message: `Tarefa falhou após ${MAX_RETRIES} tentativas` }
+  }
 
   // Marcar como 'processing'
   await supabase
@@ -374,7 +518,7 @@ async function processProspeccaoTask(supabase: any, evolutionUrl: string, evolut
 
   if (architectError || !architect) {
     console.error('❌ Arquiteto não encontrado:', architectError)
-    await supabase.from('tendenci_prospec_arq_agendamentos').update({ status: 'pendente' }).eq('id', taskId)
+    await handleProspeccaoTaskFailure(supabase, taskId, currentRetryCount)
     throw new Error('Arquiteto não encontrado')
   }
 
@@ -383,7 +527,7 @@ async function processProspeccaoTask(supabase: any, evolutionUrl: string, evolut
 
   if (!architectPhone) {
     console.error('❌ Telefone do arquiteto não encontrado')
-    await supabase.from('tendenci_prospec_arq_agendamentos').update({ status: 'pendente' }).eq('id', taskId)
+    await handleProspeccaoTaskFailure(supabase, taskId, currentRetryCount)
     
     await createFailureNotification(
       supabase,
@@ -394,7 +538,8 @@ async function processProspeccaoTask(supabase: any, evolutionUrl: string, evolut
       task.architect_id,
       architectName,
       undefined,
-      'prospeccao'
+      'prospeccao',
+      currentRetryCount
     )
     
     throw new Error('Telefone do arquiteto não encontrado')
@@ -412,7 +557,7 @@ async function processProspeccaoTask(supabase: any, evolutionUrl: string, evolut
 
   if (connectionError || !connection) {
     console.error('❌ Instância WhatsApp não encontrada para o vendedor:', connectionError)
-    await supabase.from('tendenci_prospec_arq_agendamentos').update({ status: 'pendente' }).eq('id', taskId)
+    await handleProspeccaoTaskFailure(supabase, taskId, currentRetryCount)
     
     await createFailureNotification(
       supabase,
@@ -423,7 +568,8 @@ async function processProspeccaoTask(supabase: any, evolutionUrl: string, evolut
       task.architect_id,
       architectName,
       undefined,
-      'prospeccao'
+      'prospeccao',
+      currentRetryCount
     )
     
     throw new Error('Vendedor não possui instância WhatsApp conectada')
@@ -436,7 +582,7 @@ async function processProspeccaoTask(supabase: any, evolutionUrl: string, evolut
   
   if (!phoneResult.formatted) {
     console.error(`❌ Número inválido:`, phoneResult.error)
-    await supabase.from('tendenci_prospec_arq_agendamentos').update({ status: 'pendente' }).eq('id', taskId)
+    await handleProspeccaoTaskFailure(supabase, taskId, currentRetryCount)
     
     await createFailureNotification(
       supabase,
@@ -447,7 +593,8 @@ async function processProspeccaoTask(supabase: any, evolutionUrl: string, evolut
       task.architect_id,
       architectName,
       connection.instance_name,
-      'prospeccao'
+      'prospeccao',
+      currentRetryCount
     )
     
     throw new Error(`Número inválido: ${phoneResult.error}`)
@@ -474,7 +621,7 @@ async function processProspeccaoTask(supabase: any, evolutionUrl: string, evolut
     const errorText = await sendResponse.text()
     console.error('❌ Erro ao enviar mensagem:', errorText)
     
-    await supabase.from('tendenci_prospec_arq_agendamentos').update({ status: 'pendente' }).eq('id', taskId)
+    await handleProspeccaoTaskFailure(supabase, taskId, currentRetryCount)
     
     await createFailureNotification(
       supabase,
@@ -485,7 +632,8 @@ async function processProspeccaoTask(supabase: any, evolutionUrl: string, evolut
       task.architect_id,
       architectName,
       connection.instance_name,
-      'prospeccao'
+      'prospeccao',
+      currentRetryCount
     )
     
     throw new Error('Erro ao enviar mensagem via Evolution API')
@@ -494,38 +642,38 @@ async function processProspeccaoTask(supabase: any, evolutionUrl: string, evolut
   const responseData = await sendResponse.json()
   console.log('✅ Mensagem enviada com sucesso:', responseData)
 
-  // Marcar tarefa como 'concluida'
+  // Marcar tarefa como 'concluida' e resetar retry_count
   await supabase
     .from('tendenci_prospec_arq_agendamentos')
     .update({ 
       status: 'concluida',
-      processed_at: new Date().toISOString()
+      retry_count: 0
     })
     .eq('id', taskId)
 
   console.log('✅ Tarefa de prospecção marcada como "concluida"')
 
-  // Registrar log no histórico do arquiteto
+  // Registrar no histórico do arquiteto
   await supabase
-    .from('tendenci_prospec_arq_logs')
+    .from('architect_history')
     .insert({
       architect_id: task.architect_id,
-      tipo: 'mensagem_automatica',
-      descricao: `📤 Mensagem automatizada enviada: "${message.substring(0, 100)}${message.length > 100 ? '...' : ''}"`,
-      enviado_por: task.vendedor_id
+      event_type: 'automated_message',
+      description: `📤 Mensagem automatizada enviada: "${message.substring(0, 100)}${message.length > 100 ? '...' : ''}"`,
+      created_by: task.vendedor_id
     })
 
-  // Também registrar na timeline do arquiteto
+  // Registrar na timeline do arquiteto
   await supabase
     .from('architect_timeline')
     .insert({
       architect_id: task.architect_id,
       author_id: task.vendedor_id,
-      message: `📤 Mensagem automatizada enviada: "${message.substring(0, 100)}${message.length > 100 ? '...' : ''}"`,
+      message: `📤 Mensagem automatizada enviada: "${message}"`,
       update_type: 'Sistema'
     })
 
-  console.log('✅ Log registrado no histórico do arquiteto')
+  console.log('✅ Log registrado no histórico e timeline do arquiteto')
 
   return { 
     success: true,
@@ -535,25 +683,30 @@ async function processProspeccaoTask(supabase: any, evolutionUrl: string, evolut
   }
 }
 
+// Helper para tratar falha de tarefa de prospecção com retry
+async function handleProspeccaoTaskFailure(supabase: any, taskId: string, currentRetryCount: number) {
+  const newRetryCount = currentRetryCount + 1
+  const newStatus = newRetryCount >= MAX_RETRIES ? 'falha' : 'pendente'
+  
+  console.log(`🔄 Incrementando retry_count: ${currentRetryCount} → ${newRetryCount} (status: ${newStatus})`)
+  
+  await supabase
+    .from('tendenci_prospec_arq_agendamentos')
+    .update({ 
+      status: newStatus,
+      retry_count: newRetryCount
+    })
+    .eq('id', taskId)
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
 
   try {
-    console.log('🤖 Process automated task request')
-
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
-    )
-
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const evolutionUrl = Deno.env.get('EVOLUTION_API_URL')
     const evolutionApiKey = Deno.env.get('EVOLUTION_API_KEY')
 
@@ -561,71 +714,81 @@ Deno.serve(async (req) => {
       throw new Error('Evolution API não configurada')
     }
 
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    
     const body: ProcessTaskRequest = await req.json()
-    // Aceita tanto taskId quanto tarefa_id (compatibilidade n8n)
     const taskId = body.taskId || body.tarefa_id
-    let origemModulo = body.origem_modulo || 'crm'  // Default para CRM para compatibilidade
+    let origemModulo = body.origem_modulo
 
     if (!taskId) {
-      throw new Error('taskId ou tarefa_id é obrigatório')
+      throw new Error('taskId é obrigatório')
     }
 
-    console.log(`📋 Processando tarefa: ${taskId} (módulo informado: ${origemModulo})`)
+    console.log(`\n========================================`)
+    console.log(`🚀 Iniciando processamento de tarefa: ${taskId}`)
+    console.log(`📍 Módulo informado: ${origemModulo || 'não especificado'}`)
+    console.log(`========================================\n`)
 
-    // FALLBACK: Detectar automaticamente o módulo se não foi especificado ou se é 'crm'
-    // Isso corrige o problema de arquiteto_id chegando null quando n8n não envia origem_modulo
-    if (origemModulo === 'crm') {
-      // Verificar se existe em crm_tasks
+    // Se não tiver origem_modulo, tentar detectar automaticamente
+    if (!origemModulo) {
+      console.log('🔍 Detectando módulo automaticamente...')
+      
       const { data: crmTask } = await supabase
         .from('crm_tasks')
         .select('id')
         .eq('id', taskId)
-        .maybeSingle()
+        .single()
       
-      if (!crmTask) {
-        // Se não existe em CRM, verificar em arquitetos
+      if (crmTask) {
+        origemModulo = 'crm'
+        console.log('✅ Detectado como tarefa CRM')
+      } else {
         const { data: prospTask } = await supabase
           .from('tendenci_prospec_arq_agendamentos')
           .select('id')
           .eq('id', taskId)
-          .maybeSingle()
+          .single()
         
         if (prospTask) {
-          console.log('🔄 Tarefa detectada como prospecção (fallback automático)')
           origemModulo = 'prospeccao'
+          console.log('✅ Detectado como tarefa de Prospecção')
         }
       }
     }
 
-    console.log(`📋 Módulo final: ${origemModulo}`)
-
     let result
-    
-    if (origemModulo === 'prospeccao') {
+
+    if (origemModulo === 'crm') {
+      result = await processCRMTask(supabase, evolutionUrl, evolutionApiKey, taskId)
+    } else if (origemModulo === 'prospeccao') {
       result = await processProspeccaoTask(supabase, evolutionUrl, evolutionApiKey, taskId)
     } else {
-      result = await processCRMTask(supabase, evolutionUrl, evolutionApiKey, taskId)
+      throw new Error(`Módulo não reconhecido ou tarefa não encontrada: ${origemModulo}`)
     }
+
+    console.log(`\n========================================`)
+    console.log(`✅ Processamento concluído com sucesso`)
+    console.log(`========================================\n`)
 
     return new Response(
       JSON.stringify(result),
-      {
+      { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200
       }
     )
-
-  } catch (error) {
-    console.error('💥 Erro ao processar tarefa:', error)
+  } catch (error: unknown) {
+    console.error('❌ Erro no processamento:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Erro interno'
     
     return new Response(
-      JSON.stringify({
-        success: false,
-        error: error instanceof Error ? error.message : 'Erro desconhecido'
+      JSON.stringify({ 
+        success: false, 
+        error: errorMessage
       }),
-      {
+      { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400
+        status: 500
       }
     )
   }
