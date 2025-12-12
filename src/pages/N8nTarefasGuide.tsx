@@ -925,8 +925,6 @@ export default function N8nTarefasGuide() {
             </div>
           </CardContent>
         </Card>
-          </CardContent>
-        </Card>
 
         {/* Testes e Validação */}
         <Card className="mb-6">
