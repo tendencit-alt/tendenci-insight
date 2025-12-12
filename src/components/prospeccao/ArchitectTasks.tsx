@@ -282,10 +282,11 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
         return;
       }
 
-      // Converter datetime-local para ISO preservando timezone local
+      // Converter datetime-local para ISO corretamente
+      // new Date() já interpreta datetime-local como horário local
+      // toISOString() converte automaticamente para UTC - não precisa ajuste manual
       const localDate = new Date(newTask.due_at);
-      const offsetMs = localDate.getTimezoneOffset() * 60000;
-      const localISOTime = new Date(localDate.getTime() - offsetMs).toISOString();
+      const localISOTime = localDate.toISOString();
 
       // Estruturar observações como JSON
       const observacoesJSON = JSON.stringify({
