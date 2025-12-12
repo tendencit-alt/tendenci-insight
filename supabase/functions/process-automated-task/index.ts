@@ -564,13 +564,40 @@ Deno.serve(async (req) => {
     const body: ProcessTaskRequest = await req.json()
     // Aceita tanto taskId quanto tarefa_id (compatibilidade n8n)
     const taskId = body.taskId || body.tarefa_id
-    const origemModulo = body.origem_modulo || 'crm'  // Default para CRM para compatibilidade
+    let origemModulo = body.origem_modulo || 'crm'  // Default para CRM para compatibilidade
 
     if (!taskId) {
       throw new Error('taskId ou tarefa_id é obrigatório')
     }
 
-    console.log(`📋 Processando tarefa: ${taskId} (módulo: ${origemModulo})`)
+    console.log(`📋 Processando tarefa: ${taskId} (módulo informado: ${origemModulo})`)
+
+    // FALLBACK: Detectar automaticamente o módulo se não foi especificado ou se é 'crm'
+    // Isso corrige o problema de arquiteto_id chegando null quando n8n não envia origem_modulo
+    if (origemModulo === 'crm') {
+      // Verificar se existe em crm_tasks
+      const { data: crmTask } = await supabase
+        .from('crm_tasks')
+        .select('id')
+        .eq('id', taskId)
+        .maybeSingle()
+      
+      if (!crmTask) {
+        // Se não existe em CRM, verificar em arquitetos
+        const { data: prospTask } = await supabase
+          .from('tendenci_prospec_arq_agendamentos')
+          .select('id')
+          .eq('id', taskId)
+          .maybeSingle()
+        
+        if (prospTask) {
+          console.log('🔄 Tarefa detectada como prospecção (fallback automático)')
+          origemModulo = 'prospeccao'
+        }
+      }
+    }
+
+    console.log(`📋 Módulo final: ${origemModulo}`)
 
     let result
     

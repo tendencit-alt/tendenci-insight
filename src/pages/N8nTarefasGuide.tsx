@@ -654,15 +654,28 @@ export default function N8nTarefasGuide() {
                     <div><span className="text-muted-foreground">Headers:</span> Authorization: Bearer {'{'}apiKey{'}'}</div>
                   </div>
 
-                  <p className="text-sm font-medium mt-3">Body (JSON):</p>
-                  <pre className="bg-background p-3 rounded text-xs overflow-x-auto">
+                  <p className="text-sm font-medium mt-3">Body (JSON) - <span className="text-primary font-bold">IMPORTANTE:</span></p>
+                  <pre className="bg-background p-3 rounded text-xs overflow-x-auto border-2 border-primary/50">
 {`{
-  "taskId": "{{ $("Loop Over Items").item.json.id }}"
+  "taskId": "{{ $("Loop Over Items").item.json.tarefa_id }}",
+  "origem_modulo": "{{ $("Loop Over Items").item.json.origem_modulo }}"
 }`}
                   </pre>
 
+                  <Alert className="mt-3 border-destructive bg-destructive/10">
+                    <AlertCircle className="h-4 w-4 text-destructive" />
+                    <AlertDescription className="text-xs">
+                      <strong className="text-destructive">⚠️ CRÍTICO:</strong> O campo <code>origem_modulo</code> é <strong>OBRIGATÓRIO</strong> para tarefas de arquitetos!
+                      <ul className="list-disc ml-4 mt-2 space-y-1">
+                        <li><code>tarefa_id</code> - ID da tarefa (campo unificado da RPC)</li>
+                        <li><code>origem_modulo</code> - "crm" ou "prospeccao" (identifica o módulo)</li>
+                      </ul>
+                      Sem <code>origem_modulo</code>, tarefas de arquitetos serão processadas incorretamente como CRM e falharão com <code>architect_id = null</code>.
+                    </AlertDescription>
+                  </Alert>
+
                   <Alert className="mt-3">
-                    <AlertCircle className="h-4 w-4" />
+                    <CheckCircle className="h-4 w-4" />
                     <AlertDescription className="text-xs">
                       <strong>A Edge Function faz tudo automaticamente:</strong>
                       <ul className="list-disc ml-4 mt-2 space-y-1">
@@ -673,6 +686,7 @@ export default function N8nTarefasGuide() {
                         <li>Atualiza status para "done" ou "concluida"</li>
                         <li>Registra log na timeline (arquitetos)</li>
                       </ul>
+                      <strong className="mt-2 block">Fallback:</strong> Se <code>origem_modulo</code> não for enviado, a função tenta detectar automaticamente verificando em qual tabela a tarefa existe.
                     </AlertDescription>
                   </Alert>
                 </div>
