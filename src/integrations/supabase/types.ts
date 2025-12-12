@@ -1775,12 +1775,16 @@ export type Database = {
           entrega_observacoes: string | null
           entrega_uf: string | null
           forma_pagamento: string | null
+          forma_pagamento_2: string | null
           id: string
           motivo_cancelamento: string | null
+          observacao_pagamento: string | null
           observacoes_internas: string | null
           observacoes_nf: string | null
           order_number: number
           parcelas: number | null
+          percentual_forma_1: number | null
+          percentual_forma_2: number | null
           status: string | null
           subtotal: number | null
           tipo_entrega: string | null
@@ -1816,12 +1820,16 @@ export type Database = {
           entrega_observacoes?: string | null
           entrega_uf?: string | null
           forma_pagamento?: string | null
+          forma_pagamento_2?: string | null
           id?: string
           motivo_cancelamento?: string | null
+          observacao_pagamento?: string | null
           observacoes_internas?: string | null
           observacoes_nf?: string | null
           order_number?: number
           parcelas?: number | null
+          percentual_forma_1?: number | null
+          percentual_forma_2?: number | null
           status?: string | null
           subtotal?: number | null
           tipo_entrega?: string | null
@@ -1857,12 +1865,16 @@ export type Database = {
           entrega_observacoes?: string | null
           entrega_uf?: string | null
           forma_pagamento?: string | null
+          forma_pagamento_2?: string | null
           id?: string
           motivo_cancelamento?: string | null
+          observacao_pagamento?: string | null
           observacoes_internas?: string | null
           observacoes_nf?: string | null
           order_number?: number
           parcelas?: number | null
+          percentual_forma_1?: number | null
+          percentual_forma_2?: number | null
           status?: string | null
           subtotal?: number | null
           tipo_entrega?: string | null
@@ -2312,22 +2324,27 @@ export type Database = {
         Row: {
           actual_end_date: string | null
           actual_start_date: string | null
+          alerta_atraso: string | null
           client_id: string | null
           created_at: string | null
           created_by: string | null
           current_phase_id: string | null
           deal_id: string | null
           description: string | null
+          etapa_prevista_atraso: string | null
           id: string
           notes: string | null
           order_number: number
           planned_end_date: string | null
           planned_start_date: string | null
+          prazo_customizado_dias: number | null
+          previsao_final_calculada: string | null
           priority: string
           production_type_id: string
           responsible_id: string | null
           specifications: Json | null
           status: string
+          supplier_id: string | null
           title: string
           updated_at: string | null
           value: number | null
@@ -2335,22 +2352,27 @@ export type Database = {
         Insert: {
           actual_end_date?: string | null
           actual_start_date?: string | null
+          alerta_atraso?: string | null
           client_id?: string | null
           created_at?: string | null
           created_by?: string | null
           current_phase_id?: string | null
           deal_id?: string | null
           description?: string | null
+          etapa_prevista_atraso?: string | null
           id?: string
           notes?: string | null
           order_number?: number
           planned_end_date?: string | null
           planned_start_date?: string | null
+          prazo_customizado_dias?: number | null
+          previsao_final_calculada?: string | null
           priority?: string
           production_type_id: string
           responsible_id?: string | null
           specifications?: Json | null
           status?: string
+          supplier_id?: string | null
           title: string
           updated_at?: string | null
           value?: number | null
@@ -2358,22 +2380,27 @@ export type Database = {
         Update: {
           actual_end_date?: string | null
           actual_start_date?: string | null
+          alerta_atraso?: string | null
           client_id?: string | null
           created_at?: string | null
           created_by?: string | null
           current_phase_id?: string | null
           deal_id?: string | null
           description?: string | null
+          etapa_prevista_atraso?: string | null
           id?: string
           notes?: string | null
           order_number?: number
           planned_end_date?: string | null
           planned_start_date?: string | null
+          prazo_customizado_dias?: number | null
+          previsao_final_calculada?: string | null
           priority?: string
           production_type_id?: string
           responsible_id?: string | null
           specifications?: Json | null
           status?: string
+          supplier_id?: string | null
           title?: string
           updated_at?: string | null
           value?: number | null
@@ -2421,6 +2448,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "production_orders_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
         ]
       }
       production_phase_templates: {
@@ -2435,6 +2469,7 @@ export type Database = {
           name: string
           position: number
           production_type_id: string
+          sla_dias_uteis: number | null
           sla_hours: number | null
           slug: string
           updated_at: string | null
@@ -2450,6 +2485,7 @@ export type Database = {
           name: string
           position?: number
           production_type_id: string
+          sla_dias_uteis?: number | null
           sla_hours?: number | null
           slug: string
           updated_at?: string | null
@@ -2465,6 +2501,7 @@ export type Database = {
           name?: string
           position?: number
           production_type_id?: string
+          sla_dias_uteis?: number | null
           sla_hours?: number | null
           slug?: string
           updated_at?: string | null
@@ -2600,14 +2637,17 @@ export type Database = {
           cfop_entrada: string | null
           cfop_saida: string | null
           code: string | null
+          cor: string | null
           cost_price: number | null
           created_at: string | null
           current_stock: number | null
           description: string | null
+          fornecedor_texto: string | null
           id: string
           image_url: string | null
           location_id: string | null
           max_stock: number | null
+          medida: string | null
           min_stock: number | null
           name: string
           ncm: string | null
@@ -2626,14 +2666,17 @@ export type Database = {
           cfop_entrada?: string | null
           cfop_saida?: string | null
           code?: string | null
+          cor?: string | null
           cost_price?: number | null
           created_at?: string | null
           current_stock?: number | null
           description?: string | null
+          fornecedor_texto?: string | null
           id?: string
           image_url?: string | null
           location_id?: string | null
           max_stock?: number | null
+          medida?: string | null
           min_stock?: number | null
           name: string
           ncm?: string | null
@@ -2652,14 +2695,17 @@ export type Database = {
           cfop_entrada?: string | null
           cfop_saida?: string | null
           code?: string | null
+          cor?: string | null
           cost_price?: number | null
           created_at?: string | null
           current_stock?: number | null
           description?: string | null
+          fornecedor_texto?: string | null
           id?: string
           image_url?: string | null
           location_id?: string | null
           max_stock?: number | null
+          medida?: string | null
           min_stock?: number | null
           name?: string
           ncm?: string | null
@@ -4663,6 +4709,10 @@ export type Database = {
         }[]
       }
       architects_aggregates: { Args: never; Returns: Json }
+      calcular_previsao_atraso_producao: {
+        Args: { p_order_id: string }
+        Returns: Json
+      }
       calculate_seller_rankings: { Args: never; Returns: undefined }
       check_and_expire_goals: { Args: never; Returns: undefined }
       check_and_update_inactive_architects: { Args: never; Returns: undefined }
