@@ -600,8 +600,24 @@ async function processProspeccaoTask(supabase: any, evolutionUrl: string, evolut
     throw new Error(`Número inválido: ${phoneResult.error}`)
   }
 
-  // Extrair mensagem do campo observacoes
-  const message = task.observacoes || task.titulo || 'Olá! Temos novidades para você.'
+  // Extrair mensagem do campo observacoes (pode ser JSON ou texto)
+  let message = 'Olá! Temos novidades para você.'
+  
+  if (task.observacoes) {
+    try {
+      // Tentar parsear como JSON (formato: {"titulo":"...", "nota":"..."})
+      const obsData = JSON.parse(task.observacoes)
+      message = obsData.nota || obsData.titulo || message
+      console.log(`📝 Mensagem extraída do JSON: "${message}"`)
+    } catch {
+      // Se não for JSON válido, usar como string direta
+      message = task.observacoes
+      console.log(`📝 Usando observacoes como texto direto: "${message}"`)
+    }
+  } else if (task.titulo) {
+    message = task.titulo
+  }
+  
   console.log(`📤 Enviando mensagem para ${phoneResult.formatted}`)
 
   const sendResponse = await fetch(`${evolutionUrl}/message/sendText/${connection.instance_name}`, {
