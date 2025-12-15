@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { LayoutGrid, Table as TableIcon, List } from "lucide-react";
 import { ProspeccaoKanban } from "./ProspeccaoKanban";
 import { ProspeccaoTable } from "./ProspeccaoTable";
 import { ProspeccaoFilters } from "./ProspeccaoFilters";
 import { ArchitectTasksPanel } from "./ArchitectTasksPanel";
+import { ArchitectsWithoutTasksPanel } from "./ArchitectsWithoutTasksPanel";
+import { ArchitectProspeccaoSheet } from "./ArchitectProspeccaoSheet";
 import { usePermissions } from "@/hooks/usePermissions";
 
 type ViewMode = "kanban" | "table";
@@ -18,6 +20,23 @@ export function ProspeccaoCRM({ onManageStages }: ProspeccaoCRMProps) {
   const [filters, setFilters] = useState<any>({});
   const [showNaoContactados, setShowNaoContactados] = useState(false);
   const { isMaster } = usePermissions();
+  
+  // Estado para abrir sheet via evento global (do Dialog de campanhas)
+  const [eventArchitectId, setEventArchitectId] = useState<string | null>(null);
+  const [isEventSheetOpen, setIsEventSheetOpen] = useState(false);
+  
+  // Listener para evento 'open-architect-sheet' do Dialog de campanhas bloqueadas
+  useEffect(() => {
+    const handleOpenArchitectSheet = (e: CustomEvent<{ architectId: string }>) => {
+      setEventArchitectId(e.detail.architectId);
+      setIsEventSheetOpen(true);
+    };
+    
+    window.addEventListener('open-architect-sheet', handleOpenArchitectSheet as EventListener);
+    return () => {
+      window.removeEventListener('open-architect-sheet', handleOpenArchitectSheet as EventListener);
+    };
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -68,6 +87,9 @@ export function ProspeccaoCRM({ onManageStages }: ProspeccaoCRMProps) {
         onToggleNaoContactados={() => setShowNaoContactados(!showNaoContactados)}
       />
 
+      {/* 🚨 Painel de Arquitetos Sem Tarefa - Destaque Visual */}
+      <ArchitectsWithoutTasksPanel />
+
       {/* Tasks Panel - após filtros */}
       <ArchitectTasksPanel filters={filters} />
 
@@ -76,6 +98,15 @@ export function ProspeccaoCRM({ onManageStages }: ProspeccaoCRMProps) {
         <ProspeccaoKanban filters={filters} showNaoContactados={showNaoContactados} />
       ) : (
         <ProspeccaoTable filters={filters} showNaoContactados={showNaoContactados} />
+      )}
+      
+      {/* Sheet para abrir arquiteto via evento global */}
+      {eventArchitectId && (
+        <ArchitectProspeccaoSheet
+          architectId={eventArchitectId}
+          open={isEventSheetOpen}
+          onOpenChange={setIsEventSheetOpen}
+        />
       )}
     </div>
   );
