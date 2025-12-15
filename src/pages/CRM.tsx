@@ -14,6 +14,7 @@ import { CRMFilters } from "@/components/crm/CRMFilters";
 import { CreateDealDialog } from "@/components/crm/CreateDealDialog";
 import { ManagePipelineDialog } from "@/components/crm/ManagePipelineDialog";
 import { SellerPerformancePanel } from "@/components/crm/SellerPerformancePanel";
+import { MasterGoalsPanel } from "@/components/crm/MasterGoalsPanel";
 import { TaskReminderAlert } from "@/components/crm/TaskReminderAlert";
 import { AutomationFailureAlert } from "@/components/crm/AutomationFailureAlert";
 import { useCRMStatePersistence } from "@/hooks/useCRMStatePersistence";
@@ -164,6 +165,9 @@ export default function CRM() {
       <div className="flex flex-col gap-1.5">
         {/* Alertas de Falha de Automação */}
         <AutomationFailureAlert />
+
+        {/* Painel de Metas para Usuários Master */}
+        {isAdmin && <MasterGoalsPanel />}
 
         {/* Painel de Desempenho do Vendedor */}
         {!isAdmin && <SellerPerformancePanel />}
