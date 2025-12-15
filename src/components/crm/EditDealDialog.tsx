@@ -502,10 +502,10 @@ export function EditDealDialog({
   };
 
   const handleAddIndication = () => {
-    if (!newIndication.architect_id || !newIndication.product_type) {
+    if (!newIndication.architect_id) {
       toast({
-        title: "Campos obrigatórios",
-        description: "Selecione o arquiteto e o tipo de produto.",
+        title: "Campo obrigatório",
+        description: "Selecione o arquiteto.",
         variant: "destructive",
       });
       return;
@@ -517,6 +517,7 @@ export function EditDealDialog({
       ...pendingIndications,
       {
         ...newIndication,
+        product_type: "Indicação",
         architect_name: architect?.name || "Arquiteto",
       },
     ]);
@@ -943,7 +944,6 @@ export function EditDealDialog({
                     <div key={ind.id} className="flex items-center justify-between bg-white dark:bg-background p-2 rounded border">
                       <div className="text-sm">
                         <span className="font-medium">{ind.architect?.name}</span>
-                        <span className="text-muted-foreground"> - {ind.product_type}</span>
                         {ind.value && <span className="text-muted-foreground"> - R$ {Number(ind.value).toLocaleString('pt-BR')}</span>}
                       </div>
                       <Button
@@ -970,7 +970,6 @@ export function EditDealDialog({
                     <div key={index} className="flex items-center justify-between bg-white dark:bg-background p-2 rounded border border-dashed border-amber-400">
                       <div className="text-sm">
                         <span className="font-medium">{ind.architect_name}</span>
-                        <span className="text-muted-foreground"> - {ind.product_type}</span>
                         {ind.value && <span className="text-muted-foreground"> - R$ {Number(ind.value).toLocaleString('pt-BR')}</span>}
                       </div>
                       <Button
@@ -1010,28 +1009,6 @@ export function EditDealDialog({
               </div>
 
               <div className="space-y-1">
-                <Label className="text-xs">Tipo de Produto *</Label>
-                <Select
-                  value={newIndication.product_type}
-                  onValueChange={(value) => setNewIndication({ ...newIndication, product_type: value })}
-                >
-                  <SelectTrigger className="h-9">
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Planejado">Planejado</SelectItem>
-                    <SelectItem value="Móvel">Móvel</SelectItem>
-                    <SelectItem value="Mesa">Mesa</SelectItem>
-                    <SelectItem value="Cadeira">Cadeira</SelectItem>
-                    <SelectItem value="Sofá">Sofá</SelectItem>
-                    <SelectItem value="Estante">Estante</SelectItem>
-                    <SelectItem value="Rack">Rack</SelectItem>
-                    <SelectItem value="Outro">Outro</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1">
                 <Label className="text-xs">Valor Estimado</Label>
                 <Input
                   type="number"
@@ -1052,6 +1029,7 @@ export function EditDealDialog({
                   className="h-9"
                 />
               </div>
+
             </div>
 
             <Button
