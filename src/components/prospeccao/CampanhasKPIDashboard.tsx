@@ -59,7 +59,7 @@ interface VendorComparison {
   vendedor_id: string;
   vendedor_nome: string;
   total_campanhas: number;
-  mensagens_enviadas: number;
+  total_arquitetos: number;
   respostas: number;
   convertidos: number;
   taxa_resposta: number;
@@ -451,7 +451,7 @@ export function CampanhasKPIDashboard() {
                   <tr className="border-b border-border">
                     <th className="text-left py-2 px-3 font-medium text-muted-foreground">Vendedor</th>
                     <th className="text-center py-2 px-3 font-medium text-muted-foreground">Campanhas</th>
-                    <th className="text-center py-2 px-3 font-medium text-muted-foreground">Enviados</th>
+                    <th className="text-center py-2 px-3 font-medium text-muted-foreground">Arquitetos</th>
                     <th className="text-center py-2 px-3 font-medium text-muted-foreground">Respostas</th>
                     <th className="text-center py-2 px-3 font-medium text-muted-foreground">Convertidos</th>
                     <th className="text-center py-2 px-3 font-medium text-muted-foreground">Taxa Resposta</th>
@@ -463,7 +463,7 @@ export function CampanhasKPIDashboard() {
                     <tr key={vendor.vendedor_id} className={idx % 2 === 0 ? 'bg-muted/30' : ''}>
                       <td className="py-2 px-3 font-medium">{vendor.vendedor_nome}</td>
                       <td className="text-center py-2 px-3">{vendor.total_campanhas}</td>
-                      <td className="text-center py-2 px-3">{vendor.mensagens_enviadas}</td>
+                      <td className="text-center py-2 px-3">{vendor.total_arquitetos}</td>
                       <td className="text-center py-2 px-3">{vendor.respostas}</td>
                       <td className="text-center py-2 px-3">{vendor.convertidos}</td>
                       <td className="text-center py-2 px-3">
