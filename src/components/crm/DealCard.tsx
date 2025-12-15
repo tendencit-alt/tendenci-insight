@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Clock, Flame, Snowflake, User, Bot, X, Mic, Paperclip } from "lucide-react";
+import { Clock, Flame, Snowflake, User, Bot, X, Mic, Paperclip, Target } from "lucide-react";
 import { useEffect, useState, useCallback, memo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -18,6 +18,7 @@ function DealCardComponent({ deal, timeInStage, onClick, onDragStart, onDelete }
   const [fileCount, setFileCount] = useState(0);
   const [taskCount, setTaskCount] = useState(0);
   const [overdueTaskCount, setOverdueTaskCount] = useState(0);
+  const [hasIndication, setHasIndication] = useState(false);
 
   const fetchFiles = useCallback(async () => {
     const { data } = await supabase
@@ -48,12 +49,23 @@ function DealCardComponent({ deal, timeInStage, onClick, onDragStart, onDelete }
     }
   }, [deal.id]);
 
+  const fetchIndications = useCallback(async () => {
+    const { data } = await supabase
+      .from("architect_indications")
+      .select("id")
+      .eq("deal_id", deal.id)
+      .limit(1);
+
+    setHasIndication((data?.length || 0) > 0);
+  }, [deal.id]);
+
   useEffect(() => {
     if (deal.id) {
       fetchFiles();
       fetchTasks();
+      fetchIndications();
     }
-  }, [deal.id, fetchFiles, fetchTasks]);
+  }, [deal.id, fetchFiles, fetchTasks, fetchIndications]);
 
   useEffect(() => {
     const channel = supabase
@@ -128,6 +140,12 @@ function DealCardComponent({ deal, timeInStage, onClick, onDragStart, onDelete }
               <Badge variant="secondary" className="text-[10px] bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300 flex-shrink-0 h-4">
                 <Bot className="h-2.5 w-2.5 mr-0.5" />
                 IA
+              </Badge>
+            )}
+            {hasIndication && (
+              <Badge className="text-[10px] bg-amber-500 hover:bg-amber-600 text-white flex-shrink-0 h-4 flex items-center gap-0.5">
+                <Target className="h-2.5 w-2.5" />
+                Indicação
               </Badge>
             )}
             <p className="font-bold text-sm line-clamp-1 flex-1 min-w-0">{clientName}</p>
