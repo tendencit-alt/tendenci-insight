@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { usePermissions } from "@/hooks/usePermissions";
 
 interface EditArchitectDialogProps {
   open: boolean;
@@ -19,9 +20,11 @@ interface EditArchitectDialogProps {
 }
 
 export function EditArchitectDialog({ open, onOpenChange, onSuccess, architect }: EditArchitectDialogProps) {
+  const { isMaster } = usePermissions();
   const [loading, setLoading] = useState(false);
   const [projects, setProjects] = useState<any[]>([]);
   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
+  const [vendedores, setVendedores] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     name: "",
     company: "",
@@ -36,7 +39,8 @@ export function EditArchitectDialog({ open, onOpenChange, onSuccess, architect }
     notes: "",
     categoria: "metropolitano",
     data_primeiro_contato: "",
-    data_ultimo_contato: ""
+    data_ultimo_contato: "",
+    vendedor_responsavel: ""
   });
 
   useEffect(() => {
@@ -55,11 +59,26 @@ export function EditArchitectDialog({ open, onOpenChange, onSuccess, architect }
         notes: architect.notes || "",
         categoria: architect.categoria || "metropolitano",
         data_primeiro_contato: architect.data_primeiro_contato || "",
-        data_ultimo_contato: architect.data_ultimo_contato || ""
+        data_ultimo_contato: architect.data_ultimo_contato || "",
+        vendedor_responsavel: architect.vendedor_responsavel || ""
       });
       fetchProjects();
+      if (isMaster) {
+        fetchVendedores();
+      }
     }
-  }, [open, architect]);
+  }, [open, architect, isMaster]);
+
+  const fetchVendedores = async () => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, full_name, email')
+      .order('full_name');
+    
+    if (!error && data) {
+      setVendedores(data);
+    }
+  };
 
   const fetchProjects = async () => {
     if (!architect) return;
@@ -104,24 +123,31 @@ export function EditArchitectDialog({ open, onOpenChange, onSuccess, architect }
     setLoading(true);
 
     try {
+      const updateData: any = {
+        name: formData.name,
+        company: formData.company || null,
+        phone: formData.phone,
+        email: formData.email || null,
+        instagram: formData.instagram || null,
+        city: formData.city || null,
+        tier: formData.tier,
+        commission_percent: parseFloat(formData.commission_percent),
+        birthday: formData.birthday || null,
+        active: formData.active,
+        notes: formData.notes || null,
+        categoria: formData.categoria,
+        data_primeiro_contato: formData.data_primeiro_contato || null,
+        data_ultimo_contato: formData.data_ultimo_contato || null
+      };
+
+      // Apenas MASTER pode alterar vendedor responsável
+      if (isMaster && formData.vendedor_responsavel) {
+        updateData.vendedor_responsavel = formData.vendedor_responsavel === "none" ? null : formData.vendedor_responsavel;
+      }
+
       const { error } = await supabase
         .from("architects")
-        .update({
-          name: formData.name,
-          company: formData.company || null,
-          phone: formData.phone,
-          email: formData.email || null,
-          instagram: formData.instagram || null,
-          city: formData.city || null,
-          tier: formData.tier,
-          commission_percent: parseFloat(formData.commission_percent),
-          birthday: formData.birthday || null,
-          active: formData.active,
-          notes: formData.notes || null,
-          categoria: formData.categoria,
-          data_primeiro_contato: formData.data_primeiro_contato || null,
-          data_ultimo_contato: formData.data_ultimo_contato || null
-        })
+        .update(updateData)
         .eq('id', architect.id);
 
       if (error) throw error;
@@ -275,6 +301,29 @@ export function EditArchitectDialog({ open, onOpenChange, onSuccess, architect }
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Campo de Vendedor Responsável - apenas para MASTER */}
+            {isMaster && (
+              <div className="space-y-2 col-span-2">
+                <Label htmlFor="vendedor_responsavel">Vendedor Responsável</Label>
+                <Select 
+                  value={formData.vendedor_responsavel || "none"} 
+                  onValueChange={(v) => setFormData({ ...formData, vendedor_responsavel: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o vendedor" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Sem vendedor</SelectItem>
+                    {vendedores.map((vendedor) => (
+                      <SelectItem key={vendedor.id} value={vendedor.id}>
+                        {vendedor.full_name || vendedor.email}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="commission">Comissão (%)</Label>
