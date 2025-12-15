@@ -104,8 +104,8 @@ export function ArchitectsWithoutTasksPanel() {
                   ))}
                 </div>
               ) : (
-                <ScrollArea className="max-h-[200px]">
-                  <div className="space-y-2">
+                <ScrollArea className="h-[250px] pr-3">
+                  <div className="space-y-2 pr-1">
                     {arquitetosSemTarefa.map(arq => (
                       <div 
                         key={arq.id} 
