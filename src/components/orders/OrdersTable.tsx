@@ -5,9 +5,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { format, differenceInDays, isPast } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Search, ChevronLeft, ChevronRight, AlertTriangle, ExternalLink } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, AlertTriangle, ExternalLink, Eye, Pencil } from 'lucide-react';
 
 interface Order {
   id: string;
@@ -26,6 +27,7 @@ interface OrdersTableProps {
   orders: Order[];
   isLoading: boolean;
   onSelectOrder: (id: string) => void;
+  onEditOrder?: (id: string) => void;
 }
 
 const STATUS_CONFIG: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline'; color: string }> = {
@@ -40,7 +42,8 @@ const STATUS_CONFIG: Record<string, { label: string; variant: 'default' | 'secon
 
 const ITEMS_PER_PAGE = 20;
 
-export function OrdersTable({ orders, isLoading, onSelectOrder }: OrdersTableProps) {
+export function OrdersTable({ orders, isLoading, onSelectOrder, onEditOrder }: OrdersTableProps) {
+  const isEditable = (status: string) => ['rascunho', 'aguardando_aprovacao'].includes(status);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -128,18 +131,19 @@ export function OrdersTable({ orders, isLoading, onSelectOrder }: OrdersTablePro
                   <TableHead className="text-right">Valor</TableHead>
                   <TableHead>Emissão</TableHead>
                   <TableHead>Entrega</TableHead>
+                  <TableHead className="w-[100px] text-center">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paginatedOrders.map((order) => {
                   const statusConfig = STATUS_CONFIG[order.status] || { label: order.status, variant: 'secondary' as const, color: 'bg-gray-100' };
                   const deadlineStatus = getDeadlineStatus(order.data_entrega_prevista, order.status);
+                  const canEdit = isEditable(order.status);
                   
                   return (
                     <TableRow
                       key={order.id}
-                      className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => onSelectOrder(order.id)}
+                      className="hover:bg-muted/50"
                     >
                       <TableCell className="font-mono font-medium">
                         #{order.order_number}
@@ -196,6 +200,44 @@ export function OrdersTable({ orders, isLoading, onSelectOrder }: OrdersTablePro
                           ) : (
                             <span className="text-muted-foreground text-sm">-</span>
                           )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center justify-center gap-1">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => onSelectOrder(order.id)}
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Visualizar</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  disabled={!canEdit}
+                                  onClick={() => canEdit && onEditOrder?.(order.id)}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                {canEdit ? 'Editar' : 'Apenas rascunhos podem ser editados'}
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         </div>
                       </TableCell>
                     </TableRow>
