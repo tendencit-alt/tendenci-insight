@@ -338,7 +338,7 @@ export function CampanhasKPIDashboard() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-primary mb-1">Taxa de Resposta</p>
+                <p className="text-sm font-medium text-primary mb-1">Contato Iniciado</p>
                 <p className="text-xs text-muted-foreground mb-2">KPI Principal</p>
                 {loading ? (
                   <Skeleton className="h-10 w-20" />
@@ -368,8 +368,8 @@ export function CampanhasKPIDashboard() {
           highlight
         />
         <KPICard 
-          title="Taxa de Conversão" 
-          value={metrics?.taxa_conversao || 0} 
+          title="Taxa de Ativação" 
+          value={metrics?.taxa_conversao || 0}
           suffix="%" 
           icon={TrendingUp}
           highlight
@@ -454,8 +454,8 @@ export function CampanhasKPIDashboard() {
                     <th className="text-center py-2 px-3 font-medium text-muted-foreground">Arquitetos</th>
                     <th className="text-center py-2 px-3 font-medium text-muted-foreground">Respostas</th>
                     <th className="text-center py-2 px-3 font-medium text-muted-foreground">Convertidos</th>
-                    <th className="text-center py-2 px-3 font-medium text-muted-foreground">Taxa Resposta</th>
-                    <th className="text-center py-2 px-3 font-medium text-muted-foreground">Taxa Conversão</th>
+                    <th className="text-center py-2 px-3 font-medium text-muted-foreground">Contato Iniciado</th>
+                    <th className="text-center py-2 px-3 font-medium text-muted-foreground">Taxa Ativação</th>
                   </tr>
                 </thead>
                 <tbody>
