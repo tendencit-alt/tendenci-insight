@@ -101,29 +101,73 @@ const Index = () => {
       const periodPromises = selectedPeriods.map(async (period) => {
         const { from, to } = formatPeriodDates(period);
         
-        // CRM Metrics with date filter
-        const { data: crmData } = await supabase.rpc('dashboard_crm_metrics_filtered', {
-          p_date_from: from,
-          p_date_to: to
-        }).catch(() => ({ data: null }));
+        // CRM Metrics with date filter - query tables directly
+        const [dealsResult, projectsResult, leadsResult] = await Promise.all([
+          supabase
+            .from('crm_deals')
+            .select('id, status, value, stage_id, created_at')
+            .gte('created_at', from)
+            .lte('created_at', to),
+          supabase
+            .from('projects')
+            .select('id, stage, value, created_at')
+            .gte('created_at', from)
+            .lte('created_at', to),
+          supabase
+            .from('leads')
+            .select('id, source_id, created_at, lead_sources(name)')
+            .gte('created_at', from)
+            .lte('created_at', to)
+        ]);
 
-        // Lead origins with date filter
-        const { data: originsData } = await supabase.rpc('dashboard_lead_origins_filtered', {
-          p_date_from: from,
-          p_date_to: to
-        }).catch(() => ({ data: [] }));
+        const deals = dealsResult.data || [];
+        const projects = projectsResult.data || [];
+        const leads = leadsResult.data || [];
 
-        // Projects by stage with date filter
-        const { data: stagesData } = await supabase.rpc('dashboard_projects_by_stage_filtered', {
-          p_date_from: from,
-          p_date_to: to
-        }).catch(() => ({ data: [] }));
+        // Calculate CRM metrics
+        const emOrcamento = deals.filter(d => d.status === 'open').length;
+        const valorFechado = deals.filter(d => d.status === 'won').reduce((sum, d) => sum + (d.value || 0), 0);
+        const valorPerdido = deals.filter(d => d.status === 'lost').reduce((sum, d) => sum + (d.value || 0), 0);
+        const fechado = deals.filter(d => d.status === 'won').length;
+        const perdido = deals.filter(d => d.status === 'lost').length;
+        const totalLeads = leads.length;
+        const projetosAtivos = projects.filter(p => !['aprovado', 'perdido'].includes(p.stage || '')).length;
+
+        // Calculate lead origins
+        const originCounts: Record<string, number> = {};
+        leads.forEach((lead: any) => {
+          const origin = lead.lead_sources?.name || 'Desconhecido';
+          originCounts[origin] = (originCounts[origin] || 0) + 1;
+        });
+        const leadOrigins = Object.entries(originCounts).map(([origin, count]) => ({ origin, count }));
+
+        // Calculate projects by stage
+        const stageCounts: Record<string, { count: number; value: number }> = {};
+        projects.forEach((project: any) => {
+          const stage = project.stage || 'captado';
+          if (!stageCounts[stage]) stageCounts[stage] = { count: 0, value: 0 };
+          stageCounts[stage].count++;
+          stageCounts[stage].value += project.value || 0;
+        });
+        const projectsByStage = Object.entries(stageCounts).map(([stage, data]) => ({
+          stage,
+          count: data.count,
+          value: data.value
+        }));
 
         return {
           period,
-          crmMetrics: crmData || {},
-          leadOrigins: originsData || [],
-          projectsByStage: stagesData || []
+          crmMetrics: {
+            em_orcamento: emOrcamento,
+            valor_fechado: valorFechado,
+            valor_perdido: valorPerdido,
+            fechado,
+            perdido,
+            total_leads: totalLeads,
+            projetos_ativos: projetosAtivos
+          },
+          leadOrigins,
+          projectsByStage
         };
       });
 
