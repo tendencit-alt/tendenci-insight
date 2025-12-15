@@ -24,7 +24,8 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Calendar as CalendarIcon, Mic, Square, Paperclip, Loader2, Plus } from "lucide-react";
+import { Calendar as CalendarIcon, Mic, Square, Paperclip, Loader2, Plus, Target, X } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { DealFileUpload } from "./DealFileUpload";
@@ -62,6 +63,22 @@ export function EditDealDialog({
   const [isUploading, setIsUploading] = useState(false);
   const [showCreateLead, setShowCreateLead] = useState(false);
   const [isArchitectDialogOpen, setIsArchitectDialogOpen] = useState(false);
+  
+  // Estados para indicações
+  const [existingIndications, setExistingIndications] = useState<any[]>([]);
+  const [pendingIndications, setPendingIndications] = useState<Array<{
+    architect_id: string;
+    architect_name: string;
+    product_type: string;
+    value: string;
+    notes: string;
+  }>>([]);
+  const [newIndication, setNewIndication] = useState({
+    architect_id: "",
+    product_type: "",
+    value: "",
+    notes: "",
+  });
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -109,8 +126,30 @@ export function EditDealDialog({
       
       fetchOptions();
       fetchDealFiles();
+      fetchExistingIndications();
+      // Limpar indicações pendentes ao abrir
+      setPendingIndications([]);
+      setNewIndication({ architect_id: "", product_type: "", value: "", notes: "" });
     }
   }, [open, deal]);
+
+  const fetchExistingIndications = async () => {
+    if (!deal?.id) return;
+    
+    const { data } = await supabase
+      .from("architect_indications")
+      .select(`
+        id,
+        architect_id,
+        product_type,
+        value,
+        notes,
+        architect:architects(name)
+      `)
+      .eq("deal_id", deal.id);
+    
+    setExistingIndications(data || []);
+  };
 
   const fetchOptions = async () => {
     if (!deal?.pipeline_id) return;
@@ -421,6 +460,28 @@ export function EditDealDialog({
           // Silenciar erro de atualização de lead
         }
       }
+      // Salvar novas indicações pendentes
+      if (pendingIndications.length > 0) {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        const indicationsToInsert = pendingIndications.map(ind => ({
+          deal_id: deal.id,
+          architect_id: ind.architect_id,
+          product_type: ind.product_type,
+          value: ind.value ? Number(ind.value) : null,
+          notes: ind.notes || null,
+          created_by: user?.id,
+        }));
+
+        const { error: indicationError } = await supabase
+          .from("architect_indications")
+          .insert(indicationsToInsert);
+
+        if (indicationError) {
+          console.error("Erro ao salvar indicações:", indicationError);
+        }
+      }
+
       toast({
         title: "Sucesso",
         description: "Negócio atualizado com sucesso!",
@@ -437,6 +498,59 @@ export function EditDealDialog({
         description: error.message,
         variant: "destructive",
       });
+    }
+  };
+
+  const handleAddIndication = () => {
+    if (!newIndication.architect_id || !newIndication.product_type) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Selecione o arquiteto e o tipo de produto.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const architect = architects.find(a => a.id === newIndication.architect_id);
+    
+    setPendingIndications([
+      ...pendingIndications,
+      {
+        ...newIndication,
+        architect_name: architect?.name || "Arquiteto",
+      },
+    ]);
+
+    setNewIndication({ architect_id: "", product_type: "", value: "", notes: "" });
+
+    toast({
+      title: "Indicação adicionada",
+      description: "A indicação será salva ao confirmar as alterações.",
+    });
+  };
+
+  const handleRemovePendingIndication = (index: number) => {
+    setPendingIndications(pendingIndications.filter((_, i) => i !== index));
+  };
+
+  const handleDeleteExistingIndication = async (indicationId: string) => {
+    const { error } = await supabase
+      .from("architect_indications")
+      .delete()
+      .eq("id", indicationId);
+
+    if (error) {
+      toast({
+        title: "Erro ao remover",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Indicação removida",
+        description: "A indicação foi removida com sucesso.",
+      });
+      fetchExistingIndications();
     }
   };
 
@@ -804,6 +918,152 @@ export function EditDealDialog({
                 </Popover>
               </div>
             </div>
+          </div>
+
+          {/* Seção: Indicação de Arquiteto */}
+          <div className="space-y-4 bg-amber-50 dark:bg-amber-950/20 p-4 rounded-lg border border-amber-200 dark:border-amber-800">
+            <div className="flex items-center gap-2">
+              <Target className="h-5 w-5 text-amber-600" />
+              <h3 className="text-sm font-semibold text-amber-800 dark:text-amber-200 uppercase">
+                Indicação de Arquiteto
+              </h3>
+              {(existingIndications.length + pendingIndications.length) > 0 && (
+                <Badge variant="secondary" className="bg-amber-200 text-amber-800">
+                  {existingIndications.length + pendingIndications.length} indicação(ões)
+                </Badge>
+              )}
+            </div>
+
+            {/* Indicações existentes */}
+            {existingIndications.length > 0 && (
+              <div className="space-y-2">
+                <Label className="text-amber-700 dark:text-amber-300">Indicações Salvas</Label>
+                <div className="space-y-2">
+                  {existingIndications.map((ind) => (
+                    <div key={ind.id} className="flex items-center justify-between bg-white dark:bg-background p-2 rounded border">
+                      <div className="text-sm">
+                        <span className="font-medium">{ind.architect?.name}</span>
+                        <span className="text-muted-foreground"> - {ind.product_type}</span>
+                        {ind.value && <span className="text-muted-foreground"> - R$ {Number(ind.value).toLocaleString('pt-BR')}</span>}
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteExistingIndication(ind.id)}
+                        className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Indicações pendentes */}
+            {pendingIndications.length > 0 && (
+              <div className="space-y-2">
+                <Label className="text-amber-700 dark:text-amber-300">Novas Indicações (não salvas)</Label>
+                <div className="space-y-2">
+                  {pendingIndications.map((ind, index) => (
+                    <div key={index} className="flex items-center justify-between bg-white dark:bg-background p-2 rounded border border-dashed border-amber-400">
+                      <div className="text-sm">
+                        <span className="font-medium">{ind.architect_name}</span>
+                        <span className="text-muted-foreground"> - {ind.product_type}</span>
+                        {ind.value && <span className="text-muted-foreground"> - R$ {Number(ind.value).toLocaleString('pt-BR')}</span>}
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRemovePendingIndication(index)}
+                        className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Formulário para nova indicação */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Arquiteto *</Label>
+                <Select
+                  value={newIndication.architect_id}
+                  onValueChange={(value) => setNewIndication({ ...newIndication, architect_id: value })}
+                >
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {architects.map((arch) => (
+                      <SelectItem key={arch.id} value={arch.id}>
+                        {arch.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-xs">Tipo de Produto *</Label>
+                <Select
+                  value={newIndication.product_type}
+                  onValueChange={(value) => setNewIndication({ ...newIndication, product_type: value })}
+                >
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Planejado">Planejado</SelectItem>
+                    <SelectItem value="Móvel">Móvel</SelectItem>
+                    <SelectItem value="Mesa">Mesa</SelectItem>
+                    <SelectItem value="Cadeira">Cadeira</SelectItem>
+                    <SelectItem value="Sofá">Sofá</SelectItem>
+                    <SelectItem value="Estante">Estante</SelectItem>
+                    <SelectItem value="Rack">Rack</SelectItem>
+                    <SelectItem value="Outro">Outro</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-xs">Valor Estimado</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={newIndication.value}
+                  onChange={(e) => setNewIndication({ ...newIndication, value: e.target.value })}
+                  placeholder="0.00"
+                  className="h-9"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-xs">Observações</Label>
+                <Input
+                  value={newIndication.notes}
+                  onChange={(e) => setNewIndication({ ...newIndication, notes: e.target.value })}
+                  placeholder="Observações"
+                  className="h-9"
+                />
+              </div>
+            </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleAddIndication}
+              className="w-full border-amber-400 text-amber-700 hover:bg-amber-100"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Adicionar Indicação
+            </Button>
           </div>
 
           <div className="flex justify-end gap-2 pt-4">
