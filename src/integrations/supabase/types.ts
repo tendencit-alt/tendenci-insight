@@ -4824,32 +4824,23 @@ export type Database = {
       }
       get_campaign_evolution: {
         Args: {
-          p_date_from?: string
-          p_date_to?: string
+          p_end_date?: string
+          p_start_date?: string
           p_vendedor_id?: string
         }
         Returns: Json
       }
       get_campaign_metrics: {
         Args: {
-          p_date_from?: string
-          p_date_to?: string
+          p_end_date?: string
+          p_start_date?: string
           p_vendedor_id?: string
         }
         Returns: Json
       }
       get_campaign_vendor_comparison: {
-        Args: { p_date_from: string; p_date_to: string }
-        Returns: {
-          convertidos: number
-          respostas: number
-          taxa_conversao: number
-          taxa_resposta: number
-          total_arquitetos: number
-          total_campanhas: number
-          vendedor_id: string
-          vendedor_nome: string
-        }[]
+        Args: { p_end_date?: string; p_start_date?: string }
+        Returns: Json
       }
       get_current_goals_status: {
         Args: { p_user_id?: string }
