@@ -180,6 +180,33 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
     setIsSaving(true);
     
     try {
+      // VALIDAÇÃO CRÍTICA: Verificar se há atualização na timeline nas últimas 24h
+      // Só aplica para CRIAÇÃO de novas tarefas, não para edição
+      if (!editingTaskId) {
+        const twentyFourHoursAgo = new Date();
+        twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
+        
+        const { data: recentUpdates, error: timelineError } = await supabase
+          .from("architect_timeline")
+          .select("id, created_at")
+          .eq("architect_id", architectId)
+          .gte("created_at", twentyFourHoursAgo.toISOString())
+          .limit(1);
+        
+        if (timelineError) {
+          console.error("Erro ao verificar timeline:", timelineError);
+        }
+        
+        if (!recentUpdates || recentUpdates.length === 0) {
+          toast({
+            title: "⚠️ Atualização na Timeline Obrigatória",
+            description: "Antes de criar uma tarefa, adicione uma atualização na Timeline Colaborativa (últimas 24h). Isso garante que o contexto do arquiteto está documentado.",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+
       // Validação detalhada do título
       if (!newTask.title || newTask.title.trim() === "") {
         toast({
