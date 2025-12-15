@@ -273,7 +273,14 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
 
                   {/* Badges - Indicações, Produtos e Projetos */}
                   <div className="flex gap-1.5 flex-wrap">
-                    {/* Badge 0: WhatsApp Inválido */}
+                    {/* Badge 0: Erro de Disparo */}
+                    {architect.tag_prospeccao === 'erro_disparo' && (
+                      <Badge variant="destructive" className="text-xs">
+                        ⚠️ Erro Disparo
+                      </Badge>
+                    )}
+
+                    {/* Badge 0.5: WhatsApp Inválido */}
                     {architect.whatsapp_valido === false && (
                       <Badge variant="destructive" className="text-xs flex items-center gap-1">
                         <PhoneOff className="h-3 w-3" />
