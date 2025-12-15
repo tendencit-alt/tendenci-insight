@@ -15,7 +15,8 @@ import {
   Users, 
   CalendarDays,
   Megaphone,
-  CheckCircle
+  CheckCircle,
+  User
 } from "lucide-react";
 import { format, startOfDay, endOfDay, subDays, startOfWeek, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -49,15 +50,22 @@ interface EvolutionData {
   erros: number;
 }
 
+interface Vendedor {
+  id: string;
+  full_name: string;
+}
+
 type DatePreset = 'today' | 'yesterday' | 'last7days' | 'thisWeek' | 'thisMonth' | 'custom';
 
 export function CampanhasKPIDashboard() {
   const [metrics, setMetrics] = useState<CampaignMetrics | null>(null);
   const [evolution, setEvolution] = useState<EvolutionData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [datePreset, setDatePreset] = useState<DatePreset>('last7days');
+  const [datePreset, setDatePreset] = useState<DatePreset>('thisMonth');
   const [customRange, setCustomRange] = useState<DateRange | undefined>();
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [vendedores, setVendedores] = useState<Vendedor[]>([]);
+  const [selectedVendedor, setSelectedVendedor] = useState<string>('all');
 
   const getDateRange = (): { from: Date; to: Date } => {
     const now = new Date();
@@ -78,22 +86,34 @@ export function CampanhasKPIDashboard() {
         if (customRange?.from && customRange?.to) {
           return { from: startOfDay(customRange.from), to: endOfDay(customRange.to) };
         }
-        return { from: startOfDay(subDays(now, 7)), to: endOfDay(now) };
+        return { from: startOfMonth(now), to: endOfMonth(now) };
       default:
-        return { from: startOfDay(subDays(now, 7)), to: endOfDay(now) };
+        return { from: startOfMonth(now), to: endOfMonth(now) };
     }
+  };
+
+  const fetchVendedores = async () => {
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, full_name')
+      .in('role', ['vendedor', 'admin'])
+      .order('full_name');
+    
+    if (data) setVendedores(data);
   };
 
   const fetchMetrics = async () => {
     setLoading(true);
     const { from, to } = getDateRange();
+    const vendedorId = selectedVendedor === 'all' ? null : selectedVendedor;
 
     try {
       // Fetch metrics
       const { data: metricsData, error: metricsError } = await supabase
         .rpc('get_campaign_metrics', {
           p_date_from: from.toISOString(),
-          p_date_to: to.toISOString()
+          p_date_to: to.toISOString(),
+          p_vendedor_id: vendedorId
         });
 
       if (metricsError) throw metricsError;
@@ -105,7 +125,8 @@ export function CampanhasKPIDashboard() {
       const { data: evolutionData, error: evolutionError } = await supabase
         .rpc('get_campaign_evolution', {
           p_date_from: from.toISOString(),
-          p_date_to: to.toISOString()
+          p_date_to: to.toISOString(),
+          p_vendedor_id: vendedorId
         });
 
       if (evolutionError) throw evolutionError;
@@ -120,8 +141,12 @@ export function CampanhasKPIDashboard() {
   };
 
   useEffect(() => {
+    fetchVendedores();
+  }, []);
+
+  useEffect(() => {
     fetchMetrics();
-  }, [datePreset, customRange]);
+  }, [datePreset, customRange, selectedVendedor]);
 
   const handlePresetChange = (value: string) => {
     if (value === 'custom') {
@@ -203,7 +228,22 @@ export function CampanhasKPIDashboard() {
           <h3 className="text-lg font-semibold">Dashboard de Campanhas</h3>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Select value={selectedVendedor} onValueChange={setSelectedVendedor}>
+            <SelectTrigger className="w-[180px]">
+              <User className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="Vendedor" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos Vendedores</SelectItem>
+              {vendedores.map((v) => (
+                <SelectItem key={v.id} value={v.id}>
+                  {v.full_name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
           <Select value={datePreset} onValueChange={handlePresetChange}>
             <SelectTrigger className="w-[180px]">
               <CalendarDays className="h-4 w-4 mr-2" />
