@@ -789,20 +789,35 @@ export function CampanhasManager() {
           
           <ScrollArea className="h-[300px] border rounded-md p-3">
             {arquitetosSemTarefa.map(arq => (
-              <div key={arq.id} className="flex items-center justify-between py-2 border-b last:border-b-0">
-                <div>
-                  <span className="font-medium">{arq.name}</span>
-                  {arq.company && <span className="text-muted-foreground ml-2">- {arq.company}</span>}
+              <div key={arq.id} className="flex items-center justify-between py-2 border-b last:border-b-0 gap-2">
+                <div className="flex-1 min-w-0">
+                  <span className="font-medium truncate">{arq.name}</span>
+                  {arq.company && <span className="text-muted-foreground ml-2 text-sm">- {arq.company}</span>}
                 </div>
-                <Badge variant="outline">
-                  {arq.status === 'contato_iniciado' ? 'Contato Iniciado' : 'Ativado'}
-                </Badge>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-xs whitespace-nowrap">
+                    {arq.status === 'contato_iniciado' ? 'Contato Iniciado' : 'Ativado'}
+                  </Badge>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 px-2 gap-1 text-xs"
+                    onClick={() => {
+                      setShowBlockingDialog(false);
+                      // Navegar para aba CRM e abrir sheet do arquiteto
+                      window.dispatchEvent(new CustomEvent('open-architect-sheet', { detail: { architectId: arq.id } }));
+                    }}
+                  >
+                    <Eye className="h-3 w-3" />
+                    Abrir
+                  </Button>
+                </div>
               </div>
             ))}
           </ScrollArea>
           
           <p className="text-sm text-muted-foreground mt-2">
-            📌 Acesse o <strong>Kanban de Arquitetos</strong> e agende tarefas futuras para esses arquitetos antes de disparar campanhas.
+            📌 Clique em <strong>"Abrir"</strong> para acessar o card do arquiteto e agendar uma tarefa.
           </p>
           
           <DialogFooter>
