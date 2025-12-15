@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { DashboardFilters } from "@/components/dashboard/DashboardFilters";
 import { StatCard } from "@/components/dashboard/StatCard";
@@ -36,6 +36,10 @@ import {
   Line
 } from "recharts";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PeriodComparison } from "@/components/ui/PeriodComparison";
+import { ComparisonKPICard, formatCurrency, formatNumber, PeriodValue } from "@/components/ui/ComparisonKPICard";
+import { usePeriodComparison, PeriodSelection, PERIOD_PRESETS } from "@/hooks/usePeriodComparison";
+import { format } from "date-fns";
 
 const COLORS = {
   primary: "hsl(357 75% 48%)",
@@ -45,85 +49,108 @@ const COLORS = {
   muted: "hsl(240 8% 20%)"
 };
 
+interface PeriodData {
+  period: PeriodSelection;
+  crmMetrics: any;
+  leadOrigins: any[];
+  projectsByStage: any[];
+}
+
 const Index = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   
-  // Estados para os dados
-  const [crmMetrics, setCrmMetrics] = useState<any>(null);
+  // Period comparison state
+  const {
+    selectedPeriods,
+    addPeriod,
+    removePeriod,
+    clearPeriods,
+    canAddMore,
+    maxPeriods,
+    formatPeriodDates
+  } = usePeriodComparison(5);
+
+  // Data states with period support
+  const [periodsData, setPeriodsData] = useState<PeriodData[]>([]);
   const [metaMessageCost, setMetaMessageCost] = useState<any>(null);
   const [metaAdSpend, setMetaAdSpend] = useState<any>(null);
   const [metaInitiatedMessages, setMetaInitiatedMessages] = useState<any>(null);
-  const [leadOrigins, setLeadOrigins] = useState<any[]>([]);
-  const [projectsByStage, setProjectsByStage] = useState<any[]>([]);
   const [architectsWithoutProjects, setArchitectsWithoutProjects] = useState<any[]>([]);
   const [architectResponseTime, setArchitectResponseTime] = useState<any>(null);
 
+  // Initialize with "this month" as default period
   useEffect(() => {
-    fetchAllData();
+    if (selectedPeriods.length === 0) {
+      addPeriod('thisMonth');
+    }
   }, []);
+
+  useEffect(() => {
+    if (selectedPeriods.length > 0) {
+      fetchAllData();
+    }
+  }, [selectedPeriods]);
 
   const fetchAllData = async () => {
     setLoading(true);
     
     try {
-      // 1. Métricas do CRM
-      const { data: crmData, error: crmError } = await supabase.rpc('dashboard_crm_metrics');
-      if (!crmError && crmData) {
-        setCrmMetrics(crmData);
-      }
+      // Fetch data for each selected period in parallel
+      const periodPromises = selectedPeriods.map(async (period) => {
+        const { from, to } = formatPeriodDates(period);
+        
+        // CRM Metrics with date filter
+        const { data: crmData } = await supabase.rpc('dashboard_crm_metrics_filtered', {
+          p_date_from: from,
+          p_date_to: to
+        }).catch(() => ({ data: null }));
 
-      // 2. Custo de mensagens Meta (API futura)
-      const { data: msgCostData, error: msgError } = await supabase.rpc('dashboard_meta_message_cost');
-      if (!msgError && msgCostData) {
-        setMetaMessageCost(msgCostData);
-      }
+        // Lead origins with date filter
+        const { data: originsData } = await supabase.rpc('dashboard_lead_origins_filtered', {
+          p_date_from: from,
+          p_date_to: to
+        }).catch(() => ({ data: [] }));
 
-      // 3. Gasto com Meta Ads (API futura)
-      const { data: adSpendData, error: adError } = await supabase.rpc('dashboard_meta_ad_spend');
-      if (!adError && adSpendData) {
-        setMetaAdSpend(adSpendData);
-      }
+        // Projects by stage with date filter
+        const { data: stagesData } = await supabase.rpc('dashboard_projects_by_stage_filtered', {
+          p_date_from: from,
+          p_date_to: to
+        }).catch(() => ({ data: [] }));
 
-      // 4. Mensagens Iniciadas Meta - Leads com tag de IA do CRM Clientes
-      const { count: aiLeadsCount, error: aiLeadsError } = await supabase
+        return {
+          period,
+          crmMetrics: crmData || {},
+          leadOrigins: originsData || [],
+          projectsByStage: stagesData || []
+        };
+      });
+
+      const allPeriodsData = await Promise.all(periodPromises);
+      setPeriodsData(allPeriodsData);
+
+      // Non-period-filtered data (static)
+      const { data: msgCostData } = await supabase.rpc('dashboard_meta_message_cost');
+      if (msgCostData) setMetaMessageCost(msgCostData);
+
+      const { data: adSpendData } = await supabase.rpc('dashboard_meta_ad_spend');
+      if (adSpendData) setMetaAdSpend(adSpendData);
+
+      const { count: aiLeadsCount } = await supabase
         .from('crm_deals')
         .select('*', { count: 'exact', head: true })
         .eq('from_ai', true);
       
-      if (!aiLeadsError) {
-        setMetaInitiatedMessages({ 
-          count: aiLeadsCount || 0,
-          api_connected: true 
-        });
-      }
+      setMetaInitiatedMessages({ count: aiLeadsCount || 0, api_connected: true });
 
-      // 5. Origem dos leads
-      const { data: originsData, error: originsError } = await supabase.rpc('dashboard_lead_origins');
-      if (!originsError && originsData) {
-        setLeadOrigins(originsData);
-      }
-
-      // 6. Projetos por estágio
-      const { data: stagesData, error: stagesError } = await supabase.rpc('dashboard_projects_by_stage');
-      if (!stagesError && stagesData) {
-        setProjectsByStage(stagesData);
-      }
-
-      // 7. Arquitetos sem projeto
-      const { data: archData, error: archError } = await supabase.rpc('dashboard_architects_without_projects', {
+      const { data: archData } = await supabase.rpc('dashboard_architects_without_projects', {
         days_threshold: 30
       });
-      if (!archError && archData) {
-        setArchitectsWithoutProjects(archData);
-      }
+      if (archData) setArchitectsWithoutProjects(archData);
 
-      // 8. Tempo de resposta de arquitetos
-      const { data: responseData, error: responseError } = await supabase.rpc('dashboard_architect_response_time');
-      if (!responseError && responseData) {
-        setArchitectResponseTime(responseData);
-      }
+      const { data: responseData } = await supabase.rpc('dashboard_architect_response_time');
+      if (responseData) setArchitectResponseTime(responseData);
 
     } catch (error: any) {
       toast({
@@ -146,14 +173,30 @@ const Index = () => {
     });
   };
 
+  // Helper to create period values for comparison cards
+  const createPeriodValues = (getValue: (data: PeriodData) => number, formatter: (v: number) => string): PeriodValue[] => {
+    return periodsData.map(pd => ({
+      periodId: pd.period.id,
+      periodLabel: pd.period.label,
+      periodColor: pd.period.color,
+      value: getValue(pd),
+      formattedValue: formatter(getValue(pd))
+    }));
+  };
+
+  // Get primary period data for charts
+  const primaryData = periodsData[0];
+  const leadOrigins = primaryData?.leadOrigins || [];
+  const projectsByStage = primaryData?.projectsByStage || [];
+
   // Preparar dados para os gráficos
-  const pieChartData = leadOrigins.map((item, index) => ({
+  const pieChartData = leadOrigins.map((item: any, index: number) => ({
     name: item.origin,
     value: Number(item.count),
     color: [COLORS.primary, COLORS.success, COLORS.warning, COLORS.info, COLORS.muted][index % 5]
   }));
 
-  const barChartData = projectsByStage.map(item => ({
+  const barChartData = projectsByStage.map((item: any) => ({
     stage: item.stage.charAt(0).toUpperCase() + item.stage.slice(1),
     quantidade: Number(item.count),
     valor: Number(item.value)
@@ -193,68 +236,98 @@ const Index = () => {
               Atualizar
             </Button>
           </div>
-          <DashboardFilters />
-        </div>
-
-        {/* Métricas CRM - Sistema */}
-        <div>
-          <h2 className="text-2xl font-bold mb-6 flex items-center gap-3">
-            <div className="h-1 w-12 bg-gradient-to-r from-primary to-primary/50 rounded-full" />
-            Métricas do Sistema CRM
-          </h2>
-          <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
-            <StatCard
-              title="Em Orçamento"
-              value={`${crmMetrics?.em_orcamento || 0}`}
-              subtitle="Negócios na fase de orçamento"
-              icon={Target}
-              variant="default"
-            />
-            <StatCard
-              title="Fechado"
-              value={`R$ ${Number(crmMetrics?.valor_fechado || 0).toLocaleString('pt-BR')}`}
-              subtitle={`${crmMetrics?.fechado || 0} negócios ganhos`}
-              icon={TrendingUp}
-              variant="success"
-            />
-            <StatCard
-              title="Total de Leads"
-              value={`${crmMetrics?.total_leads || 0}`}
-              subtitle="Total de negócios no CRM"
-              icon={Users}
-              variant="default"
-            />
-            <StatCard
-              title="Projetos Ativos"
-              value={`${crmMetrics?.projetos_ativos || 0}`}
-              subtitle="Negócios em andamento"
-              icon={Package}
-              variant="success"
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+            <PeriodComparison
+              selectedPeriods={selectedPeriods}
+              onAddPeriod={addPeriod}
+              onRemovePeriod={removePeriod}
+              onClear={clearPeriods}
+              canAddMore={canAddMore}
+              maxPeriods={maxPeriods}
             />
           </div>
         </div>
 
-        <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-          <StatCard
-            title="Perdido"
-            value={`R$ ${Number(crmMetrics?.valor_perdido || 0).toLocaleString('pt-BR')}`}
-            subtitle={`${crmMetrics?.perdido || 0} negócios perdidos`}
+        {/* Métricas CRM - Sistema com Comparativo */}
+        <div>
+          <h2 className="text-2xl font-bold mb-6 flex items-center gap-3">
+            <div className="h-1 w-12 bg-gradient-to-r from-primary to-primary/50 rounded-full" />
+            Métricas do Sistema CRM
+            {selectedPeriods.length > 1 && (
+              <Badge variant="outline" className="text-xs font-normal">
+                Comparando {selectedPeriods.length} períodos
+              </Badge>
+            )}
+          </h2>
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+            <ComparisonKPICard
+              title="Em Orçamento"
+              icon={Target}
+              periodValues={createPeriodValues(
+                (pd) => pd.crmMetrics?.em_orcamento || 0,
+                (v) => String(v)
+              )}
+              loading={loading}
+            />
+            <ComparisonKPICard
+              title="Valor Fechado"
+              icon={TrendingUp}
+              periodValues={createPeriodValues(
+                (pd) => pd.crmMetrics?.valor_fechado || 0,
+                (v) => formatCurrency(v)
+              )}
+              loading={loading}
+            />
+            <ComparisonKPICard
+              title="Total de Leads"
+              icon={Users}
+              periodValues={createPeriodValues(
+                (pd) => pd.crmMetrics?.total_leads || 0,
+                (v) => String(v)
+              )}
+              loading={loading}
+            />
+            <ComparisonKPICard
+              title="Projetos Ativos"
+              icon={Package}
+              periodValues={createPeriodValues(
+                (pd) => pd.crmMetrics?.projetos_ativos || 0,
+                (v) => String(v)
+              )}
+              loading={loading}
+            />
+          </div>
+        </div>
+
+        <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+          <ComparisonKPICard
+            title="Valor Perdido"
             icon={TrendingDown}
-            variant="destructive"
+            periodValues={createPeriodValues(
+              (pd) => pd.crmMetrics?.valor_perdido || 0,
+              (v) => formatCurrency(v)
+            )}
+            loading={loading}
+            invertVariation
           />
-          <StatCard
-            title="Tempo Médio"
-            value={`${architectResponseTime?.avg_days || 0} dias`}
-            subtitle="Resposta de arquitetos"
-            icon={Clock}
-            variant="warning"
+          <ComparisonKPICard
+            title="Negócios Ganhos"
+            icon={TrendingUp}
+            periodValues={createPeriodValues(
+              (pd) => pd.crmMetrics?.fechado || 0,
+              (v) => String(v)
+            )}
+            loading={loading}
           />
-          <StatCard
-            title="Leads Cadastrados"
-            value={`${leadOrigins.reduce((acc, item) => acc + Number(item.count), 0)}`}
-            subtitle="Total de leads por origem"
-            icon={Users}
-            variant="default"
+          <ComparisonKPICard
+            title="Negócios Perdidos"
+            icon={TrendingDown}
+            periodValues={createPeriodValues(
+              (pd) => pd.crmMetrics?.perdido || 0,
+              (v) => String(v)
+            )}
+            loading={loading}
+            invertVariation
           />
         </div>
 
