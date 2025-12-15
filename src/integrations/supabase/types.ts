@@ -4823,11 +4823,11 @@ export type Database = {
         }[]
       }
       get_campaign_evolution: {
-        Args: { p_date_from: string; p_date_to: string }
+        Args: { p_date_from: string; p_date_to: string; p_vendedor_id?: string }
         Returns: Json
       }
       get_campaign_metrics: {
-        Args: { p_date_from: string; p_date_to: string }
+        Args: { p_date_from: string; p_date_to: string; p_vendedor_id?: string }
         Returns: Json
       }
       get_current_goals_status: {
