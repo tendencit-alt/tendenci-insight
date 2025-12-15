@@ -55,11 +55,23 @@ interface Vendedor {
   full_name: string;
 }
 
+interface VendorComparison {
+  vendedor_id: string;
+  vendedor_nome: string;
+  total_campanhas: number;
+  mensagens_enviadas: number;
+  respostas: number;
+  convertidos: number;
+  taxa_resposta: number;
+  taxa_conversao: number;
+}
+
 type DatePreset = 'today' | 'yesterday' | 'last7days' | 'thisWeek' | 'thisMonth' | 'custom';
 
 export function CampanhasKPIDashboard() {
   const [metrics, setMetrics] = useState<CampaignMetrics | null>(null);
   const [evolution, setEvolution] = useState<EvolutionData[]>([]);
+  const [vendorComparison, setVendorComparison] = useState<VendorComparison[]>([]);
   const [loading, setLoading] = useState(true);
   const [datePreset, setDatePreset] = useState<DatePreset>('thisMonth');
   const [customRange, setCustomRange] = useState<DateRange | undefined>();
@@ -132,6 +144,18 @@ export function CampanhasKPIDashboard() {
       if (evolutionError) throw evolutionError;
       if (Array.isArray(evolutionData)) {
         setEvolution(evolutionData as unknown as EvolutionData[]);
+      }
+
+      // Fetch vendor comparison
+      const { data: comparisonData, error: comparisonError } = await supabase
+        .rpc('get_campaign_vendor_comparison', {
+          p_date_from: from.toISOString(),
+          p_date_to: to.toISOString()
+        });
+
+      if (comparisonError) throw comparisonError;
+      if (Array.isArray(comparisonData)) {
+        setVendorComparison(comparisonData as unknown as VendorComparison[]);
       }
     } catch (error) {
       console.error('Erro ao buscar métricas:', error);
@@ -406,6 +430,56 @@ export function CampanhasKPIDashboard() {
                   />
                 </LineChart>
               </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Comparativo de Vendedores */}
+      {vendorComparison.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Comparativo de Vendedores
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="text-left py-2 px-3 font-medium text-muted-foreground">Vendedor</th>
+                    <th className="text-center py-2 px-3 font-medium text-muted-foreground">Campanhas</th>
+                    <th className="text-center py-2 px-3 font-medium text-muted-foreground">Enviados</th>
+                    <th className="text-center py-2 px-3 font-medium text-muted-foreground">Respostas</th>
+                    <th className="text-center py-2 px-3 font-medium text-muted-foreground">Convertidos</th>
+                    <th className="text-center py-2 px-3 font-medium text-muted-foreground">Taxa Resposta</th>
+                    <th className="text-center py-2 px-3 font-medium text-muted-foreground">Taxa Conversão</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {vendorComparison.map((vendor, idx) => (
+                    <tr key={vendor.vendedor_id} className={idx % 2 === 0 ? 'bg-muted/30' : ''}>
+                      <td className="py-2 px-3 font-medium">{vendor.vendedor_nome}</td>
+                      <td className="text-center py-2 px-3">{vendor.total_campanhas}</td>
+                      <td className="text-center py-2 px-3">{vendor.mensagens_enviadas}</td>
+                      <td className="text-center py-2 px-3">{vendor.respostas}</td>
+                      <td className="text-center py-2 px-3">{vendor.convertidos}</td>
+                      <td className="text-center py-2 px-3">
+                        <span className={`font-medium ${Number(vendor.taxa_resposta) >= 30 ? 'text-green-600' : Number(vendor.taxa_resposta) >= 15 ? 'text-yellow-600' : 'text-muted-foreground'}`}>
+                          {vendor.taxa_resposta}%
+                        </span>
+                      </td>
+                      <td className="text-center py-2 px-3">
+                        <span className={`font-medium ${Number(vendor.taxa_conversao) >= 20 ? 'text-green-600' : Number(vendor.taxa_conversao) >= 10 ? 'text-yellow-600' : 'text-muted-foreground'}`}>
+                          {vendor.taxa_conversao}%
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </CardContent>
         </Card>

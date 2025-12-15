@@ -4838,6 +4838,19 @@ export type Database = {
         }
         Returns: Json
       }
+      get_campaign_vendor_comparison: {
+        Args: { p_date_from: string; p_date_to: string }
+        Returns: {
+          convertidos: number
+          mensagens_enviadas: number
+          respostas: number
+          taxa_conversao: number
+          taxa_resposta: number
+          total_campanhas: number
+          vendedor_id: string
+          vendedor_nome: string
+        }[]
+      }
       get_current_goals_status: {
         Args: { p_user_id?: string }
         Returns: {
