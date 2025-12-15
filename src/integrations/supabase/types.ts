@@ -4842,10 +4842,10 @@ export type Database = {
         Args: { p_date_from: string; p_date_to: string }
         Returns: {
           convertidos: number
-          mensagens_enviadas: number
           respostas: number
           taxa_conversao: number
           taxa_resposta: number
+          total_arquitetos: number
           total_campanhas: number
           vendedor_id: string
           vendedor_nome: string
