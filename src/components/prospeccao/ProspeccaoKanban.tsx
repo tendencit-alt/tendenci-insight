@@ -328,14 +328,14 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
                       );
                     })()}
 
-                    {/* Badge 4: Indicações */}
+                    {/* Badge 4: Indicação */}
                     {(() => {
                       const totalIndicacoes = architect.total_indicacoes || 0;
                       
                       return totalIndicacoes > 0 ? (
-                        <Badge className="text-xs bg-purple-600 hover:bg-purple-700 flex items-center gap-1">
+                        <Badge className="text-xs bg-amber-500 hover:bg-amber-600 text-white flex items-center gap-1">
                           <Target className="h-3 w-3" />
-                          {totalIndicacoes} indicaç{totalIndicacoes > 1 ? 'ões' : 'ão'}
+                          Indicação
                         </Badge>
                       ) : null;
                     })()}
