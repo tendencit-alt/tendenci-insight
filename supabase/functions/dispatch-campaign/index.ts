@@ -190,6 +190,12 @@ Deno.serve(async (req) => {
     if (!phoneResult.formatted) {
       console.error(`❌ Número inválido para ${nome}:`, phoneResult.error)
       
+      // Adicionar tag de erro ao arquiteto
+      await supabase
+        .from('architects')
+        .update({ tag_prospeccao: 'erro_disparo' })
+        .eq('id', arquiteto_id)
+      
       // Registrar erro de formatação
       await supabase
         .from('tendenci_prospec_arq_logs')
@@ -241,6 +247,15 @@ Deno.serve(async (req) => {
         // Se retornou array e o primeiro elemento tem exists: false
         if (Array.isArray(checkResult) && checkResult.length > 0 && checkResult[0]?.exists === false) {
           console.error(`❌ Número ${formattedNumber} não está registrado no WhatsApp`)
+          
+          // Marcar arquiteto com whatsapp_valido = false e tag de erro
+          await supabase
+            .from('architects')
+            .update({ 
+              whatsapp_valido: false,
+              tag_prospeccao: 'erro_disparo'
+            })
+            .eq('id', arquiteto_id)
           
           // Registrar erro específico
           await supabase
@@ -406,16 +421,31 @@ Deno.serve(async (req) => {
       if (isNumeroInexistente) {
         tipoErro = 'numero_inexistente'
         
-        // Marcar arquiteto IMEDIATAMENTE como whatsapp_valido = false
+        // Marcar arquiteto IMEDIATAMENTE como whatsapp_valido = false e adicionar tag de erro
         const { error: updateError } = await supabase
           .from('architects')
-          .update({ whatsapp_valido: false })
+          .update({ 
+            whatsapp_valido: false,
+            tag_prospeccao: 'erro_disparo'
+          })
           .eq('id', arquiteto_id)
           
         if (updateError) {
           console.error('❌ Erro ao marcar whatsapp_valido = false:', updateError)
         } else {
-          console.log(`✅ Arquiteto ${arquiteto_id} marcado como whatsapp_valido = false`)
+          console.log(`✅ Arquiteto ${arquiteto_id} marcado como whatsapp_valido = false e tag_prospeccao = erro_disparo`)
+        }
+      } else {
+        // Outros tipos de erro também recebem tag
+        const { error: tagError } = await supabase
+          .from('architects')
+          .update({ tag_prospeccao: 'erro_disparo' })
+          .eq('id', arquiteto_id)
+          
+        if (tagError) {
+          console.error('❌ Erro ao adicionar tag_prospeccao:', tagError)
+        } else {
+          console.log(`✅ Arquiteto ${arquiteto_id} marcado com tag_prospeccao = erro_disparo`)
         }
       }
       
