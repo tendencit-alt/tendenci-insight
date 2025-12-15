@@ -4935,6 +4935,7 @@ export type Database = {
           phone: string
           produtos_indicados: Json
           status_funil: string
+          tag_prospeccao: string
           tier: string
           total_indicacoes: number
           total_projects: number
