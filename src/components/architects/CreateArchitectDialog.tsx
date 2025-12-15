@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useFormPersistence } from "@/hooks/useFormPersistence";
 import { FormSaveIndicator } from "@/components/ui/FormSaveIndicator";
+import { Target } from "lucide-react";
 
 interface CreateArchitectDialogProps {
   open: boolean;
@@ -18,6 +19,7 @@ interface CreateArchitectDialogProps {
 
 export function CreateArchitectDialog({ open, onOpenChange, onSuccess }: CreateArchitectDialogProps) {
   const [loading, setLoading] = useState(false);
+  const [deals, setDeals] = useState<any[]>([]);
   const [formData, setFormData, clearPersistedData, hasRestoredData] = useFormPersistence(
     'create-architect-form',
     {
@@ -34,6 +36,30 @@ export function CreateArchitectDialog({ open, onOpenChange, onSuccess }: CreateA
     open
   );
 
+  // Estado para indicação de oportunidade
+  const [hasIndication, setHasIndication] = useState(false);
+  const [indication, setIndication] = useState({
+    deal_id: "",
+    product_type: "",
+    value: "",
+    notes: ""
+  });
+
+  useEffect(() => {
+    if (open) {
+      fetchDeals();
+    }
+  }, [open]);
+
+  const fetchDeals = async () => {
+    const { data } = await supabase
+      .from("crm_deals")
+      .select("id, title, lead:leads(client:clients(name))")
+      .order("created_at", { ascending: false })
+      .limit(50);
+    
+    setDeals(data || []);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,6 +71,12 @@ export function CreateArchitectDialog({ open, onOpenChange, onSuccess }: CreateA
 
     if (!formData.phone) {
       toast.error("WhatsApp é obrigatório");
+      return;
+    }
+
+    // Validar indicação se ativada
+    if (hasIndication && (!indication.deal_id || !indication.product_type)) {
+      toast.error("Para adicionar indicação, selecione a oportunidade e o tipo de produto");
       return;
     }
 
@@ -74,6 +106,20 @@ export function CreateArchitectDialog({ open, onOpenChange, onSuccess }: CreateA
 
       if (error) throw error;
 
+      // Salvar indicação se houver
+      if (hasIndication && data && indication.deal_id && indication.product_type) {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        await supabase.from("architect_indications").insert({
+          architect_id: data.id,
+          deal_id: indication.deal_id,
+          product_type: indication.product_type,
+          value: indication.value ? Number(indication.value) : null,
+          notes: indication.notes || null,
+          created_by: user?.id || null,
+        });
+      }
+
       toast.success("Arquiteto criado com sucesso!");
       
       clearPersistedData();
@@ -92,6 +138,8 @@ export function CreateArchitectDialog({ open, onOpenChange, onSuccess }: CreateA
         data_primeiro_contato: "",
         data_ultimo_contato: ""
       });
+      setHasIndication(false);
+      setIndication({ deal_id: "", product_type: "", value: "", notes: "" });
       
     } catch (error: any) {
       toast.error(error.message || "Erro ao criar arquiteto");
@@ -231,6 +279,94 @@ export function CreateArchitectDialog({ open, onOpenChange, onSuccess }: CreateA
                     type="date"
                     value={formData.data_ultimo_contato}
                     onChange={(e) => setFormData({ ...formData, data_ultimo_contato: e.target.value })}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Seção de Indicação de Oportunidade */}
+          <div className="space-y-4 p-4 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-900">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Target className="h-4 w-4 text-amber-600" />
+                <div className="space-y-0.5">
+                  <Label htmlFor="has_indication" className="text-base text-amber-800 dark:text-amber-200">
+                    Indicação de Oportunidade
+                  </Label>
+                  <p className="text-sm text-amber-700 dark:text-amber-300">
+                    Vincule este arquiteto a uma oportunidade existente
+                  </p>
+                </div>
+              </div>
+              <Switch
+                id="has_indication"
+                checked={hasIndication}
+                onCheckedChange={(checked) => {
+                  setHasIndication(checked);
+                  if (!checked) {
+                    setIndication({ deal_id: "", product_type: "", value: "", notes: "" });
+                  }
+                }}
+              />
+            </div>
+
+            {hasIndication && (
+              <div className="grid grid-cols-2 gap-4 pt-2">
+                <div className="space-y-2">
+                  <Label className="text-sm">Oportunidade *</Label>
+                  <Select
+                    value={indication.deal_id}
+                    onValueChange={(value) => setIndication(prev => ({ ...prev, deal_id: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione a oportunidade" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {deals.map((deal) => (
+                        <SelectItem key={deal.id} value={deal.id}>
+                          {deal.title}
+                          {deal.lead?.client?.name && ` - ${deal.lead.client.name}`}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm">Tipo de Produto *</Label>
+                  <Select
+                    value={indication.product_type}
+                    onValueChange={(value) => setIndication(prev => ({ ...prev, product_type: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {["Sofá", "Poltrona", "Mesa", "Cadeira", "Aparador", "Banqueta", "Rack", "Cristaleira", "Estante", "Vaso", "Quadro", "Chaise", "Personalizado"].map((tp) => (
+                        <SelectItem key={tp} value={tp}>{tp}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm">Valor Estimado (R$)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={indication.value}
+                    onChange={(e) => setIndication(prev => ({ ...prev, value: e.target.value }))}
+                    placeholder="0.00"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm">Observações</Label>
+                  <Input
+                    value={indication.notes}
+                    onChange={(e) => setIndication(prev => ({ ...prev, notes: e.target.value }))}
+                    placeholder="Observações da indicação"
                   />
                 </div>
               </div>

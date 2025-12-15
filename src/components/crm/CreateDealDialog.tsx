@@ -25,7 +25,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { Plus, Calendar as CalendarIcon, Clock, Trash2, Mic, Square, Paperclip, Loader2 } from "lucide-react";
+import { Plus, Calendar as CalendarIcon, Clock, Trash2, Mic, Square, Paperclip, Loader2, Target } from "lucide-react";
 import { validateFileType, validateFileSize, MAX_FILE_SIZE_MB, ALLOWED_FILE_TYPES_ACCEPT } from "@/lib/utils";
 import { CreateClientDialog } from "./CreateClientDialog";
 import { CreateArchitectDialog } from "../architects/CreateArchitectDialog";
@@ -69,6 +69,22 @@ export function CreateDealDialog({
   const [isUploading, setIsUploading] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [pendingAudios, setPendingAudios] = useState<Blob[]>([]);
+  
+  // Estado para indicações pendentes
+  const [pendingIndications, setPendingIndications] = useState<Array<{
+    architect_id: string;
+    architect_name: string;
+    product_type: string;
+    value: string;
+    notes: string;
+  }>>([]);
+  const [newIndication, setNewIndication] = useState({
+    architect_id: "",
+    product_type: "",
+    value: "",
+    notes: ""
+  });
+  const [showIndicationForm, setShowIndicationForm] = useState(false);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -472,6 +488,26 @@ export function CreateDealDialog({
         await uploadPendingFiles(dealData.id);
       }
 
+      // Salvar indicações pendentes
+      if (pendingIndications.length > 0 && dealData) {
+        const indicationsToInsert = pendingIndications.map(ind => ({
+          deal_id: dealData.id,
+          architect_id: ind.architect_id,
+          product_type: ind.product_type,
+          value: ind.value ? Number(ind.value) : null,
+          notes: ind.notes || null,
+          created_by: user?.id || null,
+        }));
+
+        const { error: indError } = await supabase
+          .from("architect_indications")
+          .insert(indicationsToInsert);
+
+        if (indError) {
+          console.error("Erro ao salvar indicações:", indError);
+        }
+      }
+
       setLoading(false);
 
       toast({
@@ -501,6 +537,9 @@ export function CreateDealDialog({
       setIsAddingTask(false);
       setPendingFiles([]);
       setPendingAudios([]);
+      setPendingIndications([]);
+      setNewIndication({ architect_id: "", product_type: "", value: "", notes: "" });
+      setShowIndicationForm(false);
       onOpenChange(false);
       onSuccess();
     } catch (error: any) {
@@ -689,6 +728,162 @@ export function CreateDealDialog({
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          {/* Seção: Indicação de Arquiteto */}
+          <div className="space-y-4 p-4 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-900">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Target className="h-4 w-4 text-amber-600" />
+                <h3 className="text-sm font-semibold text-amber-800 dark:text-amber-200 uppercase">
+                  Indicação de Arquiteto
+                </h3>
+                {pendingIndications.length > 0 && (
+                  <span className="bg-amber-500 text-white text-xs px-2 py-0.5 rounded-full">
+                    {pendingIndications.length}
+                  </span>
+                )}
+              </div>
+              {!showIndicationForm && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowIndicationForm(true)}
+                  className="h-7 text-xs border-amber-300 text-amber-700 hover:bg-amber-100"
+                >
+                  <Plus className="mr-1 h-3 w-3" />
+                  Adicionar Indicação
+                </Button>
+              )}
+            </div>
+
+            {/* Lista de indicações pendentes */}
+            {pendingIndications.length > 0 && (
+              <div className="space-y-2">
+                {pendingIndications.map((ind, index) => (
+                  <div key={index} className="flex items-center justify-between bg-white dark:bg-background p-2 rounded border">
+                    <div className="text-sm">
+                      <span className="font-medium">{ind.architect_name}</span>
+                      <span className="text-muted-foreground"> - {ind.product_type}</span>
+                      {ind.value && <span className="text-muted-foreground"> (R$ {ind.value})</span>}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setPendingIndications(prev => prev.filter((_, i) => i !== index))}
+                      className="h-6 w-6 p-0 text-destructive"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Formulário de nova indicação */}
+            {showIndicationForm && (
+              <div className="space-y-3 p-3 bg-white dark:bg-background rounded border">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Arquiteto *</Label>
+                    <Select
+                      value={newIndication.architect_id}
+                      onValueChange={(value) => setNewIndication(prev => ({ ...prev, architect_id: value }))}
+                    >
+                      <SelectTrigger className="h-8 text-sm">
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {architects.map((arch) => (
+                          <SelectItem key={arch.id} value={arch.id}>
+                            {arch.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-xs">Tipo de Produto *</Label>
+                    <Select
+                      value={newIndication.product_type}
+                      onValueChange={(value) => setNewIndication(prev => ({ ...prev, product_type: value }))}
+                    >
+                      <SelectTrigger className="h-8 text-sm">
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {["Sofá", "Poltrona", "Mesa", "Cadeira", "Aparador", "Banqueta", "Rack", "Cristaleira", "Estante", "Vaso", "Quadro", "Chaise", "Personalizado"].map((tp) => (
+                          <SelectItem key={tp} value={tp}>{tp}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-xs">Valor Estimado (R$)</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={newIndication.value}
+                      onChange={(e) => setNewIndication(prev => ({ ...prev, value: e.target.value }))}
+                      placeholder="0.00"
+                      className="h-8 text-sm"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-xs">Observações</Label>
+                    <Input
+                      value={newIndication.notes}
+                      onChange={(e) => setNewIndication(prev => ({ ...prev, notes: e.target.value }))}
+                      placeholder="Observações"
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-2 justify-end">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setShowIndicationForm(false);
+                      setNewIndication({ architect_id: "", product_type: "", value: "", notes: "" });
+                    }}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="bg-amber-500 hover:bg-amber-600"
+                    onClick={() => {
+                      if (!newIndication.architect_id || !newIndication.product_type) {
+                        toast({
+                          title: "Campos obrigatórios",
+                          description: "Selecione o arquiteto e o tipo de produto.",
+                          variant: "destructive",
+                        });
+                        return;
+                      }
+                      const arch = architects.find(a => a.id === newIndication.architect_id);
+                      setPendingIndications(prev => [...prev, {
+                        ...newIndication,
+                        architect_name: arch?.name || "Arquiteto"
+                      }]);
+                      setNewIndication({ architect_id: "", product_type: "", value: "", notes: "" });
+                      setShowIndicationForm(false);
+                    }}
+                  >
+                    Adicionar
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Seção: Detalhes do Negócio */}
