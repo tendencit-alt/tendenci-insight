@@ -4716,7 +4716,10 @@ export type Database = {
       calculate_seller_rankings: { Args: never; Returns: undefined }
       check_and_expire_goals: { Args: never; Returns: undefined }
       check_and_update_inactive_architects: { Args: never; Returns: undefined }
-      check_campaign_dispatch_allowed: { Args: never; Returns: Json }
+      check_campaign_dispatch_allowed: {
+        Args: { p_user_id?: string }
+        Returns: Json
+      }
       create_daily_architect_goals: { Args: never; Returns: undefined }
       create_goal_reminder_notifications: { Args: never; Returns: undefined }
       crm_agg: {
