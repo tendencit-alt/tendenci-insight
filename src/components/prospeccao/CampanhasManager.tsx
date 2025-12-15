@@ -75,11 +75,18 @@ interface ArquitetoSemTarefa {
   company: string | null;
 }
 
+interface KanbanStage {
+  id: string;
+  nome: string;
+  slug: string;
+}
+
 export function CampanhasManager() {
   const { toast } = useToast();
   const [campanhas, setCampanhas] = useState<Campanha[]>([]);
   const [arquitetosDisponiveis, setArquitetosDisponiveis] = useState<Arquiteto[]>([]);
   const [whatsappConnections, setWhatsappConnections] = useState<WhatsAppConnection[]>([]);
+  const [kanbanStages, setKanbanStages] = useState<KanbanStage[]>([]);
   const [loading, setLoading] = useState(false);
   const [dispatching, setDispatching] = useState(false);
   const [dispatchProgress, setDispatchProgress] = useState(0);
@@ -94,6 +101,9 @@ export function CampanhasManager() {
   const [arquitetosSemTarefa, setArquitetosSemTarefa] = useState<ArquitetoSemTarefa[]>([]);
   const [checkingDispatchStatus, setCheckingDispatchStatus] = useState(false);
   const [showBlockingDialog, setShowBlockingDialog] = useState(false);
+  
+  // Filtro de etapa do kanban
+  const [filtroEtapa, setFiltroEtapa] = useState<string>("novo_arquiteto");
   
   // Form state - NOT persisted, stays static when switching tabs
   const [formData, setFormData] = useState({
@@ -143,12 +153,34 @@ export function CampanhasManager() {
     }
   };
 
+  const fetchKanbanStages = async () => {
+    const { data, error } = await supabase
+      .from('tendenci_prospec_arq_stages')
+      .select('id, nome, slug')
+      .eq('ativa', true)
+      .order('position');
+
+    if (!error && data) {
+      setKanbanStages(data);
+    }
+  };
+
   useEffect(() => {
     fetchCampanhas();
-    fetchArquitetosDisponiveis();
+    fetchArquitetosDisponiveis(undefined, filtroEtapa);
     fetchWhatsAppConnections();
+    fetchKanbanStages();
     checkDispatchAllowed();
   }, []);
+  
+  // Recarregar arquitetos quando etapa mudar
+  useEffect(() => {
+    if (isDialogOpen) {
+      fetchArquitetosDisponiveis(editingCampanha?.id, filtroEtapa);
+      // Limpar seleção quando mudar etapa
+      setFormData(prev => ({ ...prev, arquitetosSelecionados: [] }));
+    }
+  }, [filtroEtapa]);
 
   const fetchCampanhas = async () => {
     const { data, error } = await supabase
@@ -176,7 +208,7 @@ export function CampanhasManager() {
   const [arquitetosEmOutrasCampanhas, setArquitetosEmOutrasCampanhas] = useState(0);
   const [arquitetosComErroTelefone, setArquitetosComErroTelefone] = useState(0);
 
-  const fetchArquitetosDisponiveis = async (editingCampaignId?: string) => {
+  const fetchArquitetosDisponiveis = async (editingCampaignId?: string, statusFunil?: string) => {
     // 1. Buscar TODOS os IDs de arquitetos que JÁ foram para QUALQUER campanha (independente do status)
     const { data: jaEmCampanhas } = await supabase
       .from('tendenci_prospec_arq_campaign_architects')
@@ -213,11 +245,13 @@ export function CampanhasManager() {
     console.log(`📵 Arquitetos com erro de telefone: ${idsComErroTelefone.length}`);
     setArquitetosEmOutrasCampanhas(idsJaEmCampanhas.length);
 
-    // 5. Buscar APENAS arquitetos com status_funil='novo_arquiteto' (nunca contactados)
+    // 5. Buscar arquitetos filtrados pela etapa do kanban selecionada
+    const etapaFiltro = statusFunil || filtroEtapa || 'novo_arquiteto';
+    
     let query = supabase
       .from('architects')
       .select('id, name, phone, tier, tag_prospeccao')
-      .eq('status_funil', 'novo_arquiteto')
+      .eq('status_funil', etapaFiltro)
       .eq('active', true);
 
     if (todosIdsParaExcluir.length > 0) {
@@ -227,7 +261,7 @@ export function CampanhasManager() {
     const { data, error } = await query.order('name');
 
     if (!error && data) {
-      console.log(`✅ Arquitetos disponíveis para campanha: ${data.length}`);
+      console.log(`✅ Arquitetos disponíveis para campanha (etapa: ${etapaFiltro}): ${data.length}`);
       setArquitetosDisponiveis(data);
     }
   };
@@ -262,10 +296,11 @@ export function CampanhasManager() {
         whatsappConnectionId: campanha.whatsapp_connection_id || "",
       });
       // Recarregar arquitetos disponíveis considerando esta campanha em edição
-      fetchArquitetosDisponiveis(campanha.id);
+      fetchArquitetosDisponiveis(campanha.id, filtroEtapa);
     } else {
       resetForm();
-      fetchArquitetosDisponiveis();
+      setFiltroEtapa("novo_arquiteto"); // Reset para etapa padrão
+      fetchArquitetosDisponiveis(undefined, "novo_arquiteto");
     }
     setIsDialogOpen(true);
   };
@@ -1066,7 +1101,26 @@ export function CampanhasManager() {
             )}
 
             <div className="space-y-2">
-              <Label>Arquitetos (Tag: "Nunca Contactado") *</Label>
+              <Label>Filtrar por Etapa do Kanban</Label>
+              <Select value={filtroEtapa} onValueChange={(v) => setFiltroEtapa(v)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a etapa" />
+                </SelectTrigger>
+                <SelectContent>
+                  {kanbanStages.map((stage) => (
+                    <SelectItem key={stage.id} value={stage.slug}>
+                      {stage.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Selecione a etapa do kanban para filtrar arquitetos disponíveis
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Arquitetos da Etapa: "{kanbanStages.find(s => s.slug === filtroEtapa)?.nome || filtroEtapa}" *</Label>
               {(arquitetosEmOutrasCampanhas > 0 || arquitetosComErroTelefone > 0) && (
                 <Card className="border-orange-200 bg-orange-50/50 dark:border-orange-800 dark:bg-orange-950/20">
                   <CardContent className="p-3 space-y-1">
@@ -1093,7 +1147,7 @@ export function CampanhasManager() {
                 <Card className="border-yellow-200 bg-yellow-50/50 dark:border-yellow-800 dark:bg-yellow-950/20">
                   <CardContent className="p-4">
                     <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                      Nenhum arquiteto disponível com a tag "Nunca Contactado".
+                      Nenhum arquiteto disponível na etapa "{kanbanStages.find(s => s.slug === filtroEtapa)?.nome || filtroEtapa}".
                     </p>
                   </CardContent>
                 </Card>
