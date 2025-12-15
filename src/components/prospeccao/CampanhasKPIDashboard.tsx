@@ -34,10 +34,10 @@ import {
 
 interface CampaignMetrics {
   total_campanhas: number;
-  mensagens_enviadas: number;
-  total_erros: number;
-  respostas: number;
-  convertidos: number;
+  total_enviados: number;
+  total_falhas: number;
+  total_respostas: number;
+  total_convertidos: number;
   taxa_entrega: number;
   taxa_resposta: number;
   taxa_conversao: number;
@@ -123,8 +123,8 @@ export function CampanhasKPIDashboard() {
       // Fetch metrics
       const { data: metricsData, error: metricsError } = await supabase
         .rpc('get_campaign_metrics', {
-          p_date_from: from.toISOString(),
-          p_date_to: to.toISOString(),
+          p_start_date: from.toISOString(),
+          p_end_date: to.toISOString(),
           p_vendedor_id: vendedorId
         });
 
@@ -136,8 +136,8 @@ export function CampanhasKPIDashboard() {
       // Fetch evolution
       const { data: evolutionData, error: evolutionError } = await supabase
         .rpc('get_campaign_evolution', {
-          p_date_from: from.toISOString(),
-          p_date_to: to.toISOString(),
+          p_start_date: from.toISOString(),
+          p_end_date: to.toISOString(),
           p_vendedor_id: vendedorId
         });
 
@@ -149,8 +149,8 @@ export function CampanhasKPIDashboard() {
       // Fetch vendor comparison
       const { data: comparisonData, error: comparisonError } = await supabase
         .rpc('get_campaign_vendor_comparison', {
-          p_date_from: from.toISOString(),
-          p_date_to: to.toISOString()
+          p_start_date: from.toISOString(),
+          p_end_date: to.toISOString()
         });
 
       if (comparisonError) throw comparisonError;
@@ -316,12 +316,12 @@ export function CampanhasKPIDashboard() {
         />
         <KPICard 
           title="Mensagens Enviadas" 
-          value={metrics?.mensagens_enviadas || 0} 
+          value={metrics?.total_enviados || 0} 
           icon={Send}
         />
         <KPICard 
           title="Falhas de Envio" 
-          value={metrics?.total_erros || 0} 
+          value={metrics?.total_falhas || 0} 
           icon={XCircle}
         />
         <KPICard 
@@ -355,7 +355,7 @@ export function CampanhasKPIDashboard() {
             <div className="mt-4 pt-4 border-t border-primary/20">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Respostas recebidas</span>
-                <span className="font-semibold">{metrics?.respostas || 0}</span>
+                <span className="font-semibold">{metrics?.total_respostas || 0}</span>
               </div>
             </div>
           </CardContent>
@@ -363,7 +363,7 @@ export function CampanhasKPIDashboard() {
 
         <KPICard 
           title="Parceiros Convertidos" 
-          value={metrics?.convertidos || 0} 
+          value={metrics?.total_convertidos || 0} 
           icon={Users}
           highlight
         />
