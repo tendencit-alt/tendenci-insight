@@ -4715,6 +4715,7 @@ export type Database = {
       }
       calculate_seller_rankings: { Args: never; Returns: undefined }
       check_and_expire_goals: { Args: never; Returns: undefined }
+      check_and_move_inactive_architects: { Args: never; Returns: undefined }
       check_and_update_inactive_architects: { Args: never; Returns: undefined }
       check_campaign_dispatch_allowed: {
         Args: { p_user_id?: string }
@@ -5105,6 +5106,7 @@ export type Database = {
       }
       purchases_metrics: { Args: never; Returns: Json }
       recalculate_all_goal_progress: { Args: never; Returns: undefined }
+      run_inactive_architects_check: { Args: never; Returns: Json }
       stock_abc_analysis: {
         Args: never
         Returns: {

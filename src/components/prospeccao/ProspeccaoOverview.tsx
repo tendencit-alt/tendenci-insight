@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, RefreshCw } from "lucide-react";
+import { Plus, RefreshCw, UserMinus } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArchitectKPIs } from "@/components/architects/ArchitectKPIs";
 import { BirthdayAlerts } from "@/components/architects/BirthdayAlerts";
@@ -10,6 +10,8 @@ import { CreateArchitectDialog } from "@/components/architects/CreateArchitectDi
 import { EditArchitectDialog } from "@/components/architects/EditArchitectDialog";
 import { ArchitectDetailSheet } from "@/components/architects/ArchitectDetailSheet";
 import { ProjectTypesDashboard } from "@/components/architects/ProjectTypesDashboard";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export function ProspeccaoOverview() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -18,6 +20,7 @@ export function ProspeccaoOverview() {
   const [selectedArchitect, setSelectedArchitect] = useState<any>(null);
   const [selectedArchitectId, setSelectedArchitectId] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [checkingInactive, setCheckingInactive] = useState(false);
 
   const handleRefresh = () => {
     setRefreshKey(prev => prev + 1);
@@ -47,10 +50,43 @@ export function ProspeccaoOverview() {
     setRefreshKey(prev => prev + 1);
   };
 
+  const handleCheckInactive = async () => {
+    setCheckingInactive(true);
+    try {
+      const { data, error } = await supabase.rpc('run_inactive_architects_check');
+      
+      if (error) throw error;
+      
+      const result = data as { success: boolean; architects_moved: number; executed_at: string };
+      
+      if (result.architects_moved > 0) {
+        toast.success(`${result.architects_moved} arquiteto(s) movido(s) para Inativo`);
+      } else {
+        toast.info('Nenhum arquiteto inativo encontrado');
+      }
+      
+      handleRefresh();
+    } catch (error) {
+      console.error('Erro ao verificar inativos:', error);
+      toast.error('Erro ao verificar arquitetos inativos');
+    } finally {
+      setCheckingInactive(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Actions Bar */}
       <div className="flex flex-wrap gap-3 justify-end">
+        <Button 
+          onClick={handleCheckInactive} 
+          variant="outline" 
+          className="gap-2"
+          disabled={checkingInactive}
+        >
+          <UserMinus className="w-4 h-4" />
+          {checkingInactive ? 'Verificando...' : 'Verificar Inativos (60d)'}
+        </Button>
         <Button onClick={handleRefresh} variant="outline" className="gap-2">
           <RefreshCw className="w-4 h-4" />
           Atualizar
