@@ -177,31 +177,26 @@ export function CampanhasManager() {
   const [arquitetosComErroTelefone, setArquitetosComErroTelefone] = useState(0);
 
   const fetchArquitetosDisponiveis = async (editingCampaignId?: string) => {
-    // 1. Buscar IDs de arquitetos que JÁ receberam campanhas com sucesso
-    const { data: jaDisparados } = await supabase
+    // 1. Buscar TODOS os IDs de arquitetos que JÁ foram para QUALQUER campanha (independente do status)
+    const { data: jaEmCampanhas } = await supabase
       .from('tendenci_prospec_arq_campaign_architects')
-      .select('architect_id')
-      .eq('status', 'enviado');
+      .select('architect_id');
 
-    // 2. Buscar IDs de arquitetos em CAMPANHAS PENDENTES (rascunho/pendente/enviando)
-    const { data: campanhasPendentes } = await supabase
-      .from('tendenci_prospec_arq_campaigns')
-      .select('id')
-      .in('status', ['rascunho', 'pendente', 'enviando']);
-
-    const campanhasPendentesIds = campanhasPendentes?.map(c => c.id) || [];
+    // 2. Se estiver editando, não excluir arquitetos da PRÓPRIA campanha
+    let idsJaEmCampanhas = [...new Set(jaEmCampanhas?.map(d => d.architect_id) || [])];
     
-    let emCampanhasPendentes: { architect_id: string; campanha_id: string }[] = [];
-    if (campanhasPendentesIds.length > 0) {
-      const { data: arquitetosEmPendentes } = await supabase
+    if (editingCampaignId) {
+      // Buscar arquitetos da campanha sendo editada para NÃO excluí-los
+      const { data: arquitetosDaCampanha } = await supabase
         .from('tendenci_prospec_arq_campaign_architects')
-        .select('architect_id, campanha_id')
-        .in('campanha_id', campanhasPendentesIds);
+        .select('architect_id')
+        .eq('campanha_id', editingCampaignId);
       
-      emCampanhasPendentes = arquitetosEmPendentes || [];
+      const idsDaCampanhaEditando = arquitetosDaCampanha?.map(d => d.architect_id) || [];
+      idsJaEmCampanhas = idsJaEmCampanhas.filter(id => !idsDaCampanhaEditando.includes(id));
     }
 
-    // 3. Buscar IDs de arquitetos com ERROS de telefone (número inexistente/formatação/envio)
+    // 3. Buscar IDs de arquitetos com ERROS de telefone
     const { data: arquitetosComErros } = await supabase
       .from('tendenci_prospec_arq_logs')
       .select('architect_id')
@@ -211,30 +206,18 @@ export function CampanhasManager() {
     const idsComErroTelefone = [...new Set(arquitetosComErros?.map(d => d.architect_id).filter(Boolean) || [])];
     setArquitetosComErroTelefone(idsComErroTelefone.length);
 
-    // 4. Se estiver editando, não excluir arquitetos da PRÓPRIA campanha
-    let arquitetosParaExcluirDePendentes = emCampanhasPendentes;
-    if (editingCampaignId) {
-      arquitetosParaExcluirDePendentes = emCampanhasPendentes.filter(
-        a => a.campanha_id !== editingCampaignId
-      );
-    }
+    // 4. Combinar listas de exclusão
+    const todosIdsParaExcluir = [...new Set([...idsJaEmCampanhas, ...idsComErroTelefone])];
 
-    // 5. Combinar listas de exclusão (já disparados + em campanhas pendentes + com erro de telefone)
-    const idsJaDisparados = [...new Set(jaDisparados?.map(d => d.architect_id) || [])];
-    const idsEmPendentes = [...new Set(arquitetosParaExcluirDePendentes.map(d => d.architect_id))];
-    const todosIdsParaExcluir = [...new Set([...idsJaDisparados, ...idsEmPendentes, ...idsComErroTelefone])];
-
-    console.log(`🚫 Arquitetos já disparados: ${idsJaDisparados.length}`);
-    console.log(`⏳ Arquitetos em campanhas pendentes (outras): ${idsEmPendentes.length}`);
+    console.log(`🚫 Arquitetos já em campanhas (qualquer status): ${idsJaEmCampanhas.length}`);
     console.log(`📵 Arquitetos com erro de telefone: ${idsComErroTelefone.length}`);
-    setArquitetosEmOutrasCampanhas(idsEmPendentes.length);
+    setArquitetosEmOutrasCampanhas(idsJaEmCampanhas.length);
 
-    // 6. Buscar arquitetos disponíveis EXCLUINDO todos
+    // 5. Buscar APENAS arquitetos com status_funil='novo_arquiteto' (nunca contactados)
     let query = supabase
       .from('architects')
       .select('id, name, phone, tier, tag_prospeccao')
-      .is('data_primeiro_contato', null)
-      .is('data_ultimo_contato', null)
+      .eq('status_funil', 'novo_arquiteto')
       .eq('active', true);
 
     if (todosIdsParaExcluir.length > 0) {
