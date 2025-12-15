@@ -87,11 +87,7 @@ export function MasterGoalsPanel() {
           id,
           valor_meta_total,
           data_inicio,
-          data_fim,
-          tendenci_goal_progress!tendenci_goal_progress_company_goal_id_fkey (
-            valor_vendido,
-            percentual
-          )
+          data_fim
         `)
         .eq("status", "ativa")
         .lte("data_inicio", now.toISOString())
@@ -103,55 +99,79 @@ export function MasterGoalsPanel() {
       let companyGoalData: CompanyGoalData | null = null;
 
       if (companyData) {
-        const progress = companyData.tendenci_goal_progress?.[0];
+        // Buscar deals ganhos no período diretamente do crm_deals
+        const { data: wonDeals, error: wonDealsError } = await supabase
+          .from("crm_deals")
+          .select("value, owner_id, updated_at")
+          .eq("status", "won")
+          .gte("updated_at", companyData.data_inicio)
+          .lte("updated_at", companyData.data_fim);
+
+        if (wonDealsError) throw wonDealsError;
+
+        // Calcular total vendido real
+        const totalVendido = wonDeals?.reduce((sum, deal) => sum + (Number(deal.value) || 0), 0) || 0;
+        const percentualTotal = companyData.valor_meta_total > 0 
+          ? (totalVendido / companyData.valor_meta_total) * 100 
+          : 0;
+
         companyGoalData = {
           id: companyData.id,
           valor_meta_total: Number(companyData.valor_meta_total) || 0,
           data_inicio: companyData.data_inicio,
           data_fim: companyData.data_fim,
-          valor_vendido: Number(progress?.valor_vendido) || 0,
-          percentual: Number(progress?.percentual) || 0,
+          valor_vendido: totalVendido,
+          percentual: percentualTotal,
         };
         setCompanyGoal(companyGoalData);
 
         // Buscar evolução diária de vendas
         await fetchDailyEvolution(companyData.data_inicio, companyData.data_fim, companyData.valor_meta_total);
-      }
 
-      // Buscar metas individuais dos vendedores
-      const { data: sellerData, error: sellerError } = await supabase
-        .from("tendenci_seller_goals")
-        .select(`
-          id,
-          vendedor_id,
-          valor_meta,
-          profiles!tendenci_seller_goals_vendedor_id_fkey (
-            full_name
-          ),
-          tendenci_goal_progress!tendenci_goal_progress_seller_goal_id_fkey (
-            valor_vendido,
-            percentual
-          )
-        `)
-        .eq("status", "ativa")
-        .lte("data_inicio", now.toISOString())
-        .gte("data_fim", now.toISOString());
+        // Buscar metas individuais dos vendedores
+        const { data: sellerData, error: sellerError } = await supabase
+          .from("tendenci_seller_goals")
+          .select(`
+            id,
+            vendedor_id,
+            valor_meta,
+            profiles!tendenci_seller_goals_vendedor_id_fkey (
+              full_name
+            )
+          `)
+          .eq("status", "ativa")
+          .lte("data_inicio", now.toISOString())
+          .gte("data_fim", now.toISOString());
 
-      if (sellerError) throw sellerError;
+        if (sellerError) throw sellerError;
 
-      if (sellerData && companyGoalData) {
-        const mappedSellers: SellerGoalData[] = sellerData.map((seller: any) => ({
-          id: seller.id,
-          vendedor_id: seller.vendedor_id,
-          vendedor_nome: seller.profiles?.full_name || "Vendedor",
-          valor_meta: Number(seller.valor_meta) || 0,
-          valor_vendido: Number(seller.tendenci_goal_progress?.[0]?.valor_vendido) || 0,
-          percentual: Number(seller.tendenci_goal_progress?.[0]?.percentual) || 0,
-        }));
+        if (sellerData) {
+          // Calcular vendas por vendedor a partir dos deals reais
+          const salesByOwner: Record<string, number> = {};
+          wonDeals?.forEach((deal) => {
+            if (deal.owner_id) {
+              salesByOwner[deal.owner_id] = (salesByOwner[deal.owner_id] || 0) + (Number(deal.value) || 0);
+            }
+          });
+
+          const mappedSellers: SellerGoalData[] = sellerData.map((seller: any) => {
+            const valorVendido = salesByOwner[seller.vendedor_id] || 0;
+            const percentual = seller.valor_meta > 0 ? (valorVendido / seller.valor_meta) * 100 : 0;
+            
+            return {
+              id: seller.id,
+              vendedor_id: seller.vendedor_id,
+              vendedor_nome: seller.profiles?.full_name || "Vendedor",
+              valor_meta: Number(seller.valor_meta) || 0,
+              valor_vendido: valorVendido,
+              percentual: percentual,
+            };
+          });
         setSellerGoals(mappedSellers);
 
         // Calcular alertas de performance
         calculateAlerts(mappedSellers, companyGoalData.data_inicio, companyGoalData.data_fim);
+        }
       }
     } catch (error) {
       console.error("Erro ao buscar metas:", error);
