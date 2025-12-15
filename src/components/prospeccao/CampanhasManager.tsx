@@ -93,6 +93,7 @@ export function CampanhasManager() {
   const [canDispatch, setCanDispatch] = useState(true);
   const [arquitetosSemTarefa, setArquitetosSemTarefa] = useState<ArquitetoSemTarefa[]>([]);
   const [checkingDispatchStatus, setCheckingDispatchStatus] = useState(false);
+  const [showBlockingDialog, setShowBlockingDialog] = useState(false);
   
   // Form state - NOT persisted, stays static when switching tabs
   const [formData, setFormData] = useState({
@@ -124,13 +125,15 @@ export function CampanhasManager() {
     setCheckingDispatchStatus(true);
     try {
       const { data, error } = await supabase.rpc('check_campaign_dispatch_allowed');
-      if (!error && data && data.length > 0) {
-        setCanDispatch(data[0].can_dispatch as boolean);
-        const arquitetos = data[0].arquitetos_sem_tarefa;
-        if (Array.isArray(arquitetos)) {
-          setArquitetosSemTarefa(arquitetos as unknown as ArquitetoSemTarefa[]);
-        } else {
-          setArquitetosSemTarefa([]);
+      if (!error && data) {
+        // RPC retorna jsonb diretamente, não array
+        const result = data as unknown as { can_dispatch: boolean; total_sem_tarefa: number; arquitetos_sem_tarefa: ArquitetoSemTarefa[] };
+        setCanDispatch(result.can_dispatch);
+        setArquitetosSemTarefa(result.arquitetos_sem_tarefa || []);
+        
+        // Abrir popup automaticamente se bloqueado
+        if (!result.can_dispatch && result.arquitetos_sem_tarefa?.length > 0) {
+          setShowBlockingDialog(true);
         }
       }
     } catch (err) {
@@ -590,13 +593,17 @@ export function CampanhasManager() {
     await checkDispatchAllowed();
     
     const { data: dispatchCheck } = await supabase.rpc('check_campaign_dispatch_allowed');
-    if (dispatchCheck && dispatchCheck.length > 0 && !dispatchCheck[0].can_dispatch) {
-      toast({
-        title: "🚫 Disparo Bloqueado",
-        description: `Existem ${dispatchCheck[0].total_sem_tarefa} arquitetos em "Contato Iniciado" ou "Ativado" sem tarefas agendadas. Agende tarefas para todos antes de disparar novas campanhas.`,
-        variant: "destructive",
-      });
-      return;
+    if (dispatchCheck) {
+      const result = dispatchCheck as unknown as { can_dispatch: boolean; total_sem_tarefa: number; arquitetos_sem_tarefa: ArquitetoSemTarefa[] };
+      if (!result.can_dispatch) {
+        setShowBlockingDialog(true);
+        toast({
+          title: "🚫 Disparo Bloqueado",
+          description: `Existem ${result.total_sem_tarefa} arquitetos sem tarefas futuras. Veja o popup para detalhes.`,
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     // ✅ Validação OBRIGATÓRIA: Verificar se há instância WhatsApp configurada
@@ -755,34 +762,68 @@ export function CampanhasManager() {
 
   return (
     <div className="space-y-6">
-      {/* 🚫 Alerta de Trava de Disparo */}
-      {!canDispatch && !checkingDispatchStatus && (
-        <Alert variant="destructive" className="border-destructive/50 bg-destructive/10">
-          <ShieldAlert className="h-5 w-5" />
-          <AlertTitle className="font-semibold">Disparo de Campanhas Bloqueado</AlertTitle>
-          <AlertDescription className="mt-2">
-            <p className="mb-2">
-              Existem <strong>{arquitetosSemTarefa.length}</strong> arquitetos em "Contato Iniciado" ou "Ativado" sem tarefas agendadas:
-            </p>
-            <ul className="list-disc ml-6 max-h-32 overflow-y-auto text-sm space-y-1 mb-3">
-              {arquitetosSemTarefa.slice(0, 10).map(arq => (
-                <li key={arq.id}>
+      {/* 🚫 Dialog/Popup de Trava de Disparo */}
+      <Dialog open={showBlockingDialog} onOpenChange={setShowBlockingDialog}>
+        <DialogContent className="max-w-2xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <ShieldAlert className="h-5 w-5" />
+              Disparo de Campanhas Bloqueado
+            </DialogTitle>
+          </DialogHeader>
+          
+          <Alert className="border-amber-500/50 bg-amber-500/10 mb-4">
+            <AlertTriangle className="h-4 w-4 text-amber-600" />
+            <AlertTitle className="text-amber-700 font-semibold">⚠️ Lembrete Importante</AlertTitle>
+            <AlertDescription className="text-amber-600">
+              Tarefas com data/hora <strong>vencida</strong> são consideradas como "realizadas". 
+              Se a data da tarefa já passou, o arquiteto volta a ter status de 
+              <strong> sem tarefa agendada</strong> e precisa de nova tarefa.
+            </AlertDescription>
+          </Alert>
+          
+          <p className="text-sm mb-4">
+            Existem <strong className="text-destructive">{arquitetosSemTarefa.length}</strong> arquitetos em 
+            "Contato Iniciado" ou "Ativado" que precisam de tarefas futuras:
+          </p>
+          
+          <ScrollArea className="h-[300px] border rounded-md p-3">
+            {arquitetosSemTarefa.map(arq => (
+              <div key={arq.id} className="flex items-center justify-between py-2 border-b last:border-b-0">
+                <div>
                   <span className="font-medium">{arq.name}</span>
-                  {arq.company && <span className="text-muted-foreground"> - {arq.company}</span>}
-                  <Badge variant="outline" className="ml-2 text-xs">
-                    {arq.status === 'contato_iniciado' ? 'Contato Iniciado' : 'Ativado'}
-                  </Badge>
-                </li>
-              ))}
-              {arquitetosSemTarefa.length > 10 && (
-                <li className="text-muted-foreground">...e mais {arquitetosSemTarefa.length - 10} arquitetos</li>
-              )}
-            </ul>
-            <p className="font-medium text-sm">
-              📌 Agende tarefas para todos os arquitetos antes de disparar novas campanhas.
-            </p>
-          </AlertDescription>
-        </Alert>
+                  {arq.company && <span className="text-muted-foreground ml-2">- {arq.company}</span>}
+                </div>
+                <Badge variant="outline">
+                  {arq.status === 'contato_iniciado' ? 'Contato Iniciado' : 'Ativado'}
+                </Badge>
+              </div>
+            ))}
+          </ScrollArea>
+          
+          <p className="text-sm text-muted-foreground mt-2">
+            📌 Acesse o <strong>Kanban de Arquitetos</strong> e agende tarefas futuras para esses arquitetos antes de disparar campanhas.
+          </p>
+          
+          <DialogFooter>
+            <Button onClick={() => setShowBlockingDialog(false)}>
+              Entendi
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Botão para reabrir popup quando bloqueado */}
+      {!canDispatch && !checkingDispatchStatus && (
+        <Button 
+          variant="destructive" 
+          size="sm"
+          onClick={() => setShowBlockingDialog(true)}
+          className="gap-2"
+        >
+          <ShieldAlert className="h-4 w-4" />
+          {arquitetosSemTarefa.length} Arquitetos Sem Tarefa
+        </Button>
       )}
 
       <div className="flex items-center justify-between">
