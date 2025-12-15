@@ -59,9 +59,10 @@ interface VendorComparison {
   vendedor_id: string;
   vendedor_nome: string;
   total_campanhas: number;
-  total_arquitetos: number;
-  respostas: number;
-  convertidos: number;
+  total_enviados: number;
+  total_falhas: number;
+  total_respostas: number;
+  total_convertidos: number;
   taxa_resposta: number;
   taxa_conversao: number;
 }
@@ -463,9 +464,9 @@ export function CampanhasKPIDashboard() {
                     <tr key={vendor.vendedor_id} className={idx % 2 === 0 ? 'bg-muted/30' : ''}>
                       <td className="py-2 px-3 font-medium">{vendor.vendedor_nome}</td>
                       <td className="text-center py-2 px-3">{vendor.total_campanhas}</td>
-                      <td className="text-center py-2 px-3">{vendor.total_arquitetos}</td>
-                      <td className="text-center py-2 px-3">{vendor.respostas}</td>
-                      <td className="text-center py-2 px-3">{vendor.convertidos}</td>
+                      <td className="text-center py-2 px-3">{vendor.total_enviados}</td>
+                      <td className="text-center py-2 px-3">{vendor.total_respostas}</td>
+                      <td className="text-center py-2 px-3">{vendor.total_convertidos}</td>
                       <td className="text-center py-2 px-3">
                         <span className={`font-medium ${Number(vendor.taxa_resposta) >= 30 ? 'text-green-600' : Number(vendor.taxa_resposta) >= 15 ? 'text-yellow-600' : 'text-muted-foreground'}`}>
                           {vendor.taxa_resposta}%
