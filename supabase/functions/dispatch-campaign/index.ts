@@ -547,8 +547,10 @@ Deno.serve(async (req) => {
       })
 
     // Atualizar dados do arquiteto após envio bem-sucedido
+    // IMPORTANTE: Mover para 'adicionar_epata' (Contato Feito por I.A), NÃO 'contato_iniciado'
+    // O vendedor move manualmente para 'contato_iniciado' quando o arquiteto responde
     const updateData: any = {
-      status_funil: 'contato_iniciado',
+      status_funil: 'adicionar_epata',
       tag_prospeccao: 'contactado',
       whatsapp_valido: true,
       data_ultimo_contato: new Date().toISOString(),
