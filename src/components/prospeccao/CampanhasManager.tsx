@@ -10,7 +10,8 @@ import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useFormPersistence } from "@/hooks/useFormPersistence";
-import { Plus, Send, Save, Trash2, Image, FileAudio, MessageSquare, Loader2, CheckCircle, XCircle, Upload, Mic, X, BookOpen, Eye, AlertTriangle } from "lucide-react";
+import { Plus, Send, Save, Trash2, Image, FileAudio, MessageSquare, Loader2, CheckCircle, XCircle, Upload, Mic, X, BookOpen, Eye, AlertTriangle, ShieldAlert } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Dialog,
   DialogContent,
@@ -67,6 +68,13 @@ interface DispatchStatus {
   mensagem_erro?: string;
 }
 
+interface ArquitetoSemTarefa {
+  id: string;
+  name: string;
+  status: string;
+  company: string | null;
+}
+
 export function CampanhasManager() {
   const { toast } = useToast();
   const [campanhas, setCampanhas] = useState<Campanha[]>([]);
@@ -80,6 +88,11 @@ export function CampanhasManager() {
   const [waitingSeconds, setWaitingSeconds] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const isPausedRef = useRef(false);
+  
+  // Estado para trava de disparo
+  const [canDispatch, setCanDispatch] = useState(true);
+  const [arquitetosSemTarefa, setArquitetosSemTarefa] = useState<ArquitetoSemTarefa[]>([]);
+  const [checkingDispatchStatus, setCheckingDispatchStatus] = useState(false);
   
   // Form state - NOT persisted, stays static when switching tabs
   const [formData, setFormData] = useState({
@@ -106,10 +119,32 @@ export function CampanhasManager() {
   // ✅ Webhook N8N padrão (pode ser sobrescrito)
   const DEFAULT_N8N_WEBHOOK = "https://n8n.tendenci.com.br/webhook/whatsapp-campaign";
 
+  // Verificar se disparo é permitido
+  const checkDispatchAllowed = async () => {
+    setCheckingDispatchStatus(true);
+    try {
+      const { data, error } = await supabase.rpc('check_campaign_dispatch_allowed');
+      if (!error && data && data.length > 0) {
+        setCanDispatch(data[0].can_dispatch as boolean);
+        const arquitetos = data[0].arquitetos_sem_tarefa;
+        if (Array.isArray(arquitetos)) {
+          setArquitetosSemTarefa(arquitetos as unknown as ArquitetoSemTarefa[]);
+        } else {
+          setArquitetosSemTarefa([]);
+        }
+      }
+    } catch (err) {
+      console.error('Erro ao verificar permissão de disparo:', err);
+    } finally {
+      setCheckingDispatchStatus(false);
+    }
+  };
+
   useEffect(() => {
     fetchCampanhas();
     fetchArquitetosDisponiveis();
     fetchWhatsAppConnections();
+    checkDispatchAllowed();
   }, []);
 
   const fetchCampanhas = async () => {
@@ -551,6 +586,19 @@ export function CampanhasManager() {
   };
 
   const handleDispatchCampanha = async (campanha: Campanha) => {
+    // 🚫 TRAVA: Verificar se há arquitetos sem tarefas em "Contato Iniciado" ou "Ativado"
+    await checkDispatchAllowed();
+    
+    const { data: dispatchCheck } = await supabase.rpc('check_campaign_dispatch_allowed');
+    if (dispatchCheck && dispatchCheck.length > 0 && !dispatchCheck[0].can_dispatch) {
+      toast({
+        title: "🚫 Disparo Bloqueado",
+        description: `Existem ${dispatchCheck[0].total_sem_tarefa} arquitetos em "Contato Iniciado" ou "Ativado" sem tarefas agendadas. Agende tarefas para todos antes de disparar novas campanhas.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     // ✅ Validação OBRIGATÓRIA: Verificar se há instância WhatsApp configurada
     if (!campanha.whatsapp_connection_id) {
       toast({
@@ -707,6 +755,36 @@ export function CampanhasManager() {
 
   return (
     <div className="space-y-6">
+      {/* 🚫 Alerta de Trava de Disparo */}
+      {!canDispatch && !checkingDispatchStatus && (
+        <Alert variant="destructive" className="border-destructive/50 bg-destructive/10">
+          <ShieldAlert className="h-5 w-5" />
+          <AlertTitle className="font-semibold">Disparo de Campanhas Bloqueado</AlertTitle>
+          <AlertDescription className="mt-2">
+            <p className="mb-2">
+              Existem <strong>{arquitetosSemTarefa.length}</strong> arquitetos em "Contato Iniciado" ou "Ativado" sem tarefas agendadas:
+            </p>
+            <ul className="list-disc ml-6 max-h-32 overflow-y-auto text-sm space-y-1 mb-3">
+              {arquitetosSemTarefa.slice(0, 10).map(arq => (
+                <li key={arq.id}>
+                  <span className="font-medium">{arq.name}</span>
+                  {arq.company && <span className="text-muted-foreground"> - {arq.company}</span>}
+                  <Badge variant="outline" className="ml-2 text-xs">
+                    {arq.status === 'contato_iniciado' ? 'Contato Iniciado' : 'Ativado'}
+                  </Badge>
+                </li>
+              ))}
+              {arquitetosSemTarefa.length > 10 && (
+                <li className="text-muted-foreground">...e mais {arquitetosSemTarefa.length - 10} arquitetos</li>
+              )}
+            </ul>
+            <p className="font-medium text-sm">
+              📌 Agende tarefas para todos os arquitetos antes de disparar novas campanhas.
+            </p>
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold">Campanhas Personalizáveis</h2>
