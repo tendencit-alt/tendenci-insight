@@ -12,10 +12,29 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Slider } from '@/components/ui/slider';
 import { toast } from 'sonner';
 import { OrderItemsTable } from './OrderItemsTable';
 import { AddressForm } from './AddressForm';
 import { Loader2, Building2, FileText, User } from 'lucide-react';
+
+const FORMAS_PAGAMENTO = [
+  { value: 'pix', label: 'PIX' },
+  { value: 'boleto', label: 'Boleto' },
+  { value: 'cartao_credito', label: 'Cartão Crédito' },
+  { value: 'cartao_debito', label: 'Cartão Débito' },
+  { value: 'transferencia', label: 'Transferência' },
+  { value: 'dinheiro', label: 'Dinheiro' },
+  { value: 'permuta', label: 'Permuta' },
+];
+
+const TIPOS_ENTREGA = [
+  { value: 'a_combinar', label: 'A combinar' },
+  { value: 'entrega_tendenci', label: 'Entrega Tendenci' },
+  { value: 'transportadora', label: 'Transportadora' },
+  { value: 'retirada', label: 'Retirada' },
+  { value: 'terceirizada', label: 'Terceirizada' },
+];
 
 interface EditOrderDialogProps {
   orderId: string;
@@ -41,15 +60,20 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('cliente');
+  const [pagamentoFracionado, setPagamentoFracionado] = useState(false);
   
   const [formData, setFormData] = useState({
     client_id: '',
     deal_id: '',
     architect_id: '',
     forma_pagamento: '',
+    forma_pagamento_2: '',
+    percentual_forma_1: 100,
+    percentual_forma_2: 0,
     condicao_pagamento: '',
+    observacao_pagamento: '',
     data_entrega_prevista: '',
-    tipo_entrega: 'entrega',
+    tipo_entrega: '',
     entrega_mesmo_endereco: true,
     entrega_cep: '',
     entrega_logradouro: '',
@@ -100,14 +124,21 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
 
   useEffect(() => {
     if (order) {
+      const percentual2 = order.percentual_forma_2 || 0;
+      setPagamentoFracionado(percentual2 > 0);
+      
       setFormData({
         client_id: order.client_id || '',
         deal_id: order.deal_id || '',
         architect_id: order.architect_id || '',
         forma_pagamento: order.forma_pagamento || '',
+        forma_pagamento_2: order.forma_pagamento_2 || '',
+        percentual_forma_1: order.percentual_forma_1 || 100,
+        percentual_forma_2: percentual2,
         condicao_pagamento: order.condicao_pagamento || '',
+        observacao_pagamento: order.observacao_pagamento || '',
         data_entrega_prevista: order.data_entrega_prevista?.split('T')[0] || '',
-        tipo_entrega: order.tipo_entrega || 'entrega',
+        tipo_entrega: order.tipo_entrega || '',
         entrega_mesmo_endereco: order.entrega_mesmo_endereco ?? true,
         entrega_cep: order.entrega_cep || '',
         entrega_logradouro: order.entrega_logradouro || '',
@@ -193,7 +224,11 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
           deal_id: formData.deal_id || null,
           architect_id: formData.architect_id || null,
           forma_pagamento: formData.forma_pagamento,
+          forma_pagamento_2: pagamentoFracionado ? formData.forma_pagamento_2 : null,
+          percentual_forma_1: pagamentoFracionado ? formData.percentual_forma_1 : 100,
+          percentual_forma_2: pagamentoFracionado ? formData.percentual_forma_2 : 0,
           condicao_pagamento: formData.condicao_pagamento,
+          observacao_pagamento: formData.observacao_pagamento || null,
           data_entrega_prevista: formData.data_entrega_prevista || null,
           tipo_entrega: formData.tipo_entrega,
           entrega_mesmo_endereco: formData.entrega_mesmo_endereco,
@@ -415,12 +450,11 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                     <SelectValue placeholder="Selecione" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="pix">PIX</SelectItem>
-                    <SelectItem value="boleto">Boleto</SelectItem>
-                    <SelectItem value="cartao_credito">Cartão de Crédito</SelectItem>
-                    <SelectItem value="cartao_debito">Cartão de Débito</SelectItem>
-                    <SelectItem value="transferencia">Transferência</SelectItem>
-                    <SelectItem value="dinheiro">Dinheiro</SelectItem>
+                    {FORMAS_PAGAMENTO.map((fp) => (
+                      <SelectItem key={fp.value} value={fp.value}>
+                        {fp.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -442,6 +476,79 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
               </div>
             </div>
 
+            {/* Pagamento Fracionado */}
+            <Card className="p-4">
+              <div className="flex items-center justify-between mb-4">
+                <Label className="text-base font-medium">Fracionar Pagamento</Label>
+                <Switch 
+                  checked={pagamentoFracionado} 
+                  onCheckedChange={(checked) => {
+                    setPagamentoFracionado(checked);
+                    if (checked) {
+                      setFormData({ ...formData, percentual_forma_1: 50, percentual_forma_2: 50 });
+                    } else {
+                      setFormData({ ...formData, percentual_forma_1: 100, percentual_forma_2: 0, forma_pagamento_2: '' });
+                    }
+                  }} 
+                  disabled={!isEditable}
+                />
+              </div>
+
+              {pagamentoFracionado && (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>{FORMAS_PAGAMENTO.find(f => f.value === formData.forma_pagamento)?.label || 'Forma 1'}: {formData.percentual_forma_1}%</span>
+                      <span>2ª Forma: {formData.percentual_forma_2}%</span>
+                    </div>
+                    <Slider
+                      value={[formData.percentual_forma_1]}
+                      onValueChange={([value]) => setFormData({ 
+                        ...formData, 
+                        percentual_forma_1: value, 
+                        percentual_forma_2: 100 - value 
+                      })}
+                      min={10}
+                      max={90}
+                      step={5}
+                      disabled={!isEditable}
+                    />
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>{formatCurrency(total * formData.percentual_forma_1 / 100)}</span>
+                      <span>{formatCurrency(total * formData.percentual_forma_2 / 100)}</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>2ª Forma de Pagamento</Label>
+                    <Select value={formData.forma_pagamento_2} onValueChange={(v) => setFormData({ ...formData, forma_pagamento_2: v })} disabled={!isEditable}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {FORMAS_PAGAMENTO.filter(fp => fp.value !== formData.forma_pagamento).map((fp) => (
+                          <SelectItem key={fp.value} value={fp.value}>
+                            {fp.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
+            </Card>
+
+            <div className="space-y-2">
+              <Label>Observação de Pagamento</Label>
+              <Textarea 
+                value={formData.observacao_pagamento} 
+                onChange={(e) => setFormData({ ...formData, observacao_pagamento: e.target.value })} 
+                placeholder="Observações sobre o pagamento..." 
+                rows={2} 
+                disabled={!isEditable} 
+              />
+            </div>
+
             <div className="space-y-2">
               <Label>Observações para NF</Label>
               <Textarea value={formData.observacoes_nf} onChange={(e) => setFormData({ ...formData, observacoes_nf: e.target.value })} placeholder="Informações que aparecerão na nota fiscal..." rows={3} disabled={!isEditable} />
@@ -459,12 +566,14 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                 <Label>Tipo de Entrega</Label>
                 <Select value={formData.tipo_entrega} onValueChange={(v) => setFormData({ ...formData, tipo_entrega: v })} disabled={!isEditable}>
                   <SelectTrigger>
-                    <SelectValue />
+                    <SelectValue placeholder="Selecione" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="entrega">Entrega</SelectItem>
-                    <SelectItem value="retirada">Retirada</SelectItem>
-                    <SelectItem value="transportadora">Transportadora</SelectItem>
+                    {TIPOS_ENTREGA.map((te) => (
+                      <SelectItem key={te.value} value={te.value}>
+                        {te.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
