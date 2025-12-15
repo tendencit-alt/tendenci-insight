@@ -7,6 +7,7 @@ import { OrdersFilters } from '@/components/orders/OrdersFilters';
 import { OrdersTable } from '@/components/orders/OrdersTable';
 import { CreateOrderDialog } from '@/components/orders/CreateOrderDialog';
 import { OrderDetailSheet } from '@/components/orders/OrderDetailSheet';
+import { EditOrderDialog } from '@/components/orders/EditOrderDialog';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { subDays } from 'date-fns';
@@ -14,6 +15,7 @@ import { subDays } from 'date-fns';
 export default function Orders() {
   const [createOpen, setCreateOpen] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [editingOrderId, setEditingOrderId] = useState<string | null>(null);
   const [filters, setFilters] = useState({
     status: '',
     vendedorId: '',
@@ -82,6 +84,7 @@ export default function Orders() {
           orders={orders || []}
           isLoading={isLoading}
           onSelectOrder={setSelectedOrderId}
+          onEditOrder={setEditingOrderId}
         />
 
         <CreateOrderDialog
@@ -99,6 +102,18 @@ export default function Orders() {
             open={!!selectedOrderId}
             onOpenChange={(open) => !open && setSelectedOrderId(null)}
             onUpdate={refetch}
+          />
+        )}
+
+        {editingOrderId && (
+          <EditOrderDialog
+            orderId={editingOrderId}
+            open={!!editingOrderId}
+            onOpenChange={(open) => !open && setEditingOrderId(null)}
+            onSuccess={() => {
+              refetch();
+              setEditingOrderId(null);
+            }}
           />
         )}
       </div>
