@@ -8,7 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Plus } from 'lucide-react';
+import CreateSupplierDialog from '@/components/suppliers/CreateSupplierDialog';
 
 interface EditProductionOrderDialogProps {
   open: boolean;
@@ -18,6 +19,7 @@ interface EditProductionOrderDialogProps {
 
 export function EditProductionOrderDialog({ open, onOpenChange, orderId }: EditProductionOrderDialogProps) {
   const queryClient = useQueryClient();
+  const [showCreateSupplier, setShowCreateSupplier] = useState(false);
   
   const [formData, setFormData] = useState({
     title: '',
@@ -31,7 +33,9 @@ export function EditProductionOrderDialog({ open, onOpenChange, orderId }: EditP
     planned_end_date: '',
     value: '',
     status: 'aguardando',
-    notes: ''
+    notes: '',
+    supplier_id: '',
+    prazo_customizado_dias: ''
   });
 
   // Buscar dados da OP
@@ -105,6 +109,20 @@ export function EditProductionOrderDialog({ open, onOpenChange, orderId }: EditP
     }
   });
 
+  // Buscar fornecedores
+  const { data: suppliers = [], refetch: refetchSuppliers } = useQuery({
+    queryKey: ['suppliers-for-production'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('suppliers')
+        .select('id, name')
+        .eq('active', true)
+        .order('name');
+      if (error) throw error;
+      return data;
+    }
+  });
+
   // Preencher form quando carregar dados
   useEffect(() => {
     if (order) {
@@ -120,7 +138,9 @@ export function EditProductionOrderDialog({ open, onOpenChange, orderId }: EditP
         planned_end_date: order.planned_end_date?.split('T')[0] || '',
         value: order.value?.toString() || '',
         status: order.status || 'aguardando',
-        notes: order.notes || ''
+        notes: order.notes || '',
+        supplier_id: order.supplier_id || '',
+        prazo_customizado_dias: order.prazo_customizado_dias?.toString() || ''
       });
     }
   }, [order]);
@@ -144,7 +164,9 @@ export function EditProductionOrderDialog({ open, onOpenChange, orderId }: EditP
           planned_end_date: formData.planned_end_date || null,
           value: formData.value ? parseFloat(formData.value) : null,
           status: formData.status,
-          notes: formData.notes || null
+          notes: formData.notes || null,
+          supplier_id: formData.supplier_id || null,
+          prazo_customizado_dias: formData.prazo_customizado_dias ? parseInt(formData.prazo_customizado_dias) : null
         })
         .eq('id', orderId);
 
@@ -162,215 +184,273 @@ export function EditProductionOrderDialog({ open, onOpenChange, orderId }: EditP
     }
   });
 
+  const handleSupplierCreated = () => {
+    refetchSuppliers();
+    setShowCreateSupplier(false);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Editar Ordem de Produção</DialogTitle>
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Editar Ordem de Produção</DialogTitle>
+          </DialogHeader>
 
-        <div className="grid gap-4 py-4">
-          {/* Título */}
-          <div className="space-y-2">
-            <Label htmlFor="edit-title">Título *</Label>
-            <Input
-              id="edit-title"
-              value={formData.title}
-              onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-            />
-          </div>
-
-          {/* Tipo de Produção (readonly) */}
-          <div className="space-y-2">
-            <Label>Tipo de Produção</Label>
-            <Select value={formData.production_type_id} disabled>
-              <SelectTrigger className="bg-muted">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {productionTypes.map((type) => (
-                  <SelectItem key={type.id} value={type.id}>
-                    <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full" style={{ backgroundColor: type.color }} />
-                      {type.name}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Status */}
-          <div className="space-y-2">
-            <Label>Status</Label>
-            <Select
-              value={formData.status}
-              onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="aguardando">Aguardando</SelectItem>
-                <SelectItem value="em_andamento">Em Andamento</SelectItem>
-                <SelectItem value="pausado">Pausado</SelectItem>
-                <SelectItem value="concluido">Concluído</SelectItem>
-                <SelectItem value="cancelado">Cancelado</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Cliente */}
-          <div className="space-y-2">
-            <Label>Cliente</Label>
-            <Select
-              value={formData.client_id || "_none"}
-              onValueChange={(value) => setFormData(prev => ({ ...prev, client_id: value === "_none" ? "" : value }))}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o cliente" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="_none">Sem cliente</SelectItem>
-                {clients.map((client) => (
-                  <SelectItem key={client.id} value={client.id}>
-                    {client.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Negócio vinculado */}
-          <div className="space-y-2">
-            <Label>Negócio Vinculado</Label>
-            <Select
-              value={formData.deal_id || "_none"}
-              onValueChange={(value) => setFormData(prev => ({ ...prev, deal_id: value === "_none" ? "" : value }))}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Vincular a um negócio ganho" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="_none">Sem vínculo</SelectItem>
-                {deals.map((deal) => (
-                  <SelectItem key={deal.id} value={deal.id}>
-                    {deal.title}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Prioridade e Responsável */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-4 py-4">
+            {/* Título */}
             <div className="space-y-2">
-              <Label>Prioridade</Label>
-              <Select
-                value={formData.priority}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, priority: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="baixa">Baixa</SelectItem>
-                  <SelectItem value="normal">Normal</SelectItem>
-                  <SelectItem value="alta">Alta</SelectItem>
-                  <SelectItem value="urgente">Urgente</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label htmlFor="edit-title">Título *</Label>
+              <Input
+                id="edit-title"
+                value={formData.title}
+                onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+              />
             </div>
 
+            {/* Tipo de Produção (readonly) */}
             <div className="space-y-2">
-              <Label>Responsável</Label>
-              <Select
-                value={formData.responsible_id || "_none"}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, responsible_id: value === "_none" ? "" : value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione" />
+              <Label>Tipo de Produção</Label>
+              <Select value={formData.production_type_id} disabled>
+                <SelectTrigger className="bg-muted">
+                  <SelectValue placeholder="-" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="_none">Sem responsável</SelectItem>
-                  {users.map((user) => (
-                    <SelectItem key={user.id} value={user.id}>
-                      {user.full_name || 'Sem nome'}
+                  {productionTypes.map((type) => (
+                    <SelectItem key={type.id} value={type.id}>
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: type.color }} />
+                        {type.name}
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-          </div>
 
-          {/* Datas */}
-          <div className="grid grid-cols-2 gap-4">
+            {/* Status */}
             <div className="space-y-2">
-              <Label>Data Início Prevista</Label>
+              <Label>Status</Label>
+              <Select
+                value={formData.status}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="aguardando">Aguardando</SelectItem>
+                  <SelectItem value="em_andamento">Em Andamento</SelectItem>
+                  <SelectItem value="pausado">Pausado</SelectItem>
+                  <SelectItem value="concluido">Concluído</SelectItem>
+                  <SelectItem value="cancelado">Cancelado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Cliente */}
+            <div className="space-y-2">
+              <Label>Cliente</Label>
+              <Select
+                value={formData.client_id || "_none"}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, client_id: value === "_none" ? "" : value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="-" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_none">-</SelectItem>
+                  {clients.map((client) => (
+                    <SelectItem key={client.id} value={client.id}>
+                      {client.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Negócio vinculado */}
+            <div className="space-y-2">
+              <Label>Negócio Vinculado</Label>
+              <Select
+                value={formData.deal_id || "_none"}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, deal_id: value === "_none" ? "" : value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="-" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_none">-</SelectItem>
+                  {deals.map((deal) => (
+                    <SelectItem key={deal.id} value={deal.id}>
+                      {deal.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Fornecedor */}
+            <div className="space-y-2">
+              <Label>Fornecedor</Label>
+              <div className="flex gap-2">
+                <Select
+                  value={formData.supplier_id || "_none"}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, supplier_id: value === "_none" ? "" : value }))}
+                >
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="-" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_none">-</SelectItem>
+                    {suppliers.map((supplier) => (
+                      <SelectItem key={supplier.id} value={supplier.id}>
+                        {supplier.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="icon"
+                  onClick={() => setShowCreateSupplier(true)}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Prioridade e Responsável */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Prioridade</Label>
+                <Select
+                  value={formData.priority}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, priority: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="baixa">Baixa</SelectItem>
+                    <SelectItem value="normal">Normal</SelectItem>
+                    <SelectItem value="alta">Alta</SelectItem>
+                    <SelectItem value="urgente">Urgente</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Responsável</Label>
+                <Select
+                  value={formData.responsible_id || "_none"}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, responsible_id: value === "_none" ? "" : value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="-" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_none">-</SelectItem>
+                    {users.map((user) => (
+                      <SelectItem key={user.id} value={user.id}>
+                        {user.full_name || 'Sem nome'}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Datas */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Data Início Prevista</Label>
+                <Input
+                  type="date"
+                  value={formData.planned_start_date}
+                  onChange={(e) => setFormData(prev => ({ ...prev, planned_start_date: e.target.value }))}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Data Fim Prevista</Label>
+                <Input
+                  type="date"
+                  value={formData.planned_end_date}
+                  onChange={(e) => setFormData(prev => ({ ...prev, planned_end_date: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            {/* Prazo Customizado */}
+            <div className="space-y-2">
+              <Label>Prazo Customizado (dias úteis)</Label>
               <Input
-                type="date"
-                value={formData.planned_start_date}
-                onChange={(e) => setFormData(prev => ({ ...prev, planned_start_date: e.target.value }))}
+                type="number"
+                value={formData.prazo_customizado_dias}
+                onChange={(e) => setFormData(prev => ({ ...prev, prazo_customizado_dias: e.target.value }))}
+                placeholder="Sobrescreve prazo automático do SLA"
+              />
+              <p className="text-xs text-muted-foreground">
+                Se preenchido, este prazo customizado será usado ao invés da soma do SLA das etapas
+              </p>
+            </div>
+
+            {/* Valor */}
+            <div className="space-y-2">
+              <Label>Valor (R$)</Label>
+              <Input
+                type="number"
+                step="0.01"
+                value={formData.value}
+                onChange={(e) => setFormData(prev => ({ ...prev, value: e.target.value }))}
+                placeholder="0,00"
               />
             </div>
 
+            {/* Descrição */}
             <div className="space-y-2">
-              <Label>Data Fim Prevista</Label>
-              <Input
-                type="date"
-                value={formData.planned_end_date}
-                onChange={(e) => setFormData(prev => ({ ...prev, planned_end_date: e.target.value }))}
+              <Label>Descrição</Label>
+              <Textarea
+                value={formData.description}
+                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                rows={3}
+              />
+            </div>
+
+            {/* Observações */}
+            <div className="space-y-2">
+              <Label>Observações Internas</Label>
+              <Textarea
+                value={formData.notes}
+                onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                placeholder="Notas internas sobre a produção..."
+                rows={2}
               />
             </div>
           </div>
 
-          {/* Valor */}
-          <div className="space-y-2">
-            <Label>Valor (R$)</Label>
-            <Input
-              type="number"
-              step="0.01"
-              value={formData.value}
-              onChange={(e) => setFormData(prev => ({ ...prev, value: e.target.value }))}
-              placeholder="0,00"
-            />
-          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Cancelar
+            </Button>
+            <Button 
+              onClick={() => updateMutation.mutate()}
+              disabled={updateMutation.isPending}
+            >
+              {updateMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-          {/* Descrição */}
-          <div className="space-y-2">
-            <Label>Descrição</Label>
-            <Textarea
-              value={formData.description}
-              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              rows={3}
-            />
-          </div>
-
-          {/* Observações */}
-          <div className="space-y-2">
-            <Label>Observações Internas</Label>
-            <Textarea
-              value={formData.notes}
-              onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-              placeholder="Notas internas sobre a produção..."
-              rows={2}
-            />
-          </div>
-        </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancelar
-          </Button>
-          <Button 
-            onClick={() => updateMutation.mutate()}
-            disabled={updateMutation.isPending}
-          >
-            {updateMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            Salvar
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      <CreateSupplierDialog
+        open={showCreateSupplier}
+        onOpenChange={setShowCreateSupplier}
+        onSuccess={handleSupplierCreated}
+      />
+    </>
   );
 }

@@ -9,6 +9,16 @@ import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { 
   Calendar, 
   User, 
   Package, 
@@ -17,11 +27,13 @@ import {
   Clock,
   FileText,
   DollarSign,
-  Pencil
+  Pencil,
+  Trash2
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { EditProductionOrderDialog } from './EditProductionOrderDialog';
+import { usePermissions } from '@/hooks/usePermissions';
 
 interface ProductionOrderDetailSheetProps {
   orderId: string | null;
@@ -48,6 +60,8 @@ const statusColors: Record<string, string> = {
 export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: ProductionOrderDetailSheetProps) {
   const queryClient = useQueryClient();
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const { isMaster } = usePermissions();
 
   // Buscar detalhes da OP
   const { data: order, isLoading } = useQuery({
@@ -159,6 +173,45 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
     }
   });
 
+  // Mutation para excluir OP
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      if (!orderId) return;
+      
+      // Excluir em cascata: anexos, logs, fases, depois a OP
+      await supabase
+        .from('production_attachments')
+        .delete()
+        .eq('production_order_id', orderId);
+      
+      await supabase
+        .from('production_logs')
+        .delete()
+        .eq('production_order_id', orderId);
+      
+      await supabase
+        .from('production_phases')
+        .delete()
+        .eq('production_order_id', orderId);
+      
+      const { error } = await supabase
+        .from('production_orders')
+        .delete()
+        .eq('id', orderId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['production-orders'] });
+      toast.success('Ordem de produção excluída com sucesso');
+      onOpenChange(false);
+    },
+    onError: (error) => {
+      console.error('Erro ao excluir OP:', error);
+      toast.error('Erro ao excluir ordem de produção');
+    }
+  });
+
   if (!orderId) return null;
 
   const phasesArray = Array.isArray(order?.phases) ? order.phases : [];
@@ -176,235 +229,288 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
     : sortedPhases[0];
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
-        {isLoading ? (
-          <div className="space-y-4">
-            <Skeleton className="h-8 w-48" />
-            <Skeleton className="h-4 w-32" />
-            <Skeleton className="h-32 w-full" />
-          </div>
-        ) : order ? (
-          <>
-            <SheetHeader className="pb-4">
-              <div className="flex items-start justify-between">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-sm font-mono text-muted-foreground">
-                      OP-{String(order.order_number).padStart(4, '0')}
-                    </span>
-                    <Badge className={statusColors[order.status] || statusColors.aguardando}>
-                      {statusLabels[order.status] || order.status}
-                    </Badge>
-                  </div>
-                  <SheetTitle className="text-xl">{order.title}</SheetTitle>
-                  {order.production_type && (
-                    <Badge variant="outline" className="mt-2">
-                      {order.production_type.name}
-                    </Badge>
-                  )}
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setEditDialogOpen(true)}
-                  className="shrink-0"
-                >
-                  <Pencil className="h-4 w-4 mr-1" />
-                  Editar
-                </Button>
-              </div>
-            </SheetHeader>
-
-            <div className="space-y-6">
-              {/* Progresso */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Progresso</span>
-                  <span className="font-medium">{completedPhases}/{totalPhases} fases</span>
-                </div>
-                <Progress value={progress} className="h-2" />
-              </div>
-
-              {/* Fase atual e botão avançar */}
-              {order.status !== 'concluido' && (
-                <div className="p-4 rounded-lg bg-muted/50 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Fase Atual</p>
-                      <p className="font-medium">
-                        {currentPhase?.phase_template?.name || 'Aguardando início'}
-                      </p>
+    <>
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
+          {isLoading ? (
+            <div className="space-y-4">
+              <Skeleton className="h-8 w-48" />
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-32 w-full" />
+            </div>
+          ) : order ? (
+            <>
+              <SheetHeader className="pb-4">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-sm font-mono text-muted-foreground">
+                        OP-{String(order.order_number).padStart(4, '0')}
+                      </span>
+                      <Badge className={statusColors[order.status] || statusColors.aguardando}>
+                        {statusLabels[order.status] || order.status}
+                      </Badge>
                     </div>
-                    {nextPhase && (
-                      <div className="text-right">
-                        <p className="text-sm text-muted-foreground">Próxima</p>
-                        <p className="font-medium text-primary">
-                          {nextPhase.phase_template?.name}
+                    <SheetTitle className="text-xl">{order.title}</SheetTitle>
+                    {order.production_type && (
+                      <Badge variant="outline" className="mt-2">
+                        {order.production_type.name}
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="flex gap-2 shrink-0">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setEditDialogOpen(true)}
+                    >
+                      <Pencil className="h-4 w-4 mr-1" />
+                      Editar
+                    </Button>
+                    {isMaster && (
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => setDeleteDialogOpen(true)}
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Excluir
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </SheetHeader>
+
+              <div className="space-y-6">
+                {/* Progresso */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Progresso</span>
+                    <span className="font-medium">{completedPhases}/{totalPhases} fases</span>
+                  </div>
+                  <Progress value={progress} className="h-2" />
+                </div>
+
+                {/* Fase atual e botão avançar */}
+                {order.status !== 'concluido' && (
+                  <div className="p-4 rounded-lg bg-muted/50 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Fase Atual</p>
+                        <p className="font-medium">
+                          {currentPhase?.phase_template?.name || 'Aguardando início'}
                         </p>
                       </div>
-                    )}
-                  </div>
-                  <Button 
-                    className="w-full gap-2"
-                    onClick={() => advancePhaseMutation.mutate()}
-                    disabled={advancePhaseMutation.isPending}
-                  >
-                    {nextPhase ? (
-                      <>
-                        Avançar para {nextPhase.phase_template?.name}
-                        <ArrowRight className="h-4 w-4" />
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle2 className="h-4 w-4" />
-                        Concluir Produção
-                      </>
-                    )}
-                  </Button>
-                </div>
-              )}
-
-              <Separator />
-
-              {/* Informações */}
-              <div className="grid gap-4">
-                {order.client && (
-                  <div className="flex items-center gap-3">
-                    <Package className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">Cliente</p>
-                      <p className="font-medium">{order.client.name}</p>
-                    </div>
-                  </div>
-                )}
-
-                {order.responsible && (
-                  <div className="flex items-center gap-3">
-                    <User className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">Responsável</p>
-                      <p className="font-medium">{order.responsible.full_name}</p>
-                    </div>
-                  </div>
-                )}
-
-                {order.value && order.value > 0 && (
-                  <div className="flex items-center gap-3">
-                    <DollarSign className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">Valor</p>
-                      <p className="font-medium">
-                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(order.value)}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {order.planned_end_date && (
-                  <div className="flex items-center gap-3">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">Prazo</p>
-                      <p className="font-medium">
-                        {format(new Date(order.planned_end_date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {order.description && (
-                  <div className="flex items-start gap-3">
-                    <FileText className="h-4 w-4 text-muted-foreground mt-0.5" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">Descrição</p>
-                      <p className="text-sm">{order.description}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <Separator />
-
-              {/* Timeline de fases */}
-              <div>
-                <h3 className="font-medium mb-3">Fases da Produção</h3>
-                <div className="space-y-3">
-                  {sortedPhases.map((phase, index) => (
-                    <div 
-                      key={phase.id}
-                      className={`flex items-center gap-3 p-3 rounded-lg border ${
-                        phase.status === 'em_andamento' 
-                          ? 'border-primary bg-primary/5' 
-                          : phase.status === 'concluido'
-                          ? 'border-green-500 bg-green-50 dark:bg-green-950/20'
-                          : 'border-border'
-                      }`}
-                    >
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                        phase.status === 'concluido' 
-                          ? 'bg-green-500 text-white'
-                          : phase.status === 'em_andamento'
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted text-muted-foreground'
-                      }`}>
-                        {phase.status === 'concluido' ? (
-                          <CheckCircle2 className="h-4 w-4" />
-                        ) : (
-                          index + 1
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-medium text-sm">{phase.phase_template?.name}</p>
-                        {phase.started_at && (
-                          <p className="text-xs text-muted-foreground">
-                            {phase.status === 'concluido' && phase.completed_at
-                              ? `Concluído em ${format(new Date(phase.completed_at), 'dd/MM HH:mm')}`
-                              : `Iniciado em ${format(new Date(phase.started_at), 'dd/MM HH:mm')}`
-                            }
+                      {nextPhase && (
+                        <div className="text-right">
+                          <p className="text-sm text-muted-foreground">Próxima</p>
+                          <p className="font-medium text-primary">
+                            {nextPhase.phase_template?.name}
                           </p>
-                        )}
+                        </div>
+                      )}
+                    </div>
+                    <Button 
+                      className="w-full gap-2"
+                      onClick={() => advancePhaseMutation.mutate()}
+                      disabled={advancePhaseMutation.isPending}
+                    >
+                      {nextPhase ? (
+                        <>
+                          Avançar para {nextPhase.phase_template?.name}
+                          <ArrowRight className="h-4 w-4" />
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 className="h-4 w-4" />
+                          Concluir Produção
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                )}
+
+                <Separator />
+
+                {/* Informações */}
+                <div className="grid gap-4">
+                  {order.client && (
+                    <div className="flex items-center gap-3">
+                      <Package className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">Cliente</p>
+                        <p className="font-medium">{order.client.name}</p>
                       </div>
                     </div>
-                  ))}
-                </div>
-              </div>
+                  )}
 
-              {/* Histórico */}
-              {logs.length > 0 && (
-                <>
-                  <Separator />
-                  <div>
-                    <h3 className="font-medium mb-3">Histórico</h3>
-                    <div className="space-y-2">
-                      {logs.map((log) => (
-                        <div key={log.id} className="flex items-start gap-2 text-sm">
-                          <Clock className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                          <div>
-                            <p>{log.description}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {format(new Date(log.created_at), "dd/MM 'às' HH:mm", { locale: ptBR })}
-                              {log.created_by_profile?.full_name && ` • ${log.created_by_profile.full_name}`}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
+                  {order.responsible && (
+                    <div className="flex items-center gap-3">
+                      <User className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">Responsável</p>
+                        <p className="font-medium">{order.responsible.full_name}</p>
+                      </div>
                     </div>
+                  )}
+
+                  {order.value && order.value > 0 && (
+                    <div className="flex items-center gap-3">
+                      <DollarSign className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">Valor</p>
+                        <p className="font-medium">
+                          {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(order.value)}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {order.planned_end_date && (
+                    <div className="flex items-center gap-3">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">Prazo</p>
+                        <p className="font-medium">
+                          {format(new Date(order.planned_end_date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {order.description && (
+                    <div className="flex items-start gap-3">
+                      <FileText className="h-4 w-4 text-muted-foreground mt-0.5" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">Descrição</p>
+                        <p className="text-sm">{order.description}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {order.notes && (
+                    <div className="flex items-start gap-3">
+                      <FileText className="h-4 w-4 text-muted-foreground mt-0.5" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">Observações</p>
+                        <p className="text-sm">{order.notes}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <Separator />
+
+                {/* Timeline de fases */}
+                <div>
+                  <h3 className="font-medium mb-3">Fases da Produção</h3>
+                  <div className="space-y-3">
+                    {sortedPhases.map((phase, index) => (
+                      <div 
+                        key={phase.id}
+                        className={`flex items-center gap-3 p-3 rounded-lg border ${
+                          phase.status === 'em_andamento' 
+                            ? 'border-primary bg-primary/5' 
+                            : phase.status === 'concluido'
+                            ? 'border-green-500 bg-green-50 dark:bg-green-950/20'
+                            : 'border-border'
+                        }`}
+                      >
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                          phase.status === 'concluido' 
+                            ? 'bg-green-500 text-white'
+                            : phase.status === 'em_andamento'
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-muted text-muted-foreground'
+                        }`}>
+                          {phase.status === 'concluido' ? (
+                            <CheckCircle2 className="h-4 w-4" />
+                          ) : (
+                            index + 1
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-medium text-sm">{phase.phase_template?.name}</p>
+                          {phase.started_at && (
+                            <p className="text-xs text-muted-foreground">
+                              {phase.status === 'concluido' && phase.completed_at
+                                ? `Concluído em ${format(new Date(phase.completed_at), 'dd/MM HH:mm')}`
+                                : `Iniciado em ${format(new Date(phase.started_at), 'dd/MM HH:mm')}`
+                              }
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                </>
-              )}
-            </div>
-          </>
-        ) : (
-          <p className="text-muted-foreground">Ordem não encontrada</p>
-        )}
-      </SheetContent>
+                </div>
+
+                {/* Histórico */}
+                {logs.length > 0 && (
+                  <>
+                    <Separator />
+                    <div>
+                      <h3 className="font-medium mb-3">Histórico</h3>
+                      <div className="space-y-2">
+                        {logs.map((log) => (
+                          <div key={log.id} className="flex items-start gap-2 text-sm">
+                            <Clock className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                            <div>
+                              <p>{log.description}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {format(new Date(log.created_at), "dd/MM 'às' HH:mm", { locale: ptBR })}
+                                {log.created_by_profile?.full_name && ` • ${log.created_by_profile.full_name}`}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            </>
+          ) : (
+            <p className="text-muted-foreground">Ordem não encontrada</p>
+          )}
+        </SheetContent>
+      </Sheet>
 
       <EditProductionOrderDialog
         open={editDialogOpen}
         onOpenChange={setEditDialogOpen}
         orderId={orderId}
       />
-    </Sheet>
+
+      {/* Dialog de confirmação de exclusão */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir Ordem de Produção</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>
+                Tem certeza que deseja excluir a OP <strong>#{order?.order_number}</strong> - <strong>{order?.title}</strong>?
+              </p>
+              {order?.client?.name && (
+                <p className="text-sm">Cliente: {order.client.name}</p>
+              )}
+              <p className="text-destructive font-medium">
+                Esta ação é irreversível e excluirá também todas as fases, logs e anexos vinculados.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteMutation.mutate()}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? 'Excluindo...' : 'Excluir OP'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
