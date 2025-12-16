@@ -3884,6 +3884,53 @@ export type Database = {
           },
         ]
       }
+      tendenci_daily_goal_records: {
+        Row: {
+          created_at: string | null
+          data: string
+          id: string
+          meta_arquitetos: number
+          meta_batida: boolean | null
+          meta_valor: number | null
+          realizado_arquitetos: number | null
+          realizado_valor: number | null
+          updated_at: string | null
+          vendedor_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          data: string
+          id?: string
+          meta_arquitetos?: number
+          meta_batida?: boolean | null
+          meta_valor?: number | null
+          realizado_arquitetos?: number | null
+          realizado_valor?: number | null
+          updated_at?: string | null
+          vendedor_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          data?: string
+          id?: string
+          meta_arquitetos?: number
+          meta_batida?: boolean | null
+          meta_valor?: number | null
+          realizado_arquitetos?: number | null
+          realizado_valor?: number | null
+          updated_at?: string | null
+          vendedor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tendenci_daily_goal_records_vendedor_id_fkey"
+            columns: ["vendedor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tendenci_goal_progress: {
         Row: {
           atualizado_em: string | null
@@ -5018,6 +5065,16 @@ export type Database = {
       get_daily_architect_goal_progress: {
         Args: { p_date?: string; p_vendedor_id: string }
         Returns: Json
+      }
+      get_daily_goal_stats: { Args: { p_vendedor_id?: string }; Returns: Json }
+      get_monthly_goal_records: {
+        Args: { p_month?: string; p_vendedor_id?: string }
+        Returns: {
+          batida: boolean
+          date: string
+          meta: number
+          realizado: number
+        }[]
       }
       get_pending_automated_tasks: {
         Args: never
