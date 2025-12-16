@@ -180,7 +180,7 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
     setIsSaving(true);
     
     try {
-      // VALIDAÇÃO CRÍTICA: Verificar se há atualização na timeline nas últimas 24h
+      // VALIDAÇÃO CRÍTICA: Verificar se há atualização na timeline nas últimas 36h
       // Só aplica para CRIAÇÃO de novas tarefas em status 'contato_iniciado' ou 'parceiro_ativo'
       if (!editingTaskId) {
         const requiresTimelineValidation = 
@@ -188,14 +188,14 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
           architectInfo?.status_funil === 'parceiro_ativo';
         
         if (requiresTimelineValidation) {
-          const twentyFourHoursAgo = new Date();
-          twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
+          const thirtySixHoursAgo = new Date();
+          thirtySixHoursAgo.setHours(thirtySixHoursAgo.getHours() - 36);
           
           const { data: recentUpdates, error: timelineError } = await supabase
             .from("architect_timeline")
             .select("id, created_at")
             .eq("architect_id", architectId)
-            .gte("created_at", twentyFourHoursAgo.toISOString())
+            .gte("created_at", thirtySixHoursAgo.toISOString())
             .limit(1);
           
           if (timelineError) {
@@ -205,7 +205,7 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
           if (!recentUpdates || recentUpdates.length === 0) {
             toast({
               title: "⚠️ Atualização na Timeline Obrigatória",
-              description: "Para arquitetos em Contato Iniciado ou Parceiro Ativo, adicione uma atualização na Timeline (últimas 24h) antes de criar tarefas.",
+              description: "Para arquitetos em Contato Iniciado ou Parceiro Ativo, adicione uma atualização na Timeline (últimas 36h) antes de criar tarefas.",
               variant: "destructive",
             });
             return;
