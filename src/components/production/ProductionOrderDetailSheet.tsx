@@ -63,34 +63,84 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const { isMaster } = usePermissions();
 
-  // Buscar detalhes da OP
+  // Buscar detalhes da OP com queries separadas para evitar problemas de FK
   const { data: order, isLoading } = useQuery({
     queryKey: ['production-order-detail', orderId],
     queryFn: async () => {
       if (!orderId) return null;
       
-      const { data, error } = await supabase
+      // Query principal - dados básicos da OP
+      const { data: orderData, error: orderError } = await supabase
         .from('production_orders')
-        .select(`
-          *,
-          production_type:production_types!production_orders_production_type_id_fkey(name, color),
-          responsible:profiles!production_orders_responsible_id_fkey(full_name, email),
-          client:clients!production_orders_client_id_fkey(name, phone),
-          deal:crm_deals!production_orders_deal_id_fkey(title, value),
-          phases:production_phases(
+        .select('*')
+        .eq('id', orderId)
+        .maybeSingle();
+      
+      if (orderError) {
+        console.error('Error fetching production order:', orderError);
+        throw orderError;
+      }
+      
+      if (!orderData) return null;
+
+      // Buscar dados relacionados em paralelo
+      const [productionTypeRes, responsibleRes, clientRes, dealRes, phasesRes] = await Promise.all([
+        // Production type
+        orderData.production_type_id 
+          ? supabase.from('production_types').select('name, color').eq('id', orderData.production_type_id).maybeSingle()
+          : Promise.resolve({ data: null }),
+        // Responsible
+        orderData.responsible_id
+          ? supabase.from('profiles').select('full_name, email').eq('id', orderData.responsible_id).maybeSingle()
+          : Promise.resolve({ data: null }),
+        // Client
+        orderData.client_id
+          ? supabase.from('clients').select('name, phone').eq('id', orderData.client_id).maybeSingle()
+          : Promise.resolve({ data: null }),
+        // Deal
+        orderData.deal_id
+          ? supabase.from('crm_deals').select('title, value').eq('id', orderData.deal_id).maybeSingle()
+          : Promise.resolve({ data: null }),
+        // Phases com templates
+        supabase
+          .from('production_phases')
+          .select(`
             id,
             status,
             started_at,
             completed_at,
             notes,
-            phase_template:production_phase_templates(id, name, color, position)
-          )
-        `)
-        .eq('id', orderId)
-        .maybeSingle();
+            phase_template_id
+          `)
+          .eq('production_order_id', orderId)
+      ]);
+
+      // Buscar templates das phases
+      const phaseTemplateIds = (phasesRes.data || [])
+        .map(p => p.phase_template_id)
+        .filter(Boolean);
       
-      if (error) throw error;
-      return data;
+      const { data: templates } = phaseTemplateIds.length > 0
+        ? await supabase
+            .from('production_phase_templates')
+            .select('id, name, color, position')
+            .in('id', phaseTemplateIds)
+        : { data: [] };
+
+      // Mapear templates para phases
+      const phasesWithTemplates = (phasesRes.data || []).map(phase => ({
+        ...phase,
+        phase_template: templates?.find(t => t.id === phase.phase_template_id) || null
+      }));
+
+      return {
+        ...orderData,
+        production_type: productionTypeRes.data,
+        responsible: responsibleRes.data,
+        client: clientRes.data,
+        deal: dealRes.data,
+        phases: phasesWithTemplates
+      };
     },
     enabled: !!orderId
   });
@@ -234,6 +284,9 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
         <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
           {isLoading ? (
             <div className="space-y-4">
+              <SheetHeader>
+                <SheetTitle>Carregando...</SheetTitle>
+              </SheetHeader>
               <Skeleton className="h-8 w-48" />
               <Skeleton className="h-4 w-32" />
               <Skeleton className="h-32 w-full" />
@@ -471,7 +524,10 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
               </div>
             </>
           ) : (
-            <p className="text-muted-foreground">Ordem não encontrada</p>
+            <SheetHeader>
+              <SheetTitle>Ordem não encontrada</SheetTitle>
+              <p className="text-muted-foreground text-sm">A ordem de produção solicitada não foi encontrada ou foi excluída.</p>
+            </SheetHeader>
           )}
         </SheetContent>
       </Sheet>
