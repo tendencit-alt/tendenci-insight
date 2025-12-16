@@ -529,6 +529,14 @@ Deno.serve(async (req) => {
 
     console.log(`✅ [MAIN] ${arquiteto_ids.length} arquitetos enfileirados`)
 
+    // 🚀 Marcar campanha como "enviando" (em andamento)
+    await supabase
+      .from('tendenci_prospec_arq_campaigns')
+      .update({ status: 'enviando' })
+      .eq('id', campanha_id)
+    
+    console.log(`📤 [MAIN] Campanha ${campanha_id} marcada como 'enviando'`)
+
     // Processar primeiro item imediatamente
     const firstResult = await processNextInQueue(supabase)
 
