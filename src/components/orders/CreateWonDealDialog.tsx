@@ -200,7 +200,7 @@ export function CreateWonDealDialog({
         .from("leads")
         .insert({
           client_id: formData.client_id,
-          status: "convertido",
+          status: "ganho",
           temperature: "quente",
         })
         .select()
