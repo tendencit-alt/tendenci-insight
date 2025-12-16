@@ -14,6 +14,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -34,7 +39,10 @@ import {
   Bell,
   Info,
   Save,
-  X
+  X,
+  HelpCircle,
+  ChevronDown,
+  CheckCircle2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -186,7 +194,10 @@ export function ManageProductionAutomationsDialog({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['production-automations'] });
-      toast.success('Automação criada com sucesso');
+      const phaseName = getPhaseName(formData.phase_template_id || null);
+      toast.success('Automação criada com sucesso', {
+        description: `OPs na etapa "${phaseName}" serão alertadas após ${formData.prazo_dias_uteis} dias úteis`
+      });
       resetForm();
     },
     onError: (error) => {
@@ -298,6 +309,29 @@ export function ManageProductionAutomationsDialog({
       return;
     }
 
+    // Check for duplicate
+    const isDuplicate = automations.some(a => 
+      a.id !== editingId &&
+      a.tipo === formData.tipo &&
+      (a.production_type_id || '') === formData.production_type_id &&
+      (a.phase_template_id || '') === formData.phase_template_id
+    );
+
+    if (isDuplicate) {
+      toast.error('Já existe uma automação com essa configuração', {
+        description: 'Escolha um tipo de produção ou etapa diferente'
+      });
+      return;
+    }
+
+    // Warn for very short deadlines
+    if (formData.prazo_dias_uteis < 2 && !editingId) {
+      const confirmed = window.confirm(
+        `Prazo de ${formData.prazo_dias_uteis} dia útil é muito curto. Deseja continuar?`
+      );
+      if (!confirmed) return;
+    }
+
     if (editingId) {
       updateMutation.mutate();
     } else {
@@ -315,6 +349,22 @@ export function ManageProductionAutomationsDialog({
     return phaseTemplates.find(t => t.id === id)?.name || 'Todas';
   };
 
+  // Check for duplicate automation
+  const checkDuplicate = () => {
+    return automations.some(a => 
+      a.id !== editingId &&
+      a.tipo === formData.tipo &&
+      (a.production_type_id || '') === formData.production_type_id &&
+      (a.phase_template_id || '') === formData.phase_template_id
+    );
+  };
+
+  const getSuccessMessage = () => {
+    const typeName = getProductionTypeName(formData.production_type_id || null);
+    const phaseName = getPhaseName(formData.phase_template_id || null);
+    return `OPs ${typeName !== 'Todos' ? `de "${typeName}"` : ''} na etapa "${phaseName}" serão alertadas após ${formData.prazo_dias_uteis} dias úteis`;
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh]">
@@ -327,6 +377,116 @@ export function ManageProductionAutomationsDialog({
 
         <ScrollArea className="max-h-[calc(90vh-120px)]">
           <div className="space-y-4 p-1">
+            {/* Guia Explicativo */}
+            <Collapsible defaultOpen={automations.length === 0}>
+              <CollapsibleTrigger className="flex items-center gap-2 w-full p-3 rounded-lg bg-primary/5 hover:bg-primary/10 transition-colors">
+                <HelpCircle className="h-4 w-4 text-primary" />
+                <span className="font-medium text-sm">📚 Guia: Como usar as Automações</span>
+                <ChevronDown className="ml-auto h-4 w-4 text-muted-foreground transition-transform duration-200 data-[state=open]:rotate-180" />
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="mt-2 p-4 rounded-lg bg-muted/50 border text-sm space-y-4">
+                  {/* O que são automações */}
+                  <div>
+                    <h4 className="font-semibold flex items-center gap-2 text-primary mb-1">
+                      <Zap className="h-4 w-4" />
+                      O que são Automações?
+                    </h4>
+                    <p className="text-muted-foreground text-xs">
+                      As automações monitoram automaticamente o tempo que cada ordem de produção permanece em cada etapa. 
+                      Quando o prazo configurado é excedido, o sistema executa a ação definida (alerta visual, mudança de prioridade, etc).
+                    </p>
+                  </div>
+
+                  {/* Como funciona dias úteis */}
+                  <div>
+                    <h4 className="font-semibold flex items-center gap-2 text-primary mb-1">
+                      <Clock className="h-4 w-4" />
+                      Cálculo de Dias Úteis
+                    </h4>
+                    <p className="text-muted-foreground text-xs">
+                      O sistema conta apenas <strong>segunda a sexta-feira</strong>. Sábados e domingos são automaticamente excluídos.
+                    </p>
+                    <div className="mt-1 p-2 rounded bg-background text-xs">
+                      <strong>Exemplo:</strong> Se configurar 3 dias úteis e a OP entrar na etapa segunda-feira, 
+                      o alerta será gerado na quinta-feira.
+                    </div>
+                  </div>
+
+                  {/* Tipos de automação */}
+                  <div>
+                    <h4 className="font-semibold flex items-center gap-2 text-primary mb-1">
+                      📋 Tipos de Automação
+                    </h4>
+                    <div className="grid gap-2 text-xs">
+                      <div className="flex items-start gap-2 p-2 rounded bg-background">
+                        <Clock className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />
+                        <div>
+                          <strong>SLA por Etapa (Dias Úteis)</strong>
+                          <p className="text-muted-foreground">Define um prazo máximo para uma etapa específica. Ideal para garantir que nenhuma OP fique "esquecida".</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2 p-2 rounded bg-background">
+                        <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+                        <div>
+                          <strong>Alerta de Prazo Geral</strong>
+                          <p className="text-muted-foreground">Monitora o prazo geral de entrega da OP. Útil para alertar quando a data está próxima.</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2 p-2 rounded bg-background">
+                        <TrendingUp className="h-4 w-4 text-orange-500 shrink-0 mt-0.5" />
+                        <div>
+                          <strong>Escalonar Prioridade</strong>
+                          <p className="text-muted-foreground">Aumenta automaticamente a prioridade quando prazo excede. Ex: "Após 5 dias úteis, mudar para URGENTE".</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2 p-2 rounded bg-background">
+                        <Bell className="h-4 w-4 text-purple-500 shrink-0 mt-0.5" />
+                        <div>
+                          <strong>Notificação</strong>
+                          <p className="text-muted-foreground">Envia notificação para o responsável ou usuário específico.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Exemplos práticos */}
+                  <div>
+                    <h4 className="font-semibold flex items-center gap-2 text-primary mb-1">
+                      <CheckCircle2 className="h-4 w-4" />
+                      Exemplos Práticos
+                    </h4>
+                    <div className="space-y-1 text-xs">
+                      <div className="p-2 rounded bg-background border-l-2 border-blue-500">
+                        <strong>1️⃣ "SLA Compra Material - 2 dias úteis"</strong>
+                        <p className="text-muted-foreground">Tipo: Móveis Planejados → Etapa: Compra de Material → Ação: Gerar alerta visual</p>
+                      </div>
+                      <div className="p-2 rounded bg-background border-l-2 border-orange-500">
+                        <strong>2️⃣ "Urgente após 5 dias em Produção"</strong>
+                        <p className="text-muted-foreground">Tipo: Todos → Etapa: Produção Iniciada → Ação: Mudar prioridade para Urgente</p>
+                      </div>
+                      <div className="p-2 rounded bg-background border-l-2 border-emerald-500">
+                        <strong>3️⃣ "Alerta Geral 3 dias"</strong>
+                        <p className="text-muted-foreground">Tipo: Todos → Etapa: Todas → Ação: Gerar alerta visual</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Dicas */}
+                  <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
+                    <h4 className="font-semibold text-xs mb-1">💡 Dicas:</h4>
+                    <ul className="text-xs text-muted-foreground space-y-0.5 list-disc list-inside">
+                      <li>Configure automações específicas para etapas críticas do seu processo</li>
+                      <li>Use "Todos os Tipos" para regras que valem para toda produção</li>
+                      <li>Comece com prazos maiores e ajuste conforme necessidade</li>
+                      <li>Ative/desative automações sem excluí-las para testes</li>
+                    </ul>
+                  </div>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+
+            <Separator />
             {/* Create/Edit Form */}
             {isCreating ? (
               <Card className="border-primary/20 bg-primary/5">

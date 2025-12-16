@@ -163,27 +163,17 @@ export function ProductionCard({ order, onClick, isDragging }: ProductionCardPro
       <CardContent className="p-3 space-y-2">
         {/* Automation Alert Badge - SLA em Dias Úteis */}
         {hasAutomationAlert && (
-          <div className="flex items-center gap-1.5 p-2 rounded-md bg-destructive/10 border border-destructive/30 text-destructive text-xs font-semibold">
-            <Siren className="h-4 w-4 animate-bounce" />
-            <span>🚨 ATRASADO - {automationAlert.dias_excedidos} DIAS ÚTEIS ACIMA DO SLA</span>
+          <div className="p-2 rounded-md bg-destructive/10 border border-destructive/30">
+            <div className="flex items-center gap-1.5 text-destructive text-xs font-semibold">
+              <Siren className="h-4 w-4 animate-bounce" />
+              <span>🚨 ATRASADO - {automationAlert.dias_excedidos} DIA(S) ÚTIL(EIS)</span>
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-1 pl-5">
+              SLA: {automationAlert.prazo_dias_uteis}d úteis | Na fase: {automationAlert.dias_uteis_na_fase}d úteis
+            </p>
           </div>
         )}
 
-        {/* Header: OP Number, Title, Priority */}
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex items-center gap-2 flex-1 min-w-0">
-            <GripVertical className="h-4 w-4 text-muted-foreground shrink-0" />
-            <div className="min-w-0">
-              <span className="text-xs font-mono text-muted-foreground block">
-                OP-{String(order.order_number).padStart(4, '0')}
-              </span>
-              <p className="font-medium text-sm truncate">{order.title}</p>
-            </div>
-          </div>
-          <Badge className={cn("shrink-0 text-xs", priorityColors[order.priority])}>
-            {priorityLabels[order.priority] || order.priority}
-          </Badge>
-        </div>
         {/* Header: OP Number, Title, Priority */}
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2 flex-1 min-w-0">
