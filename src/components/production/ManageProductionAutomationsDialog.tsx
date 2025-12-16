@@ -177,6 +177,12 @@ export function ManageProductionAutomationsDialog({
     enabled: open
   });
 
+  // Helper to convert special values to null for database
+  const getPhaseTemplateIdForDb = (value: string) => {
+    if (!value || value === 'nova_op' || value === 'all') return null;
+    return value;
+  };
+
   // Create mutation
   const createMutation = useMutation({
     mutationFn: async () => {
@@ -185,10 +191,10 @@ export function ManageProductionAutomationsDialog({
         descricao: formData.descricao || null,
         tipo: formData.tipo,
         production_type_id: formData.production_type_id || null,
-        phase_template_id: formData.phase_template_id || null,
+        phase_template_id: getPhaseTemplateIdForDb(formData.phase_template_id),
         prazo_dias_uteis: formData.prazo_dias_uteis,
         acao_tipo: formData.acao_tipo,
-        acao_config: formData.acao_config
+        acao_config: { ...formData.acao_config, is_nova_op: formData.phase_template_id === 'nova_op' }
       });
       if (error) throw error;
     },
@@ -216,10 +222,10 @@ export function ManageProductionAutomationsDialog({
           descricao: formData.descricao || null,
           tipo: formData.tipo,
           production_type_id: formData.production_type_id || null,
-          phase_template_id: formData.phase_template_id || null,
+          phase_template_id: getPhaseTemplateIdForDb(formData.phase_template_id),
           prazo_dias_uteis: formData.prazo_dias_uteis,
           acao_tipo: formData.acao_tipo,
-          acao_config: formData.acao_config
+          acao_config: { ...formData.acao_config, is_nova_op: formData.phase_template_id === 'nova_op' }
         })
         .eq('id', editingId);
       if (error) throw error;
@@ -285,12 +291,15 @@ export function ManageProductionAutomationsDialog({
   };
 
   const handleEdit = (automation: Automation) => {
+    // Restore 'nova_op' special value if it was set
+    const phaseId = automation.acao_config?.is_nova_op ? 'nova_op' : (automation.phase_template_id || '');
+    
     setFormData({
       nome: automation.nome,
       descricao: automation.descricao || '',
       tipo: automation.tipo,
       production_type_id: automation.production_type_id || '',
-      phase_template_id: automation.phase_template_id || '',
+      phase_template_id: phaseId,
       prazo_dias_uteis: automation.prazo_dias_uteis || 3,
       acao_tipo: automation.acao_tipo || 'gerar_alerta',
       acao_config: automation.acao_config || {}
