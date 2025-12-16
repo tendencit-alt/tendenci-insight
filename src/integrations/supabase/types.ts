@@ -2337,6 +2337,7 @@ export type Database = {
           etapa_prevista_atraso: string | null
           id: string
           notes: string | null
+          order_id: string | null
           order_number: number
           planned_end_date: string | null
           planned_start_date: string | null
@@ -2365,6 +2366,7 @@ export type Database = {
           etapa_prevista_atraso?: string | null
           id?: string
           notes?: string | null
+          order_id?: string | null
           order_number?: number
           planned_end_date?: string | null
           planned_start_date?: string | null
@@ -2393,6 +2395,7 @@ export type Database = {
           etapa_prevista_atraso?: string | null
           id?: string
           notes?: string | null
+          order_id?: string | null
           order_number?: number
           planned_end_date?: string | null
           planned_start_date?: string | null
@@ -2435,6 +2438,13 @@ export type Database = {
             columns: ["deal_id"]
             isOneToOne: false
             referencedRelation: "crm_deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_orders_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
             referencedColumns: ["id"]
           },
           {

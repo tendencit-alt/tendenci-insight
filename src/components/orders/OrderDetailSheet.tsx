@@ -122,49 +122,80 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
   };
 
   const handleCreateProductionOrders = async () => {
-    if (!items || items.length === 0) {
-      toast.error('Pedido não possui itens');
+    if (!order) {
+      toast.error('Pedido não encontrado');
+      return;
+    }
+
+    if (!order.centro_custo) {
+      toast.error('Pedido não possui centro de custo definido. Configure o centro de custo primeiro.');
       return;
     }
 
     setLoading(true);
     try {
-      const { data: productionTypes } = await supabase.from('production_types').select('id').eq('active', true).limit(1);
+      // Mapear centro_custo para nome do tipo de produção
+      const centroCustoMap: Record<string, string> = {
+        'moveis_planejados': 'Móveis Planejados',
+        'producao_tendenci': 'Produção Tendenci',
+        'revenda': 'Revenda'
+      };
 
-      if (!productionTypes || productionTypes.length === 0) {
-        toast.error('Nenhum tipo de produção configurado');
+      const productionTypeName = centroCustoMap[order.centro_custo];
+      if (!productionTypeName) {
+        toast.error(`Centro de custo "${order.centro_custo}" não possui mapeamento para produção`);
         return;
       }
 
-      const productionTypeId = productionTypes[0].id;
+      // Buscar tipo de produção pelo nome
+      const { data: productionType, error: typeError } = await supabase
+        .from('production_types')
+        .select('id, name')
+        .eq('name', productionTypeName)
+        .eq('active', true)
+        .single();
 
-      for (const item of items) {
-        const { data: op, error } = await supabase
-          .from('production_orders')
-          .insert({
-            title: `${item.descricao} - Pedido #${order?.order_number}`,
-            production_type_id: productionTypeId,
-            deal_id: order?.deal_id,
-            client_id: order?.client_id,
-            value: item.valor_total,
-            status: 'aguardando',
-            notes: item.especificacoes,
-          })
-          .select()
-          .single();
-
-        if (error) throw error;
-
-        await supabase.from('order_items').update({ production_order_id: op.id }).eq('id', item.id);
+      if (typeError || !productionType) {
+        toast.error(`Tipo de produção "${productionTypeName}" não encontrado ou inativo`);
+        return;
       }
 
+      // Verificar se já existe OP para este pedido
+      const { data: existingOp } = await supabase
+        .from('production_orders')
+        .select('id')
+        .eq('order_id', orderId)
+        .single();
+
+      if (existingOp) {
+        toast.info('Já existe uma ordem de produção para este pedido');
+        return;
+      }
+
+      // Criar ordem de produção
+      const { error: opError } = await supabase
+        .from('production_orders')
+        .insert({
+          title: `Pedido #${order.order_number} - ${order.client?.name || 'Cliente'}`,
+          production_type_id: productionType.id,
+          deal_id: order.deal_id,
+          client_id: order.client_id,
+          order_id: orderId,
+          value: order.valor_total,
+          status: 'aguardando',
+          priority: 'normal',
+        });
+
+      if (opError) throw opError;
+
+      // Atualizar status do pedido
       await supabase.from('orders').update({ status: 'em_producao' }).eq('id', orderId);
 
-      toast.success('Ordens de produção criadas com sucesso!');
+      toast.success(`Ordem de produção criada no kanban "${productionType.name}"!`);
       refetch();
       onUpdate();
     } catch (error: any) {
-      toast.error('Erro ao criar ordens de produção: ' + error.message);
+      toast.error('Erro ao criar ordem de produção: ' + error.message);
     } finally {
       setLoading(false);
     }
