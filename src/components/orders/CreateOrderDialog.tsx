@@ -58,6 +58,12 @@ const TIPOS_ENTREGA = [
   { value: 'terceirizada', label: 'Terceirizada' },
 ];
 
+const CENTROS_CUSTO = [
+  { value: 'moveis_planejados', label: 'Móveis Planejados' },
+  { value: 'producao_tendenci', label: 'Produção Tendenci' },
+  { value: 'revenda', label: 'Revenda' },
+];
+
 export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clientId }: CreateOrderDialogProps) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -91,6 +97,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     desconto_percentual: 0,
     desconto_valor: 0,
     valor_frete: 0,
+    centro_custo: '',
   });
 
   const [parcelas, setParcelas] = useState<PagamentoParcela[]>([
@@ -191,7 +198,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
   const total = subtotal - descontoTotal + Number(formData.valor_frete || 0);
 
   // Validações por etapa
-  const isClienteValid = !!formData.client_id;
+  const isClienteValid = !!formData.client_id && !!formData.centro_custo;
   const isItensValid = items.length > 0;
   const totalPercentual = parcelas.reduce((sum, p) => sum + p.percentual, 0);
   const isPagamentoValid = parcelas.length > 0 && parcelas.every(p => p.forma_pagamento) && totalPercentual === 100;
@@ -200,8 +207,12 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
 
   const handleNext = () => {
     if (activeTab === 'cliente') {
-      if (!isClienteValid) {
+      if (!formData.client_id) {
         toast.error('Selecione um cliente para continuar');
+        return;
+      }
+      if (!formData.centro_custo) {
+        toast.error('Selecione o centro de custo para continuar');
         return;
       }
       setActiveTab('itens');
@@ -265,6 +276,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
           valor_frete: formData.valor_frete,
           subtotal,
           valor_total: total,
+          centro_custo: formData.centro_custo || null,
           status: 'rascunho',
         })
         .select()
@@ -427,6 +439,26 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                       {deals?.map((deal) => (
                         <SelectItem key={deal.id} value={deal.id}>
                           {deal.title} {deal.value && `- ${formatCurrency(deal.value)}`}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Centro de Custo *</Label>
+                  <Select
+                    value={formData.centro_custo || "_placeholder"}
+                    onValueChange={(v) => setFormData({ ...formData, centro_custo: v === "_placeholder" ? "" : v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="-" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="_placeholder" disabled>-</SelectItem>
+                      {CENTROS_CUSTO.map((cc) => (
+                        <SelectItem key={cc.value} value={cc.value}>
+                          {cc.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
