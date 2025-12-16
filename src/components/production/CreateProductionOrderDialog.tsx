@@ -29,6 +29,7 @@ export function CreateProductionOrderDialog({ open, onOpenChange, productionType
     client_id: '',
     deal_id: '',
     description: '',
+    notes: '',
     priority: 'normal',
     responsible_id: '',
     planned_start_date: '',
@@ -107,6 +108,7 @@ export function CreateProductionOrderDialog({ open, onOpenChange, productionType
           client_id: formData.client_id || null,
           deal_id: formData.deal_id || null,
           description: formData.description || null,
+          notes: formData.notes || null,
           priority: formData.priority,
           responsible_id: formData.responsible_id || null,
           planned_start_date: formData.planned_start_date || null,
@@ -138,6 +140,7 @@ export function CreateProductionOrderDialog({ open, onOpenChange, productionType
       client_id: '',
       deal_id: '',
       description: '',
+      notes: '',
       priority: 'normal',
       responsible_id: '',
       planned_start_date: '',
@@ -211,7 +214,7 @@ export function CreateProductionOrderDialog({ open, onOpenChange, productionType
                   <SelectValue placeholder="-" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="_none">Sem cliente</SelectItem>
+                  <SelectItem value="_none">-</SelectItem>
                   {clients.map((client) => (
                     <SelectItem key={client.id} value={client.id}>
                       {client.name}
@@ -232,7 +235,7 @@ export function CreateProductionOrderDialog({ open, onOpenChange, productionType
                   <SelectValue placeholder="-" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="_none">Sem vínculo</SelectItem>
+                  <SelectItem value="_none">-</SelectItem>
                   {deals.map((deal) => (
                     <SelectItem key={deal.id} value={deal.id}>
                       {deal.title}
@@ -254,7 +257,7 @@ export function CreateProductionOrderDialog({ open, onOpenChange, productionType
                     <SelectValue placeholder="-" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="_none">Sem fornecedor</SelectItem>
+                    <SelectItem value="_none">-</SelectItem>
                     {suppliers.map((supplier) => (
                       <SelectItem key={supplier.id} value={supplier.id}>
                         {supplier.name}
@@ -303,7 +306,7 @@ export function CreateProductionOrderDialog({ open, onOpenChange, productionType
                     <SelectValue placeholder="-" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="_none">Sem responsável</SelectItem>
+                    <SelectItem value="_none">-</SelectItem>
                     {users.map((u) => (
                       <SelectItem key={u.id} value={u.id}>
                         {u.full_name || 'Sem nome'}
@@ -369,6 +372,17 @@ export function CreateProductionOrderDialog({ open, onOpenChange, productionType
                 onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                 placeholder="Detalhes adicionais da ordem de produção..."
                 rows={3}
+              />
+            </div>
+
+            {/* Observações */}
+            <div className="space-y-2">
+              <Label>Observações Internas</Label>
+              <Textarea
+                value={formData.notes}
+                onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                placeholder="Notas internas sobre a produção..."
+                rows={2}
               />
             </div>
           </div>

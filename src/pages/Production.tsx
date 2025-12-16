@@ -13,6 +13,8 @@ import { ProductionSLAAlerts } from '@/components/production/ProductionSLAAlerts
 import { ProductionOrderDetailSheet } from '@/components/production/ProductionOrderDetailSheet';
 import { ManageProductionStagesDialog } from '@/components/production/ManageProductionStagesDialog';
 import { getTailwindColor } from '@/utils/tailwindColors';
+import { toast } from 'sonner';
+import { format, subDays, startOfMonth } from 'date-fns';
 
 export default function Production() {
   const [selectedType, setSelectedType] = useState<string>('all');
@@ -23,7 +25,8 @@ export default function Production() {
     status: 'all',
     priority: 'all',
     search: '',
-    responsible: 'all'
+    responsible: 'all',
+    period: 'all'
   });
 
   const { data: productionTypes = [] } = useQuery({
@@ -41,6 +44,127 @@ export default function Production() {
   });
 
   const currentTypeId = selectedType !== 'all' ? selectedType : undefined;
+
+  // Função para exportar OPs para Excel
+  const handleExport = async () => {
+    try {
+      let query = supabase
+        .from('production_orders')
+        .select(`
+          order_number,
+          title,
+          status,
+          priority,
+          value,
+          planned_start_date,
+          planned_end_date,
+          created_at,
+          production_type:production_types(name),
+          client:clients(name),
+          responsible:profiles!production_orders_responsible_id_fkey(full_name)
+        `)
+        .order('order_number', { ascending: false });
+
+      // Aplicar filtros
+      if (currentTypeId) {
+        query = query.eq('production_type_id', currentTypeId);
+      }
+      if (filters.status !== 'all') {
+        query = query.eq('status', filters.status);
+      }
+      if (filters.priority !== 'all') {
+        query = query.eq('priority', filters.priority);
+      }
+      if (filters.responsible !== 'all') {
+        query = query.eq('responsible_id', filters.responsible);
+      }
+      if (filters.search) {
+        query = query.ilike('title', `%${filters.search}%`);
+      }
+      if (filters.period !== 'all') {
+        let dateFrom: Date;
+        const today = new Date();
+        
+        switch (filters.period) {
+          case 'last7days':
+            dateFrom = subDays(today, 7);
+            break;
+          case 'last30days':
+            dateFrom = subDays(today, 30);
+            break;
+          case 'last60days':
+            dateFrom = subDays(today, 60);
+            break;
+          case 'last90days':
+            dateFrom = subDays(today, 90);
+            break;
+          case 'thisMonth':
+            dateFrom = startOfMonth(today);
+            break;
+          default:
+            dateFrom = new Date(0);
+        }
+        
+        query = query.gte('created_at', dateFrom.toISOString());
+      }
+
+      const { data, error } = await query;
+      
+      if (error) throw error;
+
+      if (!data || data.length === 0) {
+        toast.info('Nenhuma OP encontrada para exportar');
+        return;
+      }
+
+      // Converter para CSV
+      const statusLabels: Record<string, string> = {
+        aguardando: 'Aguardando',
+        em_andamento: 'Em Andamento',
+        pausado: 'Pausado',
+        concluido: 'Concluído',
+        cancelado: 'Cancelado'
+      };
+
+      const priorityLabels: Record<string, string> = {
+        baixa: 'Baixa',
+        normal: 'Normal',
+        alta: 'Alta',
+        urgente: 'Urgente'
+      };
+
+      const headers = ['Número', 'Título', 'Tipo', 'Status', 'Prioridade', 'Cliente', 'Responsável', 'Valor', 'Data Início', 'Data Fim', 'Criado em'];
+      const rows = data.map(op => [
+        `OP-${String(op.order_number).padStart(4, '0')}`,
+        op.title,
+        op.production_type?.name || '-',
+        statusLabels[op.status] || op.status,
+        priorityLabels[op.priority] || op.priority,
+        op.client?.name || '-',
+        op.responsible?.full_name || '-',
+        op.value ? `R$ ${op.value.toFixed(2)}` : '-',
+        op.planned_start_date ? format(new Date(op.planned_start_date), 'dd/MM/yyyy') : '-',
+        op.planned_end_date ? format(new Date(op.planned_end_date), 'dd/MM/yyyy') : '-',
+        op.created_at ? format(new Date(op.created_at), 'dd/MM/yyyy HH:mm') : '-'
+      ]);
+
+      const csvContent = [headers, ...rows]
+        .map(row => row.map(cell => `"${cell}"`).join(','))
+        .join('\n');
+
+      // Download CSV
+      const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `ordens-producao-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+      link.click();
+      
+      toast.success(`${data.length} OPs exportadas com sucesso`);
+    } catch (error) {
+      console.error('Erro ao exportar:', error);
+      toast.error('Erro ao exportar ordens de produção');
+    }
+  };
 
   return (
     <DashboardLayout>
@@ -84,7 +208,11 @@ export default function Production() {
         />
 
         {/* Filtros */}
-        <ProductionFilters filters={filters} onFiltersChange={setFilters} />
+        <ProductionFilters 
+          filters={filters} 
+          onFiltersChange={setFilters} 
+          onExport={handleExport}
+        />
 
         {/* Tabs por tipo de produção */}
         <Tabs value={selectedType} onValueChange={setSelectedType} className="w-full">

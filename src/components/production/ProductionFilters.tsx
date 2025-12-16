@@ -1,7 +1,7 @@
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Search, X } from 'lucide-react';
+import { Search, X, Download } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -11,16 +11,19 @@ interface ProductionFiltersProps {
     priority: string;
     search: string;
     responsible: string;
+    period: string;
   };
   onFiltersChange: (filters: {
     status: string;
     priority: string;
     search: string;
     responsible: string;
+    period: string;
   }) => void;
+  onExport?: () => void;
 }
 
-export function ProductionFilters({ filters, onFiltersChange }: ProductionFiltersProps) {
+export function ProductionFilters({ filters, onFiltersChange, onExport }: ProductionFiltersProps) {
   const { data: users = [] } = useQuery({
     queryKey: ['users-for-filters'],
     queryFn: async () => {
@@ -38,14 +41,16 @@ export function ProductionFilters({ filters, onFiltersChange }: ProductionFilter
       status: 'all',
       priority: 'all',
       search: '',
-      responsible: 'all'
+      responsible: 'all',
+      period: 'all'
     });
   };
 
   const hasActiveFilters = filters.status !== 'all' || 
     filters.priority !== 'all' || 
     filters.search !== '' || 
-    filters.responsible !== 'all';
+    filters.responsible !== 'all' ||
+    filters.period !== 'all';
 
   return (
     <div className="flex flex-wrap items-center gap-3">
@@ -59,6 +64,24 @@ export function ProductionFilters({ filters, onFiltersChange }: ProductionFilter
           className="pl-9"
         />
       </div>
+
+      {/* Período */}
+      <Select
+        value={filters.period}
+        onValueChange={(value) => onFiltersChange({ ...filters, period: value })}
+      >
+        <SelectTrigger className="w-[140px]">
+          <SelectValue placeholder="Período" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Todo Período</SelectItem>
+          <SelectItem value="last7days">Últimos 7 dias</SelectItem>
+          <SelectItem value="last30days">Últimos 30 dias</SelectItem>
+          <SelectItem value="last60days">Últimos 60 dias</SelectItem>
+          <SelectItem value="last90days">Últimos 90 dias</SelectItem>
+          <SelectItem value="thisMonth">Este mês</SelectItem>
+        </SelectContent>
+      </Select>
 
       {/* Status */}
       <Select
@@ -117,6 +140,14 @@ export function ProductionFilters({ filters, onFiltersChange }: ProductionFilter
         <Button variant="ghost" size="sm" onClick={handleReset} className="gap-1">
           <X className="h-4 w-4" />
           Limpar
+        </Button>
+      )}
+
+      {/* Exportar */}
+      {onExport && (
+        <Button variant="outline" size="sm" onClick={onExport} className="gap-1">
+          <Download className="h-4 w-4" />
+          Exportar
         </Button>
       )}
     </div>

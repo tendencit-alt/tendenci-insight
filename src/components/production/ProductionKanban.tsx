@@ -7,6 +7,7 @@ import { DroppableColumn } from './DroppableColumn';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
+import { subDays, startOfMonth } from 'date-fns';
 
 interface ProductionKanbanProps {
   productionTypeId?: string;
@@ -15,6 +16,7 @@ interface ProductionKanbanProps {
     priority: string;
     search: string;
     responsible: string;
+    period?: string;
   };
   onOrderClick?: (orderId: string) => void;
 }
@@ -91,6 +93,34 @@ export function ProductionKanban({ productionTypeId, filters, onOrderClick }: Pr
 
       if (filters?.search) {
         query = query.or(`title.ilike.%${filters.search}%,order_number.eq.${parseInt(filters.search) || 0}`);
+      }
+
+      // Filtro de período
+      if (filters?.period && filters.period !== 'all') {
+        let dateFrom: Date;
+        const today = new Date();
+        
+        switch (filters.period) {
+          case 'last7days':
+            dateFrom = subDays(today, 7);
+            break;
+          case 'last30days':
+            dateFrom = subDays(today, 30);
+            break;
+          case 'last60days':
+            dateFrom = subDays(today, 60);
+            break;
+          case 'last90days':
+            dateFrom = subDays(today, 90);
+            break;
+          case 'thisMonth':
+            dateFrom = startOfMonth(today);
+            break;
+          default:
+            dateFrom = new Date(0);
+        }
+        
+        query = query.gte('created_at', dateFrom.toISOString());
       }
       
       const { data, error } = await query.order('created_at', { ascending: false });
