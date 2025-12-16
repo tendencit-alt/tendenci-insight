@@ -34,6 +34,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { EditProductionOrderDialog } from './EditProductionOrderDialog';
 import { usePermissions } from '@/hooks/usePermissions';
+import { ProductionUpdates } from './ProductionUpdates';
 
 interface ProductionOrderDetailSheetProps {
   orderId: string | null;
@@ -145,7 +146,7 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
     enabled: !!orderId
   });
 
-  // Buscar logs da OP
+  // Buscar logs de movimentação da OP (exceto atualizações manuais que são mostradas no ProductionUpdates)
   const { data: logs = [] } = useQuery({
     queryKey: ['production-order-logs', orderId],
     queryFn: async () => {
@@ -158,6 +159,7 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
           created_by_profile:profiles!production_logs_created_by_fkey(full_name)
         `)
         .eq('production_order_id', orderId)
+        .neq('action_type', 'update')
         .order('created_at', { ascending: false })
         .limit(10);
       
@@ -498,12 +500,17 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
                   </div>
                 </div>
 
-                {/* Histórico */}
+                <Separator />
+
+                {/* Atualizações e Anexos */}
+                <ProductionUpdates orderId={orderId} />
+
+                {/* Histórico de Movimentação */}
                 {logs.length > 0 && (
                   <>
                     <Separator />
                     <div>
-                      <h3 className="font-medium mb-3">Histórico</h3>
+                      <h3 className="font-medium mb-3">Histórico de Movimentação</h3>
                       <div className="space-y-2">
                         {logs.map((log) => (
                           <div key={log.id} className="flex items-start gap-2 text-sm">
