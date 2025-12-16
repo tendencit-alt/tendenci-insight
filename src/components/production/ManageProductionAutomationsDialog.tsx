@@ -346,6 +346,7 @@ export function ManageProductionAutomationsDialog({
 
   const getPhaseName = (id: string | null) => {
     if (!id) return 'Todas';
+    if (id === 'nova_op') return 'Nova OP (Aguardando)';
     return phaseTemplates.find(t => t.id === id)?.name || 'Todas';
   };
 
@@ -604,6 +605,7 @@ export function ManageProductionAutomationsDialog({
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="all">Todas as Etapas</SelectItem>
+                            <SelectItem value="nova_op">🆕 Nova OP (Aguardando)</SelectItem>
                             {phaseTemplates.map(phase => (
                               <SelectItem key={phase.id} value={phase.id}>
                                 {phase.name}
