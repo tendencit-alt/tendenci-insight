@@ -40,7 +40,9 @@ export function EditProjectDialog({ project, open, onOpenChange, onSuccess }: Ed
   }, [open]);
 
   useEffect(() => {
-    if (project) {
+    if (project && open) {
+      // Limpar dados persistidos antigos para garantir dados frescos do banco
+      clearPersistedData();
       setFormData({
         name: project.name || "",
         architect_id: project.architect_id || "sem-arquiteto",
@@ -49,7 +51,7 @@ export function EditProjectDialog({ project, open, onOpenChange, onSuccess }: Ed
         deadline: project.deadline ? project.deadline.split('T')[0] : ""
       });
     }
-  }, [project]);
+  }, [project, open]);
 
   const fetchArchitects = async () => {
     const { data, error } = await supabase
@@ -78,7 +80,7 @@ export function EditProjectDialog({ project, open, onOpenChange, onSuccess }: Ed
           architect_id: formData.architect_id && formData.architect_id !== "sem-arquiteto" ? formData.architect_id : null,
           stage: formData.stage,
           value: formData.value ? parseFloat(formData.value) : 0,
-          deadline: formData.deadline || null
+          deadline: formData.deadline ? `${formData.deadline}T00:00:00-03:00` : null
         })
         .eq("id", project.id);
 
