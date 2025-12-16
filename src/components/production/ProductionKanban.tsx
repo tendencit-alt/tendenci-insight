@@ -164,9 +164,10 @@ export function ProductionKanban({ productionTypeId, filters, onOrderClick }: Pr
 
   // Mutation para mover OP para uma fase específica
   const moveToPhase = useMutation({
-    mutationFn: async ({ orderId, targetPhaseTemplateId, fromWaiting }: { 
+    mutationFn: async ({ orderId, targetPhaseTemplateId, targetPhaseName, fromWaiting }: { 
       orderId: string; 
-      targetPhaseTemplateId: string;
+      targetPhaseTemplateId?: string;
+      targetPhaseName?: string;
       fromWaiting?: boolean;
     }) => {
       // Buscar a ordem atual
@@ -178,6 +179,29 @@ export function ProductionKanban({ productionTypeId, filters, onOrderClick }: Pr
 
       if (!order) throw new Error('OP não encontrada');
 
+      // Determinar o phase_template_id correto baseado no tipo da OP
+      let correctPhaseTemplateId = targetPhaseTemplateId;
+
+      // Se recebemos targetPhaseName (aba "Todos"), precisamos buscar o template correto para o tipo da OP
+      if (targetPhaseName && !targetPhaseTemplateId) {
+        const { data: correctTemplate } = await supabase
+          .from('production_phase_templates')
+          .select('id')
+          .eq('production_type_id', order.production_type_id)
+          .eq('name', targetPhaseName)
+          .eq('active', true)
+          .single();
+
+        if (!correctTemplate) {
+          throw new Error(`Fase "${targetPhaseName}" não existe para este tipo de produção`);
+        }
+        correctPhaseTemplateId = correctTemplate.id;
+      }
+
+      if (!correctPhaseTemplateId) {
+        throw new Error('Fase de destino não especificada');
+      }
+
       // Se está vindo do "Aguardando" ou não tem fase atual
       if (fromWaiting || !order.current_phase_id) {
         // Buscar a fase alvo para esta OP
@@ -185,12 +209,38 @@ export function ProductionKanban({ productionTypeId, filters, onOrderClick }: Pr
           .from('production_phases')
           .select('id')
           .eq('production_order_id', orderId)
-          .eq('phase_template_id', targetPhaseTemplateId)
+          .eq('phase_template_id', correctPhaseTemplateId)
           .single();
 
-        if (!targetPhase) throw new Error('Fase não encontrada');
+        if (!targetPhase) {
+          // Fase não existe - criar automaticamente
+          const { data: newPhase, error: createError } = await supabase
+            .from('production_phases')
+            .insert({
+              production_order_id: orderId,
+              phase_template_id: correctPhaseTemplateId,
+              status: 'em_andamento',
+              started_at: new Date().toISOString()
+            })
+            .select('id')
+            .single();
 
-        // Iniciar a fase
+          if (createError) throw new Error('Erro ao criar fase: ' + createError.message);
+
+          // Atualizar a OP
+          await supabase
+            .from('production_orders')
+            .update({ 
+              current_phase_id: newPhase.id,
+              status: 'em_andamento',
+              actual_start_date: new Date().toISOString()
+            })
+            .eq('id', orderId);
+
+          return;
+        }
+
+        // Iniciar a fase existente
         await supabase
           .from('production_phases')
           .update({ 
@@ -223,23 +273,38 @@ export function ProductionKanban({ productionTypeId, filters, onOrderClick }: Pr
         .eq('id', order.current_phase_id);
 
       // Buscar a nova fase
-      const { data: newPhase } = await supabase
+      let { data: newPhase } = await supabase
         .from('production_phases')
         .select('id')
         .eq('production_order_id', orderId)
-        .eq('phase_template_id', targetPhaseTemplateId)
+        .eq('phase_template_id', correctPhaseTemplateId)
         .single();
 
-      if (!newPhase) throw new Error('Fase não encontrada');
+      if (!newPhase) {
+        // Fase não existe - criar automaticamente
+        const { data: createdPhase, error: createError } = await supabase
+          .from('production_phases')
+          .insert({
+            production_order_id: orderId,
+            phase_template_id: correctPhaseTemplateId,
+            status: 'em_andamento',
+            started_at: new Date().toISOString()
+          })
+          .select('id')
+          .single();
 
-      // Iniciar nova fase
-      await supabase
-        .from('production_phases')
-        .update({ 
-          status: 'em_andamento',
-          started_at: new Date().toISOString()
-        })
-        .eq('id', newPhase.id);
+        if (createError) throw new Error('Erro ao criar fase: ' + createError.message);
+        newPhase = createdPhase;
+      } else {
+        // Iniciar fase existente
+        await supabase
+          .from('production_phases')
+          .update({ 
+            status: 'em_andamento',
+            started_at: new Date().toISOString()
+          })
+          .eq('id', newPhase.id);
+      }
 
       // Atualizar a OP
       await supabase
@@ -251,9 +316,9 @@ export function ProductionKanban({ productionTypeId, filters, onOrderClick }: Pr
       queryClient.invalidateQueries({ queryKey: ['production-orders'] });
       toast.success('OP movida com sucesso');
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Erro ao mover OP:', error);
-      toast.error('Erro ao mover OP');
+      toast.error(error.message || 'Erro ao mover OP');
     }
   });
 
@@ -309,14 +374,31 @@ export function ProductionKanban({ productionTypeId, filters, onOrderClick }: Pr
       if (phaseTemplateId === 'waiting') return; // Não pode voltar para aguardando
 
       const order = orders.find(o => o.id === orderId);
-      const currentPhaseId = order?.current_phase?.phase_template?.id;
+      const currentPhaseName = order?.current_phase?.phase_template?.name;
 
-      // Se já está na mesma fase, não fazer nada
-      if (currentPhaseId === phaseTemplateId) return;
+      // Encontrar a fase de destino para verificar o nome
+      const targetPhase = phases.find(p => p.id === phaseTemplateId);
+      
+      // Se já está na mesma fase (por nome), não fazer nada
+      if (currentPhaseName === targetPhase?.name) return;
 
       const fromWaiting = !order?.current_phase;
 
-      moveToPhase.mutate({ orderId, targetPhaseTemplateId: phaseTemplateId, fromWaiting });
+      // Na aba "Todos" (sem productionTypeId), usar nome da fase ao invés de ID
+      // Isso garante que o sistema encontre a fase correta para o tipo de produção da OP
+      if (!productionTypeId && targetPhase) {
+        moveToPhase.mutate({ 
+          orderId, 
+          targetPhaseName: targetPhase.name, 
+          fromWaiting 
+        });
+      } else {
+        moveToPhase.mutate({ 
+          orderId, 
+          targetPhaseTemplateId: phaseTemplateId, 
+          fromWaiting 
+        });
+      }
     }
   };
 
