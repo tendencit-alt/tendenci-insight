@@ -11,6 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { Loader2, Plus } from 'lucide-react';
 import CreateSupplierDialog from '@/components/suppliers/CreateSupplierDialog';
+import { CreateClientDialog } from '@/components/crm/CreateClientDialog';
+import { CreateDealDialog } from '@/components/crm/CreateDealDialog';
 
 interface CreateProductionOrderDialogProps {
   open: boolean;
@@ -22,6 +24,8 @@ export function CreateProductionOrderDialog({ open, onOpenChange, productionType
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [showCreateSupplier, setShowCreateSupplier] = useState(false);
+  const [showCreateClient, setShowCreateClient] = useState(false);
+  const [showCreateDeal, setShowCreateDeal] = useState(false);
   
   const [formData, setFormData] = useState({
     title: '',
@@ -40,7 +44,7 @@ export function CreateProductionOrderDialog({ open, onOpenChange, productionType
   });
 
   // Buscar clientes
-  const { data: clients = [] } = useQuery({
+  const { data: clients = [], refetch: refetchClients } = useQuery({
     queryKey: ['clients'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -53,7 +57,7 @@ export function CreateProductionOrderDialog({ open, onOpenChange, productionType
   });
 
   // Buscar deals (para vincular OP a negócio existente)
-  const { data: deals = [] } = useQuery({
+  const { data: deals = [], refetch: refetchDeals } = useQuery({
     queryKey: ['deals-for-production'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -89,6 +93,20 @@ export function CreateProductionOrderDialog({ open, onOpenChange, productionType
         .select('id, name')
         .eq('active', true)
         .order('name');
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  // Buscar pipeline para criação de deal
+  const { data: pipelines = [] } = useQuery({
+    queryKey: ['pipelines-for-production'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('crm_pipelines')
+        .select('id, name')
+        .order('created_at')
+        .limit(1);
       if (error) throw error;
       return data;
     }
@@ -156,6 +174,19 @@ export function CreateProductionOrderDialog({ open, onOpenChange, productionType
     setShowCreateSupplier(false);
   };
 
+  const handleClientCreated = (clientId?: string) => {
+    refetchClients();
+    setShowCreateClient(false);
+    if (clientId) {
+      setFormData(prev => ({ ...prev, client_id: clientId }));
+    }
+  };
+
+  const handleDealCreated = () => {
+    refetchDeals();
+    setShowCreateDeal(false);
+  };
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -206,43 +237,63 @@ export function CreateProductionOrderDialog({ open, onOpenChange, productionType
             {/* Cliente */}
             <div className="space-y-2">
               <Label>Cliente</Label>
-              <Select
-                value={formData.client_id || "_none"}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, client_id: value === "_none" ? "" : value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="-" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="_none">-</SelectItem>
-                  {clients.map((client) => (
-                    <SelectItem key={client.id} value={client.id}>
-                      {client.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex gap-2">
+                <Select
+                  value={formData.client_id || "_none"}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, client_id: value === "_none" ? "" : value }))}
+                >
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="-" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_none">-</SelectItem>
+                    {clients.map((client) => (
+                      <SelectItem key={client.id} value={client.id}>
+                        {client.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="icon"
+                  onClick={() => setShowCreateClient(true)}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
 
             {/* Negócio vinculado */}
             <div className="space-y-2">
               <Label>Negócio Vinculado</Label>
-              <Select
-                value={formData.deal_id || "_none"}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, deal_id: value === "_none" ? "" : value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="-" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="_none">-</SelectItem>
-                  {deals.map((deal) => (
-                    <SelectItem key={deal.id} value={deal.id}>
-                      {deal.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex gap-2">
+                <Select
+                  value={formData.deal_id || "_none"}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, deal_id: value === "_none" ? "" : value }))}
+                >
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="-" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_none">-</SelectItem>
+                    {deals.map((deal) => (
+                      <SelectItem key={deal.id} value={deal.id}>
+                        {deal.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="icon"
+                  onClick={() => setShowCreateDeal(true)}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
 
             {/* Fornecedor */}
@@ -407,6 +458,21 @@ export function CreateProductionOrderDialog({ open, onOpenChange, productionType
         onOpenChange={setShowCreateSupplier}
         onSuccess={handleSupplierCreated}
       />
+
+      <CreateClientDialog
+        open={showCreateClient}
+        onOpenChange={setShowCreateClient}
+        onSuccess={handleClientCreated}
+      />
+
+      {pipelines[0]?.id && (
+        <CreateDealDialog
+          open={showCreateDeal}
+          onOpenChange={setShowCreateDeal}
+          pipelineId={pipelines[0].id}
+          onSuccess={handleDealCreated}
+        />
+      )}
     </>
   );
 }
