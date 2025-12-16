@@ -240,7 +240,7 @@ export function EditProductionOrderDialog({ open, onOpenChange, orderId }: EditP
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="aguardando">Aguardando</SelectItem>
-                  <SelectItem value="em_andamento">Em Andamento</SelectItem>
+                  <SelectItem value="em_producao">Em Produção</SelectItem>
                   <SelectItem value="pausado">Pausado</SelectItem>
                   <SelectItem value="concluido">Concluído</SelectItem>
                   <SelectItem value="cancelado">Cancelado</SelectItem>

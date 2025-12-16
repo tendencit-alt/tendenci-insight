@@ -44,7 +44,7 @@ interface ProductionOrderDetailSheetProps {
 
 const statusLabels: Record<string, string> = {
   aguardando: 'Aguardando',
-  em_andamento: 'Em Andamento',
+  em_producao: 'Em Produção',
   pausado: 'Pausado',
   concluido: 'Concluído',
   cancelado: 'Cancelado'
@@ -52,7 +52,7 @@ const statusLabels: Record<string, string> = {
 
 const statusColors: Record<string, string> = {
   aguardando: 'bg-gray-100 text-gray-800',
-  em_andamento: 'bg-blue-100 text-blue-800',
+  em_producao: 'bg-blue-100 text-blue-800',
   pausado: 'bg-yellow-100 text-yellow-800',
   concluido: 'bg-green-100 text-green-800',
   cancelado: 'bg-red-100 text-red-800'
@@ -210,7 +210,7 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
         .from('production_orders')
         .update({ 
           current_phase_id: nextPhase.id,
-          status: 'em_andamento',
+          status: 'em_producao',
           actual_start_date: order.actual_start_date || new Date().toISOString()
         })
         .eq('id', orderId);
