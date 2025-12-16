@@ -347,11 +347,11 @@ export function ProductionKanban({ productionTypeId, filters, onOrderClick }: Pr
     >
       <ScrollArea className="w-full">
         <div className="flex gap-4 pb-4 min-w-max">
-          {/* Coluna de Aguardando */}
+          {/* Coluna de OPs sem fase atribuída */}
           <DroppableColumn
             id="waiting"
-            title="Aguardando"
-            color="#9ca3af"
+            title="Nova OP"
+            color="#6b7280"
             orders={ordersWithoutPhase}
             onCardClick={handleCardClick}
           />
