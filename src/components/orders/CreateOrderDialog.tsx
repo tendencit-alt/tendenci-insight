@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 import { OrderItemsTable } from './OrderItemsTable';
 
 import { CreateClientDialog } from '@/components/crm/CreateClientDialog';
+import { CreateWonDealDialog } from './CreateWonDealDialog';
 import { Loader2, AlertTriangle, Link, Plus, ChevronRight, Check } from 'lucide-react';
 
 interface CreateOrderDialogProps {
@@ -69,6 +70,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('cliente');
   const [showCreateClient, setShowCreateClient] = useState(false);
+  const [showCreateDeal, setShowCreateDeal] = useState(false);
   
   interface PagamentoParcela {
     id: string;
@@ -159,7 +161,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     },
   });
 
-  const { data: deals } = useQuery({
+  const { data: deals, refetch: refetchDeals } = useQuery({
     queryKey: ['deals-for-order'],
     queryFn: async () => {
       const { data } = await supabase
@@ -327,6 +329,12 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     setShowCreateClient(false);
   };
 
+  const handleDealCreated = (dealId: string) => {
+    refetchDeals();
+    setFormData(prev => ({ ...prev, deal_id: dealId }));
+    setShowCreateDeal(false);
+  };
+
   const getTabStatus = (tab: string) => {
     switch (tab) {
       case 'cliente': return isClienteValid;
@@ -427,22 +435,32 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
 
                 <div className="space-y-2">
                   <Label>Negócio Vinculado</Label>
-                  <Select
-                    value={formData.deal_id || "_none"}
-                    onValueChange={(v) => setFormData({ ...formData, deal_id: v === "_none" ? "" : v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="-" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="_none">-</SelectItem>
-                      {deals?.map((deal) => (
-                        <SelectItem key={deal.id} value={deal.id}>
-                          {deal.title} {deal.value && `- ${formatCurrency(deal.value)}`}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex gap-2">
+                    <Select
+                      value={formData.deal_id || "_none"}
+                      onValueChange={(v) => setFormData({ ...formData, deal_id: v === "_none" ? "" : v })}
+                    >
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder="-" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="_none">-</SelectItem>
+                        {deals?.map((deal) => (
+                          <SelectItem key={deal.id} value={deal.id}>
+                            {deal.title} {deal.value && `- ${formatCurrency(deal.value)}`}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="icon"
+                      onClick={() => setShowCreateDeal(true)}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -894,6 +912,14 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
         open={showCreateClient}
         onOpenChange={setShowCreateClient}
         onSuccess={handleClientCreated}
+      />
+
+      <CreateWonDealDialog
+        open={showCreateDeal}
+        onOpenChange={setShowCreateDeal}
+        onSuccess={handleDealCreated}
+        prefilledClientId={formData.client_id}
+        prefilledArchitectId={formData.architect_id}
       />
     </>
   );
