@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Plus, Factory, Settings } from 'lucide-react';
+import { Plus, Factory, Settings, Zap } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { ProductionKanban } from '@/components/production/ProductionKanban';
@@ -12,14 +12,17 @@ import { ProductionKPIs } from '@/components/production/ProductionKPIs';
 import { ProductionSLAAlerts } from '@/components/production/ProductionSLAAlerts';
 import { ProductionOrderDetailSheet } from '@/components/production/ProductionOrderDetailSheet';
 import { ManageProductionStagesDialog } from '@/components/production/ManageProductionStagesDialog';
+import { ManageProductionAutomationsDialog } from '@/components/production/ManageProductionAutomationsDialog';
 import { getTailwindColor } from '@/utils/tailwindColors';
 import { toast } from 'sonner';
 import { format, subDays, startOfMonth } from 'date-fns';
+import { usePermissions } from '@/hooks/usePermissions';
 
 export default function Production() {
   const [selectedType, setSelectedType] = useState<string>('all');
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
+  const [automationsDialogOpen, setAutomationsDialogOpen] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [filters, setFilters] = useState({
     status: 'all',
@@ -28,6 +31,8 @@ export default function Production() {
     responsible: 'all',
     period: 'all'
   });
+  
+  const { isMaster } = usePermissions();
 
   const { data: productionTypes = [] } = useQuery({
     queryKey: ['production-types'],
@@ -184,6 +189,12 @@ export default function Production() {
           </div>
           
           <div className="flex gap-2">
+            {isMaster && (
+              <Button variant="outline" onClick={() => setAutomationsDialogOpen(true)} className="gap-2">
+                <Zap className="h-4 w-4" />
+                Automações
+              </Button>
+            )}
             <Button variant="outline" onClick={() => setConfigDialogOpen(true)} className="gap-2">
               <Settings className="h-4 w-4" />
               Configurar Etapas
@@ -268,6 +279,14 @@ export default function Production() {
           open={configDialogOpen}
           onOpenChange={setConfigDialogOpen}
         />
+
+        {/* Dialog de automações - apenas MASTER */}
+        {isMaster && (
+          <ManageProductionAutomationsDialog
+            open={automationsDialogOpen}
+            onOpenChange={setAutomationsDialogOpen}
+          />
+        )}
       </div>
     </DashboardLayout>
   );

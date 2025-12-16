@@ -11,7 +11,9 @@ import {
   ChevronDown, 
   ChevronUp,
   AlertCircle,
-  Timer
+  Timer,
+  Zap,
+  CalendarClock
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -32,9 +34,23 @@ interface SLAAlert {
   planned_end_date: string | null;
 }
 
+interface AutomationAlert {
+  order_id: string;
+  order_number: number;
+  title: string;
+  priority: string;
+  automation_nome: string;
+  fase_nome: string;
+  dias_uteis_na_fase: number;
+  prazo_dias_uteis: number;
+  dias_excedidos: number;
+  production_type_name: string;
+}
+
 export function ProductionSLAAlerts({ productionTypeId, onOrderClick }: ProductionSLAAlertsProps) {
   const [isOpen, setIsOpen] = useState(true);
 
+  // Fetch standard SLA alerts
   const { data: alerts = [], isLoading } = useQuery({
     queryKey: ['production-sla-alerts', productionTypeId],
     queryFn: async () => {
@@ -46,11 +62,23 @@ export function ProductionSLAAlerts({ productionTypeId, onOrderClick }: Producti
     }
   });
 
+  // Fetch automation-based alerts (SLA em dias úteis)
+  const { data: automationAlerts = [] } = useQuery({
+    queryKey: ['production-automation-alerts', productionTypeId],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('check_production_automations', {
+        p_type_id: productionTypeId || null
+      });
+      if (error) throw error;
+      return data as AutomationAlert[];
+    }
+  });
+
   const prazoVencido = alerts.filter(a => a.alert_type === 'prazo_vencido');
   const slaEstourado = alerts.filter(a => a.alert_type === 'sla_estourado');
   const prazoProximo = alerts.filter(a => a.alert_type === 'prazo_proximo');
 
-  const totalAlerts = alerts.length;
+  const totalAlerts = alerts.length + automationAlerts.length;
 
   if (isLoading) {
     return null;
@@ -104,6 +132,31 @@ export function ProductionSLAAlerts({ productionTypeId, onOrderClick }: Producti
     </div>
   );
 
+  const AutomationAlertItem = ({ alert }: { alert: AutomationAlert }) => (
+    <div 
+      className="flex items-center justify-between p-2 rounded-md bg-background hover:bg-muted/50 cursor-pointer transition-colors"
+      onClick={() => onOrderClick?.(alert.order_id)}
+    >
+      <div className="flex items-center gap-2 min-w-0 flex-1">
+        <span className="text-xs font-mono text-muted-foreground">
+          #{alert.order_number}
+        </span>
+        <span className="text-sm truncate font-medium">
+          {alert.title}
+        </span>
+        <Badge variant="outline" className={`text-xs ${getPriorityColor(alert.priority)}`}>
+          {alert.priority}
+        </Badge>
+      </div>
+      <div className="flex items-center gap-2 text-xs shrink-0">
+        <span className="hidden sm:inline text-muted-foreground">{alert.fase_nome}</span>
+        <Badge variant="destructive" className="text-xs">
+          +{alert.dias_excedidos} dias úteis
+        </Badge>
+      </div>
+    </div>
+  );
+
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <Card className="border-amber-200 bg-amber-50/50">
@@ -132,6 +185,21 @@ export function ProductionSLAAlerts({ productionTypeId, onOrderClick }: Producti
         
         <CollapsibleContent>
           <CardContent className="pt-0 pb-3 space-y-3">
+            {/* Automação SLA em Dias Úteis Excedido */}
+            {automationAlerts.length > 0 && (
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 text-xs font-medium text-destructive">
+                  <Zap className="h-3.5 w-3.5" />
+                  🚨 SLA Dias Úteis Excedido ({automationAlerts.length})
+                </div>
+                <div className="space-y-1 pl-5">
+                  {automationAlerts.map((alert) => (
+                    <AutomationAlertItem key={alert.order_id} alert={alert} />
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Prazo Vencido */}
             {prazoVencido.length > 0 && (
               <div className="space-y-1">
@@ -166,7 +234,7 @@ export function ProductionSLAAlerts({ productionTypeId, onOrderClick }: Producti
             {prazoProximo.length > 0 && (
               <div className="space-y-1">
                 <div className="flex items-center gap-2 text-xs font-medium text-amber-700">
-                  <Clock className="h-3.5 w-3.5" />
+                  <CalendarClock className="h-3.5 w-3.5" />
                   Prazo Próximo - 3 dias ({prazoProximo.length})
                 </div>
                 <div className="space-y-1 pl-5">

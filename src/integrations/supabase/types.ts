@@ -2242,6 +2242,131 @@ export type Database = {
           },
         ]
       }
+      production_automation_logs: {
+        Row: {
+          automation_id: string | null
+          created_at: string | null
+          detalhes: Json | null
+          id: string
+          phase_id: string | null
+          production_order_id: string | null
+          tipo_execucao: string
+        }
+        Insert: {
+          automation_id?: string | null
+          created_at?: string | null
+          detalhes?: Json | null
+          id?: string
+          phase_id?: string | null
+          production_order_id?: string | null
+          tipo_execucao: string
+        }
+        Update: {
+          automation_id?: string | null
+          created_at?: string | null
+          detalhes?: Json | null
+          id?: string
+          phase_id?: string | null
+          production_order_id?: string | null
+          tipo_execucao?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_automation_logs_automation_id_fkey"
+            columns: ["automation_id"]
+            isOneToOne: false
+            referencedRelation: "production_automations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_automation_logs_phase_id_fkey"
+            columns: ["phase_id"]
+            isOneToOne: false
+            referencedRelation: "production_phases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_automation_logs_production_order_id_fkey"
+            columns: ["production_order_id"]
+            isOneToOne: false
+            referencedRelation: "production_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      production_automations: {
+        Row: {
+          acao_config: Json | null
+          acao_tipo: string | null
+          ativa: boolean | null
+          created_at: string | null
+          created_by: string | null
+          descricao: string | null
+          id: string
+          nome: string
+          phase_template_id: string | null
+          prazo_dias_uteis: number | null
+          prazo_horas: number | null
+          production_type_id: string | null
+          tipo: string
+          updated_at: string | null
+        }
+        Insert: {
+          acao_config?: Json | null
+          acao_tipo?: string | null
+          ativa?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          descricao?: string | null
+          id?: string
+          nome: string
+          phase_template_id?: string | null
+          prazo_dias_uteis?: number | null
+          prazo_horas?: number | null
+          production_type_id?: string | null
+          tipo: string
+          updated_at?: string | null
+        }
+        Update: {
+          acao_config?: Json | null
+          acao_tipo?: string | null
+          ativa?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          descricao?: string | null
+          id?: string
+          nome?: string
+          phase_template_id?: string | null
+          prazo_dias_uteis?: number | null
+          prazo_horas?: number | null
+          production_type_id?: string | null
+          tipo?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_automations_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_automations_phase_template_id_fkey"
+            columns: ["phase_template_id"]
+            isOneToOne: false
+            referencedRelation: "production_phase_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_automations_production_type_id_fkey"
+            columns: ["production_type_id"]
+            isOneToOne: false
+            referencedRelation: "production_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       production_logs: {
         Row: {
           action_type: string
@@ -4726,6 +4851,7 @@ export type Database = {
         Args: { p_order_id: string }
         Returns: Json
       }
+      calculate_business_days: { Args: { start_date: string }; Returns: number }
       calculate_seller_rankings: { Args: never; Returns: undefined }
       check_and_expire_goals: { Args: never; Returns: undefined }
       check_and_move_inactive_architects: { Args: never; Returns: undefined }
@@ -4733,6 +4859,23 @@ export type Database = {
       check_campaign_dispatch_allowed: {
         Args: { p_user_id?: string }
         Returns: Json
+      }
+      check_production_automations: {
+        Args: { p_type_id?: string }
+        Returns: {
+          acao_tipo: string
+          automation_id: string
+          automation_nome: string
+          dias_excedidos: number
+          dias_uteis_na_fase: number
+          fase_nome: string
+          order_id: string
+          order_number: number
+          prazo_dias_uteis: number
+          priority: string
+          production_type_name: string
+          title: string
+        }[]
       }
       create_daily_architect_goals: { Args: never; Returns: undefined }
       create_goal_reminder_notifications: { Args: never; Returns: undefined }
@@ -4917,6 +5060,7 @@ export type Database = {
           whatsapp_connection_id: string
         }[]
       }
+      get_phase_business_days: { Args: { p_phase_id: string }; Returns: number }
       get_project_stats_by_type: {
         Args: never
         Returns: {
