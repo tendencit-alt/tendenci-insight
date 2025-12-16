@@ -15,21 +15,38 @@ interface ProcessNextRequest {
   dispatch_id?: string
 }
 
-// 🎯 NOVA ARQUITETURA: Processa APENAS 1 arquiteto por invocação
-// Frontend controla o intervalo de 3 minutos entre invocações
+// 🎯 ARQUITETURA CRON: Processa 1 arquiteto por invocação
+// pg_cron chama esta função a cada 3 minutos automaticamente
 async function processNextInQueue(supabase: any) {
-  console.log('🔍 [PROCESS] Buscando próximo arquiteto pendente...')
+  console.log('🔍 [CRON] Buscando próximo arquiteto pendente...')
   
-  // 🕐 FASE 5: Verificar e corrigir dispatches travados (>6 horas em_andamento sem progresso)
-  const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString()
+  // Verificar PRIMEIRO se há itens elegíveis (evita processamento desnecessário)
+  const { count: eligibleCount } = await supabase
+    .from('tendenci_campaign_queue')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'pendente')
+    .lte('agendado_para', new Date().toISOString())
+  
+  if (eligibleCount === 0) {
+    console.log('✅ [CRON] Nenhum item elegível para processamento')
+    return { 
+      success: true, 
+      processed: false, 
+      has_more: false,
+      message: 'Nenhum item elegível'
+    }
+  }
+  
+  // 🕐 Verificar e corrigir dispatches travados (>10 minutos sem progresso)
+  const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString()
   const { data: stuckDispatches } = await supabase
     .from('tendenci_campaign_dispatches')
     .select('id, campanha_id, total_arquitetos, enviados_sucesso, enviados_erro')
     .eq('status', 'em_andamento')
-    .lt('updated_at', sixHoursAgo)
+    .lt('updated_at', tenMinutesAgo)
   
   if (stuckDispatches && stuckDispatches.length > 0) {
-    console.log(`⚠️ [TIMEOUT] Encontrados ${stuckDispatches.length} dispatches travados (>6h)`)
+    console.log(`⚠️ [TIMEOUT] Encontrados ${stuckDispatches.length} dispatches travados (>10min)`)
     for (const stuck of stuckDispatches) {
       // Verificar se houve ALGUM sucesso - se sim, não marcar campanha inteira como erro
       const hadSomeSuccess = (stuck.enviados_sucesso || 0) > 0
@@ -40,7 +57,7 @@ async function processNextInQueue(supabase: any) {
         .update({ 
           status: allFailed ? 'erro' : 'concluido',
           erro_mensagem: allFailed 
-            ? 'Timeout: sem progresso por mais de 6 horas - todos falharam'
+            ? 'Timeout: sem progresso por mais de 10 minutos - todos falharam'
             : `Timeout: concluído com ${stuck.enviados_sucesso} sucessos e ${stuck.enviados_erro} erros`,
           concluido_em: new Date().toISOString(),
           progresso_percentual: 100

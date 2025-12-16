@@ -79,83 +79,9 @@ export function CampaignProgressMonitor() {
     setLoading(false);
   };
 
-  // 🔄 CONTROLE AUTOMÁTICO: Processar próximo item a cada 3 minutos
-  // Usando useRef para evitar múltiplos intervalos
-  const intervalRef = React.useRef<NodeJS.Timeout | null>(null);
-  const lastProcessTimeRef = React.useRef<number>(0);
-  
-  useEffect(() => {
-    const activeDispatch = dispatches.find(d => d.status === 'em_andamento');
-    
-    // Limpar intervalo anterior se não há dispatch ativo
-    if (!activeDispatch) {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-      return;
-    }
-    
-    // Evitar criar múltiplos intervalos
-    if (intervalRef.current) return;
-
-    const processNext = async () => {
-      // Evitar processamento duplo
-      const now = Date.now();
-      if (now - lastProcessTimeRef.current < 30000) { // Mínimo 30s entre chamadas
-        console.log('⏳ [FRONTEND] Aguardando intervalo mínimo...');
-        return;
-      }
-      
-      if (isProcessing) {
-        console.log('⏳ [FRONTEND] Já processando, ignorando...');
-        return;
-      }
-      
-      setIsProcessing(true);
-      lastProcessTimeRef.current = now;
-      
-      try {
-        console.log('⏰ [FRONTEND] Chamando process_next automaticamente...');
-        
-        const { data, error } = await supabase.functions.invoke('execute-campaign-background', {
-          body: { process_next: true }
-        });
-
-        if (error) {
-          console.error('❌ [FRONTEND] Erro ao processar próximo:', error);
-        } else {
-          console.log('✅ [FRONTEND] Próximo item processado:', data);
-          
-          // Se não há mais itens, limpar intervalo
-          if (!data.has_more) {
-            console.log('🏁 [FRONTEND] Campanha concluída');
-            if (intervalRef.current) {
-              clearInterval(intervalRef.current);
-              intervalRef.current = null;
-            }
-          }
-        }
-      } catch (err) {
-        console.error('💥 [FRONTEND] Exceção ao processar:', err);
-      } finally {
-        setIsProcessing(false);
-      }
-    };
-
-    // Chamar imediatamente
-    processNext();
-
-    // Repetir a cada 3 minutos
-    intervalRef.current = setInterval(processNext, 3 * 60 * 1000);
-
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    };
-  }, [dispatches.some(d => d.status === 'em_andamento')]); // Dependência estável: apenas quando há dispatch ativo
+  // 🔄 PROCESSAMENTO AUTOMÁTICO VIA CRON
+  // O pg_cron processa a fila automaticamente a cada 3 minutos no backend
+  // Frontend apenas monitora e exibe progresso - NÃO controla mais o processamento
 
   useEffect(() => {
     fetchDispatches();
@@ -256,7 +182,15 @@ export function CampaignProgressMonitor() {
       case 'pendente':
         return <Badge variant="secondary"><Clock className="w-3 h-3 mr-1" />Pendente</Badge>;
       case 'em_andamento':
-        return <Badge variant="default" className="bg-blue-500"><Loader2 className="w-3 h-3 mr-1 animate-spin" />Em Andamento</Badge>;
+        return (
+          <div className="flex items-center gap-2">
+            <Badge variant="default" className="bg-blue-500"><Loader2 className="w-3 h-3 mr-1 animate-spin" />Em Andamento</Badge>
+            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+              <CheckCircle2 className="w-3 h-3 mr-1" />
+              Auto (CRON)
+            </Badge>
+          </div>
+        );
       case 'concluido':
         return <Badge variant="default" className="bg-green-500"><CheckCircle2 className="w-3 h-3 mr-1" />Concluído</Badge>;
       case 'cancelado':
@@ -368,7 +302,7 @@ export function CampaignProgressMonitor() {
               })()}
             </div>
 
-            {/* Alerta de Campanha Travada */}
+            {/* Alerta de Campanha Travada - agora 5 minutos */}
             {(() => {
               const lastUpdate = dispatch.updated_at ? new Date(dispatch.updated_at) : new Date(dispatch.iniciado_em);
               const now = new Date();
@@ -381,10 +315,10 @@ export function CampaignProgressMonitor() {
                       <AlertTriangle className="w-5 h-5 text-yellow-600 mt-0.5" />
                       <div className="flex-1">
                         <p className="text-sm font-medium text-yellow-800">
-                          Campanha pode estar travada
+                          Processamento pode estar lento
                         </p>
                         <p className="text-xs text-yellow-700 mt-1">
-                          Sem atualizações há {diffMinutes} minutos. A campanha pode ter sido interrompida pelo sistema.
+                          Sem atualizações há {diffMinutes} minutos. O CRON processa a cada 3 min. Se persistir, use "Retomar Fila".
                         </p>
                       </div>
                     </div>
