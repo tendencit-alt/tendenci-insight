@@ -73,10 +73,10 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
         .from('production_orders')
         .select(`
           *,
-          production_type:production_types(name, color),
+          production_type:production_types!production_orders_production_type_id_fkey(name, color),
           responsible:profiles!production_orders_responsible_id_fkey(full_name, email),
-          client:clients(name, phone),
-          deal:crm_deals(title, value),
+          client:clients!production_orders_client_id_fkey(name, phone),
+          deal:crm_deals!production_orders_deal_id_fkey(title, value),
           phases:production_phases(
             id,
             status,
@@ -87,7 +87,7 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
           )
         `)
         .eq('id', orderId)
-        .single();
+        .maybeSingle();
       
       if (error) throw error;
       return data;

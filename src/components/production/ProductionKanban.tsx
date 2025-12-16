@@ -61,7 +61,7 @@ export function ProductionKanban({ productionTypeId, filters, onOrderClick }: Pr
         .from('production_orders')
         .select(`
           *,
-          production_type:production_types(name, color, icon),
+          production_type:production_types!production_orders_production_type_id_fkey(name, color, icon),
           current_phase:production_phases!production_orders_current_phase_id_fkey(
             id,
             started_at,
@@ -70,7 +70,7 @@ export function ProductionKanban({ productionTypeId, filters, onOrderClick }: Pr
             phase_template:production_phase_templates(id, name, color, position, sla_hours)
           ),
           responsible:profiles!production_orders_responsible_id_fkey(full_name),
-          client:clients(name),
+          client:clients!production_orders_client_id_fkey(name),
           deal:crm_deals!production_orders_deal_id_fkey(id, title)
         `)
         .neq('status', 'cancelado');
