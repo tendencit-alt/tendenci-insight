@@ -12,11 +12,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Slider } from '@/components/ui/slider';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
 import { OrderItemsTable } from './OrderItemsTable';
 import { AddressForm } from './AddressForm';
-import { Loader2, Building2, FileText, User } from 'lucide-react';
+import { Loader2, User, AlertTriangle, Plus } from 'lucide-react';
 
 const FORMAS_PAGAMENTO = [
   { value: 'pix', label: 'PIX' },
@@ -34,6 +34,12 @@ const TIPOS_ENTREGA = [
   { value: 'transportadora', label: 'Transportadora' },
   { value: 'retirada', label: 'Retirada' },
   { value: 'terceirizada', label: 'Terceirizada' },
+];
+
+const CENTROS_CUSTO = [
+  { value: 'moveis_planejados', label: 'Móveis Planejados' },
+  { value: 'producao_tendenci', label: 'Produção Tendenci' },
+  { value: 'revenda', label: 'Revenda' },
 ];
 
 interface EditOrderDialogProps {
@@ -56,20 +62,22 @@ interface OrderItem {
   unidade?: string;
 }
 
+interface PagamentoParcela {
+  id: string;
+  forma_pagamento: string;
+  percentual: number;
+  data_vencimento: string;
+}
+
 export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: EditOrderDialogProps) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('cliente');
-  const [pagamentoFracionado, setPagamentoFracionado] = useState(false);
   
   const [formData, setFormData] = useState({
     client_id: '',
     deal_id: '',
     architect_id: '',
-    forma_pagamento: '',
-    forma_pagamento_2: '',
-    percentual_forma_1: 100,
-    percentual_forma_2: 0,
     condicao_pagamento: '',
     observacao_pagamento: '',
     data_entrega_prevista: '',
@@ -82,15 +90,18 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
     entrega_bairro: '',
     entrega_cidade: '',
     entrega_uf: '',
-    entrega_observacoes: '',
-    observacoes_internas: '',
-    observacoes_nf: '',
+    observacoes: '',
     desconto_percentual: 0,
     desconto_valor: 0,
     valor_frete: 0,
     transportadora_nome: '',
     transportadora_cnpj: '',
+    centro_custo: '',
   });
+
+  const [parcelas, setParcelas] = useState<PagamentoParcela[]>([
+    { id: '1', forma_pagamento: '', percentual: 100, data_vencimento: '' }
+  ]);
 
   const [items, setItems] = useState<OrderItem[]>([]);
 
@@ -124,19 +135,39 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
 
   useEffect(() => {
     if (order) {
-      const percentual2 = order.percentual_forma_2 || 0;
-      setPagamentoFracionado(percentual2 > 0);
+      // Parse parcelas from observacao_pagamento if it's JSON
+      let parcelasData: PagamentoParcela[] = [
+        { id: '1', forma_pagamento: order.forma_pagamento || '', percentual: order.percentual_forma_1 || 100, data_vencimento: order.data_primeiro_vencimento?.split('T')[0] || '' }
+      ];
+      
+      if (order.percentual_forma_2 > 0 && order.forma_pagamento_2) {
+        parcelasData.push({
+          id: '2',
+          forma_pagamento: order.forma_pagamento_2,
+          percentual: order.percentual_forma_2,
+          data_vencimento: ''
+        });
+      }
+
+      // Try to parse extended parcelas from observacao_pagamento
+      if (order.observacao_pagamento) {
+        try {
+          const parsed = JSON.parse(order.observacao_pagamento);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            parcelasData = parsed;
+          }
+        } catch {}
+      }
+
+      setParcelas(parcelasData);
       
       setFormData({
         client_id: order.client_id || '',
         deal_id: order.deal_id || '',
         architect_id: order.architect_id || '',
-        forma_pagamento: order.forma_pagamento || '',
-        forma_pagamento_2: order.forma_pagamento_2 || '',
-        percentual_forma_1: order.percentual_forma_1 || 100,
-        percentual_forma_2: percentual2,
         condicao_pagamento: order.condicao_pagamento || '',
-        observacao_pagamento: order.observacao_pagamento || '',
+        observacao_pagamento: typeof order.observacao_pagamento === 'string' && !order.observacao_pagamento.startsWith('[') 
+          ? order.observacao_pagamento : '',
         data_entrega_prevista: order.data_entrega_prevista?.split('T')[0] || '',
         tipo_entrega: order.tipo_entrega || '',
         entrega_mesmo_endereco: order.entrega_mesmo_endereco ?? true,
@@ -147,14 +178,13 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
         entrega_bairro: order.entrega_bairro || '',
         entrega_cidade: order.entrega_cidade || '',
         entrega_uf: order.entrega_uf || '',
-        entrega_observacoes: order.entrega_observacoes || '',
-        observacoes_internas: order.observacoes_internas || '',
-        observacoes_nf: order.observacoes_nf || '',
+        observacoes: order.entrega_observacoes || order.observacoes_internas || order.observacoes_nf || '',
         desconto_percentual: order.desconto_percentual || 0,
         desconto_valor: order.desconto_valor || 0,
         valor_frete: order.valor_frete || 0,
         transportadora_nome: order.transportadora_nome || '',
         transportadora_cnpj: order.transportadora_cnpj || '',
+        centro_custo: order.centro_custo || '',
       });
     }
   }, [order]);
@@ -207,6 +237,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
   const descontoTotal = descontoPerc + Number(formData.desconto_valor || 0);
   const total = subtotal - descontoTotal + Number(formData.valor_frete || 0);
 
+  const totalPercentual = parcelas.reduce((sum, p) => sum + p.percentual, 0);
   const isEditable = order?.status === 'rascunho' || order?.status === 'aguardando_aprovacao';
 
   const handleSubmit = async () => {
@@ -217,18 +248,22 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
 
     setLoading(true);
     try {
+      const parcelasPrincipal = parcelas[0];
+      const parcelasSecundaria = parcelas.length > 1 ? parcelas[1] : null;
+
       const { error: orderError } = await supabase
         .from('orders')
         .update({
           client_id: formData.client_id,
           deal_id: formData.deal_id || null,
           architect_id: formData.architect_id || null,
-          forma_pagamento: formData.forma_pagamento,
-          forma_pagamento_2: pagamentoFracionado ? formData.forma_pagamento_2 : null,
-          percentual_forma_1: pagamentoFracionado ? formData.percentual_forma_1 : 100,
-          percentual_forma_2: pagamentoFracionado ? formData.percentual_forma_2 : 0,
+          forma_pagamento: parcelasPrincipal?.forma_pagamento || '',
+          forma_pagamento_2: parcelasSecundaria?.forma_pagamento || null,
+          percentual_forma_1: parcelasPrincipal?.percentual || 100,
+          percentual_forma_2: parcelasSecundaria?.percentual || 0,
+          data_primeiro_vencimento: parcelasPrincipal?.data_vencimento || null,
           condicao_pagamento: formData.condicao_pagamento,
-          observacao_pagamento: formData.observacao_pagamento || null,
+          observacao_pagamento: parcelas.length > 2 ? JSON.stringify(parcelas) : (formData.observacao_pagamento || null),
           data_entrega_prevista: formData.data_entrega_prevista || null,
           tipo_entrega: formData.tipo_entrega,
           entrega_mesmo_endereco: formData.entrega_mesmo_endereco,
@@ -239,9 +274,9 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
           entrega_bairro: formData.entrega_mesmo_endereco ? null : formData.entrega_bairro,
           entrega_cidade: formData.entrega_mesmo_endereco ? null : formData.entrega_cidade,
           entrega_uf: formData.entrega_mesmo_endereco ? null : formData.entrega_uf,
-          entrega_observacoes: formData.entrega_observacoes,
-          observacoes_internas: formData.observacoes_internas,
-          observacoes_nf: formData.observacoes_nf,
+          entrega_observacoes: formData.observacoes,
+          observacoes_internas: formData.observacoes,
+          observacoes_nf: formData.observacoes,
           desconto_percentual: formData.desconto_percentual,
           desconto_valor: formData.desconto_valor,
           valor_frete: formData.valor_frete,
@@ -249,6 +284,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
           transportadora_cnpj: formData.transportadora_cnpj,
           subtotal,
           valor_total: total,
+          centro_custo: formData.centro_custo || null,
         })
         .eq('id', orderId);
 
@@ -313,11 +349,12 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Cliente *</Label>
-                <Select value={formData.client_id} onValueChange={(v) => setFormData({ ...formData, client_id: v })} disabled={!isEditable}>
+                <Select value={formData.client_id || "_placeholder"} onValueChange={(v) => setFormData({ ...formData, client_id: v === "_placeholder" ? "" : v })} disabled={!isEditable}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione o cliente" />
+                    <SelectValue placeholder="-" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="_placeholder" disabled>-</SelectItem>
                     {clients?.map((client) => (
                       <SelectItem key={client.id} value={client.id}>
                         {client.name} {client.cpf_cnpj && `(${client.cpf_cnpj})`}
@@ -329,15 +366,32 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
 
               <div className="space-y-2">
                 <Label>Arquiteto</Label>
-                <Select value={formData.architect_id || "none"} onValueChange={(v) => setFormData({ ...formData, architect_id: v === "none" ? "" : v })} disabled={!isEditable}>
+                <Select value={formData.architect_id || "_none"} onValueChange={(v) => setFormData({ ...formData, architect_id: v === "_none" ? "" : v })} disabled={!isEditable}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione o arquiteto" />
+                    <SelectValue placeholder="-" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">Sem arquiteto</SelectItem>
+                    <SelectItem value="_none">-</SelectItem>
                     {architects?.map((arch) => (
                       <SelectItem key={arch.id} value={arch.id}>
                         {arch.name} {arch.company && `- ${arch.company}`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Centro de Custo *</Label>
+                <Select value={formData.centro_custo || "_placeholder"} onValueChange={(v) => setFormData({ ...formData, centro_custo: v === "_placeholder" ? "" : v })} disabled={!isEditable}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="-" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_placeholder" disabled>-</SelectItem>
+                    {CENTROS_CUSTO.map((cc) => (
+                      <SelectItem key={cc.value} value={cc.value}>
+                        {cc.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -361,51 +415,13 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                       <p className="text-muted-foreground">CPF/CNPJ</p>
                       <p className="font-mono">{selectedClient.cpf_cnpj || '-'}</p>
                     </div>
-                    {selectedClient.tipo_pessoa === 'pj' && (
-                      <>
-                        <div>
-                          <p className="text-muted-foreground">Razão Social</p>
-                          <p>{selectedClient.razao_social || '-'}</p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground">Nome Fantasia</p>
-                          <p>{selectedClient.nome_fantasia || '-'}</p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground">Inscrição Estadual</p>
-                          <p className="font-mono">{selectedClient.inscricao_estadual || (selectedClient.isento_ie ? 'ISENTO' : '-')}</p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground">Inscrição Municipal</p>
-                          <p className="font-mono">{selectedClient.inscricao_municipal || '-'}</p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground">Contribuinte ICMS</p>
-                          <p>{selectedClient.contribuinte_icms ? 'Sim' : 'Não'}</p>
-                        </div>
-                      </>
+                    {selectedClient.phone && (
+                      <div>
+                        <p className="text-muted-foreground">Telefone</p>
+                        <p>{selectedClient.phone}</p>
+                      </div>
                     )}
-                    <div>
-                      <p className="text-muted-foreground">Telefone</p>
-                      <p>{selectedClient.phone || '-'}</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">Email</p>
-                      <p>{selectedClient.email || '-'}</p>
-                    </div>
                   </div>
-
-                  {(selectedClient.logradouro || selectedClient.city) && (
-                    <div className="pt-2 border-t">
-                      <p className="text-muted-foreground text-sm">Endereço</p>
-                      <p className="text-sm">
-                        {[selectedClient.logradouro, selectedClient.numero, selectedClient.complemento, selectedClient.bairro].filter(Boolean).join(', ')}
-                      </p>
-                      <p className="text-sm">
-                        {[selectedClient.city, selectedClient.state].filter(Boolean).join('/')} - CEP: {selectedClient.cep || '-'}
-                      </p>
-                    </div>
-                  )}
                 </CardContent>
               </Card>
             )}
@@ -442,101 +458,149 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
           </TabsContent>
 
           <TabsContent value="pagamento" className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Forma de Pagamento</Label>
-                <Select value={formData.forma_pagamento} onValueChange={(v) => setFormData({ ...formData, forma_pagamento: v })} disabled={!isEditable}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {FORMAS_PAGAMENTO.map((fp) => (
-                      <SelectItem key={fp.value} value={fp.value}>
-                        {fp.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Condição de Pagamento</Label>
-                <Select value={formData.condicao_pagamento} onValueChange={(v) => setFormData({ ...formData, condicao_pagamento: v })} disabled={!isEditable}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {paymentConditions?.map((cond) => (
-                      <SelectItem key={cond.id} value={cond.nome}>
-                        {cond.nome} {cond.descricao && `- ${cond.descricao}`}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="space-y-2">
+              <Label>Condição de Pagamento</Label>
+              <Select
+                value={formData.condicao_pagamento || "_none"}
+                onValueChange={(v) => {
+                  setFormData({ ...formData, condicao_pagamento: v === "_none" ? "" : v });
+                  if (v.toLowerCase().includes('fracionado') && parcelas.length === 1) {
+                    setParcelas([
+                      { ...parcelas[0], percentual: 50 },
+                      { id: '2', forma_pagamento: '', percentual: 50, data_vencimento: '' }
+                    ]);
+                  }
+                }}
+                disabled={!isEditable}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="-" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_none">-</SelectItem>
+                  <SelectItem value="a_vista">À Vista</SelectItem>
+                  <SelectItem value="fracionado">Fracionado</SelectItem>
+                  {paymentConditions?.map((cond) => (
+                    <SelectItem key={cond.id} value={cond.nome}>
+                      {cond.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
-            {/* Pagamento Fracionado */}
-            <Card className="p-4">
-              <div className="flex items-center justify-between mb-4">
-                <Label className="text-base font-medium">Fracionar Pagamento</Label>
-                <Switch 
-                  checked={pagamentoFracionado} 
-                  onCheckedChange={(checked) => {
-                    setPagamentoFracionado(checked);
-                    if (checked) {
-                      setFormData({ ...formData, percentual_forma_1: 50, percentual_forma_2: 50 });
-                    } else {
-                      setFormData({ ...formData, percentual_forma_1: 100, percentual_forma_2: 0, forma_pagamento_2: '' });
-                    }
-                  }} 
+            {/* Parcelas de Pagamento */}
+            <div className="space-y-4 p-4 border rounded-lg">
+              <div className="flex items-center justify-between">
+                <Label className="font-medium">Parcelas de Pagamento</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
                   disabled={!isEditable}
-                />
+                  onClick={() => setParcelas([
+                    ...parcelas,
+                    { id: String(parcelas.length + 1), forma_pagamento: '', percentual: 0, data_vencimento: '' }
+                  ])}
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Adicionar Parcela
+                </Button>
               </div>
 
-              {pagamentoFracionado && (
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span>{FORMAS_PAGAMENTO.find(f => f.value === formData.forma_pagamento)?.label || 'Forma 1'}: {formData.percentual_forma_1}%</span>
-                      <span>2ª Forma: {formData.percentual_forma_2}%</span>
+              <div className="space-y-3">
+                {parcelas.map((parcela, index) => (
+                  <div key={parcela.id} className="grid grid-cols-12 gap-2 items-end p-3 bg-muted/30 rounded-lg">
+                    <div className="col-span-4 space-y-1">
+                      <Label className="text-xs">Forma de Pagamento *</Label>
+                      <Select
+                        value={parcela.forma_pagamento || "_placeholder"}
+                        onValueChange={(v) => {
+                          const newParcelas = [...parcelas];
+                          newParcelas[index].forma_pagamento = v === "_placeholder" ? "" : v;
+                          setParcelas(newParcelas);
+                        }}
+                        disabled={!isEditable}
+                      >
+                        <SelectTrigger className="h-9">
+                          <SelectValue placeholder="-" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="_placeholder" disabled>-</SelectItem>
+                          {FORMAS_PAGAMENTO.map((f) => (
+                            <SelectItem key={f.value} value={f.value}>
+                              {f.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
-                    <Slider
-                      value={[formData.percentual_forma_1]}
-                      onValueChange={([value]) => setFormData({ 
-                        ...formData, 
-                        percentual_forma_1: value, 
-                        percentual_forma_2: 100 - value 
-                      })}
-                      min={10}
-                      max={90}
-                      step={5}
-                      disabled={!isEditable}
-                    />
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>{formatCurrency(total * formData.percentual_forma_1 / 100)}</span>
-                      <span>{formatCurrency(total * formData.percentual_forma_2 / 100)}</span>
+                    
+                    <div className="col-span-2 space-y-1">
+                      <Label className="text-xs">% do Total</Label>
+                      <Input
+                        type="number"
+                        className="h-9"
+                        value={parcela.percentual}
+                        onChange={(e) => {
+                          const newParcelas = [...parcelas];
+                          newParcelas[index].percentual = Number(e.target.value);
+                          setParcelas(newParcelas);
+                        }}
+                        min={0}
+                        max={100}
+                        disabled={!isEditable}
+                      />
                     </div>
-                  </div>
 
-                  <div className="space-y-2">
-                    <Label>2ª Forma de Pagamento</Label>
-                    <Select value={formData.forma_pagamento_2} onValueChange={(v) => setFormData({ ...formData, forma_pagamento_2: v })} disabled={!isEditable}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {FORMAS_PAGAMENTO.filter(fp => fp.value !== formData.forma_pagamento).map((fp) => (
-                          <SelectItem key={fp.value} value={fp.value}>
-                            {fp.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div className="col-span-2 space-y-1">
+                      <Label className="text-xs">Valor</Label>
+                      <p className="h-9 flex items-center text-sm text-muted-foreground">
+                        {formatCurrency(total * (parcela.percentual / 100))}
+                      </p>
+                    </div>
+
+                    <div className="col-span-3 space-y-1">
+                      <Label className="text-xs">Vencimento</Label>
+                      <Input
+                        type="date"
+                        className="h-9"
+                        value={parcela.data_vencimento}
+                        onChange={(e) => {
+                          const newParcelas = [...parcelas];
+                          newParcelas[index].data_vencimento = e.target.value;
+                          setParcelas(newParcelas);
+                        }}
+                        disabled={!isEditable}
+                      />
+                    </div>
+
+                    <div className="col-span-1">
+                      {parcelas.length > 1 && isEditable && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-9 w-9 text-destructive"
+                          onClick={() => setParcelas(parcelas.filter((_, i) => i !== index))}
+                        >
+                          ×
+                        </Button>
+                      )}
+                    </div>
                   </div>
-                </div>
+                ))}
+              </div>
+
+              {totalPercentual !== 100 && (
+                <Alert variant="destructive" className="mt-2">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>
+                    Total das parcelas: {totalPercentual}%. Deve ser exatamente 100%.
+                  </AlertDescription>
+                </Alert>
               )}
-            </Card>
+            </div>
 
             <div className="space-y-2">
               <Label>Observação de Pagamento</Label>
@@ -548,27 +612,18 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                 disabled={!isEditable} 
               />
             </div>
-
-            <div className="space-y-2">
-              <Label>Observações para NF</Label>
-              <Textarea value={formData.observacoes_nf} onChange={(e) => setFormData({ ...formData, observacoes_nf: e.target.value })} placeholder="Informações que aparecerão na nota fiscal..." rows={3} disabled={!isEditable} />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Observações Internas</Label>
-              <Textarea value={formData.observacoes_internas} onChange={(e) => setFormData({ ...formData, observacoes_internas: e.target.value })} placeholder="Observações internas (não aparece na NF)..." rows={3} disabled={!isEditable} />
-            </div>
           </TabsContent>
 
           <TabsContent value="entrega" className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Tipo de Entrega</Label>
-                <Select value={formData.tipo_entrega} onValueChange={(v) => setFormData({ ...formData, tipo_entrega: v })} disabled={!isEditable}>
+                <Label>Tipo de Entrega *</Label>
+                <Select value={formData.tipo_entrega || "_placeholder"} onValueChange={(v) => setFormData({ ...formData, tipo_entrega: v === "_placeholder" ? "" : v })} disabled={!isEditable}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione" />
+                    <SelectValue placeholder="-" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="_placeholder" disabled>-</SelectItem>
                     {TIPOS_ENTREGA.map((te) => (
                       <SelectItem key={te.value} value={te.value}>
                         {te.label}
@@ -599,9 +654,9 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
 
             {formData.tipo_entrega !== 'retirada' && (
               <>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
                   <Switch checked={formData.entrega_mesmo_endereco} onCheckedChange={(checked) => setFormData({ ...formData, entrega_mesmo_endereco: checked })} disabled={!isEditable} />
-                  <Label>Mesmo endereço do cliente</Label>
+                  <Label>Usar endereço do cliente</Label>
                 </div>
 
                 {!formData.entrega_mesmo_endereco && (
@@ -632,8 +687,14 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
             )}
 
             <div className="space-y-2">
-              <Label>Observações de Entrega</Label>
-              <Textarea value={formData.entrega_observacoes} onChange={(e) => setFormData({ ...formData, entrega_observacoes: e.target.value })} placeholder="Instruções especiais de entrega..." rows={3} disabled={!isEditable} />
+              <Label>Observações</Label>
+              <Textarea 
+                value={formData.observacoes} 
+                onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })} 
+                placeholder="Observações do pedido..." 
+                rows={3} 
+                disabled={!isEditable} 
+              />
             </div>
           </TabsContent>
         </Tabs>

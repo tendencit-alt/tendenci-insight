@@ -1753,6 +1753,7 @@ export type Database = {
         Row: {
           approved_by: string | null
           architect_id: string | null
+          centro_custo: string | null
           client_id: string | null
           condicao_pagamento: string | null
           created_at: string | null
@@ -1798,6 +1799,7 @@ export type Database = {
         Insert: {
           approved_by?: string | null
           architect_id?: string | null
+          centro_custo?: string | null
           client_id?: string | null
           condicao_pagamento?: string | null
           created_at?: string | null
@@ -1843,6 +1845,7 @@ export type Database = {
         Update: {
           approved_by?: string | null
           architect_id?: string | null
+          centro_custo?: string | null
           client_id?: string | null
           condicao_pagamento?: string | null
           created_at?: string | null
