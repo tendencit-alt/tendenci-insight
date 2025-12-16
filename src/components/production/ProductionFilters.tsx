@@ -94,7 +94,7 @@ export function ProductionFilters({ filters, onFiltersChange, onExport }: Produc
         <SelectContent>
           <SelectItem value="all">Todos Status</SelectItem>
           <SelectItem value="aguardando">Aguardando</SelectItem>
-          <SelectItem value="em_andamento">Em Andamento</SelectItem>
+          <SelectItem value="em_producao">Em Produção</SelectItem>
           <SelectItem value="pausado">Pausado</SelectItem>
           <SelectItem value="concluido">Concluído</SelectItem>
         </SelectContent>

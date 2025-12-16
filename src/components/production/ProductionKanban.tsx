@@ -228,14 +228,16 @@ export function ProductionKanban({ productionTypeId, filters, onOrderClick }: Pr
           if (createError) throw new Error('Erro ao criar fase: ' + createError.message);
 
           // Atualizar a OP
-          await supabase
+          const { error: updateError } = await supabase
             .from('production_orders')
             .update({ 
               current_phase_id: newPhase.id,
-              status: 'em_andamento',
+              status: 'em_producao',
               actual_start_date: new Date().toISOString()
             })
             .eq('id', orderId);
+          
+          if (updateError) throw new Error('Erro ao atualizar OP: ' + updateError.message);
 
           return;
         }
@@ -250,16 +252,16 @@ export function ProductionKanban({ productionTypeId, filters, onOrderClick }: Pr
           .eq('id', targetPhase.id);
 
         // Atualizar a OP
-        await supabase
+        const { error: updateError } = await supabase
           .from('production_orders')
           .update({ 
             current_phase_id: targetPhase.id,
-            status: 'em_andamento',
+            status: 'em_producao',
             actual_start_date: new Date().toISOString()
           })
           .eq('id', orderId);
-
-        return;
+        
+        if (updateError) throw new Error('Erro ao atualizar OP: ' + updateError.message);
       }
 
       // Caso normal: movendo entre fases
