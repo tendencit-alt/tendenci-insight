@@ -257,12 +257,16 @@ export function ProductionKanban({ productionTypeId, filters, onOrderClick }: Pr
     }
   });
 
-  // Agrupar OPs por fase atual
+  // Agrupar OPs por fase atual - usar match por nome para compatibilidade
   const ordersByPhase = useMemo(() => {
     return phases.reduce((acc, phase) => {
-      acc[phase.id] = orders.filter(order => 
-        order.current_phase?.phase_template?.id === phase.id
-      );
+      acc[phase.id] = orders.filter(order => {
+        // Match por ID exato primeiro
+        if (order.current_phase?.phase_template?.id === phase.id) return true;
+        // Match por nome da fase (para compatibilidade entre tipos)
+        if (order.current_phase?.phase_template?.name === phase.name) return true;
+        return false;
+      });
       return acc;
     }, {} as Record<string, typeof orders>);
   }, [phases, orders]);
