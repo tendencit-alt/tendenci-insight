@@ -368,7 +368,7 @@ export function ProductionUpdates({ orderId }: ProductionUpdatesProps) {
           <input
             ref={imageInputRef}
             type="file"
-            accept="image/*"
+            accept="image/jpeg,image/png,image/gif,image/webp,image/heic"
             multiple
             className="hidden"
             onChange={handleFileSelect}
@@ -376,7 +376,7 @@ export function ProductionUpdates({ orderId }: ProductionUpdatesProps) {
           <input
             ref={fileInputRef}
             type="file"
-            accept=".pdf,.doc,.docx,.xls,.xlsx,.xlsm"
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.xlsm,.dwg,.skp,.txt"
             multiple
             className="hidden"
             onChange={handleFileSelect}
