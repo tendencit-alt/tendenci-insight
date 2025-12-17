@@ -5,10 +5,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Target, Trophy, Award } from "lucide-react";
 import { ComparisonCards } from "@/components/goals/seller/ComparisonCards";
+import { NoActiveGoalAlert } from "@/components/goals/NoActiveGoalAlert";
+import { useGoalStatus } from "@/hooks/useGoalStatus";
 
 export function SellerPerformancePanel() {
   const { user } = useAuth();
+  const goalStatus = useGoalStatus();
   const [loading, setLoading] = useState(true);
+  const [salesGoal, setSalesGoal] = useState<any>(null);
   const [badges, setBadges] = useState<any[]>([]);
   const [ranking, setRanking] = useState<any>(null);
 
@@ -24,9 +28,23 @@ export function SellerPerformancePanel() {
           {
             event: '*',
             schema: 'public',
+            table: 'tendenci_seller_goals',
+            filter: `vendedor_id=eq.${user.id}`
+          },
+          () => {
+            fetchSalesGoal();
+            fetchRanking();
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
             table: 'tendenci_goal_progress'
           },
           () => {
+            fetchSalesGoal();
             fetchRanking();
           }
         )
@@ -52,6 +70,7 @@ export function SellerPerformancePanel() {
           },
           (payload) => {
             if (payload.new.status === 'won' || payload.new.status === 'lost') {
+              fetchSalesGoal();
               fetchRanking();
             }
           }
@@ -66,11 +85,53 @@ export function SellerPerformancePanel() {
 
   const fetchAllData = async () => {
     setLoading(true);
+    await fetchSalesGoal();
     await Promise.all([
       fetchBadges(),
       fetchRanking()
     ]);
     setLoading(false);
+  };
+
+  const fetchSalesGoal = async () => {
+    try {
+      const now = new Date().toISOString();
+      const { data, error } = await supabase
+        .from("tendenci_seller_goals")
+        .select(`
+          *,
+          tendenci_goal_progress(valor_vendido, percentual)
+        `)
+        .eq("vendedor_id", user?.id)
+        .eq("status", "ativa")
+        .lte("data_inicio", now)
+        .gte("data_fim", now)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) {
+        setSalesGoal(null);
+        return;
+      }
+
+      if (data) {
+        const progress = Array.isArray(data.tendenci_goal_progress) 
+          ? data.tendenci_goal_progress[0] 
+          : data.tendenci_goal_progress;
+
+        const goalData = {
+          target: Number(data.valor_meta) || 0,
+          current: Number(progress?.valor_vendido) || 0,
+          percentage: Number(progress?.percentual) || 0
+        };
+        setSalesGoal(goalData);
+      } else {
+        setSalesGoal(null);
+      }
+    } catch (error) {
+      setSalesGoal(null);
+    }
   };
 
   const fetchBadges = async () => {
@@ -166,6 +227,25 @@ export function SellerPerformancePanel() {
     );
   }
 
+  // Calcular dados para ComparisonCards (tendência mensal)
+  const today = new Date();
+  const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+  const currentDay = today.getDate();
+  const dailyAverage = salesGoal ? salesGoal.current / currentDay : 0;
+  const projectedMonth = dailyAverage * daysInMonth;
+
+  const trend = salesGoal ? {
+    currentSales: salesGoal.current,
+    projectedSales: projectedMonth,
+    goalAmount: salesGoal.target
+  } : undefined;
+
+  const pace = salesGoal ? {
+    dailyAverage: dailyAverage,
+    idealDaily: salesGoal.target / daysInMonth,
+    projectedMonth: projectedMonth
+  } : undefined;
+
   return (
     <div className="space-y-3">
       <h3 className="text-lg font-semibold flex items-center gap-2">
@@ -173,9 +253,22 @@ export function SellerPerformancePanel() {
         Meu Desempenho
       </h3>
 
-      {/* Cards de Comparação - Ranking */}
-      {ranking && (
-        <ComparisonCards ranking={ranking} />
+      {/* Alerta quando não há meta de vendas configurada */}
+      {!salesGoal && !goalStatus.loading && (
+        <NoActiveGoalAlert 
+          type="sales" 
+          currentMonth={goalStatus.currentMonth}
+          sellersWithoutGoals={goalStatus.sellersWithoutGoals}
+        />
+      )}
+
+      {/* Cards de Comparação - Ranking e Tendência */}
+      {salesGoal && (
+        <ComparisonCards 
+          ranking={ranking}
+          trend={trend}
+          pace={pace}
+        />
       )}
 
       {/* Insígnias e Troféus */}
