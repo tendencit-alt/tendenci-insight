@@ -126,27 +126,53 @@ export function CRMTasksPanel({
     const proportionalDay = Math.min(currentDay, lastDayOfLastMonth);
     const endOfLastMonthProportional = new Date(now.getFullYear(), now.getMonth() - 1, proportionalDay, 23, 59, 59);
 
-    // Buscar tarefas concluídas deste mês (até hoje)
+    // Buscar deal_ids filtrados por categoria (tarefas não têm categoria direta)
+    let dealsQuery = supabase
+      .from("crm_deals")
+      .select("id")
+      .eq("pipeline_id", pipelineId);
+    
+    if (categoryFilter && categoryFilter !== "all") {
+      dealsQuery = dealsQuery.eq("categoria", categoryFilter);
+    }
+    
+    const { data: filteredDeals } = await dealsQuery;
+    const dealIds = filteredDeals?.map(d => d.id) || [];
+
+    if (dealIds.length === 0) {
+      setCompletedStats({
+        thisMonth: 0,
+        lastMonth: 0,
+        bestMonth: { count: 0, month: '' },
+        loading: false
+      });
+      return;
+    }
+
+    // Buscar tarefas concluídas deste mês (até hoje) - filtradas por deals da categoria
     const { data: thisMonthData } = await supabase
       .from("crm_tasks")
       .select("id", { count: "exact" })
       .eq("status", "done")
+      .in("deal_id", dealIds)
       .gte("updated_at", startOfThisMonth.toISOString())
       .lte("updated_at", now.toISOString());
 
-    // Buscar tarefas concluídas do mês passado (período proporcional)
+    // Buscar tarefas concluídas do mês passado (período proporcional) - filtradas por deals da categoria
     const { data: lastMonthData } = await supabase
       .from("crm_tasks")
       .select("id", { count: "exact" })
       .eq("status", "done")
+      .in("deal_id", dealIds)
       .gte("updated_at", startOfLastMonth.toISOString())
       .lte("updated_at", endOfLastMonthProportional.toISOString());
 
-    // Buscar todas as tarefas concluídas para calcular o melhor mês
+    // Buscar todas as tarefas concluídas para calcular o melhor mês - filtradas por deals da categoria
     const { data: allCompletedTasks } = await supabase
       .from("crm_tasks")
       .select("updated_at")
-      .eq("status", "done");
+      .eq("status", "done")
+      .in("deal_id", dealIds);
 
     // Calcular melhor mês
     const monthCounts: { [key: string]: number } = {};
@@ -196,27 +222,45 @@ export function CRMTasksPanel({
     const proportionalDay = Math.min(currentDay, lastDayOfLastMonth);
     const endOfLastMonthProportional = new Date(now.getFullYear(), now.getMonth() - 1, proportionalDay, 23, 59, 59);
 
-    // Buscar deals criados neste mês (até hoje)
-    const { data: thisMonthData } = await supabase
+    // Buscar deals criados neste mês (até hoje) - com filtro de categoria
+    let thisMonthQuery = supabase
       .from("crm_deals")
       .select("id", { count: "exact" })
       .eq("pipeline_id", pipelineId)
       .gte("created_at", startOfThisMonth.toISOString())
       .lte("created_at", now.toISOString());
+    
+    if (categoryFilter && categoryFilter !== "all") {
+      thisMonthQuery = thisMonthQuery.eq("categoria", categoryFilter);
+    }
+    
+    const { data: thisMonthData } = await thisMonthQuery;
 
-    // Buscar deals criados do mês passado (período proporcional)
-    const { data: lastMonthData } = await supabase
+    // Buscar deals criados do mês passado (período proporcional) - com filtro de categoria
+    let lastMonthQuery = supabase
       .from("crm_deals")
       .select("id", { count: "exact" })
       .eq("pipeline_id", pipelineId)
       .gte("created_at", startOfLastMonth.toISOString())
       .lte("created_at", endOfLastMonthProportional.toISOString());
+    
+    if (categoryFilter && categoryFilter !== "all") {
+      lastMonthQuery = lastMonthQuery.eq("categoria", categoryFilter);
+    }
+    
+    const { data: lastMonthData } = await lastMonthQuery;
 
-    // Buscar todos os deals para calcular o melhor mês
-    const { data: allDeals } = await supabase
+    // Buscar todos os deals para calcular o melhor mês - com filtro de categoria
+    let allDealsQuery = supabase
       .from("crm_deals")
       .select("created_at")
       .eq("pipeline_id", pipelineId);
+    
+    if (categoryFilter && categoryFilter !== "all") {
+      allDealsQuery = allDealsQuery.eq("categoria", categoryFilter);
+    }
+    
+    const { data: allDeals } = await allDealsQuery;
 
     // Calcular melhor mês
     const monthCounts: { [key: string]: number } = {};
@@ -489,7 +533,9 @@ export function CRMTasksPanel({
   return (
     <>
       <div className="space-y-4">
-        <h2 className="text-2xl font-bold">Tarefas</h2>
+        <h2 className="text-2xl font-bold">
+          Tarefas {categoryFilter && categoryFilter !== "all" && <span className="text-primary">- {categoryFilter}</span>}
+        </h2>
         
         {/* Métricas Comparativas de Tarefas Concluídas */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -574,7 +620,9 @@ export function CRMTasksPanel({
         </div>
 
         {/* Métricas Comparativas de Novos Negócios */}
-        <h3 className="text-lg font-semibold mt-6">Novos Negócios</h3>
+        <h3 className="text-lg font-semibold mt-6">
+          Novos Negócios {categoryFilter && categoryFilter !== "all" && <span className="text-primary">- {categoryFilter}</span>}
+        </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Este Mês */}
           <Card className="border-blue-500/20">
