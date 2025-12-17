@@ -1533,6 +1533,86 @@ export type Database = {
           },
         ]
       }
+      master_idea_comments: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          idea_id: string
+          parent_id: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          idea_id: string
+          parent_id?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          idea_id?: string
+          parent_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "master_idea_comments_idea_id_fkey"
+            columns: ["idea_id"]
+            isOneToOne: false
+            referencedRelation: "master_ideas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "master_idea_comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "master_idea_comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      master_idea_ratings: {
+        Row: {
+          created_at: string | null
+          id: string
+          idea_id: string
+          rating: number
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          idea_id: string
+          rating: number
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          idea_id?: string
+          rating?: number
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "master_idea_ratings_idea_id_fkey"
+            columns: ["idea_id"]
+            isOneToOne: false
+            referencedRelation: "master_ideas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       master_ideas: {
         Row: {
           aprovado_em: string | null
@@ -5082,6 +5162,7 @@ export type Database = {
       }
       calculate_business_days: { Args: { start_date: string }; Returns: number }
       calculate_seller_rankings: { Args: never; Returns: undefined }
+      can_delete_master_idea: { Args: never; Returns: boolean }
       check_and_expire_goals: { Args: never; Returns: undefined }
       check_and_move_inactive_architects: { Args: never; Returns: undefined }
       check_and_update_inactive_architects: { Args: never; Returns: undefined }
