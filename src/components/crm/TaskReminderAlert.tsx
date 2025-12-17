@@ -11,17 +11,24 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, Calendar, X, Clock } from "lucide-react";
+import { AlertTriangle, Calendar, X, Clock, MessageSquare } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface DealWithoutTask {
   id: string;
   title: string;
   stage: { name: string };
-  lead?: { client?: { name: string } };
+  lead?: { client?: { name: string; phone?: string } };
   owner?: { full_name: string };
   owner_id?: string;
   hours_without_task?: number;
@@ -36,9 +43,17 @@ export function TaskReminderAlert({ pipelineId }: TaskReminderAlertProps) {
   const [showAlert, setShowAlert] = useState(false);
   const [dealsWithoutTasks, setDealsWithoutTasks] = useState<DealWithoutTask[]>([]);
   const [addingTaskFor, setAddingTaskFor] = useState<string | null>(null);
-  const [taskData, setTaskData] = useState({ title: "", due_at: "", observation: "" });
+  const [taskData, setTaskData] = useState({ 
+    title: "", 
+    due_at: "", 
+    observation: "",
+    tipo_tarefa: "interna" as "interna" | "automatizada",
+    whatsapp_number: "",
+    note: ""
+  });
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isMaster, setIsMaster] = useState(false);
+  const [hasWhatsAppConnection, setHasWhatsAppConnection] = useState(false);
 
   useEffect(() => {
     if (!pipelineId) return;
@@ -57,6 +72,16 @@ export function TaskReminderAlert({ pipelineId }: TaskReminderAlertProps) {
           .single();
         
         setIsMaster(profile?.role === "admin");
+
+        // Check if user has WhatsApp connection
+        const { data: connection } = await supabase
+          .from("tendenci_whatsapp_connections")
+          .select("id")
+          .eq("user_id", user.id)
+          .eq("status", "connected")
+          .maybeSingle();
+        
+        setHasWhatsAppConnection(!!connection);
       }
     };
     
@@ -103,7 +128,7 @@ export function TaskReminderAlert({ pipelineId }: TaskReminderAlertProps) {
           stage_entered_at,
           stage:crm_stages(name),
           lead:leads(
-            client:clients(name)
+            client:clients(name, phone)
           ),
           owner:profiles(full_name)
         `)
@@ -181,6 +206,34 @@ export function TaskReminderAlert({ pipelineId }: TaskReminderAlertProps) {
       return;
     }
 
+    // Validação adicional para tarefa automatizada
+    if (taskData.tipo_tarefa === "automatizada") {
+      if (!taskData.whatsapp_number) {
+        toast({
+          title: "Número de WhatsApp obrigatório",
+          description: "Informe o número de WhatsApp para tarefa automatizada",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (!taskData.note) {
+        toast({
+          title: "Mensagem obrigatória",
+          description: "Informe a mensagem para tarefa automatizada",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (!hasWhatsAppConnection) {
+        toast({
+          title: "WhatsApp não conectado",
+          description: "Você precisa ter uma instância WhatsApp conectada para criar tarefas automatizadas",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     try {
       // Primeiro, salvar a observação no timeline
       const { data: userData } = await supabase.auth.getUser();
@@ -208,16 +261,21 @@ export function TaskReminderAlert({ pipelineId }: TaskReminderAlertProps) {
           due_at: dueAtISO,
           status: "open",
           created_by: userData.user?.id || null,
+          tipo_tarefa: taskData.tipo_tarefa,
+          whatsapp_number: taskData.tipo_tarefa === "automatizada" ? taskData.whatsapp_number : null,
+          note: taskData.tipo_tarefa === "automatizada" ? taskData.note : null,
         });
 
       if (taskError) throw taskError;
 
       toast({
         title: "Observação e tarefa criadas",
-        description: "A observação e a tarefa foram adicionadas ao negócio",
+        description: taskData.tipo_tarefa === "automatizada" 
+          ? "A tarefa automatizada será executada na data agendada"
+          : "A observação e a tarefa foram adicionadas ao negócio",
       });
 
-      setTaskData({ title: "", due_at: "", observation: "" });
+      setTaskData({ title: "", due_at: "", observation: "", tipo_tarefa: "interna", whatsapp_number: "", note: "" });
       setAddingTaskFor(null);
       
       // Recarregar lista
@@ -247,6 +305,10 @@ export function TaskReminderAlert({ pipelineId }: TaskReminderAlertProps) {
     const days = Math.floor(hours / 24);
     const remainingHours = hours % 24;
     return `${days}d ${remainingHours}h sem tarefa válida`;
+  };
+
+  const getClientPhone = (deal: DealWithoutTask) => {
+    return deal.lead?.client?.phone || "";
   };
 
   if (dealsWithoutTasks.length === 0) return null;
@@ -316,6 +378,35 @@ export function TaskReminderAlert({ pipelineId }: TaskReminderAlertProps) {
                               className="min-h-[80px]"
                             />
                           </div>
+
+                          <div className="space-y-2">
+                            <Label>Tipo de Tarefa *</Label>
+                            <Select
+                              value={taskData.tipo_tarefa}
+                              onValueChange={(value: "interna" | "automatizada") => {
+                                setTaskData({ 
+                                  ...taskData, 
+                                  tipo_tarefa: value,
+                                  whatsapp_number: value === "automatizada" ? getClientPhone(deal) : "",
+                                  note: ""
+                                });
+                              }}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione o tipo" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="interna">Tarefa Interna</SelectItem>
+                                <SelectItem value="automatizada">
+                                  <span className="flex items-center gap-2">
+                                    <MessageSquare className="h-4 w-4" />
+                                    Tarefa Automatizada (WhatsApp)
+                                  </span>
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
                           <div className="space-y-2">
                             <Label htmlFor={`task-title-${deal.id}`}>Título da Tarefa *</Label>
                             <Input
@@ -325,6 +416,7 @@ export function TaskReminderAlert({ pipelineId }: TaskReminderAlertProps) {
                               onChange={(e) => setTaskData({ ...taskData, title: e.target.value })}
                             />
                           </div>
+
                           <div className="space-y-2">
                             <Label htmlFor={`task-date-${deal.id}`}>Data de Vencimento *</Label>
                             <Input
@@ -334,6 +426,44 @@ export function TaskReminderAlert({ pipelineId }: TaskReminderAlertProps) {
                               onChange={(e) => setTaskData({ ...taskData, due_at: e.target.value })}
                             />
                           </div>
+
+                          {taskData.tipo_tarefa === "automatizada" && (
+                            <>
+                              <div className="space-y-2">
+                                <Label htmlFor={`task-whatsapp-${deal.id}`}>Número de WhatsApp *</Label>
+                                <Input
+                                  id={`task-whatsapp-${deal.id}`}
+                                  placeholder="Ex: 5511999999999"
+                                  value={taskData.whatsapp_number}
+                                  onChange={(e) => setTaskData({ ...taskData, whatsapp_number: e.target.value })}
+                                />
+                                <p className="text-xs text-muted-foreground">
+                                  Formato: código do país + DDD + número (ex: 5511999999999)
+                                </p>
+                              </div>
+
+                              <div className="space-y-2">
+                                <Label htmlFor={`task-message-${deal.id}`}>Mensagem (WhatsApp) *</Label>
+                                <Textarea
+                                  id={`task-message-${deal.id}`}
+                                  placeholder="Mensagem que será enviada automaticamente..."
+                                  value={taskData.note}
+                                  onChange={(e) => setTaskData({ ...taskData, note: e.target.value })}
+                                  className="min-h-[80px]"
+                                />
+                              </div>
+
+                              {!hasWhatsAppConnection && (
+                                <div className="p-3 bg-destructive/10 border border-destructive/30 rounded-md">
+                                  <p className="text-sm text-destructive">
+                                    ⚠️ Você não tem uma instância WhatsApp conectada. 
+                                    Conecte primeiro em Configurações para criar tarefas automatizadas.
+                                  </p>
+                                </div>
+                              )}
+                            </>
+                          )}
+
                           <div className="flex gap-2">
                             <Button 
                               size="sm" 
@@ -346,7 +476,7 @@ export function TaskReminderAlert({ pipelineId }: TaskReminderAlertProps) {
                               variant="outline"
                               onClick={() => {
                                 setAddingTaskFor(null);
-                                setTaskData({ title: "", due_at: "", observation: "" });
+                                setTaskData({ title: "", due_at: "", observation: "", tipo_tarefa: "interna", whatsapp_number: "", note: "" });
                               }}
                             >
                               Cancelar
