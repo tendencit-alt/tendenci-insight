@@ -10,6 +10,7 @@ interface OrdersKPIsProps {
     vendedorId: string;
     dateFrom: Date;
     dateTo: Date;
+    dateField: 'data_emissao' | 'created_at';
   };
 }
 
@@ -22,6 +23,7 @@ export function OrdersKPIs({ filters }: OrdersKPIsProps) {
         p_vendedor_id: filters.vendedorId || null,
         p_date_from: filters.dateFrom?.toISOString() || null,
         p_date_to: filters.dateTo?.toISOString() || null,
+        p_date_field: filters.dateField || 'data_emissao',
       });
       if (error) throw error;
       return data as {

@@ -24,6 +24,7 @@ export default function Orders() {
     period: 'last30days',
     dateFrom: subDays(new Date(), 30),
     dateTo: new Date(),
+    dateField: 'data_emissao' as 'data_emissao' | 'created_at',
   });
 
   const { data: orders, isLoading, refetch } = useQuery({
@@ -52,11 +53,13 @@ export default function Orders() {
       if (filters.architectId) {
         query = query.eq('architect_id', filters.architectId);
       }
+      // Aplicar filtro de data baseado no campo selecionado
+      const dateColumn = filters.dateField === 'created_at' ? 'created_at' : 'data_emissao';
       if (filters.dateFrom) {
-        query = query.gte('data_emissao', filters.dateFrom.toISOString());
+        query = query.gte(dateColumn, filters.dateFrom.toISOString());
       }
       if (filters.dateTo) {
-        query = query.lte('data_emissao', filters.dateTo.toISOString());
+        query = query.lte(dateColumn, filters.dateTo.toISOString());
       }
 
       const { data, error } = await query;
