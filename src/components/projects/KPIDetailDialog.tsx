@@ -19,6 +19,7 @@ interface KPIDetailDialogProps {
   dateFrom: Date | null;
   dateTo: Date | null;
   periodLabel: string;
+  architectId?: string;
   onRefresh?: () => void;
 }
 
@@ -42,6 +43,7 @@ export function KPIDetailDialog({
   dateFrom,
   dateTo,
   periodLabel,
+  architectId,
   onRefresh
 }: KPIDetailDialogProps) {
   const [loading, setLoading] = useState(true);
@@ -53,7 +55,7 @@ export function KPIDetailDialog({
     if (open && stage) {
       fetchProjectsForStage();
     }
-  }, [open, stage, dateFrom, dateTo]);
+  }, [open, stage, dateFrom, dateTo, architectId]);
 
   const fetchProjectsForStage = async () => {
     setLoading(true);
@@ -74,6 +76,7 @@ export function KPIDetailDialog({
             stage,
             deadline,
             sent_date,
+            architect_id,
             client:clients(name, phone),
             architect:architects(name)
           )
@@ -91,6 +94,11 @@ export function KPIDetailDialog({
       const { data, error } = await query;
 
       if (error) throw error;
+      
+      // Apply architect filter (same logic as RPC)
+      const NO_ARCHITECT_UUID = '00000000-0000-0000-0000-000000000000';
+      const shouldFilterArchitect = architectId && architectId !== '';
+      const filterNoArchitect = architectId === NO_ARCHITECT_UUID;
 
       // Filter and map to entries for this specific stage
       const stageNormalized = stage.toLowerCase().replace(/ç/g, 'c').replace(/ /g, '_');
@@ -100,6 +108,17 @@ export function KPIDetailDialog({
 
       for (const entry of data || []) {
         if (!entry.project) continue;
+        
+        // Apply architect filter
+        if (shouldFilterArchitect) {
+          if (filterNoArchitect) {
+            // Only projects without architect
+            if (entry.project.architect_id !== null) continue;
+          } else {
+            // Only projects with this specific architect
+            if (entry.project.architect_id !== architectId) continue;
+          }
+        }
         
         let targetStage = '';
         
