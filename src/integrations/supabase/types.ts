@@ -5415,6 +5415,7 @@ export type Database = {
         }[]
       }
       purchases_metrics: { Args: never; Returns: Json }
+      reactivate_lost_deals_to_followup: { Args: never; Returns: Json }
       recalculate_all_goal_progress: { Args: never; Returns: undefined }
       run_inactive_architects_check: { Args: never; Returns: Json }
       stock_abc_analysis: {
