@@ -40,7 +40,8 @@ const MODULE_LABELS: Record<AppModule, string> = {
   'producao': 'Produção',
   'fornecedores': 'Fornecedores',
   'estoque': 'Estoque',
-  'compras': 'Compras'
+  'compras': 'Compras',
+  'pedidos': 'Pedidos'
 };
 
 const ALL_MODULES: AppModule[] = [
@@ -57,7 +58,8 @@ const ALL_MODULES: AppModule[] = [
   'gestao_usuarios',
   'fornecedores',
   'estoque',
-  'compras'
+  'compras',
+  'pedidos'
 ];
 
 export function UserPermissionsDialog({
