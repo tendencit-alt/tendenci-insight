@@ -5,8 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import { Search, X, CalendarIcon, Filter } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
@@ -65,12 +63,11 @@ export function ProjectsFilters({ filters, onFiltersChange }: ProjectsFiltersPro
   const handleClearFilters = () => {
     setSearchInput("");
     onFiltersChange({
-      period: "last_30_days",
+      period: "thisMonth",
       stages: [],
       architect: "Todos",
       search: "",
-      customDateRange: { from: undefined, to: undefined },
-      filterByDeadline: false
+      customDateRange: { from: undefined, to: undefined }
     });
   };
 
@@ -135,9 +132,8 @@ export function ProjectsFilters({ filters, onFiltersChange }: ProjectsFiltersPro
   const hasActiveFilters = 
     (filters.stages && filters.stages.length > 0) || 
     filters.architect !== "Todos" || 
-    filters.period !== "last_30_days" ||
+    filters.period !== "thisMonth" ||
     filters.search ||
-    filters.filterByDeadline ||
     filters.customDateRange?.from;
 
   const formatDateRange = () => {
@@ -217,7 +213,7 @@ export function ProjectsFilters({ filters, onFiltersChange }: ProjectsFiltersPro
         </SelectContent>
       </Select>
 
-      {/* Filtro de Período */}
+      {/* Filtro de Período - Simplificado */}
       <Select 
         value={filters.period} 
         onValueChange={handlePeriodChange}
@@ -227,13 +223,9 @@ export function ProjectsFilters({ filters, onFiltersChange }: ProjectsFiltersPro
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="today">Hoje</SelectItem>
-          <SelectItem value="yesterday">Ontem</SelectItem>
           <SelectItem value="last_7_days">Últimos 7 dias</SelectItem>
           <SelectItem value="thisMonth">Este mês</SelectItem>
           <SelectItem value="last_30_days">Últimos 30 dias</SelectItem>
-          <SelectItem value="last_60_days">Últimos 60 dias</SelectItem>
-          <SelectItem value="last_90_days">Últimos 90 dias</SelectItem>
-          <SelectItem value="all">Todo período</SelectItem>
           <SelectItem value="custom">Personalizado</SelectItem>
         </SelectContent>
       </Select>
@@ -262,18 +254,6 @@ export function ProjectsFilters({ filters, onFiltersChange }: ProjectsFiltersPro
           </PopoverContent>
         </Popover>
       )}
-
-      {/* Toggle Filtrar por Prazo */}
-      <div className="flex items-center space-x-2 px-2 py-1 rounded-md border bg-background">
-        <Switch
-          id="filter-deadline"
-          checked={filters.filterByDeadline || false}
-          onCheckedChange={(checked) => onFiltersChange({ ...filters, filterByDeadline: checked })}
-        />
-        <Label htmlFor="filter-deadline" className="text-sm cursor-pointer whitespace-nowrap">
-          Por Prazo
-        </Label>
-      </div>
 
       {/* Busca com debounce */}
       <div className="relative">

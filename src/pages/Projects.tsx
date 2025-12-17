@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
-import { Plus, RefreshCw, Download, TrendingUp, MousePointerClick } from "lucide-react";
+import { Plus, RefreshCw, Download, TrendingUp, MousePointerClick, ChevronDown, ChevronUp } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,26 +26,31 @@ interface KPIConfig {
   showValue?: boolean;
 }
 
-const KPI_CONFIGS: KPIConfig[] = [
-  { key: 'recebido', label: 'Recebidos', icon: '📥', stage: 'recebido', borderColor: 'border-l-blue-500', textColor: 'text-blue-600', showValue: true },
-  { key: 'em_orcamento', label: 'Em Orçamento', icon: '📝', stage: 'em_orcamento', borderColor: 'border-l-purple-500', textColor: 'text-purple-600', showValue: true },
+// KPIs Principais (sempre visíveis)
+const PRIMARY_KPI_CONFIGS: KPIConfig[] = [
+  { key: 'recebido', label: 'Recebidos', icon: '📥', stage: 'recebido', borderColor: 'border-l-blue-500', textColor: 'text-blue-600' },
+  { key: 'em_orcamento', label: 'Em Orçamento', icon: '📝', stage: 'em_orcamento', borderColor: 'border-l-purple-500', textColor: 'text-purple-600' },
+  { key: 'aprovado', label: 'Aprovado', icon: '✅', stage: 'aprovado', borderColor: 'border-l-green-500', textColor: 'text-green-600', showValue: true },
+  { key: 'perdido', label: 'Perdido', icon: '❌', stage: 'perdido', borderColor: 'border-l-red-500', textColor: 'text-red-600', showValue: true },
+];
+
+// KPIs Detalhados (colapsáveis - compõem o Valor Total Orçado)
+const DETAIL_KPI_CONFIGS: KPIConfig[] = [
   { key: 'orcado', label: 'Orçado', icon: '💰', stage: 'orcado', borderColor: 'border-l-indigo-500', textColor: 'text-indigo-600', showValue: true },
   { key: 'apresentado', label: 'Apresentado', icon: '📊', stage: 'apresentado', borderColor: 'border-l-cyan-500', textColor: 'text-cyan-600', showValue: true },
   { key: 'em_negociacao', label: 'Em Negociação', icon: '🤝', stage: 'em_negociacao', borderColor: 'border-l-orange-500', textColor: 'text-orange-600', showValue: true },
-  { key: 'aprovado', label: 'Aprovado', icon: '✅', stage: 'aprovado', borderColor: 'border-l-green-500', textColor: 'text-green-600', showValue: true },
-  { key: 'perdido', label: 'Perdido', icon: '❌', stage: 'perdido', borderColor: 'border-l-red-500', textColor: 'text-red-600', showValue: true },
 ];
 
 const Projects = () => {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [showDetailKPIs, setShowDetailKPIs] = useState(false);
   const [filters, setFilters] = useState({
     period: "thisMonth",
     stages: [] as string[],
     architect: "Todos",
     search: "",
-    customDateRange: { from: undefined as Date | undefined, to: undefined as Date | undefined },
-    filterByDeadline: false
+    customDateRange: { from: undefined as Date | undefined, to: undefined as Date | undefined }
   });
   const [metrics, setMetrics] = useState({
     recebido_count: 0,
@@ -64,7 +69,9 @@ const Projects = () => {
     perdido_value: 0,
     near_due_count: 0,
     overdue_count: 0,
-    total_value: 0
+    total_value: 0,
+    total_orcado_count: 0,
+    total_orcado_value: 0
   });
   
   // Estado para DeadlineAlerts click
@@ -86,11 +93,6 @@ const Projects = () => {
         dateFrom = startOfDay(now);
         dateTo = endOfDay(now);
         break;
-      case "yesterday":
-        const yesterday = subDays(now, 1);
-        dateFrom = startOfDay(yesterday);
-        dateTo = endOfDay(yesterday);
-        break;
       case "last_7_days":
         dateFrom = subDays(now, 7);
         break;
@@ -100,20 +102,14 @@ const Projects = () => {
       case "last_30_days":
         dateFrom = subDays(now, 30);
         break;
-      case "last_60_days":
-        dateFrom = subDays(now, 60);
-        break;
-      case "last_90_days":
-        dateFrom = subDays(now, 90);
-        break;
       case "custom":
         if (filters.customDateRange?.from) {
           dateFrom = filters.customDateRange.from;
           dateTo = filters.customDateRange.to || undefined;
         }
         break;
-      case "all":
       default:
+        dateFrom = startOfMonth(now);
         break;
     }
 
@@ -124,9 +120,7 @@ const Projects = () => {
     const { dateFrom, dateTo } = getDateRange();
     
     // Build RPC params
-    const params: any = {
-      p_filter_by_deadline: filters.filterByDeadline
-    };
+    const params: any = {};
 
     if (filters.stages && filters.stages.length > 0) {
       params.p_stages = filters.stages;
@@ -200,15 +194,11 @@ const Projects = () => {
   const getPeriodLabel = () => {
     switch (filters.period) {
       case "today": return "(Hoje)";
-      case "yesterday": return "(Ontem)";
       case "last_7_days": return "(7 dias)";
       case "thisMonth": return "(Este mês)";
       case "last_30_days": return "(30 dias)";
-      case "last_60_days": return "(60 dias)";
-      case "last_90_days": return "(90 dias)";
       case "custom": return "(Personalizado)";
-      case "all": return "(Total)";
-      default: return "";
+      default: return "(Este mês)";
     }
   };
 
@@ -279,35 +269,40 @@ const Projects = () => {
           </div>
         </div>
 
-        {/* KPI Valor Total - Destaque */}
+        {/* KPI Valor Total Orçado - Destaque Principal */}
         <Card className="p-6 space-y-2 hover:shadow-xl transition-all duration-300 border-2 border-primary bg-gradient-to-r from-primary/10 via-primary/5 to-transparent">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-muted-foreground">Valor Total dos Projetos {getPeriodLabel()}</span>
-            <span className="text-2xl">💎</span>
+            <span className="text-sm font-medium text-muted-foreground">💰 Valor Total Orçado {getPeriodLabel()}</span>
+            <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
+              {metrics.total_orcado_count || 0} projetos
+            </span>
           </div>
           <p className="text-3xl font-bold text-primary">
-            R$ {(metrics.total_value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            R$ {(metrics.total_orcado_value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Soma de: Orçado + Apresentado + Em Negociação
           </p>
         </Card>
 
-        {/* KPIs Clicáveis */}
+        {/* KPIs Principais */}
         <TooltipProvider>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-4">
-            {KPI_CONFIGS.map((kpi) => (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {PRIMARY_KPI_CONFIGS.map((kpi) => (
               <Tooltip key={kpi.key}>
                 <TooltipTrigger asChild>
                   <Card 
-                    className={`p-6 space-y-2 hover:shadow-xl transition-all duration-300 border-l-4 ${kpi.borderColor} cursor-pointer hover:scale-[1.02] hover:ring-2 hover:ring-primary/20 group relative`}
+                    className={`p-5 space-y-2 hover:shadow-xl transition-all duration-300 border-l-4 ${kpi.borderColor} cursor-pointer hover:scale-[1.02] hover:ring-2 hover:ring-primary/20 group relative`}
                     onClick={() => handleKPIClick(kpi)}
                   >
                     <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       <MousePointerClick className="w-4 h-4 text-muted-foreground" />
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-muted-foreground">{kpi.label} {getPeriodLabel()}</span>
-                      <span className="text-2xl">{kpi.icon}</span>
+                      <span className="text-sm font-medium text-muted-foreground">{kpi.label}</span>
+                      <span className="text-xl">{kpi.icon}</span>
                     </div>
-                    <p className={`text-3xl font-bold ${kpi.textColor}`}>
+                    <p className={`text-2xl font-bold ${kpi.textColor}`}>
                       {getMetricCount(kpi.key)}
                     </p>
                     {kpi.showValue && (
@@ -324,6 +319,54 @@ const Projects = () => {
             ))}
           </div>
         </TooltipProvider>
+
+        {/* KPIs Detalhados (Colapsável) */}
+        <div className="space-y-3">
+          <Button
+            variant="ghost"
+            className="w-full flex items-center justify-between p-2 text-sm text-muted-foreground hover:text-foreground"
+            onClick={() => setShowDetailKPIs(!showDetailKPIs)}
+          >
+            <span>📊 Detalhes do Funil de Orçamentos</span>
+            {showDetailKPIs ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </Button>
+          
+          {showDetailKPIs && (
+            <TooltipProvider>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                {DETAIL_KPI_CONFIGS.map((kpi) => (
+                  <Tooltip key={kpi.key}>
+                    <TooltipTrigger asChild>
+                      <Card 
+                        className={`p-4 space-y-2 hover:shadow-lg transition-all duration-300 border-l-4 ${kpi.borderColor} cursor-pointer hover:scale-[1.02] group relative`}
+                        onClick={() => handleKPIClick(kpi)}
+                      >
+                        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <MousePointerClick className="w-3 h-3 text-muted-foreground" />
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-muted-foreground">{kpi.label}</span>
+                          <span className="text-lg">{kpi.icon}</span>
+                        </div>
+                        <p className={`text-xl font-bold ${kpi.textColor}`}>
+                          {getMetricCount(kpi.key)}
+                        </p>
+                        {kpi.showValue && (
+                          <p className="text-sm text-muted-foreground">
+                            R$ {(getMetricValue(kpi.key) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </p>
+                        )}
+                      </Card>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Clique para ver detalhes</p>
+                    </TooltipContent>
+                  </Tooltip>
+                ))}
+              </div>
+            </TooltipProvider>
+          )}
+        </div>
 
         {/* Deadline Alerts - agora com click funcional */}
         <DeadlineAlerts refreshKey={refreshKey} onProjectClick={handleAlertProjectClick} />
