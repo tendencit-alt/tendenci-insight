@@ -495,7 +495,9 @@ export function ProjectDetailSheet({ project, open, onOpenChange, onSuccess }: P
                 <div className="flex-1">
                   <p className="font-medium text-sm">Projeto criado no sistema</p>
                   <p className="text-xs text-muted-foreground">
-                    {formatDistanceToNow(new Date(project.created_at), { addSuffix: true, locale: ptBR })}
+                    {project.created_at 
+                      ? formatDistanceToNow(new Date(project.created_at), { addSuffix: true, locale: ptBR })
+                      : 'Data não disponível'}
                   </p>
                 </div>
               </div>
