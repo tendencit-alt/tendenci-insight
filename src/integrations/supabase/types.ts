@@ -1526,30 +1526,52 @@ export type Database = {
       }
       master_ideas: {
         Row: {
+          aprovado_em: string | null
+          aprovado_por: string | null
+          categoria: string | null
           content: string | null
           created_at: string | null
           created_by: string | null
           id: string
+          motivo_recusa: string | null
+          status: string | null
           title: string
           updated_at: string | null
         }
         Insert: {
+          aprovado_em?: string | null
+          aprovado_por?: string | null
+          categoria?: string | null
           content?: string | null
           created_at?: string | null
           created_by?: string | null
           id?: string
+          motivo_recusa?: string | null
+          status?: string | null
           title: string
           updated_at?: string | null
         }
         Update: {
+          aprovado_em?: string | null
+          aprovado_por?: string | null
+          categoria?: string | null
           content?: string | null
           created_at?: string | null
           created_by?: string | null
           id?: string
+          motivo_recusa?: string | null
+          status?: string | null
           title?: string
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "master_ideas_aprovado_por_fkey"
+            columns: ["aprovado_por"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "master_ideas_created_by_fkey"
             columns: ["created_by"]
