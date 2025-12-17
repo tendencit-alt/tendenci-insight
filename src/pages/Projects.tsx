@@ -18,7 +18,7 @@ const Projects = () => {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [filters, setFilters] = useState({
-    period: "last_30_days",
+    period: "thisMonth",
     stages: [] as string[],
     architect: "Todos",
     search: "",
