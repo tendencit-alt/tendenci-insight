@@ -15,6 +15,7 @@ interface OrdersFiltersProps {
     period: string;
     dateFrom: Date;
     dateTo: Date;
+    dateField: 'data_emissao' | 'created_at';
   };
   onFiltersChange: (filters: any) => void;
 }
@@ -112,10 +113,11 @@ export function OrdersFilters({ filters, onFiltersChange }: OrdersFiltersProps) 
       period: 'last30days',
       dateFrom: subDays(new Date(), 30),
       dateTo: new Date(),
+      dateField: 'data_emissao',
     });
   };
 
-  const hasFilters = filters.status || filters.vendedorId || filters.clientId || filters.architectId || filters.period !== 'last30days';
+  const hasFilters = filters.status || filters.vendedorId || filters.clientId || filters.architectId || filters.period !== 'last30days' || filters.dateField !== 'data_emissao';
 
   return (
     <Card>
@@ -187,6 +189,19 @@ export function OrdersFilters({ filters, onFiltersChange }: OrdersFiltersProps) 
                   {p.label}
                 </SelectItem>
               ))}
+            </SelectContent>
+          </Select>
+
+          <Select 
+            value={filters.dateField} 
+            onValueChange={(v) => onFiltersChange({ ...filters, dateField: v as 'data_emissao' | 'created_at' })}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Filtrar por" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="data_emissao">Data de Emissão</SelectItem>
+              <SelectItem value="created_at">Data de Criação</SelectItem>
             </SelectContent>
           </Select>
 

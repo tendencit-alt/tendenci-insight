@@ -5308,15 +5308,26 @@ export type Database = {
         }[]
       }
       mark_inactive_architects: { Args: never; Returns: undefined }
-      orders_metrics: {
-        Args: {
-          p_date_from?: string
-          p_date_to?: string
-          p_status?: string
-          p_vendedor_id?: string
-        }
-        Returns: Json
-      }
+      orders_metrics:
+        | {
+            Args: {
+              p_date_from?: string
+              p_date_to?: string
+              p_status?: string
+              p_vendedor_id?: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_date_field?: string
+              p_date_from?: string
+              p_date_to?: string
+              p_status?: string
+              p_vendedor_id?: string
+            }
+            Returns: Json
+          }
       production_metrics:
         | {
             Args: {
