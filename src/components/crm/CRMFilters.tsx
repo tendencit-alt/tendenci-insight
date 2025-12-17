@@ -156,7 +156,7 @@ export function CRMFilters({
         </Popover>
       )}
 
-      {(selectedOwner !== "all" || searchQuery || selectedStatus !== "all" || dateFilter !== "last30days") && (
+      {(selectedOwner !== "all" || searchQuery || selectedStatus !== "all" || dateFilter !== "thisMonth") && (
         <Button 
           variant="destructive" 
           size="sm"
@@ -165,7 +165,7 @@ export function CRMFilters({
             onOwnerChange("all");
             onSearchChange("");
             onStatusChange("all");
-            onDateFilterChange("last30days");
+            onDateFilterChange("thisMonth");
             if (onCustomDateRangeChange) {
               onCustomDateRangeChange({ from: undefined, to: undefined });
             }

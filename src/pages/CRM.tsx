@@ -36,7 +36,7 @@ export default function CRM() {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [showPlanned, setShowPlanned] = useState<boolean>(false);
   const [categories, setCategories] = useState<string[]>([]);
-  const [dateFilter, setDateFilter] = useState<string>("last30days");
+  const [dateFilter, setDateFilter] = useState<string>("thisMonth");
   const [customDateRange, setCustomDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({ from: undefined, to: undefined });
   const [autoOpenDealId, setAutoOpenDealId] = useState<string | null>(null);
   const [isLoadingPipelines, setIsLoadingPipelines] = useState(true);
