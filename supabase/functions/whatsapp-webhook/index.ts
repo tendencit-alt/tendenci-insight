@@ -140,8 +140,12 @@ Deno.serve(async (req) => {
     }
 
     // ========== DETECTAR RESPOSTA DE CLIENTE/ARQUITETO ==========
-    if (event === 'messages.upsert' && data?.key?.remoteJid && data?.key?.fromMe === false) {
-      console.log('💬 Message received, checking for campaign architects and follow-up deals...')
+    // Ignorar mensagens de grupos e listas
+    const remoteJid = data?.key?.remoteJid || ''
+    const isGroupOrList = remoteJid.includes('@g.us') || remoteJid.includes('@lid')
+    
+    if (event === 'messages.upsert' && data?.key?.remoteJid && data?.key?.fromMe === false && !isGroupOrList) {
+      console.log('💬 Message received from individual, checking for campaign architects and follow-up deals...')
       
       const clientPhone = data.key.remoteJid.replace('@s.whatsapp.net', '')
       console.log('📱 Client phone:', clientPhone)
@@ -234,17 +238,32 @@ Deno.serve(async (req) => {
       } else {
         console.log('🔍 Buscando deals com últimos 8 dígitos:', clientLast8)
         
-        // Buscar etapas Follow Up e Lead
-        const { data: stages } = await supabase
+        // Buscar PRIMEIRO a etapa Follow Up para saber o pipeline
+        const { data: followupStages } = await supabase
           .from('crm_stages')
           .select('id, name, pipeline_id')
-          .or('name.ilike.%Follow Up%,name.ilike.%Lead%')
+          .ilike('name', '%Follow Up%')
         
-        const followupStage = stages?.find(s => s.name.toLowerCase().includes('follow up'))
-        const leadStage = stages?.find(s => s.name.toLowerCase() === 'lead')
+        const followupStage = followupStages?.[0]
         
-        console.log('📂 Etapa Follow Up:', followupStage?.id)
-        console.log('📂 Etapa Lead:', leadStage?.id)
+        console.log('📂 Etapa Follow Up:', followupStage?.id, 'Pipeline:', followupStage?.pipeline_id)
+        
+        // CORREÇÃO CRÍTICA: Buscar etapa Lead do MESMO PIPELINE do Follow Up
+        let leadStage = null
+        if (followupStage?.pipeline_id) {
+          const { data: leadStages } = await supabase
+            .from('crm_stages')
+            .select('id, name, pipeline_id')
+            .eq('pipeline_id', followupStage.pipeline_id)
+            .ilike('name', 'Lead')
+          
+          leadStage = leadStages?.[0]
+          console.log('📂 Etapa Lead (mesmo pipeline):', leadStage?.id, 'Pipeline:', leadStage?.pipeline_id)
+        }
+        
+        if (!leadStage && followupStage) {
+          console.error('❌ ERRO CRÍTICO: Não encontrou etapa Lead no pipeline', followupStage.pipeline_id)
+        }
         
         // Buscar deals na etapa Follow Up
         let dealsQuery = supabase
