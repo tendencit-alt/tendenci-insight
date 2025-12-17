@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
@@ -18,7 +18,6 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { 
   AlertTriangle, 
-  Plus, 
   Search, 
   CheckCircle, 
   XCircle, 
@@ -70,7 +69,6 @@ const STATUS_OPTIONS = [
 ];
 
 const SOURCE_OPTIONS = [
-  { value: "manual", label: "Manual" },
   { value: "edge_function", label: "Edge Function" },
   { value: "frontend", label: "Frontend" },
   { value: "webhook", label: "Webhook" }
@@ -83,7 +81,6 @@ export default function SystemErrors() {
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [filterSeverity, setFilterSeverity] = useState<string>("all");
   const [filterModule, setFilterModule] = useState<string>("all");
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [selectedError, setSelectedError] = useState<SystemError | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
 
@@ -113,35 +110,6 @@ export default function SystemErrors() {
       const { data, error } = await query;
       if (error) throw error;
       return data as SystemError[];
-    }
-  });
-
-  const createError = useMutation({
-    mutationFn: async (newError: { title: string; module: string; description?: string; severity?: string; source?: string; error_code?: string; stack_trace?: string }) => {
-      const { data, error } = await supabase
-        .from("system_errors")
-        .insert([{ 
-          title: newError.title,
-          module: newError.module,
-          description: newError.description || null,
-          severity: newError.severity || "medium",
-          source: newError.source || "manual",
-          error_code: newError.error_code || null,
-          stack_trace: newError.stack_trace || null,
-          reported_by: profile?.id 
-        }])
-        .select()
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["system-errors"] });
-      toast.success("Erro registrado com sucesso");
-      setIsCreateOpen(false);
-    },
-    onError: (error) => {
-      toast.error("Falha ao registrar erro: " + error.message);
     }
   });
 
@@ -205,31 +173,12 @@ export default function SystemErrors() {
     <DashboardLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Bug className="h-8 w-8 text-red-500" />
-            <div>
-              <h1 className="text-2xl font-bold">Erros do Sistema</h1>
-              <p className="text-muted-foreground">Registro e monitoramento de erros</p>
-            </div>
+        <div className="flex items-center gap-3">
+          <Bug className="h-8 w-8 text-red-500" />
+          <div>
+            <h1 className="text-2xl font-bold">Erros do Sistema</h1>
+            <p className="text-muted-foreground">Monitoramento automático de erros</p>
           </div>
-          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Registrar Erro
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Registrar Novo Erro</DialogTitle>
-              </DialogHeader>
-              <CreateErrorForm 
-                onSubmit={(data) => createError.mutate(data)} 
-                isLoading={createError.isPending}
-              />
-            </DialogContent>
-          </Dialog>
         </div>
 
         {/* KPIs */}
@@ -356,14 +305,14 @@ export default function SystemErrors() {
         {/* Tabela */}
         <Card>
           <CardHeader>
-            <CardTitle>Erros Registrados</CardTitle>
+            <CardTitle>Erros Capturados Automaticamente</CardTitle>
           </CardHeader>
           <CardContent>
             {isLoading ? (
               <div className="text-center py-8 text-muted-foreground">Carregando...</div>
             ) : filteredErrors?.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                Nenhum erro encontrado
+                Nenhum erro registrado pelo sistema
               </div>
             ) : (
               <Table>
@@ -437,129 +386,6 @@ export default function SystemErrors() {
   );
 }
 
-type CreateErrorData = { 
-  title: string; 
-  module: string; 
-  description?: string; 
-  severity?: string; 
-  source?: string; 
-  error_code?: string; 
-  stack_trace?: string; 
-};
-
-function CreateErrorForm({ 
-  onSubmit, 
-  isLoading 
-}: { 
-  onSubmit: (data: CreateErrorData) => void; 
-  isLoading: boolean;
-}) {
-  const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    module: "",
-    severity: "medium",
-    source: "manual",
-    error_code: "",
-    stack_trace: ""
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.title || !formData.module) {
-      toast.error("Título e módulo são obrigatórios");
-      return;
-    }
-    onSubmit(formData);
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
-        <div className="col-span-2">
-          <Label>Título *</Label>
-          <Input
-            value={formData.title}
-            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-            placeholder="Descrição breve do erro"
-          />
-        </div>
-        <div>
-          <Label>Módulo *</Label>
-          <Select value={formData.module} onValueChange={(v) => setFormData({ ...formData, module: v })}>
-            <SelectTrigger>
-              <SelectValue placeholder="Selecione o módulo" />
-            </SelectTrigger>
-            <SelectContent>
-              {MODULES.map(mod => (
-                <SelectItem key={mod} value={mod}>{mod}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <Label>Severidade</Label>
-          <Select value={formData.severity} onValueChange={(v) => setFormData({ ...formData, severity: v })}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {SEVERITY_OPTIONS.map(opt => (
-                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <Label>Origem</Label>
-          <Select value={formData.source} onValueChange={(v) => setFormData({ ...formData, source: v })}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {SOURCE_OPTIONS.map(opt => (
-                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <Label>Código do Erro</Label>
-          <Input
-            value={formData.error_code}
-            onChange={(e) => setFormData({ ...formData, error_code: e.target.value })}
-            placeholder="Ex: ERR_001"
-          />
-        </div>
-        <div className="col-span-2">
-          <Label>Descrição</Label>
-          <Textarea
-            value={formData.description}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            placeholder="Descreva o erro em detalhes, incluindo passos para reproduzir..."
-            rows={3}
-          />
-        </div>
-        <div className="col-span-2">
-          <Label>Stack Trace / Logs</Label>
-          <Textarea
-            value={formData.stack_trace}
-            onChange={(e) => setFormData({ ...formData, stack_trace: e.target.value })}
-            placeholder="Cole aqui o stack trace ou logs relevantes..."
-            rows={4}
-            className="font-mono text-xs"
-          />
-        </div>
-      </div>
-      <div className="flex justify-end gap-2">
-        <Button type="submit" disabled={isLoading}>
-          {isLoading ? "Salvando..." : "Registrar Erro"}
-        </Button>
-      </div>
-    </form>
-  );
-}
-
 function ErrorDetailView({ 
   error, 
   onUpdate,
@@ -613,7 +439,7 @@ function ErrorDetailView({
         <div>
           <Label className="text-muted-foreground">Origem</Label>
           <Badge variant="secondary">
-            {SOURCE_OPTIONS.find(s => s.value === error.source)?.label}
+            {SOURCE_OPTIONS.find(s => s.value === error.source)?.label || error.source}
           </Badge>
         </div>
         <div>
