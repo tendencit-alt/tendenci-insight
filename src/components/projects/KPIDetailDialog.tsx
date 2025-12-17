@@ -13,7 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 interface KPIDetailDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  stage: string;
+  stage: string | string[];
   stageLabel: string;
   stageIcon: string;
   dateFrom: Date | null;
@@ -100,8 +100,11 @@ export function KPIDetailDialog({
       const shouldFilterArchitect = architectId && architectId !== '';
       const filterNoArchitect = architectId === NO_ARCHITECT_UUID;
 
-      // Filter and map to entries for this specific stage
-      const stageNormalized = stage.toLowerCase().replace(/ç/g, 'c').replace(/ /g, '_');
+      // Support multiple stages
+      const stageArray = Array.isArray(stage) ? stage : [stage];
+      const stagesNormalized = stageArray.map(s => 
+        s.toLowerCase().replace(/ç/g, 'c').replace(/ /g, '_')
+      );
       
       const filteredEntries: ProjectEntry[] = [];
       const seenProjects = new Set<string>();
@@ -138,7 +141,7 @@ export function KPIDetailDialog({
             .replace(/ /g, '_');
         }
 
-        if (targetStage === stageNormalized && !seenProjects.has(entry.project_id)) {
+        if (stagesNormalized.includes(targetStage) && !seenProjects.has(entry.project_id)) {
           seenProjects.add(entry.project_id);
           filteredEntries.push({
             id: entry.id,
