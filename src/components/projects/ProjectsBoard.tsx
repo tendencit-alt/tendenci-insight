@@ -1,6 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { subDays, startOfDay, endOfDay, startOfMonth } from "date-fns";
 import { ProjectDetailSheet } from "./ProjectDetailSheet";
 import { ProjectCard } from "./ProjectCard";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -8,7 +7,11 @@ import { toast } from "sonner";
 import { usePermissions } from "@/hooks/usePermissions";
 
 interface ProjectsBoardProps {
-  filters: any;
+  filters: {
+    stages?: string[];
+    architect?: string;
+    search?: string;
+  };
 }
 
 const STAGE_CONFIG = [
@@ -49,52 +52,10 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
   const [projectToDelete, setProjectToDelete] = useState<any>(null);
   const { isMaster } = usePermissions();
 
-  const getDateRange = useCallback(() => {
-    const now = new Date();
-    let dateFrom: Date | null = null;
-    let dateTo: Date | null = null;
-
-    switch (filters.period) {
-      case "today":
-        dateFrom = startOfDay(now);
-        dateTo = endOfDay(now);
-        break;
-      case "yesterday":
-        const yesterday = subDays(now, 1);
-        dateFrom = startOfDay(yesterday);
-        dateTo = endOfDay(yesterday);
-        break;
-      case "last_7_days":
-        dateFrom = subDays(now, 7);
-        break;
-      case "thisMonth":
-        dateFrom = startOfMonth(now);
-        break;
-      case "last_30_days":
-        dateFrom = subDays(now, 30);
-        break;
-      case "last_60_days":
-        dateFrom = subDays(now, 60);
-        break;
-      case "last_90_days":
-        dateFrom = subDays(now, 90);
-        break;
-      case "custom":
-        if (filters.customDateRange?.from) {
-          dateFrom = filters.customDateRange.from;
-          dateTo = filters.customDateRange.to || undefined;
-        }
-        break;
-      case "all":
-      default:
-        break;
-    }
-
-    return { dateFrom, dateTo };
-  }, [filters.period, filters.customDateRange]);
-
   const fetchProjects = useCallback(async () => {
     setLoading(true);
+    
+    // Kanban sempre busca TODOS os projetos (sem filtro de data)
     let query = supabase
       .from("projects")
       .select(`
@@ -118,17 +79,6 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
       }
     }
 
-    // Filtro de período
-    const { dateFrom, dateTo } = getDateRange();
-    const dateField = filters.filterByDeadline ? "deadline" : "created_at";
-    
-    if (dateFrom) {
-      query = query.gte(dateField, dateFrom.toISOString());
-    }
-    if (dateTo) {
-      query = query.lte(dateField, dateTo.toISOString());
-    }
-
     const { data, error } = await query;
     
     if (!error && data) {
@@ -147,7 +97,7 @@ export function ProjectsBoard({ filters }: ProjectsBoardProps) {
       setProjects(filteredData);
     }
     setLoading(false);
-  }, [filters, getDateRange]);
+  }, [filters.stages, filters.architect, filters.search]);
 
   // Fetch inicial e quando filtros mudam
   useEffect(() => {

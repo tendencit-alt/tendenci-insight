@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
-import { Plus, RefreshCw, Download, TrendingUp } from "lucide-react";
+import { Plus, RefreshCw, Download, TrendingUp, MousePointerClick } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,7 +12,27 @@ import { ProjectsFilters } from "@/components/projects/ProjectsFilters";
 import { DeadlineAlerts } from "@/components/projects/DeadlineAlerts";
 import { ArchitectPerformance } from "@/components/projects/ArchitectPerformance";
 import { ProjectDetailSheet } from "@/components/projects/ProjectDetailSheet";
+import { KPIDetailDialog } from "@/components/projects/KPIDetailDialog";
 import { subDays, startOfDay, endOfDay, startOfMonth } from "date-fns";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
+interface KPIConfig {
+  key: string;
+  label: string;
+  icon: string;
+  stage: string;
+  borderColor: string;
+  textColor: string;
+  showValue?: boolean;
+}
+
+const KPI_CONFIGS: KPIConfig[] = [
+  { key: 'recebido', label: 'Recebidos', icon: '📥', stage: 'recebido', borderColor: 'border-l-blue-500', textColor: 'text-blue-600' },
+  { key: 'em_orcamento', label: 'Em Orçamento', icon: '📝', stage: 'em_orcamento', borderColor: 'border-l-purple-500', textColor: 'text-purple-600' },
+  { key: 'orcado', label: 'Orçado', icon: '💰', stage: 'orcado', borderColor: 'border-l-indigo-500', textColor: 'text-indigo-600', showValue: true },
+  { key: 'apresentado', label: 'Apresentado', icon: '📊', stage: 'apresentado', borderColor: 'border-l-cyan-500', textColor: 'text-cyan-600', showValue: true },
+  { key: 'em_negociacao', label: 'Em Negociação', icon: '🤝', stage: 'em_negociacao', borderColor: 'border-l-orange-500', textColor: 'text-orange-600' },
+];
 
 const Projects = () => {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -42,6 +62,10 @@ const Projects = () => {
   const [alertProjectId, setAlertProjectId] = useState<string | null>(null);
   const [alertProject, setAlertProject] = useState<any>(null);
   const [alertDetailOpen, setAlertDetailOpen] = useState(false);
+
+  // Estado para KPI Detail Dialog
+  const [selectedKPI, setSelectedKPI] = useState<KPIConfig | null>(null);
+  const [kpiDetailOpen, setKpiDetailOpen] = useState(false);
 
   const getDateRange = useCallback(() => {
     const now = new Date();
@@ -158,6 +182,12 @@ const Projects = () => {
     }
   };
 
+  // Handler para clique no KPI
+  const handleKPIClick = (kpi: KPIConfig) => {
+    setSelectedKPI(kpi);
+    setKpiDetailOpen(true);
+  };
+
   const getPeriodLabel = () => {
     switch (filters.period) {
       case "today": return "(Hoje)";
@@ -171,6 +201,34 @@ const Projects = () => {
       case "all": return "(Total)";
       default: return "";
     }
+  };
+
+  const getMetricCount = (key: string): number => {
+    switch (key) {
+      case 'recebido': return metrics.recebido_count;
+      case 'em_orcamento': return metrics.em_orcamento_count;
+      case 'orcado': return metrics.orcado_count;
+      case 'apresentado': return metrics.apresentado_count;
+      case 'em_negociacao': return metrics.em_negociacao_count;
+      default: return 0;
+    }
+  };
+
+  const getMetricValue = (key: string): number => {
+    switch (key) {
+      case 'orcado': return metrics.orcado_value;
+      case 'apresentado': return metrics.apresentado_value;
+      default: return 0;
+    }
+  };
+
+  const { dateFrom, dateTo } = getDateRange();
+
+  // Filtros separados para o Kanban (sem período)
+  const boardFilters = {
+    stages: filters.stages,
+    architect: filters.architect,
+    search: filters.search
   };
 
   return (
@@ -216,54 +274,40 @@ const Projects = () => {
           </p>
         </Card>
 
-        {/* KPIs */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          <Card className="p-6 space-y-2 hover:shadow-xl transition-all duration-300 border-l-4 border-l-blue-500">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-muted-foreground">Recebidos {getPeriodLabel()}</span>
-              <span className="text-2xl">📥</span>
-            </div>
-            <p className="text-3xl font-bold text-blue-600">{metrics.recebido_count}</p>
-          </Card>
-
-          <Card className="p-6 space-y-2 hover:shadow-xl transition-all duration-300 border-l-4 border-l-purple-500">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-muted-foreground">Em Orçamento {getPeriodLabel()}</span>
-              <span className="text-2xl">📝</span>
-            </div>
-            <p className="text-3xl font-bold text-purple-600">{metrics.em_orcamento_count}</p>
-          </Card>
-
-          <Card className="p-6 space-y-2 hover:shadow-xl transition-all duration-300 border-l-4 border-l-indigo-500">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-muted-foreground">Orçado {getPeriodLabel()}</span>
-              <span className="text-2xl">💰</span>
-            </div>
-            <p className="text-3xl font-bold text-indigo-600">{metrics.orcado_count}</p>
-            <p className="text-sm text-muted-foreground">
-              R$ {(metrics.orcado_value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-            </p>
-          </Card>
-
-          <Card className="p-6 space-y-2 hover:shadow-xl transition-all duration-300 border-l-4 border-l-cyan-500">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-muted-foreground">Apresentado {getPeriodLabel()}</span>
-              <span className="text-2xl">📊</span>
-            </div>
-            <p className="text-3xl font-bold text-cyan-600">{metrics.apresentado_count}</p>
-            <p className="text-sm text-muted-foreground">
-              R$ {(metrics.apresentado_value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-            </p>
-          </Card>
-
-          <Card className="p-6 space-y-2 hover:shadow-xl transition-all duration-300 border-l-4 border-l-orange-500">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-muted-foreground">Em Negociação {getPeriodLabel()}</span>
-              <span className="text-2xl">🤝</span>
-            </div>
-            <p className="text-3xl font-bold text-orange-600">{metrics.em_negociacao_count}</p>
-          </Card>
-        </div>
+        {/* KPIs Clicáveis */}
+        <TooltipProvider>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            {KPI_CONFIGS.map((kpi) => (
+              <Tooltip key={kpi.key}>
+                <TooltipTrigger asChild>
+                  <Card 
+                    className={`p-6 space-y-2 hover:shadow-xl transition-all duration-300 border-l-4 ${kpi.borderColor} cursor-pointer hover:scale-[1.02] hover:ring-2 hover:ring-primary/20 group relative`}
+                    onClick={() => handleKPIClick(kpi)}
+                  >
+                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <MousePointerClick className="w-4 h-4 text-muted-foreground" />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-muted-foreground">{kpi.label} {getPeriodLabel()}</span>
+                      <span className="text-2xl">{kpi.icon}</span>
+                    </div>
+                    <p className={`text-3xl font-bold ${kpi.textColor}`}>
+                      {getMetricCount(kpi.key)}
+                    </p>
+                    {kpi.showValue && (
+                      <p className="text-sm text-muted-foreground">
+                        R$ {(getMetricValue(kpi.key) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </p>
+                    )}
+                  </Card>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Clique para ver detalhes</p>
+                </TooltipContent>
+              </Tooltip>
+            ))}
+          </div>
+        </TooltipProvider>
 
         {/* Deadline Alerts - agora com click funcional */}
         <DeadlineAlerts refreshKey={refreshKey} onProjectClick={handleAlertProjectClick} />
@@ -284,7 +328,8 @@ const Projects = () => {
           </TabsList>
 
           <TabsContent value="board" className="space-y-6">
-            <ProjectsBoard key={refreshKey} filters={filters} />
+            {/* Kanban recebe apenas filtros de visualização (sem período) */}
+            <ProjectsBoard key={refreshKey} filters={boardFilters} />
           </TabsContent>
 
           <TabsContent value="table" className="space-y-6">
@@ -310,6 +355,21 @@ const Projects = () => {
           onOpenChange={setAlertDetailOpen}
           onSuccess={handleRefresh}
         />
+
+        {/* KPI Detail Dialog */}
+        {selectedKPI && (
+          <KPIDetailDialog
+            open={kpiDetailOpen}
+            onOpenChange={setKpiDetailOpen}
+            stage={selectedKPI.stage}
+            stageLabel={selectedKPI.label}
+            stageIcon={selectedKPI.icon}
+            dateFrom={dateFrom}
+            dateTo={dateTo}
+            periodLabel={getPeriodLabel()}
+            onRefresh={handleRefresh}
+          />
+        )}
       </div>
     </DashboardLayout>
   );
