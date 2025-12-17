@@ -20,7 +20,7 @@ interface KPIConfig {
   key: string;
   label: string;
   icon: string;
-  stage: string;
+  stage: string | string[];
   borderColor: string;
   textColor: string;
   showValue?: boolean;
@@ -270,7 +270,21 @@ const Projects = () => {
         </div>
 
         {/* KPI Valor Total Orçado - Destaque Principal */}
-        <Card className="p-6 space-y-2 hover:shadow-xl transition-all duration-300 border-2 border-primary bg-gradient-to-r from-primary/10 via-primary/5 to-transparent">
+        <Card 
+          className="p-6 space-y-2 hover:shadow-xl transition-all duration-300 border-2 border-primary bg-gradient-to-r from-primary/10 via-primary/5 to-transparent cursor-pointer hover:scale-[1.01] group relative"
+          onClick={() => handleKPIClick({
+            key: 'total_orcado',
+            label: 'Valor Total Orçado',
+            icon: '💰',
+            stage: ['orcado', 'apresentado', 'em_negociacao'],
+            borderColor: 'border-primary',
+            textColor: 'text-primary',
+            showValue: true
+          })}
+        >
+          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <MousePointerClick className="w-4 h-4 text-muted-foreground" />
+          </div>
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-muted-foreground">💰 Valor Total Orçado {getPeriodLabel()}</span>
             <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
@@ -281,7 +295,7 @@ const Projects = () => {
             R$ {(metrics.total_orcado_value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </p>
           <p className="text-xs text-muted-foreground">
-            Soma de: Orçado + Apresentado + Em Negociação
+            Soma de: Orçado + Apresentado + Em Negociação • Clique para ver detalhes
           </p>
         </Card>
 
