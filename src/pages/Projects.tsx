@@ -29,11 +29,10 @@ const Projects = () => {
     recebido_count: 0,
     em_orcamento_count: 0,
     orcado_count: 0,
+    orcado_value: 0,
     apresentado_count: 0,
+    apresentado_value: 0,
     em_negociacao_count: 0,
-    aprovado_count: 0,
-    aprovado_value: 0,
-    perdido_count: 0,
     near_due_count: 0,
     overdue_count: 0,
     total_value: 0
@@ -218,7 +217,7 @@ const Projects = () => {
         </Card>
 
         {/* KPIs */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-8 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           <Card className="p-6 space-y-2 hover:shadow-xl transition-all duration-300 border-l-4 border-l-blue-500">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium text-muted-foreground">Recebidos {getPeriodLabel()}</span>
@@ -241,6 +240,9 @@ const Projects = () => {
               <span className="text-2xl">💰</span>
             </div>
             <p className="text-3xl font-bold text-indigo-600">{metrics.orcado_count}</p>
+            <p className="text-sm text-muted-foreground">
+              R$ {(metrics.orcado_value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            </p>
           </Card>
 
           <Card className="p-6 space-y-2 hover:shadow-xl transition-all duration-300 border-l-4 border-l-cyan-500">
@@ -249,6 +251,9 @@ const Projects = () => {
               <span className="text-2xl">📊</span>
             </div>
             <p className="text-3xl font-bold text-cyan-600">{metrics.apresentado_count}</p>
+            <p className="text-sm text-muted-foreground">
+              R$ {(metrics.apresentado_value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            </p>
           </Card>
 
           <Card className="p-6 space-y-2 hover:shadow-xl transition-all duration-300 border-l-4 border-l-orange-500">
@@ -257,32 +262,6 @@ const Projects = () => {
               <span className="text-2xl">🤝</span>
             </div>
             <p className="text-3xl font-bold text-orange-600">{metrics.em_negociacao_count}</p>
-          </Card>
-
-          <Card className="p-6 space-y-2 hover:shadow-xl transition-all duration-300 border-l-4 border-l-green-500">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-muted-foreground">Aprovados {getPeriodLabel()}</span>
-              <span className="text-2xl">✅</span>
-            </div>
-            <p className="text-3xl font-bold text-green-600">{metrics.aprovado_count}</p>
-          </Card>
-
-          <Card className="p-6 space-y-2 hover:shadow-xl transition-all duration-300 border-l-4 border-l-green-700">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-muted-foreground">Valor Aprovado {getPeriodLabel()}</span>
-              <span className="text-2xl">💵</span>
-            </div>
-            <p className="text-2xl font-bold text-green-700">
-              R$ {(metrics.aprovado_value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-            </p>
-          </Card>
-
-          <Card className="p-6 space-y-2 hover:shadow-xl transition-all duration-300 border-l-4 border-l-red-500">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-muted-foreground">Perdidos {getPeriodLabel()}</span>
-              <span className="text-2xl">❌</span>
-            </div>
-            <p className="text-3xl font-bold text-red-600">{metrics.perdido_count}</p>
           </Card>
         </div>
 
