@@ -2,12 +2,13 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
-import { CheckCircle, Clock, ChevronDown } from "lucide-react";
+import { CheckCircle, Clock, ChevronDown, TrendingUp, TrendingDown, Trophy, Minus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DealDetailSheet } from "./DealDetailSheet";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useAuth } from "@/contexts/AuthContext";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface CRMTasksPanelProps {
   pipelineId: string;
@@ -16,6 +17,13 @@ interface CRMTasksPanelProps {
   searchQuery?: string;
   dateFilter?: string;
   customDateRange?: { from: Date | undefined; to: Date | undefined };
+}
+
+interface CompletedStats {
+  thisMonth: number;
+  lastMonth: number;
+  bestMonth: { count: number; month: string };
+  loading: boolean;
 }
 
 export function CRMTasksPanel({ 
@@ -36,9 +44,16 @@ export function CRMTasksPanel({
     diarias: false,
     futuras: false,
   });
+  const [completedStats, setCompletedStats] = useState<CompletedStats>({
+    thisMonth: 0,
+    lastMonth: 0,
+    bestMonth: { count: 0, month: '' },
+    loading: true
+  });
 
   useEffect(() => {
     fetchTasks();
+    fetchCompletedStats();
 
     // Realtime subscription com debounce
     let debounceTimeout: NodeJS.Timeout;
@@ -55,6 +70,7 @@ export function CRMTasksPanel({
           clearTimeout(debounceTimeout);
           debounceTimeout = setTimeout(() => {
             fetchTasks();
+            fetchCompletedStats();
           }, 500);
         }
       )
@@ -65,6 +81,68 @@ export function CRMTasksPanel({
       supabase.removeChannel(channel);
     };
   }, [pipelineId, categoryFilter, ownerFilter, searchQuery]);
+
+  const fetchCompletedStats = async () => {
+    setCompletedStats(prev => ({ ...prev, loading: true }));
+    
+    const now = new Date();
+    const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+
+    // Buscar tarefas concluídas deste mês
+    const { data: thisMonthData } = await supabase
+      .from("crm_tasks")
+      .select("id", { count: "exact" })
+      .eq("status", "done")
+      .gte("updated_at", startOfThisMonth.toISOString());
+
+    // Buscar tarefas concluídas do mês passado
+    const { data: lastMonthData } = await supabase
+      .from("crm_tasks")
+      .select("id", { count: "exact" })
+      .eq("status", "done")
+      .gte("updated_at", startOfLastMonth.toISOString())
+      .lte("updated_at", endOfLastMonth.toISOString());
+
+    // Buscar todas as tarefas concluídas para calcular o melhor mês
+    const { data: allCompletedTasks } = await supabase
+      .from("crm_tasks")
+      .select("updated_at")
+      .eq("status", "done");
+
+    // Calcular melhor mês
+    const monthCounts: { [key: string]: number } = {};
+    allCompletedTasks?.forEach(task => {
+      const date = new Date(task.updated_at);
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      monthCounts[monthKey] = (monthCounts[monthKey] || 0) + 1;
+    });
+
+    let bestMonthKey = '';
+    let bestMonthCount = 0;
+    Object.entries(monthCounts).forEach(([month, count]) => {
+      if (count > bestMonthCount) {
+        bestMonthCount = count;
+        bestMonthKey = month;
+      }
+    });
+
+    // Formatar nome do melhor mês
+    let bestMonthName = '';
+    if (bestMonthKey) {
+      const [year, month] = bestMonthKey.split('-');
+      const date = new Date(parseInt(year), parseInt(month) - 1, 1);
+      bestMonthName = date.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
+    }
+
+    setCompletedStats({
+      thisMonth: thisMonthData?.length || 0,
+      lastMonth: lastMonthData?.length || 0,
+      bestMonth: { count: bestMonthCount, month: bestMonthName },
+      loading: false
+    });
+  };
 
   const fetchTasks = async () => {
     setLoading(true);
@@ -276,6 +354,14 @@ export function CRMTasksPanel({
     );
   };
 
+  const variation = completedStats.lastMonth > 0 
+    ? ((completedStats.thisMonth - completedStats.lastMonth) / completedStats.lastMonth) * 100 
+    : completedStats.thisMonth > 0 ? 100 : 0;
+  
+  const isNewRecord = completedStats.thisMonth > 0 && completedStats.thisMonth >= completedStats.bestMonth.count;
+  const currentMonthKey = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+  const bestMonthDate = completedStats.bestMonth.month ? new Date(completedStats.bestMonth.month) : null;
+
   if (loading) {
     return (
       <Card>
@@ -293,6 +379,84 @@ export function CRMTasksPanel({
     <>
       <div className="space-y-4">
         <h2 className="text-2xl font-bold">Tarefas</h2>
+        
+        {/* Métricas Comparativas de Tarefas Concluídas */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Este Mês */}
+          <Card className="border-primary/20">
+            <CardContent className="pt-4">
+              {completedStats.loading ? (
+                <Skeleton className="h-16 w-full" />
+              ) : (
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground font-medium">Concluídas Este Mês</p>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-5 w-5 text-primary" />
+                    <span className="text-2xl font-bold">{completedStats.thisMonth}</span>
+                    {completedStats.lastMonth > 0 && (
+                      <div className={`flex items-center text-xs ${variation >= 0 ? 'text-green-600' : 'text-destructive'}`}>
+                        {variation > 0 ? (
+                          <TrendingUp className="h-3 w-3 mr-0.5" />
+                        ) : variation < 0 ? (
+                          <TrendingDown className="h-3 w-3 mr-0.5" />
+                        ) : (
+                          <Minus className="h-3 w-3 mr-0.5" />
+                        )}
+                        {variation > 0 ? '+' : ''}{variation.toFixed(1)}%
+                      </div>
+                    )}
+                  </div>
+                  {isNewRecord && (
+                    <Badge variant="default" className="bg-amber-500 hover:bg-amber-600 text-xs">
+                      <Trophy className="h-3 w-3 mr-1" />
+                      Novo Recorde!
+                    </Badge>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Mês Anterior */}
+          <Card>
+            <CardContent className="pt-4">
+              {completedStats.loading ? (
+                <Skeleton className="h-16 w-full" />
+              ) : (
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground font-medium">Concluídas Mês Anterior</p>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-5 w-5 text-muted-foreground" />
+                    <span className="text-2xl font-bold">{completedStats.lastMonth}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1).toLocaleDateString('pt-BR', { month: 'long' })}
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Melhor Mês */}
+          <Card className="border-amber-500/30 bg-amber-500/5">
+            <CardContent className="pt-4">
+              {completedStats.loading ? (
+                <Skeleton className="h-16 w-full" />
+              ) : (
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground font-medium">Melhor Mês Histórico</p>
+                  <div className="flex items-center gap-2">
+                    <Trophy className="h-5 w-5 text-amber-500" />
+                    <span className="text-2xl font-bold">{completedStats.bestMonth.count}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground capitalize">
+                    {completedStats.bestMonth.month || 'Sem dados'}
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* TODAS */}
