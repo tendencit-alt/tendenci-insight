@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import { OrdersKPIs } from '@/components/orders/OrdersKPIs';
 import { OrdersFilters } from '@/components/orders/OrdersFilters';
 import { OrdersTable } from '@/components/orders/OrdersTable';
@@ -71,8 +72,9 @@ export default function Orders() {
   });
 
   return (
-    <DashboardLayout>
-      <div className="space-y-4 p-4">
+    <PermissionGuard module="pedidos">
+      <DashboardLayout>
+        <div className="space-y-4 p-4">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">Pedidos</h1>
           <Button onClick={() => setCreateOpen(true)}>
@@ -137,5 +139,6 @@ export default function Orders() {
         )}
       </div>
     </DashboardLayout>
+    </PermissionGuard>
   );
 }

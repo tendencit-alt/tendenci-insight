@@ -16,7 +16,8 @@ export type AppModule =
   | 'producao'
   | 'fornecedores'
   | 'estoque'
-  | 'compras';
+  | 'compras'
+  | 'pedidos';
 
 export interface ModulePermission {
   module: AppModule;
@@ -74,7 +75,8 @@ export function usePermissions() {
             'producao',
             'fornecedores',
             'estoque',
-            'compras'
+            'compras',
+            'pedidos'
           ];
 
           setPermissions({
@@ -167,7 +169,8 @@ export function usePermissions() {
               'producao',
               'fornecedores',
               'estoque',
-              'compras'
+              'compras',
+              'pedidos'
             ];
 
             setPermissions({
