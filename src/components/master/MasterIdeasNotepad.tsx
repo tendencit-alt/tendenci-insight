@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Lightbulb, Plus, Pencil, Trash2, Check, X, CheckCircle2, XCircle, Clock, Sparkles, Image, Mic, Loader2, Save } from 'lucide-react';
+import { Lightbulb, Plus, Pencil, Trash2, Check, X, CheckCircle2, XCircle, Clock, Sparkles, Image, Mic, Loader2, Save, ArrowUpDown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -18,9 +18,15 @@ import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { IdeaImageUpload, ImagePreview } from './IdeaImageUpload';
 import { IdeaAudioRecorder, AudioPreview } from './IdeaAudioRecorder';
+import { IdeaRating } from './IdeaRating';
+import { IdeaComments } from './IdeaComments';
+
+// Emails autorizados a excluir ideias
+const AUTHORIZED_DELETE_EMAILS = ['csoares_felipe@hotmail.com', 'matheus@tendenci.com.br'];
 
 type IdeaStatus = 'em_pauta' | 'aprovada' | 'recusada' | 'implementada';
 type IdeaCategoria = 'marketing' | 'producao' | 'vendas' | 'financeiro' | 'geral';
+type SortOption = 'date' | 'rating' | 'comments';
 
 interface Attachment {
   id?: string;
@@ -44,6 +50,8 @@ interface Idea {
   aprovado_em: string | null;
   motivo_recusa: string | null;
   attachments: Attachment[];
+  averageRating?: number;
+  totalComments?: number;
   author?: {
     full_name: string;
     avatar_url: string | null;
@@ -69,6 +77,12 @@ const CATEGORIA_CONFIG: Record<IdeaCategoria, { label: string; color: string }> 
   geral: { label: 'Geral', color: 'bg-muted-foreground text-white' },
 };
 
+const SORT_OPTIONS: Record<SortOption, string> = {
+  date: 'Mais Recentes',
+  rating: 'Melhor Avaliadas',
+  comments: 'Mais Comentadas',
+};
+
 export function MasterIdeasNotepad() {
   const { user, profile } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
@@ -76,6 +90,7 @@ export function MasterIdeasNotepad() {
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<IdeaStatus>('em_pauta');
   const [filterCategoria, setFilterCategoria] = useState<IdeaCategoria | 'all'>('all');
+  const [sortBy, setSortBy] = useState<SortOption>('date');
   
   // Form states
   const [newTitle, setNewTitle] = useState('');
@@ -98,12 +113,33 @@ export function MasterIdeasNotepad() {
   const editTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   const isAdmin = profile?.role === 'admin';
+  const canDelete = profile?.email && AUTHORIZED_DELETE_EMAILS.includes(profile.email);
 
   useEffect(() => {
     if (isOpen && user) {
       fetchIdeas();
+      setupRealtimeSubscription();
     }
   }, [isOpen, user]);
+
+  const setupRealtimeSubscription = () => {
+    const channel = supabase
+      .channel('brainstorm-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'master_ideas' }, () => {
+        fetchIdeas();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'master_idea_ratings' }, () => {
+        fetchIdeas();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'master_idea_comments' }, () => {
+        fetchIdeas();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  };
 
   const fetchIdeas = async () => {
     setIsLoading(true);
@@ -115,7 +151,7 @@ export function MasterIdeasNotepad() {
 
       if (error) throw error;
 
-      // Fetch authors and attachments
+      // Fetch authors, attachments, ratings, and comments count
       const ideasWithDetails = await Promise.all(
         (ideasData || []).map(async (idea) => {
           // Fetch author
@@ -155,11 +191,29 @@ export function MasterIdeasNotepad() {
             transcription: att.transcription || undefined,
           }));
 
+          // Fetch ratings
+          const { data: ratingsData } = await supabase
+            .from('master_idea_ratings')
+            .select('rating')
+            .eq('idea_id', idea.id);
+
+          const averageRating = ratingsData && ratingsData.length > 0
+            ? ratingsData.reduce((sum, r) => sum + r.rating, 0) / ratingsData.length
+            : 0;
+
+          // Fetch comments count
+          const { count: commentsCount } = await supabase
+            .from('master_idea_comments')
+            .select('*', { count: 'exact', head: true })
+            .eq('idea_id', idea.id);
+
           return {
             ...idea,
             status: (idea.status || 'em_pauta') as IdeaStatus,
             categoria: (idea.categoria || 'geral') as IdeaCategoria,
             attachments,
+            averageRating,
+            totalComments: commentsCount || 0,
             author,
             approver,
           };
@@ -431,16 +485,27 @@ export function MasterIdeasNotepad() {
     setAttachments(prev => prev.filter((_, i) => i !== index));
   };
 
-  const filteredIdeas = ideas.filter(idea => {
-    const matchesStatus = idea.status === activeTab;
-    const matchesCategoria = filterCategoria === 'all' || idea.categoria === filterCategoria;
-    return matchesStatus && matchesCategoria;
-  });
+  const sortedAndFilteredIdeas = ideas
+    .filter(idea => {
+      const matchesStatus = idea.status === activeTab;
+      const matchesCategoria = filterCategoria === 'all' || idea.categoria === filterCategoria;
+      return matchesStatus && matchesCategoria;
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case 'rating':
+          return (b.averageRating || 0) - (a.averageRating || 0);
+        case 'comments':
+          return (b.totalComments || 0) - (a.totalComments || 0);
+        case 'date':
+        default:
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      }
+    });
 
   const countByStatus = (status: IdeaStatus) => ideas.filter(i => i.status === status).length;
 
   const canEdit = (idea: Idea) => idea.created_by === user?.id || isAdmin;
-  const canDelete = isAdmin;
 
   if (!user) return null;
 
@@ -475,13 +540,24 @@ export function MasterIdeasNotepad() {
 
           <div className="px-4 py-3 flex gap-2">
             <Select value={filterCategoria} onValueChange={(v) => setFilterCategoria(v as IdeaCategoria | 'all')}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Filtrar categoria" />
+              <SelectTrigger className="w-[150px]">
+                <SelectValue placeholder="Categoria" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todas Categorias</SelectItem>
+                <SelectItem value="all">Todas</SelectItem>
                 {Object.entries(CATEGORIA_CONFIG).map(([key, config]) => (
                   <SelectItem key={key} value={key}>{config.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
+              <SelectTrigger className="w-[160px]">
+                <ArrowUpDown className="h-3 w-3 mr-2" />
+                <SelectValue placeholder="Ordenar" />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(SORT_OPTIONS).map(([key, label]) => (
+                  <SelectItem key={key} value={key}>{label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -569,12 +645,12 @@ export function MasterIdeasNotepad() {
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                 </div>
-              ) : filteredIdeas.length === 0 ? (
+              ) : sortedAndFilteredIdeas.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   Nenhuma ideia {STATUS_CONFIG[activeTab].label.toLowerCase()}
                 </div>
               ) : (
-                filteredIdeas.map((idea) => (
+                sortedAndFilteredIdeas.map((idea) => (
                   <Card key={idea.id} className="relative">
                     <CardContent className="p-4">
                       {editingId === idea.id ? (
@@ -654,6 +730,11 @@ export function MasterIdeasNotepad() {
                             </Badge>
                             <h4 className="font-semibold flex-1">{idea.title}</h4>
                           </div>
+
+                          {/* Star Rating */}
+                          <div className="mb-2">
+                            <IdeaRating ideaId={idea.id} onRatingChange={fetchIdeas} />
+                          </div>
                           
                           {idea.content && (
                             <p className="text-sm text-muted-foreground mb-3 whitespace-pre-wrap">
@@ -708,6 +789,11 @@ export function MasterIdeasNotepad() {
                               {idea.aprovado_em && ` em ${new Date(idea.aprovado_em).toLocaleDateString('pt-BR')}`}
                             </div>
                           )}
+
+                          {/* Comments Section */}
+                          <div className="mb-3">
+                            <IdeaComments ideaId={idea.id} onCommentChange={fetchIdeas} />
+                          </div>
 
                           {/* Actions */}
                           <div className="flex flex-wrap gap-2">
