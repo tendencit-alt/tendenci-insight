@@ -178,13 +178,13 @@ export function UserPermissionsDialog({
         .delete()
         .eq('user_id', userId);
 
-      // Inserir novas permissões
+      // Inserir novas permissões (cast para any devido ao tipo gerado do Supabase não incluir novos módulos ainda)
       const { error } = await supabase
         .from('user_permissions')
         .insert(
           permissions.map(p => ({
             user_id: userId,
-            module: p.module,
+            module: p.module as any,
             can_view: p.can_view,
             can_create: p.can_create,
             can_edit: p.can_edit,
