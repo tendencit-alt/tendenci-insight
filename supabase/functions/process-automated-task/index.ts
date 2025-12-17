@@ -692,7 +692,7 @@ async function processProspeccaoTask(supabase: any, evolutionUrl: string, evolut
       architect_id: task.architect_id,
       author_id: task.vendedor_id,
       message: `📤 Mensagem automatizada enviada: "${message}"`,
-      update_type: 'Sistema'
+      update_type: 'Comentário Interno'
     })
 
   if (timelineError) {
@@ -703,7 +703,7 @@ async function processProspeccaoTask(supabase: any, evolutionUrl: string, evolut
       .insert({
         architect_id: task.architect_id,
         message: `📤 Mensagem automatizada enviada`,
-        update_type: 'Sistema'
+        update_type: 'Comentário Interno'
       })
     
     if (retryError) {
