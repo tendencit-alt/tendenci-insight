@@ -32,6 +32,8 @@ const KPI_CONFIGS: KPIConfig[] = [
   { key: 'orcado', label: 'Orçado', icon: '💰', stage: 'orcado', borderColor: 'border-l-indigo-500', textColor: 'text-indigo-600', showValue: true },
   { key: 'apresentado', label: 'Apresentado', icon: '📊', stage: 'apresentado', borderColor: 'border-l-cyan-500', textColor: 'text-cyan-600', showValue: true },
   { key: 'em_negociacao', label: 'Em Negociação', icon: '🤝', stage: 'em_negociacao', borderColor: 'border-l-orange-500', textColor: 'text-orange-600' },
+  { key: 'aprovado', label: 'Aprovado', icon: '✅', stage: 'aprovado', borderColor: 'border-l-green-500', textColor: 'text-green-600', showValue: true },
+  { key: 'perdido', label: 'Perdido', icon: '❌', stage: 'perdido', borderColor: 'border-l-red-500', textColor: 'text-red-600', showValue: true },
 ];
 
 const Projects = () => {
@@ -53,6 +55,10 @@ const Projects = () => {
     apresentado_count: 0,
     apresentado_value: 0,
     em_negociacao_count: 0,
+    aprovado_count: 0,
+    aprovado_value: 0,
+    perdido_count: 0,
+    perdido_value: 0,
     near_due_count: 0,
     overdue_count: 0,
     total_value: 0
@@ -210,6 +216,8 @@ const Projects = () => {
       case 'orcado': return metrics.orcado_count;
       case 'apresentado': return metrics.apresentado_count;
       case 'em_negociacao': return metrics.em_negociacao_count;
+      case 'aprovado': return metrics.aprovado_count;
+      case 'perdido': return metrics.perdido_count;
       default: return 0;
     }
   };
@@ -218,6 +226,8 @@ const Projects = () => {
     switch (key) {
       case 'orcado': return metrics.orcado_value;
       case 'apresentado': return metrics.apresentado_value;
+      case 'aprovado': return metrics.aprovado_value;
+      case 'perdido': return metrics.perdido_value;
       default: return 0;
     }
   };
@@ -276,7 +286,7 @@ const Projects = () => {
 
         {/* KPIs Clicáveis */}
         <TooltipProvider>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-4">
             {KPI_CONFIGS.map((kpi) => (
               <Tooltip key={kpi.key}>
                 <TooltipTrigger asChild>

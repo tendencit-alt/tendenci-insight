@@ -5414,12 +5414,16 @@ export type Database = {
         Returns: {
           apresentado_count: number
           apresentado_value: number
+          aprovado_count: number
+          aprovado_value: number
           em_negociacao_count: number
           em_orcamento_count: number
           near_due_count: number
           orcado_count: number
           orcado_value: number
           overdue_count: number
+          perdido_count: number
+          perdido_value: number
           recebido_count: number
           total_value: number
         }[]
