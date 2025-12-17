@@ -231,7 +231,7 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
                   architect_id: architectId,
                   author_id: user.id,
                   message: "📤 Tarefa automatizada executada (registro retroativo)",
-                  update_type: "Sistema"
+                  update_type: "Comentário Interno"
                 });
               }
             }
