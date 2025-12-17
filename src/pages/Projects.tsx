@@ -115,7 +115,7 @@ const Projects = () => {
       params.p_date_to = dateTo.toISOString();
     }
 
-    const { data, error } = await supabase.rpc('projects_metrics_filtered', params);
+    const { data, error } = await supabase.rpc('projects_metrics_by_history', params);
     
     if (!error && data && data.length > 0) {
       setMetrics(data[0] as any);
