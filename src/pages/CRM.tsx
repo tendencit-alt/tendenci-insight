@@ -306,10 +306,9 @@ export default function CRM() {
                   search: searchQuery,
                   status: selectedStatus,
                   category: selectedCategory,
-                  showPlanned: showPlanned,
-                  dateFilter,
-                  customDateRange
-                }} 
+                  showPlanned: showPlanned
+                  // Filtros de data removidos - afetam apenas KPIs
+                }}
               />
             </div>
           </>
