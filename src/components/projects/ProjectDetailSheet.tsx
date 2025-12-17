@@ -94,7 +94,26 @@ export function ProjectDetailSheet({ project, open, onOpenChange, onSuccess }: P
       .order('created_at', { ascending: true });
 
     if (!error && data) {
-      setHistory(data);
+      // Fetch user names for each history entry
+      const userIds = [...new Set(data.filter(e => e.created_by).map(e => e.created_by))];
+      
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, full_name')
+          .in('id', userIds);
+        
+        const profileMap = new Map(profiles?.map(p => [p.id, p.full_name]) || []);
+        
+        const historyWithUsers = data.map(event => ({
+          ...event,
+          user_name: event.created_by ? profileMap.get(event.created_by) : null
+        }));
+        
+        setHistory(historyWithUsers);
+      } else {
+        setHistory(data);
+      }
     }
   };
 
@@ -477,14 +496,20 @@ export function ProjectDetailSheet({ project, open, onOpenChange, onSuccess }: P
             <h3 className="font-semibold text-lg">Histórico do Projeto</h3>
             {history.length > 0 ? (
               <div className="space-y-4">
-                {history.map((event) => (
+                {history.map((event: any) => (
                   <div key={event.id} className="flex gap-3">
                     <div className="w-2 h-2 bg-primary rounded-full mt-2" />
                     <div className="flex-1">
                       <p className="font-medium text-sm">{event.description}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatDistanceToNow(new Date(event.created_at), { addSuffix: true, locale: ptBR })}
-                      </p>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span>{formatDistanceToNow(new Date(event.created_at), { addSuffix: true, locale: ptBR })}</span>
+                        {event.user_name && (
+                          <>
+                            <span>•</span>
+                            <span className="font-medium">{event.user_name}</span>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
