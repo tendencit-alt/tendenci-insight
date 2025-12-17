@@ -1,5 +1,6 @@
 import { AppNavbar } from "./AppNavbar";
 import { TendenciAssistant } from "@/components/ai/TendenciAssistant";
+import { MasterIdeasNotepad } from "@/components/master/MasterIdeasNotepad";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -15,6 +16,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       </main>
       
       <TendenciAssistant />
+      <MasterIdeasNotepad />
     </div>
   );
 }
