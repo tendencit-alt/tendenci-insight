@@ -670,7 +670,7 @@ async function processProspeccaoTask(supabase: any, evolutionUrl: string, evolut
   console.log('✅ Tarefa de prospecção marcada como "concluida"')
 
   // Registrar no histórico do arquiteto
-  await supabase
+  const { error: historyError } = await supabase
     .from('architect_history')
     .insert({
       architect_id: task.architect_id,
@@ -679,8 +679,14 @@ async function processProspeccaoTask(supabase: any, evolutionUrl: string, evolut
       created_by: task.vendedor_id
     })
 
-  // Registrar na timeline do arquiteto
-  await supabase
+  if (historyError) {
+    console.error('⚠️ Erro ao inserir no histórico (não crítico):', historyError)
+  } else {
+    console.log('✅ Log registrado no histórico do arquiteto')
+  }
+
+  // CRÍTICO: Registrar na timeline do arquiteto (necessário para validação de 36h)
+  const { error: timelineError } = await supabase
     .from('architect_timeline')
     .insert({
       architect_id: task.architect_id,
@@ -689,7 +695,25 @@ async function processProspeccaoTask(supabase: any, evolutionUrl: string, evolut
       update_type: 'Sistema'
     })
 
-  console.log('✅ Log registrado no histórico e timeline do arquiteto')
+  if (timelineError) {
+    console.error('❌ ERRO CRÍTICO ao inserir na timeline:', timelineError)
+    // Tentar novamente com campos mínimos
+    const { error: retryError } = await supabase
+      .from('architect_timeline')
+      .insert({
+        architect_id: task.architect_id,
+        message: `📤 Mensagem automatizada enviada`,
+        update_type: 'Sistema'
+      })
+    
+    if (retryError) {
+      console.error('❌ Retry também falhou:', retryError)
+    } else {
+      console.log('✅ Timeline registrada no retry (sem author_id)')
+    }
+  } else {
+    console.log('✅ Timeline do arquiteto atualizada com sucesso')
+  }
 
   return { 
     success: true,
