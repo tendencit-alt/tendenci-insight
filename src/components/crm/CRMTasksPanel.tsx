@@ -26,6 +26,13 @@ interface CompletedStats {
   loading: boolean;
 }
 
+interface DealsStats {
+  thisMonth: number;
+  lastMonth: number;
+  bestMonth: { count: number; month: string };
+  loading: boolean;
+}
+
 export function CRMTasksPanel({ 
   pipelineId, 
   categoryFilter, 
@@ -50,10 +57,17 @@ export function CRMTasksPanel({
     bestMonth: { count: 0, month: '' },
     loading: true
   });
+  const [dealsStats, setDealsStats] = useState<DealsStats>({
+    thisMonth: 0,
+    lastMonth: 0,
+    bestMonth: { count: 0, month: '' },
+    loading: true
+  });
 
   useEffect(() => {
     fetchTasks();
     fetchCompletedStats();
+    fetchDealsStats();
 
     // Realtime subscription com debounce
     let debounceTimeout: NodeJS.Timeout;
@@ -71,6 +85,20 @@ export function CRMTasksPanel({
           debounceTimeout = setTimeout(() => {
             fetchTasks();
             fetchCompletedStats();
+          }, 500);
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "crm_deals",
+        },
+        () => {
+          clearTimeout(debounceTimeout);
+          debounceTimeout = setTimeout(() => {
+            fetchDealsStats();
           }, 500);
         }
       )
@@ -146,6 +174,76 @@ export function CRMTasksPanel({
     }
 
     setCompletedStats({
+      thisMonth: thisMonthData?.length || 0,
+      lastMonth: lastMonthData?.length || 0,
+      bestMonth: { count: bestMonthCount, month: bestMonthName },
+      loading: false
+    });
+  };
+
+  const fetchDealsStats = async () => {
+    setDealsStats(prev => ({ ...prev, loading: true }));
+    
+    const now = new Date();
+    const currentDay = now.getDate();
+    
+    // Este mês: do dia 1 até hoje
+    const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    
+    // Mês anterior proporcional: do dia 1 até o mesmo dia do mês anterior
+    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const lastDayOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0).getDate();
+    const proportionalDay = Math.min(currentDay, lastDayOfLastMonth);
+    const endOfLastMonthProportional = new Date(now.getFullYear(), now.getMonth() - 1, proportionalDay, 23, 59, 59);
+
+    // Buscar deals criados neste mês (até hoje)
+    const { data: thisMonthData } = await supabase
+      .from("crm_deals")
+      .select("id", { count: "exact" })
+      .eq("pipeline_id", pipelineId)
+      .gte("created_at", startOfThisMonth.toISOString())
+      .lte("created_at", now.toISOString());
+
+    // Buscar deals criados do mês passado (período proporcional)
+    const { data: lastMonthData } = await supabase
+      .from("crm_deals")
+      .select("id", { count: "exact" })
+      .eq("pipeline_id", pipelineId)
+      .gte("created_at", startOfLastMonth.toISOString())
+      .lte("created_at", endOfLastMonthProportional.toISOString());
+
+    // Buscar todos os deals para calcular o melhor mês
+    const { data: allDeals } = await supabase
+      .from("crm_deals")
+      .select("created_at")
+      .eq("pipeline_id", pipelineId);
+
+    // Calcular melhor mês
+    const monthCounts: { [key: string]: number } = {};
+    allDeals?.forEach(deal => {
+      const date = new Date(deal.created_at);
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      monthCounts[monthKey] = (monthCounts[monthKey] || 0) + 1;
+    });
+
+    let bestMonthKey = '';
+    let bestMonthCount = 0;
+    Object.entries(monthCounts).forEach(([month, count]) => {
+      if (count > bestMonthCount) {
+        bestMonthCount = count;
+        bestMonthKey = month;
+      }
+    });
+
+    // Formatar nome do melhor mês
+    let bestMonthName = '';
+    if (bestMonthKey) {
+      const [year, month] = bestMonthKey.split('-');
+      const date = new Date(parseInt(year), parseInt(month) - 1, 1);
+      bestMonthName = date.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
+    }
+
+    setDealsStats({
       thisMonth: thisMonthData?.length || 0,
       lastMonth: lastMonthData?.length || 0,
       bestMonth: { count: bestMonthCount, month: bestMonthName },
@@ -368,8 +466,12 @@ export function CRMTasksPanel({
     : completedStats.thisMonth > 0 ? 100 : 0;
   
   const isNewRecord = completedStats.thisMonth > 0 && completedStats.thisMonth >= completedStats.bestMonth.count;
-  const currentMonthKey = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
-  const bestMonthDate = completedStats.bestMonth.month ? new Date(completedStats.bestMonth.month) : null;
+
+  const dealsVariation = dealsStats.lastMonth > 0 
+    ? ((dealsStats.thisMonth - dealsStats.lastMonth) / dealsStats.lastMonth) * 100 
+    : dealsStats.thisMonth > 0 ? 100 : 0;
+  
+  const isDealsNewRecord = dealsStats.thisMonth > 0 && dealsStats.thisMonth >= dealsStats.bestMonth.count;
 
   if (loading) {
     return (
@@ -464,6 +566,89 @@ export function CRMTasksPanel({
                   </div>
                   <p className="text-xs text-muted-foreground capitalize">
                     {completedStats.bestMonth.month || 'Sem dados'}
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Métricas Comparativas de Novos Negócios */}
+        <h3 className="text-lg font-semibold mt-6">Novos Negócios</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Este Mês */}
+          <Card className="border-blue-500/20">
+            <CardContent className="pt-4">
+              {dealsStats.loading ? (
+                <Skeleton className="h-16 w-full" />
+              ) : (
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground font-medium">
+                    Novos Este Mês (até dia {new Date().getDate()})
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-5 w-5 text-blue-500" />
+                    <span className="text-2xl font-bold">{dealsStats.thisMonth}</span>
+                    {dealsStats.lastMonth > 0 && (
+                      <div className={`flex items-center text-xs ${dealsVariation >= 0 ? 'text-green-600' : 'text-destructive'}`}>
+                        {dealsVariation > 0 ? (
+                          <TrendingUp className="h-3 w-3 mr-0.5" />
+                        ) : dealsVariation < 0 ? (
+                          <TrendingDown className="h-3 w-3 mr-0.5" />
+                        ) : (
+                          <Minus className="h-3 w-3 mr-0.5" />
+                        )}
+                        {dealsVariation > 0 ? '+' : ''}{dealsVariation.toFixed(1)}%
+                      </div>
+                    )}
+                  </div>
+                  {isDealsNewRecord && (
+                    <Badge variant="default" className="bg-blue-500 hover:bg-blue-600 text-xs">
+                      <Trophy className="h-3 w-3 mr-1" />
+                      Novo Recorde!
+                    </Badge>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Mês Anterior */}
+          <Card>
+            <CardContent className="pt-4">
+              {dealsStats.loading ? (
+                <Skeleton className="h-16 w-full" />
+              ) : (
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground font-medium">
+                    Mês Anterior (até dia {Math.min(new Date().getDate(), new Date(new Date().getFullYear(), new Date().getMonth(), 0).getDate())})
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-5 w-5 text-muted-foreground" />
+                    <span className="text-2xl font-bold">{dealsStats.lastMonth}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground capitalize">
+                    {new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1).toLocaleDateString('pt-BR', { month: 'long' })}
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Melhor Mês */}
+          <Card className="border-blue-500/30 bg-blue-500/5">
+            <CardContent className="pt-4">
+              {dealsStats.loading ? (
+                <Skeleton className="h-16 w-full" />
+              ) : (
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground font-medium">Melhor Mês Histórico</p>
+                  <div className="flex items-center gap-2">
+                    <Trophy className="h-5 w-5 text-blue-500" />
+                    <span className="text-2xl font-bold">{dealsStats.bestMonth.count}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground capitalize">
+                    {dealsStats.bestMonth.month || 'Sem dados'}
                   </p>
                 </div>
               )}
