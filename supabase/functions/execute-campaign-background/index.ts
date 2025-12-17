@@ -557,6 +557,27 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('💥 [MAIN] Erro geral:', error)
+    
+    // Log error to system_errors table
+    try {
+      const supabase = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      )
+      await supabase.from('system_errors').insert({
+        title: 'Erro crítico no execute-campaign-background',
+        description: error instanceof Error ? error.message : 'Erro desconhecido',
+        module: 'campanhas',
+        severity: 'critical',
+        source: 'edge_function',
+        stack_trace: error instanceof Error ? error.stack : null,
+        metadata: { function: 'execute-campaign-background' },
+        status: 'open'
+      })
+    } catch (logErr) {
+      console.error('❌ Falha ao logar erro:', logErr)
+    }
+    
     return new Response(
       JSON.stringify({ 
         success: false,
