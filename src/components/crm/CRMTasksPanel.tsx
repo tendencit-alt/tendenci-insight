@@ -173,7 +173,7 @@ export function CRMTasksPanel({
         )
       `)
       .in("deal_id", dealIds)
-      .eq("status", "open")
+      .in("status", ["open", "pendente"])
       .order("due_at", { ascending: true });
 
     if (error) {
