@@ -128,13 +128,9 @@ export function CRMKPIs({
         negociacaoQuery = negociacaoQuery.eq("owner_id", ownerFilter);
       }
 
-      // Filtrar por data
-      if (dateRange.from) {
-        negociacaoQuery = negociacaoQuery.gte("created_at", dateRange.from);
-      }
-      if (dateRange.to) {
-        negociacaoQuery = negociacaoQuery.lte("created_at", dateRange.to);
-      }
+      // NOTA: NÃO aplicamos filtro de data para "Em Negociação"
+      // Este KPI sempre mostra o valor ATUAL de todos os deals em negociação
+      // independente do período selecionado, pois representa o estado atual do pipeline
       
       const { data: negociacaoDeals } = await negociacaoQuery;
       
