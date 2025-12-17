@@ -149,7 +149,10 @@ export type Database = {
           created_by: string | null
           description: string
           event_type: string
+          field_name: string | null
           id: string
+          new_value: string | null
+          old_value: string | null
         }
         Insert: {
           architect_id: string
@@ -157,7 +160,10 @@ export type Database = {
           created_by?: string | null
           description: string
           event_type: string
+          field_name?: string | null
           id?: string
+          new_value?: string | null
+          old_value?: string | null
         }
         Update: {
           architect_id?: string
@@ -165,7 +171,10 @@ export type Database = {
           created_by?: string | null
           description?: string
           event_type?: string
+          field_name?: string | null
           id?: string
+          new_value?: string | null
+          old_value?: string | null
         }
         Relationships: [
           {
