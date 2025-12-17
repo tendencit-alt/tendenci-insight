@@ -122,9 +122,7 @@ const Projects = () => {
     // Build RPC params
     const params: any = {};
 
-    if (filters.stages && filters.stages.length > 0) {
-      params.p_stages = filters.stages;
-    }
+    // Stages filter removed - RPC now handles all stages internally
 
     if (filters.architect && filters.architect !== "Todos") {
       if (filters.architect === "sem-arquiteto") {
@@ -143,8 +141,8 @@ const Projects = () => {
 
     const { data, error } = await supabase.rpc('projects_metrics_by_history', params);
     
-    if (!error && data && data.length > 0) {
-      setMetrics(data[0] as any);
+    if (!error && data) {
+      setMetrics(data as any);
     }
   }, [filters, getDateRange]);
 
