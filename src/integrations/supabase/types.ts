@@ -5428,6 +5428,8 @@ export type Database = {
           perdido_value: number
           recebido_count: number
           recebido_value: number
+          total_orcado_count: number
+          total_orcado_value: number
           total_value: number
         }[]
       }
