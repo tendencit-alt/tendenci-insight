@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, Calendar, X } from "lucide-react";
+import { AlertTriangle, Calendar, X, Clock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -23,6 +23,8 @@ interface DealWithoutTask {
   stage: { name: string };
   lead?: { client?: { name: string } };
   owner?: { full_name: string };
+  owner_id?: string;
+  hours_without_task?: number;
 }
 
 interface TaskReminderAlertProps {
@@ -35,22 +37,49 @@ export function TaskReminderAlert({ pipelineId }: TaskReminderAlertProps) {
   const [dealsWithoutTasks, setDealsWithoutTasks] = useState<DealWithoutTask[]>([]);
   const [addingTaskFor, setAddingTaskFor] = useState<string | null>(null);
   const [taskData, setTaskData] = useState({ title: "", due_at: "", observation: "" });
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [isMaster, setIsMaster] = useState(false);
 
   useEffect(() => {
     if (!pipelineId) return;
 
+    // Get current user info
+    const getCurrentUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setCurrentUserId(user.id);
+        
+        // Check if user is master/admin
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", user.id)
+          .single();
+        
+        setIsMaster(profile?.role === "admin");
+      }
+    };
+    
+    getCurrentUser();
+  }, []);
+
+  useEffect(() => {
+    if (!pipelineId || !currentUserId) return;
+
     // Verificação inicial
     checkDealsWithoutTasks();
 
-    // Verificar a cada 26 horas (93600000ms)
+    // Verificar a cada 30 minutos (1800000ms) - muito mais frequente que antes
     const interval = setInterval(() => {
       checkDealsWithoutTasks();
-    }, 93600000);
+    }, 1800000);
 
     return () => clearInterval(interval);
-  }, [pipelineId]);
+  }, [pipelineId, currentUserId, isMaster]);
 
   const checkDealsWithoutTasks = async () => {
+    if (!currentUserId) return;
+    
     try {
       // Buscar etapas de Qualificação e Negociação
       const { data: stages } = await supabase
@@ -64,11 +93,14 @@ export function TaskReminderAlert({ pipelineId }: TaskReminderAlertProps) {
       const stageIds = stages.map(s => s.id);
 
       // Buscar deals nessas etapas que estão abertos
-      const { data: deals } = await supabase
+      // Se for vendedor (não master), filtrar apenas pelos seus deals
+      let query = supabase
         .from("crm_deals")
         .select(`
           id,
           title,
+          owner_id,
+          stage_entered_at,
           stage:crm_stages(name),
           lead:leads(
             client:clients(name)
@@ -79,28 +111,56 @@ export function TaskReminderAlert({ pipelineId }: TaskReminderAlertProps) {
         .eq("status", "aberto")
         .in("stage_id", stageIds);
 
+      // Vendedores só veem seus próprios deals
+      if (!isMaster) {
+        query = query.eq("owner_id", currentUserId);
+      }
+
+      const { data: deals, error: dealsError } = await query;
+
+      if (dealsError) {
+        console.error('Error fetching deals:', dealsError);
+        return;
+      }
+
       if (!deals || deals.length === 0) {
         setDealsWithoutTasks([]);
         setShowAlert(false);
         return;
       }
 
-      // Para cada deal, verificar se tem tarefas
-      const dealsWithoutTasksArray: DealWithoutTask[] = [];
+      // Para cada deal, verificar se tem tarefas VÁLIDAS (pendente E due_at >= NOW())
+      const dealsWithoutValidTasksArray: DealWithoutTask[] = [];
+      const now = new Date().toISOString();
       
       for (const deal of deals) {
-        const { data: tasks, count } = await supabase
+        // Buscar tarefas válidas: status pendente E data futura
+        const { count } = await supabase
           .from("crm_tasks")
           .select("id", { count: "exact", head: true })
-          .eq("deal_id", deal.id);
+          .eq("deal_id", deal.id)
+          .eq("status", "pendente")
+          .gte("due_at", now);
 
         if (count === 0) {
-          dealsWithoutTasksArray.push(deal as DealWithoutTask);
+          // Calcular horas sem tarefa válida
+          const stageEnteredAt = deal.stage_entered_at ? new Date(deal.stage_entered_at) : new Date();
+          const hoursWithoutTask = Math.floor((Date.now() - stageEnteredAt.getTime()) / (1000 * 60 * 60));
+          
+          dealsWithoutValidTasksArray.push({
+            ...deal as DealWithoutTask,
+            hours_without_task: hoursWithoutTask
+          });
         }
       }
 
-      if (dealsWithoutTasksArray.length > 0) {
-        setDealsWithoutTasks(dealsWithoutTasksArray);
+      if (dealsWithoutValidTasksArray.length > 0) {
+        // Ordenar por horas sem tarefa (mais urgente primeiro)
+        dealsWithoutValidTasksArray.sort((a, b) => 
+          (b.hours_without_task || 0) - (a.hours_without_task || 0)
+        );
+        
+        setDealsWithoutTasks(dealsWithoutValidTasksArray);
         setShowAlert(true);
       } else {
         setDealsWithoutTasks([]);
@@ -136,18 +196,17 @@ export function TaskReminderAlert({ pipelineId }: TaskReminderAlertProps) {
 
       if (timelineError) throw timelineError;
 
-      // Depois, criar a tarefa
-      const localDate = new Date(taskData.due_at);
-      const offsetMs = localDate.getTimezoneOffset() * 60000;
-      const localISOTime = new Date(localDate.getTime() - offsetMs).toISOString().slice(0, -1);
+      // Depois, criar a tarefa - usando horário de Brasília (UTC-3)
+      const dueAtWithTimezone = taskData.due_at + ":00-03:00";
+      const dueAtISO = new Date(dueAtWithTimezone).toISOString();
 
       const { error: taskError } = await supabase
         .from("crm_tasks")
         .insert({
           deal_id: dealId,
           title: taskData.title,
-          due_at: localISOTime,
-          status: "open",
+          due_at: dueAtISO,
+          status: "pendente",
           created_by: userData.user?.id || null,
         });
 
@@ -174,12 +233,20 @@ export function TaskReminderAlert({ pipelineId }: TaskReminderAlertProps) {
 
   const handleDismiss = () => {
     setShowAlert(false);
-    // Mostrar novamente após 26 horas se ainda houver deals sem tarefas
+    // Mostrar novamente após 2 horas se ainda houver deals sem tarefas
     setTimeout(() => {
       if (dealsWithoutTasks.length > 0) {
         setShowAlert(true);
       }
-    }, 93600000);
+    }, 7200000); // 2 horas
+  };
+
+  const formatHoursWithoutTask = (hours: number | undefined) => {
+    if (!hours) return "";
+    if (hours < 24) return `${hours}h sem tarefa válida`;
+    const days = Math.floor(hours / 24);
+    const remainingHours = hours % 24;
+    return `${days}d ${remainingHours}h sem tarefa válida`;
   };
 
   if (dealsWithoutTasks.length === 0) return null;
@@ -190,11 +257,14 @@ export function TaskReminderAlert({ pipelineId }: TaskReminderAlertProps) {
         <AlertDialogHeader>
           <AlertDialogTitle className="flex items-center gap-2 text-xl">
             <AlertTriangle className="h-6 w-6 text-yellow-600" />
-            Oportunidades sem Tarefas
+            Oportunidades sem Tarefas Válidas
+            <Badge variant="destructive" className="ml-2">
+              {dealsWithoutTasks.length}
+            </Badge>
           </AlertDialogTitle>
           <AlertDialogDescription className="text-base">
             As seguintes oportunidades nas etapas de <strong>Qualificação</strong> e <strong>Negociação</strong> 
-            não possuem nenhuma tarefa cadastrada. Adicione pelo menos uma tarefa para cada.
+            não possuem tarefas válidas (pendentes com data futura). Adicione pelo menos uma tarefa para cada.
           </AlertDialogDescription>
         </AlertDialogHeader>
 
@@ -205,9 +275,21 @@ export function TaskReminderAlert({ pipelineId }: TaskReminderAlertProps) {
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 space-y-2">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <h4 className="font-semibold">{deal.title}</h4>
                         <Badge variant="outline">{deal.stage?.name}</Badge>
+                        {deal.hours_without_task !== undefined && deal.hours_without_task > 36 && (
+                          <Badge variant="destructive" className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {formatHoursWithoutTask(deal.hours_without_task)}
+                          </Badge>
+                        )}
+                        {deal.hours_without_task !== undefined && deal.hours_without_task <= 36 && (
+                          <Badge variant="secondary" className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {formatHoursWithoutTask(deal.hours_without_task)}
+                          </Badge>
+                        )}
                       </div>
                       {deal.lead?.client?.name && (
                         <p className="text-sm text-muted-foreground">
@@ -293,7 +375,7 @@ export function TaskReminderAlert({ pipelineId }: TaskReminderAlertProps) {
         <div className="flex justify-end gap-3 pt-4 border-t">
           <Button variant="outline" onClick={handleDismiss}>
             <X className="h-4 w-4 mr-2" />
-            Lembrar depois (26h)
+            Lembrar depois (2h)
           </Button>
           <Button onClick={() => setShowAlert(false)}>
             Fechar

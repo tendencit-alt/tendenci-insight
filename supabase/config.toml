@@ -35,3 +35,6 @@ verify_jwt = false
 
 [functions.update-deal-conversation]
 verify_jwt = false
+
+[functions.check-deals-without-tasks]
+verify_jwt = false
