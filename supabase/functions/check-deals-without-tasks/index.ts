@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
           .from('crm_tasks')
           .select('id', { count: 'exact', head: true })
           .eq('deal_id', deal.id)
-          .eq('status', 'pendente')
+          .eq('status', 'open')
           .gte('due_at', now);
 
         if (tasksError) {

@@ -139,7 +139,7 @@ export function TaskReminderAlert({ pipelineId }: TaskReminderAlertProps) {
           .from("crm_tasks")
           .select("id", { count: "exact", head: true })
           .eq("deal_id", deal.id)
-          .eq("status", "pendente")
+          .eq("status", "open")
           .gte("due_at", now);
 
         if (count === 0) {
@@ -206,7 +206,7 @@ export function TaskReminderAlert({ pipelineId }: TaskReminderAlertProps) {
           deal_id: dealId,
           title: taskData.title,
           due_at: dueAtISO,
-          status: "pendente",
+          status: "open",
           created_by: userData.user?.id || null,
         });
 
