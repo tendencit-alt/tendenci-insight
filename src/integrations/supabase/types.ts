@@ -5403,36 +5403,45 @@ export type Database = {
           recebido_count: number
         }[]
       }
-      projects_metrics_by_history: {
-        Args: {
-          p_architect_id?: string
-          p_date_from?: string
-          p_date_to?: string
-          p_filter_by_deadline?: boolean
-          p_stages?: string[]
-        }
-        Returns: {
-          apresentado_count: number
-          apresentado_value: number
-          aprovado_count: number
-          aprovado_value: number
-          em_negociacao_count: number
-          em_negociacao_value: number
-          em_orcamento_count: number
-          em_orcamento_value: number
-          near_due_count: number
-          orcado_count: number
-          orcado_value: number
-          overdue_count: number
-          perdido_count: number
-          perdido_value: number
-          recebido_count: number
-          recebido_value: number
-          total_orcado_count: number
-          total_orcado_value: number
-          total_value: number
-        }[]
-      }
+      projects_metrics_by_history:
+        | {
+            Args: {
+              p_architect_id?: string
+              p_date_from?: string
+              p_date_to?: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_architect_id?: string
+              p_date_from?: string
+              p_date_to?: string
+              p_filter_by_deadline?: boolean
+              p_stages?: string[]
+            }
+            Returns: {
+              apresentado_count: number
+              apresentado_value: number
+              aprovado_count: number
+              aprovado_value: number
+              em_negociacao_count: number
+              em_negociacao_value: number
+              em_orcamento_count: number
+              em_orcamento_value: number
+              near_due_count: number
+              orcado_count: number
+              orcado_value: number
+              overdue_count: number
+              perdido_count: number
+              perdido_value: number
+              recebido_count: number
+              recebido_value: number
+              total_orcado_count: number
+              total_orcado_value: number
+              total_value: number
+            }[]
+          }
       projects_metrics_filtered: {
         Args: {
           p_architect_id?: string
