@@ -64,7 +64,7 @@ export function CRMTasksPanel({
       clearTimeout(debounceTimeout);
       supabase.removeChannel(channel);
     };
-  }, [pipelineId, categoryFilter, ownerFilter, searchQuery, dateFilter, customDateRange]);
+  }, [pipelineId, categoryFilter, ownerFilter, searchQuery]);
 
   const fetchTasks = async () => {
     setLoading(true);
@@ -91,46 +91,6 @@ export function CRMTasksPanel({
       dealsQuery = dealsQuery.ilike("title", `%${searchQuery}%`);
     }
 
-    // Filtrar por data de criação do deal
-    if (dateFilter && dateFilter !== "all") {
-      const now = new Date();
-      let startDate: Date | undefined;
-      let endDate: Date | undefined;
-      
-      switch(dateFilter) {
-        case "today":
-          startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-          break;
-        case "yesterday":
-          startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
-          endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-          break;
-        case "last7days":
-          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-          break;
-        case "thisMonth":
-          startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-          break;
-        case "last30days":
-          startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-          break;
-        case "custom":
-          if (customDateRange?.from) {
-            dealsQuery = dealsQuery.gte("created_at", customDateRange.from.toISOString());
-          }
-          if (customDateRange?.to) {
-            dealsQuery = dealsQuery.lte("created_at", customDateRange.to.toISOString());
-          }
-          break;
-      }
-      
-      if (startDate && dateFilter !== "custom") {
-        dealsQuery = dealsQuery.gte("created_at", startDate.toISOString());
-      }
-      if (endDate && dateFilter !== "custom") {
-        dealsQuery = dealsQuery.lte("created_at", endDate.toISOString());
-      }
-    }
     
     const { data: deals } = await dealsQuery;
 
