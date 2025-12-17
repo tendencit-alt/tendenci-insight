@@ -27,11 +27,11 @@ interface KPIConfig {
 }
 
 const KPI_CONFIGS: KPIConfig[] = [
-  { key: 'recebido', label: 'Recebidos', icon: '📥', stage: 'recebido', borderColor: 'border-l-blue-500', textColor: 'text-blue-600' },
-  { key: 'em_orcamento', label: 'Em Orçamento', icon: '📝', stage: 'em_orcamento', borderColor: 'border-l-purple-500', textColor: 'text-purple-600' },
+  { key: 'recebido', label: 'Recebidos', icon: '📥', stage: 'recebido', borderColor: 'border-l-blue-500', textColor: 'text-blue-600', showValue: true },
+  { key: 'em_orcamento', label: 'Em Orçamento', icon: '📝', stage: 'em_orcamento', borderColor: 'border-l-purple-500', textColor: 'text-purple-600', showValue: true },
   { key: 'orcado', label: 'Orçado', icon: '💰', stage: 'orcado', borderColor: 'border-l-indigo-500', textColor: 'text-indigo-600', showValue: true },
   { key: 'apresentado', label: 'Apresentado', icon: '📊', stage: 'apresentado', borderColor: 'border-l-cyan-500', textColor: 'text-cyan-600', showValue: true },
-  { key: 'em_negociacao', label: 'Em Negociação', icon: '🤝', stage: 'em_negociacao', borderColor: 'border-l-orange-500', textColor: 'text-orange-600' },
+  { key: 'em_negociacao', label: 'Em Negociação', icon: '🤝', stage: 'em_negociacao', borderColor: 'border-l-orange-500', textColor: 'text-orange-600', showValue: true },
   { key: 'aprovado', label: 'Aprovado', icon: '✅', stage: 'aprovado', borderColor: 'border-l-green-500', textColor: 'text-green-600', showValue: true },
   { key: 'perdido', label: 'Perdido', icon: '❌', stage: 'perdido', borderColor: 'border-l-red-500', textColor: 'text-red-600', showValue: true },
 ];
@@ -49,12 +49,15 @@ const Projects = () => {
   });
   const [metrics, setMetrics] = useState({
     recebido_count: 0,
+    recebido_value: 0,
     em_orcamento_count: 0,
+    em_orcamento_value: 0,
     orcado_count: 0,
     orcado_value: 0,
     apresentado_count: 0,
     apresentado_value: 0,
     em_negociacao_count: 0,
+    em_negociacao_value: 0,
     aprovado_count: 0,
     aprovado_value: 0,
     perdido_count: 0,
@@ -224,8 +227,11 @@ const Projects = () => {
 
   const getMetricValue = (key: string): number => {
     switch (key) {
+      case 'recebido': return metrics.recebido_value;
+      case 'em_orcamento': return metrics.em_orcamento_value;
       case 'orcado': return metrics.orcado_value;
       case 'apresentado': return metrics.apresentado_value;
+      case 'em_negociacao': return metrics.em_negociacao_value;
       case 'aprovado': return metrics.aprovado_value;
       case 'perdido': return metrics.perdido_value;
       default: return 0;

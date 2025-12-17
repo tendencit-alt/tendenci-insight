@@ -5417,7 +5417,9 @@ export type Database = {
           aprovado_count: number
           aprovado_value: number
           em_negociacao_count: number
+          em_negociacao_value: number
           em_orcamento_count: number
+          em_orcamento_value: number
           near_due_count: number
           orcado_count: number
           orcado_value: number
@@ -5425,6 +5427,7 @@ export type Database = {
           perdido_count: number
           perdido_value: number
           recebido_count: number
+          recebido_value: number
           total_value: number
         }[]
       }
