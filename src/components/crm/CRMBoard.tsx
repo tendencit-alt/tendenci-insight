@@ -30,8 +30,9 @@ interface CRMBoardProps {
     status: string;
     category?: string;
     showPlanned?: boolean;
-    dateFilter?: string;
-    customDateRange?: { from: Date | undefined; to: Date | undefined };
+    // Nota: dateFilter e customDateRange NÃO são passados ao Kanban
+    // pois o Kanban deve sempre mostrar TODOS os cards, independente do período
+    // Os filtros de data afetam apenas os KPIs
   };
 }
 
@@ -191,48 +192,9 @@ export function CRMBoard({ pipelineId, onRefresh, autoOpenDealId, onDealOpened, 
       dealsQuery = dealsQuery.not("scheduled_call", "is", null);
     }
 
-    // Filtro de período
-    if (filters?.dateFilter && filters.dateFilter !== "all") {
-      const now = new Date();
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      
-      switch (filters.dateFilter) {
-        case "today":
-          dealsQuery = dealsQuery.gte("created_at", today.toISOString());
-          break;
-        case "yesterday":
-          const yesterday = new Date(today);
-          yesterday.setDate(yesterday.getDate() - 1);
-          dealsQuery = dealsQuery.gte("created_at", yesterday.toISOString()).lt("created_at", today.toISOString());
-          break;
-        case "last7days":
-          const last7days = new Date(today);
-          last7days.setDate(last7days.getDate() - 7);
-          dealsQuery = dealsQuery.gte("created_at", last7days.toISOString());
-          break;
-        case "thisMonth":
-          const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-          dealsQuery = dealsQuery.gte("created_at", firstDayOfMonth.toISOString());
-          break;
-        case "last30days":
-          const last30days = new Date(today);
-          last30days.setDate(last30days.getDate() - 30);
-          dealsQuery = dealsQuery.gte("created_at", last30days.toISOString());
-          break;
-        case "custom":
-          if (filters.customDateRange?.from) {
-            const fromDate = new Date(filters.customDateRange.from);
-            fromDate.setHours(0, 0, 0, 0);
-            dealsQuery = dealsQuery.gte("created_at", fromDate.toISOString());
-          }
-          if (filters.customDateRange?.to) {
-            const toDate = new Date(filters.customDateRange.to);
-            toDate.setHours(23, 59, 59, 999);
-            dealsQuery = dealsQuery.lte("created_at", toDate.toISOString());
-          }
-          break;
-      }
-    }
+    // NOTA: Filtro de período NÃO é aplicado ao Kanban
+    // O Kanban sempre exibe TODOS os cards, independente do filtro de data selecionado
+    // Os filtros de data afetam apenas os KPIs para cálculos de métricas
 
     const { data: dealsData, error: dealsError } = await dealsQuery.order("stage_position", { ascending: true });
 
