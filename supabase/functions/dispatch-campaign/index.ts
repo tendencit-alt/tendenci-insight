@@ -651,6 +651,26 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('💥 Erro inesperado ao disparar campanha:', error)
     
+    // Log error to system_errors table
+    try {
+      const supabase = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      )
+      await supabase.from('system_errors').insert({
+        title: 'Erro crítico no dispatch-campaign',
+        description: error instanceof Error ? error.message : 'Erro desconhecido',
+        module: 'campanhas',
+        severity: 'high',
+        source: 'edge_function',
+        stack_trace: error instanceof Error ? error.stack : null,
+        metadata: { function: 'dispatch-campaign' },
+        status: 'open'
+      })
+    } catch (logErr) {
+      console.error('❌ Falha ao logar erro:', logErr)
+    }
+    
     // SEMPRE retornar status 200 mesmo em erro crítico
     return new Response(
       JSON.stringify({

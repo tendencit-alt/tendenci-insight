@@ -505,6 +505,27 @@ Deno.serve(async (req) => {
 
   } catch (error: any) {
     console.error('💥 Webhook error:', error)
+    
+    // Log error to system_errors table
+    try {
+      const supabase = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      )
+      await supabase.from('system_errors').insert({
+        title: 'Erro no whatsapp-webhook',
+        description: error.message || 'Erro desconhecido no webhook',
+        module: 'webhooks',
+        severity: 'high',
+        source: 'webhook',
+        stack_trace: error.stack || null,
+        metadata: { function: 'whatsapp-webhook' },
+        status: 'open'
+      })
+    } catch (logErr) {
+      console.error('❌ Falha ao logar erro:', logErr)
+    }
+    
     return new Response(
       JSON.stringify({ error: error.message }),
       { 

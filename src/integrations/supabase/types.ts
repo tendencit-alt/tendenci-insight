@@ -3718,8 +3718,10 @@ export type Database = {
           description: string | null
           error_code: string | null
           id: string
+          last_occurrence_at: string | null
           metadata: Json | null
           module: string
+          occurrence_count: number | null
           reported_by: string | null
           resolution_notes: string | null
           resolved_at: string | null
@@ -3736,8 +3738,10 @@ export type Database = {
           description?: string | null
           error_code?: string | null
           id?: string
+          last_occurrence_at?: string | null
           metadata?: Json | null
           module: string
+          occurrence_count?: number | null
           reported_by?: string | null
           resolution_notes?: string | null
           resolved_at?: string | null
@@ -3754,8 +3758,10 @@ export type Database = {
           description?: string | null
           error_code?: string | null
           id?: string
+          last_occurrence_at?: string | null
           metadata?: Json | null
           module?: string
+          occurrence_count?: number | null
           reported_by?: string | null
           resolution_notes?: string | null
           resolved_at?: string | null
