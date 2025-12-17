@@ -92,7 +92,7 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
       // Registrar no histórico
       await supabase.from("architect_history").insert({
         architect_id: architectId,
-        event_type: "status_change",
+        event_type: "sistema",
         description: `Status alterado para: ${newStatus}`,
       });
     },
