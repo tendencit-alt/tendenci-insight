@@ -6,9 +6,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { usePermissions } from '@/hooks/usePermissions';
 import { format, differenceInDays, isPast } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Search, ChevronLeft, ChevronRight, AlertTriangle, ExternalLink, Eye, Pencil } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, AlertTriangle, ExternalLink, Eye, Pencil, Trash2 } from 'lucide-react';
 
 interface Order {
   id: string;
@@ -28,6 +29,7 @@ interface OrdersTableProps {
   isLoading: boolean;
   onSelectOrder: (id: string) => void;
   onEditOrder?: (id: string) => void;
+  onDeleteOrder?: (id: string, orderNumber: number) => void;
 }
 
 const STATUS_CONFIG: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline'; color: string }> = {
@@ -42,7 +44,8 @@ const STATUS_CONFIG: Record<string, { label: string; variant: 'default' | 'secon
 
 const ITEMS_PER_PAGE = 20;
 
-export function OrdersTable({ orders, isLoading, onSelectOrder, onEditOrder }: OrdersTableProps) {
+export function OrdersTable({ orders, isLoading, onSelectOrder, onEditOrder, onDeleteOrder }: OrdersTableProps) {
+  const { isMaster } = usePermissions();
   const isEditable = (status: string) => ['rascunho', 'aguardando_aprovacao'].includes(status);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -238,6 +241,24 @@ export function OrdersTable({ orders, isLoading, onSelectOrder, onEditOrder }: O
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
+
+                          {isMaster && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                    onClick={() => onDeleteOrder?.(order.id, order.order_number)}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Excluir</TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
