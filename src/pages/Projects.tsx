@@ -367,6 +367,7 @@ const Projects = () => {
             dateFrom={dateFrom}
             dateTo={dateTo}
             periodLabel={getPeriodLabel()}
+            architectId={filters.architect !== "Todos" ? filters.architect : undefined}
             onRefresh={handleRefresh}
           />
         )}
