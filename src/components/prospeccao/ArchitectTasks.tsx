@@ -191,6 +191,7 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
           const thirtySixHoursAgo = new Date();
           thirtySixHoursAgo.setHours(thirtySixHoursAgo.getHours() - 36);
           
+          // Verificar timeline nas últimas 36h
           const { data: recentUpdates, error: timelineError } = await supabase
             .from("architect_timeline")
             .select("id, created_at")
@@ -202,7 +203,41 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
             console.error("Erro ao verificar timeline:", timelineError);
           }
           
-          if (!recentUpdates || recentUpdates.length === 0) {
+          // FALLBACK: Se não há timeline, verificar se há tarefa automatizada concluída recentemente
+          // (pode ter falhado a inserção na timeline após execução da tarefa)
+          let hasRecentActivity = recentUpdates && recentUpdates.length > 0;
+          
+          if (!hasRecentActivity) {
+            const thirtyMinutesAgo = new Date();
+            thirtyMinutesAgo.setMinutes(thirtyMinutesAgo.getMinutes() - 30);
+            
+            const { data: recentCompletedTasks } = await supabase
+              .from("tendenci_prospec_arq_agendamentos")
+              .select("id, updated_at, tipo_tarefa")
+              .eq("architect_id", architectId)
+              .eq("status", "concluida")
+              .eq("tipo_tarefa", "automatizada")
+              .gte("updated_at", thirtyMinutesAgo.toISOString())
+              .limit(1);
+            
+            if (recentCompletedTasks && recentCompletedTasks.length > 0) {
+              console.log("✅ Fallback: Tarefa automatizada concluída recentemente detectada");
+              hasRecentActivity = true;
+              
+              // Tentar criar a entrada na timeline que estava faltando
+              const { data: { user } } = await supabase.auth.getUser();
+              if (user) {
+                await supabase.from("architect_timeline").insert({
+                  architect_id: architectId,
+                  author_id: user.id,
+                  message: "📤 Tarefa automatizada executada (registro retroativo)",
+                  update_type: "Sistema"
+                });
+              }
+            }
+          }
+          
+          if (!hasRecentActivity) {
             toast({
               title: "⚠️ Atualização na Timeline Obrigatória",
               description: "Para arquitetos em Contato Iniciado ou Parceiro Ativo, adicione uma atualização na Timeline (últimas 36h) antes de criar tarefas.",
