@@ -1486,6 +1486,44 @@ export type Database = {
         }
         Relationships: []
       }
+      master_idea_attachments: {
+        Row: {
+          created_at: string | null
+          file_name: string
+          file_path: string
+          file_type: string
+          id: string
+          idea_id: string
+          transcription: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          file_name: string
+          file_path: string
+          file_type: string
+          id?: string
+          idea_id: string
+          transcription?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          file_name?: string
+          file_path?: string
+          file_type?: string
+          id?: string
+          idea_id?: string
+          transcription?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "master_idea_attachments_idea_id_fkey"
+            columns: ["idea_id"]
+            isOneToOne: false
+            referencedRelation: "master_ideas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       master_ideas: {
         Row: {
           content: string | null
