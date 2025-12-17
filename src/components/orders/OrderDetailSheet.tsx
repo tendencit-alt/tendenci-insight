@@ -12,13 +12,14 @@ import { OrderItemsTable } from './OrderItemsTable';
 import { EditOrderDialog } from './EditOrderDialog';
 import { OrderExportDialog } from './OrderExportDialog';
 import { CancelOrderDialog } from './CancelOrderDialog';
+import { DeleteOrderDialog } from './DeleteOrderDialog';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
   User, Building2, Phone, Mail, MapPin, Calendar, DollarSign,
   Truck, FileText, Clock, CheckCircle, AlertCircle, Loader2, Factory,
-  Edit, Copy, Download, Printer, MessageSquare, ExternalLink
+  Edit, Copy, Download, Printer, MessageSquare, ExternalLink, Trash2
 } from 'lucide-react';
 
 interface OrderDetailSheetProps {
@@ -44,6 +45,7 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
   const [editOpen, setEditOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const { data: order, refetch } = useQuery({
     queryKey: ['order-detail', orderId],
@@ -479,6 +481,17 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
                     </Button>
                   )}
 
+                  {isMaster && (
+                    <Button 
+                      variant="outline" 
+                      className="w-full mt-3 text-destructive border-destructive/50 hover:bg-destructive/10"
+                      onClick={() => setDeleteOpen(true)}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Excluir Pedido
+                    </Button>
+                  )}
+
                   {order.status === 'aprovado' && (
                     <Button className="w-full" onClick={handleCreateProductionOrders} disabled={loading}>
                       {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
@@ -626,6 +639,17 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
         onOpenChange={setCancelOpen}
         onSuccess={() => {
           refetch();
+          onUpdate();
+        }}
+      />
+
+      <DeleteOrderDialog
+        orderId={orderId}
+        orderNumber={order?.order_number || 0}
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        onSuccess={() => {
+          onOpenChange(false);
           onUpdate();
         }}
       />
