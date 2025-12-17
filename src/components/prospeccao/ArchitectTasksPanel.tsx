@@ -5,7 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, ChevronRight, Clock, AlertTriangle, Calendar, Bot, User } from "lucide-react";
+import { ChevronDown, ChevronRight, Clock, AlertTriangle, Calendar, Bot, User, CheckCircle, TrendingUp, TrendingDown, Minus, Trophy } from "lucide-react";
 import { format, isToday, isTomorrow, isPast, differenceInDays, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
@@ -34,6 +34,13 @@ interface Task {
   } | null;
 }
 
+interface CompletedStats {
+  thisMonth: number;
+  lastMonth: number;
+  bestMonth: { count: number; month: string };
+  loading: boolean;
+}
+
 export function ArchitectTasksPanel({ filters }: ArchitectTasksPanelProps) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,6 +50,12 @@ export function ArchitectTasksPanel({ filters }: ArchitectTasksPanelProps) {
     todas: false,
     diarias: false,
     futuras: false,
+  });
+  const [completedStats, setCompletedStats] = useState<CompletedStats>({
+    thisMonth: 0,
+    lastMonth: 0,
+    bestMonth: { count: 0, month: '' },
+    loading: true
   });
   const { isMaster } = usePermissions();
 
@@ -97,8 +110,104 @@ export function ArchitectTasksPanel({ filters }: ArchitectTasksPanelProps) {
     }
   }, [filters?.vendedor, filters?.search, isMaster]);
 
+  const fetchCompletedStats = useCallback(async () => {
+    setCompletedStats(prev => ({ ...prev, loading: true }));
+    
+    const now = new Date();
+    const currentDay = now.getDate();
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    // Este mês: do dia 1 até hoje
+    const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    
+    // Mês anterior proporcional
+    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const lastDayOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0).getDate();
+    const proportionalDay = Math.min(currentDay, lastDayOfLastMonth);
+    const endOfLastMonthProportional = new Date(now.getFullYear(), now.getMonth() - 1, proportionalDay, 23, 59, 59);
+
+    // Buscar tarefas concluídas deste mês (até hoje)
+    let thisMonthQuery = supabase
+      .from("tendenci_prospec_arq_agendamentos")
+      .select("id", { count: "exact" })
+      .eq("status", "concluida")
+      .gte("updated_at", startOfThisMonth.toISOString())
+      .lte("updated_at", now.toISOString());
+    
+    // Filtrar por vendedor se não for master
+    if (!isMaster && user?.id) {
+      thisMonthQuery = thisMonthQuery.eq("vendedor_id", user.id);
+    } else if (filters?.vendedor && filters.vendedor !== "todos") {
+      thisMonthQuery = thisMonthQuery.eq("vendedor_id", filters.vendedor);
+    }
+
+    const { data: thisMonthData } = await thisMonthQuery;
+
+    // Buscar tarefas concluídas do mês passado (período proporcional)
+    let lastMonthQuery = supabase
+      .from("tendenci_prospec_arq_agendamentos")
+      .select("id", { count: "exact" })
+      .eq("status", "concluida")
+      .gte("updated_at", startOfLastMonth.toISOString())
+      .lte("updated_at", endOfLastMonthProportional.toISOString());
+    
+    if (!isMaster && user?.id) {
+      lastMonthQuery = lastMonthQuery.eq("vendedor_id", user.id);
+    } else if (filters?.vendedor && filters.vendedor !== "todos") {
+      lastMonthQuery = lastMonthQuery.eq("vendedor_id", filters.vendedor);
+    }
+
+    const { data: lastMonthData } = await lastMonthQuery;
+
+    // Buscar todas as tarefas concluídas para calcular o melhor mês
+    let allQuery = supabase
+      .from("tendenci_prospec_arq_agendamentos")
+      .select("updated_at")
+      .eq("status", "concluida");
+    
+    if (!isMaster && user?.id) {
+      allQuery = allQuery.eq("vendedor_id", user.id);
+    } else if (filters?.vendedor && filters.vendedor !== "todos") {
+      allQuery = allQuery.eq("vendedor_id", filters.vendedor);
+    }
+
+    const { data: allCompletedTasks } = await allQuery;
+
+    // Calcular melhor mês
+    const monthCounts: { [key: string]: number } = {};
+    allCompletedTasks?.forEach(task => {
+      const date = new Date(task.updated_at);
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      monthCounts[monthKey] = (monthCounts[monthKey] || 0) + 1;
+    });
+
+    let bestMonthKey = '';
+    let bestMonthCount = 0;
+    Object.entries(monthCounts).forEach(([month, count]) => {
+      if (count > bestMonthCount) {
+        bestMonthCount = count;
+        bestMonthKey = month;
+      }
+    });
+
+    let bestMonthName = '';
+    if (bestMonthKey) {
+      const [year, month] = bestMonthKey.split('-');
+      const date = new Date(parseInt(year), parseInt(month) - 1, 1);
+      bestMonthName = date.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
+    }
+
+    setCompletedStats({
+      thisMonth: thisMonthData?.length || 0,
+      lastMonth: lastMonthData?.length || 0,
+      bestMonth: { count: bestMonthCount, month: bestMonthName },
+      loading: false
+    });
+  }, [filters?.vendedor, isMaster]);
+
   useEffect(() => {
     fetchTasks();
+    fetchCompletedStats();
 
     // Realtime subscription
     const channel = supabase
@@ -111,7 +220,10 @@ export function ArchitectTasksPanel({ filters }: ArchitectTasksPanelProps) {
           table: "tendenci_prospec_arq_agendamentos",
         },
         () => {
-          setTimeout(fetchTasks, 500);
+          setTimeout(() => {
+            fetchTasks();
+            fetchCompletedStats();
+          }, 500);
         }
       )
       .subscribe();
@@ -119,7 +231,7 @@ export function ArchitectTasksPanel({ filters }: ArchitectTasksPanelProps) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [fetchTasks]);
+  }, [fetchTasks, fetchCompletedStats]);
 
   const getDaysUntilDue = (dueDate: string) => {
     const due = new Date(dueDate);
@@ -279,9 +391,101 @@ export function ArchitectTasksPanel({ filters }: ArchitectTasksPanelProps) {
     );
   }
 
+  const variation = completedStats.lastMonth > 0 
+    ? ((completedStats.thisMonth - completedStats.lastMonth) / completedStats.lastMonth) * 100 
+    : completedStats.thisMonth > 0 ? 100 : 0;
+  
+  const isNewRecord = completedStats.thisMonth > 0 && completedStats.thisMonth >= completedStats.bestMonth.count;
+  const currentDay = new Date().getDate();
+  const proportionalDay = Math.min(currentDay, new Date(new Date().getFullYear(), new Date().getMonth(), 0).getDate());
+
   return (
-    <div className="mb-6">
-      <h3 className="text-lg font-semibold mb-4">Tarefas de Arquitetos</h3>
+    <div className="mb-6 space-y-4">
+      <h3 className="text-lg font-semibold">Tarefas de Arquitetos</h3>
+      
+      {/* Métricas Comparativas */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Este Mês */}
+        <Card className="border-primary/20">
+          <CardContent className="pt-4">
+            {completedStats.loading ? (
+              <Skeleton className="h-16 w-full" />
+            ) : (
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground font-medium">
+                  Concluídas Este Mês (até dia {currentDay})
+                </p>
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-5 w-5 text-primary" />
+                  <span className="text-2xl font-bold">{completedStats.thisMonth}</span>
+                  {completedStats.lastMonth > 0 && (
+                    <div className={`flex items-center text-xs ${variation >= 0 ? 'text-green-600' : 'text-destructive'}`}>
+                      {variation > 0 ? (
+                        <TrendingUp className="h-3 w-3 mr-0.5" />
+                      ) : variation < 0 ? (
+                        <TrendingDown className="h-3 w-3 mr-0.5" />
+                      ) : (
+                        <Minus className="h-3 w-3 mr-0.5" />
+                      )}
+                      {variation > 0 ? '+' : ''}{variation.toFixed(1)}%
+                    </div>
+                  )}
+                </div>
+                {isNewRecord && (
+                  <Badge variant="default" className="bg-amber-500 hover:bg-amber-600 text-xs">
+                    <Trophy className="h-3 w-3 mr-1" />
+                    Novo Recorde!
+                  </Badge>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Mês Anterior */}
+        <Card>
+          <CardContent className="pt-4">
+            {completedStats.loading ? (
+              <Skeleton className="h-16 w-full" />
+            ) : (
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground font-medium">
+                  Mês Anterior (até dia {proportionalDay})
+                </p>
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-5 w-5 text-muted-foreground" />
+                  <span className="text-2xl font-bold">{completedStats.lastMonth}</span>
+                </div>
+                <p className="text-xs text-muted-foreground capitalize">
+                  {new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1).toLocaleDateString('pt-BR', { month: 'long' })}
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Melhor Mês */}
+        <Card className="border-amber-500/30 bg-amber-500/5">
+          <CardContent className="pt-4">
+            {completedStats.loading ? (
+              <Skeleton className="h-16 w-full" />
+            ) : (
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground font-medium">Melhor Mês Histórico</p>
+                <div className="flex items-center gap-2">
+                  <Trophy className="h-5 w-5 text-amber-500" />
+                  <span className="text-2xl font-bold">{completedStats.bestMonth.count}</span>
+                </div>
+                <p className="text-xs text-muted-foreground capitalize">
+                  {completedStats.bestMonth.month || 'Sem dados'}
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Cards de Tarefas */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {/* TODAS */}
         <Collapsible
