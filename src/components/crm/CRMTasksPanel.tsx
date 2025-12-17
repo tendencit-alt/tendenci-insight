@@ -86,24 +86,33 @@ export function CRMTasksPanel({
     setCompletedStats(prev => ({ ...prev, loading: true }));
     
     const now = new Date();
+    const currentDay = now.getDate();
+    
+    // Este mês: do dia 1 até hoje
     const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    
+    // Mês anterior proporcional: do dia 1 até o mesmo dia do mês anterior
     const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+    // Pegar o mesmo dia do mês anterior (ou último dia se o mês anterior for mais curto)
+    const lastDayOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0).getDate();
+    const proportionalDay = Math.min(currentDay, lastDayOfLastMonth);
+    const endOfLastMonthProportional = new Date(now.getFullYear(), now.getMonth() - 1, proportionalDay, 23, 59, 59);
 
-    // Buscar tarefas concluídas deste mês
+    // Buscar tarefas concluídas deste mês (até hoje)
     const { data: thisMonthData } = await supabase
       .from("crm_tasks")
       .select("id", { count: "exact" })
       .eq("status", "done")
-      .gte("updated_at", startOfThisMonth.toISOString());
+      .gte("updated_at", startOfThisMonth.toISOString())
+      .lte("updated_at", now.toISOString());
 
-    // Buscar tarefas concluídas do mês passado
+    // Buscar tarefas concluídas do mês passado (período proporcional)
     const { data: lastMonthData } = await supabase
       .from("crm_tasks")
       .select("id", { count: "exact" })
       .eq("status", "done")
       .gte("updated_at", startOfLastMonth.toISOString())
-      .lte("updated_at", endOfLastMonth.toISOString());
+      .lte("updated_at", endOfLastMonthProportional.toISOString());
 
     // Buscar todas as tarefas concluídas para calcular o melhor mês
     const { data: allCompletedTasks } = await supabase
@@ -389,7 +398,9 @@ export function CRMTasksPanel({
                 <Skeleton className="h-16 w-full" />
               ) : (
                 <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground font-medium">Concluídas Este Mês</p>
+                  <p className="text-xs text-muted-foreground font-medium">
+                    Concluídas Este Mês (até dia {new Date().getDate()})
+                  </p>
                   <div className="flex items-center gap-2">
                     <CheckCircle className="h-5 w-5 text-primary" />
                     <span className="text-2xl font-bold">{completedStats.thisMonth}</span>
@@ -424,12 +435,14 @@ export function CRMTasksPanel({
                 <Skeleton className="h-16 w-full" />
               ) : (
                 <div className="space-y-1">
-                  <p className="text-xs text-muted-foreground font-medium">Concluídas Mês Anterior</p>
+                  <p className="text-xs text-muted-foreground font-medium">
+                    Mês Anterior (até dia {Math.min(new Date().getDate(), new Date(new Date().getFullYear(), new Date().getMonth(), 0).getDate())})
+                  </p>
                   <div className="flex items-center gap-2">
                     <CheckCircle className="h-5 w-5 text-muted-foreground" />
                     <span className="text-2xl font-bold">{completedStats.lastMonth}</span>
                   </div>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-muted-foreground capitalize">
                     {new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1).toLocaleDateString('pt-BR', { month: 'long' })}
                   </p>
                 </div>
