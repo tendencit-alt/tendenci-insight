@@ -4,14 +4,23 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
-import { Lightbulb, Plus, Pencil, Trash2, Save, X, Image as ImageIcon, Music, Loader2 } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Lightbulb, Plus, Pencil, Trash2, Check, X, CheckCircle2, XCircle, Clock, Sparkles, Image, Mic, Loader2, Save } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { formatDistanceToNow } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { IdeaImageUpload, ImagePreview } from './IdeaImageUpload';
 import { IdeaAudioRecorder, AudioPreview } from './IdeaAudioRecorder';
+
+type IdeaStatus = 'em_pauta' | 'aprovada' | 'recusada' | 'implementada';
+type IdeaCategoria = 'marketing' | 'producao' | 'vendas' | 'financeiro' | 'geral';
 
 interface Attachment {
   id?: string;
@@ -26,49 +35,112 @@ interface Idea {
   id: string;
   title: string;
   content: string | null;
+  status: IdeaStatus;
+  categoria: IdeaCategoria;
   created_at: string;
-  updated_at: string;
-  attachments?: Attachment[];
+  updated_at: string | null;
+  created_by: string | null;
+  aprovado_por: string | null;
+  aprovado_em: string | null;
+  motivo_recusa: string | null;
+  attachments: Attachment[];
+  author?: {
+    full_name: string;
+    avatar_url: string | null;
+    email: string;
+  };
+  approver?: {
+    full_name: string;
+  };
 }
 
+const STATUS_CONFIG: Record<IdeaStatus, { label: string; color: string; icon: typeof Clock }> = {
+  em_pauta: { label: 'Em Pauta', color: 'bg-amber-500', icon: Clock },
+  aprovada: { label: 'Aprovadas', color: 'bg-green-500', icon: Check },
+  recusada: { label: 'Recusadas', color: 'bg-destructive', icon: X },
+  implementada: { label: 'Implementadas', color: 'bg-primary', icon: Sparkles },
+};
+
+const CATEGORIA_CONFIG: Record<IdeaCategoria, { label: string; color: string }> = {
+  marketing: { label: 'Marketing', color: 'bg-purple-500 text-white' },
+  producao: { label: 'Produção', color: 'bg-orange-500 text-white' },
+  vendas: { label: 'Vendas', color: 'bg-emerald-500 text-white' },
+  financeiro: { label: 'Financeiro', color: 'bg-blue-500 text-white' },
+  geral: { label: 'Geral', color: 'bg-muted-foreground text-white' },
+};
+
 export function MasterIdeasNotepad() {
-  const { profile } = useAuth();
+  const { user, profile } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [ideas, setIdeas] = useState<Idea[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<IdeaStatus>('em_pauta');
+  const [filterCategoria, setFilterCategoria] = useState<IdeaCategoria | 'all'>('all');
+  
+  // Form states
   const [newTitle, setNewTitle] = useState('');
   const [newContent, setNewContent] = useState('');
+  const [newCategoria, setNewCategoria] = useState<IdeaCategoria>('geral');
+  const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
+  
+  // Edit states
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [editContent, setEditContent] = useState('');
-  const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>([]);
+  const [editCategoria, setEditCategoria] = useState<IdeaCategoria>('geral');
   const [editAttachments, setEditAttachments] = useState<Attachment[]>([]);
-  const [isSaving, setIsSaving] = useState(false);
+  
+  // Action states
+  const [motivoRecusa, setMotivoRecusa] = useState('');
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const editTextareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const isMaster = profile?.role === 'admin';
+  const isAdmin = profile?.role === 'admin';
 
   useEffect(() => {
-    if (isMaster && isOpen) {
+    if (isOpen && user) {
       fetchIdeas();
     }
-  }, [isMaster, isOpen]);
+  }, [isOpen, user]);
 
   const fetchIdeas = async () => {
-    setLoading(true);
+    setIsLoading(true);
     try {
-      const { data: ideasData, error: ideasError } = await supabase
+      const { data: ideasData, error } = await supabase
         .from('master_ideas')
         .select('*')
-        .order('updated_at', { ascending: false });
+        .order('created_at', { ascending: false });
 
-      if (ideasError) throw ideasError;
+      if (error) throw error;
 
-      // Fetch attachments for each idea
-      const ideasWithAttachments = await Promise.all(
+      // Fetch authors and attachments
+      const ideasWithDetails = await Promise.all(
         (ideasData || []).map(async (idea) => {
+          // Fetch author
+          let author = undefined;
+          if (idea.created_by) {
+            const { data: authorData } = await supabase
+              .from('profiles')
+              .select('full_name, avatar_url, email')
+              .eq('id', idea.created_by)
+              .single();
+            author = authorData || undefined;
+          }
+
+          // Fetch approver
+          let approver = undefined;
+          if (idea.aprovado_por) {
+            const { data: approverData } = await supabase
+              .from('profiles')
+              .select('full_name')
+              .eq('id', idea.aprovado_por)
+              .single();
+            approver = approverData || undefined;
+          }
+
+          // Fetch attachments
           const { data: attachmentsData } = await supabase
             .from('master_idea_attachments')
             .select('*')
@@ -83,33 +155,39 @@ export function MasterIdeasNotepad() {
             transcription: att.transcription || undefined,
           }));
 
-          return { ...idea, attachments };
+          return {
+            ...idea,
+            status: (idea.status || 'em_pauta') as IdeaStatus,
+            categoria: (idea.categoria || 'geral') as IdeaCategoria,
+            attachments,
+            author,
+            approver,
+          };
         })
       );
 
-      setIdeas(ideasWithAttachments);
+      setIdeas(ideasWithDetails);
     } catch (error) {
-      console.error('Erro ao buscar ideias:', error);
+      console.error('Error fetching ideas:', error);
       toast.error('Erro ao carregar ideias');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
   const handleAddIdea = async () => {
-    if (!newTitle.trim()) {
-      toast.error('Título é obrigatório');
-      return;
-    }
+    if (!newTitle.trim() || !user) return;
 
     setIsSaving(true);
     try {
-      const { data: ideaData, error } = await supabase
+      const { data: newIdea, error } = await supabase
         .from('master_ideas')
-        .insert({ 
-          title: newTitle.trim(), 
+        .insert({
+          title: newTitle.trim(),
           content: newContent.trim() || null,
-          created_by: profile?.id 
+          categoria: newCategoria,
+          status: 'em_pauta',
+          created_by: user.id,
         })
         .select()
         .single();
@@ -117,44 +195,43 @@ export function MasterIdeasNotepad() {
       if (error) throw error;
 
       // Save attachments
-      if (pendingAttachments.length > 0 && ideaData) {
-        const attachmentsToInsert = pendingAttachments.map(att => ({
-          idea_id: ideaData.id,
+      for (const att of pendingAttachments) {
+        await supabase.from('master_idea_attachments').insert({
+          idea_id: newIdea.id,
           file_path: att.filePath,
           file_name: att.fileName,
           file_type: att.fileType,
           transcription: att.transcription || null,
-        }));
-
-        await supabase.from('master_idea_attachments').insert(attachmentsToInsert);
+        });
       }
 
+      toast.success('Ideia adicionada com sucesso!');
       setNewTitle('');
       setNewContent('');
+      setNewCategoria('geral');
       setPendingAttachments([]);
       fetchIdeas();
-      toast.success('Ideia adicionada!');
     } catch (error) {
-      console.error('Erro ao adicionar ideia:', error);
+      console.error('Error adding idea:', error);
       toast.error('Erro ao adicionar ideia');
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleUpdateIdea = async () => {
-    if (!editingId || !editTitle.trim()) return;
+  const handleUpdateIdea = async (id: string) => {
+    if (!editTitle.trim()) return;
 
     setIsSaving(true);
     try {
       const { error } = await supabase
         .from('master_ideas')
-        .update({ 
-          title: editTitle.trim(), 
+        .update({
+          title: editTitle.trim(),
           content: editContent.trim() || null,
-          updated_at: new Date().toISOString()
+          categoria: editCategoria,
         })
-        .eq('id', editingId);
+        .eq('id', id);
 
       if (error) throw error;
 
@@ -162,7 +239,7 @@ export function MasterIdeasNotepad() {
       const { data: currentAtts } = await supabase
         .from('master_idea_attachments')
         .select('id, file_path')
-        .eq('idea_id', editingId);
+        .eq('idea_id', id);
 
       const editIds = new Set(editAttachments.filter(a => a.id).map(a => a.id));
 
@@ -177,7 +254,7 @@ export function MasterIdeasNotepad() {
       const newAtts = editAttachments.filter(a => !a.id);
       if (newAtts.length > 0) {
         const attachmentsToInsert = newAtts.map(att => ({
-          idea_id: editingId,
+          idea_id: id,
           file_path: att.filePath,
           file_name: att.fileName,
           file_type: att.fileType,
@@ -186,14 +263,15 @@ export function MasterIdeasNotepad() {
         await supabase.from('master_idea_attachments').insert(attachmentsToInsert);
       }
 
+      toast.success('Ideia atualizada!');
       setEditingId(null);
       setEditTitle('');
       setEditContent('');
+      setEditCategoria('geral');
       setEditAttachments([]);
       fetchIdeas();
-      toast.success('Ideia atualizada!');
     } catch (error) {
-      console.error('Erro ao atualizar ideia:', error);
+      console.error('Error updating idea:', error);
       toast.error('Erro ao atualizar ideia');
     } finally {
       setIsSaving(false);
@@ -202,16 +280,13 @@ export function MasterIdeasNotepad() {
 
   const handleDeleteIdea = async (id: string) => {
     try {
-      // Get attachments to delete files
-      const { data: attachments } = await supabase
-        .from('master_idea_attachments')
-        .select('file_path')
-        .eq('idea_id', id);
-
-      // Delete files from storage
-      if (attachments && attachments.length > 0) {
-        const paths = attachments.map(a => a.file_path);
-        await supabase.storage.from('master-ideas-files').remove(paths);
+      const idea = ideas.find(i => i.id === id);
+      
+      // Delete attachments from storage
+      if (idea?.attachments.length) {
+        await supabase.storage.from('master-ideas-files').remove(
+          idea.attachments.map(att => att.filePath)
+        );
       }
 
       const { error } = await supabase
@@ -221,11 +296,72 @@ export function MasterIdeasNotepad() {
 
       if (error) throw error;
 
-      fetchIdeas();
       toast.success('Ideia excluída!');
+      fetchIdeas();
     } catch (error) {
-      console.error('Erro ao excluir ideia:', error);
+      console.error('Error deleting idea:', error);
       toast.error('Erro ao excluir ideia');
+    }
+  };
+
+  const handleApprove = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('master_ideas')
+        .update({
+          status: 'aprovada',
+          aprovado_por: user?.id,
+          aprovado_em: new Date().toISOString(),
+        })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast.success('Ideia aprovada!');
+      fetchIdeas();
+    } catch (error) {
+      console.error('Error approving idea:', error);
+      toast.error('Erro ao aprovar ideia');
+    }
+  };
+
+  const handleReject = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('master_ideas')
+        .update({
+          status: 'recusada',
+          aprovado_por: user?.id,
+          aprovado_em: new Date().toISOString(),
+          motivo_recusa: motivoRecusa.trim() || null,
+        })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast.success('Ideia recusada');
+      setMotivoRecusa('');
+      fetchIdeas();
+    } catch (error) {
+      console.error('Error rejecting idea:', error);
+      toast.error('Erro ao recusar ideia');
+    }
+  };
+
+  const handleImplement = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('master_ideas')
+        .update({ status: 'implementada' })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast.success('Ideia marcada como implementada!');
+      fetchIdeas();
+    } catch (error) {
+      console.error('Error implementing idea:', error);
+      toast.error('Erro ao marcar como implementada');
     }
   };
 
@@ -233,13 +369,15 @@ export function MasterIdeasNotepad() {
     setEditingId(idea.id);
     setEditTitle(idea.title);
     setEditContent(idea.content || '');
-    setEditAttachments(idea.attachments || []);
+    setEditCategoria(idea.categoria);
+    setEditAttachments([...idea.attachments]);
   };
 
   const cancelEditing = () => {
     setEditingId(null);
     setEditTitle('');
     setEditContent('');
+    setEditCategoria('geral');
     setEditAttachments([]);
   };
 
@@ -271,7 +409,7 @@ export function MasterIdeasNotepad() {
     }
   };
 
-  const handleAudioSaved = (url: string, fileName: string, filePath: string, transcription?: string, isEdit?: boolean) => {
+  const handleAudioSaved = (url: string, fileName: string, filePath: string, transcription: string | undefined, isEdit: boolean) => {
     const attachment: Attachment = { url, fileName, filePath, fileType: 'audio', transcription };
     if (isEdit) {
       setEditAttachments(prev => [...prev, attachment]);
@@ -293,63 +431,108 @@ export function MasterIdeasNotepad() {
     setAttachments(prev => prev.filter((_, i) => i !== index));
   };
 
-  if (!isMaster) return null;
+  const filteredIdeas = ideas.filter(idea => {
+    const matchesStatus = idea.status === activeTab;
+    const matchesCategoria = filterCategoria === 'all' || idea.categoria === filterCategoria;
+    return matchesStatus && matchesCategoria;
+  });
+
+  const countByStatus = (status: IdeaStatus) => ideas.filter(i => i.status === status).length;
+
+  const canEdit = (idea: Idea) => idea.created_by === user?.id || isAdmin;
+  const canDelete = isAdmin;
+
+  if (!user) return null;
 
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetTrigger asChild>
         <Button
+          className="fixed bottom-24 right-6 h-14 w-14 rounded-full shadow-lg z-40"
           size="icon"
-          className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg bg-primary hover:bg-primary/90"
         >
           <Lightbulb className="h-6 w-6" />
         </Button>
       </SheetTrigger>
-      <SheetContent side="right" className="w-full sm:max-w-lg">
-        <SheetHeader>
+      <SheetContent className="w-full sm:max-w-xl flex flex-col h-full p-0">
+        <SheetHeader className="px-6 py-4 border-b">
           <SheetTitle className="flex items-center gap-2">
-            <Lightbulb className="h-5 w-5" />
-            Bloco de Ideias MASTER
+            <Lightbulb className="h-5 w-5 text-amber-500" />
+            Brainstorm Empresarial
           </SheetTitle>
         </SheetHeader>
 
-        <div className="flex flex-col h-[calc(100vh-100px)] mt-4">
-          {/* New Idea Form */}
-          <Card className="mb-4">
-            <CardHeader className="py-3">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                Nova Ideia
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Input
-                placeholder="Título da ideia..."
-                value={newTitle}
-                onChange={(e) => setNewTitle(e.target.value)}
-              />
-              <Textarea
-                ref={textareaRef}
-                placeholder="Descrição (suporta markdown para imagens)..."
-                value={newContent}
-                onChange={(e) => setNewContent(e.target.value)}
-                className="min-h-[100px]"
-              />
-              
-              {/* Media Buttons */}
-              <div className="flex gap-2">
-                <IdeaImageUpload 
-                  onImageUploaded={(url, fileName, filePath) => handleImageUploaded(url, fileName, filePath, false)}
-                />
-                <IdeaAudioRecorder 
-                  onAudioSaved={(url, fileName, filePath, transcription) => handleAudioSaved(url, fileName, filePath, transcription, false)}
-                />
-              </div>
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as IdeaStatus)} className="flex-1 flex flex-col overflow-hidden">
+          <div className="px-4 pt-4">
+            <TabsList className="w-full grid grid-cols-4">
+              {Object.entries(STATUS_CONFIG).map(([key, config]) => (
+                <TabsTrigger key={key} value={key} className="text-xs">
+                  {config.label} ({countByStatus(key as IdeaStatus)})
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </div>
 
-              {/* Pending Attachments Preview */}
-              {pendingAttachments.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-xs text-muted-foreground">Anexos:</p>
+          <div className="px-4 py-3 flex gap-2">
+            <Select value={filterCategoria} onValueChange={(v) => setFilterCategoria(v as IdeaCategoria | 'all')}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Filtrar categoria" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas Categorias</SelectItem>
+                {Object.entries(CATEGORIA_CONFIG).map(([key, config]) => (
+                  <SelectItem key={key} value={key}>{config.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <ScrollArea className="flex-1 px-4">
+            {/* New Idea Form */}
+            <Card className="mb-4 border-dashed border-2">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Plus className="h-4 w-4" />
+                  Nova Ideia
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Título da ideia..."
+                    value={newTitle}
+                    onChange={(e) => setNewTitle(e.target.value)}
+                    className="flex-1"
+                  />
+                  <Select value={newCategoria} onValueChange={(v) => setNewCategoria(v as IdeaCategoria)}>
+                    <SelectTrigger className="w-[140px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(CATEGORIA_CONFIG).map(([key, config]) => (
+                        <SelectItem key={key} value={key}>{config.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Textarea
+                  ref={textareaRef}
+                  placeholder="Descreva sua ideia..."
+                  value={newContent}
+                  onChange={(e) => setNewContent(e.target.value)}
+                  className="min-h-[80px]"
+                />
+                <div className="flex gap-2">
+                  <IdeaImageUpload 
+                    onImageUploaded={(url, name, path) => handleImageUploaded(url, name, path, false)} 
+                    disabled={false} 
+                  />
+                  <IdeaAudioRecorder 
+                    onAudioSaved={(url, name, path, trans) => handleAudioSaved(url, name, path, trans, false)} 
+                    disabled={false} 
+                  />
+                </div>
+                {pendingAttachments.length > 0 && (
                   <div className="flex flex-wrap gap-2">
                     {pendingAttachments.map((att, idx) => (
                       att.fileType === 'image' ? (
@@ -372,65 +555,65 @@ export function MasterIdeasNotepad() {
                       )
                     ))}
                   </div>
+                )}
+                <Button onClick={handleAddIdea} disabled={!newTitle.trim() || isSaving} className="w-full">
+                  {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plus className="h-4 w-4 mr-2" />}
+                  Adicionar Ideia
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Ideas List */}
+            <div className="space-y-3 pb-4">
+              {isLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                 </div>
-              )}
-
-              <Button 
-                onClick={handleAddIdea} 
-                className="w-full gap-2"
-                disabled={isSaving || !newTitle.trim()}
-              >
-                {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                Salvar Ideia
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Separator />
-
-          {/* Ideas List */}
-          <ScrollArea className="flex-1 mt-4">
-            {loading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-              </div>
-            ) : ideas.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                Nenhuma ideia ainda. Comece a criar!
-              </div>
-            ) : (
-              <div className="space-y-3 pr-4">
-                {ideas.map((idea) => (
+              ) : filteredIdeas.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  Nenhuma ideia {STATUS_CONFIG[activeTab].label.toLowerCase()}
+                </div>
+              ) : (
+                filteredIdeas.map((idea) => (
                   <Card key={idea.id} className="relative">
-                    {editingId === idea.id ? (
-                      <CardContent className="pt-4 space-y-3">
-                        <Input
-                          value={editTitle}
-                          onChange={(e) => setEditTitle(e.target.value)}
-                          placeholder="Título..."
-                        />
-                        <Textarea
-                          ref={editTextareaRef}
-                          value={editContent}
-                          onChange={(e) => setEditContent(e.target.value)}
-                          placeholder="Descrição..."
-                          className="min-h-[80px]"
-                        />
-                        
-                        {/* Media Buttons */}
-                        <div className="flex gap-2">
-                          <IdeaImageUpload 
-                            onImageUploaded={(url, fileName, filePath) => handleImageUploaded(url, fileName, filePath, true)}
+                    <CardContent className="p-4">
+                      {editingId === idea.id ? (
+                        /* Edit Mode */
+                        <div className="space-y-3">
+                          <div className="flex gap-2">
+                            <Input
+                              value={editTitle}
+                              onChange={(e) => setEditTitle(e.target.value)}
+                              className="flex-1"
+                            />
+                            <Select value={editCategoria} onValueChange={(v) => setEditCategoria(v as IdeaCategoria)}>
+                              <SelectTrigger className="w-[140px]">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {Object.entries(CATEGORIA_CONFIG).map(([key, config]) => (
+                                  <SelectItem key={key} value={key}>{config.label}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <Textarea
+                            ref={editTextareaRef}
+                            value={editContent}
+                            onChange={(e) => setEditContent(e.target.value)}
+                            className="min-h-[80px]"
                           />
-                          <IdeaAudioRecorder 
-                            onAudioSaved={(url, fileName, filePath, transcription) => handleAudioSaved(url, fileName, filePath, transcription, true)}
-                          />
-                        </div>
-
-                        {/* Edit Attachments Preview */}
-                        {editAttachments.length > 0 && (
-                          <div className="space-y-2">
-                            <p className="text-xs text-muted-foreground">Anexos:</p>
+                          <div className="flex gap-2">
+                            <IdeaImageUpload 
+                              onImageUploaded={(url, name, path) => handleImageUploaded(url, name, path, true)} 
+                              disabled={false} 
+                            />
+                            <IdeaAudioRecorder 
+                              onAudioSaved={(url, name, path, trans) => handleAudioSaved(url, name, path, trans, true)} 
+                              disabled={false} 
+                            />
+                          </div>
+                          {editAttachments.length > 0 && (
                             <div className="flex flex-wrap gap-2">
                               {editAttachments.map((att, idx) => (
                                 att.fileType === 'image' ? (
@@ -453,96 +636,168 @@ export function MasterIdeasNotepad() {
                                 )
                               ))}
                             </div>
+                          )}
+                          <div className="flex gap-2">
+                            <Button size="sm" onClick={() => handleUpdateIdea(idea.id)} disabled={isSaving}>
+                              {isSaving ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Save className="h-3 w-3 mr-1" />}
+                              Salvar
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={cancelEditing}>Cancelar</Button>
                           </div>
-                        )}
-
-                        <div className="flex gap-2">
-                          <Button 
-                            size="sm" 
-                            onClick={handleUpdateIdea}
-                            disabled={isSaving}
-                            className="gap-1"
-                          >
-                            {isSaving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
-                            Salvar
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            onClick={cancelEditing}
-                            className="gap-1"
-                          >
-                            <X className="h-3 w-3" />
-                            Cancelar
-                          </Button>
                         </div>
-                      </CardContent>
-                    ) : (
-                      <CardContent className="pt-4">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-medium text-sm truncate">{idea.title}</h4>
-                            {idea.content && (
-                              <p className="text-xs text-muted-foreground mt-1 line-clamp-3 whitespace-pre-wrap">
-                                {idea.content}
-                              </p>
+                      ) : (
+                        /* View Mode */
+                        <>
+                          <div className="flex items-start gap-2 mb-2">
+                            <Badge className={`${CATEGORIA_CONFIG[idea.categoria].color} text-xs`}>
+                              {CATEGORIA_CONFIG[idea.categoria].label}
+                            </Badge>
+                            <h4 className="font-semibold flex-1">{idea.title}</h4>
+                          </div>
+                          
+                          {idea.content && (
+                            <p className="text-sm text-muted-foreground mb-3 whitespace-pre-wrap">
+                              {idea.content}
+                            </p>
+                          )}
+
+                          {/* Attachments indicators */}
+                          {idea.attachments.length > 0 && (
+                            <div className="flex gap-2 mb-3">
+                              {idea.attachments.filter(a => a.fileType === 'image').length > 0 && (
+                                <Badge variant="outline" className="text-xs">
+                                  <Image className="h-3 w-3 mr-1" />
+                                  {idea.attachments.filter(a => a.fileType === 'image').length}
+                                </Badge>
+                              )}
+                              {idea.attachments.filter(a => a.fileType === 'audio').length > 0 && (
+                                <Badge variant="outline" className="text-xs">
+                                  <Mic className="h-3 w-3 mr-1" />
+                                  {idea.attachments.filter(a => a.fileType === 'audio').length}
+                                </Badge>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Author info */}
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
+                            <Avatar className="h-5 w-5">
+                              <AvatarImage src={idea.author?.avatar_url || ''} />
+                              <AvatarFallback className="text-[8px]">
+                                {idea.author?.full_name?.charAt(0) || '?'}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span>{idea.author?.full_name || 'Usuário'}</span>
+                            <span>•</span>
+                            <span>
+                              {formatDistanceToNow(new Date(idea.created_at), { addSuffix: true, locale: ptBR })}
+                            </span>
+                          </div>
+
+                          {/* Rejection reason */}
+                          {idea.status === 'recusada' && idea.motivo_recusa && (
+                            <div className="bg-destructive/10 text-destructive text-xs p-2 rounded mb-3">
+                              <strong>Motivo:</strong> {idea.motivo_recusa}
+                            </div>
+                          )}
+
+                          {/* Approval info */}
+                          {(idea.status === 'aprovada' || idea.status === 'implementada') && idea.approver && (
+                            <div className="text-xs text-muted-foreground mb-3">
+                              Aprovada por {idea.approver.full_name}
+                              {idea.aprovado_em && ` em ${new Date(idea.aprovado_em).toLocaleDateString('pt-BR')}`}
+                            </div>
+                          )}
+
+                          {/* Actions */}
+                          <div className="flex flex-wrap gap-2">
+                            {/* Author/Admin actions */}
+                            {canEdit(idea) && idea.status === 'em_pauta' && (
+                              <Button size="sm" variant="outline" onClick={() => startEditing(idea)}>
+                                <Pencil className="h-3 w-3 mr-1" />
+                                Editar
+                              </Button>
                             )}
                             
-                            {/* Attachment indicators */}
-                            {idea.attachments && idea.attachments.length > 0 && (
-                              <div className="flex gap-2 mt-2">
-                                {idea.attachments.filter(a => a.fileType === 'image').length > 0 && (
-                                  <span className="inline-flex items-center gap-1 text-xs bg-muted px-2 py-0.5 rounded">
-                                    <ImageIcon className="h-3 w-3" />
-                                    {idea.attachments.filter(a => a.fileType === 'image').length}
-                                  </span>
-                                )}
-                                {idea.attachments.filter(a => a.fileType === 'audio').length > 0 && (
-                                  <span className="inline-flex items-center gap-1 text-xs bg-muted px-2 py-0.5 rounded">
-                                    <Music className="h-3 w-3" />
-                                    {idea.attachments.filter(a => a.fileType === 'audio').length}
-                                  </span>
-                                )}
-                              </div>
+                            {canDelete && (
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button size="sm" variant="outline" className="text-destructive">
+                                    <Trash2 className="h-3 w-3 mr-1" />
+                                    Excluir
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Excluir ideia?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Esta ação não pode ser desfeita.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDeleteIdea(idea.id)}>
+                                      Excluir
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
                             )}
 
-                            <p className="text-xs text-muted-foreground mt-2">
-                              {new Date(idea.updated_at).toLocaleDateString('pt-BR', {
-                                day: '2-digit',
-                                month: 'short',
-                                year: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                              })}
-                            </p>
+                            {/* Admin approval actions */}
+                            {isAdmin && idea.status === 'em_pauta' && (
+                              <>
+                                <Button size="sm" onClick={() => handleApprove(idea.id)} className="bg-green-600 hover:bg-green-700">
+                                  <CheckCircle2 className="h-3 w-3 mr-1" />
+                                  Aprovar
+                                </Button>
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button size="sm" variant="destructive">
+                                      <XCircle className="h-3 w-3 mr-1" />
+                                      Recusar
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Recusar ideia</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        <Textarea
+                                          placeholder="Motivo da recusa (opcional)"
+                                          value={motivoRecusa}
+                                          onChange={(e) => setMotivoRecusa(e.target.value)}
+                                          className="mt-2"
+                                        />
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel onClick={() => setMotivoRecusa('')}>Cancelar</AlertDialogCancel>
+                                      <AlertDialogAction onClick={() => handleReject(idea.id)}>
+                                        Recusar
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </>
+                            )}
+
+                            {/* Implement action */}
+                            {isAdmin && idea.status === 'aprovada' && (
+                              <Button size="sm" onClick={() => handleImplement(idea.id)}>
+                                <Sparkles className="h-3 w-3 mr-1" />
+                                Marcar Implementada
+                              </Button>
+                            )}
                           </div>
-                          <div className="flex gap-1">
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="h-7 w-7"
-                              onClick={() => startEditing(idea)}
-                            >
-                              <Pencil className="h-3 w-3" />
-                            </Button>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="h-7 w-7 text-destructive hover:text-destructive"
-                              onClick={() => handleDeleteIdea(idea.id)}
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    )}
+                        </>
+                      )}
+                    </CardContent>
                   </Card>
-                ))}
-              </div>
-            )}
+                ))
+              )}
+            </div>
           </ScrollArea>
-        </div>
+        </Tabs>
       </SheetContent>
     </Sheet>
   );
