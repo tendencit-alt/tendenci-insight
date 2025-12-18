@@ -655,6 +655,12 @@ export function DealDetailSheet({
                       {deal.lead.client.state && ` - ${deal.lead.client.state}`}
                     </div>
                   )}
+                  {deal.lead.client.notes && (
+                    <div className="mt-3 p-3 bg-muted/50 rounded-md border-l-2 border-primary/40">
+                      <p className="text-xs font-semibold text-muted-foreground mb-1">📋 Observações do Cliente:</p>
+                      <p className="text-sm whitespace-pre-wrap">{deal.lead.client.notes}</p>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="text-center py-4 text-muted-foreground text-sm">

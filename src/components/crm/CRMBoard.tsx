@@ -166,7 +166,7 @@ export function CRMBoard({ pipelineId, onRefresh, autoOpenDealId, onDealOpened, 
           client_id,
           temperature,
           source:lead_sources(id, name),
-          client:clients(id, name, phone, email, city, state)
+          client:clients(id, name, phone, email, city, state, notes)
         ),
         architect:architects(name),
         owner:profiles(id, full_name, email),
