@@ -133,6 +133,19 @@ export function EditDealDialog({
     }
   }, [open, deal]);
 
+  // Pré-preencher observações do cliente quando um lead é alterado
+  useEffect(() => {
+    if (formData.lead_id && clients.length > 0 && formData.lead_id !== deal?.lead_id) {
+      const selectedLead = clients.find((l: any) => l.id === formData.lead_id);
+      if (selectedLead?.client?.notes && !formData.note) {
+        setFormData((prev) => ({
+          ...prev,
+          note: selectedLead.client.notes,
+        }));
+      }
+    }
+  }, [formData.lead_id, clients]);
+
   const fetchExistingIndications = async () => {
     if (!deal?.id) return;
     
@@ -174,12 +187,12 @@ export function EditDealDialog({
       .select("id, name")
       .order("name");
 
-    // Fetch clients
+    // Fetch clients with notes
     const { data: clientsData } = await supabase
       .from("leads")
       .select(`
         id,
-        client:clients(id, name, phone)
+        client:clients(id, name, phone, notes)
       `)
       .order("created_at", { ascending: false });
 
