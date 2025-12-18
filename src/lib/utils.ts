@@ -22,6 +22,7 @@ export const ALLOWED_FILE_EXTENSIONS = [
 export const ALLOWED_FILE_TYPES_ACCEPT = '.pdf,.doc,.docx,.xls,.xlsx,.xlsm,.dwg,.skp,.jpg,.jpeg,.png,.webp,.txt,.mp3,.wav,.m4a,.webm,.ogg';
 
 // MIME types permitidos para upload
+// CRÍTICO: application/octet-stream é necessário para arquivos .skp e .dwg que browsers não reconhecem
 export const ALLOWED_MIME_TYPES = [
   'application/pdf',
   'application/msword',
@@ -29,8 +30,11 @@ export const ALLOWED_MIME_TYPES = [
   'application/vnd.ms-excel',
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   'application/vnd.ms-excel.sheet.macroenabled.12', // Excel com macros (.xlsm)
+  'application/octet-stream', // CRÍTICO: browsers enviam .skp e .dwg como octet-stream
   'image/dwg',
   'image/x-dwg',
+  'application/dwg',
+  'application/x-dwg',
   'application/acad',
   'application/x-acad',
   'application/vnd.sketchup.skp', // SketchUp (.skp)
@@ -45,7 +49,8 @@ export const ALLOWED_MIME_TYPES = [
   'audio/wav',
   'audio/mp4',
   'audio/webm',
-  'audio/ogg'
+  'audio/ogg',
+  '' // Alguns browsers enviam MIME type vazio
 ];
 
 export const MAX_FILE_SIZE_MB = 1024; // 1GB
