@@ -13,10 +13,10 @@ export interface Message {
 }
 
 const quickQuestions = [
-  { icon: BarChart3, text: "Como está o pipeline?", color: "text-blue-500" },
-  { icon: Target, text: "Como estão as metas da equipe?", color: "text-green-500" },
-  { icon: AlertTriangle, text: "Quais alertas preciso ver?", color: "text-amber-500" },
-  { icon: TrendingUp, text: "Análise geral do mês", color: "text-purple-500" },
+  { icon: BarChart3, text: "Como está meu pipeline?", color: "text-blue-500" },
+  { icon: Target, text: "Comparar com mês anterior", color: "text-green-500" },
+  { icon: AlertTriangle, text: "Onde está travando o funil?", color: "text-amber-500" },
+  { icon: TrendingUp, text: "Previsão de fechamento do mês", color: "text-purple-500" },
 ];
 
 export function TendenciAssistant() {
@@ -120,9 +120,9 @@ export function TendenciAssistant() {
               <Bot className="h-6 w-6 text-primary" />
             </div>
             <div>
-              <span className="text-lg font-semibold">Agente Tendenci</span>
+              <span className="text-lg font-semibold">Agente Tendenci CEO</span>
               <p className="text-xs text-muted-foreground font-normal">
-                Especialista em Gestão Comercial
+                Diretor Comercial Sênior • Análise Estratégica
               </p>
             </div>
           </SheetTitle>
