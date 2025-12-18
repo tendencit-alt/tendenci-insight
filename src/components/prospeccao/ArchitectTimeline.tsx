@@ -62,6 +62,7 @@ export function ArchitectTimeline({ architectId }: ArchitectTimelineProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editMessage, setEditMessage] = useState("");
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
@@ -73,7 +74,18 @@ export function ArchitectTimeline({ architectId }: ArchitectTimelineProps) {
   useEffect(() => {
     const getCurrentUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) setCurrentUserId(user.id);
+      if (user) {
+        setCurrentUserId(user.id);
+        
+        // Verificar se é admin
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+        
+        setIsAdmin(profile?.role === 'admin');
+      }
     };
     getCurrentUser();
   }, []);
@@ -743,7 +755,7 @@ export function ArchitectTimeline({ architectId }: ArchitectTimelineProps) {
                         </span>
                       </div>
                       
-                      {isAuthor && (
+                      {(isAuthor || isAdmin) && (
                         <div className="flex gap-1">
                           {editingId === update.id ? (
                             <>
