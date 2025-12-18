@@ -13,13 +13,19 @@ interface ProcessTaskRequest {
 
 const MAX_RETRIES = 3
 
-// Função para formatar número de telefone brasileiro
-function formatBrazilianPhone(phone: string): { formatted: string | null; error?: string; original: string } {
+// Função para formatar número de telefone brasileiro com fallback (com/sem 9º dígito)
+function formatBrazilianPhoneWithFallback(phone: string): { 
+  primary: string | null;      // Formato 13 dígitos (COM 9º dígito)
+  fallback: string | null;     // Formato 12 dígitos (SEM 9º dígito)
+  error?: string;
+  original: string;
+} {
   const original = phone
   let clean = phone.replace(/\D/g, '')
   
   console.log(`📱 Formatando número - Original: "${original}" → Limpo: "${clean}"`)
   
+  // Remover 55 duplicados no início
   while (clean.startsWith('55') && clean.length > 11) {
     clean = clean.substring(2)
     console.log(`🔄 Removendo 55 duplicado: "${clean}"`)
@@ -27,39 +33,150 @@ function formatBrazilianPhone(phone: string): { formatted: string | null; error?
   
   if (clean.length < 10) {
     return { 
-      formatted: null, 
+      primary: null, 
+      fallback: null,
       error: `Número muito curto - falta DDD (${clean.length} dígitos)`,
       original 
     }
   }
   
+  // Padronizar para 11 dígitos (DDD + 9 + 8 dígitos)
+  let digits11 = clean
+  
   if (clean.length === 10) {
-    clean = clean.slice(0, 2) + '9' + clean.slice(2)
-    console.log(`✨ Adicionado 9° dígito (10→11): "${clean}"`)
-  }
-  
-  if (clean.length === 12 && clean.startsWith('55')) {
-    clean = clean.slice(0, 4) + '9' + clean.slice(4)
-    console.log(`✨ Adicionado 9° dígito (12→13): "${clean}"`)
-  }
-  
-  if (!clean.startsWith('55')) {
-    clean = '55' + clean
-    console.log(`🌍 Adicionado código do país: "${clean}"`)
-  }
-  
-  if (clean.length !== 13) {
+    // 10 dígitos: DDD + 8 dígitos → adicionar 9
+    digits11 = clean.slice(0, 2) + '9' + clean.slice(2)
+    console.log(`✨ Adicionado 9° dígito (10→11): "${digits11}"`)
+  } else if (clean.length === 11) {
+    // Já tem 11 dígitos: DDD + 9 + 8
+    digits11 = clean
+  } else if (clean.length === 12 && clean.startsWith('55')) {
+    // 55 + DDD + 8 dígitos → adicionar 9
+    digits11 = clean.slice(2, 4) + '9' + clean.slice(4)
+    console.log(`✨ Adicionado 9° dígito (12→11): "${digits11}"`)
+  } else if (clean.length === 13 && clean.startsWith('55')) {
+    // Já tem 55 + DDD + 9 + 8
+    digits11 = clean.slice(2)
+  } else {
     return { 
-      formatted: null, 
-      error: `Número com tamanho inválido: ${clean.length} dígitos (esperado 13)`,
+      primary: null, 
+      fallback: null,
+      error: `Número com tamanho inválido: ${clean.length} dígitos`,
       original 
     }
   }
   
-  const formatted = `${clean}@s.whatsapp.net`
-  console.log(`✅ Número formatado: "${formatted}"`)
+  // Formato COM 9º dígito (13 dígitos total: 55 + DDD + 9 + 8)
+  const primary = `55${digits11}@s.whatsapp.net`
   
-  return { formatted, original }
+  // Formato SEM 9º dígito (12 dígitos total: 55 + DDD + 8)
+  // Remover o 9 que está na posição 2 (após o DDD)
+  const ddd = digits11.slice(0, 2)
+  const restWithout9 = digits11.slice(3) // Pular o 9 (posição 2)
+  const fallback = `55${ddd}${restWithout9}@s.whatsapp.net`
+  
+  console.log(`✅ Número formatado - Primary: "${primary}" | Fallback: "${fallback}"`)
+  
+  return { primary, fallback, original }
+}
+
+// Função para enviar WhatsApp com fallback de formato de número
+async function sendWhatsAppWithFallback(
+  evolutionUrl: string,
+  evolutionApiKey: string,
+  instanceName: string,
+  phoneNumber: string,
+  message: string
+): Promise<{ success: boolean; response?: any; error?: string; usedNumber?: string; isNumberNotExists?: boolean }> {
+  
+  const phoneFormats = formatBrazilianPhoneWithFallback(phoneNumber)
+  
+  if (!phoneFormats.primary) {
+    return { success: false, error: phoneFormats.error, isNumberNotExists: false }
+  }
+  
+  // Array de formatos para tentar
+  const numbersToTry = [phoneFormats.primary]
+  
+  // Só adicionar fallback se for diferente do primary
+  if (phoneFormats.fallback && phoneFormats.fallback !== phoneFormats.primary) {
+    numbersToTry.push(phoneFormats.fallback)
+  }
+  
+  let lastError = ''
+  let isNumberNotExistsError = false
+  
+  for (let i = 0; i < numbersToTry.length; i++) {
+    const formattedNumber = numbersToTry[i]
+    const attemptLabel = i === 0 ? 'COM 9º dígito' : 'SEM 9º dígito'
+    
+    console.log(`📤 Tentativa ${i + 1}/${numbersToTry.length} (${attemptLabel}): ${formattedNumber}`)
+    
+    try {
+      const response = await fetch(`${evolutionUrl}/message/sendText/${instanceName}`, {
+        method: 'POST',
+        headers: {
+          'apikey': evolutionApiKey,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          number: formattedNumber,
+          text: message,
+          delay: 1000
+        })
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        console.log(`✅ Mensagem enviada com sucesso usando formato ${attemptLabel}: ${formattedNumber}`)
+        return { success: true, response: data, usedNumber: formattedNumber, isNumberNotExists: false }
+      }
+      
+      // Verificar se é erro de número inexistente
+      const responseText = await response.text()
+      let errorData: any = {}
+      
+      try {
+        errorData = JSON.parse(responseText)
+      } catch {
+        lastError = responseText
+      }
+      
+      // Detectar erro de número inexistente
+      const isNumberNotFound = 
+        errorData.response?.message?.[0]?.exists === false ||
+        errorData.message?.toLowerCase().includes('not exist') ||
+        errorData.message?.toLowerCase().includes('não existe') ||
+        errorData.error?.toLowerCase().includes('not found')
+      
+      if (isNumberNotFound) {
+        console.log(`⚠️ Número ${formattedNumber} não existe no WhatsApp, tentando próximo formato...`)
+        isNumberNotExistsError = true
+        lastError = `Número não encontrado no WhatsApp: ${formattedNumber}`
+        continue // Tentar próximo formato
+      }
+      
+      // Se não é erro de número inexistente, é outro tipo de erro - retornar imediatamente
+      lastError = errorData.message || responseText
+      console.error(`❌ Erro não relacionado ao número: ${lastError}`)
+      return { success: false, error: lastError, isNumberNotExists: false }
+      
+    } catch (fetchError) {
+      lastError = fetchError instanceof Error ? fetchError.message : 'Erro de conexão'
+      console.error(`❌ Erro na requisição: ${lastError}`)
+      return { success: false, error: lastError, isNumberNotExists: false }
+    }
+  }
+  
+  // Se chegou aqui, nenhum formato funcionou
+  const finalError = `Número não encontrado no WhatsApp em nenhum formato (tentamos com e sem 9º dígito). Verifique se o número está correto e se a pessoa usa WhatsApp.`
+  console.error(`❌ ${finalError}`)
+  
+  return { 
+    success: false, 
+    error: finalError,
+    isNumberNotExists: isNumberNotExistsError
+  }
 }
 
 // Função para verificar se já existe notificação recente para a mesma tarefa
@@ -140,6 +257,7 @@ async function createFailureNotification(
     'missing_phone': `O ${module === 'crm' ? 'cliente deste negócio' : 'arquiteto'} não possui telefone cadastrado.`,
     'no_instance': `Você não possui uma instância WhatsApp conectada. Configure em Configurações.`,
     'max_retries': `Tarefa falhou após ${MAX_RETRIES} tentativas. Verifique a configuração.`,
+    'number_not_exists': `O número do ${module === 'crm' ? 'cliente' : 'arquiteto'} não está registrado no WhatsApp. Verifique se o número está correto e se a pessoa usa WhatsApp.`,
     'unknown': errorMessage
   }
 
@@ -322,70 +440,63 @@ async function processCRMTask(supabase: any, evolutionUrl: string, evolutionApiK
 
   console.log(`📱 Instância WhatsApp: ${connection.instance_name}`)
 
-  // Formatar número de telefone
-  const phoneResult = formatBrazilianPhone(clientPhone)
-  
-  if (!phoneResult.formatted) {
-    console.error(`❌ Número inválido:`, phoneResult.error)
-    await handleCRMTaskFailure(supabase, taskId, currentRetryCount)
-    
-    await createFailureNotification(
-      supabase,
-      task.created_by,
-      'invalid_phone',
-      phoneResult.error || 'Formato inválido',
-      taskId,
-      task.deal_id,
-      dealTitle,
-      connection.instance_name,
-      'crm',
-      currentRetryCount
-    )
-    
-    throw new Error(`Número inválido: ${phoneResult.error}`)
-  }
-
-  // Enviar mensagem via Evolution API
+  // Enviar mensagem via Evolution API COM FALLBACK de formato
   const message = task.note || task.title
-  console.log(`📤 Enviando mensagem para ${phoneResult.formatted}`)
+  console.log(`📤 Enviando mensagem para telefone: ${clientPhone}`)
 
-  const sendResponse = await fetch(`${evolutionUrl}/message/sendText/${connection.instance_name}`, {
-    method: 'POST',
-    headers: {
-      'apikey': evolutionApiKey,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      number: phoneResult.formatted,
-      text: message,
-      delay: 1000
-    })
-  })
+  const sendResult = await sendWhatsAppWithFallback(
+    evolutionUrl,
+    evolutionApiKey,
+    connection.instance_name,
+    clientPhone,
+    message
+  )
 
-  if (!sendResponse.ok) {
-    const errorText = await sendResponse.text()
-    console.error('❌ Erro ao enviar mensagem:', errorText)
+  if (!sendResult.success) {
+    console.error('❌ Falha ao enviar:', sendResult.error)
     
-    await handleCRMTaskFailure(supabase, taskId, currentRetryCount)
+    // Se é erro de número inexistente, marcar como falha permanente (não adianta retry)
+    if (sendResult.isNumberNotExists) {
+      await supabase
+        .from('crm_tasks')
+        .update({ status: 'failed', retry_count: MAX_RETRIES })
+        .eq('id', taskId)
+      
+      await createFailureNotification(
+        supabase,
+        task.created_by,
+        'number_not_exists',
+        sendResult.error || 'Número não encontrado no WhatsApp',
+        taskId,
+        task.deal_id,
+        dealTitle,
+        connection.instance_name,
+        'crm',
+        0 // Sempre notificar sobre número inexistente
+      )
+    } else {
+      // Erro temporário - tentar novamente
+      await handleCRMTaskFailure(supabase, taskId, currentRetryCount)
+      
+      await createFailureNotification(
+        supabase,
+        task.created_by,
+        'api_error',
+        sendResult.error?.substring(0, 100) || 'Erro desconhecido',
+        taskId,
+        task.deal_id,
+        dealTitle,
+        connection.instance_name,
+        'crm',
+        currentRetryCount
+      )
+    }
     
-    await createFailureNotification(
-      supabase,
-      task.created_by,
-      'api_error',
-      `Erro Evolution API: ${errorText.substring(0, 100)}`,
-      taskId,
-      task.deal_id,
-      dealTitle,
-      connection.instance_name,
-      'crm',
-      currentRetryCount
-    )
-    
-    throw new Error('Erro ao enviar mensagem via Evolution API')
+    throw new Error(sendResult.error || 'Erro ao enviar mensagem')
   }
 
-  const responseData = await sendResponse.json()
-  console.log('✅ Mensagem enviada com sucesso:', responseData)
+  const responseData = sendResult.response
+  console.log('✅ Mensagem enviada com sucesso usando:', sendResult.usedNumber)
 
   // Marcar tarefa como 'done' e resetar retry_count
   await supabase
@@ -577,29 +688,6 @@ async function processProspeccaoTask(supabase: any, evolutionUrl: string, evolut
 
   console.log(`📱 Instância WhatsApp: ${connection.instance_name}`)
 
-  // Formatar número de telefone
-  const phoneResult = formatBrazilianPhone(architectPhone)
-  
-  if (!phoneResult.formatted) {
-    console.error(`❌ Número inválido:`, phoneResult.error)
-    await handleProspeccaoTaskFailure(supabase, taskId, currentRetryCount)
-    
-    await createFailureNotification(
-      supabase,
-      task.vendedor_id,
-      'invalid_phone',
-      phoneResult.error || 'Formato inválido',
-      taskId,
-      task.architect_id,
-      architectName,
-      connection.instance_name,
-      'prospeccao',
-      currentRetryCount
-    )
-    
-    throw new Error(`Número inválido: ${phoneResult.error}`)
-  }
-
   // Extrair mensagem do campo observacoes (pode ser JSON ou texto)
   let message = 'Olá! Temos novidades para você.'
   
@@ -618,45 +706,62 @@ async function processProspeccaoTask(supabase: any, evolutionUrl: string, evolut
     message = task.titulo
   }
   
-  console.log(`📤 Enviando mensagem para ${phoneResult.formatted}`)
+  console.log(`📤 Enviando mensagem para telefone: ${architectPhone}`)
 
-  const sendResponse = await fetch(`${evolutionUrl}/message/sendText/${connection.instance_name}`, {
-    method: 'POST',
-    headers: {
-      'apikey': evolutionApiKey,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      number: phoneResult.formatted,
-      text: message,
-      delay: 1000
-    })
-  })
+  // Enviar mensagem via Evolution API COM FALLBACK de formato
+  const sendResult = await sendWhatsAppWithFallback(
+    evolutionUrl,
+    evolutionApiKey,
+    connection.instance_name,
+    architectPhone,
+    message
+  )
 
-  if (!sendResponse.ok) {
-    const errorText = await sendResponse.text()
-    console.error('❌ Erro ao enviar mensagem:', errorText)
+  if (!sendResult.success) {
+    console.error('❌ Falha ao enviar:', sendResult.error)
     
-    await handleProspeccaoTaskFailure(supabase, taskId, currentRetryCount)
+    // Se é erro de número inexistente, marcar como falha permanente (não adianta retry)
+    if (sendResult.isNumberNotExists) {
+      await supabase
+        .from('tendenci_prospec_arq_agendamentos')
+        .update({ status: 'falha', retry_count: MAX_RETRIES })
+        .eq('id', taskId)
+      
+      await createFailureNotification(
+        supabase,
+        task.vendedor_id,
+        'number_not_exists',
+        sendResult.error || 'Número não encontrado no WhatsApp',
+        taskId,
+        task.architect_id,
+        architectName,
+        connection.instance_name,
+        'prospeccao',
+        0 // Sempre notificar sobre número inexistente
+      )
+    } else {
+      // Erro temporário - tentar novamente
+      await handleProspeccaoTaskFailure(supabase, taskId, currentRetryCount)
+      
+      await createFailureNotification(
+        supabase,
+        task.vendedor_id,
+        'api_error',
+        sendResult.error?.substring(0, 100) || 'Erro desconhecido',
+        taskId,
+        task.architect_id,
+        architectName,
+        connection.instance_name,
+        'prospeccao',
+        currentRetryCount
+      )
+    }
     
-    await createFailureNotification(
-      supabase,
-      task.vendedor_id,
-      'api_error',
-      `Erro Evolution API: ${errorText.substring(0, 100)}`,
-      taskId,
-      task.architect_id,
-      architectName,
-      connection.instance_name,
-      'prospeccao',
-      currentRetryCount
-    )
-    
-    throw new Error('Erro ao enviar mensagem via Evolution API')
+    throw new Error(sendResult.error || 'Erro ao enviar mensagem')
   }
 
-  const responseData = await sendResponse.json()
-  console.log('✅ Mensagem enviada com sucesso:', responseData)
+  const responseData = sendResult.response
+  console.log('✅ Mensagem enviada com sucesso usando:', sendResult.usedNumber)
 
   // Marcar tarefa como 'concluida' e resetar retry_count
   await supabase
