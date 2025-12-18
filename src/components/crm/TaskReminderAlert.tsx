@@ -106,86 +106,32 @@ export function TaskReminderAlert({ pipelineId }: TaskReminderAlertProps) {
     if (!currentUserId) return;
     
     try {
-      // Buscar etapas de Qualificação e Negociação
-      const { data: stages } = await supabase
-        .from("crm_stages")
-        .select("id, name")
-        .eq("pipeline_id", pipelineId)
-        .or("name.ilike.%qualificação%,name.ilike.%negociação%,name.ilike.%qualificacao%,name.ilike.%negociacao%");
+      // Usar RPC do servidor que usa NOW() para garantir consistência
+      // Isso resolve o problema de timezone e relógio do cliente
+      const { data: deals, error } = await supabase.rpc('get_deals_without_valid_tasks', {
+        p_pipeline_id: pipelineId,
+        p_user_id: currentUserId,
+        p_is_master: isMaster
+      });
 
-      if (!stages || stages.length === 0) return;
-
-      const stageIds = stages.map(s => s.id);
-
-      // Buscar deals nessas etapas que estão abertos
-      // Se for vendedor (não master), filtrar apenas pelos seus deals
-      let query = supabase
-        .from("crm_deals")
-        .select(`
-          id,
-          title,
-          owner_id,
-          stage_entered_at,
-          stage:crm_stages(name),
-          lead:leads(
-            client:clients(name, phone)
-          ),
-          owner:profiles(full_name)
-        `)
-        .eq("pipeline_id", pipelineId)
-        .eq("status", "aberto")
-        .in("stage_id", stageIds);
-
-      // Vendedores só veem seus próprios deals
-      if (!isMaster) {
-        query = query.eq("owner_id", currentUserId);
-      }
-
-      const { data: deals, error: dealsError } = await query;
-
-      if (dealsError) {
-        console.error('Error fetching deals:', dealsError);
+      if (error) {
+        console.error('Error fetching deals without tasks:', error);
         return;
       }
 
-      if (!deals || deals.length === 0) {
-        setDealsWithoutTasks([]);
-        setShowAlert(false);
-        return;
-      }
-
-      // Para cada deal, verificar se tem tarefas VÁLIDAS (pendente E due_at >= NOW())
-      const dealsWithoutValidTasksArray: DealWithoutTask[] = [];
-      const now = new Date().toISOString();
-      
-      for (const deal of deals) {
-        // Buscar tarefas válidas: status pendente E data futura
-        const { count } = await supabase
-          .from("crm_tasks")
-          .select("id", { count: "exact", head: true })
-          .eq("deal_id", deal.id)
-          .in("status", ["open", "pendente"])
-          .gte("due_at", now);
-
-        if (count === 0) {
-          // Calcular horas sem tarefa válida
-          const stageEnteredAt = deal.stage_entered_at ? new Date(deal.stage_entered_at) : new Date();
-          const hoursWithoutTask = Math.floor((Date.now() - stageEnteredAt.getTime()) / (1000 * 60 * 60));
-          
-          dealsWithoutValidTasksArray.push({
-            ...deal as DealWithoutTask,
-            hours_without_task: hoursWithoutTask
-          });
-        }
-      }
-
-      if (dealsWithoutValidTasksArray.length > 0) {
-        // Ordenar por horas sem tarefa (mais urgente primeiro)
-        dealsWithoutValidTasksArray.sort((a, b) => 
-          (b.hours_without_task || 0) - (a.hours_without_task || 0)
-        );
+      if (deals && deals.length > 0) {
+        // Mapear para o formato esperado pelo componente
+        const formattedDeals: DealWithoutTask[] = deals.map((deal: any) => ({
+          id: deal.id,
+          title: deal.title,
+          stage: { name: deal.stage_name },
+          lead: { client: { name: deal.client_name, phone: deal.client_phone } },
+          owner: { full_name: deal.owner_name },
+          owner_id: deal.owner_id,
+          hours_without_task: deal.hours_without_task
+        }));
         
-        setDealsWithoutTasks(dealsWithoutValidTasksArray);
+        setDealsWithoutTasks(formattedDeals);
         setShowAlert(true);
       } else {
         setDealsWithoutTasks([]);

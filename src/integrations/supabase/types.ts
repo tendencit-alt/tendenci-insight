@@ -5330,6 +5330,26 @@ export type Database = {
         Returns: Json
       }
       get_daily_goal_stats: { Args: { p_vendedor_id?: string }; Returns: Json }
+      get_deals_without_valid_tasks: {
+        Args: {
+          p_is_master?: boolean
+          p_pipeline_id: string
+          p_user_id?: string
+        }
+        Returns: {
+          client_name: string
+          client_phone: string
+          hours_without_task: number
+          id: string
+          lead_id: string
+          owner_id: string
+          owner_name: string
+          stage_entered_at: string
+          stage_id: string
+          stage_name: string
+          title: string
+        }[]
+      }
       get_monthly_goal_records: {
         Args: { p_month?: string; p_vendedor_id?: string }
         Returns: {
