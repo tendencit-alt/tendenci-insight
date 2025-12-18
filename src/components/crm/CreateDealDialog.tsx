@@ -117,6 +117,19 @@ export function CreateDealDialog({
     }
   }, [open, pipelineId]);
 
+  // Pré-preencher observações do cliente quando um lead é selecionado
+  useEffect(() => {
+    if (formData.lead_id && leads.length > 0) {
+      const selectedLead = leads.find((l: any) => l.id === formData.lead_id);
+      if (selectedLead?.client?.notes && !formData.observations) {
+        setFormData((prev) => ({
+          ...prev,
+          observations: selectedLead.client.notes,
+        }));
+      }
+    }
+  }, [formData.lead_id, leads]);
+
   const fetchOptions = async () => {
     // Fetch stages
     const { data: stagesData } = await supabase
@@ -125,10 +138,10 @@ export function CreateDealDialog({
       .eq("pipeline_id", pipelineId)
       .order("position");
 
-    // Fetch leads with client info
+    // Fetch leads with client info including notes
     const { data: leadsData } = await supabase
       .from("leads")
-      .select("id, client:clients(name, phone, email)")
+      .select("id, client:clients(id, name, phone, email, notes)")
       .order("created_at", { ascending: false })
       .limit(50);
 
