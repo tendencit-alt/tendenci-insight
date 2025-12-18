@@ -37,7 +37,7 @@ export function LeadsTable({ filters }: LeadsTableProps) {
       .from("leads")
       .select(`
         *,
-        client:clients(name, phone, email),
+        client:clients(name, phone, email, notes),
         architect:architects(name),
         source:lead_sources(name)
       `)

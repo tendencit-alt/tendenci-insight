@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -27,7 +28,8 @@ export function EditLeadDialog({ lead, open, onOpenChange, onSuccess }: EditLead
       email: "",
       source: "",
       status: "",
-      responsible: ""
+      responsible: "",
+      notes: ""
     },
     open
   );
@@ -44,7 +46,8 @@ export function EditLeadDialog({ lead, open, onOpenChange, onSuccess }: EditLead
         email: lead.client?.email || "",
         source: lead.utm_source || "",
         status: lead.status || "novo",
-        responsible: lead.architect_id || ""
+        responsible: lead.architect_id || "",
+        notes: lead.client?.notes || ""
       });
     }
   }, [lead]);
@@ -72,7 +75,8 @@ export function EditLeadDialog({ lead, open, onOpenChange, onSuccess }: EditLead
           .update({
             name: formData.name,
             phone: formData.phone,
-            email: formData.email
+            email: formData.email,
+            notes: formData.notes || null
           })
           .eq("id", lead.client_id);
 
@@ -205,6 +209,17 @@ export function EditLeadDialog({ lead, open, onOpenChange, onSuccess }: EditLead
                   Remover responsável
                 </Button>
               )}
+            </div>
+
+            <div className="space-y-2 col-span-2">
+              <Label htmlFor="edit-notes">Observações</Label>
+              <Textarea
+                id="edit-notes"
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                placeholder="Anotações sobre o cliente..."
+                rows={3}
+              />
             </div>
           </div>
 

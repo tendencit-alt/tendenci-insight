@@ -3266,6 +3266,7 @@ export type Database = {
           lost_date: string | null
           lost_reason: string | null
           name: string | null
+          notes: string | null
           presented_at: string | null
           sent_at: string | null
           sent_date: string | null
@@ -3284,6 +3285,7 @@ export type Database = {
           lost_date?: string | null
           lost_reason?: string | null
           name?: string | null
+          notes?: string | null
           presented_at?: string | null
           sent_at?: string | null
           sent_date?: string | null
@@ -3302,6 +3304,7 @@ export type Database = {
           lost_date?: string | null
           lost_reason?: string | null
           name?: string | null
+          notes?: string | null
           presented_at?: string | null
           sent_at?: string | null
           sent_date?: string | null

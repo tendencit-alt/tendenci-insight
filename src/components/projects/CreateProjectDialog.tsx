@@ -235,7 +235,8 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess, preSelected
           architect_id: formData.architect_id && formData.architect_id !== 'sem-arquiteto' ? formData.architect_id : null,
           stage: formData.stage,
           value: formData.value ? parseFloat(formData.value) : 0,
-          deadline: formData.deadline || null
+          deadline: formData.deadline || null,
+          notes: formData.notes || null
         })
         .select()
         .maybeSingle();

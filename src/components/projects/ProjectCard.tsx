@@ -138,6 +138,13 @@ export function ProjectCard({
           </p>
         )}
         
+        {/* Project notes */}
+        {project.notes && (
+          <p className="text-xs text-muted-foreground line-clamp-2 italic">
+            📝 {project.notes}
+          </p>
+        )}
+        
         {/* Days since sent */}
         {daysSinceSent !== null && daysSinceSent > 0 && (
           <p className="text-xs text-muted-foreground">

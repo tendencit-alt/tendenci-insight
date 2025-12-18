@@ -108,6 +108,12 @@ export function LeadDetailSheet({ lead, open, onOpenChange, onEdit }: LeadDetail
                 <span className="text-sm text-muted-foreground">Responsável</span>
                 <p className="font-medium">{lead.architect?.name || "Não atribuído"}</p>
               </div>
+              {lead.client?.notes && (
+                <div className="col-span-2 mt-2 p-3 bg-muted/50 rounded-md border-l-2 border-primary/40">
+                  <p className="text-xs font-semibold text-muted-foreground mb-1">📋 Observações:</p>
+                  <p className="text-sm whitespace-pre-wrap">{lead.client.notes}</p>
+                </div>
+              )}
             </div>
 
             <Separator />
