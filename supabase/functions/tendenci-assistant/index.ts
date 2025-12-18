@@ -3,8 +3,9 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.80.0";
 
 async function processToolCalls(toolCalls: any[]) {
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-  const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
-  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  // Usar SERVICE_ROLE_KEY para bypass de RLS - acesso total aos dados para o assistente de gestão
+  const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
   const results = [];
 
@@ -12,15 +13,24 @@ async function processToolCalls(toolCalls: any[]) {
     const functionName = toolCall.function.name;
     const args = JSON.parse(toolCall.function.arguments || "{}");
     
-    console.log(`Executando ferramenta: ${functionName}`, args);
+    console.log(`[Tendenci] Executando ferramenta: ${functionName}`, args);
     
     let result;
 
     try {
+      // Datas padrão para métricas (últimos 30 dias)
+      const now = new Date();
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
       switch (functionName) {
         // ==================== CRM ====================
         case "buscar_metricas_crm":
-          const { data: crmData } = await supabase.rpc("dashboard_crm_metrics");
+          // Chamar com parâmetros obrigatórios
+          const { data: crmData, error: crmError } = await supabase.rpc("dashboard_crm_metrics", {
+            p_start: thirtyDaysAgo.toISOString(),
+            p_end: now.toISOString()
+          });
+          if (crmError) console.error("[Tendenci] Erro buscar_metricas_crm:", crmError);
           result = crmData;
           break;
 
@@ -333,16 +343,31 @@ async function processToolCalls(toolCalls: any[]) {
         // ==================== DIAGNÓSTICO GERAL ====================
         case "diagnostico_geral":
           // Buscar múltiplas métricas em paralelo
+          const diagNow = new Date();
+          const diagThirtyDaysAgo = new Date(diagNow.getTime() - 30 * 24 * 60 * 60 * 1000);
+          
+          // Buscar pipeline padrão para alertas SLA
+          const { data: defaultPipeline } = await supabase
+            .from("crm_pipelines")
+            .select("id")
+            .limit(1)
+            .single();
+          
           const [
-            { data: crmMetrics },
+            { data: crmMetrics, error: diagCrmError },
             { data: metaEmpresa },
             { data: alertasSLA },
             { data: projetosAtrasados },
             { data: leadsQuentes }
           ] = await Promise.all([
-            supabase.rpc("dashboard_crm_metrics"),
+            supabase.rpc("dashboard_crm_metrics", {
+              p_start: diagThirtyDaysAgo.toISOString(),
+              p_end: diagNow.toISOString()
+            }),
             supabase.from("tendenci_company_goals").select("*").eq("status", "ativa").single(),
-            supabase.rpc("crm_sla_alerts", { p_pipeline_id: null }),
+            defaultPipeline?.id 
+              ? supabase.rpc("crm_sla_alerts", { p_pipeline_id: defaultPipeline.id })
+              : Promise.resolve({ data: [] }),
             supabase.from("projects")
               .select("id")
               .lt("deadline", new Date().toISOString())
@@ -352,6 +377,8 @@ async function processToolCalls(toolCalls: any[]) {
               .eq("temperature", "quente")
               .eq("status", "novo")
           ]);
+          
+          if (diagCrmError) console.error("[Tendenci] Erro diagnóstico CRM:", diagCrmError);
 
           // Calcular progresso da meta da empresa
           let progressoMeta = null;
