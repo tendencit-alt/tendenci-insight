@@ -24,6 +24,9 @@ verify_jwt = false
 [functions.dispatch-followup]
 verify_jwt = false
 
+[functions.get-eligible-followups]
+verify_jwt = false
+
 [functions.whatsapp-webhook]
 verify_jwt = false
 

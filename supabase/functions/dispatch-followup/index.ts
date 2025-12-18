@@ -8,14 +8,29 @@ import {
   getMostRecentDate
 } from '../_shared/timezone.ts'
 
+/**
+ * dispatch-followup
+ * 
+ * Este endpoint agora funciona de forma unificada com a IA de atendimento:
+ * 
+ * MODO 1 (Padrão): Notifica a IA de atendimento sobre deals elegíveis
+ *   - Chama o webhook da IA de atendimento (N8N_ATENDIMENTO_WEBHOOK_URL)
+ *   - A IA é responsável por gerar mensagens e enviar via WhatsApp
+ * 
+ * MODO 2 (Fallback): Envia para workflow separado de follow-up
+ *   - Se N8N_ATENDIMENTO_WEBHOOK_URL não estiver configurado
+ *   - Usa N8N_FOLLOWUP_WEBHOOK_URL como fallback
+ */
+
 interface DispatchRequest {
-  webhook_url?: string // Agora opcional - usa variável de ambiente se não fornecido
+  webhook_url?: string
   ignore_time_filter?: boolean
+  mode?: 'atendimento' | 'followup' // Modo de operação
 }
 
 interface LeadForFollowup {
   deal_id: string
-  lead_id: string
+  session_id: string
   client_name: string
   client_phone: string
   conversation_history: string | null
@@ -27,6 +42,7 @@ interface LeadForFollowup {
   product_type: string | null
   categoria: string | null
   last_interaction: string | null
+  type: 'followup_trigger' // Identificador para a IA de atendimento
 }
 
 // Formata número brasileiro para WhatsApp
@@ -78,7 +94,7 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Tentar parsear body, mas pode vir vazio do CRON
+    // Parsear body
     let body: DispatchRequest = {}
     try {
       const text = await req.text()
@@ -86,19 +102,24 @@ Deno.serve(async (req) => {
         body = JSON.parse(text)
       }
     } catch {
-      // Body vazio ou inválido - ok para chamadas CRON
+      // Body vazio - ok para CRON
     }
 
-    // Usar webhook_url do body OU da variável de ambiente
-    const webhookUrl = body.webhook_url || Deno.env.get('N8N_FOLLOWUP_WEBHOOK_URL')
     const ignoreTimeFilter = body.ignore_time_filter || false
 
+    // Determinar webhook a usar (prioridade: IA de atendimento)
+    const atendimentoWebhook = Deno.env.get('N8N_ATENDIMENTO_WEBHOOK_URL')
+    const followupWebhook = body.webhook_url || Deno.env.get('N8N_FOLLOWUP_WEBHOOK_URL')
+    
+    const webhookUrl = atendimentoWebhook || followupWebhook
+    const isAtendimentoMode = !!atendimentoWebhook
+
     if (!webhookUrl) {
-      console.error('❌ Nenhum webhook_url configurado (body ou env)')
+      console.error('❌ Nenhum webhook configurado')
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: 'Webhook URL não configurado. Configure N8N_FOLLOWUP_WEBHOOK_URL nas secrets.' 
+          error: 'Nenhum webhook configurado. Configure N8N_ATENDIMENTO_WEBHOOK_URL ou N8N_FOLLOWUP_WEBHOOK_URL.' 
         }),
         { 
           status: 400,
@@ -107,8 +128,9 @@ Deno.serve(async (req) => {
       )
     }
 
-    console.log('🚀 Iniciando disparo AUTOMÁTICO de follow-ups...')
-    console.log('📡 Webhook URL:', webhookUrl.substring(0, 50) + '...')
+    console.log('🚀 Iniciando disparo de follow-ups...')
+    console.log(`📡 Modo: ${isAtendimentoMode ? 'IA de Atendimento' : 'Workflow Separado'}`)
+    console.log(`📡 Webhook: ${webhookUrl.substring(0, 50)}...`)
 
     // Verificar horário comercial
     const hour = getCurrentHourBrasil()
@@ -130,7 +152,7 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Buscar ID da etapa "Follow Up (I.A)"
+    // Buscar etapa "Follow Up (I.A)"
     const { data: followupStage, error: stageError } = await supabase
       .from('crm_stages')
       .select('id, name')
@@ -141,16 +163,15 @@ Deno.serve(async (req) => {
       console.warn('⚠️ Erro ao buscar etapa Follow Up:', stageError.message)
     } else if (followupStage) {
       console.log(`✅ Etapa Follow Up encontrada: ${followupStage.name} (${followupStage.id})`)
-    } else {
-      console.log('ℹ️ Etapa "Follow Up" não encontrada')
     }
 
-    // Buscar leads elegíveis para follow-up
+    // Buscar deals elegíveis
     let query = supabase
       .from('crm_deals')
       .select(`
         id,
         lead_id,
+        title,
         conversation_history,
         followup_count,
         max_followups,
@@ -172,7 +193,7 @@ Deno.serve(async (req) => {
       .eq('followup_enabled', true)
       .eq('status', 'aberto')
 
-    // Adicionar filtro de etapa se encontrada
+    // Filtrar por etapa se encontrada
     if (followupStage?.id) {
       query = query.eq('stage_id', followupStage.id)
     }
@@ -186,7 +207,7 @@ Deno.serve(async (req) => {
 
     console.log(`📊 Total de leads com follow-up ativo: ${leads?.length || 0}`)
 
-    // Cutoff de 48h em UTC
+    // Cutoff de 48h
     const cutoffTimestamp = get48HoursCutoffUTC()
     console.log(`⏰ Cutoff 48h UTC: ${new Date(cutoffTimestamp).toISOString()}`)
     
@@ -207,9 +228,7 @@ Deno.serve(async (req) => {
           return true
         }
         
-        const mostRecentTimestamp = mostRecentDate.getTime()
-        const isEligible = mostRecentTimestamp < cutoffTimestamp
-        
+        const isEligible = mostRecentDate.getTime() < cutoffTimestamp
         console.log(`📅 Deal ${deal.id}: Última atividade ${mostRecentDate.toISOString()}, elegível: ${isEligible}`)
         
         return isEligible
@@ -220,14 +239,13 @@ Deno.serve(async (req) => {
           ? leadsData[0]?.clients 
           : (leadsData as any)?.clients
         
-        const leadPhone = clientData?.phone
-        const phone = formatBrazilianPhone(leadPhone)
+        const phone = formatBrazilianPhone(clientData?.phone)
         const clientName = clientData?.name || 'Cliente'
         const followupNumber = (deal.followup_count || 0) + 1
         
         return {
           deal_id: deal.id,
-          lead_id: deal.lead_id,
+          session_id: deal.id, // Para compatibilidade com IA de atendimento
           client_name: clientName,
           client_phone: phone,
           conversation_history: deal.conversation_history,
@@ -238,7 +256,8 @@ Deno.serve(async (req) => {
           owner_name: (deal.profiles as any)?.full_name || null,
           product_type: deal.product_type,
           categoria: deal.categoria,
-          last_interaction: deal.last_interaction
+          last_interaction: deal.last_interaction,
+          type: 'followup_trigger' as const
         }
       })
       .filter((lead): lead is LeadForFollowup => lead.client_phone !== null)
@@ -265,51 +284,38 @@ Deno.serve(async (req) => {
       errors: [] as string[]
     }
 
+    // Enviar para webhook
     for (const lead of eligibleLeads) {
       try {
-        console.log(`📤 Enviando lead ${lead.client_name} (follow-up #${lead.followup_number}) para webhook...`)
+        console.log(`📤 Enviando ${lead.client_name} (follow-up #${lead.followup_number})...`)
         
-      const payload = {
-        deal_id: lead.deal_id,
-        sessionId: lead.deal_id,
-        client_name: lead.client_name,
-          client_phone: lead.client_phone,
-          conversation_history: lead.conversation_history || '',
-          followup_count: lead.followup_count,
-          followup_number: lead.followup_number,
-          product_type: lead.product_type,
-          categoria: lead.categoria,
-          last_interaction: lead.last_interaction,
+        const payload = {
+          ...lead,
           callback_url: callbackUrl
         }
 
         const response = await fetch(webhookUrl, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         })
 
         if (response.ok) {
-          console.log(`✅ Lead ${lead.client_name} enviado com sucesso`)
+          console.log(`✅ ${lead.client_name} enviado com sucesso`)
           results.success++
           
-          const { error: logError } = await supabase
+          // Registrar log como pending
+          await supabase
             .from('followup_logs')
             .insert({
               deal_id: lead.deal_id,
               followup_number: lead.followup_number,
               status: 'pending',
-              message_sent: 'Enviado para n8n - aguardando processamento'
+              message_sent: `Enviado para ${isAtendimentoMode ? 'IA de atendimento' : 'n8n'}`
             })
-          
-          if (logError) {
-            console.warn(`⚠️ Erro ao criar log pending: ${logError.message}`)
-          }
         } else {
           const errorText = await response.text()
-          console.error(`❌ Erro ao enviar lead ${lead.client_name}:`, errorText)
+          console.error(`❌ Erro ao enviar ${lead.client_name}:`, errorText)
           results.failed++
           results.errors.push(`${lead.client_name}: ${errorText}`)
           
@@ -324,7 +330,7 @@ Deno.serve(async (req) => {
         }
 
       } catch (error: any) {
-        console.error(`❌ Erro ao processar lead ${lead.client_name}:`, error.message)
+        console.error(`❌ Erro ao processar ${lead.client_name}:`, error.message)
         results.failed++
         results.errors.push(`${lead.client_name}: ${error.message}`)
       }
@@ -336,6 +342,7 @@ Deno.serve(async (req) => {
       JSON.stringify({ 
         success: true, 
         message: `Follow-ups disparados: ${results.success} sucesso, ${results.failed} falhas`,
+        mode: isAtendimentoMode ? 'atendimento' : 'followup',
         dispatched: results.success,
         failed: results.failed,
         eligible: eligibleLeads.length,

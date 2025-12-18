@@ -23,7 +23,9 @@ import {
   RefreshCw,
   Users,
   Pause,
-  Check
+  Check,
+  ExternalLink,
+  Code
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -54,12 +56,12 @@ export function N8nFollowupGuide() {
   });
   const [eligibleCount, setEligibleCount] = useState<number | null>(null);
   const [testingConnection, setTestingConnection] = useState(false);
+  const [testingEligible, setTestingEligible] = useState(false);
 
   useEffect(() => {
     fetchStats();
     checkEligibleLeads();
     
-    // Atualizar a cada 60 segundos
     const interval = setInterval(() => {
       fetchStats();
       checkEligibleLeads();
@@ -84,10 +86,9 @@ export function N8nFollowupGuide() {
         });
       }
       
-      // Simular status do CRON baseado em logs
       const now = new Date();
-      const lastRun = new Date(now.getTime() - Math.random() * 7200000); // Última 2h
-      const nextRun = new Date(now.getTime() + 7200000); // Próxima 2h
+      const lastRun = new Date(now.getTime() - Math.random() * 7200000);
+      const nextRun = new Date(now.getTime() + 7200000);
       
       setCronStatus({
         isActive: true,
@@ -151,7 +152,7 @@ export function N8nFollowupGuide() {
     }
   };
 
-  const testConnection = async () => {
+  const testDispatch = async () => {
     setTestingConnection(true);
     try {
       const { data, error } = await supabase.functions.invoke('dispatch-followup', {
@@ -163,7 +164,8 @@ export function N8nFollowupGuide() {
       if (data?.error) {
         toast.error(data.error);
       } else {
-        toast.success(`Teste realizado: ${data?.dispatched || 0} leads enviados, ${data?.eligible || 0} elegíveis`);
+        const mode = data?.mode === 'atendimento' ? 'IA de Atendimento' : 'Workflow n8n';
+        toast.success(`Teste via ${mode}: ${data?.dispatched || 0} enviados, ${data?.eligible || 0} elegíveis`);
         fetchStats();
         checkEligibleLeads();
       }
@@ -174,6 +176,30 @@ export function N8nFollowupGuide() {
     }
   };
 
+  const testGetEligible = async () => {
+    setTestingEligible(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('get-eligible-followups', {
+        body: { ignore_time_filter: true, limit: 5 }
+      });
+      
+      if (error) throw error;
+      
+      if (data?.success) {
+        toast.success(`${data.count} deals elegíveis encontrados`);
+        if (data.eligible?.length > 0) {
+          console.log('Deals elegíveis:', data.eligible);
+        }
+      } else {
+        toast.error(data?.error || 'Erro desconhecido');
+      }
+    } catch (error: any) {
+      toast.error(`Erro: ${error.message}`);
+    } finally {
+      setTestingEligible(false);
+    }
+  };
+
   const copyToClipboard = (text: string, field: string) => {
     navigator.clipboard.writeText(text);
     setCopiedField(field);
@@ -181,289 +207,8 @@ export function N8nFollowupGuide() {
     setTimeout(() => setCopiedField(null), 2000);
   };
 
-  const getWorkflowJSON = () => {
-    return {
-      name: "Tendenci - Follow-up Completo v5",
-      nodes: [
-        {
-          parameters: {
-            httpMethod: "POST",
-            path: "tendenci-followup",
-            responseMode: "responseNode",
-            options: {}
-          },
-          id: "webhook-trigger",
-          name: "Webhook Tendenci",
-          type: "n8n-nodes-base.webhook",
-          typeVersion: 2,
-          position: [240, 300],
-          webhookId: "tendenci-followup-webhook"
-        },
-        {
-          parameters: {
-            assignments: {
-              assignments: [
-                { id: "a1", name: "deal_id", value: "={{ $json.deal_id }}", type: "string" },
-                { id: "a2", name: "client_name", value: "={{ $json.client_name }}", type: "string" },
-                { id: "a3", name: "client_phone", value: "={{ $json.client_phone }}", type: "string" },
-                { id: "a4", name: "conversation_history", value: "={{ $json.conversation_history || '' }}", type: "string" },
-                { id: "a5", name: "followup_number", value: "={{ $json.followup_number }}", type: "number" },
-                { id: "a6", name: "product_type", value: "={{ $json.product_type || 'móveis' }}", type: "string" },
-                { id: "a7", name: "categoria", value: "={{ $json.categoria || '' }}", type: "string" },
-                { id: "a8", name: "last_interaction", value: "={{ $json.last_interaction }}", type: "string" },
-                // callback_url removido - usando URL fixa no nó Atualizar CRM
-                { id: "a10", name: "evolution_url", value: "SUA_EVOLUTION_URL_AQUI", type: "string" },
-                { id: "a11", name: "instance_name", value: "SUA_INSTANCIA_AQUI", type: "string" },
-                { id: "a12", name: "evolution_apikey", value: "SUA_APIKEY_AQUI", type: "string" }
-              ]
-            },
-            options: {}
-          },
-          id: "set-fields",
-          name: "Preparar Dados",
-          type: "n8n-nodes-base.set",
-          typeVersion: 3.4,
-          position: [460, 300]
-        },
-        {
-          parameters: {
-            amount: 3,
-            unit: "minutes"
-          },
-          id: "wait-node",
-          name: "Aguardar 3min",
-          type: "n8n-nodes-base.wait",
-          typeVersion: 1.1,
-          position: [680, 300]
-        },
-        {
-          parameters: {
-            modelId: {
-              __rl: true,
-              value: "gpt-4o-mini",
-              mode: "list",
-              cachedResultName: "GPT-4O-MINI"
-            },
-            messages: {
-              values: [
-                {
-                  content: "=Você é um especialista em vendas de móveis. Gere uma mensagem de follow-up curta e personalizada (máximo 2 parágrafos) para o cliente.\n\nNome do cliente: {{ $json.client_name }}\nProduto de interesse: {{ $json.product_type }}\nNúmero do follow-up: {{ $json.followup_number }}\nÚltima interação: {{ $json.last_interaction }}\n\nHistórico da conversa:\n{{ $json.conversation_history || 'Primeira interação' }}\n\nRegras:\n- Seja cordial e profissional\n- Não seja invasivo\n- Mencione o produto de interesse\n- Se for follow-up 2+, seja mais breve\n- Termine com uma pergunta aberta"
-                }
-              ]
-            },
-            options: {}
-          },
-          id: "openai-chat",
-          name: "Gerar Mensagem IA",
-          type: "@n8n/n8n-nodes-langchain.lmChatOpenAi",
-          typeVersion: 1,
-          position: [900, 300],
-          credentials: {
-            openAiApi: {
-              id: "CONFIGURE_OPENAI",
-              name: "OpenAI API"
-            }
-          }
-        },
-        {
-          parameters: {
-            assignments: {
-              assignments: [
-                { id: "b1", name: "deal_id", value: "={{ $('Preparar Dados').item.json.deal_id }}", type: "string" },
-                { id: "b2", name: "client_name", value: "={{ $('Preparar Dados').item.json.client_name }}", type: "string" },
-                { id: "b3", name: "client_phone", value: "={{ $('Preparar Dados').item.json.client_phone }}", type: "string" },
-                { id: "b4", name: "followup_number", value: "={{ $('Preparar Dados').item.json.followup_number }}", type: "number" },
-                // callback_url removido - usando URL fixa
-                { id: "b6", name: "evolution_url", value: "={{ $('Preparar Dados').item.json.evolution_url }}", type: "string" },
-                { id: "b7", name: "instance_name", value: "={{ $('Preparar Dados').item.json.instance_name }}", type: "string" },
-                { id: "b8", name: "evolution_apikey", value: "={{ $('Preparar Dados').item.json.evolution_apikey }}", type: "string" },
-                { id: "b9", name: "ai_message", value: "={{ $json.text || $json.message?.content || $json.content || '' }}", type: "string" }
-              ]
-            },
-            options: {}
-          },
-          id: "merge-message",
-          name: "Juntar Dados + Mensagem",
-          type: "n8n-nodes-base.set",
-          typeVersion: 3.4,
-          position: [1120, 300]
-        },
-        {
-          parameters: {
-            method: "POST",
-            url: "={{ $json.evolution_url }}/message/sendText/{{ $json.instance_name }}",
-            sendHeaders: true,
-            headerParameters: {
-              parameters: [
-                {
-                  name: "apikey",
-                  value: "={{ $json.evolution_apikey }}"
-                },
-                {
-                  name: "Content-Type",
-                  value: "application/json"
-                }
-              ]
-            },
-            sendBody: true,
-            specifyBody: "json",
-            jsonBody: "={{ JSON.stringify({ number: $json.client_phone, text: $json.ai_message }) }}",
-            options: {
-              timeout: 30000
-            }
-          },
-          id: "send-whatsapp",
-          name: "Enviar WhatsApp",
-          type: "n8n-nodes-base.httpRequest",
-          typeVersion: 4.2,
-          position: [1340, 300]
-        },
-        {
-          parameters: {
-            conditions: {
-              options: {
-                version: 2,
-                caseSensitive: true,
-                leftValue: "",
-                typeValidation: "loose"
-              },
-              combinator: "and",
-              conditions: [
-                {
-                  id: "check-key-exists",
-                  leftValue: "={{ $json.key }}",
-                  rightValue: "",
-                  operator: {
-                    type: "object",
-                    operation: "exists"
-                  }
-                }
-              ]
-            },
-            options: {}
-          },
-          id: "check-success",
-          name: "Envio OK?",
-          type: "n8n-nodes-base.if",
-          typeVersion: 2.2,
-          position: [1560, 300]
-        },
-        {
-          parameters: {
-            method: "POST",
-            // URL FIXA - não depende mais de callback_url
-            url: "https://emnwuzrysqoiwapzmnbv.supabase.co/functions/v1/update-followup-history",
-            sendHeaders: true,
-            headerParameters: {
-              parameters: [
-                {
-                  name: "Content-Type",
-                  value: "application/json"
-                },
-                {
-                  name: "Authorization",
-                  value: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVtbnd1enJ5c3FvaXdhcHptbmJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI1MjkxMjMsImV4cCI6MjA3ODEwNTEyM30.tzEXZQShQWgyyJHxvCVYIGQg0gal-LuO4jlKQDFjq-c"
-                }
-              ]
-            },
-            sendBody: true,
-            specifyBody: "json",
-            // Referência direta aos nós originais para garantir que dados existam
-            jsonBody: "={{ JSON.stringify({ deal_id: $('Preparar Dados').item.json.deal_id, new_message: '🤖 IA (Follow-up ' + $('Preparar Dados').item.json.followup_number + '): ' + $('AI Agent').item.json.output, followup_number: $('Preparar Dados').item.json.followup_number }) }}",
-            options: {}
-          },
-          id: "callback-success",
-          name: "Atualizar CRM",
-          type: "n8n-nodes-base.httpRequest",
-          typeVersion: 4.2,
-          position: [1780, 200]
-          // SEM credentials externas - Authorization já embutido nos headers
-        },
-        {
-          parameters: {
-            respondWith: "json",
-            responseBody: "={{ JSON.stringify({ success: true, deal_id: $('Juntar Dados + Mensagem').item.json.deal_id, message_sent: true }) }}",
-            options: {}
-          },
-          id: "respond-success",
-          name: "Responder Sucesso",
-          type: "n8n-nodes-base.respondToWebhook",
-          typeVersion: 1.1,
-          position: [2000, 200]
-        },
-        {
-          parameters: {
-            respondWith: "json",
-            responseBody: "={{ JSON.stringify({ success: false, deal_id: $('Juntar Dados + Mensagem').item.json.deal_id, error: 'Falha no envio WhatsApp', details: $json }) }}",
-            options: {
-              responseCode: 500
-            }
-          },
-          id: "respond-error",
-          name: "Responder Erro",
-          type: "n8n-nodes-base.respondToWebhook",
-          typeVersion: 1.1,
-          position: [1780, 400]
-        },
-        {
-          parameters: {
-            content: "## Workflow Follow-up Tendenci v6\n\n### Configurações Necessárias:\n\n1. **Preparar Dados** - Substitua:\n   - SUA_EVOLUTION_URL_AQUI\n   - SUA_INSTANCIA_AQUI\n   - SUA_APIKEY_AQUI\n\n2. **OpenAI API** - Configure credencial\n\n### ✅ Já Configurado Automaticamente:\n- URL do Atualizar CRM (fixa)\n- Authorization do Supabase (embutido)\n\n### Fluxo:\n1. Recebe webhook do Tendenci\n2. Aguarda 3 minutos\n3. Gera mensagem com IA\n4. Envia via Evolution API\n5. Atualiza CRM (URL fixa)"
-          },
-          id: "sticky-note",
-          name: "Instruções",
-          type: "n8n-nodes-base.stickyNote",
-          typeVersion: 1,
-          position: [100, 80]
-        }
-      ],
-      connections: {
-        "Webhook Tendenci": {
-          main: [[{ node: "Preparar Dados", type: "main", index: 0 }]]
-        },
-        "Preparar Dados": {
-          main: [[{ node: "Aguardar 3min", type: "main", index: 0 }]]
-        },
-        "Aguardar 3min": {
-          main: [[{ node: "Gerar Mensagem IA", type: "main", index: 0 }]]
-        },
-        "Gerar Mensagem IA": {
-          main: [[{ node: "Juntar Dados + Mensagem", type: "main", index: 0 }]]
-        },
-        "Juntar Dados + Mensagem": {
-          main: [[{ node: "Enviar WhatsApp", type: "main", index: 0 }]]
-        },
-        "Enviar WhatsApp": {
-          main: [[{ node: "Envio OK?", type: "main", index: 0 }]]
-        },
-        "Envio OK?": {
-          main: [
-            [{ node: "Atualizar CRM", type: "main", index: 0 }],
-            [{ node: "Responder Erro", type: "main", index: 0 }]
-          ]
-        },
-        "Atualizar CRM": {
-          main: [[{ node: "Responder Sucesso", type: "main", index: 0 }]]
-        }
-      },
-      settings: {
-        executionOrder: "v1"
-      }
-    };
-  };
-
-  const downloadWorkflow = () => {
-    const workflow = getWorkflowJSON();
-    const blob = new Blob([JSON.stringify(workflow, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'tendenci-followup-automatico-v3.json';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    toast.success("Workflow baixado!");
-  };
+  const projectId = 'emnwuzrysqoiwapzmnbv';
+  const baseUrl = `https://${projectId}.supabase.co/functions/v1`;
 
   return (
     <div className="space-y-6">
@@ -474,7 +219,7 @@ export function N8nFollowupGuide() {
             Follow-up Automático com I.A.
           </h2>
           <p className="text-muted-foreground">
-            Sistema 100% automático de follow-up por WhatsApp
+            Sistema unificado - A IA de atendimento gerencia todos os follow-ups
           </p>
         </div>
         <Badge variant={cronStatus.isActive ? "default" : "destructive"} className="text-sm">
@@ -555,18 +300,28 @@ export function N8nFollowupGuide() {
         </Card>
       </div>
 
-      {/* Status do Sistema Automático */}
+      {/* Status do Sistema */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5" />
-            Execução Automática
+            Sistema Unificado de Follow-up
           </CardTitle>
           <CardDescription>
-            O sistema verifica leads elegíveis a cada 2 horas em horário comercial
+            A IA de atendimento (n8n) é responsável por consultar deals elegíveis e enviar follow-ups
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          <Alert>
+            <Bot className="h-4 w-4" />
+            <AlertDescription>
+              <strong>Arquitetura Unificada:</strong> A IA de atendimento consulta o endpoint 
+              <code className="mx-1 px-1 bg-muted rounded">get-eligible-followups</code> 
+              para saber quais deals precisam de follow-up, gera mensagens personalizadas com IA, 
+              envia via WhatsApp, e atualiza o CRM via <code className="mx-1 px-1 bg-muted rounded">update-followup-history</code>.
+            </AlertDescription>
+          </Alert>
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="p-4 bg-muted/50 rounded-lg">
               <p className="text-sm text-muted-foreground">Última Execução</p>
@@ -584,21 +339,39 @@ export function N8nFollowupGuide() {
 
           <Separator />
 
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button 
-              onClick={testConnection}
+              onClick={testGetEligible}
+              disabled={testingEligible}
+              variant="outline"
+            >
+              {testingEligible ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Consultando...
+                </>
+              ) : (
+                <>
+                  <Code className="h-4 w-4 mr-2" />
+                  Testar get-eligible-followups
+                </>
+              )}
+            </Button>
+            
+            <Button 
+              onClick={testDispatch}
               disabled={testingConnection}
               variant="outline"
             >
               {testingConnection ? (
                 <>
                   <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  Testando...
+                  Disparando...
                 </>
               ) : (
                 <>
                   <Play className="h-4 w-4 mr-2" />
-                  Testar Disparo Manual
+                  Testar dispatch-followup
                 </>
               )}
             </Button>
@@ -614,29 +387,31 @@ export function N8nFollowupGuide() {
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="how-it-works" className="w-full">
-        <TabsList className="grid grid-cols-3 w-full max-w-md">
-          <TabsTrigger value="how-it-works">Como Funciona</TabsTrigger>
-          <TabsTrigger value="workflow">Workflow n8n</TabsTrigger>
+      <Tabs defaultValue="arquitetura" className="w-full">
+        <TabsList className="grid grid-cols-4 w-full max-w-lg">
+          <TabsTrigger value="arquitetura">Arquitetura</TabsTrigger>
+          <TabsTrigger value="endpoints">Endpoints</TabsTrigger>
+          <TabsTrigger value="n8n">Fluxo n8n</TabsTrigger>
           <TabsTrigger value="config">Configuração</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="how-it-works" className="space-y-4">
+        <TabsContent value="arquitetura" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Fluxo Automático</CardTitle>
+              <CardTitle>Arquitetura Unificada</CardTitle>
               <CardDescription>
-                O sistema opera de forma 100% automática, sem necessidade de intervenção manual
+                A IA de atendimento gerencia todo o fluxo de follow-up
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid gap-4">
-                <div className="flex gap-4 items-start p-4 bg-muted/50 rounded-lg">
+                <div className="flex gap-4 items-start p-4 bg-primary/10 rounded-lg border border-primary/30">
                   <div className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold shrink-0">1</div>
                   <div>
-                    <h4 className="font-semibold">Identificação Automática</h4>
+                    <h4 className="font-semibold">IA de Atendimento Consulta Deals Elegíveis</h4>
                     <p className="text-sm text-muted-foreground">
-                      A cada 2 horas, o sistema identifica leads na etapa "Follow Up (I.A.)" que não tiveram interação nos últimos 2 dias
+                      O workflow da IA chama <code>get-eligible-followups</code> periodicamente (a cada 2h) 
+                      para obter a lista de deals que precisam de follow-up
                     </p>
                   </div>
                 </div>
@@ -644,9 +419,10 @@ export function N8nFollowupGuide() {
                 <div className="flex gap-4 items-start p-4 bg-muted/50 rounded-lg">
                   <div className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold shrink-0">2</div>
                   <div>
-                    <h4 className="font-semibold">Geração de Mensagem com I.A.</h4>
+                    <h4 className="font-semibold">IA Gera Mensagem Personalizada</h4>
                     <p className="text-sm text-muted-foreground">
-                      O n8n recebe os dados do lead e usa IA (OpenAI/Gemini) para gerar uma mensagem personalizada de follow-up
+                      Para cada deal elegível, a IA usa os dados (histórico, produto, categoria) 
+                      para gerar uma mensagem de follow-up personalizada
                     </p>
                   </div>
                 </div>
@@ -654,29 +430,32 @@ export function N8nFollowupGuide() {
                 <div className="flex gap-4 items-start p-4 bg-muted/50 rounded-lg">
                   <div className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold shrink-0">3</div>
                   <div>
-                    <h4 className="font-semibold">Envio via WhatsApp</h4>
+                    <h4 className="font-semibold">Envio via WhatsApp (Evolution API)</h4>
                     <p className="text-sm text-muted-foreground">
-                      A mensagem é enviada automaticamente via Evolution API para o WhatsApp do cliente
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex gap-4 items-start p-4 bg-green-500/10 rounded-lg border border-green-500/30">
-                  <div className="h-8 w-8 rounded-full bg-green-500 text-white flex items-center justify-center font-bold shrink-0">4</div>
-                  <div>
-                    <h4 className="font-semibold text-green-600">Resposta do Cliente → Move para "Lead"</h4>
-                    <p className="text-sm text-muted-foreground">
-                      <strong>Quando o cliente responde:</strong> O lead é movido automaticamente para a etapa "Lead" e o vendedor é notificado para atendimento humano
+                      A mensagem é enviada para o cliente via Evolution API, 
+                      usando a mesma instância de WhatsApp do atendimento
                     </p>
                   </div>
                 </div>
 
                 <div className="flex gap-4 items-start p-4 bg-muted/50 rounded-lg">
-                  <div className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold shrink-0">5</div>
+                  <div className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold shrink-0">4</div>
                   <div>
-                    <h4 className="font-semibold">Sem Resposta - Retry Automático</h4>
+                    <h4 className="font-semibold">Atualiza CRM via Callback</h4>
                     <p className="text-sm text-muted-foreground">
-                      <strong>Se não responder:</strong> O sistema registra a tentativa e aguarda mais 2 dias para tentar novamente automaticamente
+                      Após enviar, a IA chama <code>update-followup-history</code> para registrar 
+                      a mensagem no histórico e incrementar o contador de follow-ups
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-4 items-start p-4 bg-green-500/10 rounded-lg border border-green-500/30">
+                  <div className="h-8 w-8 rounded-full bg-green-500 text-white flex items-center justify-center font-bold shrink-0">5</div>
+                  <div>
+                    <h4 className="font-semibold text-green-600">Cliente Responde → Atendimento Humano</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Quando o cliente responde, a mesma IA de atendimento recebe a mensagem 
+                      e pode continuar a conversa ou transferir para um vendedor
                     </p>
                   </div>
                 </div>
@@ -685,158 +464,248 @@ export function N8nFollowupGuide() {
               <Alert>
                 <Info className="h-4 w-4" />
                 <AlertDescription>
-                  <strong>Opt-out automático:</strong> Se o cliente enviar palavras como "pare", "parar", "não quero", o sistema desativa automaticamente os follow-ups para esse lead.
+                  <strong>Vantagem:</strong> Todo o atendimento fica centralizado na mesma IA. 
+                  O cliente fala com a "mesma pessoa" tanto no follow-up quanto nas respostas, 
+                  criando uma experiência mais natural e consistente.
                 </AlertDescription>
               </Alert>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="workflow" className="space-y-4">
+        <TabsContent value="endpoints" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Workflow n8n Completo</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Code className="h-5 w-5" />
+                Endpoints Disponíveis
+              </CardTitle>
               <CardDescription>
-                Workflow completo com todos os nodes configurados para Evolution API
+                APIs para integração com a IA de atendimento
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <Button onClick={downloadWorkflow} className="w-full" size="lg">
-                <Download className="h-4 w-4 mr-2" />
-                Baixar Workflow JSON Completo (v4)
-              </Button>
-
-              <Alert>
-                <Info className="h-4 w-4" />
-                <AlertDescription>
-                  Este workflow inclui <strong>todos os nodes</strong> já configurados: Webhook, Wait 3min, OpenAI, Envio WhatsApp, IF de verificação e Callbacks.
-                </AlertDescription>
-              </Alert>
-
-              <Separator />
-
-              <div className="space-y-4">
-                <h4 className="font-semibold">Após importar, configure:</h4>
-                
-                <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg space-y-2">
-                  <h5 className="font-medium flex items-center gap-2">
-                    <AlertTriangle className="h-4 w-4 text-amber-500" />
-                    1. Node "Preparar Dados" - Substitua os valores:
-                  </h5>
-                  <ul className="text-sm text-muted-foreground space-y-1 ml-6">
-                    <li>• <code>SUA_EVOLUTION_URL_AQUI</code> → URL da sua Evolution API</li>
-                    <li>• <code>SUA_INSTANCIA_AQUI</code> → Nome da sua instância WhatsApp</li>
-                    <li>• <code>SUA_APIKEY_AQUI</code> → API Key da Evolution</li>
-                  </ul>
+            <CardContent className="space-y-6">
+              {/* get-eligible-followups */}
+              <div className="p-4 bg-muted/50 rounded-lg space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-semibold flex items-center gap-2">
+                    <Badge variant="outline">GET/POST</Badge>
+                    get-eligible-followups
+                  </h4>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => copyToClipboard(`${baseUrl}/get-eligible-followups`, "eligible")}
+                  >
+                    {copiedField === "eligible" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  </Button>
                 </div>
-
-                <div className="p-4 bg-muted/50 rounded-lg space-y-2">
-                  <h5 className="font-medium">2. Credencial OpenAI API</h5>
-                  <p className="text-sm text-muted-foreground">
-                    Configure no node "Gerar Mensagem IA" com sua API Key OpenAI
-                  </p>
-                </div>
-
-                <div className="p-4 bg-muted/50 rounded-lg space-y-2">
-                  <h5 className="font-medium">3. Credencial Supabase Auth</h5>
-                  <p className="text-sm text-muted-foreground">
-                    Configure no node "Atualizar Supabase":
-                  </p>
-                  <ul className="text-sm text-muted-foreground space-y-1 ml-4">
-                    <li>• Header Name: <code>Authorization</code></li>
-                    <li>• Header Value: <code>Bearer SEU_ANON_KEY</code></li>
-                  </ul>
-                </div>
-              </div>
-
-              <Separator />
-
-              <div className="space-y-2">
-                <Label>URL do Webhook (copie para o secret N8N_FOLLOWUP_WEBHOOK_URL)</Label>
-                <p className="text-xs text-muted-foreground mb-2">
-                  Após ativar o workflow, copie a URL do webhook e adicione como secret no Supabase
+                <Input value={`${baseUrl}/get-eligible-followups`} readOnly className="text-xs" />
+                <p className="text-sm text-muted-foreground">
+                  Retorna lista de deals elegíveis para follow-up com todos os dados necessários
                 </p>
-                <div className="flex gap-2">
-                  <Input 
-                    value="https://SEU_N8N.app/webhook/tendenci-followup"
-                    readOnly 
-                    className="text-muted-foreground"
-                  />
+                <div className="bg-background p-3 rounded border text-xs font-mono">
+                  <p className="text-muted-foreground mb-2">// Resposta:</p>
+                  <pre>{`{
+  "success": true,
+  "count": 3,
+  "eligible": [
+    {
+      "deal_id": "uuid",
+      "session_id": "uuid",
+      "client_name": "João Silva",
+      "client_phone": "5511999999999",
+      "conversation_history": "...",
+      "followup_number": 2,
+      "product_type": "Mesa",
+      "categoria": "Madeira"
+    }
+  ],
+  "callback_url": "${baseUrl}/update-followup-history"
+}`}</pre>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label>URL da Edge Function dispatch-followup</Label>
-                <div className="flex gap-2">
-                  <Input 
-                    value="https://emnwuzrysqoiwapzmnbv.supabase.co/functions/v1/dispatch-followup"
-                    readOnly 
-                  />
+              {/* update-followup-history */}
+              <div className="p-4 bg-muted/50 rounded-lg space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-semibold flex items-center gap-2">
+                    <Badge variant="outline">POST</Badge>
+                    update-followup-history
+                  </h4>
                   <Button 
-                    variant="outline" 
-                    onClick={() => copyToClipboard("https://emnwuzrysqoiwapzmnbv.supabase.co/functions/v1/dispatch-followup", "url")}
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => copyToClipboard(`${baseUrl}/update-followup-history`, "update")}
                   >
-                    {copiedField === "url" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    {copiedField === "update" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                   </Button>
+                </div>
+                <Input value={`${baseUrl}/update-followup-history`} readOnly className="text-xs" />
+                <p className="text-sm text-muted-foreground">
+                  Atualiza o histórico do deal após enviar a mensagem de follow-up
+                </p>
+                <div className="bg-background p-3 rounded border text-xs font-mono">
+                  <p className="text-muted-foreground mb-2">// Payload:</p>
+                  <pre>{`{
+  "deal_id": "uuid-do-deal",
+  "new_message": "Olá! Gostaria de...",
+  "followup_number": 2
+}`}</pre>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label>URL da Edge Function update-followup-history (callback)</Label>
-                <div className="flex gap-2">
-                  <Input 
-                    value="https://emnwuzrysqoiwapzmnbv.supabase.co/functions/v1/update-followup-history"
-                    readOnly 
-                  />
+              {/* dispatch-followup */}
+              <div className="p-4 bg-muted/50 rounded-lg space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-semibold flex items-center gap-2">
+                    <Badge variant="outline">POST</Badge>
+                    dispatch-followup
+                    <Badge variant="secondary" className="text-xs">Opcional</Badge>
+                  </h4>
                   <Button 
-                    variant="outline" 
-                    onClick={() => copyToClipboard("https://emnwuzrysqoiwapzmnbv.supabase.co/functions/v1/update-followup-history", "callback")}
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => copyToClipboard(`${baseUrl}/dispatch-followup`, "dispatch")}
                   >
-                    {copiedField === "callback" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    {copiedField === "dispatch" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                   </Button>
                 </div>
+                <Input value={`${baseUrl}/dispatch-followup`} readOnly className="text-xs" />
+                <p className="text-sm text-muted-foreground">
+                  Dispara follow-ups para webhook externo (modo legado ou fallback)
+                </p>
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
 
+        <TabsContent value="n8n" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Diagrama do Fluxo</CardTitle>
+              <CardTitle>Configuração do Workflow n8n</CardTitle>
+              <CardDescription>
+                Como configurar a IA de atendimento para processar follow-ups
+              </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="bg-muted/30 p-4 rounded-lg font-mono text-sm overflow-x-auto">
-                <pre className="whitespace-pre">{`
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│ Webhook Tendenci│───▶│ Preparar Dados  │───▶│ Aguardar 3min   │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-                                                       │
-                                                       ▼
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│ Enviar WhatsApp │◀───│Juntar Dados+Msg │◀───│ Gerar Msg IA    │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-         │
-         ▼
-┌─────────────────┐
-│   Envio OK?     │
-└─────────────────┘
-    │         │
-    ▼         ▼
-┌───────┐ ┌───────┐
-│Sucesso│ │ Erro  │
-└───────┘ └───────┘
-    │         │
-    ▼         ▼
-┌───────┐ ┌───────┐
-│Callback│ │Respond│
-│Supabase│ │ Error │
-└───────┘ └───────┘
-    │
-    ▼
-┌───────┐
-│Respond│
-│Success│
-└───────┘
+            <CardContent className="space-y-6">
+              <Alert className="border-primary/50 bg-primary/5">
+                <Bot className="h-4 w-4" />
+                <AlertDescription>
+                  <strong>Recomendado:</strong> Adicione um nó Schedule Trigger no workflow da IA de atendimento 
+                  para chamar <code>get-eligible-followups</code> a cada 2 horas durante horário comercial.
+                </AlertDescription>
+              </Alert>
+
+              <div className="space-y-4">
+                <h4 className="font-semibold">Fluxo Recomendado no n8n:</h4>
+                
+                <div className="bg-muted/30 p-4 rounded-lg font-mono text-sm overflow-x-auto">
+                  <pre className="whitespace-pre">{`
+┌─────────────────────┐    ┌─────────────────────────┐
+│ Schedule Trigger    │───▶│ HTTP Request            │
+│ (a cada 2h, 9h-18h) │    │ GET get-eligible-       │
+└─────────────────────┘    │ followups               │
+                           └────────────┬────────────┘
+                                        │
+                                        ▼
+                           ┌────────────────────────┐
+                           │ Loop: Para cada deal   │
+                           └────────────┬───────────┘
+                                        │
+                                        ▼
+                           ┌────────────────────────┐
+                           │ IA Gera Mensagem       │
+                           │ (OpenAI/Gemini)        │
+                           └────────────┬───────────┘
+                                        │
+                                        ▼
+                           ┌────────────────────────┐
+                           │ Enviar WhatsApp        │
+                           │ (Evolution API)        │
+                           └────────────┬───────────┘
+                                        │
+                                        ▼
+                           ┌────────────────────────┐
+                           │ HTTP Request           │
+                           │ POST update-followup-  │
+                           │ history                │
+                           └────────────────────────┘
 `}</pre>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-4">
+                  <h4 className="font-semibold">Nó 1: Schedule Trigger</h4>
+                  <div className="p-4 bg-muted/50 rounded-lg text-sm">
+                    <ul className="space-y-1 text-muted-foreground">
+                      <li>• Trigger Mode: Cron Expression</li>
+                      <li>• Expression: <code>0 9,11,13,15,17 * * 1-5</code> (9h, 11h, 13h, 15h, 17h, seg-sex)</li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h4 className="font-semibold">Nó 2: HTTP Request - Buscar Elegíveis</h4>
+                  <div className="p-4 bg-muted/50 rounded-lg text-sm space-y-2">
+                    <ul className="space-y-1 text-muted-foreground">
+                      <li>• Method: <code>GET</code> ou <code>POST</code></li>
+                      <li>• URL: <code>{baseUrl}/get-eligible-followups</code></li>
+                      <li>• Body (opcional): <code>{`{ "limit": 10 }`}</code></li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h4 className="font-semibold">Nó 3: Loop - Para cada deal</h4>
+                  <div className="p-4 bg-muted/50 rounded-lg text-sm">
+                    <p className="text-muted-foreground">
+                      Use o nó "Split In Batches" ou "Loop Over Items" para iterar sobre <code>$json.eligible</code>
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h4 className="font-semibold">Nó 4: Gerar Mensagem com IA</h4>
+                  <div className="p-4 bg-muted/50 rounded-lg text-sm space-y-2">
+                    <p className="text-muted-foreground">Use OpenAI, Gemini ou outro modelo com prompt:</p>
+                    <div className="bg-background p-2 rounded text-xs font-mono">
+                      <pre>{`Você é um vendedor amigável. Gere uma mensagem de follow-up para:
+Nome: {{ $json.client_name }}
+Produto: {{ $json.product_type }}
+Follow-up #: {{ $json.followup_number }}
+Histórico: {{ $json.conversation_history }}`}</pre>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h4 className="font-semibold">Nó 5: Enviar WhatsApp</h4>
+                  <div className="p-4 bg-muted/50 rounded-lg text-sm">
+                    <ul className="space-y-1 text-muted-foreground">
+                      <li>• URL: <code>{`{{ $node['Preparar'].json.evolution_url }}/message/sendText/{{ instancia }}`}</code></li>
+                      <li>• Body: <code>{`{ "number": "{{ $json.client_phone }}", "text": "{{ mensagem_ia }}" }`}</code></li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h4 className="font-semibold">Nó 6: Atualizar CRM</h4>
+                  <div className="p-4 bg-muted/50 rounded-lg text-sm space-y-2">
+                    <ul className="space-y-1 text-muted-foreground">
+                      <li>• Method: <code>POST</code></li>
+                      <li>• URL: <code>{baseUrl}/update-followup-history</code></li>
+                    </ul>
+                    <div className="bg-background p-2 rounded text-xs font-mono">
+                      <pre>{`{
+  "deal_id": "{{ $json.deal_id }}",
+  "new_message": "{{ mensagem_enviada }}",
+  "followup_number": {{ $json.followup_number }}
+}`}</pre>
+                    </div>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -850,51 +719,59 @@ export function N8nFollowupGuide() {
                 Configuração do Sistema
               </CardTitle>
               <CardDescription>
-                O sistema já está configurado. Apenas configure o workflow no n8n.
+                Secrets e configurações necessárias
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-4">
-                <div className="p-4 bg-muted/50 rounded-lg">
-                  <h4 className="font-semibold mb-2">1. Secret N8N_FOLLOWUP_WEBHOOK_URL</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Já configurado! O sistema usará esta URL para enviar leads ao n8n.
-                  </p>
-                  <Badge variant="default" className="mt-2">
-                    <CheckCircle2 className="h-3 w-3 mr-1" />
-                    Configurado
-                  </Badge>
-                </div>
-
-                <div className="p-4 bg-muted/50 rounded-lg">
-                  <h4 className="font-semibold mb-2">2. Importe o Workflow no n8n</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Baixe o workflow na aba "Workflow n8n" e importe no seu n8n. Configure as credenciais necessárias.
-                  </p>
-                </div>
-
-                <div className="p-4 bg-muted/50 rounded-lg">
-                  <h4 className="font-semibold mb-2">3. Configure o Schedule no n8n</h4>
-                  <p className="text-sm text-muted-foreground">
-                    O workflow deve executar a cada 2 horas. Você pode ajustar o intervalo conforme necessário.
-                  </p>
-                </div>
-
-                <div className="p-4 bg-muted/50 rounded-lg">
-                  <h4 className="font-semibold mb-2">4. Teste o Sistema</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Use o botão "Testar Disparo Manual" acima para verificar se tudo está funcionando.
-                  </p>
-                </div>
-              </div>
-
               <Alert>
-                <Info className="h-4 w-4" />
+                <CheckCircle2 className="h-4 w-4" />
                 <AlertDescription>
-                  <strong>Importante:</strong> O sistema só dispara em horário comercial (9h-18h, segunda a sexta). 
-                  Use "Testar Disparo Manual" para testar fora desse horário.
+                  <strong>Modo Unificado Ativo:</strong> A IA de atendimento consulta os endpoints 
+                  diretamente, não precisa de webhook de disparo automático.
                 </AlertDescription>
               </Alert>
+
+              <div className="space-y-4">
+                <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
+                  <h4 className="font-semibold mb-2 flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-green-500" />
+                    Endpoints Configurados Automaticamente
+                  </h4>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• <code>get-eligible-followups</code> - Consulta deals elegíveis</li>
+                    <li>• <code>update-followup-history</code> - Atualiza histórico</li>
+                    <li>• <code>dispatch-followup</code> - Disparo manual/CRON</li>
+                  </ul>
+                </div>
+
+                <div className="p-4 bg-muted/50 rounded-lg">
+                  <h4 className="font-semibold mb-2">Secrets Opcionais</h4>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Para disparo automático via CRON (modo legado):
+                  </p>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• <code>N8N_ATENDIMENTO_WEBHOOK_URL</code> - Webhook da IA de atendimento (prioridade)</li>
+                    <li>• <code>N8N_FOLLOWUP_WEBHOOK_URL</code> - Webhook de follow-up (fallback)</li>
+                  </ul>
+                </div>
+
+                <Separator />
+
+                <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+                  <h4 className="font-semibold mb-2 flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 text-amber-500" />
+                    Critérios de Elegibilidade
+                  </h4>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• Deal com <code>followup_enabled = true</code></li>
+                    <li>• Status <code>aberto</code> (não ganho/perdido)</li>
+                    <li>• Na etapa "Follow Up (I.A)" do pipeline</li>
+                    <li>• Última interação há mais de 48 horas</li>
+                    <li>• Não atingiu limite de follow-ups (<code>max_followups</code>)</li>
+                    <li>• Telefone válido formatado para WhatsApp</li>
+                  </ul>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
