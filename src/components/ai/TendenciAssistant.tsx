@@ -1,16 +1,11 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Bot, Send, Loader2, Sparkles, TrendingUp, AlertTriangle, Target, BarChart3 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { Bot, Send, Loader2, Sparkles, TrendingUp, AlertTriangle, Target, BarChart3, Database } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-
-export interface Message {
-  role: "user" | "assistant";
-  content: string;
-}
+import { streamChat, Message } from "@/utils/aiChat";
 
 const quickQuestions = [
   { icon: BarChart3, text: "Como está meu pipeline?", color: "text-blue-500" },
@@ -19,21 +14,83 @@ const quickQuestions = [
   { icon: TrendingUp, text: "Previsão de fechamento do mês", color: "text-purple-500" },
 ];
 
+// Componente para renderizar markdown básico
+function MarkdownContent({ content }: { content: string }) {
+  const renderLine = (line: string, index: number) => {
+    // Negrito: **texto**
+    let formatted = line.replace(/\*\*([^*]+)\*\*/g, '<strong class="font-semibold">$1</strong>');
+    // Itálico: *texto* (mas não confundir com negrito)
+    formatted = formatted.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>');
+    // Código inline: `código`
+    formatted = formatted.replace(/`([^`]+)`/g, '<code class="bg-muted px-1 py-0.5 rounded text-xs">$1</code>');
+    
+    // Headers
+    if (line.startsWith('### ')) {
+      return <h3 key={index} className="font-semibold text-base mt-3 mb-1">{line.slice(4)}</h3>;
+    }
+    if (line.startsWith('## ')) {
+      return <h2 key={index} className="font-semibold text-lg mt-3 mb-1">{line.slice(3)}</h2>;
+    }
+    if (line.startsWith('# ')) {
+      return <h1 key={index} className="font-bold text-xl mt-3 mb-1">{line.slice(2)}</h1>;
+    }
+    
+    // Bullet points
+    if (line.startsWith('- ') || line.startsWith('• ')) {
+      return (
+        <div key={index} className="flex gap-2 ml-2">
+          <span className="text-muted-foreground">•</span>
+          <span dangerouslySetInnerHTML={{ __html: formatted.slice(2) }} />
+        </div>
+      );
+    }
+    
+    // Numbered lists
+    const numberedMatch = line.match(/^(\d+)\.\s/);
+    if (numberedMatch) {
+      return (
+        <div key={index} className="flex gap-2 ml-2">
+          <span className="text-muted-foreground min-w-[1.5rem]">{numberedMatch[1]}.</span>
+          <span dangerouslySetInnerHTML={{ __html: formatted.slice(numberedMatch[0].length) }} />
+        </div>
+      );
+    }
+    
+    // Linha normal
+    if (line.trim() === '') {
+      return <div key={index} className="h-2" />;
+    }
+    
+    return <p key={index} dangerouslySetInnerHTML={{ __html: formatted }} />;
+  };
+
+  return (
+    <div className="space-y-1">
+      {content.split('\n').map((line, i) => renderLine(line, i))}
+    </div>
+  );
+}
+
 export function TendenciAssistant() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
+  // Auto-scroll quando mensagens mudam
   useEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      const scrollElement = scrollRef.current.querySelector('[data-radix-scroll-area-viewport]');
+      if (scrollElement) {
+        scrollElement.scrollTop = scrollElement.scrollHeight;
+      }
     }
   }, [messages]);
 
-  const handleSend = async (messageText?: string) => {
+  const handleSend = useCallback(async (messageText?: string) => {
     const textToSend = messageText || input.trim();
     if (!textToSend || isLoading) return;
 
@@ -45,37 +102,53 @@ export function TendenciAssistant() {
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setIsLoading(true);
+    setIsAnalyzing(true);
+
+    let assistantContent = "";
+
+    const updateAssistantMessage = (chunk: string) => {
+      assistantContent += chunk;
+      setIsAnalyzing(false);
+      setMessages((prev) => {
+        const last = prev[prev.length - 1];
+        if (last?.role === "assistant") {
+          return prev.map((m, i) => 
+            i === prev.length - 1 ? { ...m, content: assistantContent } : m
+          );
+        }
+        return [...prev, { role: "assistant", content: assistantContent }];
+      });
+    };
 
     try {
-      const { data, error } = await supabase.functions.invoke("tendenci-assistant", {
-        body: { messages: [...messages, userMessage] },
+      await streamChat({
+        messages: [...messages, userMessage],
+        onChunk: updateAssistantMessage,
+        onDone: () => {
+          setIsLoading(false);
+          setIsAnalyzing(false);
+        },
+        onError: (error) => {
+          setIsLoading(false);
+          setIsAnalyzing(false);
+          toast({
+            title: "Erro",
+            description: error,
+            variant: "destructive",
+          });
+        },
       });
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      if (data?.error) {
-        throw new Error(data.error);
-      }
-
-      const assistantMessage: Message = {
-        role: "assistant",
-        content: data?.content || "Desculpe, não consegui processar sua pergunta.",
-      };
-
-      setMessages((prev) => [...prev, assistantMessage]);
     } catch (error) {
       console.error("Error sending message:", error);
+      setIsLoading(false);
+      setIsAnalyzing(false);
       toast({
         title: "Erro",
         description: error instanceof Error ? error.message : "Falha ao enviar mensagem. Tente novamente.",
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
     }
-  };
+  }, [input, isLoading, messages, toast]);
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -88,23 +161,12 @@ export function TendenciAssistant() {
     handleSend(question);
   };
 
-  const formatMessage = (content: string) => {
-    // Formatar emojis e números
-    return content
-      .split('\n')
-      .map((line, i) => (
-        <span key={i} className="block">
-          {line}
-        </span>
-      ));
-  };
-
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetTrigger asChild>
         <Button
           size="lg"
-          className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg bg-gradient-to-br from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 z-50 group animate-pulse hover:animate-none"
+          className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg bg-gradient-to-br from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 z-50 group"
         >
           <Sparkles className="h-6 w-6 group-hover:scale-110 transition-transform" />
         </Button>
@@ -122,7 +184,7 @@ export function TendenciAssistant() {
             <div>
               <span className="text-lg font-semibold">Agente Tendenci CEO</span>
               <p className="text-xs text-muted-foreground font-normal">
-                Diretor Comercial Sênior • Análise Estratégica
+                Diretor Comercial Sênior • Análise Estratégica com IA Pro
               </p>
             </div>
           </SheetTitle>
@@ -179,14 +241,18 @@ export function TendenciAssistant() {
                   className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                 >
                   <div
-                    className={`max-w-[85%] rounded-2xl px-4 py-3 ${
+                    className={`max-w-[90%] rounded-2xl px-4 py-3 ${
                       msg.role === "user"
                         ? "bg-primary text-primary-foreground rounded-br-md"
                         : "bg-muted rounded-bl-md"
                     }`}
                   >
-                    <div className="text-sm whitespace-pre-wrap leading-relaxed">
-                      {formatMessage(msg.content)}
+                    <div className="text-sm leading-relaxed">
+                      {msg.role === "assistant" ? (
+                        <MarkdownContent content={msg.content} />
+                      ) : (
+                        msg.content
+                      )}
                     </div>
                   </div>
                 </div>
@@ -195,8 +261,17 @@ export function TendenciAssistant() {
                 <div className="flex justify-start">
                   <div className="bg-muted rounded-2xl rounded-bl-md px-4 py-3">
                     <div className="flex items-center gap-2 text-muted-foreground">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      <span className="text-sm">Analisando dados...</span>
+                      {isAnalyzing ? (
+                        <>
+                          <Database className="h-4 w-4 animate-pulse" />
+                          <span className="text-sm">Consultando dados...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span className="text-sm">Gerando análise...</span>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>

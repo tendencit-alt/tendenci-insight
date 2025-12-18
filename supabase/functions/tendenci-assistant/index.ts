@@ -45,6 +45,85 @@ async function processToolCalls(toolCalls: any[]) {
       const { start: inicioMesAnterior, end: fimMesAnterior } = getMonthBounds(1);
 
       switch (functionName) {
+        // ==================== DIAGNÓSTICO COMPLETO (SUPER FERRAMENTA) ====================
+        case "diagnostico_completo": {
+          // Buscar múltiplos dados em paralelo para análise rápida
+          const [
+            { data: crmMetrics },
+            { data: pipelinesData },
+            { data: metasVendedores },
+            { data: timeInStage },
+            { data: leadsQuentes }
+          ] = await Promise.all([
+            supabase.rpc("dashboard_crm_metrics", {
+              p_start: thirtyDaysAgo.toISOString(),
+              p_end: now.toISOString()
+            }),
+            supabase.from("crm_pipelines").select("id").limit(1),
+            supabase.from("tendenci_seller_goals")
+              .select(`id, valor_meta, vendedor:profiles(full_name)`)
+              .eq("status", "ativa")
+              .gte("data_fim", now.toISOString().split("T")[0]),
+            supabase.rpc("crm_time_in_stage"),
+            supabase.from("leads")
+              .select("id, client:clients(name, phone)")
+              .eq("temperature", "hot")
+              .eq("status", "new")
+              .limit(5)
+          ]);
+
+          const pipelineId = pipelinesData?.[0]?.id;
+          
+          let dealsAbertos = null;
+          let slaAlerts = null;
+          if (pipelineId) {
+            const [dealsResult, slaResult] = await Promise.all([
+              supabase.from("crm_deals")
+                .select("id, title, value, status, stage:crm_stages(name, sla_hours)")
+                .eq("pipeline_id", pipelineId)
+                .eq("status", "aberto")
+                .order("value", { ascending: false })
+                .limit(30),
+              supabase.rpc("crm_sla_alerts", { p_pipeline_id: pipelineId })
+            ]);
+            dealsAbertos = dealsResult.data;
+            slaAlerts = slaResult.data;
+          }
+
+          // Calcular progresso das metas
+          const metasComProgresso = [];
+          for (const meta of metasVendedores || []) {
+            const { data: progresso } = await supabase
+              .from("tendenci_goal_progress")
+              .select("valor_vendido, percentual")
+              .eq("seller_goal_id", meta.id)
+              .single();
+            
+            const vendedorData = meta.vendedor as any;
+            metasComProgresso.push({
+              vendedor: vendedorData?.full_name,
+              meta: meta.valor_meta,
+              vendido: progresso?.valor_vendido || 0,
+              percentual: progresso?.percentual || 0
+            });
+          }
+
+          result = {
+            metricas_crm: crmMetrics,
+            deals_abertos: {
+              total: dealsAbertos?.length || 0,
+              valor_total: dealsAbertos?.reduce((a, d) => a + (d.value || 0), 0) || 0,
+              top_5: dealsAbertos?.slice(0, 5)
+            },
+            alertas_sla: slaAlerts?.slice(0, 10),
+            tempo_por_etapa: timeInStage,
+            metas_vendedores: metasComProgresso.sort((a, b) => b.percentual - a.percentual),
+            leads_quentes: leadsQuentes,
+            data_analise: now.toISOString()
+          };
+          break;
+        }
+
         // ==================== CRM BÁSICO ====================
         case "buscar_metricas_crm":
           const { data: crmData, error: crmError } = await supabase.rpc("dashboard_crm_metrics", {
@@ -124,9 +203,8 @@ async function processToolCalls(toolCalls: any[]) {
           result = funilData;
           break;
 
-        // ==================== CRM AVANÇADO (NOVAS) ====================
+        // ==================== CRM AVANÇADO ====================
         case "buscar_tendencias_crm":
-          // Série temporal dos últimos 90 dias
           const { data: timeseries } = await supabase.rpc("crm_timeseries", {
             p_start: new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000).toISOString(),
             p_end: now.toISOString()
@@ -135,7 +213,6 @@ async function processToolCalls(toolCalls: any[]) {
           break;
 
         case "buscar_tempo_etapas":
-          // Tempo médio em cada etapa
           const { data: timeInStage } = await supabase.rpc("crm_time_in_stage");
           result = timeInStage;
           break;
@@ -151,13 +228,11 @@ async function processToolCalls(toolCalls: any[]) {
           break;
 
         case "buscar_deals_sem_tarefas":
-          // Deals sem tarefas válidas - risco de abandono
           const { data: dealsSemTarefas } = await supabase.rpc("get_deals_without_valid_tasks");
           result = dealsSemTarefas;
           break;
 
         case "buscar_deal":
-          // Detalhes completos de um deal específico
           if (!args.deal_id) {
             result = { error: "deal_id é obrigatório" };
             break;
@@ -206,7 +281,6 @@ async function processToolCalls(toolCalls: any[]) {
             .order("created_at", { ascending: false })
             .limit(args.limite || 50);
           
-          // Buscar métricas de cada cliente
           const clientsComMetricas = [];
           for (const client of clientsData || []) {
             const { data: leads } = await supabase
@@ -276,7 +350,7 @@ async function processToolCalls(toolCalls: any[]) {
           };
           break;
 
-        // ==================== ARQUITETOS AVANÇADO ====================
+        // ==================== ARQUITETOS ====================
         case "buscar_agregacoes_arquitetos":
           const { data: archAgg } = await supabase.rpc("architects_aggregates");
           result = archAgg;
@@ -315,7 +389,6 @@ async function processToolCalls(toolCalls: any[]) {
             .eq("id", args.architect_id)
             .single();
           
-          // Buscar indicações
           const { data: archIndicacoes } = await supabase
             .from("architect_indications")
             .select(`
@@ -429,7 +502,6 @@ async function processToolCalls(toolCalls: any[]) {
             result = { error: "vendedor_id é obrigatório" };
             break;
           }
-          // Buscar meta ativa
           const { data: metaAtiva } = await supabase
             .from("tendenci_seller_goals")
             .select("id")
@@ -448,147 +520,133 @@ async function processToolCalls(toolCalls: any[]) {
           break;
 
         case "buscar_ranking_vendedores":
-          const { data: ranking } = await supabase
-            .from("tendenci_seller_ranking")
-            .select(`
-              posicao_atual, percentual_meta_atualizado, valor_total_vendido,
-              vendedor:profiles(id, full_name, email)
-            `)
-            .order("posicao_atual", { ascending: true })
-            .limit(15);
-          result = ranking;
+          const { data: rankingVend } = await supabase.rpc("get_seller_ranking");
+          result = rankingVend;
           break;
 
         case "comparar_vendedores":
-          // Comparativo completo dos vendedores
-          const { data: todosVendedores } = await supabase
+          const { data: allGoals } = await supabase
             .from("tendenci_seller_goals")
             .select(`
-              id, valor_meta, vendedor_id,
-              vendedor:profiles!tendenci_seller_goals_vendedor_id_fkey(id, full_name)
+              id, valor_meta,
+              vendedor:profiles(id, full_name)
             `)
             .eq("status", "ativa");
           
-          const comparativo = [];
-          for (const v of todosVendedores || []) {
-            const vendedorData = Array.isArray(v.vendedor) ? v.vendedor[0] : v.vendedor;
+          const compareData = [];
+          for (const goal of allGoals || []) {
             const { data: prog } = await supabase
               .from("tendenci_goal_progress")
-              .select("valor_vendido, percentual, deals_fechados")
-              .eq("seller_goal_id", v.id)
+              .select("valor_vendido, percentual")
+              .eq("seller_goal_id", goal.id)
               .single();
             
-            // Deals do vendedor
+            const vendedorData = goal.vendedor as any;
             const { data: dealsVend } = await supabase
               .from("crm_deals")
-              .select("id, value, status")
-              .eq("owner_id", v.vendedor_id)
-              .gte("created_at", inicioMesAtual.toISOString());
+              .select("value")
+              .eq("owner_id", vendedorData?.id)
+              .eq("status", "aberto");
             
-            comparativo.push({
+            compareData.push({
               vendedor: vendedorData?.full_name,
-              vendedor_id: vendedorData?.id,
-              meta: v.valor_meta,
+              meta: goal.valor_meta,
               vendido: prog?.valor_vendido || 0,
               percentual: prog?.percentual || 0,
-              deals_abertos: dealsVend?.filter(d => d.status === "aberto").length || 0,
-              deals_ganhos_mes: dealsVend?.filter(d => d.status === "won").length || 0,
-              pipeline_valor: dealsVend?.filter(d => d.status === "aberto").reduce((a, d) => a + (d.value || 0), 0) || 0
+              pipeline_aberto: dealsVend?.reduce((a, d) => a + (d.value || 0), 0) || 0
             });
           }
           
-          // Calcular média
-          const mediaPercentual = comparativo.length 
-            ? comparativo.reduce((a, v) => a + v.percentual, 0) / comparativo.length 
+          const mediaEquipe = compareData.length 
+            ? compareData.reduce((a, v) => a + v.percentual, 0) / compareData.length 
             : 0;
           
           result = {
-            vendedores: comparativo.sort((a, b) => b.percentual - a.percentual),
-            media_equipe: mediaPercentual,
-            total_equipe: comparativo.reduce((a, v) => a + v.vendido, 0)
+            vendedores: compareData.sort((a, b) => b.percentual - a.percentual),
+            media_equipe: mediaEquipe.toFixed(1),
+            total_vendido: compareData.reduce((a, v) => a + v.vendido, 0),
+            total_meta: compareData.reduce((a, v) => a + v.meta, 0)
           };
           break;
 
         case "buscar_meta_diaria":
-          const hoje = new Date().toISOString().split("T")[0];
-          const { data: metasDiarias } = await supabase
+          const hojeStr = new Date().toISOString().split("T")[0];
+          const { data: metaDiaria } = await supabase
             .from("tendenci_daily_architect_goals")
             .select(`
-              meta_captacoes, captacoes_realizadas, data,
+              id, data, meta_novos, meta_contatados, meta_agendamentos,
+              novos_realizados, contatados_realizados, agendamentos_realizados,
               vendedor:profiles(full_name)
             `)
-            .eq("data", hoje);
-          result = metasDiarias;
+            .eq("data", hojeStr);
+          result = metaDiaria;
           break;
 
         case "buscar_stats_metas_diarias":
-          const periodoStats = args.periodo_dias || 7;
-          const dataInicioPeriodo = new Date();
-          dataInicioPeriodo.setDate(dataInicioPeriodo.getDate() - periodoStats);
+          const diasStats = args.periodo_dias || 7;
+          const dataInicioStats = new Date();
+          dataInicioStats.setDate(dataInicioStats.getDate() - diasStats);
           
-          const { data: dailyStats } = await supabase.rpc("get_daily_goal_stats", {
-            p_start_date: dataInicioPeriodo.toISOString().split("T")[0],
-            p_end_date: now.toISOString().split("T")[0]
-          });
-          result = dailyStats;
+          const { data: statsDaily } = await supabase
+            .from("tendenci_daily_architect_goals")
+            .select("*")
+            .gte("data", dataInicioStats.toISOString().split("T")[0])
+            .order("data", { ascending: false });
+          result = statsDaily;
           break;
 
         // ==================== PROJETOS ====================
         case "buscar_projetos":
-          let queryProj = supabase
+          let projQuery = supabase
             .from("projects")
             .select(`
-              id, name, value, stage, deadline, created_at, sent_date, approved_date,
-              client:clients(name, phone),
-              architect:architects(name, phone, categoria),
-              deal:crm_deals(id, title, status)
-            `);
+              id, name, value, stage, deadline, created_at,
+              client:clients(name),
+              architect:architects(name),
+              vendedor:profiles(full_name)
+            `)
+            .order("created_at", { ascending: false })
+            .limit(50);
           
           if (args.stage && args.stage !== "todos") {
-            queryProj = queryProj.eq("stage", args.stage);
+            projQuery = projQuery.eq("stage", args.stage);
           }
           
-          const { data: projects } = await queryProj
-            .order("created_at", { ascending: false })
-            .limit(30);
-          result = projects;
+          const { data: projetos } = await projQuery;
+          result = projetos;
           break;
 
         case "buscar_metricas_projetos":
-          const { data: metricasProj } = await supabase.rpc("projects_metrics");
-          result = metricasProj;
+          const { data: projMetrics } = await supabase.rpc("projects_metrics");
+          result = projMetrics;
           break;
 
         case "buscar_stats_tipo_produto":
-          const { data: statsTipo } = await supabase.rpc("get_project_stats_by_type");
-          result = statsTipo;
+          const { data: productStats } = await supabase.rpc("get_projects_by_product_type");
+          result = productStats;
           break;
 
         case "buscar_metricas_projetos_historico":
-          const { data: projHistorico } = await supabase.rpc("projects_metrics_by_history", {
-            p_months: args.meses || 6
+          const mesesHist = args.meses || 6;
+          const { data: projHist } = await supabase.rpc("projects_monthly_metrics", {
+            p_months: mesesHist
           });
-          result = projHistorico;
+          result = projHist;
           break;
 
         case "buscar_alertas_prazo":
-          const { data: alertasPrazo } = await supabase
+          const { data: prazoAlerts } = await supabase
             .from("projects")
             .select(`
-              id, name, value, deadline, stage, created_at,
-              client:clients(name, phone),
+              id, name, value, stage, deadline, created_at,
+              client:clients(name),
               architect:architects(name)
             `)
             .not("stage", "in", '("aprovado","perdido")')
             .not("deadline", "is", null)
-            .lt("deadline", new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString())
-            .order("deadline", { ascending: true });
-          
-          result = (alertasPrazo || []).map(p => ({
-            ...p,
-            dias_restantes: Math.ceil((new Date(p.deadline).getTime() - now.getTime()) / (1000 * 60 * 60 * 24)),
-            atrasado: new Date(p.deadline) < now
-          }));
+            .lte("deadline", new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString())
+            .order("deadline");
+          result = prazoAlerts;
           break;
 
         // ==================== LEADS ====================
@@ -596,440 +654,264 @@ async function processToolCalls(toolCalls: any[]) {
           const { data: hotLeads } = await supabase
             .from("leads")
             .select(`
-              id, temperature, created_at, status, utm_source, utm_campaign,
-              client:clients(name, phone, email, city)
+              id, created_at, temperature, status,
+              client:clients(name, phone, email)
             `)
-            .eq("temperature", "quente")
-            .eq("status", "novo")
+            .eq("temperature", "hot")
+            .eq("status", "new")
             .order("created_at", { ascending: false })
             .limit(20);
           result = hotLeads;
           break;
 
         case "buscar_metricas_leads":
-          const { data: metricasLeads } = await supabase.rpc("leads_aggregates");
-          result = metricasLeads;
+          const { data: allLeads } = await supabase
+            .from("leads")
+            .select("id, temperature, status, created_at")
+            .gte("created_at", thirtyDaysAgo.toISOString());
+          
+          const leadsQuentes = allLeads?.filter(l => l.temperature === "hot").length || 0;
+          const leadsMornos = allLeads?.filter(l => l.temperature === "warm").length || 0;
+          const leadsFrios = allLeads?.filter(l => l.temperature === "cold").length || 0;
+          const leadsConvertidos = allLeads?.filter(l => l.status === "converted").length || 0;
+          
+          result = {
+            total: allLeads?.length || 0,
+            quentes: leadsQuentes,
+            mornos: leadsMornos,
+            frios: leadsFrios,
+            convertidos: leadsConvertidos,
+            taxa_conversao: allLeads?.length ? ((leadsConvertidos / allLeads.length) * 100).toFixed(1) + "%" : "0%"
+          };
           break;
 
         // ==================== PRODUÇÃO ====================
         case "buscar_metricas_producao":
-          const { data: ordensProducao } = await supabase
+          const { data: prodOrders } = await supabase
             .from("production_orders")
-            .select("id, status, priority, planned_end_date")
-            .in("status", ["pendente", "em_producao", "pausado"]);
+            .select("id, status, priority, expected_delivery, created_at");
           
-          const atrasadas = (ordensProducao || []).filter(
-            o => o.planned_end_date && new Date(o.planned_end_date) < now
-          ).length;
+          const hoje = new Date();
+          const atrasadas = prodOrders?.filter(o => 
+            o.status !== "concluida" && 
+            o.expected_delivery && 
+            new Date(o.expected_delivery) < hoje
+          ).length || 0;
           
           result = {
-            total_ordens_ativas: ordensProducao?.length || 0,
-            pendentes: ordensProducao?.filter(o => o.status === "pendente").length || 0,
-            em_producao: ordensProducao?.filter(o => o.status === "em_producao").length || 0,
-            pausadas: ordensProducao?.filter(o => o.status === "pausado").length || 0,
-            urgentes: ordensProducao?.filter(o => o.priority === "urgente").length || 0,
-            atrasadas: atrasadas
+            total: prodOrders?.length || 0,
+            pendentes: prodOrders?.filter(o => o.status === "pendente").length || 0,
+            em_producao: prodOrders?.filter(o => o.status === "em_producao").length || 0,
+            concluidas: prodOrders?.filter(o => o.status === "concluida").length || 0,
+            urgentes: prodOrders?.filter(o => o.priority === "urgente").length || 0,
+            atrasadas
           };
           break;
 
         case "buscar_alertas_producao":
-          const { data: alertasProd } = await supabase
+          const hojeProd = new Date();
+          const { data: prodAlerts } = await supabase
             .from("production_orders")
             .select(`
-              id, order_number, status, priority, planned_end_date, created_at,
-              client:clients(name, phone),
-              order:orders(order_number, valor_total)
+              id, order_number, status, priority, expected_delivery,
+              client:clients(name)
             `)
-            .in("status", ["pendente", "em_producao"])
-            .or(`priority.eq.urgente,planned_end_date.lt.${new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString()}`)
-            .limit(20);
-          result = alertasProd;
+            .neq("status", "concluida")
+            .or(`priority.eq.urgente,expected_delivery.lte.${new Date(hojeProd.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString()}`)
+            .order("expected_delivery");
+          result = prodAlerts;
           break;
 
         // ==================== PEDIDOS ====================
         case "buscar_metricas_pedidos":
-          const { data: pedidosMes } = await supabase
+          const { data: ordersAtual } = await supabase
             .from("orders")
             .select("id, valor_total, status, created_at")
-            .gte("created_at", inicioMesAtual.toISOString());
+            .gte("created_at", inicioMesAtual.toISOString())
+            .lte("created_at", fimMesAtual.toISOString());
           
-          const { data: pedidosMesAnterior } = await supabase
+          const { data: ordersAnterior } = await supabase
             .from("orders")
-            .select("valor_total, status")
+            .select("id, valor_total, status, created_at")
             .gte("created_at", inicioMesAnterior.toISOString())
-            .lt("created_at", fimMesAnterior.toISOString());
+            .lte("created_at", fimMesAnterior.toISOString());
           
-          const valorMes = pedidosMes?.reduce((acc, p) => acc + (p.valor_total || 0), 0) || 0;
-          const valorMesAnterior = pedidosMesAnterior?.reduce((acc, p) => acc + (p.valor_total || 0), 0) || 0;
+          const totalAtual = ordersAtual?.reduce((a, o) => a + (o.valor_total || 0), 0) || 0;
+          const totalAnterior = ordersAnterior?.reduce((a, o) => a + (o.valor_total || 0), 0) || 0;
           
           result = {
-            total_pedidos_mes: pedidosMes?.length || 0,
-            valor_total_mes: valorMes,
-            pendentes: pedidosMes?.filter(p => p.status === "pendente").length || 0,
-            aprovados: pedidosMes?.filter(p => p.status === "aprovado").length || 0,
-            faturados: pedidosMes?.filter(p => p.status === "faturado").length || 0,
-            comparativo_mes_anterior: {
-              valor_anterior: valorMesAnterior,
-              variacao_percentual: valorMesAnterior ? ((valorMes - valorMesAnterior) / valorMesAnterior * 100).toFixed(1) : "N/A"
-            }
+            mes_atual: {
+              total_pedidos: ordersAtual?.length || 0,
+              valor_total: totalAtual,
+              aprovados: ordersAtual?.filter(o => o.status === "aprovado").length || 0,
+              pendentes: ordersAtual?.filter(o => o.status === "pendente").length || 0
+            },
+            mes_anterior: {
+              total_pedidos: ordersAnterior?.length || 0,
+              valor_total: totalAnterior
+            },
+            variacao_percentual: totalAnterior ? (((totalAtual - totalAnterior) / totalAnterior) * 100).toFixed(1) + "%" : "N/A"
           };
           break;
 
         // ==================== ESTOQUE ====================
         case "buscar_alertas_estoque":
-          const { data: todosProducts } = await supabase
+          const { data: lowStock } = await supabase
             .from("products")
-            .select("id, name, code, current_stock, min_stock, cost_price, sale_price")
-            .eq("active", true);
-          
-          const produtosBaixoEstoque = (todosProducts || [])
-            .filter(p => p.current_stock < (p.min_stock || 0))
-            .map(p => ({
-              ...p,
-              deficit: (p.min_stock || 0) - p.current_stock,
-              valor_reposicao: ((p.min_stock || 0) - p.current_stock) * (p.cost_price || 0)
-            }))
-            .sort((a, b) => b.deficit - a.deficit);
-          result = produtosBaixoEstoque.slice(0, 25);
+            .select("id, name, sku, current_stock, min_stock, unit_price")
+            .not("min_stock", "is", null)
+            .filter("current_stock", "lte", "min_stock");
+          result = lowStock;
           break;
 
         // ==================== CAMPANHAS ====================
         case "buscar_metricas_campanhas":
-          const { data: campanhas } = await supabase
+          const { data: campaigns } = await supabase
             .from("prospeccao_campanhas")
-            .select(`
-              id, nome, status, tipo, 
-              total_enviados, total_entregues, total_erros,
-              created_at, executed_at
-            `)
+            .select("id, nome, status, total_arquitetos, enviados, entregues, erros, created_at")
             .order("created_at", { ascending: false })
-            .limit(15);
-          
-          result = (campanhas || []).map(c => ({
-            ...c,
-            taxa_entrega: c.total_enviados ? ((c.total_entregues || 0) / c.total_enviados * 100).toFixed(1) + "%" : "0%",
-            taxa_erro: c.total_enviados ? ((c.total_erros || 0) / c.total_enviados * 100).toFixed(1) + "%" : "0%"
-          }));
+            .limit(10);
+          result = campaigns;
           break;
 
-        // ==================== ANÁLISE ESTRATÉGICA CEO ====================
+        // ==================== ANÁLISE ESTRATÉGICA ====================
         case "comparar_periodos":
-          const periodoTipo = args.tipo || "mes"; // mes, trimestre
+          const tipoComparacao = args.tipo || "mes";
           
-          let p1Start, p1End, p2Start, p2End;
-          if (periodoTipo === "trimestre") {
-            const trimAtual = Math.floor(now.getMonth() / 3);
-            p1Start = new Date(now.getFullYear(), trimAtual * 3, 1);
-            p1End = new Date(now.getFullYear(), (trimAtual + 1) * 3, 0);
-            p2Start = new Date(now.getFullYear(), (trimAtual - 1) * 3, 1);
-            p2End = new Date(now.getFullYear(), trimAtual * 3, 0);
+          if (tipoComparacao === "mes") {
+            const [{ data: dealsAtual }, { data: dealsAnterior }] = await Promise.all([
+              supabase.from("crm_deals")
+                .select("id, value, status, created_at")
+                .gte("created_at", inicioMesAtual.toISOString())
+                .lte("created_at", fimMesAtual.toISOString()),
+              supabase.from("crm_deals")
+                .select("id, value, status, created_at")
+                .gte("created_at", inicioMesAnterior.toISOString())
+                .lte("created_at", fimMesAnterior.toISOString())
+            ]);
+            
+            const calcMetricas = (deals: any[]) => ({
+              total_deals: deals?.length || 0,
+              ganhos: deals?.filter(d => d.status === "won").length || 0,
+              perdidos: deals?.filter(d => d.status === "lost").length || 0,
+              valor_ganho: deals?.filter(d => d.status === "won").reduce((a, d) => a + (d.value || 0), 0) || 0,
+              ticket_medio: (() => {
+                const ganhos = deals?.filter(d => d.status === "won") || [];
+                return ganhos.length ? ganhos.reduce((a, d) => a + (d.value || 0), 0) / ganhos.length : 0;
+              })()
+            });
+            
+            const metricasAtual = calcMetricas(dealsAtual || []);
+            const metricasAnterior = calcMetricas(dealsAnterior || []);
+            
+            result = {
+              mes_atual: metricasAtual,
+              mes_anterior: metricasAnterior,
+              variacao: {
+                deals: metricasAnterior.total_deals ? ((metricasAtual.total_deals - metricasAnterior.total_deals) / metricasAnterior.total_deals * 100).toFixed(1) + "%" : "N/A",
+                valor: metricasAnterior.valor_ganho ? ((metricasAtual.valor_ganho - metricasAnterior.valor_ganho) / metricasAnterior.valor_ganho * 100).toFixed(1) + "%" : "N/A",
+                ticket: metricasAnterior.ticket_medio ? ((metricasAtual.ticket_medio - metricasAnterior.ticket_medio) / metricasAnterior.ticket_medio * 100).toFixed(1) + "%" : "N/A"
+              }
+            };
           } else {
-            p1Start = inicioMesAtual;
-            p1End = fimMesAtual;
-            p2Start = inicioMesAnterior;
-            p2End = fimMesAnterior;
+            result = { error: "Comparação trimestral ainda não implementada" };
           }
-          
-          // Buscar métricas dos dois períodos
-          const [{ data: metricasP1 }, { data: metricasP2 }] = await Promise.all([
-            supabase.rpc("crm_agg", { p_start: p1Start.toISOString(), p_end: p1End.toISOString() }),
-            supabase.rpc("crm_agg", { p_start: p2Start.toISOString(), p_end: p2End.toISOString() })
-          ]);
-          
-          // Pedidos dos dois períodos
-          const [{ data: pedidosP1 }, { data: pedidosP2 }] = await Promise.all([
-            supabase.from("orders").select("valor_total, status").gte("created_at", p1Start.toISOString()).lte("created_at", p1End.toISOString()),
-            supabase.from("orders").select("valor_total, status").gte("created_at", p2Start.toISOString()).lte("created_at", p2End.toISOString())
-          ]);
-          
-          const valorPedidosP1 = pedidosP1?.reduce((a, p) => a + (p.valor_total || 0), 0) || 0;
-          const valorPedidosP2 = pedidosP2?.reduce((a, p) => a + (p.valor_total || 0), 0) || 0;
-          
-          const calcVariacao = (atual: number, anterior: number) => 
-            anterior ? ((atual - anterior) / anterior * 100).toFixed(1) : "N/A";
-          
-          result = {
-            periodo_atual: {
-              nome: periodoTipo === "trimestre" ? `Q${Math.floor(now.getMonth() / 3) + 1}` : now.toLocaleString('pt-BR', { month: 'long' }),
-              inicio: p1Start.toISOString().split("T")[0],
-              fim: p1End.toISOString().split("T")[0],
-              crm: metricasP1,
-              pedidos_valor: valorPedidosP1,
-              pedidos_qtd: pedidosP1?.length || 0
-            },
-            periodo_anterior: {
-              nome: periodoTipo === "trimestre" ? `Q${Math.floor(now.getMonth() / 3)}` : new Date(inicioMesAnterior).toLocaleString('pt-BR', { month: 'long' }),
-              inicio: p2Start.toISOString().split("T")[0],
-              fim: p2End.toISOString().split("T")[0],
-              crm: metricasP2,
-              pedidos_valor: valorPedidosP2,
-              pedidos_qtd: pedidosP2?.length || 0
-            },
-            variacoes: {
-              deals_valor: calcVariacao(metricasP1?.total_value || 0, metricasP2?.total_value || 0) + "%",
-              deals_qtd: calcVariacao(metricasP1?.total_deals || 0, metricasP2?.total_deals || 0) + "%",
-              pedidos_valor: calcVariacao(valorPedidosP1, valorPedidosP2) + "%",
-              ticket_medio: calcVariacao(metricasP1?.avg_value || 0, metricasP2?.avg_value || 0) + "%"
-            },
-            tendencia: (metricasP1?.total_value || 0) > (metricasP2?.total_value || 0) ? "📈 crescimento" : "📉 queda"
-          };
           break;
 
         case "prever_fechamento_mes":
-          // Buscar deals abertos
-          const { data: dealsAbertos } = await supabase
+          const { data: dealsAbertosPrevisao } = await supabase
             .from("crm_deals")
-            .select("id, value, stage_id, created_at, stage:crm_stages(position, name)")
+            .select(`
+              id, value, stage_entered_at,
+              stage:crm_stages(name, position)
+            `)
             .eq("status", "aberto");
           
-          // Taxa de conversão histórica por posição no funil
-          const taxasConversao: { [key: number]: number } = {
-            0: 0.15, // Primeira etapa
-            1: 0.25,
-            2: 0.40,
-            3: 0.55,
-            4: 0.70,
-            5: 0.85
-          };
+          const { data: historicoConversao } = await supabase.rpc("crm_conversion_rates");
           
-          // Calcular previsão ponderada
-          let previsaoTotal = 0;
-          const dealsComPrevisao = [];
-          for (const deal of dealsAbertos || []) {
-            const stageData = Array.isArray(deal.stage) ? deal.stage[0] : deal.stage;
-            const posicao = stageData?.position || 0;
-            const taxa = taxasConversao[posicao] || 0.30;
-            const previsaoDeal = (deal.value || 0) * taxa;
-            previsaoTotal += previsaoDeal;
-            dealsComPrevisao.push({
-              titulo: deal.id,
-              valor: deal.value,
-              etapa: stageData?.name,
-              probabilidade: `${(taxa * 100).toFixed(0)}%`,
-              previsao: previsaoDeal
-            });
-          }
+          const diasRestantes = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() - now.getDate();
+          const previsao = dealsAbertosPrevisao?.reduce((total, deal) => {
+            const stageData = deal.stage as any;
+            const taxa = historicoConversao?.[stageData?.name] || 0.2;
+            return total + (deal.value || 0) * taxa;
+          }, 0) || 0;
           
-          const diasRestantesMes = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() - now.getDate();
-          const pipelineTotal = dealsAbertos?.reduce((a, d) => a + (d.value || 0), 0) || 0;
-          
-          // Buscar meta da empresa
-          const { data: metaEmpresaPrevisao } = await supabase
+          const { data: metaEmpresa } = await supabase
             .from("tendenci_company_goals")
-            .select("valor_meta_total")
+            .select("valor_meta")
             .eq("status", "ativa")
             .single();
           
-          // Valor já vendido no mês
-          const { data: vendidoMes } = await supabase
+          const { data: jaVendido } = await supabase
             .from("crm_deals")
             .select("value")
             .eq("status", "won")
-            .gte("updated_at", inicioMesAtual.toISOString());
+            .gte("created_at", inicioMesAtual.toISOString());
           
-          const jaVendido = vendidoMes?.reduce((a, d) => a + (d.value || 0), 0) || 0;
-          const projecaoTotal = jaVendido + previsaoTotal;
+          const vendidoMes = jaVendido?.reduce((a, d) => a + (d.value || 0), 0) || 0;
           
           result = {
-            pipeline_total: pipelineTotal,
-            total_deals_abertos: dealsAbertos?.length || 0,
-            previsao_fechamento: previsaoTotal,
-            ja_vendido_mes: jaVendido,
-            projecao_total_mes: projecaoTotal,
-            meta_empresa: metaEmpresaPrevisao?.valor_meta_total || 0,
-            percentual_projetado_meta: metaEmpresaPrevisao?.valor_meta_total 
-              ? ((projecaoTotal / metaEmpresaPrevisao.valor_meta_total) * 100).toFixed(1) + "%"
-              : "N/A",
-            dias_restantes_mes: diasRestantesMes,
-            confianca: "média (baseado em histórico)",
-            top_oportunidades: dealsComPrevisao.sort((a, b) => b.previsao - a.previsao).slice(0, 10)
+            pipeline_aberto: dealsAbertosPrevisao?.reduce((a, d) => a + (d.value || 0), 0) || 0,
+            previsao_fechamento: previsao,
+            ja_vendido: vendidoMes,
+            projecao_total: vendidoMes + previsao,
+            meta_empresa: metaEmpresa?.valor_meta || 0,
+            gap_meta: (metaEmpresa?.valor_meta || 0) - vendidoMes - previsao,
+            dias_restantes: diasRestantes,
+            on_track: vendidoMes + previsao >= (metaEmpresa?.valor_meta || 0)
           };
           break;
 
         case "identificar_gargalos":
-          // Tempo em cada etapa
-          const { data: tempoEtapas } = await supabase.rpc("crm_time_in_stage");
+          const { data: stagesGargalo } = await supabase
+            .from("crm_stages")
+            .select("id, name, position, sla_hours")
+            .order("position");
           
-          // Identificar gargalos (acima do SLA)
           const gargalos = [];
-          for (const etapa of tempoEtapas || []) {
-            const slaHoras = etapa.sla_hours || 24;
-            const tempoMedio = etapa.avg_hours || 0;
+          for (const stage of stagesGargalo || []) {
+            const { data: dealsStage } = await supabase
+              .from("crm_deals")
+              .select("id, value, stage_entered_at, title")
+              .eq("stage_id", stage.id)
+              .eq("status", "aberto");
             
-            if (tempoMedio > slaHoras) {
-              // Valor travado nesta etapa
-              const { data: dealsEtapa } = await supabase
-                .from("crm_deals")
-                .select("id, value, title, stage_entered_at")
-                .eq("stage_id", etapa.stage_id)
-                .eq("status", "aberto");
-              
-              const valorTravado = dealsEtapa?.reduce((a, d) => a + (d.value || 0), 0) || 0;
-              const dealsAtrasados = dealsEtapa?.filter(d => {
-                const horasNaEtapa = (now.getTime() - new Date(d.stage_entered_at).getTime()) / (1000 * 60 * 60);
-                return horasNaEtapa > slaHoras;
-              }) || [];
-              
-              gargalos.push({
-                etapa: etapa.stage_name,
-                tempo_medio_horas: Math.round(tempoMedio),
-                sla_horas: slaHoras,
-                excesso_percentual: Math.round((tempoMedio / slaHoras - 1) * 100),
-                deals_na_etapa: dealsEtapa?.length || 0,
-                deals_atrasados: dealsAtrasados.length,
-                valor_travado: valorTravado,
-                acao_recomendada: tempoMedio > slaHoras * 2 
-                  ? "🔴 CRÍTICO: Revisar processo urgente" 
-                  : "🟡 ATENÇÃO: Monitorar e acelerar"
-              });
-            }
+            const agora = new Date();
+            const dealsAtrasados = (dealsStage || []).filter(d => {
+              if (!d.stage_entered_at || !stage.sla_hours) return false;
+              const entrou = new Date(d.stage_entered_at);
+              const horasNaEtapa = (agora.getTime() - entrou.getTime()) / (1000 * 60 * 60);
+              return horasNaEtapa > stage.sla_hours;
+            });
+            
+            gargalos.push({
+              etapa: stage.name,
+              posicao: stage.position,
+              sla_horas: stage.sla_hours,
+              total_deals: dealsStage?.length || 0,
+              valor_parado: dealsStage?.reduce((a, d) => a + (d.value || 0), 0) || 0,
+              deals_atrasados: dealsAtrasados.length,
+              valor_atrasado: dealsAtrasados.reduce((a, d) => a + (d.value || 0), 0),
+              deals_criticos: dealsAtrasados.slice(0, 3).map(d => ({ id: d.id, titulo: d.title, valor: d.value }))
+            });
           }
           
-          // Deals sem tarefas (outro tipo de gargalo)
-          const { data: semTarefas } = await supabase.rpc("get_deals_without_valid_tasks");
-          
-          result = {
-            gargalos_funil: gargalos.sort((a, b) => b.excesso_percentual - a.excesso_percentual),
-            total_valor_travado: gargalos.reduce((a, g) => a + g.valor_travado, 0),
-            deals_sem_tarefas: semTarefas?.length || 0,
-            recomendacao_principal: gargalos.length > 0 
-              ? `Priorizar etapa "${gargalos[0]?.etapa}" com R$ ${gargalos[0]?.valor_travado?.toLocaleString('pt-BR')} travados`
-              : "Funil saudável, sem gargalos críticos"
-          };
-          break;
-
-        // ==================== DIAGNÓSTICO GERAL CEO ====================
-        case "diagnostico_geral":
-          const diagNow = new Date();
-          const diagThirtyDaysAgo = new Date(diagNow.getTime() - 30 * 24 * 60 * 60 * 1000);
-          
-          const { data: defaultPipeline } = await supabase
-            .from("crm_pipelines")
-            .select("id")
-            .limit(1)
-            .single();
-          
-          const [
-            { data: crmMetrics, error: diagCrmError },
-            { data: metaEmpresa },
-            { data: alertasSLA },
-            { data: projetosAtrasados },
-            { data: leadsQuentes },
-            { data: tempoEtapasDiag },
-            { data: dealsSemTarefasDiag }
-          ] = await Promise.all([
-            supabase.rpc("dashboard_crm_metrics", {
-              p_start: diagThirtyDaysAgo.toISOString(),
-              p_end: diagNow.toISOString()
-            }),
-            supabase.from("tendenci_company_goals").select("*").eq("status", "ativa").single(),
-            defaultPipeline?.id 
-              ? supabase.rpc("crm_sla_alerts", { p_pipeline_id: defaultPipeline.id })
-              : Promise.resolve({ data: [] }),
-            supabase.from("projects")
-              .select("id, name, value")
-              .lt("deadline", diagNow.toISOString())
-              .not("stage", "in", '("aprovado","perdido")'),
-            supabase.from("leads")
-              .select("id")
-              .eq("temperature", "quente")
-              .eq("status", "novo"),
-            supabase.rpc("crm_time_in_stage"),
-            supabase.rpc("get_deals_without_valid_tasks")
-          ]);
-          
-          if (diagCrmError) console.error("[Tendenci] Erro diagnóstico CRM:", diagCrmError);
-
-          // Calcular progresso da meta da empresa
-          let progressoMeta = null;
-          if (metaEmpresa) {
-            const { data: progEmpresa } = await supabase
-              .from("tendenci_goal_progress")
-              .select("valor_vendido, percentual")
-              .eq("company_goal_id", metaEmpresa.id)
-              .single();
-            progressoMeta = {
-              meta: metaEmpresa.valor_meta_total,
-              vendido: progEmpresa?.valor_vendido || 0,
-              percentual: progEmpresa?.percentual || 0,
-              falta: (metaEmpresa.valor_meta_total || 0) - (progEmpresa?.valor_vendido || 0)
-            };
-          }
-
-          // Identificar maior gargalo
-          const maiorGargalo = (tempoEtapasDiag || [])
-            .filter((e: any) => (e.avg_hours || 0) > (e.sla_hours || 24))
-            .sort((a: any, b: any) => (b.avg_hours / b.sla_hours) - (a.avg_hours / a.sla_hours))[0];
-
-          const acoes: string[] = [];
-          
-          if ((alertasSLA?.length || 0) > 0) {
-            acoes.push(`🚨 ${alertasSLA?.length || 0} negócios acima do SLA - contatar HOJE`);
-          }
-          if ((dealsSemTarefasDiag?.length || 0) > 0) {
-            acoes.push(`⚠️ ${dealsSemTarefasDiag?.length || 0} deals sem tarefas - risco de abandono`);
-          }
-          if ((projetosAtrasados?.length || 0) > 0) {
-            const valorAtrasado = projetosAtrasados?.reduce((a: number, p: any) => a + (p.value || 0), 0) || 0;
-            acoes.push(`📋 ${projetosAtrasados?.length || 0} projetos atrasados (R$ ${valorAtrasado.toLocaleString('pt-BR')})`);
-          }
-          if ((leadsQuentes?.length || 0) > 0) {
-            acoes.push(`🔥 ${leadsQuentes?.length || 0} leads QUENTES aguardando - prioridade máxima`);
-          }
-          if (progressoMeta && progressoMeta.percentual < 50) {
-            acoes.push(`📊 Meta em ${progressoMeta.percentual.toFixed(1)}% - faltam R$ ${progressoMeta.falta.toLocaleString('pt-BR')}`);
-          }
-          if (maiorGargalo) {
-            acoes.push(`🔴 Gargalo em "${maiorGargalo.stage_name}" - ${Math.round(maiorGargalo.avg_hours)}h vs SLA ${maiorGargalo.sla_hours}h`);
-          }
-
-          result = {
-            resumo_executivo: {
-              pipeline_total: crmMetrics?.pipeline_value || 0,
-              deals_abertos: crmMetrics?.total_open || 0,
-              ticket_medio: crmMetrics?.avg_value || 0,
-              taxa_conversao: crmMetrics?.conversion_rate || 0
-            },
-            meta_empresa: progressoMeta,
-            saude_pipeline: {
-              sla_atrasados: alertasSLA?.length || 0,
-              deals_sem_tarefas: dealsSemTarefasDiag?.length || 0,
-              maior_gargalo: maiorGargalo ? {
-                etapa: maiorGargalo.stage_name,
-                tempo_medio: Math.round(maiorGargalo.avg_hours),
-                sla: maiorGargalo.sla_hours
-              } : null
-            },
-            alertas: {
-              projetos_atrasados: projetosAtrasados?.length || 0,
-              leads_quentes_pendentes: leadsQuentes?.length || 0
-            },
-            acoes_prioritarias: acoes.slice(0, 5),
-            status_geral: acoes.length === 0 ? "🟢 Operação saudável" : 
-                          acoes.length <= 2 ? "🟡 Atenção necessária" : "🔴 Ação urgente"
-          };
+          result = gargalos.sort((a, b) => b.valor_atrasado - a.valor_atrasado);
           break;
 
         default:
-          result = { error: `Ferramenta "${functionName}" não encontrada` };
+          result = { error: `Função ${functionName} não reconhecida` };
       }
-
-      console.log(`[Tendenci CEO] Resultado ${functionName}:`, JSON.stringify(result).substring(0, 800));
-
-      results.push({
-        role: "tool",
-        tool_call_id: toolCall.id,
-        content: JSON.stringify(result || { error: "Sem dados" }),
-      });
-    } catch (error) {
-      console.error(`[Tendenci CEO] Erro em ${functionName}:`, error);
-      const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
-      results.push({
-        role: "tool",
-        tool_call_id: toolCall.id,
-        content: JSON.stringify({ error: errorMessage }),
-      });
+    } catch (err) {
+      console.error(`[Tendenci CEO] Erro em ${functionName}:`, err);
+      result = { error: `Erro ao executar ${functionName}: ${err instanceof Error ? err.message : "Erro desconhecido"}` };
     }
+
+    results.push({
+      role: "tool",
+      tool_call_id: toolCall.id,
+      content: JSON.stringify(result, null, 2)
+    });
   }
 
   return results;
@@ -1051,72 +933,75 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    const systemPrompt = `Você é o **Agente Tendenci**, um DIRETOR COMERCIAL SÊNIOR (CCO) com 20+ anos de experiência em empresas milionárias do setor de móveis, decoração e marcenaria.
+    // Limitar histórico para últimas 15 mensagens
+    const recentMessages = messages.slice(-15);
 
-🎯 SEU PAPEL ESTRATÉGICO:
-Você é o braço direito do CEO. Analisa dados em tempo real, identifica padrões, prevê tendências e dá recomendações estratégicas com base em DADOS CONCRETOS do sistema. Sua análise deve ter o nível de um consultor de R$ 50.000/mês.
+    const systemPrompt = `Você é o **Agente Tendenci**, um DIRETOR COMERCIAL SÊNIOR (CCO) de elite com 20+ anos de experiência em empresas milionárias do setor de móveis planejados, decoração e marcenaria de alto padrão.
 
-💼 NÍVEL DE ANÁLISE C-LEVEL:
-- **Visão holística**: Conecte dados de vendas, produção, arquitetos e clientes
-- **Análise preditiva**: Identifique tendências e projete resultados do mês
-- **Benchmarking**: Compare performances (vendedores x média, atual x anterior)
-- **Gargalos**: Encontre onde o dinheiro está travando no funil
-- **ROI de parcerias**: Avalie retorno dos arquitetos parceiros
-- **Estratégia**: Sugira ações de alto impacto financeiro
+🎯 **SEU PAPEL ESTRATÉGICO:**
+Você é o braço direito do CEO. Sua função é analisar dados em tempo real, identificar padrões ocultos, prever tendências e fornecer recomendações estratégicas de ALTO IMPACTO baseadas em DADOS CONCRETOS. Seu nível de análise equivale a um consultor de R$ 80.000/mês.
 
-📊 MÉTRICAS DE CEO (sempre inclua quando relevante):
-- Pipeline health: valor total, conversão por etapa, velocidade
-- Performance individual vs média da equipe
-- Ticket médio e tendência (subindo/caindo)
-- Tempo médio de fechamento e onde trava
-- Arquitetos mais rentáveis (ROI real)
-- Previsão de fechamento do mês vs meta
-- Comparativo com período anterior
+🧠 **PROCESSO DE RACIOCÍNIO (Chain-of-Thought):**
+Antes de responder, SEMPRE siga este processo mental:
+1. **Entender**: O que o CEO realmente quer saber? Qual a preocupação por trás da pergunta?
+2. **Coletar**: Quais dados preciso buscar para uma análise completa?
+3. **Analisar**: O que os números revelam? Tendências? Anomalias? Padrões?
+4. **Comparar**: Como está vs meta? Vs período anterior? Vs média do mercado?
+5. **Recomendar**: Qual ação de MAIOR IMPACTO FINANCEIRO posso sugerir?
 
-🔧 FORMATO CEO - MÁXIMA EFICIÊNCIA:
-- 3-4 linhas MAX por insight (CEO não lê textão)
-- Números SEMPRE comparativos: "R$ 45k (+12% vs mês anterior)"
-- Use indicadores visuais: 🟢 ok | 🟡 atenção | 🔴 crítico | 📈 subindo | 📉 caindo
+📊 **MÉTRICAS C-LEVEL (sempre inclua quando relevante):**
+- Pipeline health: valor total, conversão por etapa, velocidade de fechamento
+- Performance individual vs média da equipe (identificar outliers)
+- Ticket médio e tendência (subindo/caindo/estável)
+- Tempo médio de fechamento e onde está travando
+- ROI real dos arquitetos parceiros (quem traz mais valor)
+- Previsão de fechamento vs meta (on track ou off track?)
+- Comparativo MoM (Month over Month)
+
+🔧 **FORMATO EXECUTIVO - MÁXIMA EFICIÊNCIA:**
+- Use **negrito** para números e insights críticos
+- Máximo 4-5 linhas por insight (CEO não lê textão)
+- Números SEMPRE comparativos: "**R$ 45.000** (+12% vs mês anterior)"
+- Indicadores visuais: 🟢 ok | 🟡 atenção | 🔴 crítico | 📈 subindo | 📉 caindo | ⚡ urgente
 - Priorize pelo IMPACTO EM R$, não por urgência
-- SEMPRE termine com: "**Ação recomendada:** [específica e executável]"
+- SEMPRE termine com: "**💡 Ação recomendada:** [específica e executável]"
 
-📋 REGRAS ABSOLUTAS:
+📋 **REGRAS ABSOLUTAS:**
 1. SEMPRE use as ferramentas para consultar dados REAIS - NUNCA invente números
-2. Se não encontrar dados, diga claramente: "Não encontrei essa informação"
-3. Compare SEMPRE: atual vs meta, atual vs período anterior, individual vs equipe
-4. Identifique a CAUSA raiz, não só o sintoma
-5. Quantifique o impacto em R$ sempre que possível
-6. Seja direto e estratégico - você é um consultor premium
+2. Se não encontrar dados, diga claramente: "Não encontrei dados sobre isso no sistema"
+3. Compare SEMPRE: atual vs meta | atual vs período anterior | individual vs equipe
+4. Identifique a CAUSA RAIZ, não só sintomas
+5. Quantifique impacto em R$ sempre que possível
+6. Para saudações simples ("oi", "olá"), responda brevemente SEM consultar ferramentas
+7. Para perguntas amplas ("como está?", "resumo"), use a ferramenta diagnostico_completo
 
-💡 EXEMPLOS DE ANÁLISE CEO:
+💬 **CLARIFICAÇÃO:**
+Se a pergunta for ambígua, pergunte para clarificar:
+- "Você quer ver dados do mês atual ou comparar com o anterior?"
+- "Prefere o ranking por valor vendido ou por taxa de conversão?"
 
-Pergunta: "Como está o pipeline?"
-Resposta:
-"📊 **Pipeline: R$ 890.450** (45 deals)
-- Ticket médio: R$ 19.787 📈 (+8% vs mês anterior)  
-- 🔴 8 deals acima do SLA na etapa "Proposta" (R$ 145k travados)
-- Taxa conversão: 23% 📉 (era 28% - verificar qualificação)
-
-**Ação:** Ligar para os 3 maiores deals em SLA hoje - potencial R$ 89k"
-
-Pergunta: "Ranking de vendedores"
-Resposta:
-"🏆 **Ranking - Dezembro:**
-1. João: 87% da meta (R$ 174k) ⭐ melhor conversão
-2. Maria: 72% da meta (R$ 144k) - pipeline forte
-3. Pedro: 45% da meta (R$ 90k) 🔴 abaixo média
-
-📊 Média equipe: 68% | Meta empresa: 65% atingida
-
-**Ação:** Reunião com Pedro para revisar pipeline (12 deals parados)"`;
+🎨 **FORMATAÇÃO MARKDOWN:**
+- Use **negrito** para destacar números importantes
+- Use listas com bullet points para múltiplos itens
+- Use emojis com moderação para indicadores visuais
+- Separe seções com quebras de linha`;
 
     const tools = [
-      // ==================== CRM BÁSICO ====================
+      // SUPER FERRAMENTA - DIAGNÓSTICO COMPLETO
+      {
+        type: "function",
+        function: {
+          name: "diagnostico_completo",
+          description: "DIAGNÓSTICO CEO COMPLETO: análise rápida de pipeline, metas, gargalos, leads quentes. Use para perguntas amplas como 'como está a empresa?', 'resumo geral', 'análise do negócio'.",
+          parameters: { type: "object", properties: {}, required: [] }
+        }
+      },
+      // CRM
       {
         type: "function",
         function: {
           name: "buscar_metricas_crm",
-          description: "Métricas gerais do CRM: total de negócios, ganhos, perdidos, valores, ticket médio",
+          description: "Métricas gerais do CRM: deals, ganhos, perdidos, valores, ticket médio",
           parameters: { type: "object", properties: {}, required: [] }
         }
       },
@@ -1124,7 +1009,7 @@ Resposta:
         type: "function",
         function: {
           name: "buscar_negocios_pipeline",
-          description: "Lista negócios abertos com detalhes: cliente, valor, etapa, responsável, arquiteto",
+          description: "Lista negócios abertos com detalhes: cliente, valor, etapa, responsável",
           parameters: {
             type: "object",
             properties: {
@@ -1137,7 +1022,7 @@ Resposta:
         type: "function",
         function: {
           name: "buscar_alertas_sla",
-          description: "Negócios que ultrapassaram o SLA da etapa - precisam de ação urgente",
+          description: "Negócios que ultrapassaram o SLA - precisam de ação urgente",
           parameters: {
             type: "object",
             properties: {
@@ -1154,12 +1039,11 @@ Resposta:
           parameters: { type: "object", properties: {}, required: [] }
         }
       },
-      // ==================== CRM AVANÇADO ====================
       {
         type: "function",
         function: {
           name: "buscar_tendencias_crm",
-          description: "Série temporal de métricas CRM dos últimos 90 dias - para análise de tendências",
+          description: "Série temporal dos últimos 90 dias - análise de tendências",
           parameters: { type: "object", properties: {}, required: [] }
         }
       },
@@ -1167,22 +1051,8 @@ Resposta:
         type: "function",
         function: {
           name: "buscar_tempo_etapas",
-          description: "Tempo médio que deals ficam em cada etapa - identificar gargalos",
+          description: "Tempo médio em cada etapa - identificar gargalos",
           parameters: { type: "object", properties: {}, required: [] }
-        }
-      },
-      {
-        type: "function",
-        function: {
-          name: "buscar_agregacoes_crm",
-          description: "Agregações avançadas do CRM com filtro de período",
-          parameters: {
-            type: "object",
-            properties: {
-              data_inicio: { type: "string", description: "Data início (ISO)" },
-              data_fim: { type: "string", description: "Data fim (ISO)" }
-            }
-          }
         }
       },
       {
@@ -1197,103 +1067,50 @@ Resposta:
         type: "function",
         function: {
           name: "buscar_deal",
-          description: "Detalhes completos de um deal específico com histórico e tarefas",
+          description: "Detalhes de um deal específico com histórico e tarefas",
           parameters: {
             type: "object",
-            properties: {
-              deal_id: { type: "string", description: "UUID do deal" }
-            },
+            properties: { deal_id: { type: "string" } },
             required: ["deal_id"]
           }
         }
       },
+      // METAS E VENDEDORES
       {
         type: "function",
         function: {
-          name: "buscar_historico_deal",
-          description: "Histórico de movimentações de um deal específico",
-          parameters: {
-            type: "object",
-            properties: {
-              deal_id: { type: "string", description: "UUID do deal" }
-            },
-            required: ["deal_id"]
-          }
-        }
-      },
-      // ==================== CLIENTES ====================
-      {
-        type: "function",
-        function: {
-          name: "buscar_clientes",
-          description: "Lista clientes com métricas: leads, deals, valor total",
-          parameters: {
-            type: "object",
-            properties: {
-              limite: { type: "number", description: "Quantidade de clientes (padrão: 50)" }
-            }
-          }
-        }
-      },
-      {
-        type: "function",
-        function: {
-          name: "buscar_performance_cliente",
-          description: "Performance detalhada de um cliente: histórico de compras, projetos, ticket médio",
-          parameters: {
-            type: "object",
-            properties: {
-              client_id: { type: "string", description: "UUID do cliente" }
-            },
-            required: ["client_id"]
-          }
-        }
-      },
-      // ==================== ARQUITETOS ====================
-      {
-        type: "function",
-        function: {
-          name: "buscar_arquitetos_inativos",
-          description: "Arquitetos sem enviar projetos há X dias - precisam de reativação",
-          parameters: {
-            type: "object",
-            properties: {
-              dias: { type: "number", description: "Dias de inatividade (padrão: 30)" }
-            }
-          }
-        }
-      },
-      {
-        type: "function",
-        function: {
-          name: "buscar_performance_arquitetos",
-          description: "Performance dos arquitetos: projetos enviados, aprovados, perdidos, valor total",
-          parameters: {
-            type: "object",
-            properties: {
-              periodo_dias: { type: "number", description: "Período em dias para análise (padrão: 30)" }
-            }
-          }
-        }
-      },
-      {
-        type: "function",
-        function: {
-          name: "buscar_agregacoes_arquitetos",
-          description: "Agregações de arquitetos: total por categoria, tier, status",
+          name: "buscar_metas_vendedores",
+          description: "Metas ativas de todos os vendedores com progresso",
           parameters: { type: "object", properties: {}, required: [] }
         }
       },
+      {
+        type: "function",
+        function: {
+          name: "comparar_vendedores",
+          description: "Comparativo dos vendedores: meta, vendido, pipeline, média equipe",
+          parameters: { type: "object", properties: {}, required: [] }
+        }
+      },
+      {
+        type: "function",
+        function: {
+          name: "buscar_ranking_vendedores",
+          description: "Ranking dos vendedores por % meta e valor vendido",
+          parameters: { type: "object", properties: {}, required: [] }
+        }
+      },
+      // ARQUITETOS
       {
         type: "function",
         function: {
           name: "buscar_ranking_arquitetos",
-          description: "Ranking de arquitetos por tipo: valor_indicado, projetos_aprovados, quantidade_projetos",
+          description: "Ranking de arquitetos por: valor_indicado, projetos_aprovados, quantidade_projetos",
           parameters: {
             type: "object",
             properties: {
-              tipo: { type: "string", enum: ["valor_indicado", "projetos_aprovados", "quantidade_projetos"], description: "Tipo de ranking" },
-              limite: { type: "number", description: "Quantidade no ranking (padrão: 20)" }
+              tipo: { type: "string", enum: ["valor_indicado", "projetos_aprovados", "quantidade_projetos"] },
+              limite: { type: "number" }
             }
           }
         }
@@ -1301,22 +1118,11 @@ Resposta:
       {
         type: "function",
         function: {
-          name: "buscar_indicacoes_arquitetos",
-          description: "Estatísticas de indicações de arquitetos no período",
-          parameters: { type: "object", properties: {}, required: [] }
-        }
-      },
-      {
-        type: "function",
-        function: {
-          name: "buscar_arquiteto",
-          description: "Detalhes completos de um arquiteto: timeline, projetos, indicações, vendedor responsável",
+          name: "buscar_arquitetos_inativos",
+          description: "Arquitetos sem projetos há X dias - precisam reativação",
           parameters: {
             type: "object",
-            properties: {
-              architect_id: { type: "string", description: "UUID do arquiteto" }
-            },
-            required: ["architect_id"]
+            properties: { dias: { type: "number" } }
           }
         }
       },
@@ -1328,81 +1134,7 @@ Resposta:
           parameters: { type: "object", properties: {}, required: [] }
         }
       },
-      // ==================== METAS E VENDEDORES ====================
-      {
-        type: "function",
-        function: {
-          name: "buscar_metas_vendedores",
-          description: "Metas ativas de todos os vendedores com progresso atual",
-          parameters: { type: "object", properties: {}, required: [] }
-        }
-      },
-      {
-        type: "function",
-        function: {
-          name: "buscar_performance_vendedor",
-          description: "Performance de um vendedor específico: meta, vendas, ranking",
-          parameters: {
-            type: "object",
-            properties: {
-              vendedor_id: { type: "string", description: "UUID do vendedor" }
-            },
-            required: ["vendedor_id"]
-          }
-        }
-      },
-      {
-        type: "function",
-        function: {
-          name: "buscar_performance_detalhada_vendedor",
-          description: "Performance DETALHADA por meta: deals por etapa, conversão, histórico",
-          parameters: {
-            type: "object",
-            properties: {
-              vendedor_id: { type: "string", description: "UUID do vendedor" }
-            },
-            required: ["vendedor_id"]
-          }
-        }
-      },
-      {
-        type: "function",
-        function: {
-          name: "buscar_ranking_vendedores",
-          description: "Ranking dos vendedores por percentual de meta e valor vendido",
-          parameters: { type: "object", properties: {}, required: [] }
-        }
-      },
-      {
-        type: "function",
-        function: {
-          name: "comparar_vendedores",
-          description: "Comparativo COMPLETO dos vendedores: meta, vendido, pipeline, média da equipe",
-          parameters: { type: "object", properties: {}, required: [] }
-        }
-      },
-      {
-        type: "function",
-        function: {
-          name: "buscar_meta_diaria",
-          description: "Metas diárias de captação de arquitetos - hoje",
-          parameters: { type: "object", properties: {}, required: [] }
-        }
-      },
-      {
-        type: "function",
-        function: {
-          name: "buscar_stats_metas_diarias",
-          description: "Estatísticas de metas diárias dos últimos X dias",
-          parameters: {
-            type: "object",
-            properties: {
-              periodo_dias: { type: "number", description: "Dias para análise (padrão: 7)" }
-            }
-          }
-        }
-      },
-      // ==================== PROJETOS ====================
+      // PROJETOS
       {
         type: "function",
         function: {
@@ -1411,36 +1143,7 @@ Resposta:
           parameters: {
             type: "object",
             properties: {
-              stage: { type: "string", enum: ["recebido", "em_orcamento", "orcado", "apresentado", "em_negociacao", "aprovado", "perdido", "todos"], description: "Estágio" }
-            }
-          }
-        }
-      },
-      {
-        type: "function",
-        function: {
-          name: "buscar_metricas_projetos",
-          description: "Métricas de projetos: quantidade por etapa, valor aprovado",
-          parameters: { type: "object", properties: {}, required: [] }
-        }
-      },
-      {
-        type: "function",
-        function: {
-          name: "buscar_stats_tipo_produto",
-          description: "Estatísticas de projetos por tipo de produto",
-          parameters: { type: "object", properties: {}, required: [] }
-        }
-      },
-      {
-        type: "function",
-        function: {
-          name: "buscar_metricas_projetos_historico",
-          description: "Métricas de projetos com histórico mensal",
-          parameters: {
-            type: "object",
-            properties: {
-              meses: { type: "number", description: "Quantidade de meses (padrão: 6)" }
+              stage: { type: "string", enum: ["recebido", "em_orcamento", "orcado", "apresentado", "em_negociacao", "aprovado", "perdido", "todos"] }
             }
           }
         }
@@ -1453,12 +1156,12 @@ Resposta:
           parameters: { type: "object", properties: {}, required: [] }
         }
       },
-      // ==================== LEADS ====================
+      // LEADS
       {
         type: "function",
         function: {
           name: "buscar_leads_quentes",
-          description: "Leads QUENTES aguardando atendimento - PRIORIDADE MÁXIMA",
+          description: "Leads QUENTES aguardando atendimento - PRIORIDADE",
           parameters: { type: "object", properties: {}, required: [] }
         }
       },
@@ -1466,11 +1169,11 @@ Resposta:
         type: "function",
         function: {
           name: "buscar_metricas_leads",
-          description: "Métricas de leads: total, por temperatura, taxa conversão para CRM",
+          description: "Métricas de leads: total, por temperatura, taxa conversão",
           parameters: { type: "object", properties: {}, required: [] }
         }
       },
-      // ==================== PRODUÇÃO ====================
+      // PRODUÇÃO E PEDIDOS
       {
         type: "function",
         function: {
@@ -1482,48 +1185,29 @@ Resposta:
       {
         type: "function",
         function: {
-          name: "buscar_alertas_producao",
-          description: "Ordens de produção urgentes ou com prazo crítico",
-          parameters: { type: "object", properties: {}, required: [] }
-        }
-      },
-      // ==================== PEDIDOS ====================
-      {
-        type: "function",
-        function: {
           name: "buscar_metricas_pedidos",
-          description: "Métricas de pedidos do mês com comparativo do mês anterior",
+          description: "Métricas de pedidos do mês com comparativo anterior",
           parameters: { type: "object", properties: {}, required: [] }
         }
       },
-      // ==================== ESTOQUE ====================
       {
         type: "function",
         function: {
           name: "buscar_alertas_estoque",
-          description: "Produtos com estoque abaixo do mínimo - precisam reposição",
+          description: "Produtos com estoque abaixo do mínimo",
           parameters: { type: "object", properties: {}, required: [] }
         }
       },
-      // ==================== CAMPANHAS ====================
-      {
-        type: "function",
-        function: {
-          name: "buscar_metricas_campanhas",
-          description: "Métricas de campanhas de prospecção: taxa entrega, erros",
-          parameters: { type: "object", properties: {}, required: [] }
-        }
-      },
-      // ==================== ANÁLISE ESTRATÉGICA CEO ====================
+      // ANÁLISE ESTRATÉGICA
       {
         type: "function",
         function: {
           name: "comparar_periodos",
-          description: "ANÁLISE COMPARATIVA: mês atual vs anterior ou trimestre atual vs anterior. Essencial para identificar tendências.",
+          description: "COMPARATIVO: mês atual vs anterior. Identifica tendências.",
           parameters: {
             type: "object",
             properties: {
-              tipo: { type: "string", enum: ["mes", "trimestre"], description: "Tipo de comparação (padrão: mes)" }
+              tipo: { type: "string", enum: ["mes", "trimestre"] }
             }
           }
         }
@@ -1532,7 +1216,7 @@ Resposta:
         type: "function",
         function: {
           name: "prever_fechamento_mes",
-          description: "PREVISÃO DE FECHAMENTO: projeta quanto vai fechar no mês baseado no pipeline atual e taxas históricas de conversão. Compara com meta.",
+          description: "PREVISÃO: quanto vai fechar no mês baseado no pipeline e taxas históricas",
           parameters: { type: "object", properties: {}, required: [] }
         }
       },
@@ -1540,21 +1224,15 @@ Resposta:
         type: "function",
         function: {
           name: "identificar_gargalos",
-          description: "IDENTIFICAR GARGALOS: onde os deals estão travando, quanto dinheiro está parado, ações recomendadas por etapa.",
-          parameters: { type: "object", properties: {}, required: [] }
-        }
-      },
-      // ==================== DIAGNÓSTICO ====================
-      {
-        type: "function",
-        function: {
-          name: "diagnostico_geral",
-          description: "DIAGNÓSTICO CEO COMPLETO: resumo executivo, meta empresa, saúde do pipeline, gargalos, alertas e ações prioritárias. Use para 'como está a empresa?' ou 'análise geral'.",
+          description: "GARGALOS: onde deals estão travando, quanto dinheiro parado, ações recomendadas",
           parameters: { type: "object", properties: {}, required: [] }
         }
       }
     ];
 
+    console.log(`[Tendenci CEO] Processando ${recentMessages.length} mensagens`);
+
+    // Primeira chamada - pode ter tool calls
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -1562,10 +1240,10 @@ Resposta:
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-2.5-pro",
         messages: [
           { role: "system", content: systemPrompt },
-          ...messages,
+          ...recentMessages,
         ],
         tools,
         tool_choice: "auto",
@@ -1605,11 +1283,12 @@ Resposta:
       
       const finalMessages = [
         { role: "system", content: systemPrompt },
-        ...messages,
+        ...recentMessages,
         aiResponse.choices[0].message,
         ...toolResults
       ];
 
+      // Segunda chamada COM STREAMING
       const finalResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -1617,23 +1296,58 @@ Resposta:
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
+          model: "google/gemini-2.5-pro",
           messages: finalMessages,
-          stream: false,
+          stream: true,
         }),
       });
 
-      const finalData = await finalResponse.json();
-      return new Response(
-        JSON.stringify({ content: finalData.choices[0].message.content }), 
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      if (!finalResponse.ok) {
+        const errorText = await finalResponse.text();
+        console.error("[Tendenci CEO] Final response error:", errorText);
+        return new Response(
+          JSON.stringify({ error: "Erro ao gerar resposta final" }), 
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Retornar streaming
+      return new Response(finalResponse.body, {
+        headers: { 
+          ...corsHeaders, 
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          "Connection": "keep-alive"
+        },
+      });
     }
 
-    return new Response(
-      JSON.stringify({ content: aiResponse.choices[0].message.content }), 
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    // Sem tool calls - resposta direta com streaming
+    const directResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-pro",
+        messages: [
+          { role: "system", content: systemPrompt },
+          ...recentMessages,
+        ],
+        stream: true,
+      }),
+    });
+
+    return new Response(directResponse.body, {
+      headers: { 
+        ...corsHeaders, 
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        "Connection": "keep-alive"
+      },
+    });
+
   } catch (e) {
     console.error("[Tendenci CEO] Error:", e);
     return new Response(

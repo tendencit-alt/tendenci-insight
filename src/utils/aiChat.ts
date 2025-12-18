@@ -38,17 +38,93 @@ export const streamChat = async ({
       throw new Error("Falha ao iniciar conversa");
     }
 
-    const data = await resp.json();
+    const contentType = resp.headers.get("content-type") || "";
     
-    if (data.error) {
-      onError?.(data.error);
+    // Se for JSON (resposta antiga sem streaming)
+    if (contentType.includes("application/json")) {
+      const data = await resp.json();
+      if (data.error) {
+        onError?.(data.error);
+        return;
+      }
+      if (data.content) {
+        onChunk(data.content);
+        onDone();
+      }
       return;
     }
 
-    if (data.content) {
-      onChunk(data.content);
-      onDone();
+    // Se for SSE (streaming)
+    if (!resp.body) {
+      throw new Error("Sem corpo de resposta");
     }
+
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let textBuffer = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      
+      textBuffer += decoder.decode(value, { stream: true });
+
+      // Processar linha por linha
+      let newlineIndex: number;
+      while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
+        let line = textBuffer.slice(0, newlineIndex);
+        textBuffer = textBuffer.slice(newlineIndex + 1);
+
+        // Remover \r se existir (CRLF)
+        if (line.endsWith("\r")) line = line.slice(0, -1);
+        
+        // Ignorar linhas vazias e comentários SSE
+        if (line.startsWith(":") || line.trim() === "") continue;
+        if (!line.startsWith("data: ")) continue;
+
+        const jsonStr = line.slice(6).trim();
+        
+        // Fim do stream
+        if (jsonStr === "[DONE]") {
+          break;
+        }
+
+        try {
+          const parsed = JSON.parse(jsonStr);
+          const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+          if (content) {
+            onChunk(content);
+          }
+        } catch {
+          // JSON incompleto - colocar de volta no buffer
+          textBuffer = line + "\n" + textBuffer;
+          break;
+        }
+      }
+    }
+
+    // Processar qualquer conteúdo restante no buffer
+    if (textBuffer.trim()) {
+      for (let raw of textBuffer.split("\n")) {
+        if (!raw) continue;
+        if (raw.endsWith("\r")) raw = raw.slice(0, -1);
+        if (raw.startsWith(":") || raw.trim() === "") continue;
+        if (!raw.startsWith("data: ")) continue;
+        
+        const jsonStr = raw.slice(6).trim();
+        if (jsonStr === "[DONE]") continue;
+        
+        try {
+          const parsed = JSON.parse(jsonStr);
+          const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+          if (content) onChunk(content);
+        } catch {
+          // Ignorar fragmentos incompletos
+        }
+      }
+    }
+
+    onDone();
   } catch (error) {
     console.error("Stream chat error:", error);
     onError?.(error instanceof Error ? error.message : "Erro desconhecido");
