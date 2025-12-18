@@ -3,117 +3,231 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Bot, Send, Loader2 } from "lucide-react";
-import { streamChat, type Message } from "@/utils/aiChat";
+import { Bot, Send, Loader2, Sparkles, TrendingUp, AlertTriangle, Target, BarChart3 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+
+export interface Message {
+  role: "user" | "assistant";
+  content: string;
+}
+
+const quickQuestions = [
+  { icon: BarChart3, text: "Como está o pipeline?", color: "text-blue-500" },
+  { icon: Target, text: "Como estão as metas da equipe?", color: "text-green-500" },
+  { icon: AlertTriangle, text: "Quais alertas preciso ver?", color: "text-amber-500" },
+  { icon: TrendingUp, text: "Análise geral do mês", color: "text-purple-500" },
+];
+
 export function TendenciAssistant() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const {
-    toast
-  } = useToast();
+  const { toast } = useToast();
+
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
-  const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
+
+  const handleSend = async (messageText?: string) => {
+    const textToSend = messageText || input.trim();
+    if (!textToSend || isLoading) return;
+
     const userMessage: Message = {
       role: "user",
-      content: input
+      content: textToSend,
     };
-    setMessages(prev => [...prev, userMessage]);
+
+    setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setIsLoading(true);
+
     try {
-      await streamChat({
-        messages: [...messages, userMessage],
-        onChunk: chunk => {
-          setMessages(prev => {
-            const last = prev[prev.length - 1];
-            if (last?.role === "assistant") {
-              return prev.map((m, i) => i === prev.length - 1 ? {
-                ...m,
-                content: last.content + chunk
-              } : m);
-            }
-            return [...prev, {
-              role: "assistant",
-              content: chunk
-            }];
-          });
-        },
-        onDone: () => setIsLoading(false),
-        onError: error => {
-          toast({
-            title: "Erro",
-            description: error,
-            variant: "destructive"
-          });
-          setIsLoading(false);
-        }
+      const { data, error } = await supabase.functions.invoke("tendenci-assistant", {
+        body: { messages: [...messages, userMessage] },
       });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      const assistantMessage: Message = {
+        role: "assistant",
+        content: data?.content || "Desculpe, não consegui processar sua pergunta.",
+      };
+
+      setMessages((prev) => [...prev, assistantMessage]);
     } catch (error) {
       console.error("Error sending message:", error);
-      setIsLoading(false);
       toast({
         title: "Erro",
-        description: "Falha ao enviar mensagem. Tente novamente.",
-        variant: "destructive"
+        description: error instanceof Error ? error.message : "Falha ao enviar mensagem. Tente novamente.",
+        variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
   };
-  return <Sheet open={isOpen} onOpenChange={setIsOpen}>
+
+  const handleQuickQuestion = (question: string) => {
+    handleSend(question);
+  };
+
+  const formatMessage = (content: string) => {
+    // Formatar emojis e números
+    return content
+      .split('\n')
+      .map((line, i) => (
+        <span key={i} className="block">
+          {line}
+        </span>
+      ));
+  };
+
+  return (
+    <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetTrigger asChild>
-        
+        <Button
+          size="lg"
+          className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg bg-gradient-to-br from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 z-50 group animate-pulse hover:animate-none"
+        >
+          <Sparkles className="h-6 w-6 group-hover:scale-110 transition-transform" />
+        </Button>
       </SheetTrigger>
-      <SheetContent 
-        className="w-full sm:max-w-xl flex flex-col"
+      <SheetContent
+        className="w-full sm:max-w-xl flex flex-col h-full"
         onPointerDownOutside={(e) => e.preventDefault()}
         onInteractOutside={(e) => e.preventDefault()}
       >
-        <SheetHeader>
-          <SheetTitle className="flex items-center gap-2">
-            <Bot className="h-5 w-5" />
-            🧠 Assistente de Inteligência Tendenci
+        <SheetHeader className="border-b pb-4">
+          <SheetTitle className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5">
+              <Bot className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <span className="text-lg font-semibold">Agente Tendenci</span>
+              <p className="text-xs text-muted-foreground font-normal">
+                Especialista em Gestão Comercial
+              </p>
+            </div>
           </SheetTitle>
         </SheetHeader>
 
         <ScrollArea ref={scrollRef} className="flex-1 pr-4 mt-4">
-          {messages.length === 0 ? <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-8">
-              <Bot className="h-16 w-16 mb-4 opacity-50" />
-              <p className="text-lg font-medium mb-2">
-                Olá! Sou sua Assistente de Inteligência Tendenci
-              </p>
-              <p className="text-sm">
-                Posso ajudar com análises de CRM, projetos, clientes e desempenho comercial.
-                Faça uma pergunta para começar!
-              </p>
-            </div> : <div className="space-y-4 pb-4">
-              {messages.map((msg, idx) => <div key={idx} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                  <div className={`max-w-[80%] rounded-lg px-4 py-2 ${msg.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
-                    <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+          {messages.length === 0 ? (
+            <div className="flex flex-col h-full">
+              <div className="text-center p-6 bg-gradient-to-br from-muted/50 to-muted/20 rounded-xl mb-4">
+                <div className="p-3 rounded-full bg-primary/10 w-fit mx-auto mb-3">
+                  <Sparkles className="h-8 w-8 text-primary" />
+                </div>
+                <p className="text-lg font-medium mb-1">
+                  Olá! Sou o Agente Tendenci
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Especialista em gestão comercial e vendas B2B.
+                  <br />
+                  Analiso dados reais do seu sistema em tempo real.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide px-1">
+                  Perguntas rápidas
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  {quickQuestions.map((q, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => handleQuickQuestion(q.text)}
+                      className="flex items-center gap-2 p-3 text-left text-sm rounded-lg border border-border/50 hover:border-primary/50 hover:bg-muted/50 transition-all group"
+                    >
+                      <q.icon className={`h-4 w-4 ${q.color} group-hover:scale-110 transition-transform`} />
+                      <span className="text-muted-foreground group-hover:text-foreground transition-colors">
+                        {q.text}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-6 p-4 bg-amber-500/10 rounded-lg border border-amber-500/20">
+                <p className="text-xs text-amber-700 dark:text-amber-400">
+                  💡 <strong>Dica:</strong> Pergunte sobre vendedores específicos, metas, projetos atrasados, leads quentes ou peça uma análise geral.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4 pb-4">
+              {messages.map((msg, idx) => (
+                <div
+                  key={idx}
+                  className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                >
+                  <div
+                    className={`max-w-[85%] rounded-2xl px-4 py-3 ${
+                      msg.role === "user"
+                        ? "bg-primary text-primary-foreground rounded-br-md"
+                        : "bg-muted rounded-bl-md"
+                    }`}
+                  >
+                    <div className="text-sm whitespace-pre-wrap leading-relaxed">
+                      {formatMessage(msg.content)}
+                    </div>
                   </div>
-                </div>)}
-            </div>}
+                </div>
+              ))}
+              {isLoading && (
+                <div className="flex justify-start">
+                  <div className="bg-muted rounded-2xl rounded-bl-md px-4 py-3">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span className="text-sm">Analisando dados...</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </ScrollArea>
 
         <div className="flex gap-2 pt-4 border-t">
-          <Input placeholder="Digite sua pergunta..." value={input} onChange={e => setInput(e.target.value)} onKeyPress={handleKeyPress} disabled={isLoading} />
-          <Button size="icon" onClick={handleSend} disabled={isLoading || !input.trim()}>
-            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+          <Input
+            placeholder="Pergunte sobre vendas, metas, projetos..."
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyPress={handleKeyPress}
+            disabled={isLoading}
+            className="rounded-full"
+          />
+          <Button
+            size="icon"
+            onClick={() => handleSend()}
+            disabled={isLoading || !input.trim()}
+            className="rounded-full shrink-0"
+          >
+            {isLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Send className="h-4 w-4" />
+            )}
           </Button>
         </div>
       </SheetContent>
-    </Sheet>;
+    </Sheet>
+  );
 }
