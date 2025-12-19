@@ -175,6 +175,16 @@ export function ArchitectTimeline({ architectId }: ArchitectTimelineProps) {
   const handleSubmit = async () => {
     if (!message.trim() && !files && !audioFiles && !audioBlob) return;
 
+    // Validar sessão do usuário antes de permitir envio
+    if (!currentUserId) {
+      toast({
+        title: "Sessão expirada",
+        description: "Por favor, faça login novamente para continuar",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Validar arquivos regulares antes do upload
     if (files && files.length > 0) {
       for (let i = 0; i < files.length; i++) {
@@ -228,7 +238,7 @@ export function ArchitectTimeline({ architectId }: ArchitectTimelineProps) {
         mentionedUsers.push(match[2]); // Extract user ID from [@Name](userId)
       }
 
-      // Insert timeline entry
+      // Insert timeline entry com author_id
       const { data: timelineEntry, error: timelineError } = await supabase
         .from("architect_timeline")
         .insert({
@@ -236,11 +246,17 @@ export function ArchitectTimeline({ architectId }: ArchitectTimelineProps) {
           message,
           update_type: updateType,
           mentioned_users: mentionedUsers,
+          author_id: currentUserId,
         })
         .select()
         .maybeSingle();
 
       if (timelineError) throw timelineError;
+
+      // Validar se o registro foi realmente criado
+      if (!timelineEntry) {
+        throw new Error("Falha ao salvar - registro não foi criado. Verifique sua conexão e tente novamente.");
+      }
 
       // Upload files if any
       if (files && files.length > 0) {
@@ -333,8 +349,8 @@ export function ArchitectTimeline({ architectId }: ArchitectTimelineProps) {
       }
 
       toast({
-        title: "Sucesso",
-        description: "Atualização adicionada à timeline!",
+        title: "Salvo com sucesso",
+        description: `Atualização registrada às ${format(new Date(), "HH:mm", { locale: ptBR })}`,
       });
 
       setMessage("");
@@ -713,13 +729,27 @@ export function ArchitectTimeline({ architectId }: ArchitectTimelineProps) {
             )}
           </div>
 
+          {/* Indicador do usuário logado */}
+          {currentUserId && (
+            <div className="text-xs text-muted-foreground flex items-center gap-1">
+              <span className="h-2 w-2 bg-green-500 rounded-full animate-pulse" />
+              Você está logado como: {allUsers.find(u => u.id === currentUserId)?.full_name || "Usuário"}
+            </div>
+          )}
+          {!currentUserId && (
+            <div className="text-xs text-destructive flex items-center gap-1">
+              <span className="h-2 w-2 bg-destructive rounded-full" />
+              Sessão expirada - faça login novamente
+            </div>
+          )}
+
           <Button
             onClick={handleSubmit}
-            disabled={submitting || (!message.trim() && !files && !audioBlob && !audioFiles)}
+            disabled={submitting || !currentUserId || (!message.trim() && !files && !audioBlob && !audioFiles)}
             className="w-full"
           >
             <Send className="h-4 w-4 mr-2" />
-            {submitting ? "Enviando..." : "Enviar"}
+            {submitting ? "Salvando..." : "Enviar Atualização"}
           </Button>
         </div>
 
