@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Message } from "@/utils/aiChat";
+import { toast } from "@/hooks/use-toast";
 
 export interface AIConversation {
   id: string;
@@ -18,11 +19,16 @@ export function useAIChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState(false);
 
   // Carregar conversas do usuário
   const loadConversations = useCallback(async () => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      console.log("[useAIChat] loadConversations: usuário não autenticado");
+      return;
+    }
 
+    console.log("[useAIChat] loadConversations: carregando para user_id:", user.id);
     setIsLoading(true);
     try {
       const { data, error } = await supabase
@@ -31,10 +37,20 @@ export function useAIChat() {
         .eq("user_id", user.id)
         .order("updated_at", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("[useAIChat] loadConversations erro:", error);
+        throw error;
+      }
+      
+      console.log("[useAIChat] loadConversations: encontradas", data?.length || 0, "conversas");
       setConversations(data || []);
     } catch (error) {
-      console.error("Error loading conversations:", error);
+      console.error("[useAIChat] Error loading conversations:", error);
+      toast({
+        title: "Erro ao carregar histórico",
+        description: "Não foi possível carregar as conversas anteriores.",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -65,8 +81,19 @@ export function useAIChat() {
 
   // Criar nova conversa
   const createConversation = useCallback(async (): Promise<string | null> => {
-    if (!user?.id) return null;
+    if (!user?.id) {
+      console.error("[useAIChat] createConversation: usuário não autenticado");
+      toast({
+        title: "Erro de autenticação",
+        description: "Você precisa estar logado para usar o assistente.",
+        variant: "destructive",
+      });
+      return null;
+    }
 
+    console.log("[useAIChat] createConversation: criando para user_id:", user.id);
+    setSaveError(false);
+    
     try {
       const { data, error } = await supabase
         .from("ai_conversations")
@@ -74,14 +101,24 @@ export function useAIChat() {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("[useAIChat] createConversation erro:", error);
+        throw error;
+      }
 
+      console.log("[useAIChat] createConversation: conversa criada com id:", data.id);
       setConversations((prev) => [data, ...prev]);
       setCurrentConversationId(data.id);
       setMessages([]);
       return data.id;
     } catch (error) {
-      console.error("Error creating conversation:", error);
+      console.error("[useAIChat] Error creating conversation:", error);
+      setSaveError(true);
+      toast({
+        title: "Erro ao criar conversa",
+        description: "A conversa não será salva no histórico.",
+        variant: "destructive",
+      });
       return null;
     }
   }, [user?.id]);
@@ -90,23 +127,38 @@ export function useAIChat() {
   const saveMessage = useCallback(
     async (role: "user" | "assistant", content: string, conversationId?: string) => {
       const targetConversationId = conversationId || currentConversationId;
-      if (!targetConversationId) return;
+      if (!targetConversationId) {
+        console.warn("[useAIChat] saveMessage: sem conversation_id, mensagem não será salva");
+        return;
+      }
 
+      console.log("[useAIChat] saveMessage:", { role, conversationId: targetConversationId, contentLength: content.length });
       setIsSaving(true);
+      setSaveError(false);
+      
       try {
-        const { error } = await supabase.from("ai_messages").insert({
+        const { data, error } = await supabase.from("ai_messages").insert({
           conversation_id: targetConversationId,
           role,
           content,
-        });
+        }).select();
 
-        if (error) throw error;
+        if (error) {
+          console.error("[useAIChat] saveMessage erro:", error);
+          throw error;
+        }
+
+        console.log("[useAIChat] saveMessage: mensagem salva com sucesso, id:", data?.[0]?.id);
 
         // Atualizar updated_at da conversa
-        await supabase
+        const { error: updateError } = await supabase
           .from("ai_conversations")
           .update({ updated_at: new Date().toISOString() })
           .eq("id", targetConversationId);
+
+        if (updateError) {
+          console.warn("[useAIChat] saveMessage: erro ao atualizar timestamp:", updateError);
+        }
 
         // Mover conversa para o topo da lista
         setConversations((prev) => {
@@ -118,7 +170,13 @@ export function useAIChat() {
           ];
         });
       } catch (error) {
-        console.error("Error saving message:", error);
+        console.error("[useAIChat] Error saving message:", error);
+        setSaveError(true);
+        toast({
+          title: "Erro ao salvar mensagem",
+          description: "A mensagem pode não aparecer no histórico.",
+          variant: "destructive",
+        });
       } finally {
         setIsSaving(false);
       }
@@ -223,6 +281,7 @@ export function useAIChat() {
     setMessages,
     isLoading,
     isSaving,
+    saveError,
     loadConversations,
     loadMessages,
     createConversation,
