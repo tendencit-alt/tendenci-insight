@@ -152,6 +152,10 @@ export function ProjectNotes({ projectId }: ProjectNotesProps) {
 
     if (!error && data) {
       setNoteHistory(data);
+      // Se há histórico, limpar a observação inicial (já está no histórico)
+      if (data.length > 0) {
+        setProjectInitialNote(null);
+      }
     }
   };
 
@@ -165,72 +169,90 @@ export function ProjectNotes({ projectId }: ProjectNotesProps) {
       return;
     }
 
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    // Detectar menções @username
-    const mentionRegex = /@(\w+)/g;
-    const mentions = [...note.matchAll(mentionRegex)].map(match => match[1]);
-    
-    // Salvar na tabela project_notes
-    const { error: noteError } = await supabase
-      .from("project_notes")
-      .insert({
-        project_id: projectId,
-        message: note,
-        author_id: user?.id,
-        mentioned_users: mentions.length > 0 ? mentions : null
-      });
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      // Se existe observação inicial que não está no histórico, migrar primeiro
+      if (projectInitialNote && noteHistory.length === 0) {
+        await supabase.from("project_notes").insert({
+          project_id: projectId,
+          message: projectInitialNote,
+          author_id: null, // Observação inicial do cadastro
+        });
+        setProjectInitialNote(null);
+      }
+      
+      // Detectar menções @username
+      const mentionRegex = /@(\w+)/g;
+      const mentions = [...note.matchAll(mentionRegex)].map(match => match[1]);
+      
+      // Salvar na tabela project_notes
+      const { error: noteError } = await supabase
+        .from("project_notes")
+        .insert({
+          project_id: projectId,
+          message: note,
+          author_id: user?.id,
+          mentioned_users: mentions.length > 0 ? mentions : null
+        });
 
-    if (noteError) {
+      if (noteError) {
+        throw noteError;
+      }
+
+      // SYNC: Atualizar também o campo projects.notes para sincronização
+      const { error: updateError } = await supabase.from("projects").update({
+        notes: note
+      }).eq("id", projectId);
+
+      if (updateError) {
+        console.error("Erro ao sincronizar projects.notes:", updateError);
+      }
+
+      // Se houver menções, criar notificações
+      if (mentions.length > 0) {
+        const { data: mentionedUsers } = await supabase
+          .from("profiles")
+          .select("id, username, full_name")
+          .in("username", mentions);
+
+        if (mentionedUsers && mentionedUsers.length > 0) {
+          const { data: project } = await supabase
+            .from("projects")
+            .select("name")
+            .eq("id", projectId)
+            .single();
+
+          const notifications = mentionedUsers.map(mentionedUser => ({
+            user_id: mentionedUser.id,
+            type: "mention",
+            title: "Você foi mencionado",
+            message: `${user?.email || 'Alguém'} mencionou você em uma observação do projeto "${project?.name || 'sem título'}"`,
+            link: `/projects?project=${projectId}`,
+            read: false
+          }));
+
+          await supabase.from("notifications").insert(notifications);
+        }
+      }
+
+      toast({
+        title: "Observação salva",
+        description: mentions.length > 0 
+          ? `Observação salva e ${mentions.length} usuário(s) notificado(s).`
+          : "A observação foi adicionada ao histórico.",
+      });
+      
+      setNote("");
+      fetchNoteHistory();
+    } catch (error: any) {
+      console.error("Erro ao salvar observação:", error);
       toast({
         title: "Erro ao salvar observação",
-        description: noteError.message,
+        description: error.message || "Ocorreu um erro inesperado.",
         variant: "destructive",
       });
-      return;
     }
-
-    // SYNC: Atualizar também o campo projects.notes para sincronização
-    await supabase.from("projects").update({
-      notes: note
-    }).eq("id", projectId);
-
-    // Se houver menções, criar notificações
-    if (mentions.length > 0) {
-      const { data: mentionedUsers } = await supabase
-        .from("profiles")
-        .select("id, username, full_name")
-        .in("username", mentions);
-
-      if (mentionedUsers && mentionedUsers.length > 0) {
-        const { data: project } = await supabase
-          .from("projects")
-          .select("name")
-          .eq("id", projectId)
-          .single();
-
-        const notifications = mentionedUsers.map(mentionedUser => ({
-          user_id: mentionedUser.id,
-          type: "mention",
-          title: "Você foi mencionado",
-          message: `${user?.email || 'Alguém'} mencionou você em uma observação do projeto "${project?.name || 'sem título'}"`,
-          link: `/projects?project=${projectId}`,
-          read: false
-        }));
-
-        await supabase.from("notifications").insert(notifications);
-      }
-    }
-
-    toast({
-      title: "Observação salva",
-      description: mentions.length > 0 
-        ? `Observação salva e ${mentions.length} usuário(s) notificado(s).`
-        : "A observação foi adicionada ao histórico.",
-    });
-    
-    setNote("");
-    fetchNoteHistory();
   };
 
   const handleSaveAudio = async (audioBlob: Blob) => {
