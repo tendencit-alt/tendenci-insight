@@ -3,9 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Bot, Send, Loader2, Sparkles, TrendingUp, AlertTriangle, Target, BarChart3, Database } from "lucide-react";
+import { Bot, Send, Loader2, Sparkles, TrendingUp, AlertTriangle, Target, BarChart3, Database, Cloud, CloudOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { streamChat, Message } from "@/utils/aiChat";
+import { useAIChat } from "@/hooks/useAIChat";
+import { ConversationsList } from "./ConversationsList";
 
 const quickQuestions = [
   { icon: BarChart3, text: "Como está meu pipeline?", color: "text-blue-500" },
@@ -72,13 +74,38 @@ function MarkdownContent({ content }: { content: string }) {
 }
 
 export function TendenciAssistant() {
-  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+
+  const {
+    conversations,
+    currentConversationId,
+    messages,
+    setMessages,
+    isSaving,
+    loadMessages,
+    createConversation,
+    saveMessage,
+    generateTitle,
+    deleteConversation,
+    startNewConversation,
+    loadMostRecentConversation,
+    loadConversations,
+  } = useAIChat();
+
+  // Carregar conversa recente ao abrir
+  useEffect(() => {
+    if (isOpen) {
+      loadConversations();
+      if (!currentConversationId && messages.length === 0) {
+        loadMostRecentConversation();
+      }
+    }
+  }, [isOpen, currentConversationId, messages.length, loadMostRecentConversation, loadConversations]);
 
   // Auto-scroll quando mensagens mudam
   useEffect(() => {
@@ -99,10 +126,29 @@ export function TendenciAssistant() {
       content: textToSend,
     };
 
+    // Atualizar UI imediatamente
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setIsLoading(true);
     setIsAnalyzing(true);
+
+    // Criar conversa se não existir
+    let conversationId = currentConversationId;
+    const isFirstMessage = messages.length === 0;
+
+    if (!conversationId) {
+      conversationId = await createConversation();
+    }
+
+    // Salvar mensagem do usuário
+    if (conversationId) {
+      await saveMessage("user", textToSend, conversationId);
+      
+      // Gerar título na primeira mensagem
+      if (isFirstMessage) {
+        await generateTitle(textToSend, conversationId);
+      }
+    }
 
     let assistantContent = "";
 
@@ -124,9 +170,14 @@ export function TendenciAssistant() {
       await streamChat({
         messages: [...messages, userMessage],
         onChunk: updateAssistantMessage,
-        onDone: () => {
+        onDone: async () => {
           setIsLoading(false);
           setIsAnalyzing(false);
+          
+          // Salvar resposta do assistente
+          if (conversationId && assistantContent) {
+            await saveMessage("assistant", assistantContent, conversationId);
+          }
         },
         onError: (error) => {
           setIsLoading(false);
@@ -148,7 +199,7 @@ export function TendenciAssistant() {
         variant: "destructive",
       });
     }
-  }, [input, isLoading, messages, toast]);
+  }, [input, isLoading, messages, currentConversationId, createConversation, saveMessage, generateTitle, setMessages, toast]);
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -159,6 +210,18 @@ export function TendenciAssistant() {
 
   const handleQuickQuestion = (question: string) => {
     handleSend(question);
+  };
+
+  const handleSelectConversation = (id: string) => {
+    loadMessages(id);
+  };
+
+  const handleNewConversation = () => {
+    startNewConversation();
+  };
+
+  const handleDeleteConversation = (id: string) => {
+    deleteConversation(id);
   };
 
   return (
@@ -181,16 +244,32 @@ export function TendenciAssistant() {
             <div className="p-2 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5">
               <Bot className="h-6 w-6 text-primary" />
             </div>
-            <div>
+            <div className="flex-1">
               <span className="text-lg font-semibold">Agente Tendenci CEO</span>
               <p className="text-xs text-muted-foreground font-normal">
                 Diretor Comercial Sênior • Análise Estratégica com IA Pro
               </p>
             </div>
+            {isSaving ? (
+              <Cloud className="h-4 w-4 text-muted-foreground animate-pulse" />
+            ) : (
+              <CloudOff className="h-4 w-4 text-muted-foreground/50" />
+            )}
           </SheetTitle>
         </SheetHeader>
 
-        <ScrollArea ref={scrollRef} className="flex-1 pr-4 mt-4">
+        {/* Lista de conversas anteriores */}
+        <div className="pt-3">
+          <ConversationsList
+            conversations={conversations}
+            currentConversationId={currentConversationId}
+            onSelectConversation={handleSelectConversation}
+            onNewConversation={handleNewConversation}
+            onDeleteConversation={handleDeleteConversation}
+          />
+        </div>
+
+        <ScrollArea ref={scrollRef} className="flex-1 pr-4">
           {messages.length === 0 ? (
             <div className="flex flex-col h-full">
               <div className="text-center p-6 bg-gradient-to-br from-muted/50 to-muted/20 rounded-xl mb-4">
