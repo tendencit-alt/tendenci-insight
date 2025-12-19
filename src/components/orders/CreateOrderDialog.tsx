@@ -307,6 +307,18 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
 
       if (itemsError) throw itemsError;
 
+      // SYNC: Se houver observações, registrar no order_history
+      if (formData.observacoes?.trim()) {
+        await supabase.from('order_history').insert({
+          order_id: order.id,
+          action_type: 'observation',
+          field_name: 'observacoes',
+          new_value: formData.observacoes,
+          description: 'Observação adicionada na criação do pedido',
+          created_by: user?.id
+        });
+      }
+
       toast.success(`Pedido #${order.order_number} criado com sucesso!`);
       onSuccess();
     } catch (error: any) {
