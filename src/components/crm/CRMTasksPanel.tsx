@@ -9,7 +9,7 @@ import { DealDetailSheet } from "./DealDetailSheet";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useAuth } from "@/contexts/AuthContext";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getDaysUntilDue as getTaskDueStatus, formatBrasilShort } from "@/utils/taskTimezone";
+import { getDaysUntilDue as getTaskDueStatus, formatBrasilShort, isISODateInPast } from "@/utils/taskTimezone";
 
 interface CRMTasksPanelProps {
   pipelineId: string;
@@ -453,7 +453,8 @@ export function CRMTasksPanel({
     const dueInfo = getDaysUntilDue(task.due_at);
     const dueDate = new Date(task.due_at);
     const clientName = task.deal?.lead?.client?.name || "Sem cliente";
-    const isOverdue = new Date(task.due_at) < new Date();
+    // Usar utilitário centralizado para verificação de atraso
+    const isOverdue = isISODateInPast(task.due_at);
 
     return (
       <div
@@ -485,12 +486,7 @@ export function CRMTasksPanel({
                 </Badge>
               )}
               <span className="text-xs text-muted-foreground">
-                {dueDate.toLocaleString("pt-BR", {
-                  day: "2-digit",
-                  month: "2-digit",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
+                {formatBrasilShort(task.due_at)}
               </span>
             </div>
           </div>

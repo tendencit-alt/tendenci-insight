@@ -70,16 +70,17 @@ Deno.serve(async (req) => {
 
       console.log(`[check-deals-without-tasks] Pipeline ${pipeline.id}: Found ${deals.length} deals`);
 
-      const now = new Date().toISOString();
+      // Tolerância de 4 horas para tarefas recém-vencidas (sincronizado com RPC get_deals_without_valid_tasks)
+      const fourHoursAgo = new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString();
 
       for (const deal of deals) {
-        // Verificar se tem tarefas válidas (pendente E due_at >= NOW())
+        // Verificar se tem tarefas válidas (pendente E due_at >= NOW() - 4h)
         const { count, error: tasksError } = await supabase
           .from('crm_tasks')
           .select('id', { count: 'exact', head: true })
           .eq('deal_id', deal.id)
           .in('status', ['open', 'pendente'])
-          .gte('due_at', now);
+          .gte('due_at', fourHoursAgo);
 
         if (tasksError) {
           console.error(`[check-deals-without-tasks] Error checking tasks for deal ${deal.id}:`, tasksError);

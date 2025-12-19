@@ -470,7 +470,7 @@ export function ProspeccaoTasksManager() {
                         )}
                         <p className="text-xs text-muted-foreground">
                           <Calendar className="h-3 w-3 inline mr-1" />
-                          {new Date(task.due_at).toLocaleString("pt-BR")}
+                          {formatBrasil(task.due_at)}
                         </p>
                       </div>
                       <div className="flex gap-2">
