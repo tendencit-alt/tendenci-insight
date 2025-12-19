@@ -196,6 +196,27 @@ export function EditDealDialog({
       `)
       .order("created_at", { ascending: false });
 
+    // CORREÇÃO: Garantir que o lead atual do deal sempre apareça na lista
+    let finalClientsData = clientsData || [];
+    if (deal.lead_id) {
+      const currentLeadExists = finalClientsData.find((c: any) => c.id === deal.lead_id);
+      if (!currentLeadExists) {
+        // Buscar o lead atual separadamente
+        const { data: currentLead } = await supabase
+          .from("leads")
+          .select(`
+            id,
+            client:clients(id, name, phone, notes)
+          `)
+          .eq("id", deal.lead_id)
+          .maybeSingle();
+        
+        if (currentLead) {
+          finalClientsData = [currentLead, ...finalClientsData];
+        }
+      }
+    }
+
     // Fetch owners (profiles)
     const { data: ownersData } = await supabase
       .from("profiles")
@@ -205,7 +226,7 @@ export function EditDealDialog({
     setStages(stagesData || []);
     setArchitects(architectsData || []);
     setSources(sourcesData || []);
-    setClients(clientsData || []);
+    setClients(finalClientsData);
     setOwners(ownersData || []);
   };
 
@@ -385,14 +406,26 @@ export function EditDealDialog({
       return;
     }
 
+    // CORREÇÃO: Confirmação ao remover cliente vinculado
+    const isRemovingClient = deal.lead_id && !formData.lead_id;
+    if (isRemovingClient) {
+      const confirmar = window.confirm(
+        "Você está removendo o cliente vinculado a este negócio. Deseja continuar?"
+      );
+      if (!confirmar) {
+        return;
+      }
+    }
+
     setLoading(true);
 
     try {
       // Track only changes NOT logged by database trigger
       const changes: Array<{field_name: string, old_value: string, new_value: string}> = [];
       
-      // lead_id is NOT logged by trigger, so we manually log it
-      if (formData.lead_id !== deal.lead_id) {
+      // CORREÇÃO: Só logar mudança de lead_id se foi REALMENTE alterado
+      const leadIdChanged = formData.lead_id !== (deal.lead_id || "");
+      if (leadIdChanged) {
         const oldValue = await getDisplayValue('lead_id', deal.lead_id);
         const newValue = await getDisplayValue('lead_id', formData.lead_id);
         changes.push({
@@ -421,11 +454,11 @@ export function EditDealDialog({
         }
       }
 
+      // CORREÇÃO: Só incluir lead_id no update se foi REALMENTE alterado pelo usuário
       const updateData: any = {
         title: formData.title,
         architect_id: formData.architect_id || null,
         owner_id: formData.owner_id || null,
-        lead_id: formData.lead_id || null,
         value: formData.value ? Number(formData.value) : 0,
         note: formData.note || null,
         product_type: formData.product_type || null,
@@ -433,6 +466,11 @@ export function EditDealDialog({
         scheduled_call: scheduledCall?.toISOString() || null,
         updated_at: new Date().toISOString(),
       };
+
+      // Só atualizar lead_id se foi explicitamente alterado
+      if (leadIdChanged) {
+        updateData.lead_id = formData.lead_id || null;
+      }
 
       // If stage changed, update stage_id and stage_entered_at
       if (formData.stage_id && formData.stage_id !== deal.stage_id) {
