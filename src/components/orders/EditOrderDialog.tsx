@@ -310,6 +310,20 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
       const { error: itemsError } = await supabase.from('order_items').insert(itemsToInsert);
       if (itemsError) throw itemsError;
 
+      // SYNC: Se observações foram alteradas, registrar no order_history
+      const originalObs = order.entrega_observacoes || order.observacoes_internas || order.observacoes_nf || '';
+      if (formData.observacoes && formData.observacoes !== originalObs) {
+        await supabase.from('order_history').insert({
+          order_id: orderId,
+          action_type: 'observation',
+          field_name: 'observacoes',
+          old_value: originalObs || null,
+          new_value: formData.observacoes,
+          description: 'Observação atualizada',
+          created_by: user?.id
+        });
+      }
+
       toast.success('Pedido atualizado com sucesso!');
       onSuccess();
       onOpenChange(false);

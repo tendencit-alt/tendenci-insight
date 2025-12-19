@@ -140,6 +140,11 @@ export function DealNotes({ dealId, currentNote, onNoteUpdate }: DealNotesProps)
       return;
     }
 
+    // SYNC: Atualizar também o campo crm_deals.note para sincronização com o card
+    await supabase.from("crm_deals").update({
+      note: note
+    }).eq("id", dealId);
+
     // Se houver menções, buscar IDs dos usuários e criar notificações
     if (mentions.length > 0) {
       const { data: mentionedUsers } = await supabase

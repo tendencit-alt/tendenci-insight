@@ -174,6 +174,17 @@ export function EditArchitectDialog({ open, onOpenChange, onSuccess, architect }
         description: 'Dados do arquiteto atualizados'
       });
 
+      // SYNC: Se as notas foram alteradas, salvar também na architect_timeline
+      if (formData.notes && formData.notes !== architect.notes) {
+        const { data: { user } } = await supabase.auth.getUser();
+        await supabase.from('architect_timeline').insert({
+          architect_id: architect.id,
+          message: formData.notes,
+          update_type: 'Observação',
+          author_id: user?.id
+        });
+      }
+
       toast.success("Arquiteto atualizado com sucesso!");
       
       onSuccess();

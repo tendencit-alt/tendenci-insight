@@ -459,6 +459,17 @@ export function EditDealDialog({
         await logDealChange(deal.id, changes);
       }
 
+      // SYNC: Se a nota foi alterada, registrar também na crm_timeline
+      if (formData.note && formData.note !== deal.note) {
+        const { data: { user } } = await supabase.auth.getUser();
+        await supabase.from("crm_timeline").insert({
+          deal_id: deal.id,
+          message: formData.note,
+          update_type: "Observação",
+          author_id: user?.id,
+        });
+      }
+
       // Atualizar temperatura e origem do lead se houver lead vinculado
       if (formData.lead_id) {
         const { error: leadError } = await supabase

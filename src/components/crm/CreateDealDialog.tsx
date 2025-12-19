@@ -502,6 +502,19 @@ export function CreateDealDialog({
         await uploadPendingFiles(dealData.id);
       }
 
+      // SYNC: Se houver observações, salvar também na crm_timeline
+      if (dealData && (formData.observations?.trim() || formData.note?.trim())) {
+        const fullNote = `${formData.observations ? formData.observations + '\n\n' : ''}${formData.note || ''}`.trim();
+        if (fullNote) {
+          await supabase.from("crm_timeline").insert({
+            deal_id: dealData.id,
+            message: fullNote,
+            update_type: "Observação",
+            author_id: user?.id,
+          });
+        }
+      }
+
       // Salvar indicações pendentes
       if (pendingIndications.length > 0 && dealData) {
         const indicationsToInsert = pendingIndications.map(ind => ({

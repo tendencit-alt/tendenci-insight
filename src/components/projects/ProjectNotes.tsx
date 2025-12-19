@@ -175,6 +175,11 @@ export function ProjectNotes({ projectId }: ProjectNotesProps) {
       return;
     }
 
+    // SYNC: Atualizar também o campo projects.notes para sincronização
+    await supabase.from("projects").update({
+      notes: note
+    }).eq("id", projectId);
+
     // Se houver menções, criar notificações
     if (mentions.length > 0) {
       const { data: mentionedUsers } = await supabase

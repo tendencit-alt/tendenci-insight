@@ -243,6 +243,16 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess, preSelected
 
       if (error) throw error;
 
+      // SYNC: Se houver observações, salvar também na tabela project_notes
+      if (data && formData.notes?.trim()) {
+        const { data: { user } } = await supabase.auth.getUser();
+        await supabase.from("project_notes").insert({
+          project_id: data.id,
+          message: formData.notes,
+          author_id: user?.id
+        });
+      }
+
       // Upload de arquivos adicionais do projeto
       if (data && files.length > 0) {
         await uploadFiles(data.id);
