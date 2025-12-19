@@ -11,7 +11,7 @@ import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { ArchitectProspeccaoSheet } from "./ArchitectProspeccaoSheet";
 import { usePermissions } from "@/hooks/usePermissions";
-import { getDaysUntilDue as getTaskDueStatus } from "@/utils/taskTimezone";
+import { getDaysUntilDue as getTaskDueStatus, formatBrasilShort } from "@/utils/taskTimezone";
 
 interface ArchitectTasksPanelProps {
   filters?: any;
@@ -352,7 +352,7 @@ export function ArchitectTasksPanel({ filters }: ArchitectTasksPanelProps) {
                 {dueInfo.text}
               </Badge>
               <span className="text-xs text-muted-foreground">
-                {format(new Date(task.data_agendamento), "dd/MM HH:mm", { locale: ptBR })}
+                {formatBrasilShort(task.data_agendamento)}
               </span>
             </div>
           </div>
