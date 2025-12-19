@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 interface IdeaRatingProps {
   ideaId: string;
   onRatingChange?: () => void;
+  size?: 'sm' | 'md' | 'lg';
 }
 
 interface RatingData {
@@ -15,7 +16,13 @@ interface RatingData {
   userRating: number | null;
 }
 
-export function IdeaRating({ ideaId, onRatingChange }: IdeaRatingProps) {
+const SIZE_CONFIG = {
+  sm: { star: 'h-3 w-3', text: 'text-xs' },
+  md: { star: 'h-4 w-4', text: 'text-xs' },
+  lg: { star: 'h-6 w-6', text: 'text-sm' },
+};
+
+export function IdeaRating({ ideaId, onRatingChange, size = 'md' }: IdeaRatingProps) {
   const { user } = useAuth();
   const [ratingData, setRatingData] = useState<RatingData>({
     averageRating: 0,
@@ -89,9 +96,11 @@ export function IdeaRating({ ideaId, onRatingChange }: IdeaRatingProps) {
 
   const displayRating = hoveredRating ?? ratingData.userRating ?? 0;
 
+  const sizeConfig = SIZE_CONFIG[size];
+
   return (
-    <div className="flex items-center gap-2">
-      <div className="flex items-center gap-0.5">
+    <div className={cn("flex items-center gap-2", size === 'lg' && "flex-col items-start gap-3")}>
+      <div className={cn("flex items-center", size === 'lg' ? "gap-1" : "gap-0.5")}>
         {[1, 2, 3, 4, 5].map((star) => (
           <button
             key={star}
@@ -108,7 +117,8 @@ export function IdeaRating({ ideaId, onRatingChange }: IdeaRatingProps) {
           >
             <Star
               className={cn(
-                "h-4 w-4 transition-colors",
+                sizeConfig.star,
+                "transition-colors",
                 star <= displayRating
                   ? "fill-amber-400 text-amber-400"
                   : "text-muted-foreground/40 hover:text-amber-400/60"
@@ -117,7 +127,7 @@ export function IdeaRating({ ideaId, onRatingChange }: IdeaRatingProps) {
           </button>
         ))}
       </div>
-      <span className="text-xs text-muted-foreground">
+      <span className={cn(sizeConfig.text, "text-muted-foreground")}>
         {ratingData.averageRating > 0 ? (
           <>
             <span className="font-medium">{ratingData.averageRating.toFixed(1)}</span>
