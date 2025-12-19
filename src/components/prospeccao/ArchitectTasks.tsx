@@ -23,7 +23,9 @@ import {
   localInputToUTC, 
   utcToLocalInput, 
   isLocalInputInPast, 
-  formatBrasil 
+  formatBrasil,
+  formatBrasilShort,
+  isISODateInPast
 } from "@/utils/taskTimezone";
 
 interface ArchitectTasksProps {
@@ -695,7 +697,8 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
           </Card>
         ) : (
           tasks.map((task) => {
-            const isOverdue = new Date(task.data_agendamento) < new Date();
+            // Usar utilitário centralizado para verificação de atraso (comparação UTC vs UTC)
+            const isOverdue = isISODateInPast(task.data_agendamento);
             const isCompleted = task.status === "concluida";
 
             return (
@@ -783,6 +786,7 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
                               addSuffix: true,
                               locale: ptBR,
                             })}
+                            {" • "}{formatBrasilShort(task.data_agendamento)}
                           </span>
                         </div>
                         {task.tipo_tarefa === "automatizada" && task.whatsapp_number && (

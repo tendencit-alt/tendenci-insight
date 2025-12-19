@@ -276,12 +276,12 @@ export function CampaignProgressMonitor() {
             <div className="space-y-1 text-xs">
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Iniciado em:</span>
-                <span className="font-medium">{new Date(dispatch.iniciado_em).toLocaleString('pt-BR')}</span>
+                <span className="font-medium">{new Date(dispatch.iniciado_em).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}</span>
               </div>
               {dispatch.updated_at && (
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Última atualização:</span>
-                  <span className="font-medium">{new Date(dispatch.updated_at).toLocaleString('pt-BR')}</span>
+                  <span className="font-medium">{new Date(dispatch.updated_at).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}</span>
                 </div>
               )}
               {(() => {
@@ -440,7 +440,7 @@ export function CampaignProgressMonitor() {
 
                       {dispatch.concluido_em && (
                         <p className="text-xs text-muted-foreground">
-                          Concluído em: {new Date(dispatch.concluido_em).toLocaleString('pt-BR')}
+                          Concluído em: {new Date(dispatch.concluido_em).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}
                         </p>
                       )}
 
