@@ -35,6 +35,7 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useFormPersistence } from "@/hooks/useFormPersistence";
 import { FormSaveIndicator } from "@/components/ui/FormSaveIndicator";
+import { formatBrasil } from "@/utils/taskTimezone";
 
 interface CreateDealDialogProps {
   open: boolean;
@@ -1215,13 +1216,7 @@ export function CreateDealDialog({
                         <span className="font-medium">{task.title}</span>
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        📅 {new Date(task.due_at).toLocaleString("pt-BR", {
-                          day: "2-digit",
-                          month: "2-digit",
-                          year: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
+                        📅 {formatBrasil(task.due_at)}
                       </div>
                       {task.note && (
                         <p className="text-sm text-muted-foreground mt-1">
