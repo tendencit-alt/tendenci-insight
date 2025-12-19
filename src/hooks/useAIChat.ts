@@ -231,11 +231,20 @@ export function useAIChat() {
     [currentConversationId]
   );
 
-  // Nova conversa (limpar estado)
-  const startNewConversation = useCallback(() => {
-    setCurrentConversationId(null);
+  // Nova conversa - cria no banco imediatamente
+  const startNewConversation = useCallback(async (): Promise<string | null> => {
+    // 1. Limpar estado local imediatamente
     setMessages([]);
-  }, []);
+    setCurrentConversationId(null);
+    setSaveError(false);
+    
+    // 2. Criar nova conversa no banco
+    const newId = await createConversation();
+    
+    console.log("[useAIChat] startNewConversation: nova conversa criada:", newId);
+    
+    return newId;
+  }, [createConversation]);
 
   // Carregar conversa mais recente automaticamente
   const loadMostRecentConversation = useCallback(async () => {
