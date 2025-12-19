@@ -87,6 +87,7 @@ export function TendenciAssistant() {
     messages,
     setMessages,
     isSaving,
+    saveError,
     loadMessages,
     createConversation,
     saveMessage,
@@ -250,11 +251,18 @@ export function TendenciAssistant() {
                 Diretor Comercial Sênior • Análise Estratégica com IA Pro
               </p>
             </div>
-            {isSaving ? (
-              <Cloud className="h-4 w-4 text-muted-foreground animate-pulse" />
-            ) : (
-              <CloudOff className="h-4 w-4 text-muted-foreground/50" />
-            )}
+            <div className="relative group">
+              {isSaving ? (
+                <Cloud className="h-4 w-4 text-primary animate-pulse" />
+              ) : saveError ? (
+                <CloudOff className="h-4 w-4 text-destructive" />
+              ) : (
+                <Cloud className="h-4 w-4 text-green-500" />
+              )}
+              <span className="absolute -bottom-8 right-0 text-xs bg-popover text-popover-foreground px-2 py-1 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                {isSaving ? "Salvando..." : saveError ? "Erro ao salvar" : "Sincronizado"}
+              </span>
+            </div>
           </SheetTitle>
         </SheetHeader>
 
