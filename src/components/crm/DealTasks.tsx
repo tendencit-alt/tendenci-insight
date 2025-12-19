@@ -30,6 +30,13 @@ import {
 } from "@/components/ui/alert-dialog";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { 
+  localInputToUTC, 
+  utcToLocalInput, 
+  isLocalInputInPast, 
+  formatBrasil,
+  getDaysUntilDue as getTaskDueInfo 
+} from "@/utils/taskTimezone";
 
 interface DealTasksProps {
   dealId: string;
@@ -158,17 +165,13 @@ export function DealTasks({ dealId }: DealTasksProps) {
 
   const handleStartEdit = (task: any) => {
     setEditingTaskId(task.id);
-    // Converter ISO/UTC para datetime-local format em horário Brasília
-    const dueDate = new Date(task.due_at);
-    // Converter para horário de Brasília (UTC-3) para exibição
-    const brasilOffset = -3 * 60; // -3 horas em minutos
-    const brasilDate = new Date(dueDate.getTime() + (brasilOffset * 60000));
-    const localISOTime = brasilDate.toISOString().slice(0, 16);
+    // Usar utilitário centralizado para converter UTC -> datetime-local em Brasília
+    const localDateTime = utcToLocalInput(task.due_at);
     
     setNewTask({
       title: task.title,
       note: task.note || "",
-      due_at: localISOTime,
+      due_at: localDateTime,
       tipo_tarefa: task.tipo_tarefa || "interna",
       whatsapp_number: task.whatsapp_number || "",
       audio_url: task.audio_url || "",
@@ -276,13 +279,20 @@ export function DealTasks({ dealId }: DealTasksProps) {
     }
 
     try {
-      // Fase 3: Validar conversão de timezone corretamente
-      // datetime-local retorna "2025-12-15T14:00" sem timezone
-      // Forçar interpretação como Brasília (UTC-3) anexando o offset
-      const rawDateTime = newTask.due_at; // "2025-12-15T14:00"
-      const localISOTime = new Date(rawDateTime + ":00-03:00").toISOString();
+      // VALIDAÇÃO: Verificar se data está no passado
+      if (isLocalInputInPast(newTask.due_at)) {
+        toast({
+          title: "Data no passado",
+          description: "Selecione uma data e hora futura para a tarefa.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Usar utilitário centralizado para converter datetime-local -> UTC
+      const localISOTime = localInputToUTC(newTask.due_at);
       
-      if (isNaN(new Date(localISOTime).getTime())) {
+      if (!localISOTime || isNaN(new Date(localISOTime).getTime())) {
         throw new Error("Data/hora inválida");
       }
 
@@ -325,10 +335,10 @@ export function DealTasks({ dealId }: DealTasksProps) {
 
         console.log("✅ [UPDATE] Tarefa editada com sucesso:", updatedTask);
 
-        // Fase 2: Feedback visual aprimorado
+        // Feedback visual com horário de Brasília
         toast({
           title: "✅ Tarefa atualizada",
-          description: `"${newTask.title}" foi atualizada para ${new Date(newTask.due_at).toLocaleString("pt-BR")}`,
+          description: `"${newTask.title}" foi atualizada para ${formatBrasil(localISOTime)}`,
         });
         
         // Forçar refetch imediato para sincronizar dados
@@ -382,7 +392,7 @@ export function DealTasks({ dealId }: DealTasksProps) {
 
         toast({
           title: "Tarefa criada",
-          description: `"${newTask.title}" foi adicionada para ${new Date(newTask.due_at).toLocaleString("pt-BR")}`,
+          description: `"${newTask.title}" foi adicionada para ${formatBrasil(localISOTime)}`,
         });
 
         // Limpar formulário
@@ -502,24 +512,15 @@ export function DealTasks({ dealId }: DealTasksProps) {
     fetchTasks();
   };
 
-  const getDaysUntilDue = (dueAt: string) => {
-    const dueDate = new Date(dueAt);
-    const now = new Date();
-    const diffTime = dueDate.getTime() - now.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    const diffHours = Math.ceil(diffTime / (1000 * 60 * 60));
-
-    if (diffDays < 0) {
-      return { text: "Atrasada", variant: "destructive" as const, icon: "⚠️" };
-    } else if (diffHours < 24) {
-      return { text: `${diffHours}h restantes`, variant: "default" as const, icon: "⏰" };
-    } else if (diffDays === 0) {
-      return { text: "Hoje", variant: "default" as const, icon: "📅" };
-    } else if (diffDays === 1) {
-      return { text: "Amanhã", variant: "secondary" as const, icon: "📅" };
-    } else {
-      return { text: `${diffDays} dias`, variant: "secondary" as const, icon: "📅" };
-    }
+  // Usar utilitário centralizado para calcular status de vencimento
+  const getDaysUntilDueLocal = (dueAt: string) => {
+    const info = getTaskDueInfo(dueAt);
+    // Manter compatibilidade com ícones existentes
+    let icon = "📅";
+    if (info.isOverdue) icon = "⚠️";
+    else if (info.text === "Hoje") icon = "⏰";
+    
+    return { ...info, icon };
   };
 
   return (
@@ -709,8 +710,7 @@ export function DealTasks({ dealId }: DealTasksProps) {
         ) : (
           <div className="space-y-3">
             {tasks.map((task) => {
-              const dueInfo = getDaysUntilDue(task.due_at);
-              const dueDate = new Date(task.due_at);
+              const dueInfo = getDaysUntilDueLocal(task.due_at);
 
               return (
                 <div
@@ -780,10 +780,7 @@ export function DealTasks({ dealId }: DealTasksProps) {
                           </Badge>
                         )}
                         <span className="text-xs text-muted-foreground">
-                          {dueDate.toLocaleString("pt-BR", {
-                            dateStyle: "short",
-                            timeStyle: "short",
-                          })}
+                          {formatBrasil(task.due_at)}
                         </span>
                         {task.status === "done" && (
                           <Badge variant="outline" className="text-green-600">

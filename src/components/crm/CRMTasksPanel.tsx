@@ -9,6 +9,7 @@ import { DealDetailSheet } from "./DealDetailSheet";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useAuth } from "@/contexts/AuthContext";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getDaysUntilDue as getTaskDueStatus, formatBrasilShort } from "@/utils/taskTimezone";
 
 interface CRMTasksPanelProps {
   pipelineId: string;
@@ -375,21 +376,14 @@ export function CRMTasksPanel({
     setLoading(false);
   };
 
+  // Usar utilitário centralizado para status de vencimento
   const getDaysUntilDue = (dueAt: string) => {
-    const dueDate = new Date(dueAt);
-    const now = new Date();
-    const diffTime = dueDate.getTime() - now.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffDays < 0) {
-      return { text: "Atrasada", variant: "destructive" as const, icon: "⚠️" };
-    } else if (diffDays === 0) {
-      return { text: "Hoje", variant: "default" as const, icon: "📅" };
-    } else if (diffDays === 1) {
-      return { text: "Amanhã", variant: "secondary" as const, icon: "📅" };
-    } else {
-      return { text: `${diffDays}d`, variant: "secondary" as const, icon: "📅" };
-    }
+    const info = getTaskDueStatus(dueAt);
+    return { 
+      text: info.text, 
+      variant: info.variant, 
+      icon: info.isOverdue ? "⚠️" : "📅" 
+    };
   };
 
   const handleMarkDone = async (taskId: string, e: React.MouseEvent) => {
