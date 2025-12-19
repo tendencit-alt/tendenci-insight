@@ -1,11 +1,12 @@
-import { useState } from "react";
-import { MessageSquare, Trash2, Plus, History, ChevronDown, ChevronUp } from "lucide-react";
+import { useState, useEffect } from "react";
+import { MessageSquare, Trash2, Plus, History, ChevronDown, ChevronUp, RefreshCw, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { AIConversation } from "@/hooks/useAIChat";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Badge } from "@/components/ui/badge";
 
 interface ConversationsListProps {
   conversations: AIConversation[];
@@ -13,6 +14,8 @@ interface ConversationsListProps {
   onSelectConversation: (id: string) => void;
   onNewConversation: () => void;
   onDeleteConversation: (id: string) => void;
+  onRefresh?: () => void;
+  isLoading?: boolean;
 }
 
 export function ConversationsList({
@@ -21,8 +24,18 @@ export function ConversationsList({
   onSelectConversation,
   onNewConversation,
   onDeleteConversation,
+  onRefresh,
+  isLoading,
 }: ConversationsListProps) {
-  const [isOpen, setIsOpen] = useState(false);
+  // Abrir automaticamente se há conversas
+  const [isOpen, setIsOpen] = useState(conversations.length > 0);
+
+  // Atualizar estado quando conversas mudam
+  useEffect(() => {
+    if (conversations.length > 0 && !isOpen) {
+      setIsOpen(true);
+    }
+  }, [conversations.length]);
 
   if (conversations.length === 0) {
     return (
@@ -32,15 +45,28 @@ export function ConversationsList({
             <History className="h-3 w-3" />
             Histórico de Conversas
           </span>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onNewConversation}
-            className="h-7 px-2 text-xs"
-          >
-            <Plus className="h-3 w-3 mr-1" />
-            Nova Conversa
-          </Button>
+          <div className="flex items-center gap-1">
+            {onRefresh && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onRefresh}
+                disabled={isLoading}
+                className="h-7 w-7 p-0"
+              >
+                <RefreshCw className={`h-3 w-3 ${isLoading ? 'animate-spin' : ''}`} />
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onNewConversation}
+              className="h-7 px-2 text-xs"
+            >
+              <Plus className="h-3 w-3 mr-1" />
+              Nova Conversa
+            </Button>
+          </div>
         </div>
         <p className="text-xs text-muted-foreground mt-2 text-center py-3 bg-muted/30 rounded-lg">
           Nenhuma conversa salva ainda
@@ -65,15 +91,29 @@ export function ConversationsList({
             )}
           </Button>
         </CollapsibleTrigger>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onNewConversation}
-          className="h-7 px-2 text-xs"
-        >
-          <Plus className="h-3 w-3 mr-1" />
-          Nova
-        </Button>
+        <div className="flex items-center gap-1">
+          {onRefresh && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onRefresh}
+              disabled={isLoading}
+              className="h-7 w-7 p-0"
+              title="Atualizar histórico"
+            >
+              <RefreshCw className={`h-3 w-3 ${isLoading ? 'animate-spin' : ''}`} />
+            </Button>
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onNewConversation}
+            className="h-7 px-2 text-xs"
+          >
+            <Plus className="h-3 w-3 mr-1" />
+            Nova
+          </Button>
+        </div>
       </div>
       
       <CollapsibleContent>
@@ -89,11 +129,21 @@ export function ConversationsList({
                 }`}
                 onClick={() => onSelectConversation(conv.id)}
               >
-                <MessageSquare className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                <MessageSquare className={`h-3.5 w-3.5 shrink-0 ${
+                  currentConversationId === conv.id ? "text-primary" : "text-muted-foreground"
+                }`} />
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium truncate">
-                    {conv.title || "Nova conversa"}
-                  </p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-xs font-medium truncate">
+                      {conv.title || "Nova conversa"}
+                    </p>
+                    {currentConversationId === conv.id && (
+                      <Badge variant="secondary" className="h-4 px-1 text-[9px] shrink-0">
+                        <Check className="h-2 w-2 mr-0.5" />
+                        Atual
+                      </Badge>
+                    )}
+                  </div>
                   <p className="text-[10px] text-muted-foreground">
                     {formatDistanceToNow(new Date(conv.updated_at), {
                       addSuffix: true,

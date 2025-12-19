@@ -139,16 +139,28 @@ export function TendenciAssistant() {
 
     if (!conversationId) {
       conversationId = await createConversation();
+      
+      // Se não conseguiu criar, parar e informar usuário
+      if (!conversationId) {
+        setIsLoading(false);
+        setIsAnalyzing(false);
+        toast({
+          title: "Erro",
+          description: "Não foi possível iniciar a conversa. Verifique sua conexão.",
+          variant: "destructive",
+        });
+        // Remover mensagem da UI pois não foi salva
+        setMessages((prev) => prev.slice(0, -1));
+        return;
+      }
     }
 
     // Salvar mensagem do usuário
-    if (conversationId) {
-      await saveMessage("user", textToSend, conversationId);
-      
-      // Gerar título na primeira mensagem
-      if (isFirstMessage) {
-        await generateTitle(textToSend, conversationId);
-      }
+    await saveMessage("user", textToSend, conversationId);
+    
+    // Gerar título na primeira mensagem
+    if (isFirstMessage) {
+      await generateTitle(textToSend, conversationId);
     }
 
     let assistantContent = "";
@@ -217,8 +229,14 @@ export function TendenciAssistant() {
     loadMessages(id);
   };
 
-  const handleNewConversation = () => {
-    startNewConversation();
+  const handleNewConversation = async () => {
+    const newId = await startNewConversation();
+    if (newId) {
+      toast({
+        title: "Nova conversa",
+        description: "Iniciando nova conversa com o Agente CEO.",
+      });
+    }
   };
 
   const handleDeleteConversation = (id: string) => {
@@ -274,6 +292,8 @@ export function TendenciAssistant() {
             onSelectConversation={handleSelectConversation}
             onNewConversation={handleNewConversation}
             onDeleteConversation={handleDeleteConversation}
+            onRefresh={loadConversations}
+            isLoading={isLoading}
           />
         </div>
 
