@@ -6,7 +6,8 @@ import {
   Package,
   Target,
   UserSearch,
-  PanelTop
+  PanelTop,
+  Activity
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
@@ -31,6 +32,7 @@ const menuItems = [
   { title: "Prospecção Arquitetos", url: "/prospeccao", icon: UserSearch, module: "arquitetos" },
   { title: "CRM CLIENTES", url: "/kanban", icon: MessageSquare, module: "crm" },
   { title: "Metas", url: "/metas", icon: Target, module: "metas" },
+  { title: "Central de Atividades", url: "/atividades", icon: Activity, module: null, masterOnly: true },
   { title: "Dashboards Personalizados", url: "/dashboards", icon: PanelTop, module: null, masterOnly: true },
   { title: "Configurações", url: "/settings", icon: Settings, module: "configuracoes" },
 ];
