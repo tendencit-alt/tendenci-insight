@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Lightbulb, Plus, Pencil, Trash2, Check, X, CheckCircle2, XCircle, Clock, Sparkles, Image, Mic, Loader2, Save, ArrowUpDown } from 'lucide-react';
+import { Lightbulb, Plus, Pencil, Trash2, Check, X, CheckCircle2, XCircle, Clock, Sparkles, Image, Mic, Loader2, Save, ArrowUpDown, Eye, AlertTriangle, ArrowUp, Minus, ArrowDown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -20,13 +20,16 @@ import { IdeaImageUpload, ImagePreview } from './IdeaImageUpload';
 import { IdeaAudioRecorder, AudioPreview } from './IdeaAudioRecorder';
 import { IdeaRating } from './IdeaRating';
 import { IdeaComments } from './IdeaComments';
+import { IdeaDetailSheet } from './IdeaDetailSheet';
+import { IdeaImageLightbox } from './IdeaImageLightbox';
 
 // Emails autorizados a excluir ideias
 const AUTHORIZED_DELETE_EMAILS = ['csoares_felipe@hotmail.com', 'matheus@tendenci.com.br'];
 
 type IdeaStatus = 'em_pauta' | 'aprovada' | 'recusada' | 'implementada';
 type IdeaCategoria = 'marketing' | 'producao' | 'vendas' | 'financeiro' | 'geral';
-type SortOption = 'date' | 'rating' | 'comments';
+type SortOption = 'date' | 'rating' | 'comments' | 'priority';
+type PrioridadeFilter = 'all' | '1' | '2' | '3' | '4' | '5';
 
 interface Attachment {
   id?: string;
@@ -43,6 +46,7 @@ interface Idea {
   content: string | null;
   status: IdeaStatus;
   categoria: IdeaCategoria;
+  prioridade: number;
   created_at: string;
   updated_at: string | null;
   created_by: string | null;
@@ -51,6 +55,7 @@ interface Idea {
   motivo_recusa: string | null;
   attachments: Attachment[];
   averageRating?: number;
+  totalRatings?: number;
   totalComments?: number;
   author?: {
     full_name: string;
@@ -77,10 +82,19 @@ const CATEGORIA_CONFIG: Record<IdeaCategoria, { label: string; color: string }> 
   geral: { label: 'Geral', color: 'bg-muted-foreground text-white' },
 };
 
+const PRIORIDADE_CONFIG: Record<number, { label: string; color: string; bgColor: string; icon: typeof AlertTriangle }> = {
+  1: { label: 'Crítica', color: 'text-red-600', bgColor: 'bg-red-500', icon: AlertTriangle },
+  2: { label: 'Alta', color: 'text-orange-600', bgColor: 'bg-orange-500', icon: ArrowUp },
+  3: { label: 'Média', color: 'text-yellow-600', bgColor: 'bg-yellow-500', icon: Minus },
+  4: { label: 'Baixa', color: 'text-green-600', bgColor: 'bg-green-500', icon: ArrowDown },
+  5: { label: 'Sugestão', color: 'text-blue-600', bgColor: 'bg-blue-500', icon: Lightbulb },
+};
+
 const SORT_OPTIONS: Record<SortOption, string> = {
   date: 'Mais Recentes',
   rating: 'Melhor Avaliadas',
   comments: 'Mais Comentadas',
+  priority: 'Prioridade',
 };
 
 export function MasterIdeasNotepad() {
@@ -96,15 +110,27 @@ export function MasterIdeasNotepad() {
   const [newTitle, setNewTitle] = useState('');
   const [newContent, setNewContent] = useState('');
   const [newCategoria, setNewCategoria] = useState<IdeaCategoria>('geral');
+  const [newPrioridade, setNewPrioridade] = useState<number>(3);
   const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [filterPrioridade, setFilterPrioridade] = useState<PrioridadeFilter>('all');
+  
+  // Detail sheet states
+  const [selectedIdea, setSelectedIdea] = useState<Idea | null>(null);
+  const [detailSheetOpen, setDetailSheetOpen] = useState(false);
+  
+  // Lightbox states
+  const [lightboxImages, setLightboxImages] = useState<{ url: string; fileName: string }[]>([]);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
   
   // Edit states
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [editContent, setEditContent] = useState('');
   const [editCategoria, setEditCategoria] = useState<IdeaCategoria>('geral');
-  const [editAttachments, setEditAttachments] = useState<Attachment[]>([]);
+  const [editPrioridade, setEditPrioridade] = useState<number>(3);
+  const [editAttachments, setEditAttachments] = useState<Attachment[]>();
   
   // Action states
   const [motivoRecusa, setMotivoRecusa] = useState('');
@@ -211,8 +237,10 @@ export function MasterIdeasNotepad() {
             ...idea,
             status: (idea.status || 'em_pauta') as IdeaStatus,
             categoria: (idea.categoria || 'geral') as IdeaCategoria,
+            prioridade: idea.prioridade || 3,
             attachments,
             averageRating,
+            totalRatings: ratingsData?.length || 0,
             totalComments: commentsCount || 0,
             author,
             approver,
@@ -240,6 +268,7 @@ export function MasterIdeasNotepad() {
           title: newTitle.trim(),
           content: newContent.trim() || null,
           categoria: newCategoria,
+          prioridade: newPrioridade,
           status: 'em_pauta',
           created_by: user.id,
         })
@@ -263,6 +292,7 @@ export function MasterIdeasNotepad() {
       setNewTitle('');
       setNewContent('');
       setNewCategoria('geral');
+      setNewPrioridade(3);
       setPendingAttachments([]);
       fetchIdeas();
     } catch (error) {
@@ -284,6 +314,7 @@ export function MasterIdeasNotepad() {
           title: editTitle.trim(),
           content: editContent.trim() || null,
           categoria: editCategoria,
+          prioridade: editPrioridade,
         })
         .eq('id', id);
 
@@ -322,6 +353,7 @@ export function MasterIdeasNotepad() {
       setEditTitle('');
       setEditContent('');
       setEditCategoria('geral');
+      setEditPrioridade(3);
       setEditAttachments([]);
       fetchIdeas();
     } catch (error) {
@@ -424,6 +456,7 @@ export function MasterIdeasNotepad() {
     setEditTitle(idea.title);
     setEditContent(idea.content || '');
     setEditCategoria(idea.categoria);
+    setEditPrioridade(idea.prioridade || 3);
     setEditAttachments([...idea.attachments]);
   };
 
@@ -432,7 +465,19 @@ export function MasterIdeasNotepad() {
     setEditTitle('');
     setEditContent('');
     setEditCategoria('geral');
+    setEditPrioridade(3);
     setEditAttachments([]);
+  };
+  
+  const openIdeaDetail = (idea: Idea) => {
+    setSelectedIdea(idea);
+    setDetailSheetOpen(true);
+  };
+
+  const openImageLightbox = (images: Attachment[], startIndex: number) => {
+    setLightboxImages(images.map(a => ({ url: a.url, fileName: a.fileName })));
+    setLightboxIndex(startIndex);
+    setLightboxOpen(true);
   };
 
   const insertTextAtCursor = (text: string, isEdit: boolean) => {
@@ -489,7 +534,8 @@ export function MasterIdeasNotepad() {
     .filter(idea => {
       const matchesStatus = idea.status === activeTab;
       const matchesCategoria = filterCategoria === 'all' || idea.categoria === filterCategoria;
-      return matchesStatus && matchesCategoria;
+      const matchesPrioridade = filterPrioridade === 'all' || idea.prioridade === Number(filterPrioridade);
+      return matchesStatus && matchesCategoria && matchesPrioridade;
     })
     .sort((a, b) => {
       switch (sortBy) {
@@ -497,6 +543,8 @@ export function MasterIdeasNotepad() {
           return (b.averageRating || 0) - (a.averageRating || 0);
         case 'comments':
           return (b.totalComments || 0) - (a.totalComments || 0);
+        case 'priority':
+          return (a.prioridade || 3) - (b.prioridade || 3);
         case 'date':
         default:
           return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
@@ -509,7 +557,19 @@ export function MasterIdeasNotepad() {
 
   if (!user) return null;
 
+  const PrioridadeBadge = ({ prioridade }: { prioridade: number }) => {
+    const config = PRIORIDADE_CONFIG[prioridade] || PRIORIDADE_CONFIG[3];
+    const Icon = config.icon;
+    return (
+      <Badge variant="outline" className={`${config.color} text-xs`}>
+        <Icon className="h-3 w-3 mr-1" />
+        {config.label}
+      </Badge>
+    );
+  };
+
   return (
+    <>
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetTrigger asChild>
         <Button
@@ -538,14 +598,25 @@ export function MasterIdeasNotepad() {
             </TabsList>
           </div>
 
-          <div className="px-4 py-3 flex gap-2">
+          <div className="px-4 py-3 flex flex-wrap gap-2">
             <Select value={filterCategoria} onValueChange={(v) => setFilterCategoria(v as IdeaCategoria | 'all')}>
-              <SelectTrigger className="w-[150px]">
+              <SelectTrigger className="w-[130px]">
                 <SelectValue placeholder="Categoria" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todas</SelectItem>
                 {Object.entries(CATEGORIA_CONFIG).map(([key, config]) => (
+                  <SelectItem key={key} value={key}>{config.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={filterPrioridade} onValueChange={(v) => setFilterPrioridade(v as PrioridadeFilter)}>
+              <SelectTrigger className="w-[130px]">
+                <SelectValue placeholder="Prioridade" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas</SelectItem>
+                {Object.entries(PRIORIDADE_CONFIG).map(([key, config]) => (
                   <SelectItem key={key} value={key}>{config.label}</SelectItem>
                 ))}
               </SelectContent>
@@ -886,5 +957,23 @@ export function MasterIdeasNotepad() {
         </Tabs>
       </SheetContent>
     </Sheet>
+    
+    {/* Detail Sheet */}
+    <IdeaDetailSheet
+      idea={selectedIdea}
+      isOpen={detailSheetOpen}
+      onClose={() => setDetailSheetOpen(false)}
+      onRatingChange={fetchIdeas}
+      onCommentChange={fetchIdeas}
+    />
+    
+    {/* Image Lightbox */}
+    <IdeaImageLightbox
+      images={lightboxImages}
+      initialIndex={lightboxIndex}
+      isOpen={lightboxOpen}
+      onClose={() => setLightboxOpen(false)}
+    />
+    </>
   );
 }

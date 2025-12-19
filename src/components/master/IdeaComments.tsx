@@ -29,12 +29,13 @@ interface Comment {
 interface IdeaCommentsProps {
   ideaId: string;
   onCommentChange?: () => void;
+  defaultOpen?: boolean;
 }
 
-export function IdeaComments({ ideaId, onCommentChange }: IdeaCommentsProps) {
+export function IdeaComments({ ideaId, onCommentChange, defaultOpen = false }: IdeaCommentsProps) {
   const { user } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(defaultOpen);
   const [newComment, setNewComment] = useState('');
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyContent, setReplyContent] = useState('');

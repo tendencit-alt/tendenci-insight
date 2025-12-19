@@ -1682,6 +1682,7 @@ export type Database = {
           created_by: string | null
           id: string
           motivo_recusa: string | null
+          prioridade: number | null
           status: string | null
           title: string
           updated_at: string | null
@@ -1695,6 +1696,7 @@ export type Database = {
           created_by?: string | null
           id?: string
           motivo_recusa?: string | null
+          prioridade?: number | null
           status?: string | null
           title: string
           updated_at?: string | null
@@ -1708,6 +1710,7 @@ export type Database = {
           created_by?: string | null
           id?: string
           motivo_recusa?: string | null
+          prioridade?: number | null
           status?: string | null
           title?: string
           updated_at?: string | null
