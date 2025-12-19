@@ -17,6 +17,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { 
+  localInputToUTC, 
+  isLocalInputInPast, 
+  getDaysUntilDue as getTaskDueStatus, 
+  formatBrasil 
+} from "@/utils/taskTimezone";
 
 export function ProspeccaoTasksManager() {
   const { toast } = useToast();
@@ -115,6 +121,16 @@ export function ProspeccaoTasksManager() {
       return;
     }
 
+    // VALIDAÇÃO: Verificar se data está no passado
+    if (isLocalInputInPast(newTask.due_at)) {
+      toast({
+        title: "Data no passado",
+        description: "Selecione uma data e hora futura para a tarefa.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Validação para tarefas automatizadas
     if (newTask.tipo_tarefa === "automatizada") {
       if (!newTask.whatsapp_number || !newTask.note) {
@@ -137,11 +153,8 @@ export function ProspeccaoTasksManager() {
       });
       return;
     }
-    // Converter datetime-local para ISO corretamente
-    // datetime-local retorna "2025-12-15T14:00" sem timezone
-    // Forçar interpretação como Brasília (UTC-3) anexando o offset
-    const rawDateTime = newTask.due_at; // "2025-12-15T14:00"
-    const dueAtISO = new Date(rawDateTime + ":00-03:00").toISOString();
+    // Usar utilitário centralizado para conversão de timezone
+    const dueAtISO = localInputToUTC(newTask.due_at);
 
     const { error } = await supabase.from("crm_tasks").insert({
       deal_id: newTask.deal_id,
@@ -226,21 +239,10 @@ export function ProspeccaoTasksManager() {
     fetchData();
   };
 
+  // Usar utilitário centralizado para status de vencimento
   const getDaysUntilDue = (dueAt: string) => {
-    const dueDate = new Date(dueAt);
-    const now = new Date();
-    const diffTime = dueDate.getTime() - now.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffDays < 0) {
-      return { text: "Atrasada", variant: "destructive" as const };
-    } else if (diffDays === 0) {
-      return { text: "Hoje", variant: "default" as const };
-    } else if (diffDays === 1) {
-      return { text: "Amanhã", variant: "secondary" as const };
-    } else {
-      return { text: `${diffDays}d`, variant: "secondary" as const };
-    }
+    const info = getTaskDueStatus(dueAt);
+    return { text: info.text, variant: info.variant };
   };
 
   if (loading) {

@@ -19,6 +19,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { 
+  localInputToUTC, 
+  utcToLocalInput, 
+  isLocalInputInPast, 
+  formatBrasil 
+} from "@/utils/taskTimezone";
 
 interface ArchitectTasksProps {
   architectId: string;
@@ -133,12 +139,8 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
 
   const handleStartEdit = (task: any) => {
     setEditingTaskId(task.id);
-    // Converter ISO/UTC para datetime-local format em horário Brasília
-    const dueDate = new Date(task.data_agendamento);
-    // Converter para horário de Brasília (UTC-3) para exibição
-    const brasilOffset = -3 * 60; // -3 horas em minutos
-    const brasilDate = new Date(dueDate.getTime() + (brasilOffset * 60000));
-    const localISOTime = brasilDate.toISOString().slice(0, 16);
+    // Usar utilitário centralizado para converter UTC -> datetime-local em Brasília
+    const localDateTime = utcToLocalInput(task.data_agendamento);
     
     // Parser de observações JSON
     let taskTitle = "";
@@ -155,7 +157,7 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
     setNewTask({
       title: taskTitle,
       note: taskNote,
-      due_at: localISOTime,
+      due_at: localDateTime,
       tipo_tarefa: task.tipo_tarefa || "interna",
       whatsapp_number: task.whatsapp_number || "",
       audio_url: task.audio_url || "",
@@ -269,8 +271,7 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
       }
 
       // Validar se a data é válida
-      const dueDate = new Date(newTask.due_at);
-      if (isNaN(dueDate.getTime())) {
+      if (!newTask.due_at) {
         toast({
           title: "Data inválida",
           description: "Por favor, selecione uma data válida.",
@@ -279,9 +280,8 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
         return;
       }
 
-      // Validar se a data está no futuro
-      const now = new Date();
-      if (dueDate < now) {
+      // Usar utilitário centralizado para validar data no passado
+      if (isLocalInputInPast(newTask.due_at)) {
         toast({
           title: "Data no passado",
           description: "Selecione uma data e hora futura.",
@@ -351,11 +351,8 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
         return;
       }
 
-      // Converter datetime-local para ISO corretamente
-      // datetime-local retorna "2025-12-15T14:00" sem timezone
-      // Forçar interpretação como Brasília (UTC-3) anexando o offset
-      const rawDateTime = newTask.due_at; // "2025-12-15T14:00"
-      const localISOTime = new Date(rawDateTime + ":00-03:00").toISOString();
+      // Usar utilitário centralizado para conversão de timezone
+      const localISOTime = localInputToUTC(newTask.due_at);
 
       // Estruturar observações como JSON
       const observacoesJSON = JSON.stringify({

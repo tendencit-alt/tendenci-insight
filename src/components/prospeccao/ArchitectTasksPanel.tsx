@@ -6,11 +6,12 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown, ChevronRight, Clock, AlertTriangle, Calendar, Bot, User, CheckCircle, TrendingUp, TrendingDown, Minus, Trophy } from "lucide-react";
-import { format, isToday, isTomorrow, isPast, differenceInDays, startOfDay } from "date-fns";
+import { format, isToday, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { ArchitectProspeccaoSheet } from "./ArchitectProspeccaoSheet";
 import { usePermissions } from "@/hooks/usePermissions";
+import { getDaysUntilDue as getTaskDueStatus } from "@/utils/taskTimezone";
 
 interface ArchitectTasksPanelProps {
   filters?: any;
@@ -233,37 +234,19 @@ export function ArchitectTasksPanel({ filters }: ArchitectTasksPanelProps) {
     };
   }, [fetchTasks, fetchCompletedStats]);
 
+  // Usar utilitário centralizado para status de vencimento
   const getDaysUntilDue = (dueDate: string) => {
-    const due = new Date(dueDate);
-    const today = startOfDay(new Date());
-    const dueDay = startOfDay(due);
-    const daysUntil = differenceInDays(dueDay, today);
-
-    if (isPast(dueDay) && !isToday(due)) {
-      return {
-        text: "Atrasada",
-        variant: "destructive" as const,
-        icon: AlertTriangle,
-      };
-    }
-    if (isToday(due)) {
-      return {
-        text: "Hoje",
-        variant: "default" as const,
-        icon: Clock,
-      };
-    }
-    if (isTomorrow(due)) {
-      return {
-        text: "Amanhã",
-        variant: "secondary" as const,
-        icon: Calendar,
-      };
-    }
+    const info = getTaskDueStatus(dueDate);
+    
+    // Mapear para ícones Lucide
+    let icon = Calendar;
+    if (info.isOverdue) icon = AlertTriangle;
+    else if (info.text === "Hoje") icon = Clock;
+    
     return {
-      text: `${daysUntil}d`,
-      variant: "outline" as const,
-      icon: Calendar,
+      text: info.text,
+      variant: info.variant as "destructive" | "default" | "secondary" | "outline",
+      icon,
     };
   };
 

@@ -23,6 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { localInputToUTC, isLocalInputInPast } from "@/utils/taskTimezone";
 
 interface DealWithoutTask {
   id: string;
@@ -152,6 +153,16 @@ export function TaskReminderAlert({ pipelineId }: TaskReminderAlertProps) {
       return;
     }
 
+    // VALIDAÇÃO: Verificar se data está no passado
+    if (isLocalInputInPast(taskData.due_at)) {
+      toast({
+        title: "Data no passado",
+        description: "Selecione uma data e hora futura para a tarefa.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Validação adicional para tarefa automatizada
     if (taskData.tipo_tarefa === "automatizada") {
       if (!taskData.whatsapp_number) {
@@ -195,9 +206,8 @@ export function TaskReminderAlert({ pipelineId }: TaskReminderAlertProps) {
 
       if (timelineError) throw timelineError;
 
-      // Depois, criar a tarefa - usando horário de Brasília (UTC-3)
-      const dueAtWithTimezone = taskData.due_at + ":00-03:00";
-      const dueAtISO = new Date(dueAtWithTimezone).toISOString();
+      // Usar utilitário centralizado para conversão de timezone
+      const dueAtISO = localInputToUTC(taskData.due_at);
 
       const { error: taskError } = await supabase
         .from("crm_tasks")
