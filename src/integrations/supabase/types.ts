@@ -3795,6 +3795,54 @@ export type Database = {
         }
         Relationships: []
       }
+      system_activities: {
+        Row: {
+          action_type: string
+          created_at: string | null
+          description: string
+          entity_id: string
+          entity_name: string | null
+          entity_type: string
+          id: string
+          metadata: Json | null
+          module: string
+          new_value: string | null
+          old_value: string | null
+          user_id: string | null
+          user_name: string | null
+        }
+        Insert: {
+          action_type: string
+          created_at?: string | null
+          description: string
+          entity_id: string
+          entity_name?: string | null
+          entity_type: string
+          id?: string
+          metadata?: Json | null
+          module: string
+          new_value?: string | null
+          old_value?: string | null
+          user_id?: string | null
+          user_name?: string | null
+        }
+        Update: {
+          action_type?: string
+          created_at?: string | null
+          description?: string
+          entity_id?: string
+          entity_name?: string | null
+          entity_type?: string
+          id?: string
+          metadata?: Json | null
+          module?: string
+          new_value?: string | null
+          old_value?: string | null
+          user_id?: string | null
+          user_name?: string | null
+        }
+        Relationships: []
+      }
       system_errors: {
         Row: {
           created_at: string
