@@ -36,6 +36,7 @@ export function ProjectNotes({ projectId }: ProjectNotesProps) {
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editingNoteText, setEditingNoteText] = useState("");
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [projectInitialNote, setProjectInitialNote] = useState<string | null>(null);
   const audioRefs = useRef<Map<string, HTMLAudioElement>>(new Map());
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -44,12 +45,26 @@ export function ProjectNotes({ projectId }: ProjectNotesProps) {
     fetchNoteHistory();
     fetchAvailableUsers();
     fetchCurrentUser();
+    fetchProjectInitialNote();
   }, [projectId]);
 
   const fetchCurrentUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       setCurrentUserId(user.id);
+    }
+  };
+
+  // Buscar observação inicial do projeto (campo projects.notes)
+  const fetchProjectInitialNote = async () => {
+    const { data, error } = await supabase
+      .from("projects")
+      .select("notes, created_at")
+      .eq("id", projectId)
+      .single();
+
+    if (!error && data && data.notes?.trim()) {
+      setProjectInitialNote(data.notes);
     }
   };
 
@@ -535,10 +550,27 @@ export function ProjectNotes({ projectId }: ProjectNotesProps) {
         </div>
 
         {/* Histórico de Observações */}
-        {noteHistory.length > 0 && (
+        {(noteHistory.length > 0 || projectInitialNote) && (
           <div className="space-y-3">
             <Label className="text-sm font-medium">Histórico de Observações</Label>
             <div className="space-y-2 max-h-60 overflow-y-auto">
+              {/* Se não há histórico mas existe observação inicial, mostrar ela */}
+              {noteHistory.length === 0 && projectInitialNote && (
+                <div className="p-3 bg-background border rounded-lg space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm whitespace-pre-wrap">{projectInitialNote}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span>Observação inicial</span>
+                    <span>•</span>
+                    <span>Cadastro do projeto</span>
+                  </div>
+                </div>
+              )}
+              
+              {/* Histórico normal da tabela project_notes */}
               {noteHistory.map((entry) => (
                 <div
                   key={entry.id}
