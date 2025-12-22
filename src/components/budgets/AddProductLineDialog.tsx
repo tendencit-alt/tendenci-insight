@@ -1,13 +1,14 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Calculator } from "lucide-react";
 
 interface AddProductLineDialogProps {
   productId: string;
@@ -17,27 +18,24 @@ interface AddProductLineDialogProps {
 }
 
 const lineTypes = [
-  { value: "corpo", label: "Corpo (MDF)", unit: "m²" },
-  { value: "porta", label: "Porta/Frente", unit: "m²" },
-  { value: "tamponamento", label: "Tamponamento", unit: "m²" },
-  { value: "prateleira", label: "Prateleira", unit: "m²" },
-  { value: "gaveta", label: "Gaveta", unit: "un" },
-  { value: "fundo", label: "Fundo (MDF 6mm)", unit: "m²" },
-  { value: "fita_borda", label: "Fita de Borda", unit: "m" },
-  { value: "corte", label: "Corte (máquina)", unit: "min" },
-  { value: "fitagem", label: "Fitagem (coladeira)", unit: "m" },
-  { value: "ferragem", label: "Ferragem", unit: "un" },
+  { value: "material", label: "Material", unit: "m²" },
+  { value: "maquina", label: "Máquina/Tempo", unit: "min" },
   { value: "mao_obra", label: "Mão de Obra", unit: "h" },
-  { value: "outro", label: "Outro", unit: "un" }
+  { value: "ferragem", label: "Ferragem", unit: "un" }
 ];
 
 export function AddProductLineDialog({ productId, open, onOpenChange, onSuccess }: AddProductLineDialogProps) {
   const [lineName, setLineName] = useState("");
-  const [lineType, setLineType] = useState("corpo");
+  const [lineType, setLineType] = useState("material");
   const [quantity, setQuantity] = useState(1);
+  const [unit, setUnit] = useState("m²");
   const [costRefId, setCostRefId] = useState<string>("manual");
   const [unitCost, setUnitCost] = useState(0);
   const [loading, setLoading] = useState(false);
+  
+  // Auto calculation states
+  const [autoCalculate, setAutoCalculate] = useState(false);
+  const [metersToProcess, setMetersToProcess] = useState(0);
 
   const { data: globalCosts = [] } = useQuery({
     queryKey: ['budget-global-costs'],
@@ -55,7 +53,41 @@ export function AddProductLineDialog({ productId, open, onOpenChange, onSuccess 
   });
 
   const selectedLineType = lineTypes.find(t => t.value === lineType);
-  const unit = selectedLineType?.unit || "un";
+  
+  // Get machine speed and cost for calculations
+  const machineSpeedCutting = globalCosts.find(c => c.code === 'velocidade_corte')?.value || 15;
+  const machineCostCutting = globalCosts.find(c => c.code === 'custo_corte_min')?.value || 0.80;
+  const machineSpeedTaping = globalCosts.find(c => c.code === 'velocidade_fitagem')?.value || 8;
+  const machineCostTaping = globalCosts.find(c => c.code === 'custo_fitagem_m')?.value || 1.20;
+
+  // Auto calculate time based on meters
+  const calculatedTime = useMemo(() => {
+    if (!autoCalculate || lineType !== 'maquina') return null;
+    
+    // Check if it's cutting or taping based on unit cost reference
+    const selectedCost = globalCosts.find(c => c.id === costRefId);
+    
+    if (selectedCost?.code === 'custo_corte_min') {
+      // Cutting: time = meters / speed
+      const time = metersToProcess / machineSpeedCutting;
+      return { time, unit: 'min', cost: time * machineCostCutting };
+    } else if (selectedCost?.code === 'custo_fitagem_m') {
+      // Taping: already in meters, cost per meter
+      return { time: metersToProcess, unit: 'm', cost: metersToProcess * machineCostTaping };
+    }
+    
+    return null;
+  }, [autoCalculate, lineType, metersToProcess, costRefId, globalCosts, machineSpeedCutting, machineCostCutting, machineSpeedTaping, machineCostTaping]);
+
+  const handleLineTypeChange = (value: string) => {
+    setLineType(value);
+    const type = lineTypes.find(t => t.value === value);
+    if (type) {
+      setUnit(type.unit);
+    }
+    setAutoCalculate(false);
+    setCostRefId("manual");
+  };
 
   const handleCostRefChange = (value: string) => {
     setCostRefId(value);
@@ -63,6 +95,7 @@ export function AddProductLineDialog({ productId, open, onOpenChange, onSuccess 
       const cost = globalCosts.find(c => c.id === value);
       if (cost) {
         setUnitCost(cost.value);
+        setUnit(cost.unit);
       }
     }
   };
@@ -88,6 +121,11 @@ export function AddProductLineDialog({ productId, open, onOpenChange, onSuccess 
       const nextPosition = (existingLines?.[0]?.position || 0) + 1;
 
       const costRef = costRefId !== "manual" ? globalCosts.find(c => c.id === costRefId) : null;
+      
+      // Use calculated values if auto-calculate is enabled
+      const finalQuantity = autoCalculate && calculatedTime ? calculatedTime.time : quantity;
+      const finalUnit = autoCalculate && calculatedTime ? calculatedTime.unit : unit;
+      const finalUnitCost = unitCost;
 
       const { error } = await supabase
         .from('budget_product_lines')
@@ -95,10 +133,10 @@ export function AddProductLineDialog({ productId, open, onOpenChange, onSuccess 
           product_id: productId,
           line_name: lineName.trim(),
           line_type: lineType,
-          quantity,
-          unit,
-          unit_cost: unitCost,
-          subtotal: quantity * unitCost,
+          quantity: finalQuantity,
+          unit: finalUnit,
+          unit_cost: finalUnitCost,
+          subtotal: finalQuantity * finalUnitCost,
           cost_ref_id: costRef?.id || null,
           cost_ref_code: costRef?.code || null,
           position: nextPosition
@@ -119,17 +157,22 @@ export function AddProductLineDialog({ productId, open, onOpenChange, onSuccess 
 
   const resetForm = () => {
     setLineName("");
-    setLineType("corpo");
+    setLineType("material");
     setQuantity(1);
+    setUnit("m²");
     setCostRefId("manual");
     setUnitCost(0);
+    setAutoCalculate(false);
+    setMetersToProcess(0);
   };
 
-  const subtotal = quantity * unitCost;
+  const subtotal = autoCalculate && calculatedTime 
+    ? calculatedTime.cost 
+    : quantity * unitCost;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Adicionar Linha de Custo</DialogTitle>
         </DialogHeader>
@@ -148,7 +191,7 @@ export function AddProductLineDialog({ productId, open, onOpenChange, onSuccess 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Tipo</Label>
-              <Select value={lineType} onValueChange={setLineType}>
+              <Select value={lineType} onValueChange={handleLineTypeChange}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -170,54 +213,103 @@ export function AddProductLineDialog({ productId, open, onOpenChange, onSuccess 
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="manual">Valor Manual</SelectItem>
-                  {globalCosts.map(cost => (
-                    <SelectItem key={cost.id} value={cost.id}>
-                      {cost.code} - R$ {cost.value.toFixed(2)}
-                    </SelectItem>
-                  ))}
+                  {globalCosts
+                    .filter(c => c.category === lineType || lineType === 'material')
+                    .map(cost => (
+                      <SelectItem key={cost.id} value={cost.id}>
+                        {cost.code} - R$ {cost.value.toFixed(2)}/{cost.unit}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="quantity">Quantidade</Label>
-              <div className="flex gap-1 items-center">
+          {/* Auto-calculate toggle for machine time */}
+          {lineType === 'maquina' && (
+            <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+              <div className="flex items-center gap-2">
+                <Calculator className="h-4 w-4 text-muted-foreground" />
+                <Label htmlFor="auto-calc" className="text-sm">Calcular tempo automaticamente</Label>
+              </div>
+              <Switch
+                id="auto-calc"
+                checked={autoCalculate}
+                onCheckedChange={setAutoCalculate}
+              />
+            </div>
+          )}
+
+          {/* Auto-calculation inputs */}
+          {autoCalculate && lineType === 'maquina' && (
+            <div className="p-3 bg-primary/5 rounded-lg space-y-3 border border-primary/20">
+              <div className="space-y-2">
+                <Label htmlFor="metersToProcess">Metros a processar</Label>
                 <Input
-                  id="quantity"
+                  id="metersToProcess"
                   type="number"
                   step="0.01"
                   min={0}
-                  value={quantity}
-                  onChange={(e) => setQuantity(parseFloat(e.target.value) || 0)}
+                  value={metersToProcess}
+                  onChange={(e) => setMetersToProcess(parseFloat(e.target.value) || 0)}
+                  placeholder="Ex: 12.5"
                 />
-                <span className="text-sm text-muted-foreground">{unit}</span>
+              </div>
+              
+              {calculatedTime && (
+                <div className="text-sm text-muted-foreground">
+                  <p>
+                    Tempo calculado: <strong>{calculatedTime.time.toFixed(2)} {calculatedTime.unit}</strong>
+                  </p>
+                  <p>
+                    Custo estimado: <strong>R$ {calculatedTime.cost.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Manual quantity input */}
+          {!autoCalculate && (
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="quantity">Quantidade</Label>
+                <div className="flex gap-1 items-center">
+                  <Input
+                    id="quantity"
+                    type="number"
+                    step="0.01"
+                    min={0}
+                    value={quantity}
+                    onChange={(e) => setQuantity(parseFloat(e.target.value) || 0)}
+                  />
+                  <span className="text-sm text-muted-foreground">{unit}</span>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="unitCost">Custo Unit. (R$)</Label>
+                <Input
+                  id="unitCost"
+                  type="number"
+                  step="0.01"
+                  min={0}
+                  value={unitCost}
+                  onChange={(e) => setUnitCost(parseFloat(e.target.value) || 0)}
+                  disabled={costRefId !== "manual"}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Subtotal</Label>
+                <div className="h-9 flex items-center px-3 bg-muted rounded-md">
+                  <span className="font-semibold">
+                    R$ {subtotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
               </div>
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="unitCost">Custo Unit. (R$)</Label>
-              <Input
-                id="unitCost"
-                type="number"
-                step="0.01"
-                min={0}
-                value={unitCost}
-                onChange={(e) => setUnitCost(parseFloat(e.target.value) || 0)}
-                disabled={costRefId !== "manual"}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Subtotal</Label>
-              <div className="h-9 flex items-center px-3 bg-muted rounded-md">
-                <span className="font-semibold">
-                  R$ {subtotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                </span>
-              </div>
-            </div>
-          </div>
+          )}
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

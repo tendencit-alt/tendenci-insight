@@ -7,9 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, FileText } from "lucide-react";
+import { Loader2, FileText, Package, Layers } from "lucide-react";
 
 interface AddProductDialogProps {
   budgetId: string;
@@ -19,19 +20,20 @@ interface AddProductDialogProps {
 }
 
 export function AddProductDialog({ budgetId, open, onOpenChange, onSuccess }: AddProductDialogProps) {
-  const [mode, setMode] = useState<"manual" | "template">("manual");
+  const [mode, setMode] = useState<"template" | "manual">("template");
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [ambiente, setAmbiente] = useState("");
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const { data: templates = [] } = useQuery({
+  const { data: templates = [], isLoading: templatesLoading } = useQuery({
     queryKey: ['budget-product-templates'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('budget_product_templates')
         .select('*, budget_template_lines(*)')
+        .order('categoria')
         .order('name');
 
       if (error) throw error;
@@ -150,11 +152,28 @@ export function AddProductDialog({ budgetId, open, onOpenChange, onSuccess }: Ad
   };
 
   const resetForm = () => {
-    setMode("manual");
+    setMode("template");
     setName("");
     setDescription("");
     setAmbiente("");
     setSelectedTemplateId(null);
+  };
+
+  // Group templates by category
+  const templatesByCategory = templates.reduce((acc, template) => {
+    const cat = template.categoria || 'outros';
+    if (!acc[cat]) acc[cat] = [];
+    acc[cat].push(template);
+    return acc;
+  }, {} as Record<string, typeof templates>);
+
+  const categoryLabels: Record<string, string> = {
+    armarios: 'Armários',
+    gabinetes: 'Gabinetes',
+    gavetas: 'Gavetas',
+    prateleiras: 'Prateleiras',
+    paineis: 'Painéis',
+    outros: 'Outros'
   };
 
   return (
@@ -165,11 +184,71 @@ export function AddProductDialog({ budgetId, open, onOpenChange, onSuccess }: Ad
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <Tabs value={mode} onValueChange={(v) => setMode(v as "manual" | "template")}>
+          <Tabs value={mode} onValueChange={(v) => setMode(v as "template" | "manual")}>
             <TabsList className="w-full grid grid-cols-2">
-              <TabsTrigger value="manual">Criar Manualmente</TabsTrigger>
-              <TabsTrigger value="template">Usar Template</TabsTrigger>
+              <TabsTrigger value="template" className="gap-2">
+                <Package className="h-4 w-4" />
+                Usar Template
+              </TabsTrigger>
+              <TabsTrigger value="manual" className="gap-2">
+                <Layers className="h-4 w-4" />
+                Criar do Zero
+              </TabsTrigger>
             </TabsList>
+
+            <TabsContent value="template" className="space-y-4 mt-4">
+              {templatesLoading ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
+                  Carregando templates...
+                </div>
+              ) : templates.length > 0 ? (
+                <RadioGroup value={selectedTemplateId || ""} onValueChange={setSelectedTemplateId}>
+                  <div className="space-y-4 max-h-72 overflow-y-auto pr-2">
+                    {Object.entries(templatesByCategory).map(([category, categoryTemplates]) => (
+                      <div key={category}>
+                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                          {categoryLabels[category] || category}
+                        </h4>
+                        <div className="space-y-2">
+                          {categoryTemplates.map(template => (
+                            <div
+                              key={template.id}
+                              className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-colors hover:bg-muted/50 ${
+                                selectedTemplateId === template.id ? 'border-primary bg-primary/5 ring-1 ring-primary/30' : 'border-border'
+                              }`}
+                              onClick={() => setSelectedTemplateId(template.id)}
+                            >
+                              <RadioGroupItem value={template.id} id={template.id} className="mt-1" />
+                              <div className="flex-1 min-w-0">
+                                <Label htmlFor={template.id} className="font-medium cursor-pointer block">
+                                  {template.name}
+                                </Label>
+                                {template.description && (
+                                  <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{template.description}</p>
+                                )}
+                                <div className="flex items-center gap-2 mt-2">
+                                  <Badge variant="secondary" className="text-[10px]">
+                                    <FileText className="h-3 w-3 mr-1" />
+                                    {template.budget_template_lines?.length || 0} linhas
+                                  </Badge>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </RadioGroup>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Package className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">Nenhum template disponível.</p>
+                  <p className="text-xs">Use a aba "Criar do Zero" para adicionar produtos manualmente.</p>
+                </div>
+              )}
+            </TabsContent>
 
             <TabsContent value="manual" className="space-y-4 mt-4">
               <div className="space-y-2">
@@ -186,48 +265,12 @@ export function AddProductDialog({ budgetId, open, onOpenChange, onSuccess }: Ad
                 <Label htmlFor="description">Descrição</Label>
                 <Textarea
                   id="description"
-                  placeholder="Descrição detalhada..."
+                  placeholder="Descrição detalhada do produto..."
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   rows={2}
                 />
               </div>
-            </TabsContent>
-
-            <TabsContent value="template" className="space-y-4 mt-4">
-              {templates.length > 0 ? (
-                <RadioGroup value={selectedTemplateId || ""} onValueChange={setSelectedTemplateId}>
-                  <div className="space-y-2 max-h-64 overflow-y-auto">
-                    {templates.map(template => (
-                      <div
-                        key={template.id}
-                        className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer hover:bg-muted/50 ${
-                          selectedTemplateId === template.id ? 'border-primary bg-primary/5' : ''
-                        }`}
-                        onClick={() => setSelectedTemplateId(template.id)}
-                      >
-                        <RadioGroupItem value={template.id} id={template.id} className="mt-1" />
-                        <div className="flex-1">
-                          <Label htmlFor={template.id} className="font-medium cursor-pointer">
-                            {template.name}
-                          </Label>
-                          {template.description && (
-                            <p className="text-sm text-muted-foreground">{template.description}</p>
-                          )}
-                          <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
-                            <FileText className="h-3 w-3" />
-                            <span>{template.budget_template_lines?.length || 0} linhas de custo</span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </RadioGroup>
-              ) : (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  Nenhum template disponível. Crie produtos manualmente.
-                </p>
-              )}
             </TabsContent>
           </Tabs>
 
