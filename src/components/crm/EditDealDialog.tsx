@@ -84,6 +84,9 @@ export function EditDealDialog({
   const audioChunksRef = useRef<Blob[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // CORREÇÃO: Desabilitar persistência para este form (enabled = false)
+  // O lead_id estava sendo perdido porque o localStorage sobrescrevia o valor correto do deal
+  // Em vez de persistir, sempre carregar dados frescos do deal ao abrir
   const [formData, setFormData, clearPersistedData, hasRestoredData] = useFormPersistence(
     `edit-deal-form-${deal?.id || 'new'}`,
     {
@@ -99,11 +102,17 @@ export function EditDealDialog({
       source_id: "",
       lead_id: "",
     },
-    open
+    false  // DESABILITADO: Evita restaurar dados antigos que sobrescrevem lead_id
   );
 
   useEffect(() => {
     if (open && deal) {
+      // CORREÇÃO: Limpar dados persistidos antes de carregar dados frescos do deal
+      // Isso evita que lead_id antigo do localStorage sobrescreva o valor correto
+      clearPersistedData();
+      
+      // CORREÇÃO: Sempre usar os dados do deal, ignorando qualquer valor persistido
+      // Especialmente crítico para lead_id que estava sendo perdido
       setFormData({
         title: deal.title || "",
         stage_id: deal.stage_id || "",
@@ -115,7 +124,7 @@ export function EditDealDialog({
         conversation_history: deal.conversation_history || "",
         owner_id: deal.owner_id || "",
         source_id: deal.lead?.source_id?.toString() || "",
-        lead_id: deal.lead_id || "",
+        lead_id: deal.lead_id || "",  // CRÍTICO: Sempre pegar do deal
       });
       
       if (deal.scheduled_call) {
