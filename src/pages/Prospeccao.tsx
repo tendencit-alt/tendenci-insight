@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ProspeccaoOverview } from "@/components/prospeccao/ProspeccaoOverview";
@@ -10,11 +10,30 @@ import { CampanhasManager } from "@/components/prospeccao/CampanhasManager";
 import { CampaignProgressMonitor } from "@/components/prospeccao/CampaignProgressMonitor";
 import { CampanhasKPIDashboard } from "@/components/prospeccao/CampanhasKPIDashboard";
 import { EvolutionAPIStatus } from "@/components/prospeccao/EvolutionAPIStatus";
+import { ArchitectProspeccaoSheet } from "@/components/prospeccao/ArchitectProspeccaoSheet";
 import { UserSearch, LayoutGrid, CheckSquare, MessageSquare, Megaphone } from "lucide-react";
 
 export default function Prospeccao() {
   const [activeTab, setActiveTab] = useState("overview");
   const [manageStagesOpen, setManageStagesOpen] = useState(false);
+  
+  // Estados para abrir sheet via evento global (do Dialog de campanhas - funciona de qualquer aba)
+  const [eventArchitectId, setEventArchitectId] = useState<string | null>(null);
+  const [isEventSheetOpen, setIsEventSheetOpen] = useState(false);
+  
+  // Listener para evento 'open-architect-sheet' - no nível da página para funcionar de qualquer aba
+  useEffect(() => {
+    const handleOpenArchitectSheet = (e: CustomEvent<{ architectId: string }>) => {
+      setEventArchitectId(e.detail.architectId);
+      setIsEventSheetOpen(true);
+      setActiveTab("crm"); // Navegar para aba CRM ao abrir
+    };
+    
+    window.addEventListener('open-architect-sheet', handleOpenArchitectSheet as EventListener);
+    return () => {
+      window.removeEventListener('open-architect-sheet', handleOpenArchitectSheet as EventListener);
+    };
+  }, []);
 
   return (
     <DashboardLayout>
@@ -141,6 +160,15 @@ export default function Prospeccao() {
           open={manageStagesOpen} 
           onOpenChange={setManageStagesOpen} 
         />
+        
+        {/* Sheet para abrir arquiteto via evento global - no nível da página */}
+        {eventArchitectId && (
+          <ArchitectProspeccaoSheet
+            architectId={eventArchitectId}
+            open={isEventSheetOpen}
+            onOpenChange={setIsEventSheetOpen}
+          />
+        )}
       </div>
     </DashboardLayout>
   );
