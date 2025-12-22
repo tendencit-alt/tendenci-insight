@@ -37,6 +37,7 @@ import {
   formatBrasil,
   getDaysUntilDue as getTaskDueInfo 
 } from "@/utils/taskTimezone";
+import { sanitizeWhatsAppNumber, formatPhoneForDisplay } from "@/utils/whatsappValidation";
 
 interface DealTasksProps {
   dealId: string;
@@ -213,6 +214,22 @@ export function DealTasks({ dealId }: DealTasksProps) {
           variant: "destructive",
         });
         return;
+      }
+
+      // Validar e sanitizar número de WhatsApp
+      const whatsappValidation = sanitizeWhatsAppNumber(newTask.whatsapp_number);
+      if (whatsappValidation.error) {
+        toast({
+          title: "Número de WhatsApp inválido",
+          description: whatsappValidation.error,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Atualizar número formatado no state
+      if (whatsappValidation.number && whatsappValidation.number !== newTask.whatsapp_number) {
+        setNewTask(prev => ({ ...prev, whatsapp_number: whatsappValidation.number! }));
       }
 
       // Verificar se vendedor tem instância WhatsApp conectada

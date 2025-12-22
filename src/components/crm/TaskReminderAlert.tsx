@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { localInputToUTC, isLocalInputInPast } from "@/utils/taskTimezone";
+import { sanitizeWhatsAppNumber } from "@/utils/whatsappValidation";
 
 interface DealWithoutTask {
   id: string;
@@ -186,6 +187,23 @@ export function TaskReminderAlert({ pipelineId }: TaskReminderAlertProps) {
         });
         return;
       }
+
+      // Validar e sanitizar número de WhatsApp
+      const whatsappValidation = sanitizeWhatsAppNumber(taskData.whatsapp_number);
+      if (whatsappValidation.error) {
+        toast({
+          title: "Número de WhatsApp inválido",
+          description: whatsappValidation.error,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Atualizar número formatado
+      if (whatsappValidation.number && whatsappValidation.number !== taskData.whatsapp_number) {
+        setTaskData(prev => ({ ...prev, whatsapp_number: whatsappValidation.number! }));
+      }
+
       if (!taskData.note) {
         toast({
           title: "Mensagem obrigatória",
