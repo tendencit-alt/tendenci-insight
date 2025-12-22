@@ -63,7 +63,6 @@ export function EditDealDialog({
   const [isUploading, setIsUploading] = useState(false);
   const [showCreateLead, setShowCreateLead] = useState(false);
   const [isArchitectDialogOpen, setIsArchitectDialogOpen] = useState(false);
-  const [leadIdExplicitlyChanged, setLeadIdExplicitlyChanged] = useState(false);
   
   // Estados para indicações
   const [existingIndications, setExistingIndications] = useState<any[]>([]);
@@ -84,6 +83,10 @@ export function EditDealDialog({
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // SOLUÇÃO DEFINITIVA: Referência imutável do lead_id original
+  // Definida UMA VEZ quando o dialog abre, não muda durante a edição
+  const originalLeadIdRef = useRef<string | null>(null);
 
   // CORREÇÃO: Desabilitar persistência para este form (enabled = false)
   // O lead_id estava sendo perdido porque o localStorage sobrescrevia o valor correto do deal
@@ -108,12 +111,14 @@ export function EditDealDialog({
 
   useEffect(() => {
     if (open && deal) {
-      // CORREÇÃO: Limpar dados persistidos antes de carregar dados frescos do deal
-      // Isso evita que lead_id antigo do localStorage sobrescreva o valor correto
+      // SOLUÇÃO DEFINITIVA: Guardar o lead_id original ANTES de qualquer coisa
+      // Esta referência NÃO MUDA durante toda a sessão de edição
+      originalLeadIdRef.current = deal.lead_id || null;
+      
+      // Limpar dados persistidos antes de carregar dados frescos do deal
       clearPersistedData();
       
-      // CORREÇÃO: Sempre usar os dados do deal, ignorando qualquer valor persistido
-      // Especialmente crítico para lead_id que estava sendo perdido
+      // Sempre usar os dados do deal, ignorando qualquer valor persistido
       setFormData({
         title: deal.title || "",
         stage_id: deal.stage_id || "",
@@ -125,7 +130,7 @@ export function EditDealDialog({
         conversation_history: deal.conversation_history || "",
         owner_id: deal.owner_id || "",
         source_id: deal.lead?.source_id?.toString() || "",
-        lead_id: deal.lead_id || "",  // CRÍTICO: Sempre pegar do deal
+        lead_id: deal.lead_id || "",
       });
       
       if (deal.scheduled_call) {
@@ -140,8 +145,6 @@ export function EditDealDialog({
       // Limpar indicações pendentes ao abrir
       setPendingIndications([]);
       setNewIndication({ architect_id: "", product_type: "", value: "", notes: "" });
-      // Reset: só perguntar sobre remoção se usuário realmente alterar
-      setLeadIdExplicitlyChanged(false);
     }
   }, [open, deal]);
 
@@ -418,8 +421,15 @@ export function EditDealDialog({
       return;
     }
 
-    // CORREÇÃO: Confirmação ao remover cliente vinculado - SÓ se usuário alterou explicitamente
-    const isRemovingClient = deal.lead_id && !formData.lead_id && leadIdExplicitlyChanged;
+    // SOLUÇÃO DEFINITIVA: Comparar com o lead_id ORIGINAL (imutável)
+    // originalLeadIdRef.current foi definido UMA VEZ quando o dialog abriu
+    const originalLeadId = originalLeadIdRef.current;
+    const currentLeadId = formData.lead_id || null;
+    
+    // Só perguntar se:
+    // 1. Havia um cliente vinculado originalmente (originalLeadId existe)
+    // 2. E agora não há mais cliente (currentLeadId é null/vazio)
+    const isRemovingClient = originalLeadId && !currentLeadId;
     if (isRemovingClient) {
       const confirmar = window.confirm(
         "Você está removendo o cliente vinculado a este negócio. Deseja continuar?"
@@ -435,8 +445,8 @@ export function EditDealDialog({
       // Track only changes NOT logged by database trigger
       const changes: Array<{field_name: string, old_value: string, new_value: string}> = [];
       
-      // CORREÇÃO: Só logar mudança de lead_id se foi REALMENTE alterado
-      const leadIdChanged = formData.lead_id !== (deal.lead_id || "");
+      // SOLUÇÃO DEFINITIVA: Comparar com referência imutável original
+      const leadIdChanged = (formData.lead_id || null) !== originalLeadIdRef.current;
       if (leadIdChanged) {
         const oldValue = await getDisplayValue('lead_id', deal.lead_id);
         const newValue = await getDisplayValue('lead_id', formData.lead_id);
@@ -747,10 +757,6 @@ export function EditDealDialog({
                   value={formData.lead_id || "none"}
                   onValueChange={(value) => {
                     const newLeadId = value === "none" ? "" : value;
-                    // Só marcar como alterado se o valor realmente mudou
-                    if (newLeadId !== formData.lead_id) {
-                      setLeadIdExplicitlyChanged(true);
-                    }
                     setFormData({ ...formData, lead_id: newLeadId });
                   }}
                 >
