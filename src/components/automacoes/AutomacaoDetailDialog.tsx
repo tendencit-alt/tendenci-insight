@@ -41,7 +41,7 @@ export interface AutomacaoDetail {
 
 // Mapeamento de detalhes de cada automação
 export const AUTOMACOES_DETAILS: Record<string, Omit<AutomacaoDetail, 'id' | 'ativo' | 'sucessos' | 'falhas' | 'ultimaExecucao'>> = {
-  // CRM
+  // ============== CRM ==============
   'followup-ia': {
     titulo: 'Follow-up I.A.',
     descricao: 'Sistema inteligente de follow-up automático',
@@ -141,8 +141,97 @@ export const AUTOMACOES_DETAILS: Record<string, Omit<AutomacaoDetail, 'id' | 'at
       'Estabeleça meta de zero negócios sem tarefa'
     ]
   },
+  'reativar-deals-perdidos': {
+    titulo: 'Reativar Negócios Perdidos',
+    descricao: 'Reabre negócios perdidos após período configurado',
+    oQueFaz: 'Verifica negócios marcados como "lost" há mais de X dias e os reativa automaticamente para nova tentativa de venda, movendo para a primeira etapa do funil.',
+    comoFunciona: [
+      'Trigger de banco verifica negócios com status "lost"',
+      'Filtra por tempo desde a data de perda',
+      'Altera status para "open"',
+      'Move para primeira etapa do pipeline',
+      'Registra no histórico do deal',
+      'Notifica vendedor responsável'
+    ],
+    quandoExecuta: 'Trigger de banco - quando status muda para "lost"',
+    triggerType: 'event',
+    dependencias: [
+      'Trigger set_reopen_at configurado',
+      'Campo reopen_at preenchido'
+    ],
+    dicas: [
+      'Configure prazo de reativação de 30-90 dias',
+      'Revise motivos de perda antes de reativar',
+      'Crie segmentos para abordagem diferenciada'
+    ]
+  },
+  'atribuir-owner-qualificacao': {
+    titulo: 'Atribuir Responsável na Qualificação',
+    descricao: 'Atribui automaticamente owner_id ao deal na qualificação',
+    oQueFaz: 'Quando um negócio é movido para a etapa de qualificação sem um responsável definido, atribui automaticamente o usuário que fez a movimentação como owner.',
+    comoFunciona: [
+      'Trigger monitora mudança para etapa "Qualificação"',
+      'Verifica se owner_id está nulo',
+      'Atribui moved_by como owner_id',
+      'Registra alteração no histórico'
+    ],
+    quandoExecuta: 'Trigger de banco - ao entrar na etapa Qualificação',
+    triggerType: 'event',
+    dependencias: [
+      'Etapa "Qualificação" configurada no pipeline',
+      'Trigger auto_assign_owner_on_qualification ativo'
+    ],
+    dicas: [
+      'Garanta que apenas vendedores qualificados movam deals',
+      'Configure redistribuição se necessário'
+    ]
+  },
+  'criar-pedido-deal-won': {
+    titulo: 'Criar Pedido ao Ganhar Negócio',
+    descricao: 'Cria automaticamente pedido quando deal é ganho',
+    oQueFaz: 'Quando um negócio é marcado como "won", cria automaticamente um pedido no módulo de pedidos com os dados do negócio.',
+    comoFunciona: [
+      'Trigger monitora mudança de status para "won"',
+      'Cria registro na tabela orders',
+      'Copia dados do deal (valor, cliente, produto)',
+      'Vincula order_id ao deal',
+      'Notifica responsáveis'
+    ],
+    quandoExecuta: 'Trigger de banco - ao marcar deal como won',
+    triggerType: 'event',
+    dependencias: [
+      'Tabela orders configurada',
+      'Trigger create_order_on_deal_won ativo'
+    ],
+    dicas: [
+      'Verifique se todos os dados obrigatórios estão preenchidos',
+      'Configure status inicial do pedido',
+      'Defina prazo de entrega padrão'
+    ]
+  },
+  'log-mudancas-deal': {
+    titulo: 'Histórico de Alterações de Deal',
+    descricao: 'Registra todas as alterações feitas em negócios',
+    oQueFaz: 'Mantém um log completo de todas as alterações feitas em negócios do CRM, incluindo mudanças de etapa, valor, responsável e outros campos.',
+    comoFunciona: [
+      'Trigger monitora UPDATE na tabela crm_deals',
+      'Compara valores antigos com novos',
+      'Registra alteração em crm_deal_history',
+      'Inclui user_id, timestamp e campos alterados'
+    ],
+    quandoExecuta: 'Trigger de banco - a cada UPDATE em crm_deals',
+    triggerType: 'event',
+    dependencias: [
+      'Trigger log_crm_deal_changes ativo'
+    ],
+    dicas: [
+      'Use para auditoria e análise',
+      'Configure retenção de logs',
+      'Exporte periodicamente para backup'
+    ]
+  },
 
-  // Prospecção
+  // ============== PROSPECÇÃO ==============
   'campanhas-whatsapp': {
     titulo: 'Campanhas WhatsApp',
     descricao: 'Disparo em massa de mensagens para arquitetos',
@@ -245,8 +334,78 @@ export const AUTOMACOES_DETAILS: Record<string, Omit<AutomacaoDetail, 'id' | 'at
       'Envie lembrete 24h antes'
     ]
   },
+  'arquitetos-inativos': {
+    titulo: 'Verificar Arquitetos Inativos (60 dias)',
+    descricao: 'Move arquitetos sem atividade para etapa Inativo',
+    oQueFaz: 'Verifica arquitetos na etapa "parceiro_ativo" que não tiveram indicações, projetos ou interações nos últimos 60 dias e move automaticamente para a etapa "inativo".',
+    comoFunciona: [
+      'Função RPC run_inactive_architects_check é executada',
+      'Busca arquitetos em "parceiro_ativo"',
+      'Verifica data_ultimo_contato e ultimo_projeto_data',
+      'Se ambos > 60 dias, marca como inativo',
+      'Atualiza status_funil para "inativo"',
+      'Registra data_marcado_inativo',
+      'Registra evento no histórico'
+    ],
+    quandoExecuta: 'Manual via botão ou agendável via n8n',
+    triggerType: 'manual',
+    endpoint: 'RPC: run_inactive_architects_check',
+    dependencias: [
+      'Etapa "inativo" configurada no funil',
+      'Arquitetos com datas de contato preenchidas',
+      'Função RPC criada no banco'
+    ],
+    dicas: [
+      'Execute semanalmente ou quinzenalmente',
+      'Revise lista de inativos mensalmente',
+      'Crie campanhas de reativação para inativos',
+      'Configure período de inatividade conforme necessidade'
+    ]
+  },
+  'validar-whatsapp': {
+    titulo: 'Validação de WhatsApp',
+    descricao: 'Valida números de WhatsApp dos arquitetos',
+    oQueFaz: 'Verifica se os números de telefone cadastrados são válidos para WhatsApp, marcando o campo whatsapp_valido como true ou false.',
+    comoFunciona: [
+      'Trigger de banco ao inserir/atualizar telefone',
+      'Formata número para padrão internacional',
+      'Pode consultar Evolution API para validação',
+      'Atualiza campo whatsapp_valido',
+      'Permite filtrar apenas números válidos'
+    ],
+    quandoExecuta: 'Trigger de banco - ao alterar telefone',
+    triggerType: 'event',
+    dependencias: [
+      'Campo phone preenchido',
+      'Trigger validate_whatsapp_number ativo'
+    ],
+    dicas: [
+      'Use para filtrar campanhas',
+      'Valide números antes de disparos em massa',
+      'Configure revalidação periódica'
+    ]
+  },
+  'atualizar-contato-arquiteto': {
+    titulo: 'Atualizar Data Último Contato',
+    descricao: 'Atualiza data de último contato automaticamente',
+    oQueFaz: 'Quando uma interação é registrada na timeline do arquiteto, atualiza automaticamente o campo data_ultimo_contato.',
+    comoFunciona: [
+      'Trigger monitora INSERT em architect_timeline',
+      'Atualiza data_ultimo_contato no arquiteto',
+      'Mantém histórico de interações atualizado'
+    ],
+    quandoExecuta: 'Trigger de banco - ao criar timeline',
+    triggerType: 'event',
+    dependencias: [
+      'Trigger update_architect_last_contact ativo'
+    ],
+    dicas: [
+      'Garanta que todas as interações são registradas',
+      'Use para calcular inatividade'
+    ]
+  },
 
-  // Produção
+  // ============== PRODUÇÃO ==============
   'automacao-producao': {
     titulo: 'Automação de Produção',
     descricao: 'Automações configuráveis por etapa da produção',
@@ -271,8 +430,75 @@ export const AUTOMACOES_DETAILS: Record<string, Omit<AutomacaoDetail, 'id' | 'at
       'Use webhooks para integrar com outros sistemas'
     ]
   },
+  'criar-fases-op': {
+    titulo: 'Criar Fases da OP',
+    descricao: 'Cria automaticamente fases ao criar OP',
+    oQueFaz: 'Quando uma Ordem de Produção é criada, gera automaticamente todas as fases de produção configuradas no template.',
+    comoFunciona: [
+      'Trigger monitora INSERT em production_orders',
+      'Busca template de fases configurado',
+      'Cria registros em production_phases',
+      'Define ordem e prazos de cada fase',
+      'OP fica pronta para acompanhamento'
+    ],
+    quandoExecuta: 'Trigger de banco - ao criar OP',
+    triggerType: 'event',
+    dependencias: [
+      'Templates de fases configurados',
+      'Trigger create_production_phases ativo'
+    ],
+    dicas: [
+      'Configure templates por tipo de produto',
+      'Defina prazos realistas por fase',
+      'Revise templates periodicamente'
+    ]
+  },
+  'criar-producao-aprovacao': {
+    titulo: 'Criar OP na Aprovação de Pedido',
+    descricao: 'Cria OP automaticamente ao aprovar pedido',
+    oQueFaz: 'Quando um pedido é aprovado (status muda para "approved"), cria automaticamente uma Ordem de Produção vinculada.',
+    comoFunciona: [
+      'Trigger monitora mudança de status para "approved"',
+      'Cria registro em production_orders',
+      'Vincula order_id e copia dados',
+      'Dispara criação de fases',
+      'Notifica equipe de produção'
+    ],
+    quandoExecuta: 'Trigger de banco - ao aprovar pedido',
+    triggerType: 'event',
+    dependencias: [
+      'Trigger create_production_on_approval ativo',
+      'Pedido com dados completos'
+    ],
+    dicas: [
+      'Verifique dados obrigatórios antes de aprovar',
+      'Configure notificações para produção',
+      'Defina prioridade automática'
+    ]
+  },
+  'log-mudancas-op': {
+    titulo: 'Histórico de Alterações OP',
+    descricao: 'Registra alterações em Ordens de Produção',
+    oQueFaz: 'Mantém log completo de todas as alterações em OPs, incluindo mudanças de etapa, responsável, prazos e outros campos.',
+    comoFunciona: [
+      'Trigger monitora UPDATE em production_orders',
+      'Registra em production_order_history',
+      'Inclui valores anteriores e novos',
+      'Permite auditoria completa'
+    ],
+    quandoExecuta: 'Trigger de banco - a cada UPDATE',
+    triggerType: 'event',
+    dependencias: [
+      'Trigger log_production_changes ativo'
+    ],
+    dicas: [
+      'Use para análise de gargalos',
+      'Identifique padrões de alteração',
+      'Configure alertas para mudanças críticas'
+    ]
+  },
 
-  // Metas
+  // ============== METAS ==============
   'metas-diarias': {
     titulo: 'Inicialização de Metas Diárias',
     descricao: 'Criação automática de metas diárias para vendedores',
@@ -297,6 +523,120 @@ export const AUTOMACOES_DETAILS: Record<string, Omit<AutomacaoDetail, 'id' | 'at
       'Configure metas mensais antes do início do mês',
       'Revise distribuição semanalmente',
       'Ajuste para considerar feriados'
+    ]
+  },
+  'expirar-metas': {
+    titulo: 'Expirar Metas Antigas',
+    descricao: 'Marca metas passadas como expiradas',
+    oQueFaz: 'Verifica metas com data_fim anterior à data atual e atualiza o status para "expirada", mantendo histórico organizado.',
+    comoFunciona: [
+      'Trigger verifica metas com data_fim < now()',
+      'Atualiza status para "expirada"',
+      'Calcula resultado final (atingida ou não)',
+      'Mantém dados para relatórios históricos'
+    ],
+    quandoExecuta: 'Trigger de banco ou agendado diário',
+    triggerType: 'scheduled',
+    dependencias: [
+      'Campo data_fim preenchido nas metas'
+    ],
+    dicas: [
+      'Execute diariamente',
+      'Gere relatórios mensais de resultado',
+      'Analise metas não atingidas'
+    ]
+  },
+  'lembrete-metas': {
+    titulo: 'Lembretes de Metas',
+    descricao: 'Envia lembretes sobre metas próximas do vencimento',
+    oQueFaz: 'Quando uma meta está próxima de vencer e ainda não foi atingida, envia notificação para o vendedor responsável.',
+    comoFunciona: [
+      'Sistema verifica metas próximas do fim',
+      'Calcula % de atingimento atual',
+      'Se < 80%, gera notificação',
+      'Envia para vendedor e gestor',
+      'Sugere ações para atingir meta'
+    ],
+    quandoExecuta: 'Agendado - verificação diária',
+    triggerType: 'scheduled',
+    dependencias: [
+      'Sistema de notificações ativo',
+      'Metas com prazos definidos'
+    ],
+    dicas: [
+      'Configure antecedência de 3-5 dias',
+      'Personalize mensagens por % de atingimento',
+      'Inclua sugestões práticas'
+    ]
+  },
+  'atualizar-progresso-metas': {
+    titulo: 'Atualizar Progresso de Metas',
+    descricao: 'Recalcula progresso das metas automaticamente',
+    oQueFaz: 'Quando um negócio é marcado como ganho (won), recalcula automaticamente o progresso das metas do vendedor responsável.',
+    comoFunciona: [
+      'Trigger monitora status = "won" em deals',
+      'Identifica vendedor e meta ativa',
+      'Soma valor ao realizado',
+      'Recalcula percentual de atingimento',
+      'Atualiza badges e notificações'
+    ],
+    quandoExecuta: 'Trigger de banco - ao ganhar negócio',
+    triggerType: 'event',
+    dependencias: [
+      'Trigger update_goal_progress ativo',
+      'Metas com vendedores vinculados'
+    ],
+    dicas: [
+      'Verifique se valor do deal está correto',
+      'Configure comemorações ao atingir meta',
+      'Analise velocidade de atingimento'
+    ]
+  },
+
+  // ============== ESTOQUE ==============
+  'atualizar-estoque': {
+    titulo: 'Atualizar Estoque Automático',
+    descricao: 'Atualiza estoque ao registrar movimentações',
+    oQueFaz: 'Quando uma movimentação de estoque é registrada (entrada ou saída), atualiza automaticamente a quantidade em estoque do produto.',
+    comoFunciona: [
+      'Trigger monitora INSERT em stock_movements',
+      'Verifica tipo de movimentação (entrada/saída)',
+      'Atualiza quantity no produto',
+      'Registra histórico de movimentação',
+      'Gera alerta se estoque baixo'
+    ],
+    quandoExecuta: 'Trigger de banco - ao criar movimentação',
+    triggerType: 'event',
+    dependencias: [
+      'Trigger update_product_stock ativo',
+      'Produtos cadastrados'
+    ],
+    dicas: [
+      'Sempre registre movimentações',
+      'Configure alertas de estoque mínimo',
+      'Faça inventário periódico'
+    ]
+  },
+  'recalcular-totais-compra': {
+    titulo: 'Recalcular Totais de Compra',
+    descricao: 'Recalcula totais ao alterar itens da compra',
+    oQueFaz: 'Quando itens de uma ordem de compra são alterados, recalcula automaticamente os totais (subtotal, impostos, total geral).',
+    comoFunciona: [
+      'Trigger monitora changes em purchase_order_items',
+      'Soma todos os itens da ordem',
+      'Aplica cálculos de impostos',
+      'Atualiza total_amount na ordem',
+      'Mantém consistência dos dados'
+    ],
+    quandoExecuta: 'Trigger de banco - ao alterar itens',
+    triggerType: 'event',
+    dependencias: [
+      'Trigger recalculate_purchase_totals ativo'
+    ],
+    dicas: [
+      'Verifique configuração de impostos',
+      'Confirme totais antes de aprovar',
+      'Use para auditoria financeira'
     ]
   }
 };

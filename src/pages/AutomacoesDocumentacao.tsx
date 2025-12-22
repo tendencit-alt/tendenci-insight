@@ -16,7 +16,8 @@ import {
   Target,
   Link2,
   AlertTriangle,
-  Activity
+  Activity,
+  Package
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ModuloAutomacoes } from "@/components/automacoes/ModuloAutomacoes";
@@ -40,6 +41,7 @@ export default function AutomacoesDocumentacao() {
   const [automacoesProducao, setAutomacoesProducao] = useState<any[]>([]);
   const [automacoesProspeccao, setAutomacoesProspeccao] = useState<any[]>([]);
   const [automacoesMetas, setAutomacoesMetas] = useState<any[]>([]);
+  const [automacoesEstoque, setAutomacoesEstoque] = useState<any[]>([]);
   const [logsRecentes, setLogsRecentes] = useState<any[]>([]);
 
   const fetchData = async () => {
@@ -90,9 +92,11 @@ export default function AutomacoesDocumentacao() {
           .limit(50)
       ]);
 
-      // Calculate KPIs
-      const totalAutomacoes = (productionAutomations?.length || 0) + 6; // 6 fixed automations
-      const automacoesAtivas = (productionAutomations?.filter(a => a.ativa)?.length || 0) + 5;
+      // Calculate KPIs - total de automações fixas + dinâmicas
+      const fixedAutomations = 24; // Total de automações fixas documentadas
+      const dynamicAutomations = productionAutomations?.length || 0;
+      const totalAutomacoes = fixedAutomations + dynamicAutomations;
+      const automacoesAtivas = (productionAutomations?.filter(a => a.ativa)?.length || 0) + 20; // Maioria das fixas estão ativas
       const falhasRecentes = notifications?.length || 0;
       const ultimaExecucao = productionLogs?.[0]?.created_at || followupLogs?.[0]?.sent_at;
 
@@ -141,7 +145,7 @@ export default function AutomacoesDocumentacao() {
           triggerType: 'scheduled' as const
         },
         {
-          id: 'tarefas-automatizadas',
+          id: 'tarefas-automatizadas-crm',
           nome: 'Tarefas Automatizadas CRM',
           descricao: 'Processa e executa tarefas de CRM automaticamente',
           ativo: true,
@@ -152,7 +156,7 @@ export default function AutomacoesDocumentacao() {
           triggerType: 'scheduled' as const
         },
         {
-          id: 'alerta-sla',
+          id: 'alertas-sla',
           nome: 'Alertas de SLA',
           descricao: 'Notifica quando negócios excedem tempo em etapa',
           ativo: true,
@@ -162,13 +166,45 @@ export default function AutomacoesDocumentacao() {
           triggerType: 'event' as const
         },
         {
-          id: 'deals-sem-tarefa',
+          id: 'negocios-sem-tarefa',
           nome: 'Negócios sem Tarefa',
           descricao: 'Verifica negócios sem tarefas agendadas',
           ativo: true,
           ultimaExecucao: null,
           endpoint: '/functions/v1/check-deals-without-tasks',
           triggerType: 'scheduled' as const
+        },
+        {
+          id: 'reativar-deals-perdidos',
+          nome: 'Reativar Negócios Perdidos',
+          descricao: 'Reabre negócios perdidos após período configurado',
+          ativo: true,
+          ultimaExecucao: null,
+          triggerType: 'event' as const
+        },
+        {
+          id: 'atribuir-owner-qualificacao',
+          nome: 'Atribuir Responsável na Qualificação',
+          descricao: 'Atribui owner_id automaticamente ao qualificar deal',
+          ativo: true,
+          ultimaExecucao: null,
+          triggerType: 'event' as const
+        },
+        {
+          id: 'criar-pedido-deal-won',
+          nome: 'Criar Pedido ao Ganhar',
+          descricao: 'Cria pedido automaticamente quando deal é ganho',
+          ativo: true,
+          ultimaExecucao: null,
+          triggerType: 'event' as const
+        },
+        {
+          id: 'log-mudancas-deal',
+          nome: 'Histórico de Alterações',
+          descricao: 'Registra todas as alterações em negócios',
+          ativo: true,
+          ultimaExecucao: null,
+          triggerType: 'event' as const
         }
       ]);
 
@@ -188,7 +224,35 @@ export default function AutomacoesDocumentacao() {
         };
       });
 
-      setAutomacoesProducao(prodAutomacoesFormatadas);
+      // Adicionar automações fixas de produção
+      const automacoesProducaoFixas = [
+        {
+          id: 'criar-fases-op',
+          nome: 'Criar Fases da OP',
+          descricao: 'Cria fases automaticamente ao criar OP',
+          ativo: true,
+          ultimaExecucao: null,
+          triggerType: 'event' as const
+        },
+        {
+          id: 'criar-producao-aprovacao',
+          nome: 'Criar OP na Aprovação',
+          descricao: 'Cria OP ao aprovar pedido',
+          ativo: true,
+          ultimaExecucao: null,
+          triggerType: 'event' as const
+        },
+        {
+          id: 'log-mudancas-op',
+          nome: 'Histórico de Alterações OP',
+          descricao: 'Registra alterações em OPs',
+          ativo: true,
+          ultimaExecucao: null,
+          triggerType: 'event' as const
+        }
+      ];
+
+      setAutomacoesProducao([...automacoesProducaoFixas, ...prodAutomacoesFormatadas]);
 
       // Process Prospeccao automations
       const campanhasAtivas = campaigns?.filter(c => c.status === 'sending')?.length || 0;
@@ -224,19 +288,97 @@ export default function AutomacoesDocumentacao() {
           ultimaExecucao: null,
           endpoint: '/functions/v1/process-pending-architect-tasks',
           triggerType: 'scheduled' as const
+        },
+        {
+          id: 'agendamentos-automaticos',
+          nome: 'Agendamentos Automáticos',
+          descricao: 'Cria agendamentos via detecção da I.A.',
+          ativo: true,
+          ultimaExecucao: null,
+          endpoint: '/functions/v1/create-agendamento',
+          triggerType: 'event' as const
+        },
+        {
+          id: 'arquitetos-inativos',
+          nome: 'Verificar Arquitetos Inativos (60 dias)',
+          descricao: 'Move arquitetos sem atividade para etapa Inativo',
+          ativo: true,
+          ultimaExecucao: null,
+          endpoint: 'RPC: run_inactive_architects_check',
+          triggerType: 'manual' as const
+        },
+        {
+          id: 'validar-whatsapp',
+          nome: 'Validação de WhatsApp',
+          descricao: 'Valida números de WhatsApp dos arquitetos',
+          ativo: true,
+          ultimaExecucao: null,
+          triggerType: 'event' as const
+        },
+        {
+          id: 'atualizar-contato-arquiteto',
+          nome: 'Atualizar Data Último Contato',
+          descricao: 'Atualiza data de contato ao interagir',
+          ativo: true,
+          ultimaExecucao: null,
+          triggerType: 'event' as const
         }
       ]);
 
       // Process Metas automations
       setAutomacoesMetas([
         {
-          id: 'init-daily-goals',
+          id: 'metas-diarias',
           nome: 'Inicialização de Metas Diárias',
           descricao: 'Cria automaticamente metas diárias para vendedores',
           ativo: true,
           ultimaExecucao: null,
           endpoint: '/functions/v1/initialize-daily-goals',
           triggerType: 'scheduled' as const
+        },
+        {
+          id: 'expirar-metas',
+          nome: 'Expirar Metas Antigas',
+          descricao: 'Marca metas passadas como expiradas',
+          ativo: true,
+          ultimaExecucao: null,
+          triggerType: 'scheduled' as const
+        },
+        {
+          id: 'lembrete-metas',
+          nome: 'Lembretes de Metas',
+          descricao: 'Envia lembretes sobre metas próximas do vencimento',
+          ativo: true,
+          ultimaExecucao: null,
+          triggerType: 'scheduled' as const
+        },
+        {
+          id: 'atualizar-progresso-metas',
+          nome: 'Atualizar Progresso de Metas',
+          descricao: 'Recalcula progresso ao ganhar negócio',
+          ativo: true,
+          ultimaExecucao: null,
+          triggerType: 'event' as const
+        }
+      ]);
+
+      // Process Estoque automations
+      setAutomacoesEstoque([
+        {
+          id: 'atualizar-estoque',
+          nome: 'Atualizar Estoque Automático',
+          descricao: 'Atualiza estoque ao registrar movimentações',
+          ativo: true,
+          ultimaExecucao: null,
+          triggerType: 'event' as const
+        },
+        {
+          id: 'recalcular-totais-compra',
+          nome: 'Recalcular Totais de Compra',
+          descricao: 'Recalcula totais ao alterar itens da compra',
+          ativo: true,
+          ultimaExecucao: null,
+          triggerType: 'event' as const
         }
       ]);
 
@@ -323,7 +465,7 @@ export default function AutomacoesDocumentacao() {
 
         {/* Tabs por módulo */}
         <Tabs defaultValue="crm" className="space-y-4">
-          <TabsList className="grid grid-cols-6 w-full max-w-3xl">
+          <TabsList className="grid grid-cols-7 w-full max-w-4xl">
             <TabsTrigger value="crm" className="flex items-center gap-2">
               <MessageSquare className="h-4 w-4" />
               CRM
@@ -339,6 +481,10 @@ export default function AutomacoesDocumentacao() {
             <TabsTrigger value="metas" className="flex items-center gap-2">
               <Target className="h-4 w-4" />
               Metas
+            </TabsTrigger>
+            <TabsTrigger value="estoque" className="flex items-center gap-2">
+              <Package className="h-4 w-4" />
+              Estoque
             </TabsTrigger>
             <TabsTrigger value="endpoints" className="flex items-center gap-2">
               <Link2 className="h-4 w-4" />
@@ -382,6 +528,15 @@ export default function AutomacoesDocumentacao() {
               titulo="Automações de Metas"
               descricao="Automações relacionadas ao sistema de metas"
               automacoes={automacoesMetas}
+              loading={loading}
+            />
+          </TabsContent>
+
+          <TabsContent value="estoque">
+            <ModuloAutomacoes
+              titulo="Automações de Estoque"
+              descricao="Automações relacionadas ao controle de estoque e compras"
+              automacoes={automacoesEstoque}
               loading={loading}
             />
           </TabsContent>

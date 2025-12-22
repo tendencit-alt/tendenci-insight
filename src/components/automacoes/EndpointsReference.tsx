@@ -17,6 +17,7 @@ interface Endpoint {
 }
 
 const endpoints: Endpoint[] = [
+  // CRM
   {
     name: "Criar Lead via I.A.",
     description: "Cria um novo lead a partir de conversa de WhatsApp",
@@ -28,19 +29,6 @@ const endpoints: Endpoint[] = [
       telefone: "5511999999999",
       origem: "whatsapp",
       conversa: "Histórico da conversa..."
-    }
-  },
-  {
-    name: "Criar Agendamento",
-    description: "Cria um agendamento para arquiteto",
-    path: "/functions/v1/create-agendamento",
-    method: "POST",
-    module: "Prospecção",
-    payload: {
-      architect_id: "uuid",
-      data_agendamento: "2025-01-15T10:00:00",
-      tipo: "visita",
-      notas: "Visita técnica"
     }
   },
   {
@@ -58,6 +46,25 @@ const endpoints: Endpoint[] = [
     module: "CRM"
   },
   {
+    name: "Estatísticas de Follow-up",
+    description: "Retorna estatísticas de follow-ups enviados",
+    path: "/functions/v1/get-followup-stats",
+    method: "GET",
+    module: "CRM"
+  },
+  {
+    name: "Atualizar Histórico Follow-up",
+    description: "Atualiza histórico de follow-ups do deal",
+    path: "/functions/v1/update-followup-history",
+    method: "POST",
+    module: "CRM",
+    payload: {
+      deal_id: "uuid",
+      followup_number: 1,
+      status: "sent"
+    }
+  },
+  {
     name: "Processar Tarefa Automatizada",
     description: "Processa tarefa de CRM automatizada",
     path: "/functions/v1/process-automated-task",
@@ -65,6 +72,47 @@ const endpoints: Endpoint[] = [
     module: "CRM",
     payload: {
       task_id: "uuid"
+    }
+  },
+  {
+    name: "Processar Tarefas CRM Pendentes",
+    description: "Processa lote de tarefas CRM",
+    path: "/functions/v1/process-pending-crm-tasks",
+    method: "POST",
+    module: "CRM"
+  },
+  {
+    name: "Verificar Deals sem Tarefa",
+    description: "Retorna deals sem tarefas pendentes",
+    path: "/functions/v1/check-deals-without-tasks",
+    method: "GET",
+    module: "CRM"
+  },
+  {
+    name: "Atualizar Histórico Conversa",
+    description: "Atualiza histórico de conversa do deal",
+    path: "/functions/v1/update-deal-conversation",
+    method: "POST",
+    module: "CRM",
+    payload: {
+      deal_id: "uuid",
+      message: "Nova mensagem",
+      role: "client"
+    }
+  },
+
+  // Prospecção
+  {
+    name: "Criar Agendamento",
+    description: "Cria um agendamento para arquiteto",
+    path: "/functions/v1/create-agendamento",
+    method: "POST",
+    module: "Prospecção",
+    payload: {
+      architect_id: "uuid",
+      data_agendamento: "2025-01-15T10:00:00",
+      tipo: "visita",
+      notas: "Visita técnica"
     }
   },
   {
@@ -77,6 +125,47 @@ const endpoints: Endpoint[] = [
       campaign_id: "uuid"
     }
   },
+  {
+    name: "Executar Campanha Background",
+    description: "Executa campanha em segundo plano",
+    path: "/functions/v1/execute-campaign-background",
+    method: "POST",
+    module: "Prospecção",
+    payload: {
+      campaign_id: "uuid"
+    }
+  },
+  {
+    name: "Processar Tarefas Arquitetos",
+    description: "Processa tarefas de prospecção pendentes",
+    path: "/functions/v1/process-pending-architect-tasks",
+    method: "POST",
+    module: "Prospecção"
+  },
+  {
+    name: "Importar Arquitetos",
+    description: "Importa arquitetos de planilha",
+    path: "/functions/v1/import-architects",
+    method: "POST",
+    module: "Prospecção",
+    payload: {
+      data: [{ name: "Nome", phone: "5511999999999", email: "email@exemplo.com" }]
+    }
+  },
+  {
+    name: "Log Interação Prospecção",
+    description: "Registra interação na timeline do arquiteto",
+    path: "/functions/v1/log-prospeccao-interaction",
+    method: "POST",
+    module: "Prospecção",
+    payload: {
+      architect_id: "uuid",
+      type: "whatsapp",
+      message: "Mensagem enviada"
+    }
+  },
+
+  // WhatsApp
   {
     name: "Verificar Saúde Evolution",
     description: "Verifica status da conexão WhatsApp",
@@ -103,38 +192,23 @@ const endpoints: Endpoint[] = [
     module: "WhatsApp"
   },
   {
+    name: "WhatsApp Evolution",
+    description: "Integração direta com Evolution API",
+    path: "/functions/v1/whatsapp-evolution",
+    method: "POST",
+    module: "WhatsApp"
+  },
+
+  // Metas
+  {
     name: "Inicializar Metas Diárias",
     description: "Cria metas diárias para vendedores",
     path: "/functions/v1/initialize-daily-goals",
     method: "POST",
     module: "Metas"
   },
-  {
-    name: "Processar Tarefas CRM Pendentes",
-    description: "Processa lote de tarefas CRM",
-    path: "/functions/v1/process-pending-crm-tasks",
-    method: "POST",
-    module: "CRM"
-  },
-  {
-    name: "Processar Tarefas Arquitetos",
-    description: "Processa tarefas de prospecção pendentes",
-    path: "/functions/v1/process-pending-architect-tasks",
-    method: "POST",
-    module: "Prospecção"
-  },
-  {
-    name: "Atualizar Histórico Conversa",
-    description: "Atualiza histórico de conversa do deal",
-    path: "/functions/v1/update-deal-conversation",
-    method: "POST",
-    module: "CRM",
-    payload: {
-      deal_id: "uuid",
-      message: "Nova mensagem",
-      role: "client"
-    }
-  },
+
+  // Geral
   {
     name: "Transcrever Áudio",
     description: "Transcreve áudio para texto",
@@ -151,6 +225,64 @@ const endpoints: Endpoint[] = [
     payload: {
       message: "Sua pergunta aqui",
       conversation_id: "uuid (opcional)"
+    }
+  },
+  {
+    name: "Registrar Erro do Sistema",
+    description: "Registra erro no log de erros do sistema",
+    path: "/functions/v1/log-system-error",
+    method: "POST",
+    module: "Geral",
+    payload: {
+      error_type: "edge_function_error",
+      message: "Descrição do erro",
+      context: { function: "nome-da-funcao" }
+    }
+  },
+
+  // Admin
+  {
+    name: "Criar Usuário Admin",
+    description: "Cria novo usuário no sistema",
+    path: "/functions/v1/admin-create-user",
+    method: "POST",
+    module: "Admin",
+    payload: {
+      email: "usuario@exemplo.com",
+      password: "senha123",
+      name: "Nome do Usuário"
+    }
+  },
+  {
+    name: "Deletar Usuário Admin",
+    description: "Remove usuário do sistema",
+    path: "/functions/v1/admin-delete-user",
+    method: "POST",
+    module: "Admin",
+    payload: {
+      user_id: "uuid"
+    }
+  },
+  {
+    name: "Resetar Senha Admin",
+    description: "Reseta senha de usuário",
+    path: "/functions/v1/admin-reset-password",
+    method: "POST",
+    module: "Admin",
+    payload: {
+      user_id: "uuid",
+      new_password: "novaSenha123"
+    }
+  },
+  {
+    name: "Atualizar Email Admin",
+    description: "Atualiza email de usuário",
+    path: "/functions/v1/admin-update-user-email",
+    method: "POST",
+    module: "Admin",
+    payload: {
+      user_id: "uuid",
+      new_email: "novoemail@exemplo.com"
     }
   }
 ];
