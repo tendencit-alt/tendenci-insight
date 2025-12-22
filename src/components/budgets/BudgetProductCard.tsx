@@ -349,19 +349,15 @@ export function BudgetProductCard({ product, markupPercent, globalCosts, onRefre
                   <table className="w-full">
                     <BudgetProductLinesTableHeader />
                     <tbody>
-                      {lines.map(line => {
-                        const globalCost = globalCosts.find(g => g.id === line.cost_ref_id);
-                        return (
-                          <BudgetProductLineEditor
-                            key={line.id}
-                            line={line}
-                            globalCosts={globalCosts}
-                            linkedCost={globalCost}
-                            onUpdate={(lineId, data) => updateLineMutation.mutate({ lineId, data })}
-                            onDelete={(lineId) => deleteLineMutation.mutate(lineId)}
-                          />
-                        );
-                      })}
+                      {lines.map(line => (
+                        <BudgetProductLineEditor
+                          key={line.id}
+                          line={line}
+                          globalCosts={globalCosts}
+                          onUpdate={(lineId, data) => updateLineMutation.mutate({ lineId, data })}
+                          onDelete={(lineId) => deleteLineMutation.mutate(lineId)}
+                        />
+                      ))}
                     </tbody>
                     <tfoot className="bg-primary/5 border-t-2 border-primary/20">
                       <tr>
