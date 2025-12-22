@@ -87,6 +87,8 @@ export function EditDealDialog({
   // SOLUÇÃO DEFINITIVA: Referência imutável do lead_id original
   // Definida UMA VEZ quando o dialog abre, não muda durante a edição
   const originalLeadIdRef = useRef<string | null>(null);
+  // Flag para garantir inicialização única por sessão de edição
+  const isInitializedRef = useRef(false);
 
   // CORREÇÃO: Desabilitar persistência para este form (enabled = false)
   // O lead_id estava sendo perdido porque o localStorage sobrescrevia o valor correto do deal
@@ -109,11 +111,22 @@ export function EditDealDialog({
     false  // DESABILITADO: Evita restaurar dados antigos que sobrescrevem lead_id
   );
 
+  // Resetar flags quando o dialog fecha
+  useEffect(() => {
+    if (!open) {
+      isInitializedRef.current = false;
+      originalLeadIdRef.current = null;
+    }
+  }, [open]);
+
   useEffect(() => {
     if (open && deal) {
-      // SOLUÇÃO DEFINITIVA: Guardar o lead_id original ANTES de qualquer coisa
-      // Esta referência NÃO MUDA durante toda a sessão de edição
-      originalLeadIdRef.current = deal.lead_id || null;
+      // SOLUÇÃO DEFINITIVA: Só inicializar na PRIMEIRA vez que o dialog abre
+      // Ignora re-renderizações subsequentes que passam novo objeto deal
+      if (!isInitializedRef.current) {
+        originalLeadIdRef.current = deal.lead_id || null;
+        isInitializedRef.current = true;
+      }
       
       // Limpar dados persistidos antes de carregar dados frescos do deal
       clearPersistedData();
