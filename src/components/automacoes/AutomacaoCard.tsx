@@ -8,7 +8,8 @@ import {
   Play, 
   FileText,
   AlertTriangle,
-  Zap
+  Zap,
+  Info
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -24,6 +25,7 @@ interface AutomacaoCardProps {
   triggerType?: 'scheduled' | 'webhook' | 'event' | 'manual';
   onViewLogs?: () => void;
   onTest?: () => void;
+  onShowDetails?: () => void;
 }
 
 export function AutomacaoCard({
@@ -36,7 +38,8 @@ export function AutomacaoCard({
   endpoint,
   triggerType = 'manual',
   onViewLogs,
-  onTest
+  onTest,
+  onShowDetails
 }: AutomacaoCardProps) {
   const total = sucessos + falhas;
   const taxaSucesso = total > 0 ? Math.round((sucessos / total) * 100) : 0;
@@ -60,11 +63,17 @@ export function AutomacaoCard({
   };
 
   return (
-    <Card className="hover:shadow-md transition-shadow">
+    <Card 
+      className="hover:shadow-md transition-shadow cursor-pointer group"
+      onClick={onShowDetails}
+    >
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between">
-          <div className="space-y-1">
-            <CardTitle className="text-base font-medium">{nome}</CardTitle>
+          <div className="space-y-1 flex-1">
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-base font-medium">{nome}</CardTitle>
+              <Info className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+            </div>
             <p className="text-sm text-muted-foreground">{descricao}</p>
           </div>
           <div className="flex items-center gap-2">
@@ -128,7 +137,7 @@ export function AutomacaoCard({
           </div>
         )}
 
-        <div className="flex gap-2">
+        <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
           {onViewLogs && (
             <Button variant="outline" size="sm" onClick={onViewLogs}>
               <FileText className="h-4 w-4 mr-1" />
@@ -141,6 +150,10 @@ export function AutomacaoCard({
               Testar
             </Button>
           )}
+          <Button variant="ghost" size="sm" onClick={onShowDetails}>
+            <Info className="h-4 w-4 mr-1" />
+            Saiba mais
+          </Button>
         </div>
       </CardContent>
     </Card>
