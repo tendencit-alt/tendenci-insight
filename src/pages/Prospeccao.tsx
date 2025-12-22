@@ -9,6 +9,7 @@ import WhatsAppConnectionManager from "@/components/prospeccao/WhatsAppConnectio
 import { CampanhasManager } from "@/components/prospeccao/CampanhasManager";
 import { CampaignProgressMonitor } from "@/components/prospeccao/CampaignProgressMonitor";
 import { CampanhasKPIDashboard } from "@/components/prospeccao/CampanhasKPIDashboard";
+import { EvolutionAPIStatus } from "@/components/prospeccao/EvolutionAPIStatus";
 import { UserSearch, LayoutGrid, CheckSquare, MessageSquare, Megaphone } from "lucide-react";
 
 export default function Prospeccao() {
@@ -96,6 +97,7 @@ export default function Prospeccao() {
           </TabsContent>
 
           <TabsContent value="campanhas" className="space-y-6">
+            <EvolutionAPIStatus />
             <CampanhasKPIDashboard />
             <CampanhasManager />
           </TabsContent>

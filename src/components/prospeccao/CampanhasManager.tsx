@@ -607,6 +607,32 @@ export function CampanhasManager() {
   };
 
   const handleDispatchCampanha = async (campanha: Campanha) => {
+    // 🔌 VERIFICAR CONECTIVIDADE DA EVOLUTION API ANTES DE INICIAR
+    toast({
+      title: "Verificando servidor WhatsApp...",
+      description: "Aguarde a verificação de conectividade",
+    });
+
+    try {
+      const { data: healthCheck, error: healthError } = await supabase.functions.invoke('check-evolution-health');
+      
+      if (healthError || !healthCheck?.online) {
+        toast({
+          title: "❌ Servidor WhatsApp Offline",
+          description: healthCheck?.error || "O servidor Evolution API está inacessível. Tente novamente mais tarde.",
+          variant: "destructive",
+        });
+        return;
+      }
+    } catch (err) {
+      toast({
+        title: "❌ Erro ao verificar servidor",
+        description: "Não foi possível verificar se o servidor WhatsApp está online. Tente novamente.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // 🚫 TRAVA: Verificar se há arquitetos sem tarefas em "Contato Iniciado" ou "Ativado"
     await checkDispatchAllowed();
     
