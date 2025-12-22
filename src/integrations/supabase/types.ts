@@ -535,6 +535,256 @@ export type Database = {
           },
         ]
       }
+      budget_global_costs: {
+        Row: {
+          active: boolean | null
+          category: string
+          code: string
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          unit: string
+          updated_at: string | null
+          value: number
+        }
+        Insert: {
+          active?: boolean | null
+          category: string
+          code: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          unit: string
+          updated_at?: string | null
+          value?: number
+        }
+        Update: {
+          active?: boolean | null
+          category?: string
+          code?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          unit?: string
+          updated_at?: string | null
+          value?: number
+        }
+        Relationships: []
+      }
+      budget_product_lines: {
+        Row: {
+          cost_ref_code: string | null
+          cost_ref_id: string | null
+          created_at: string | null
+          id: string
+          line_name: string
+          line_type: string
+          notes: string | null
+          position: number | null
+          product_id: string
+          quantity: number
+          subtotal: number | null
+          unit: string
+          unit_cost: number
+        }
+        Insert: {
+          cost_ref_code?: string | null
+          cost_ref_id?: string | null
+          created_at?: string | null
+          id?: string
+          line_name: string
+          line_type: string
+          notes?: string | null
+          position?: number | null
+          product_id: string
+          quantity?: number
+          subtotal?: number | null
+          unit: string
+          unit_cost?: number
+        }
+        Update: {
+          cost_ref_code?: string | null
+          cost_ref_id?: string | null
+          created_at?: string | null
+          id?: string
+          line_name?: string
+          line_type?: string
+          notes?: string | null
+          position?: number | null
+          product_id?: string
+          quantity?: number
+          subtotal?: number | null
+          unit?: string
+          unit_cost?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "budget_product_lines_cost_ref_id_fkey"
+            columns: ["cost_ref_id"]
+            isOneToOne: false
+            referencedRelation: "budget_global_costs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "budget_product_lines_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "budget_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      budget_product_templates: {
+        Row: {
+          categoria: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          categoria?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          categoria?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "budget_product_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      budget_products: {
+        Row: {
+          ambiente: string | null
+          budget_id: string
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          position: number | null
+          quantity: number | null
+          total_cost: number | null
+          total_price: number | null
+          unit_cost: number | null
+          unit_price: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          ambiente?: string | null
+          budget_id: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          position?: number | null
+          quantity?: number | null
+          total_cost?: number | null
+          total_price?: number | null
+          unit_cost?: number | null
+          unit_price?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          ambiente?: string | null
+          budget_id?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          position?: number | null
+          quantity?: number | null
+          total_cost?: number | null
+          total_price?: number | null
+          unit_cost?: number | null
+          unit_price?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "budget_products_budget_id_fkey"
+            columns: ["budget_id"]
+            isOneToOne: false
+            referencedRelation: "project_budgets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      budget_template_lines: {
+        Row: {
+          cost_ref_code: string | null
+          cost_ref_id: string | null
+          created_at: string | null
+          default_quantity: number | null
+          id: string
+          line_name: string
+          line_type: string
+          position: number | null
+          template_id: string
+          unit: string
+        }
+        Insert: {
+          cost_ref_code?: string | null
+          cost_ref_id?: string | null
+          created_at?: string | null
+          default_quantity?: number | null
+          id?: string
+          line_name: string
+          line_type: string
+          position?: number | null
+          template_id: string
+          unit: string
+        }
+        Update: {
+          cost_ref_code?: string | null
+          cost_ref_id?: string | null
+          created_at?: string | null
+          default_quantity?: number | null
+          id?: string
+          line_name?: string
+          line_type?: string
+          position?: number | null
+          template_id?: string
+          unit?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "budget_template_lines_cost_ref_id_fkey"
+            columns: ["cost_ref_id"]
+            isOneToOne: false
+            referencedRelation: "budget_global_costs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "budget_template_lines_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "budget_product_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cadence_steps: {
         Row: {
           cadence_id: string | null
@@ -3152,6 +3402,69 @@ export type Database = {
           username?: string
         }
         Relationships: []
+      }
+      project_budgets: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          discount_percent: number | null
+          id: string
+          markup_percent: number | null
+          name: string
+          notes: string | null
+          project_id: string | null
+          status: string | null
+          total_cost: number | null
+          total_price: number | null
+          updated_at: string | null
+          version: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          discount_percent?: number | null
+          id?: string
+          markup_percent?: number | null
+          name: string
+          notes?: string | null
+          project_id?: string | null
+          status?: string | null
+          total_cost?: number | null
+          total_price?: number | null
+          updated_at?: string | null
+          version?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          discount_percent?: number | null
+          id?: string
+          markup_percent?: number | null
+          name?: string
+          notes?: string | null
+          project_id?: string | null
+          status?: string | null
+          total_cost?: number | null
+          total_price?: number | null
+          updated_at?: string | null
+          version?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_budgets_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_budgets_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       project_files: {
         Row: {
