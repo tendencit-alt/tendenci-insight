@@ -52,6 +52,7 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
         p_cidade: filters.cidade && filters.cidade !== "todas" ? filters.cidade : null,
         p_tier: filters.tier && filters.tier !== "todos" ? filters.tier : null,
         p_search: filters.search || null,
+        p_phone_search: filters.phone || null,
       });
 
       if (error) throw error;

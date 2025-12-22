@@ -77,6 +77,9 @@ export function ProspeccaoTable({ filters = {}, showNaoContactados = false }: Pr
       if (filters.search) {
         query = query.or(`name.ilike.%${filters.search}%,company.ilike.%${filters.search}%,city.ilike.%${filters.search}%`);
       }
+      if (filters.phone) {
+        query = query.ilike("phone", `%${filters.phone}%`);
+      }
 
       const { data, error } = await query.order("created_at", { ascending: false });
 
