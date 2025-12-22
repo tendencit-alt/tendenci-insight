@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, X, UserX } from "lucide-react";
+import { Search, X, UserX, Phone } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,6 +19,7 @@ export function ProspeccaoFilters({
   onToggleNaoContactados 
 }: ProspeccaoFiltersProps) {
   const [searchTerm, setSearchTerm] = useState("");
+  const [phoneSearch, setPhoneSearch] = useState("");
   const [selectedVendedor, setSelectedVendedor] = useState<string>("todos");
   const [selectedStatus, setSelectedStatus] = useState<string>("todos");
   const [selectedCidade, setSelectedCidade] = useState<string>("todas");
@@ -73,6 +74,7 @@ export function ProspeccaoFilters({
   const handleApplyFilters = () => {
     onFilterChange({
       search: searchTerm,
+      phone: phoneSearch,
       vendedor: selectedVendedor,
       status: selectedStatus,
       cidade: selectedCidade,
@@ -82,6 +84,7 @@ export function ProspeccaoFilters({
 
   const handleClearFilters = () => {
     setSearchTerm("");
+    setPhoneSearch("");
     setSelectedVendedor("todos");
     setSelectedStatus("todos");
     setSelectedCidade("todas");
@@ -91,7 +94,7 @@ export function ProspeccaoFilters({
 
   return (
     <div className="bg-card border border-border rounded-lg p-6 space-y-4">
-      {/* Primeira linha - Busca e Não Contactados */}
+      {/* Primeira linha - Busca, Telefone e Não Contactados */}
       <div className="flex gap-4">
         <div className="flex-1">
           <Label htmlFor="search">Buscar</Label>
@@ -102,6 +105,20 @@ export function ProspeccaoFilters({
               placeholder="Nome, empresa, cidade..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+        </div>
+        
+        <div className="w-56">
+          <Label htmlFor="phone">Telefone</Label>
+          <div className="relative">
+            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              id="phone"
+              placeholder="Buscar por telefone..."
+              value={phoneSearch}
+              onChange={(e) => setPhoneSearch(e.target.value)}
               className="pl-10"
             />
           </div>
