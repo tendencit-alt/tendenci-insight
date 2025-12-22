@@ -63,6 +63,7 @@ export function EditDealDialog({
   const [isUploading, setIsUploading] = useState(false);
   const [showCreateLead, setShowCreateLead] = useState(false);
   const [isArchitectDialogOpen, setIsArchitectDialogOpen] = useState(false);
+  const [leadIdExplicitlyChanged, setLeadIdExplicitlyChanged] = useState(false);
   
   // Estados para indicações
   const [existingIndications, setExistingIndications] = useState<any[]>([]);
@@ -139,6 +140,8 @@ export function EditDealDialog({
       // Limpar indicações pendentes ao abrir
       setPendingIndications([]);
       setNewIndication({ architect_id: "", product_type: "", value: "", notes: "" });
+      // Reset: só perguntar sobre remoção se usuário realmente alterar
+      setLeadIdExplicitlyChanged(false);
     }
   }, [open, deal]);
 
@@ -415,8 +418,8 @@ export function EditDealDialog({
       return;
     }
 
-    // CORREÇÃO: Confirmação ao remover cliente vinculado
-    const isRemovingClient = deal.lead_id && !formData.lead_id;
+    // CORREÇÃO: Confirmação ao remover cliente vinculado - SÓ se usuário alterou explicitamente
+    const isRemovingClient = deal.lead_id && !formData.lead_id && leadIdExplicitlyChanged;
     if (isRemovingClient) {
       const confirmar = window.confirm(
         "Você está removendo o cliente vinculado a este negócio. Deseja continuar?"
@@ -742,9 +745,14 @@ export function EditDealDialog({
                 </div>
                 <Select
                   value={formData.lead_id || "none"}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, lead_id: value === "none" ? "" : value })
-                  }
+                  onValueChange={(value) => {
+                    const newLeadId = value === "none" ? "" : value;
+                    // Só marcar como alterado se o valor realmente mudou
+                    if (newLeadId !== formData.lead_id) {
+                      setLeadIdExplicitlyChanged(true);
+                    }
+                    setFormData({ ...formData, lead_id: newLeadId });
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione o cliente" />
