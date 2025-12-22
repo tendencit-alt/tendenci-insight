@@ -105,6 +105,19 @@ export function TaskReminderAlert({ pipelineId }: TaskReminderAlertProps) {
 
   const checkDealsWithoutTasks = async () => {
     if (!currentUserId) return;
+
+    // Verificar se o usuário pediu para não ser lembrado (dismiss persistente)
+    const dismissedUntil = localStorage.getItem('taskReminderDismissedUntil');
+    if (dismissedUntil) {
+      const dismissTime = parseInt(dismissedUntil, 10);
+      if (Date.now() < dismissTime) {
+        // Ainda está no período de dismiss, não mostrar popup
+        return;
+      } else {
+        // Período expirou, remover do localStorage
+        localStorage.removeItem('taskReminderDismissedUntil');
+      }
+    }
     
     try {
       // Usar RPC do servidor que usa NOW() para garantir consistência
@@ -247,12 +260,9 @@ export function TaskReminderAlert({ pipelineId }: TaskReminderAlertProps) {
 
   const handleDismiss = () => {
     setShowAlert(false);
-    // Mostrar novamente após 2 horas se ainda houver deals sem tarefas
-    setTimeout(() => {
-      if (dealsWithoutTasks.length > 0) {
-        setShowAlert(true);
-      }
-    }, 7200000); // 2 horas
+    // Persistir no localStorage por 2 horas (sobrevive a refresh/navegação)
+    const dismissUntil = Date.now() + (2 * 60 * 60 * 1000); // 2 horas em ms
+    localStorage.setItem('taskReminderDismissedUntil', dismissUntil.toString());
   };
 
   const formatHoursWithoutTask = (hours: number | undefined) => {
