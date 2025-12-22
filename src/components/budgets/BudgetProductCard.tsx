@@ -6,9 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, ChevronUp, Plus, Trash2, Copy, Edit2, Check, X } from "lucide-react";
+import { ChevronDown, ChevronUp, Plus, Trash2, Copy, Edit2, Check, X, Package } from "lucide-react";
 import { toast } from "sonner";
-import { BudgetProductLineEditor } from "./BudgetProductLineEditor";
+import { BudgetProductLineEditor, BudgetProductLinesTableHeader } from "./BudgetProductLineEditor";
 import { AddProductLineDialog } from "./AddProductLineDialog";
 
 interface BudgetProduct {
@@ -38,6 +38,22 @@ export function BudgetProductCard({ product, markupPercent, onRefresh }: BudgetP
   const [editAmbiente, setEditAmbiente] = useState(product.ambiente || "");
   const [addLineOpen, setAddLineOpen] = useState(false);
   const queryClient = useQueryClient();
+
+  // Fetch global costs for the line editor
+  const { data: globalCosts = [] } = useQuery({
+    queryKey: ['budget-global-costs'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('budget_global_costs')
+        .select('*')
+        .eq('active', true)
+        .order('category')
+        .order('name');
+
+      if (error) throw error;
+      return data;
+    }
+  });
 
   const { data: lines = [], isLoading: linesLoading } = useQuery({
     queryKey: ['budget-product-lines', product.id],
@@ -76,13 +92,11 @@ export function BudgetProductCard({ product, markupPercent, onRefresh }: BudgetP
 
   const deleteProductMutation = useMutation({
     mutationFn: async () => {
-      // First delete all lines
       await supabase
         .from('budget_product_lines')
         .delete()
         .eq('product_id', product.id);
 
-      // Then delete the product
       const { error } = await supabase
         .from('budget_products')
         .delete()
@@ -103,7 +117,6 @@ export function BudgetProductCard({ product, markupPercent, onRefresh }: BudgetP
 
   const duplicateProductMutation = useMutation({
     mutationFn: async () => {
-      // Create new product
       const { data: newProduct, error: productError } = await supabase
         .from('budget_products')
         .insert({
@@ -122,13 +135,11 @@ export function BudgetProductCard({ product, markupPercent, onRefresh }: BudgetP
 
       if (productError) throw productError;
 
-      // Get lines from original product
       const { data: originalLines } = await supabase
         .from('budget_product_lines')
         .select('*')
         .eq('product_id', product.id);
 
-      // Copy lines to new product
       if (originalLines && originalLines.length > 0) {
         const newLines = originalLines.map(line => ({
           product_id: newProduct.id,
@@ -202,19 +213,26 @@ export function BudgetProductCard({ product, markupPercent, onRefresh }: BudgetP
     setIsEditing(false);
   };
 
-  const totalCost = product.total_cost || 0;
+  // Calculate totals from lines
+  const linesTotal = lines.reduce((sum, line) => sum + (line.quantity * line.unit_cost), 0);
+  const totalCost = isOpen && lines.length > 0 ? linesTotal : (product.total_cost || 0);
   const totalPrice = totalCost * (1 + markupPercent / 100);
 
   return (
     <>
-      <Card className="overflow-hidden">
+      <Card className="overflow-hidden border-l-4 border-l-primary/30 hover:border-l-primary/60 transition-colors">
         <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-          <div className="p-4 flex items-center gap-4">
+          {/* Product Header */}
+          <div className="p-4 flex items-center gap-4 bg-gradient-to-r from-background to-muted/20">
             <CollapsibleTrigger asChild>
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                 {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
               </Button>
             </CollapsibleTrigger>
+
+            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Package className="h-5 w-5 text-primary" />
+            </div>
 
             <div className="flex-1 min-w-0">
               {isEditing ? (
@@ -222,28 +240,28 @@ export function BudgetProductCard({ product, markupPercent, onRefresh }: BudgetP
                   <Input
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
-                    className="flex-1"
+                    className="flex-1 h-8"
                     placeholder="Nome do produto"
                   />
                   <Input
                     value={editAmbiente}
                     onChange={(e) => setEditAmbiente(e.target.value)}
-                    className="w-32"
+                    className="w-32 h-8"
                     placeholder="Ambiente"
                   />
-                  <Button size="sm" onClick={handleSaveEdit}>
+                  <Button size="sm" className="h-8" onClick={handleSaveEdit}>
                     <Check className="h-4 w-4" />
                   </Button>
-                  <Button size="sm" variant="ghost" onClick={handleCancelEdit}>
+                  <Button size="sm" variant="ghost" className="h-8" onClick={handleCancelEdit}>
                     <X className="h-4 w-4" />
                   </Button>
                 </div>
               ) : (
                 <div>
                   <div className="flex items-center gap-2">
-                    <h4 className="font-semibold">{product.name}</h4>
+                    <h4 className="font-semibold text-base">{product.name}</h4>
                     {product.ambiente && (
-                      <Badge variant="outline" className="text-xs">
+                      <Badge variant="secondary" className="text-xs">
                         {product.ambiente}
                       </Badge>
                     )}
@@ -255,27 +273,37 @@ export function BudgetProductCard({ product, markupPercent, onRefresh }: BudgetP
               )}
             </div>
 
-            <div className="text-right">
-              <p className="text-xs text-muted-foreground">Custo</p>
-              <p className="font-medium">R$ {totalCost.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+            {/* Summary values */}
+            <div className="flex items-center gap-6">
+              <div className="text-right">
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Custo</p>
+                <p className="font-semibold tabular-nums">
+                  R$ {totalCost.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </p>
+              </div>
+
+              <div className="text-right">
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+                  Preço (+{markupPercent}%)
+                </p>
+                <p className="font-bold text-lg text-primary tabular-nums">
+                  R$ {totalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </p>
+              </div>
             </div>
 
-            <div className="text-right">
-              <p className="text-xs text-muted-foreground">Preço</p>
-              <p className="font-semibold text-primary">R$ {totalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-            </div>
-
+            {/* Actions */}
             <div className="flex gap-1">
-              <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)}>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => setIsEditing(true)}>
                 <Edit2 className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="sm" onClick={() => duplicateProductMutation.mutate()}>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => duplicateProductMutation.mutate()}>
                 <Copy className="h-4 w-4" />
               </Button>
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="text-destructive hover:text-destructive"
+                className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
                 onClick={() => deleteProductMutation.mutate()}
               >
                 <Trash2 className="h-4 w-4" />
@@ -283,35 +311,60 @@ export function BudgetProductCard({ product, markupPercent, onRefresh }: BudgetP
             </div>
           </div>
 
+          {/* Lines Table */}
           <CollapsibleContent>
-            <div className="border-t px-4 py-3 space-y-2 bg-muted/20">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-medium text-muted-foreground">
+            <div className="border-t">
+              {/* Lines header */}
+              <div className="px-4 py-2 flex items-center justify-between bg-muted/30 border-b">
+                <span className="text-sm font-medium">
                   Linhas de Custo ({lines.length})
                 </span>
-                <Button size="sm" variant="outline" onClick={() => setAddLineOpen(true)}>
-                  <Plus className="h-4 w-4 mr-1" />
+                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setAddLineOpen(true)}>
+                  <Plus className="h-3 w-3 mr-1" />
                   Adicionar Linha
                 </Button>
               </div>
 
+              {/* Lines table */}
               {linesLoading ? (
-                <p className="text-sm text-muted-foreground text-center py-4">Carregando...</p>
+                <div className="p-8 text-center text-muted-foreground">
+                  Carregando linhas...
+                </div>
               ) : lines.length > 0 ? (
-                <div className="space-y-1">
-                  {lines.map(line => (
-                    <BudgetProductLineEditor
-                      key={line.id}
-                      line={line}
-                      onUpdate={(lineId, data) => updateLineMutation.mutate({ lineId, data })}
-                      onDelete={(lineId) => deleteLineMutation.mutate(lineId)}
-                    />
-                  ))}
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <BudgetProductLinesTableHeader />
+                    <tbody>
+                      {lines.map(line => (
+                        <BudgetProductLineEditor
+                          key={line.id}
+                          line={line}
+                          globalCosts={globalCosts}
+                          onUpdate={(lineId, data) => updateLineMutation.mutate({ lineId, data })}
+                          onDelete={(lineId) => deleteLineMutation.mutate(lineId)}
+                        />
+                      ))}
+                    </tbody>
+                    <tfoot className="bg-primary/5 border-t-2 border-primary/20">
+                      <tr>
+                        <td colSpan={5} className="py-3 px-3 text-right font-semibold text-sm">
+                          TOTAL DO PRODUTO:
+                        </td>
+                        <td className="py-3 px-3 text-right">
+                          <span className="font-bold text-lg text-primary">
+                            R$ {linesTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </span>
+                        </td>
+                        <td></td>
+                      </tr>
+                    </tfoot>
+                  </table>
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  Nenhuma linha de custo. Clique em "Adicionar Linha" para começar.
-                </p>
+                <div className="p-8 text-center text-muted-foreground">
+                  <p className="text-sm">Nenhuma linha de custo.</p>
+                  <p className="text-xs">Clique em "Adicionar Linha" para começar a compor o custo deste produto.</p>
+                </div>
               )}
             </div>
           </CollapsibleContent>
