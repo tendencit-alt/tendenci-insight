@@ -36,18 +36,10 @@ interface BudgetProductLineEditorProps {
 }
 
 const lineTypeLabels: Record<string, string> = {
-  corpo: "Corpo (MDF)",
-  porta: "Porta/Frente",
-  tamponamento: "Tamponamento",
-  prateleira: "Prateleira",
-  gaveta: "Gaveta",
-  fundo: "Fundo (MDF 6mm)",
-  fita_borda: "Fita de Borda",
-  corte: "Tempo de Corte",
-  fitagem: "Tempo de Fitagem",
-  ferragem: "Ferragem",
+  material: "Material",
+  maquina: "Máquina/Tempo",
   mao_obra: "Mão de Obra",
-  outro: "Outro"
+  ferragem: "Ferragem"
 };
 
 export function BudgetProductLineEditor({ line, globalCosts, onUpdate, onDelete }: BudgetProductLineEditorProps) {
