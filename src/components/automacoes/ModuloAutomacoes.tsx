@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { AutomacaoCard } from "./AutomacaoCard";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AutomacaoDetailDialog, AutomacaoDetail, AUTOMACOES_DETAILS } from "./AutomacaoDetailDialog";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle } from "lucide-react";
@@ -33,8 +35,55 @@ export function ModuloAutomacoes({
   onViewLogs,
   onTest
 }: ModuloAutomacoesProps) {
+  const [selectedAutomacao, setSelectedAutomacao] = useState<AutomacaoDetail | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+
   const ativas = automacoes.filter(a => a.ativo).length;
   const totalFalhas = automacoes.reduce((acc, a) => acc + (a.falhas || 0), 0);
+
+  const handleShowDetails = (automacao: Automacao) => {
+    const detalhes = AUTOMACOES_DETAILS[automacao.id];
+    
+    if (detalhes) {
+      setSelectedAutomacao({
+        id: automacao.id,
+        titulo: detalhes.titulo,
+        descricao: detalhes.descricao,
+        ativo: automacao.ativo,
+        oQueFaz: detalhes.oQueFaz,
+        comoFunciona: detalhes.comoFunciona,
+        quandoExecuta: detalhes.quandoExecuta,
+        triggerType: detalhes.triggerType,
+        endpoint: detalhes.endpoint,
+        dependencias: detalhes.dependencias,
+        dicas: detalhes.dicas,
+        sucessos: automacao.sucessos,
+        falhas: automacao.falhas,
+        ultimaExecucao: automacao.ultimaExecucao
+      });
+    } else {
+      // Fallback para automações sem detalhes pré-definidos
+      setSelectedAutomacao({
+        id: automacao.id,
+        titulo: automacao.nome,
+        descricao: automacao.descricao,
+        ativo: automacao.ativo,
+        oQueFaz: automacao.descricao,
+        comoFunciona: ['Automação configurada dinamicamente no sistema'],
+        quandoExecuta: automacao.triggerType === 'scheduled' ? 'Agendado' : 
+                       automacao.triggerType === 'webhook' ? 'Via webhook' :
+                       automacao.triggerType === 'event' ? 'Por evento' : 'Manual',
+        triggerType: automacao.triggerType || 'manual',
+        endpoint: automacao.endpoint,
+        dependencias: ['Configuração específica da automação'],
+        dicas: ['Verifique os logs para mais detalhes'],
+        sucessos: automacao.sucessos,
+        falhas: automacao.falhas,
+        ultimaExecucao: automacao.ultimaExecucao
+      });
+    }
+    setDialogOpen(true);
+  };
 
   if (loading) {
     return (
@@ -66,41 +115,50 @@ export function ModuloAutomacoes({
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold">{titulo}</h3>
-          <p className="text-sm text-muted-foreground">{descricao}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Badge variant="outline">
-            {ativas}/{automacoes.length} ativas
-          </Badge>
-          {totalFalhas > 0 && (
-            <Badge variant="destructive">
-              {totalFalhas} falha(s)
+    <>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-semibold">{titulo}</h3>
+            <p className="text-sm text-muted-foreground">{descricao}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline">
+              {ativas}/{automacoes.length} ativas
             </Badge>
-          )}
+            {totalFalhas > 0 && (
+              <Badge variant="destructive">
+                {totalFalhas} falha(s)
+              </Badge>
+            )}
+          </div>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          {automacoes.map((automacao) => (
+            <AutomacaoCard
+              key={automacao.id}
+              nome={automacao.nome}
+              descricao={automacao.descricao}
+              ativo={automacao.ativo}
+              ultimaExecucao={automacao.ultimaExecucao}
+              sucessos={automacao.sucessos}
+              falhas={automacao.falhas}
+              endpoint={automacao.endpoint}
+              triggerType={automacao.triggerType}
+              onViewLogs={onViewLogs ? () => onViewLogs(automacao.id) : undefined}
+              onTest={onTest ? () => onTest(automacao.id) : undefined}
+              onShowDetails={() => handleShowDetails(automacao)}
+            />
+          ))}
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        {automacoes.map((automacao) => (
-          <AutomacaoCard
-            key={automacao.id}
-            nome={automacao.nome}
-            descricao={automacao.descricao}
-            ativo={automacao.ativo}
-            ultimaExecucao={automacao.ultimaExecucao}
-            sucessos={automacao.sucessos}
-            falhas={automacao.falhas}
-            endpoint={automacao.endpoint}
-            triggerType={automacao.triggerType}
-            onViewLogs={onViewLogs ? () => onViewLogs(automacao.id) : undefined}
-            onTest={onTest ? () => onTest(automacao.id) : undefined}
-          />
-        ))}
-      </div>
-    </div>
+      <AutomacaoDetailDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        automacao={selectedAutomacao}
+      />
+    </>
   );
 }
