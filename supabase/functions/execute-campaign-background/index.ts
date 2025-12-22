@@ -270,11 +270,66 @@ async function processNextInQueue(supabase: any) {
   } catch (err) {
     console.error(`💥 [PROCESS] Exceção:`, err)
     
+    const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido'
+    
+    // 🔌 DETECTAR ERRO DE REDE - Pausar campanha ao invés de falhar tudo
+    const isNetworkError = errorMessage.includes('No route to host') || 
+                           errorMessage.includes('Connection refused') ||
+                           errorMessage.includes('ECONNREFUSED') ||
+                           errorMessage.includes('ETIMEDOUT') ||
+                           errorMessage.includes('network') ||
+                           errorMessage.includes('fetch failed')
+
+    if (isNetworkError) {
+      console.log('🔌 [NETWORK ERROR] Erro de rede detectado - PAUSANDO campanha')
+      
+      // Pausar dispatch ao invés de marcar como erro
+      await supabase
+        .from('tendenci_campaign_dispatches')
+        .update({
+          status: 'pausado',
+          erro_mensagem: `Campanha pausada: servidor WhatsApp inacessível (${errorMessage})`,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', nextInQueue.dispatch_id)
+      
+      // Atualizar status da campanha para pausado
+      await supabase
+        .from('tendenci_prospec_arq_campaigns')
+        .update({ status: 'pausado' })
+        .eq('id', nextInQueue.campanha_id)
+      
+      // Log do erro de rede
+      await supabase
+        .from('system_errors')
+        .insert({
+          category: 'campaign',
+          function_name: 'execute-campaign-background',
+          error_message: `Campanha pausada por erro de rede: ${errorMessage}`,
+          metadata: {
+            dispatch_id: nextInQueue.dispatch_id,
+            campanha_id: nextInQueue.campanha_id,
+            arquiteto_id: nextInQueue.arquiteto_id,
+            is_network_error: true
+          }
+        })
+      
+      return {
+        success: false,
+        processed: false,
+        has_more: false,
+        paused: true,
+        message: 'Campanha pausada: servidor WhatsApp inacessível',
+        error: errorMessage
+      }
+    }
+    
+    // Erro normal (não de rede) - comportamento original
     await supabase
       .from('tendenci_campaign_queue')
       .update({
         status: 'erro',
-        erro_mensagem: err instanceof Error ? err.message : 'Erro desconhecido',
+        erro_mensagem: errorMessage,
         tentativas: nextInQueue.tentativas + 1
       })
       .eq('id', nextInQueue.id)

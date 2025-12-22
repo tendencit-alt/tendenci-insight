@@ -1,5 +1,8 @@
 project_id = "emnwuzrysqoiwapzmnbv"
 
+[functions.check-evolution-health]
+verify_jwt = false
+
 [functions.create-lead-from-ai]
 verify_jwt = false
 
