@@ -7,7 +7,8 @@ import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { FileText, Image as ImageIcon, Download, Upload, X, Loader2, Edit } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { FileText, Image as ImageIcon, Download, Upload, X, Loader2, Edit, Calculator, Info, History } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
@@ -16,6 +17,7 @@ import { useWebhookSync } from "@/hooks/useWebhookSync";
 import { EditProjectDialog } from "./EditProjectDialog";
 import { ProjectNotes } from "./ProjectNotes";
 import { usePermissions } from "@/hooks/usePermissions";
+import { ProjectBudgetTab } from "@/components/budgets/ProjectBudgetTab";
 import { 
   validateFileType, 
   validateFileSize, 
@@ -316,219 +318,249 @@ export function ProjectDetailSheet({ project, open, onOpenChange, onSuccess }: P
           </div>
         </SheetHeader>
 
-        <div className="space-y-6 mt-6">
-          {/* Info Card */}
-          <Card className="p-6 space-y-4">
-            <h3 className="font-semibold text-lg">Informações Gerais</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <span className="text-sm text-muted-foreground">Projeto</span>
-                <p className="font-medium">{project.name || "Sem título"}</p>
-              </div>
-              <div>
-                <span className="text-sm text-muted-foreground">Cliente</span>
-                <p className="font-medium">{project.client?.name || "N/A"}</p>
-              </div>
-              <div>
-                <span className="text-sm text-muted-foreground">Arquiteto</span>
-                <p className="font-medium">{project.architect?.name || "Não atribuído"}</p>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-sm text-muted-foreground">Estágio</Label>
-                <div className="flex gap-2">
-                  <Select value={currentStage} onValueChange={setCurrentStage}>
-                    <SelectTrigger className="flex-1">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="recebido">Recebido</SelectItem>
-                      <SelectItem value="em_orcamento">Em Orçamento</SelectItem>
-                      <SelectItem value="orcado">Orçado</SelectItem>
-                      <SelectItem value="apresentado">Apresentado</SelectItem>
-                      <SelectItem value="em_negociacao">Em Negociação</SelectItem>
-                      <SelectItem value="aprovado">Aprovado</SelectItem>
-                      <SelectItem value="perdido">Perdido</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {stageChanged && (
-                    <Button 
-                      onClick={handleSaveStage} 
-                      disabled={savingStage}
-                      size="sm"
-                    >
-                      {savingStage ? "Salvando..." : "Salvar"}
-                    </Button>
-                  )}
+        <Tabs defaultValue="info" className="mt-6">
+          <TabsList className="w-full grid grid-cols-4">
+            <TabsTrigger value="info" className="flex items-center gap-1">
+              <Info className="h-4 w-4" />
+              Informações
+            </TabsTrigger>
+            <TabsTrigger value="budget" className="flex items-center gap-1">
+              <Calculator className="h-4 w-4" />
+              Orçamento
+            </TabsTrigger>
+            <TabsTrigger value="files" className="flex items-center gap-1">
+              <FileText className="h-4 w-4" />
+              Arquivos
+            </TabsTrigger>
+            <TabsTrigger value="history" className="flex items-center gap-1">
+              <History className="h-4 w-4" />
+              Histórico
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="info" className="space-y-6 mt-4">
+            {/* Info Card */}
+            <Card className="p-6 space-y-4">
+              <h3 className="font-semibold text-lg">Informações Gerais</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <span className="text-sm text-muted-foreground">Projeto</span>
+                  <p className="font-medium">{project.name || "Sem título"}</p>
+                </div>
+                <div>
+                  <span className="text-sm text-muted-foreground">Cliente</span>
+                  <p className="font-medium">{project.client?.name || "N/A"}</p>
+                </div>
+                <div>
+                  <span className="text-sm text-muted-foreground">Arquiteto</span>
+                  <p className="font-medium">{project.architect?.name || "Não atribuído"}</p>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm text-muted-foreground">Estágio</Label>
+                  <div className="flex gap-2">
+                    <Select value={currentStage} onValueChange={setCurrentStage}>
+                      <SelectTrigger className="flex-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="recebido">Recebido</SelectItem>
+                        <SelectItem value="em_orcamento">Em Orçamento</SelectItem>
+                        <SelectItem value="orcado">Orçado</SelectItem>
+                        <SelectItem value="apresentado">Apresentado</SelectItem>
+                        <SelectItem value="em_negociacao">Em Negociação</SelectItem>
+                        <SelectItem value="aprovado">Aprovado</SelectItem>
+                        <SelectItem value="perdido">Perdido</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {stageChanged && (
+                      <Button 
+                        onClick={handleSaveStage} 
+                        disabled={savingStage}
+                        size="sm"
+                      >
+                        {savingStage ? "Salvando..." : "Salvar"}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <span className="text-sm text-muted-foreground">Valor</span>
+                  <p className="font-medium">R$ {project.value?.toLocaleString('pt-BR') || "0"}</p>
+                </div>
+                <div>
+                  <span className="text-sm text-muted-foreground">Prazo</span>
+                  <p className="font-medium">
+                    {project.deadline ? new Date(project.deadline).toLocaleDateString('pt-BR') : "Sem prazo"}
+                  </p>
                 </div>
               </div>
-              <div>
-                <span className="text-sm text-muted-foreground">Valor</span>
-                <p className="font-medium">R$ {project.value?.toLocaleString('pt-BR') || "0"}</p>
-              </div>
-              <div>
-                <span className="text-sm text-muted-foreground">Prazo</span>
-                <p className="font-medium">
-                  {project.deadline ? new Date(project.deadline).toLocaleDateString('pt-BR') : "Sem prazo"}
-                </p>
-              </div>
-            </div>
-          </Card>
-
-          {/* Orçamentos */}
-          {quotes.length > 0 && (
-            <Card className="p-6 space-y-4">
-              <h3 className="font-semibold text-lg">Orçamentos Detalhados</h3>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Item</TableHead>
-                    <TableHead>Qtd</TableHead>
-                    <TableHead>Valor Unit.</TableHead>
-                    <TableHead>Total</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {quotes.map((quote) => (
-                    <TableRow key={quote.id}>
-                      <TableCell>{quote.item}</TableCell>
-                      <TableCell>{quote.quantity}</TableCell>
-                      <TableCell>R$ {quote.unit_price?.toLocaleString('pt-BR')}</TableCell>
-                      <TableCell className="font-semibold">R$ {quote.total?.toLocaleString('pt-BR')}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
             </Card>
-          )}
 
-          {/* Arquivos */}
-          <Card className="p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-lg flex items-center gap-2">
-                <FileText className="w-5 h-5" />
-                Arquivos do Projeto ({files.length})
-              </h3>
-              <Button
-                size="sm"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
-                className="gap-2"
-              >
-                {uploading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Enviando...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="w-4 h-4" />
-                    Adicionar
-                  </>
-                )}
-              </Button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept={ALLOWED_FILE_TYPES_ACCEPT}
-                onChange={handleFileUpload}
-                className="hidden"
-              />
-            </div>
+            {/* Orçamentos simples antigos */}
+            {quotes.length > 0 && (
+              <Card className="p-6 space-y-4">
+                <h3 className="font-semibold text-lg">Orçamentos Simples</h3>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Item</TableHead>
+                      <TableHead>Qtd</TableHead>
+                      <TableHead>Valor Unit.</TableHead>
+                      <TableHead>Total</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {quotes.map((quote) => (
+                      <TableRow key={quote.id}>
+                        <TableCell>{quote.item}</TableCell>
+                        <TableCell>{quote.quantity}</TableCell>
+                        <TableCell>R$ {quote.unit_price?.toLocaleString('pt-BR')}</TableCell>
+                        <TableCell className="font-semibold">R$ {quote.total?.toLocaleString('pt-BR')}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </Card>
+            )}
 
-            {files.length > 0 ? (
-              <div className="grid grid-cols-1 gap-3">
-                {files.map((file) => (
-                  <div
-                    key={file.id}
-                    className="p-3 border rounded-lg hover:bg-muted/50 transition-colors group"
-                  >
-                    <div className="flex items-center gap-3">
-                      {file.file_type.includes('pdf') ? (
-                        <FileText className="w-8 h-8 text-red-500" />
-                      ) : (
-                        <ImageIcon className="w-8 h-8 text-blue-500" />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate">{file.file_name}</p>
+            {/* Observações do Projeto */}
+            <ProjectNotes projectId={project.id} />
+          </TabsContent>
+
+          <TabsContent value="budget" className="mt-4">
+            <ProjectBudgetTab projectId={project.id} />
+          </TabsContent>
+
+          <TabsContent value="files" className="space-y-4 mt-4">
+
+            {/* Arquivos */}
+            <Card className="p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-lg flex items-center gap-2">
+                  <FileText className="w-5 h-5" />
+                  Arquivos do Projeto ({files.length})
+                </h3>
+                <Button
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="gap-2"
+                >
+                  {uploading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Enviando...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4" />
+                      Adicionar
+                    </>
+                  )}
+                </Button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept={ALLOWED_FILE_TYPES_ACCEPT}
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+              </div>
+
+              {files.length > 0 ? (
+                <div className="grid grid-cols-1 gap-3">
+                  {files.map((file) => (
+                    <div
+                      key={file.id}
+                      className="p-3 border rounded-lg hover:bg-muted/50 transition-colors group"
+                    >
+                      <div className="flex items-center gap-3">
+                        {file.file_type.includes('pdf') ? (
+                          <FileText className="w-8 h-8 text-red-500" />
+                        ) : (
+                          <ImageIcon className="w-8 h-8 text-blue-500" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm truncate">{file.file_name}</p>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <span>{formatFileSize(file.file_size)}</span>
+                            {file.uploaded_at && (
+                              <>
+                                <span>•</span>
+                                <span>{new Date(file.uploaded_at).toLocaleDateString('pt-BR')}</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => downloadFile(file)}
+                          >
+                            <Download className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => deleteFile(file)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  Nenhum arquivo anexado
+                </p>
+              )}
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="history" className="mt-4">
+            {/* Histórico */}
+            <Card className="p-6 space-y-4">
+              <h3 className="font-semibold text-lg">Histórico do Projeto</h3>
+              {history.length > 0 ? (
+                <div className="space-y-4">
+                  {history.map((event: any) => (
+                    <div key={event.id} className="flex gap-3">
+                      <div className="w-2 h-2 bg-primary rounded-full mt-2" />
+                      <div className="flex-1">
+                        <p className="font-medium text-sm">{event.description}</p>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <span>{formatFileSize(file.file_size)}</span>
-                          {file.uploaded_at && (
+                          <span>{formatDistanceToNow(new Date(event.created_at), { addSuffix: true, locale: ptBR })}</span>
+                          {event.user_name && (
                             <>
                               <span>•</span>
-                              <span>{new Date(file.uploaded_at).toLocaleDateString('pt-BR')}</span>
+                              <span className="font-medium">{event.user_name}</span>
                             </>
                           )}
                         </div>
                       </div>
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => downloadFile(file)}
-                        >
-                          <Download className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => deleteFile(file)}
-                          className="text-destructive hover:text-destructive"
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                Nenhum arquivo anexado
-              </p>
-            )}
-          </Card>
-
-          {/* Observações do Projeto */}
-          <ProjectNotes projectId={project.id} />
-
-          {/* Histórico */}
-          <Card className="p-6 space-y-4">
-            <h3 className="font-semibold text-lg">Histórico do Projeto</h3>
-            {history.length > 0 ? (
-              <div className="space-y-4">
-                {history.map((event: any) => (
-                  <div key={event.id} className="flex gap-3">
-                    <div className="w-2 h-2 bg-primary rounded-full mt-2" />
-                    <div className="flex-1">
-                      <p className="font-medium text-sm">{event.description}</p>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span>{formatDistanceToNow(new Date(event.created_at), { addSuffix: true, locale: ptBR })}</span>
-                        {event.user_name && (
-                          <>
-                            <span>•</span>
-                            <span className="font-medium">{event.user_name}</span>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="flex gap-3">
-                <div className="w-2 h-2 bg-primary rounded-full mt-2" />
-                <div className="flex-1">
-                  <p className="font-medium text-sm">Projeto criado no sistema</p>
-                  <p className="text-xs text-muted-foreground">
-                    {project.created_at 
-                      ? formatDistanceToNow(new Date(project.created_at), { addSuffix: true, locale: ptBR })
-                      : 'Data não disponível'}
-                  </p>
+                  ))}
                 </div>
-              </div>
-            )}
-          </Card>
-        </div>
+              ) : (
+                <div className="flex gap-3">
+                  <div className="w-2 h-2 bg-primary rounded-full mt-2" />
+                  <div className="flex-1">
+                    <p className="font-medium text-sm">Projeto criado no sistema</p>
+                    <p className="text-xs text-muted-foreground">
+                      {project.created_at 
+                        ? formatDistanceToNow(new Date(project.created_at), { addSuffix: true, locale: ptBR })
+                        : 'Data não disponível'}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </Card>
+          </TabsContent>
+        </Tabs>
       </SheetContent>
 
       {/* Edit Dialog */}
