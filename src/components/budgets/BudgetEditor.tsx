@@ -7,10 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Settings, Trash2, Loader2, ArrowLeft } from "lucide-react";
+import { Plus, Settings, Trash2, Loader2, ArrowLeft, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { BudgetProductCard } from "./BudgetProductCard";
 import { BudgetSummary } from "./BudgetSummary";
+import { BudgetTechnicalSummary } from "./BudgetTechnicalSummary";
 import { AddProductDialog } from "./AddProductDialog";
 
 interface Budget {
@@ -39,6 +40,22 @@ export function BudgetEditor({ budget, onBack, onRefresh }: BudgetEditorProps) {
   const [discount, setDiscount] = useState(budget.discount_percent || 0);
   const queryClient = useQueryClient();
 
+  // Fetch global costs
+  const { data: globalCosts = [] } = useQuery({
+    queryKey: ['budget-global-costs'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('budget_global_costs')
+        .select('*')
+        .eq('active', true)
+        .order('category')
+        .order('name');
+
+      if (error) throw error;
+      return data;
+    }
+  });
+
   const { data: products = [], isLoading: productsLoading, refetch: refetchProducts } = useQuery({
     queryKey: ['budget-products', budget.id],
     queryFn: async () => {
@@ -51,6 +68,24 @@ export function BudgetEditor({ budget, onBack, onRefresh }: BudgetEditorProps) {
       if (error) throw error;
       return data;
     }
+  });
+
+  // Fetch all lines for all products to show technical summary
+  const { data: allLines = [] } = useQuery({
+    queryKey: ['budget-all-lines', budget.id],
+    queryFn: async () => {
+      if (products.length === 0) return [];
+      
+      const productIds = products.map(p => p.id);
+      const { data, error } = await supabase
+        .from('budget_product_lines')
+        .select('*')
+        .in('product_id', productIds);
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: products.length > 0
   });
 
   const updateBudgetMutation = useMutation({
@@ -107,6 +142,55 @@ export function BudgetEditor({ budget, onBack, onRefresh }: BudgetEditorProps) {
     }
   });
 
+  // Recalculate all lines that reference global costs
+  const recalculateMutation = useMutation({
+    mutationFn: async () => {
+      // Get all lines that have cost references
+      const linesWithRefs = allLines.filter(line => line.cost_ref_id);
+      
+      for (const line of linesWithRefs) {
+        const globalCost = globalCosts.find(g => g.id === line.cost_ref_id);
+        if (globalCost && globalCost.value !== line.unit_cost) {
+          await supabase
+            .from('budget_product_lines')
+            .update({ 
+              unit_cost: globalCost.value,
+              subtotal: line.quantity * globalCost.value
+            })
+            .eq('id', line.id);
+        }
+      }
+
+      // Update product totals
+      for (const product of products) {
+        const productLines = allLines.filter(l => l.product_id === product.id);
+        const totalCost = productLines.reduce((sum, l) => {
+          const globalCost = globalCosts.find(g => g.id === l.cost_ref_id);
+          const unitCost = globalCost ? globalCost.value : l.unit_cost;
+          return sum + (l.quantity * unitCost);
+        }, 0);
+
+        await supabase
+          .from('budget_products')
+          .update({ 
+            total_cost: totalCost,
+            unit_cost: totalCost 
+          })
+          .eq('id', product.id);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['budget-products', budget.id] });
+      queryClient.invalidateQueries({ queryKey: ['budget-all-lines', budget.id] });
+      queryClient.invalidateQueries({ queryKey: ['project-budgets'] });
+      toast.success("Orçamento recalculado com custos atualizados!");
+      onRefresh();
+    },
+    onError: () => {
+      toast.error("Erro ao recalcular orçamento");
+    }
+  });
+
   const handleSaveSettings = () => {
     updateBudgetMutation.mutate({
       markup_percent: markup,
@@ -114,7 +198,13 @@ export function BudgetEditor({ budget, onBack, onRefresh }: BudgetEditorProps) {
     });
   };
 
-  const totalCost = products.reduce((sum, p) => sum + (p.total_cost || 0), 0);
+  // Calculate total from lines
+  const totalCost = allLines.reduce((sum, line) => {
+    const globalCost = globalCosts.find(g => g.id === line.cost_ref_id);
+    const unitCost = globalCost ? globalCost.value : line.unit_cost;
+    return sum + (line.quantity * unitCost);
+  }, 0);
+  
   const markupPercent = budget.markup_percent || 50;
   const discountPercent = budget.discount_percent || 0;
 
@@ -143,10 +233,23 @@ export function BudgetEditor({ budget, onBack, onRefresh }: BudgetEditorProps) {
           <Button 
             variant="outline" 
             size="sm"
+            onClick={() => recalculateMutation.mutate()}
+            disabled={recalculateMutation.isPending}
+          >
+            {recalculateMutation.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin mr-1" />
+            ) : (
+              <RefreshCw className="h-4 w-4 mr-1" />
+            )}
+            Recalcular
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
             onClick={() => setEditingSettings(!editingSettings)}
           >
             <Settings className="h-4 w-4 mr-1" />
-            Configurações
+            Markup/Desconto
           </Button>
           <Button
             variant="outline"
@@ -165,8 +268,11 @@ export function BudgetEditor({ budget, onBack, onRefresh }: BudgetEditorProps) {
 
       {/* Settings Panel */}
       {editingSettings && (
-        <Card className="p-4">
-          <h4 className="font-medium mb-4">Configurações do Orçamento</h4>
+        <Card className="p-4 border-primary/30 bg-primary/5">
+          <h4 className="font-medium mb-2">Configurações Comerciais</h4>
+          <p className="text-sm text-muted-foreground mb-4">
+            Aplique markup e desconto sobre o custo técnico total
+          </p>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Markup (%)</Label>
@@ -209,6 +315,15 @@ export function BudgetEditor({ budget, onBack, onRefresh }: BudgetEditorProps) {
         </Card>
       )}
 
+      {/* Technical Summary - HIGHLIGHTED */}
+      {allLines.length > 0 && (
+        <BudgetTechnicalSummary 
+          products={products}
+          allLines={allLines}
+          globalCosts={globalCosts}
+        />
+      )}
+
       <Separator />
 
       {/* Products Section */}
@@ -231,8 +346,10 @@ export function BudgetEditor({ budget, onBack, onRefresh }: BudgetEditorProps) {
               key={product.id}
               product={product}
               markupPercent={markupPercent}
+              globalCosts={globalCosts}
               onRefresh={() => {
                 refetchProducts();
+                queryClient.invalidateQueries({ queryKey: ['budget-all-lines', budget.id] });
                 onRefresh();
               }}
             />
@@ -241,7 +358,7 @@ export function BudgetEditor({ budget, onBack, onRefresh }: BudgetEditorProps) {
       ) : (
         <Card className="p-8 text-center">
           <p className="text-muted-foreground mb-4">
-            Nenhum produto adicionado. Adicione produtos para compor o orçamento.
+            Nenhum produto adicionado. Adicione produtos para compor o custo técnico.
           </p>
           <Button onClick={() => setAddProductOpen(true)}>
             <Plus className="h-4 w-4 mr-1" />
@@ -250,7 +367,7 @@ export function BudgetEditor({ budget, onBack, onRefresh }: BudgetEditorProps) {
         </Card>
       )}
 
-      {/* Summary */}
+      {/* Commercial Summary */}
       {products.length > 0 && (
         <BudgetSummary
           totalCost={totalCost}
@@ -266,6 +383,7 @@ export function BudgetEditor({ budget, onBack, onRefresh }: BudgetEditorProps) {
         onOpenChange={setAddProductOpen}
         onSuccess={() => {
           refetchProducts();
+          queryClient.invalidateQueries({ queryKey: ['budget-all-lines', budget.id] });
           onRefresh();
         }}
       />

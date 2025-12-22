@@ -1,25 +1,21 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Sparkles } from "lucide-react";
 
 interface CreateBudgetDialogProps {
   projectId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSuccess: () => void;
+  onSuccess: (budgetId: string) => void;
 }
 
 export function CreateBudgetDialog({ projectId, open, onOpenChange, onSuccess }: CreateBudgetDialogProps) {
   const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [markup, setMarkup] = useState(50);
-  const [discount, setDiscount] = useState(0);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -34,25 +30,26 @@ export function CreateBudgetDialog({ projectId, open, onOpenChange, onSuccess }:
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('project_budgets')
         .insert({
           project_id: projectId,
           name: name.trim(),
-          description: description.trim() || null,
-          markup_percent: markup,
-          discount_percent: discount,
+          markup_percent: 50,
+          discount_percent: 0,
           total_cost: 0,
           total_price: 0,
           created_by: user?.id
-        });
+        })
+        .select()
+        .single();
 
       if (error) throw error;
 
-      toast.success("Orçamento criado com sucesso!");
-      onSuccess();
+      toast.success("Orçamento criado! Adicione produtos para compor o custo técnico.");
       onOpenChange(false);
       resetForm();
+      onSuccess(data.id);
     } catch (error: any) {
       toast.error(error.message || "Erro ao criar orçamento");
     } finally {
@@ -62,16 +59,20 @@ export function CreateBudgetDialog({ projectId, open, onOpenChange, onSuccess }:
 
   const resetForm = () => {
     setName("");
-    setDescription("");
-    setMarkup(50);
-    setDiscount(0);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Novo Orçamento Técnico</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-primary" />
+            Novo Orçamento Técnico
+          </DialogTitle>
+          <DialogDescription>
+            Crie um orçamento baseado em insumos reais. O custo é calculado automaticamente 
+            a partir das linhas técnicas de cada produto.
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -79,53 +80,23 @@ export function CreateBudgetDialog({ projectId, open, onOpenChange, onSuccess }:
             <Label htmlFor="name">Nome do Orçamento *</Label>
             <Input
               id="name"
-              placeholder="Ex: Cozinha Planejada"
+              placeholder="Ex: Cozinha Planejada, Closet Master..."
               value={name}
               onChange={(e) => setName(e.target.value)}
+              autoFocus
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="description">Descrição</Label>
-            <Textarea
-              id="description"
-              placeholder="Descrição detalhada do orçamento..."
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={3}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="markup">Markup (%)</Label>
-              <Input
-                id="markup"
-                type="number"
-                min={0}
-                max={200}
-                value={markup}
-                onChange={(e) => setMarkup(parseFloat(e.target.value) || 0)}
-              />
-              <p className="text-xs text-muted-foreground">
-                Margem sobre o custo
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="discount">Desconto (%)</Label>
-              <Input
-                id="discount"
-                type="number"
-                min={0}
-                max={100}
-                value={discount}
-                onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)}
-              />
-              <p className="text-xs text-muted-foreground">
-                Desconto sobre o preço
-              </p>
-            </div>
+          <div className="rounded-lg border border-dashed border-muted-foreground/30 p-4 bg-muted/30">
+            <p className="text-sm text-muted-foreground">
+              <strong>Próximos passos:</strong>
+            </p>
+            <ol className="text-sm text-muted-foreground mt-2 list-decimal list-inside space-y-1">
+              <li>Adicione produtos (caixotes, portas, prateleiras...)</li>
+              <li>Cada produto terá linhas técnicas com custo unitário</li>
+              <li>O sistema soma tudo automaticamente</li>
+              <li>Configure markup e desconto no final</li>
+            </ol>
           </div>
 
           <DialogFooter>
@@ -139,7 +110,7 @@ export function CreateBudgetDialog({ projectId, open, onOpenChange, onSuccess }:
                   Criando...
                 </>
               ) : (
-                "Criar Orçamento"
+                "Criar e Continuar"
               )}
             </Button>
           </DialogFooter>

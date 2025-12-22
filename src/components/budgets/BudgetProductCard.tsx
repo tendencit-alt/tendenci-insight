@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, ChevronUp, Plus, Trash2, Copy, Edit2, Check, X, Package } from "lucide-react";
+import { ChevronDown, ChevronUp, Plus, Trash2, Copy, Edit2, Check, X, Package, Link2 } from "lucide-react";
 import { toast } from "sonner";
 import { BudgetProductLineEditor, BudgetProductLinesTableHeader } from "./BudgetProductLineEditor";
 import { AddProductLineDialog } from "./AddProductLineDialog";
@@ -25,35 +25,29 @@ interface BudgetProduct {
   position: number | null;
 }
 
+interface GlobalCost {
+  id: string;
+  code: string;
+  name: string;
+  value: number;
+  unit: string;
+  category: string;
+}
+
 interface BudgetProductCardProps {
   product: BudgetProduct;
   markupPercent: number;
+  globalCosts: GlobalCost[];
   onRefresh: () => void;
 }
 
-export function BudgetProductCard({ product, markupPercent, onRefresh }: BudgetProductCardProps) {
+export function BudgetProductCard({ product, markupPercent, globalCosts, onRefresh }: BudgetProductCardProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(product.name);
   const [editAmbiente, setEditAmbiente] = useState(product.ambiente || "");
   const [addLineOpen, setAddLineOpen] = useState(false);
   const queryClient = useQueryClient();
-
-  // Fetch global costs for the line editor
-  const { data: globalCosts = [] } = useQuery({
-    queryKey: ['budget-global-costs'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('budget_global_costs')
-        .select('*')
-        .eq('active', true)
-        .order('category')
-        .order('name');
-
-      if (error) throw error;
-      return data;
-    }
-  });
 
   const { data: lines = [], isLoading: linesLoading } = useQuery({
     queryKey: ['budget-product-lines', product.id],
@@ -213,10 +207,19 @@ export function BudgetProductCard({ product, markupPercent, onRefresh }: BudgetP
     setIsEditing(false);
   };
 
-  // Calculate totals from lines
-  const linesTotal = lines.reduce((sum, line) => sum + (line.quantity * line.unit_cost), 0);
+  // Calculate totals from lines using current global costs
+  const linesTotal = lines.reduce((sum, line) => {
+    const globalCost = globalCosts.find(g => g.id === line.cost_ref_id);
+    const unitCost = globalCost ? globalCost.value : line.unit_cost;
+    return sum + (line.quantity * unitCost);
+  }, 0);
+  
   const totalCost = isOpen && lines.length > 0 ? linesTotal : (product.total_cost || 0);
   const totalPrice = totalCost * (1 + markupPercent / 100);
+
+  // Count linked vs manual lines
+  const linkedLinesCount = lines.filter(l => l.cost_ref_id).length;
+  const manualLinesCount = lines.length - linkedLinesCount;
 
   return (
     <>
@@ -265,6 +268,17 @@ export function BudgetProductCard({ product, markupPercent, onRefresh }: BudgetP
                         {product.ambiente}
                       </Badge>
                     )}
+                    {linkedLinesCount > 0 && (
+                      <Badge variant="outline" className="text-xs gap-1 bg-green-500/10 text-green-600 border-green-500/30">
+                        <Link2 className="h-3 w-3" />
+                        {linkedLinesCount} vinculadas
+                      </Badge>
+                    )}
+                    {manualLinesCount > 0 && (
+                      <Badge variant="outline" className="text-xs bg-yellow-500/10 text-yellow-600 border-yellow-500/30">
+                        {manualLinesCount} manuais
+                      </Badge>
+                    )}
                   </div>
                   {product.description && (
                     <p className="text-sm text-muted-foreground truncate">{product.description}</p>
@@ -276,7 +290,7 @@ export function BudgetProductCard({ product, markupPercent, onRefresh }: BudgetP
             {/* Summary values */}
             <div className="flex items-center gap-6">
               <div className="text-right">
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Custo</p>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Custo Técnico</p>
                 <p className="font-semibold tabular-nums">
                   R$ {totalCost.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </p>
@@ -317,7 +331,7 @@ export function BudgetProductCard({ product, markupPercent, onRefresh }: BudgetP
               {/* Lines header */}
               <div className="px-4 py-2 flex items-center justify-between bg-muted/30 border-b">
                 <span className="text-sm font-medium">
-                  Linhas de Custo ({lines.length})
+                  Linhas Técnicas ({lines.length})
                 </span>
                 <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setAddLineOpen(true)}>
                   <Plus className="h-3 w-3 mr-1" />
@@ -335,20 +349,24 @@ export function BudgetProductCard({ product, markupPercent, onRefresh }: BudgetP
                   <table className="w-full">
                     <BudgetProductLinesTableHeader />
                     <tbody>
-                      {lines.map(line => (
-                        <BudgetProductLineEditor
-                          key={line.id}
-                          line={line}
-                          globalCosts={globalCosts}
-                          onUpdate={(lineId, data) => updateLineMutation.mutate({ lineId, data })}
-                          onDelete={(lineId) => deleteLineMutation.mutate(lineId)}
-                        />
-                      ))}
+                      {lines.map(line => {
+                        const globalCost = globalCosts.find(g => g.id === line.cost_ref_id);
+                        return (
+                          <BudgetProductLineEditor
+                            key={line.id}
+                            line={line}
+                            globalCosts={globalCosts}
+                            linkedCost={globalCost}
+                            onUpdate={(lineId, data) => updateLineMutation.mutate({ lineId, data })}
+                            onDelete={(lineId) => deleteLineMutation.mutate(lineId)}
+                          />
+                        );
+                      })}
                     </tbody>
                     <tfoot className="bg-primary/5 border-t-2 border-primary/20">
                       <tr>
                         <td colSpan={5} className="py-3 px-3 text-right font-semibold text-sm">
-                          TOTAL DO PRODUTO:
+                          CUSTO TÉCNICO DO PRODUTO:
                         </td>
                         <td className="py-3 px-3 text-right">
                           <span className="font-bold text-lg text-primary">
@@ -362,8 +380,8 @@ export function BudgetProductCard({ product, markupPercent, onRefresh }: BudgetP
                 </div>
               ) : (
                 <div className="p-8 text-center text-muted-foreground">
-                  <p className="text-sm">Nenhuma linha de custo.</p>
-                  <p className="text-xs">Clique em "Adicionar Linha" para começar a compor o custo deste produto.</p>
+                  <p className="text-sm">Nenhuma linha técnica.</p>
+                  <p className="text-xs">Clique em "Adicionar Linha" para compor o custo técnico deste produto.</p>
                 </div>
               )}
             </div>
