@@ -302,13 +302,6 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                             </TableCell>
                           </>
                         )}
-                        <TableCell>
-                          <Input type="number" className="h-8 w-16" value={item.quantidade} onChange={(e) => handleUpdateItem(item.id, { quantidade: Number(e.target.value) })} min={1} />
-                        </TableCell>
-                        <TableCell>
-                          <Input type="number" className="h-8" value={item.valor_unitario} onChange={(e) => handleUpdateItem(item.id, { valor_unitario: Number(e.target.value) })} min={0} step={0.01} />
-                        </TableCell>
-                        <TableCell className="font-medium text-right">{formatCurrency(item.valor_total)}</TableCell>
                         {requireCentroCusto && (
                           <TableCell>
                             <Select
@@ -327,6 +320,13 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                             </Select>
                           </TableCell>
                         )}
+                        <TableCell>
+                          <Input type="number" className="h-8 w-16" value={item.quantidade} onChange={(e) => handleUpdateItem(item.id, { quantidade: Number(e.target.value) })} min={1} />
+                        </TableCell>
+                        <TableCell>
+                          <Input type="number" className="h-8" value={item.valor_unitario} onChange={(e) => handleUpdateItem(item.id, { valor_unitario: Number(e.target.value) })} min={0} step={0.01} />
+                        </TableCell>
+                        <TableCell className="font-medium text-right">{formatCurrency(item.valor_total)}</TableCell>
                         <TableCell>
                           <Button size="icon" variant="ghost" onClick={() => setEditingId(null)}>
                             <Check className="h-4 w-4 text-green-600" />
@@ -357,9 +357,6 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                             <TableCell className="text-xs">{item.unidade || 'UN'}</TableCell>
                           </>
                         )}
-                        <TableCell className="text-center">{item.quantidade}</TableCell>
-                        <TableCell className="text-right">{formatCurrency(item.valor_unitario)}</TableCell>
-                        <TableCell className="font-medium text-right">{formatCurrency(item.valor_total)}</TableCell>
                         {requireCentroCusto && (
                           <TableCell>
                             <span className="text-xs">
@@ -367,6 +364,9 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                             </span>
                           </TableCell>
                         )}
+                        <TableCell className="text-center">{item.quantidade}</TableCell>
+                        <TableCell className="text-right">{formatCurrency(item.valor_unitario)}</TableCell>
+                        <TableCell className="font-medium text-right">{formatCurrency(item.valor_total)}</TableCell>
                         {!readOnly && (
                           <TableCell>
                             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
