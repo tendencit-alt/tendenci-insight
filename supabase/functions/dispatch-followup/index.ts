@@ -9,19 +9,24 @@ import {
 } from '../_shared/timezone.ts'
 
 /**
- * dispatch-followup
+ * dispatch-followup v3.0
  * 
- * CORREÇÕES v2.0:
- * - Logs detalhados para debug de horário
+ * MODO HÍBRIDO:
+ * 1. Tenta envio DIRETO via send-followup-whatsapp (preferencial)
+ * 2. Fallback para n8n webhook se configurado
+ * 
+ * CORREÇÕES:
+ * - Envio direto elimina dependência do n8n
  * - Proteção robusta contra execução fora do horário
- * - Limite de falhas consecutivas por deal (máx 3 em 24h)
- * - Nunca cria logs de "failed" fora do horário comercial
+ * - Limite de falhas consecutivas (máx 3 em 24h)
+ * - Verificação de Evolution API antes de enviar
  */
 
 interface DispatchRequest {
   webhook_url?: string
   ignore_time_filter?: boolean
-  mode?: 'atendimento' | 'followup'
+  mode?: 'direct' | 'n8n' | 'hybrid'
+  limit?: number
 }
 
 interface LeadForFollowup {
@@ -72,7 +77,7 @@ function formatBrazilianPhone(phone: string | null): string | null {
   }
   
   if (cleaned.length < 12 || cleaned.length > 13) {
-    console.warn(`⚠️ Telefone inválido após formatação: ${phone} -> ${cleaned}`)
+    console.warn(`⚠️ Telefone inválido: ${phone} -> ${cleaned}`)
     return null
   }
   
@@ -82,20 +87,62 @@ function formatBrazilianPhone(phone: string | null): string | null {
 // Máximo de falhas consecutivas permitidas em 24h
 const MAX_CONSECUTIVE_FAILURES = 3
 
+// Envio direto via edge function interna
+async function sendDirectFollowup(
+  supabaseUrl: string,
+  supabaseKey: string,
+  lead: LeadForFollowup
+): Promise<{ success: boolean; error?: string; messageId?: string }> {
+  try {
+    const response = await fetch(`${supabaseUrl}/functions/v1/send-followup-whatsapp`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${supabaseKey}`
+      },
+      body: JSON.stringify({
+        deal_id: lead.deal_id,
+        client_name: lead.client_name,
+        client_phone: lead.client_phone,
+        conversation_history: lead.conversation_history,
+        followup_count: lead.followup_count,
+        max_followups: lead.max_followups,
+        followup_number: lead.followup_number,
+        owner_id: lead.owner_id,
+        owner_name: lead.owner_name,
+        product_type: lead.product_type,
+        categoria: lead.categoria
+      })
+    })
+    
+    const data = await response.json()
+    
+    if (data.success) {
+      return { success: true, messageId: data.messageId }
+    } else {
+      return { success: false, error: data.error || 'Erro desconhecido' }
+    }
+  } catch (error: any) {
+    return { success: false, error: error.message }
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
 
+  const startTime = Date.now()
+
   try {
     console.log('═══════════════════════════════════════════════════════════')
-    console.log('🚀 [DISPATCH-FOLLOWUP] Iniciando execução...')
+    console.log('🚀 [DISPATCH-FOLLOWUP v3.0] Iniciando...')
     console.log('═══════════════════════════════════════════════════════════')
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    
+    const supabase = createClient(supabaseUrl, supabaseKey)
 
     // Parsear body
     let body: DispatchRequest = {}
@@ -109,7 +156,10 @@ Deno.serve(async (req) => {
     }
 
     const ignoreTimeFilter = body.ignore_time_filter || false
-    console.log(`📋 Parâmetros: ignore_time_filter=${ignoreTimeFilter}`)
+    const sendMode = body.mode || 'direct' // Padrão: envio direto
+    const sendLimit = body.limit || 10 // Máximo por execução
+    
+    console.log(`📋 Modo: ${sendMode}, Limite: ${sendLimit}, IgnoreTime: ${ignoreTimeFilter}`)
 
     // ═══════════════════════════════════════════════════════════
     // VERIFICAÇÃO DE HORÁRIO COMERCIAL (CRÍTICA)
@@ -117,72 +167,27 @@ Deno.serve(async (req) => {
     const isBusinessHours = isBusinessHoursBrasil()
     const hour = getCurrentHourBrasil()
     const day = getCurrentDayOfWeekBrasil()
+    const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab']
     
-    console.log(`🕐 Resumo: Hora=${hour}h, Dia=${day}, BusinessHours=${isBusinessHours}`)
+    console.log(`🕐 Hora Brasil: ${hour}h, Dia: ${dayNames[day]}, Horário Comercial: ${isBusinessHours}`)
     
-    // PROTEÇÃO ROBUSTA: Mesmo com ignore_time_filter, não processa fora do horário
-    // A menos que seja um teste explícito (header especial)
+    // PROTEÇÃO: Apenas teste explícito pode ignorar horário
     const isTestMode = req.headers.get('X-Test-Mode') === 'true'
     
     if (!isBusinessHours && !isTestMode) {
       console.log('⏰ BLOQUEADO: Fora do horário comercial (9h-18h, Seg-Sex)')
-      console.log('📌 Nenhum log será criado, nenhum follow-up será disparado')
       console.log('═══════════════════════════════════════════════════════════')
       return new Response(
         JSON.stringify({ 
           success: true, 
-          message: 'Fora do horário comercial (9h-18h, Seg-Sex Brasil)',
+          message: 'Fora do horário comercial',
           dispatched: 0,
           eligible: 0,
           skipped_reason: 'outside_business_hours',
-          debug: {
-            hour,
-            day,
-            dayName: ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'][day],
-            isBusinessHours,
-            ignoreTimeFilter,
-            isTestMode
-          }
+          debug: { hour, day: dayNames[day], isBusinessHours, isTestMode }
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
-    }
-
-    // Determinar webhook a usar (prioridade: IA de atendimento)
-    const atendimentoWebhook = Deno.env.get('N8N_ATENDIMENTO_WEBHOOK_URL')
-    const followupWebhook = body.webhook_url || Deno.env.get('N8N_FOLLOWUP_WEBHOOK_URL')
-    
-    const webhookUrl = atendimentoWebhook || followupWebhook
-    const isAtendimentoMode = !!atendimentoWebhook
-
-    if (!webhookUrl) {
-      console.error('❌ Nenhum webhook configurado')
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: 'Nenhum webhook configurado. Configure N8N_ATENDIMENTO_WEBHOOK_URL ou N8N_FOLLOWUP_WEBHOOK_URL.' 
-        }),
-        { 
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      )
-    }
-
-    console.log(`📡 Modo: ${isAtendimentoMode ? 'IA de Atendimento' : 'Workflow Separado'}`)
-    console.log(`📡 Webhook: ${webhookUrl.substring(0, 50)}...`)
-
-    // Buscar etapa "Follow Up (I.A)"
-    const { data: followupStage, error: stageError } = await supabase
-      .from('crm_stages')
-      .select('id, name')
-      .ilike('name', '%Follow Up%')
-      .maybeSingle()
-
-    if (stageError) {
-      console.warn('⚠️ Erro ao buscar etapa Follow Up:', stageError.message)
-    } else if (followupStage) {
-      console.log(`✅ Etapa Follow Up encontrada: ${followupStage.name} (${followupStage.id})`)
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -196,7 +201,6 @@ Deno.serve(async (req) => {
       .eq('status', 'failed')
       .gte('created_at', twentyFourHoursAgo)
     
-    // Contar falhas por deal
     const failureCountByDeal: Record<string, number> = {}
     for (const failure of (recentFailures || [])) {
       if (failure.deal_id) {
@@ -204,7 +208,6 @@ Deno.serve(async (req) => {
       }
     }
     
-    // Deals a excluir (3+ falhas em 24h)
     const dealsToExclude = new Set(
       Object.entries(failureCountByDeal)
         .filter(([_, count]) => count >= MAX_CONSECUTIVE_FAILURES)
@@ -212,10 +215,18 @@ Deno.serve(async (req) => {
     )
     
     if (dealsToExclude.size > 0) {
-      console.log(`⛔ ${dealsToExclude.size} deals excluídos por ${MAX_CONSECUTIVE_FAILURES}+ falhas em 24h:`)
-      for (const dealId of dealsToExclude) {
-        console.log(`   - ${dealId}: ${failureCountByDeal[dealId]} falhas`)
-      }
+      console.log(`⛔ ${dealsToExclude.size} deals bloqueados por ${MAX_CONSECUTIVE_FAILURES}+ falhas`)
+    }
+
+    // Buscar etapa "Follow Up"
+    const { data: followupStage } = await supabase
+      .from('crm_stages')
+      .select('id, name')
+      .ilike('name', '%Follow Up%')
+      .maybeSingle()
+
+    if (followupStage) {
+      console.log(`✅ Etapa Follow Up: ${followupStage.name}`)
     }
 
     // Buscar deals elegíveis
@@ -236,17 +247,13 @@ Deno.serve(async (req) => {
         leads(
           id,
           client_id,
-          clients(
-            name,
-            phone
-          )
+          clients(name, phone)
         ),
         profiles:owner_id(full_name)
       `)
       .eq('followup_enabled', true)
       .eq('status', 'aberto')
 
-    // Filtrar por etapa se encontrada
     if (followupStage?.id) {
       query = query.eq('stage_id', followupStage.id)
     }
@@ -258,40 +265,26 @@ Deno.serve(async (req) => {
       throw leadsError
     }
 
-    console.log(`📊 Total de leads com follow-up ativo: ${leads?.length || 0}`)
+    console.log(`📊 Deals com follow-up ativo: ${leads?.length || 0}`)
 
     // Cutoff de 48h
     const cutoffTimestamp = get48HoursCutoffUTC()
-    console.log(`⏰ Cutoff 48h UTC: ${new Date(cutoffTimestamp).toISOString()}`)
     
     const eligibleLeads = (leads || [])
       .filter(deal => {
-        // Verificar se está na lista de excluídos por falhas
-        if (dealsToExclude.has(deal.id)) {
-          console.log(`⛔ Deal ${deal.id}: Excluído por falhas consecutivas`)
-          return false
-        }
+        if (dealsToExclude.has(deal.id)) return false
         
         const currentCount = deal.followup_count || 0
-        const maxFollowups = deal.max_followups || 999
+        const maxFollowups = deal.max_followups || 5
         
-        if (currentCount >= maxFollowups) {
-          console.log(`⛔ Deal ${deal.id}: Atingiu limite (${currentCount}/${maxFollowups})`)
-          return false
-        }
+        if (currentCount >= maxFollowups) return false
         
         const mostRecentDate = getMostRecentDate(deal.last_interaction, deal.last_followup_at)
+        if (!mostRecentDate) return true
         
-        if (!mostRecentDate) {
-          console.log(`✅ Deal ${deal.id}: Nunca teve interação, elegível`)
-          return true
-        }
-        
-        const isEligible = mostRecentDate.getTime() < cutoffTimestamp
-        console.log(`📅 Deal ${deal.id}: Última atividade ${mostRecentDate.toISOString()}, elegível: ${isEligible}`)
-        
-        return isEligible
+        return mostRecentDate.getTime() < cutoffTimestamp
       })
+      .slice(0, sendLimit) // Limitar quantidade
       .map(deal => {
         const leadsData = deal.leads
         const clientData = Array.isArray(leadsData) 
@@ -309,7 +302,7 @@ Deno.serve(async (req) => {
           client_phone: phone,
           conversation_history: deal.conversation_history,
           followup_count: deal.followup_count || 0,
-          max_followups: deal.max_followups || 999,
+          max_followups: deal.max_followups || 5,
           followup_number: followupNumber,
           owner_id: deal.owner_id,
           owner_name: (deal.profiles as any)?.full_name || null,
@@ -321,14 +314,14 @@ Deno.serve(async (req) => {
       })
       .filter((lead): lead is LeadForFollowup => lead.client_phone !== null)
 
-    console.log(`✅ Leads elegíveis para follow-up: ${eligibleLeads.length}`)
+    console.log(`✅ Elegíveis para envio: ${eligibleLeads.length}`)
 
     if (eligibleLeads.length === 0) {
       console.log('═══════════════════════════════════════════════════════════')
       return new Response(
         JSON.stringify({ 
           success: true, 
-          message: 'Nenhum lead elegível para follow-up',
+          message: 'Nenhum lead elegível',
           dispatched: 0,
           eligible: 0,
           excluded_by_failures: dealsToExclude.size
@@ -337,101 +330,111 @@ Deno.serve(async (req) => {
       )
     }
 
-    const callbackUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/update-followup-history`
+    // ═══════════════════════════════════════════════════════════
+    // ENVIO - MODO HÍBRIDO
+    // ═══════════════════════════════════════════════════════════
+    const results = { success: 0, failed: 0, errors: [] as string[] }
+    
+    const n8nWebhook = body.webhook_url || Deno.env.get('N8N_FOLLOWUP_WEBHOOK_URL')
+    const useDirectMode = sendMode === 'direct' || sendMode === 'hybrid'
+    const useN8nFallback = sendMode === 'n8n' || (sendMode === 'hybrid' && n8nWebhook)
 
-    const results = {
-      success: 0,
-      failed: 0,
-      errors: [] as string[]
-    }
-
-    // Enviar para webhook
     for (const lead of eligibleLeads) {
-      try {
-        console.log(`📤 Enviando ${lead.client_name} (follow-up #${lead.followup_number})...`)
+      console.log(`📤 Enviando: ${lead.client_name} (FU #${lead.followup_number})...`)
+      
+      let sent = false
+      let errorMsg = ''
+      
+      // Tentar envio direto primeiro (se habilitado)
+      if (useDirectMode && !sent) {
+        const directResult = await sendDirectFollowup(supabaseUrl, supabaseKey, lead)
         
-        const payload = {
-          ...lead,
-          callback_url: callbackUrl
-        }
-
-        const response = await fetch(webhookUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        })
-
-        if (response.ok) {
-          console.log(`✅ ${lead.client_name} enviado com sucesso`)
+        if (directResult.success) {
+          console.log(`✅ [DIRETO] ${lead.client_name} enviado`)
           results.success++
+          sent = true
+        } else {
+          console.warn(`⚠️ [DIRETO] Falha: ${directResult.error}`)
+          errorMsg = directResult.error || 'Erro no envio direto'
+        }
+      }
+      
+      // Fallback para n8n (se configurado e ainda não enviou)
+      if (useN8nFallback && !sent && n8nWebhook) {
+        try {
+          const response = await fetch(n8nWebhook, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              ...lead,
+              callback_url: `${supabaseUrl}/functions/v1/update-followup-history`
+            })
+          })
           
-          // Registrar log como pending
-          await supabase
-            .from('followup_logs')
-            .insert({
+          if (response.ok) {
+            console.log(`✅ [N8N] ${lead.client_name} enviado`)
+            results.success++
+            sent = true
+            
+            // Registrar como pending (n8n vai confirmar depois)
+            await supabase.from('followup_logs').insert({
               deal_id: lead.deal_id,
               followup_number: lead.followup_number,
               status: 'pending',
-              message_sent: `Enviado para ${isAtendimentoMode ? 'IA de atendimento' : 'n8n'}`
+              message_sent: 'Enviado para n8n'
             })
-        } else {
-          const errorText = await response.text()
-          console.error(`❌ Erro ao enviar ${lead.client_name}:`, errorText)
-          results.failed++
-          results.errors.push(`${lead.client_name}: ${errorText}`)
-          
-          await supabase
-            .from('followup_logs')
-            .insert({
-              deal_id: lead.deal_id,
-              followup_number: lead.followup_number,
-              status: 'failed',
-              error_message: errorText.substring(0, 500)
-            })
+          } else {
+            const errText = await response.text()
+            errorMsg = `N8N: ${errText}`
+          }
+        } catch (e: any) {
+          errorMsg = `N8N: ${e.message}`
         }
-
-      } catch (error: any) {
-        console.error(`❌ Erro ao processar ${lead.client_name}:`, error.message)
-        results.failed++
-        results.errors.push(`${lead.client_name}: ${error.message}`)
-        
-        await supabase
-          .from('followup_logs')
-          .insert({
-            deal_id: lead.deal_id,
-            followup_number: lead.followup_number,
-            status: 'failed',
-            error_message: error.message?.substring(0, 500) || 'Erro desconhecido'
-          })
       }
+      
+      // Se falhou em todos os métodos
+      if (!sent) {
+        console.error(`❌ ${lead.client_name}: ${errorMsg}`)
+        results.failed++
+        results.errors.push(`${lead.client_name}: ${errorMsg}`)
+        
+        await supabase.from('followup_logs').insert({
+          deal_id: lead.deal_id,
+          followup_number: lead.followup_number,
+          status: 'failed',
+          error_message: errorMsg.substring(0, 500)
+        })
+      }
+      
+      // Delay entre envios para não sobrecarregar
+      await new Promise(r => setTimeout(r, 2000))
     }
 
-    console.log(`🏁 Disparo concluído: ${results.success} sucesso, ${results.failed} falhas`)
+    const elapsed = Date.now() - startTime
+    console.log(`🏁 Concluído: ${results.success} ✅, ${results.failed} ❌ (${elapsed}ms)`)
     console.log('═══════════════════════════════════════════════════════════')
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: `Follow-ups disparados: ${results.success} sucesso, ${results.failed} falhas`,
-        mode: isAtendimentoMode ? 'atendimento' : 'followup',
+        message: `${results.success} enviados, ${results.failed} falhas`,
+        mode: sendMode,
         dispatched: results.success,
         failed: results.failed,
         eligible: eligibleLeads.length,
         excluded_by_failures: dealsToExclude.size,
-        errors: results.errors
+        elapsed_ms: elapsed,
+        errors: results.errors.slice(0, 5) // Limitar erros retornados
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
   } catch (error: any) {
-    console.error('💥 Erro no dispatch-followup:', error)
+    console.error('💥 Erro:', error)
     console.log('═══════════════════════════════════════════════════════════')
     return new Response(
       JSON.stringify({ error: error.message }),
-      { 
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
 })
