@@ -11,7 +11,7 @@ import { format } from "date-fns";
 import { ArchitectProspeccaoSheet } from "./ArchitectProspeccaoSheet";
 import { CreateProjectDialog } from "@/components/projects/CreateProjectDialog";
 import { CreateArchitectDialog } from "@/components/architects/CreateArchitectDialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
 interface ProspeccaoKanbanProps {
   filters?: any;
@@ -415,6 +415,7 @@ export function ProspeccaoKanban({ filters = {}, showNaoContactados = false }: P
             </div>
           ))}
         </div>
+        <ScrollBar orientation="horizontal" />
       </ScrollArea>
 
       {selectedArchitectId && (
