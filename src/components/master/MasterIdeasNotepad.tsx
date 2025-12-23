@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Lightbulb, Plus, Pencil, Trash2, Check, X, CheckCircle2, XCircle, Clock, Sparkles, Image, Mic, Loader2, Save, ArrowUpDown, Eye, AlertTriangle, ArrowUp, Minus, ArrowDown } from 'lucide-react';
+import { Lightbulb, Plus, Pencil, Trash2, Check, X, CheckCircle2, XCircle, Clock, Sparkles, Image, Mic, Loader2, Save, ArrowUpDown, Eye, AlertTriangle, ArrowUp, Minus, ArrowDown, Star, Trophy, BarChart3 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -30,6 +30,7 @@ type IdeaStatus = 'em_pauta' | 'aprovada' | 'recusada' | 'implementada';
 type IdeaCategoria = 'marketing' | 'producao' | 'vendas' | 'financeiro' | 'geral';
 type SortOption = 'date' | 'rating' | 'comments' | 'priority';
 type PrioridadeFilter = 'all' | '1' | '2' | '3' | '4' | '5';
+type RatingFilter = 'all' | '4+' | '3+' | '2+' | 'unrated';
 
 interface Attachment {
   id?: string;
@@ -114,6 +115,7 @@ export function MasterIdeasNotepad() {
   const [pendingAttachments, setPendingAttachments] = useState<Attachment[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [filterPrioridade, setFilterPrioridade] = useState<PrioridadeFilter>('all');
+  const [filterRating, setFilterRating] = useState<RatingFilter>('all');
   
   // Detail sheet states
   const [selectedIdea, setSelectedIdea] = useState<Idea | null>(null);
@@ -530,12 +532,44 @@ export function MasterIdeasNotepad() {
     setAttachments(prev => prev.filter((_, i) => i !== index));
   };
 
+  // Métricas de avaliação para ideias aprovadas
+  const approvedIdeas = ideas.filter(i => i.status === 'aprovada');
+  const approvedWithRatings = approvedIdeas.filter(i => (i.totalRatings || 0) > 0);
+  const approvedAverageRating = approvedWithRatings.length > 0
+    ? approvedWithRatings.reduce((sum, i) => sum + (i.averageRating || 0), 0) / approvedWithRatings.length
+    : 0;
+  const topRatedCount = approvedIdeas.filter(i => (i.averageRating || 0) >= 4).length;
+  const unratedCount = approvedIdeas.filter(i => (i.totalRatings || 0) === 0).length;
+
   const sortedAndFilteredIdeas = ideas
     .filter(idea => {
       const matchesStatus = idea.status === activeTab;
       const matchesCategoria = filterCategoria === 'all' || idea.categoria === filterCategoria;
       const matchesPrioridade = filterPrioridade === 'all' || idea.prioridade === Number(filterPrioridade);
-      return matchesStatus && matchesCategoria && matchesPrioridade;
+      
+      // Filtro por rating
+      let matchesRating = true;
+      if (filterRating !== 'all') {
+        const rating = idea.averageRating || 0;
+        const hasRatings = (idea.totalRatings || 0) > 0;
+        
+        switch (filterRating) {
+          case '4+':
+            matchesRating = rating >= 4;
+            break;
+          case '3+':
+            matchesRating = rating >= 3;
+            break;
+          case '2+':
+            matchesRating = rating >= 2;
+            break;
+          case 'unrated':
+            matchesRating = !hasRatings;
+            break;
+        }
+      }
+      
+      return matchesStatus && matchesCategoria && matchesPrioridade && matchesRating;
     })
     .sort((a, b) => {
       switch (sortBy) {
@@ -598,6 +632,35 @@ export function MasterIdeasNotepad() {
             </TabsList>
           </div>
 
+          {/* KPIs de Avaliação - apenas na aba Aprovadas */}
+          {activeTab === 'aprovada' && approvedIdeas.length > 0 && (
+            <div className="px-4 pt-3">
+              <div className="grid grid-cols-3 gap-2 p-3 bg-gradient-to-r from-amber-500/10 via-yellow-500/10 to-orange-500/10 rounded-lg border border-amber-500/20">
+                <div className="text-center">
+                  <div className="flex items-center justify-center gap-1 text-amber-600">
+                    <Star className="h-4 w-4 fill-amber-500" />
+                    <span className="text-lg font-bold">{approvedAverageRating.toFixed(1)}</span>
+                  </div>
+                  <span className="text-xs text-muted-foreground">Média Geral</span>
+                </div>
+                <div className="text-center border-x border-amber-500/20">
+                  <div className="flex items-center justify-center gap-1 text-emerald-600">
+                    <Trophy className="h-4 w-4" />
+                    <span className="text-lg font-bold">{topRatedCount}</span>
+                  </div>
+                  <span className="text-xs text-muted-foreground">Top Rated (≥4)</span>
+                </div>
+                <div className="text-center">
+                  <div className="flex items-center justify-center gap-1 text-blue-600">
+                    <BarChart3 className="h-4 w-4" />
+                    <span className="text-lg font-bold">{approvedIdeas.length}</span>
+                  </div>
+                  <span className="text-xs text-muted-foreground">Total</span>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="px-4 py-3 flex flex-wrap gap-2">
             <Select value={filterCategoria} onValueChange={(v) => setFilterCategoria(v as IdeaCategoria | 'all')}>
               <SelectTrigger className="w-[130px]">
@@ -619,6 +682,19 @@ export function MasterIdeasNotepad() {
                 {Object.entries(PRIORIDADE_CONFIG).map(([key, config]) => (
                   <SelectItem key={key} value={key}>{config.label}</SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+            <Select value={filterRating} onValueChange={(v) => setFilterRating(v as RatingFilter)}>
+              <SelectTrigger className="w-[140px]">
+                <Star className="h-3 w-3 mr-2" />
+                <SelectValue placeholder="Avaliação" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas Notas</SelectItem>
+                <SelectItem value="4+">⭐⭐⭐⭐+ (≥4)</SelectItem>
+                <SelectItem value="3+">⭐⭐⭐+ (≥3)</SelectItem>
+                <SelectItem value="2+">⭐⭐+ (≥2)</SelectItem>
+                <SelectItem value="unrated">Sem Avaliação</SelectItem>
               </SelectContent>
             </Select>
             <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
@@ -721,8 +797,10 @@ export function MasterIdeasNotepad() {
                   Nenhuma ideia {STATUS_CONFIG[activeTab].label.toLowerCase()}
                 </div>
               ) : (
-                sortedAndFilteredIdeas.map((idea) => (
-                  <Card key={idea.id} className="relative">
+                sortedAndFilteredIdeas.map((idea) => {
+                  const isTopRated = (idea.averageRating || 0) >= 4 && (idea.totalRatings || 0) > 0;
+                  return (
+                  <Card key={idea.id} className={`relative ${isTopRated ? 'ring-2 ring-amber-400/50 bg-gradient-to-r from-amber-500/5 to-transparent' : ''}`}>
                     <CardContent className="p-4">
                       {editingId === idea.id ? (
                         /* Edit Mode */
@@ -799,6 +877,12 @@ export function MasterIdeasNotepad() {
                             <Badge className={`${CATEGORIA_CONFIG[idea.categoria].color} text-xs`}>
                               {CATEGORIA_CONFIG[idea.categoria].label}
                             </Badge>
+                            {isTopRated && (
+                              <Badge className="bg-gradient-to-r from-amber-500 to-yellow-500 text-white text-xs gap-1">
+                                <Trophy className="h-3 w-3" />
+                                Top Rated
+                              </Badge>
+                            )}
                             <h4 className="font-semibold flex-1">{idea.title}</h4>
                           </div>
 
@@ -950,7 +1034,8 @@ export function MasterIdeasNotepad() {
                       )}
                     </CardContent>
                   </Card>
-                ))
+                  );
+                })
               )}
             </div>
           </ScrollArea>
