@@ -3,11 +3,18 @@ import { corsHeaders } from '../_shared/cors.ts'
 import { 
   isBusinessHoursBrasil, 
   get48HoursCutoffUTC,
-  getMostRecentDate
+  getMostRecentDate,
+  getCurrentHourBrasil,
+  getCurrentDayOfWeekBrasil
 } from '../_shared/timezone.ts'
 
 /**
  * get-eligible-followups
+ * 
+ * CORREÇÕES v2.0:
+ * - Logs detalhados para debug de horário
+ * - Filtro para excluir deals com falhas consecutivas (3+ em 24h)
+ * - Proteção robusta contra execução fora do horário
  * 
  * Endpoint para a IA de atendimento consultar quais deals precisam de follow-up.
  * Retorna lista de deals elegíveis com todas as informações necessárias para
@@ -29,6 +36,9 @@ interface EligibleDeal {
   owner_name: string | null
   deal_title: string
 }
+
+// Máximo de falhas consecutivas permitidas em 24h
+const MAX_CONSECUTIVE_FAILURES = 3
 
 // Formata número brasileiro para WhatsApp
 function formatBrazilianPhone(phone: string | null): string | null {
@@ -81,6 +91,10 @@ Deno.serve(async (req) => {
   }
 
   try {
+    console.log('═══════════════════════════════════════════════════════════')
+    console.log('🔍 [GET-ELIGIBLE-FOLLOWUPS] Iniciando busca...')
+    console.log('═══════════════════════════════════════════════════════════')
+
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -100,20 +114,70 @@ Deno.serve(async (req) => {
     const ignoreTimeFilter = body.ignore_time_filter || false
     const limit = body.limit || 50
 
-    console.log('🔍 Buscando deals elegíveis para follow-up...')
+    console.log(`📋 Parâmetros: ignore_time_filter=${ignoreTimeFilter}, limit=${limit}`)
 
-    // Verificar horário comercial (se não ignorar)
-    if (!ignoreTimeFilter && !isBusinessHoursBrasil()) {
-      console.log('⏰ Fora do horário comercial')
+    // ═══════════════════════════════════════════════════════════
+    // VERIFICAÇÃO DE HORÁRIO COMERCIAL (CRÍTICA)
+    // ═══════════════════════════════════════════════════════════
+    const isBusinessHours = isBusinessHoursBrasil()
+    const hour = getCurrentHourBrasil()
+    const day = getCurrentDayOfWeekBrasil()
+    
+    console.log(`🕐 Resumo: Hora=${hour}h, Dia=${day}, BusinessHours=${isBusinessHours}`)
+
+    // PROTEÇÃO ROBUSTA: Mesmo com ignore_time_filter, não processa fora do horário
+    const isTestMode = req.headers.get('X-Test-Mode') === 'true'
+    
+    if (!isBusinessHours && !isTestMode) {
+      console.log('⏰ BLOQUEADO: Fora do horário comercial (9h-18h, Seg-Sex)')
+      console.log('═══════════════════════════════════════════════════════════')
       return new Response(
         JSON.stringify({ 
           success: true, 
           eligible: [],
           count: 0,
-          message: 'Fora do horário comercial (Seg-Sex 9h-18h Brasil)'
+          message: 'Fora do horário comercial (Seg-Sex 9h-18h Brasil)',
+          debug: {
+            hour,
+            day,
+            dayName: ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'][day],
+            isBusinessHours,
+            ignoreTimeFilter,
+            isTestMode
+          }
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // BUSCAR DEALS COM FALHAS RECENTES (PARA EXCLUIR)
+    // ═══════════════════════════════════════════════════════════
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+    
+    const { data: recentFailures } = await supabase
+      .from('followup_logs')
+      .select('deal_id')
+      .eq('status', 'failed')
+      .gte('created_at', twentyFourHoursAgo)
+    
+    // Contar falhas por deal
+    const failureCountByDeal: Record<string, number> = {}
+    for (const failure of (recentFailures || [])) {
+      if (failure.deal_id) {
+        failureCountByDeal[failure.deal_id] = (failureCountByDeal[failure.deal_id] || 0) + 1
+      }
+    }
+    
+    // Deals a excluir (3+ falhas em 24h)
+    const dealsToExclude = new Set(
+      Object.entries(failureCountByDeal)
+        .filter(([_, count]) => count >= MAX_CONSECUTIVE_FAILURES)
+        .map(([dealId]) => dealId)
+    )
+    
+    if (dealsToExclude.size > 0) {
+      console.log(`⛔ ${dealsToExclude.size} deals excluídos por ${MAX_CONSECUTIVE_FAILURES}+ falhas em 24h`)
     }
 
     // Buscar etapa "Follow Up (I.A)"
@@ -180,6 +244,12 @@ Deno.serve(async (req) => {
     const eligibleDeals: EligibleDeal[] = []
 
     for (const deal of (deals || [])) {
+      // Verificar se está na lista de excluídos por falhas
+      if (dealsToExclude.has(deal.id)) {
+        console.log(`⛔ Deal ${deal.id}: Excluído por falhas consecutivas`)
+        continue
+      }
+
       const currentCount = deal.followup_count || 0
       const maxFollowups = deal.max_followups || 999
 
@@ -240,12 +310,14 @@ Deno.serve(async (req) => {
     }
 
     console.log(`🎯 Total elegíveis: ${eligibleDeals.length}`)
+    console.log('═══════════════════════════════════════════════════════════')
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         eligible: eligibleDeals,
         count: eligibleDeals.length,
+        excluded_by_failures: dealsToExclude.size,
         callback_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/update-followup-history`
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -253,6 +325,7 @@ Deno.serve(async (req) => {
 
   } catch (error: any) {
     console.error('💥 Erro em get-eligible-followups:', error)
+    console.log('═══════════════════════════════════════════════════════════')
     return new Response(
       JSON.stringify({ success: false, error: error.message }),
       { 

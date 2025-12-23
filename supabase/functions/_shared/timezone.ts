@@ -2,6 +2,7 @@
 // IMPORTANTE: Todas as datas são tratadas em UTC para consistência
 
 // Offset de Brasília em milissegundos (-3 horas)
+// UTC - 3 = Brasília, então para obter horário Brasil a partir de UTC: UTC + (-3h) = UTC - 3h
 const BRASIL_OFFSET_MS = -3 * 60 * 60 * 1000
 
 /**
@@ -21,10 +22,18 @@ export function getNowBrasil(): Date {
 
 /**
  * Retorna a hora atual em Brasília (0-23)
+ * Com logs de debug para rastreamento
  */
 export function getCurrentHourBrasil(): number {
-  const brasilTime = new Date(Date.now() + BRASIL_OFFSET_MS)
-  return brasilTime.getUTCHours()
+  const nowUTC = Date.now()
+  const brasilTime = new Date(nowUTC + BRASIL_OFFSET_MS)
+  const hour = brasilTime.getUTCHours()
+  
+  console.log(`[TIMEZONE DEBUG] UTC now: ${new Date(nowUTC).toISOString()}`)
+  console.log(`[TIMEZONE DEBUG] Brasil time (adjusted): ${brasilTime.toISOString()}`)
+  console.log(`[TIMEZONE DEBUG] Hour extracted: ${hour}`)
+  
+  return hour
 }
 
 /**
@@ -32,16 +41,37 @@ export function getCurrentHourBrasil(): number {
  */
 export function getCurrentDayOfWeekBrasil(): number {
   const brasilTime = new Date(Date.now() + BRASIL_OFFSET_MS)
-  return brasilTime.getUTCDay()
+  const day = brasilTime.getUTCDay()
+  
+  console.log(`[TIMEZONE DEBUG] Day of week Brasil: ${day} (0=Dom, 1=Seg, ..., 6=Sab)`)
+  
+  return day
 }
 
 /**
  * Verifica se está dentro do horário comercial Brasil (9h-18h, seg-sex)
+ * Com logs detalhados para debug
  */
 export function isBusinessHoursBrasil(): boolean {
-  const hour = getCurrentHourBrasil()
-  const day = getCurrentDayOfWeekBrasil()
-  return hour >= 9 && hour < 18 && day >= 1 && day <= 5
+  const nowUTC = Date.now()
+  const brasilTime = new Date(nowUTC + BRASIL_OFFSET_MS)
+  const hour = brasilTime.getUTCHours()
+  const day = brasilTime.getUTCDay()
+  
+  const isBusinessDay = day >= 1 && day <= 5 // Segunda (1) a Sexta (5)
+  const isBusinessHour = hour >= 9 && hour < 18 // 9h às 17:59
+  const isBusinessTime = isBusinessDay && isBusinessHour
+  
+  console.log(`[BUSINESS HOURS CHECK]`)
+  console.log(`  UTC: ${new Date(nowUTC).toISOString()}`)
+  console.log(`  Brasil: ${brasilTime.toISOString()} (representação)`)
+  console.log(`  Hora Brasil: ${hour}h`)
+  console.log(`  Dia Brasil: ${day} (${['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'][day]})`)
+  console.log(`  É dia útil (1-5): ${isBusinessDay}`)
+  console.log(`  É hora comercial (9-18): ${isBusinessHour}`)
+  console.log(`  RESULTADO: ${isBusinessTime ? '✅ DENTRO do horário comercial' : '❌ FORA do horário comercial'}`)
+  
+  return isBusinessTime
 }
 
 /**

@@ -11,21 +11,17 @@ import {
 /**
  * dispatch-followup
  * 
- * Este endpoint agora funciona de forma unificada com a IA de atendimento:
- * 
- * MODO 1 (Padrão): Notifica a IA de atendimento sobre deals elegíveis
- *   - Chama o webhook da IA de atendimento (N8N_ATENDIMENTO_WEBHOOK_URL)
- *   - A IA é responsável por gerar mensagens e enviar via WhatsApp
- * 
- * MODO 2 (Fallback): Envia para workflow separado de follow-up
- *   - Se N8N_ATENDIMENTO_WEBHOOK_URL não estiver configurado
- *   - Usa N8N_FOLLOWUP_WEBHOOK_URL como fallback
+ * CORREÇÕES v2.0:
+ * - Logs detalhados para debug de horário
+ * - Proteção robusta contra execução fora do horário
+ * - Limite de falhas consecutivas por deal (máx 3 em 24h)
+ * - Nunca cria logs de "failed" fora do horário comercial
  */
 
 interface DispatchRequest {
   webhook_url?: string
   ignore_time_filter?: boolean
-  mode?: 'atendimento' | 'followup' // Modo de operação
+  mode?: 'atendimento' | 'followup'
 }
 
 interface LeadForFollowup {
@@ -42,7 +38,7 @@ interface LeadForFollowup {
   product_type: string | null
   categoria: string | null
   last_interaction: string | null
-  type: 'followup_trigger' // Identificador para a IA de atendimento
+  type: 'followup_trigger'
 }
 
 // Formata número brasileiro para WhatsApp
@@ -83,12 +79,19 @@ function formatBrazilianPhone(phone: string | null): string | null {
   return cleaned
 }
 
+// Máximo de falhas consecutivas permitidas em 24h
+const MAX_CONSECUTIVE_FAILURES = 3
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
 
   try {
+    console.log('═══════════════════════════════════════════════════════════')
+    console.log('🚀 [DISPATCH-FOLLOWUP] Iniciando execução...')
+    console.log('═══════════════════════════════════════════════════════════')
+
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -106,6 +109,44 @@ Deno.serve(async (req) => {
     }
 
     const ignoreTimeFilter = body.ignore_time_filter || false
+    console.log(`📋 Parâmetros: ignore_time_filter=${ignoreTimeFilter}`)
+
+    // ═══════════════════════════════════════════════════════════
+    // VERIFICAÇÃO DE HORÁRIO COMERCIAL (CRÍTICA)
+    // ═══════════════════════════════════════════════════════════
+    const isBusinessHours = isBusinessHoursBrasil()
+    const hour = getCurrentHourBrasil()
+    const day = getCurrentDayOfWeekBrasil()
+    
+    console.log(`🕐 Resumo: Hora=${hour}h, Dia=${day}, BusinessHours=${isBusinessHours}`)
+    
+    // PROTEÇÃO ROBUSTA: Mesmo com ignore_time_filter, não processa fora do horário
+    // A menos que seja um teste explícito (header especial)
+    const isTestMode = req.headers.get('X-Test-Mode') === 'true'
+    
+    if (!isBusinessHours && !isTestMode) {
+      console.log('⏰ BLOQUEADO: Fora do horário comercial (9h-18h, Seg-Sex)')
+      console.log('📌 Nenhum log será criado, nenhum follow-up será disparado')
+      console.log('═══════════════════════════════════════════════════════════')
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: 'Fora do horário comercial (9h-18h, Seg-Sex Brasil)',
+          dispatched: 0,
+          eligible: 0,
+          skipped_reason: 'outside_business_hours',
+          debug: {
+            hour,
+            day,
+            dayName: ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'][day],
+            isBusinessHours,
+            ignoreTimeFilter,
+            isTestMode
+          }
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
 
     // Determinar webhook a usar (prioridade: IA de atendimento)
     const atendimentoWebhook = Deno.env.get('N8N_ATENDIMENTO_WEBHOOK_URL')
@@ -128,29 +169,8 @@ Deno.serve(async (req) => {
       )
     }
 
-    console.log('🚀 Iniciando disparo de follow-ups...')
     console.log(`📡 Modo: ${isAtendimentoMode ? 'IA de Atendimento' : 'Workflow Separado'}`)
     console.log(`📡 Webhook: ${webhookUrl.substring(0, 50)}...`)
-
-    // Verificar horário comercial
-    const hour = getCurrentHourBrasil()
-    const day = getCurrentDayOfWeekBrasil()
-    const isBusinessHours = isBusinessHoursBrasil()
-    
-    console.log(`🕐 Horário Brasil: ${hour}h, dia: ${day}, comercial: ${isBusinessHours}`)
-    
-    if (!ignoreTimeFilter && !isBusinessHours) {
-      console.log('⏰ Fora do horário comercial. Abortando.')
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          message: 'Fora do horário comercial',
-          dispatched: 0,
-          eligible: 0
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
 
     // Buscar etapa "Follow Up (I.A)"
     const { data: followupStage, error: stageError } = await supabase
@@ -163,6 +183,39 @@ Deno.serve(async (req) => {
       console.warn('⚠️ Erro ao buscar etapa Follow Up:', stageError.message)
     } else if (followupStage) {
       console.log(`✅ Etapa Follow Up encontrada: ${followupStage.name} (${followupStage.id})`)
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // BUSCAR DEALS COM FALHAS RECENTES (PARA EXCLUIR)
+    // ═══════════════════════════════════════════════════════════
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+    
+    const { data: recentFailures } = await supabase
+      .from('followup_logs')
+      .select('deal_id')
+      .eq('status', 'failed')
+      .gte('created_at', twentyFourHoursAgo)
+    
+    // Contar falhas por deal
+    const failureCountByDeal: Record<string, number> = {}
+    for (const failure of (recentFailures || [])) {
+      if (failure.deal_id) {
+        failureCountByDeal[failure.deal_id] = (failureCountByDeal[failure.deal_id] || 0) + 1
+      }
+    }
+    
+    // Deals a excluir (3+ falhas em 24h)
+    const dealsToExclude = new Set(
+      Object.entries(failureCountByDeal)
+        .filter(([_, count]) => count >= MAX_CONSECUTIVE_FAILURES)
+        .map(([dealId]) => dealId)
+    )
+    
+    if (dealsToExclude.size > 0) {
+      console.log(`⛔ ${dealsToExclude.size} deals excluídos por ${MAX_CONSECUTIVE_FAILURES}+ falhas em 24h:`)
+      for (const dealId of dealsToExclude) {
+        console.log(`   - ${dealId}: ${failureCountByDeal[dealId]} falhas`)
+      }
     }
 
     // Buscar deals elegíveis
@@ -213,6 +266,12 @@ Deno.serve(async (req) => {
     
     const eligibleLeads = (leads || [])
       .filter(deal => {
+        // Verificar se está na lista de excluídos por falhas
+        if (dealsToExclude.has(deal.id)) {
+          console.log(`⛔ Deal ${deal.id}: Excluído por falhas consecutivas`)
+          return false
+        }
+        
         const currentCount = deal.followup_count || 0
         const maxFollowups = deal.max_followups || 999
         
@@ -245,7 +304,7 @@ Deno.serve(async (req) => {
         
         return {
           deal_id: deal.id,
-          session_id: deal.id, // Para compatibilidade com IA de atendimento
+          session_id: deal.id,
           client_name: clientName,
           client_phone: phone,
           conversation_history: deal.conversation_history,
@@ -265,12 +324,14 @@ Deno.serve(async (req) => {
     console.log(`✅ Leads elegíveis para follow-up: ${eligibleLeads.length}`)
 
     if (eligibleLeads.length === 0) {
+      console.log('═══════════════════════════════════════════════════════════')
       return new Response(
         JSON.stringify({ 
           success: true, 
           message: 'Nenhum lead elegível para follow-up',
           dispatched: 0,
-          eligible: 0
+          eligible: 0,
+          excluded_by_failures: dealsToExclude.size
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
@@ -333,10 +394,20 @@ Deno.serve(async (req) => {
         console.error(`❌ Erro ao processar ${lead.client_name}:`, error.message)
         results.failed++
         results.errors.push(`${lead.client_name}: ${error.message}`)
+        
+        await supabase
+          .from('followup_logs')
+          .insert({
+            deal_id: lead.deal_id,
+            followup_number: lead.followup_number,
+            status: 'failed',
+            error_message: error.message?.substring(0, 500) || 'Erro desconhecido'
+          })
       }
     }
 
     console.log(`🏁 Disparo concluído: ${results.success} sucesso, ${results.failed} falhas`)
+    console.log('═══════════════════════════════════════════════════════════')
 
     return new Response(
       JSON.stringify({ 
@@ -346,6 +417,7 @@ Deno.serve(async (req) => {
         dispatched: results.success,
         failed: results.failed,
         eligible: eligibleLeads.length,
+        excluded_by_failures: dealsToExclude.size,
         errors: results.errors
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -353,6 +425,7 @@ Deno.serve(async (req) => {
 
   } catch (error: any) {
     console.error('💥 Erro no dispatch-followup:', error)
+    console.log('═══════════════════════════════════════════════════════════')
     return new Response(
       JSON.stringify({ error: error.message }),
       { 
