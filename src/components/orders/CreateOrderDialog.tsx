@@ -39,6 +39,7 @@ interface OrderItem {
   ncm?: string;
   cfop?: string;
   unidade?: string;
+  centro_custo?: string;
 }
 
 const FORMAS_PAGAMENTO = [
@@ -59,11 +60,7 @@ const TIPOS_ENTREGA = [
   { value: 'terceirizada', label: 'Terceirizada' },
 ];
 
-const CENTROS_CUSTO = [
-  { value: 'moveis_planejados', label: 'Móveis Planejados' },
-  { value: 'producao_tendenci', label: 'Produção Tendenci' },
-  { value: 'revenda', label: 'Revenda' },
-];
+// Centro de custo agora é por item, não mais no pedido
 
 export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clientId }: CreateOrderDialogProps) {
   const { user } = useAuth();
@@ -99,7 +96,6 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     desconto_percentual: 0,
     desconto_valor: 0,
     valor_frete: 0,
-    centro_custo: '',
   });
 
   const [parcelas, setParcelas] = useState<PagamentoParcela[]>([
@@ -200,8 +196,9 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
   const total = subtotal - descontoTotal + Number(formData.valor_frete || 0);
 
   // Validações por etapa
-  const isClienteValid = !!formData.client_id && !!formData.centro_custo;
-  const isItensValid = items.length > 0;
+  const isClienteValid = !!formData.client_id;
+  const allItemsHaveCentroCusto = items.length > 0 && items.every(item => !!item.centro_custo);
+  const isItensValid = items.length > 0 && allItemsHaveCentroCusto;
   const totalPercentual = parcelas.reduce((sum, p) => sum + p.percentual, 0);
   const isPagamentoValid = parcelas.length > 0 && parcelas.every(p => p.forma_pagamento) && totalPercentual === 100;
   const isEntregaValid = !!formData.tipo_entrega;
@@ -213,14 +210,14 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
         toast.error('Selecione um cliente para continuar');
         return;
       }
-      if (!formData.centro_custo) {
-        toast.error('Selecione o centro de custo para continuar');
-        return;
-      }
       setActiveTab('itens');
     } else if (activeTab === 'itens') {
-      if (!isItensValid) {
+      if (items.length === 0) {
         toast.error('Adicione pelo menos um item ao pedido');
+        return;
+      }
+      if (!allItemsHaveCentroCusto) {
+        toast.error('Todos os itens precisam ter um centro de custo definido');
         return;
       }
       setActiveTab('pagamento');
@@ -278,7 +275,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
           valor_frete: formData.valor_frete,
           subtotal,
           valor_total: total,
-          centro_custo: formData.centro_custo || null,
+          centro_custo: null, // centro_custo agora é por item
           status: 'rascunho',
         })
         .select()
@@ -298,6 +295,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
         ncm: item.ncm || null,
         cfop: item.cfop || null,
         unidade: item.unidade || 'UN',
+        centro_custo: item.centro_custo || null,
         position: index,
       }));
 
@@ -475,25 +473,6 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Centro de Custo *</Label>
-                  <Select
-                    value={formData.centro_custo || "_placeholder"}
-                    onValueChange={(v) => setFormData({ ...formData, centro_custo: v === "_placeholder" ? "" : v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="-" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="_placeholder" disabled>-</SelectItem>
-                      {CENTROS_CUSTO.map((cc) => (
-                        <SelectItem key={cc.value} value={cc.value}>
-                          {cc.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
               </div>
 
               {selectedClient && (
@@ -560,7 +539,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
             </TabsContent>
 
             <TabsContent value="itens" className="space-y-4">
-              <OrderItemsTable items={items} onItemsChange={setItems} showFiscalFields={true} />
+              <OrderItemsTable items={items} onItemsChange={setItems} showFiscalFields={true} requireCentroCusto={true} />
 
               <div className="flex justify-end">
                 <div className="w-64 space-y-2 text-sm">

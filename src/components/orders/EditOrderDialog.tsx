@@ -37,11 +37,7 @@ const TIPOS_ENTREGA = [
   { value: 'terceirizada', label: 'Terceirizada' },
 ];
 
-const CENTROS_CUSTO = [
-  { value: 'moveis_planejados', label: 'Móveis Planejados' },
-  { value: 'producao_tendenci', label: 'Produção Tendenci' },
-  { value: 'revenda', label: 'Revenda' },
-];
+// Centro de custo agora é por item, não mais no pedido
 
 const UF_OPTIONS = [
   'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA',
@@ -67,6 +63,7 @@ interface OrderItem {
   ncm?: string;
   cfop?: string;
   unidade?: string;
+  centro_custo?: string;
 }
 
 interface PagamentoParcela {
@@ -154,7 +151,6 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
     valor_frete: 0,
     transportadora_nome: '',
     transportadora_cnpj: '',
-    centro_custo: '',
   });
 
   const [parcelas, setParcelas] = useState<PagamentoParcela[]>([
@@ -245,7 +241,6 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
         valor_frete: order.valor_frete || 0,
         transportadora_nome: order.transportadora_nome || '',
         transportadora_cnpj: order.transportadora_cnpj || '',
-        centro_custo: order.centro_custo || '',
       });
     }
   }, [order]);
@@ -263,6 +258,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
         ncm: i.ncm || undefined,
         cfop: i.cfop || undefined,
         unidade: i.unidade || undefined,
+        centro_custo: (i as any).centro_custo || undefined,
       })));
     }
   }, [orderItems]);
@@ -441,7 +437,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
           transportadora_cnpj: formData.transportadora_cnpj,
           subtotal,
           valor_total: total,
-          centro_custo: formData.centro_custo || null,
+          centro_custo: null, // centro_custo agora é por item
         })
         .eq('id', orderId);
 
@@ -461,6 +457,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
         ncm: item.ncm,
         cfop: item.cfop,
         unidade: item.unidade,
+        centro_custo: item.centro_custo || null,
         position: index,
       }));
 
@@ -552,22 +549,6 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label>Centro de Custo *</Label>
-                <Select value={formData.centro_custo || "_placeholder"} onValueChange={(v) => setFormData({ ...formData, centro_custo: v === "_placeholder" ? "" : v })} disabled={!isEditable}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="-" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="_placeholder" disabled>-</SelectItem>
-                    {CENTROS_CUSTO.map((cc) => (
-                      <SelectItem key={cc.value} value={cc.value}>
-                        {cc.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
             </div>
 
             {selectedClient && (
@@ -848,7 +829,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
           </TabsContent>
 
           <TabsContent value="itens" className="space-y-4">
-            <OrderItemsTable items={items} onItemsChange={setItems} readOnly={!isEditable} showFiscalFields />
+            <OrderItemsTable items={items} onItemsChange={setItems} readOnly={!isEditable} showFiscalFields requireCentroCusto={true} />
 
             <div className="flex justify-end">
               <div className="w-80 space-y-2 text-sm">

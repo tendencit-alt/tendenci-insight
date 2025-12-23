@@ -2172,6 +2172,7 @@ export type Database = {
       }
       order_items: {
         Row: {
+          centro_custo: string | null
           cfop: string | null
           codigo_produto: string | null
           created_at: string | null
@@ -2191,6 +2192,7 @@ export type Database = {
           valor_unitario: number
         }
         Insert: {
+          centro_custo?: string | null
           cfop?: string | null
           codigo_produto?: string | null
           created_at?: string | null
@@ -2210,6 +2212,7 @@ export type Database = {
           valor_unitario?: number
         }
         Update: {
+          centro_custo?: string | null
           cfop?: string | null
           codigo_produto?: string | null
           created_at?: string | null

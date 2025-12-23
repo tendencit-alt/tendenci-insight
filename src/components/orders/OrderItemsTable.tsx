@@ -6,9 +6,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Trash2, Edit2, Check, ChevronDown, ChevronUp, Package, X } from 'lucide-react';
 
-interface OrderItem {
+export interface OrderItem {
   id: string;
   descricao: string;
   quantidade: number;
@@ -19,6 +20,7 @@ interface OrderItem {
   ncm?: string;
   cfop?: string;
   unidade?: string;
+  centro_custo?: string;
 }
 
 interface OrderItemsTableProps {
@@ -26,7 +28,14 @@ interface OrderItemsTableProps {
   onItemsChange: (items: OrderItem[]) => void;
   readOnly?: boolean;
   showFiscalFields?: boolean;
+  requireCentroCusto?: boolean;
 }
+
+const CENTROS_CUSTO = [
+  { value: 'moveis_planejados', label: 'Móveis Planejados' },
+  { value: 'producao_tendenci', label: 'Produção Tendenci' },
+  { value: 'revenda', label: 'Revenda' },
+];
 
 const emptyItem = {
   descricao: '',
@@ -37,9 +46,10 @@ const emptyItem = {
   cfop: '',
   unidade: 'UN',
   especificacoes: '',
+  centro_custo: '',
 };
 
-export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFiscalFields = false }: OrderItemsTableProps) {
+export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFiscalFields = false, requireCentroCusto = false }: OrderItemsTableProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [isAddingItem, setIsAddingItem] = useState(false);
@@ -47,6 +57,7 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
 
   const handleAddItem = () => {
     if (!newItem.descricao || !newItem.valor_unitario) return;
+    if (requireCentroCusto && !newItem.centro_custo) return;
 
     const item: OrderItem = {
       id: crypto.randomUUID(),
@@ -59,6 +70,7 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
       ncm: newItem.ncm,
       cfop: newItem.cfop,
       unidade: newItem.unidade || 'UN',
+      centro_custo: newItem.centro_custo,
     };
 
     onItemsChange([...items, item]);
@@ -198,6 +210,26 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
               </div>
             </div>
 
+            {requireCentroCusto && (
+              <div className="space-y-1">
+                <Label className="text-xs">Centro de Custo *</Label>
+                <Select
+                  value={newItem.centro_custo || "_placeholder"}
+                  onValueChange={(v) => setNewItem({ ...newItem, centro_custo: v === "_placeholder" ? "" : v })}
+                >
+                  <SelectTrigger className={!newItem.centro_custo ? 'border-destructive/50' : ''}>
+                    <SelectValue placeholder="Selecione o centro de custo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_placeholder" disabled>Selecione</SelectItem>
+                    {CENTROS_CUSTO.map((cc) => (
+                      <SelectItem key={cc.value} value={cc.value}>{cc.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
             <div className="space-y-1">
               <Label className="text-xs">Especificações / Observações</Label>
               <Textarea
@@ -212,7 +244,7 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
               <Button variant="outline" onClick={() => { setIsAddingItem(false); setNewItem(emptyItem); }}>
                 Cancelar
               </Button>
-              <Button onClick={handleAddItem} disabled={!newItem.descricao || !newItem.valor_unitario}>
+              <Button onClick={handleAddItem} disabled={!newItem.descricao || !newItem.valor_unitario || (requireCentroCusto && !newItem.centro_custo)}>
                 <Plus className="h-4 w-4 mr-1" />
                 Adicionar Item
               </Button>
@@ -235,6 +267,7 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                   <TableHead className="w-[50px]">UN</TableHead>
                 </>
               )}
+              {requireCentroCusto && <TableHead className="w-[130px]">Centro de Custo</TableHead>}
               <TableHead className="w-[60px] text-center">Qtd</TableHead>
               <TableHead className="w-[100px] text-right">V.Unit.</TableHead>
               <TableHead className="w-[100px] text-right">Total</TableHead>
@@ -276,6 +309,24 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                           <Input type="number" className="h-8" value={item.valor_unitario} onChange={(e) => handleUpdateItem(item.id, { valor_unitario: Number(e.target.value) })} min={0} step={0.01} />
                         </TableCell>
                         <TableCell className="font-medium text-right">{formatCurrency(item.valor_total)}</TableCell>
+                        {requireCentroCusto && (
+                          <TableCell>
+                            <Select
+                              value={item.centro_custo || "_placeholder"}
+                              onValueChange={(v) => handleUpdateItem(item.id, { centro_custo: v === "_placeholder" ? "" : v })}
+                            >
+                              <SelectTrigger className="h-8">
+                                <SelectValue placeholder="-" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="_placeholder" disabled>-</SelectItem>
+                                {CENTROS_CUSTO.map((cc) => (
+                                  <SelectItem key={cc.value} value={cc.value}>{cc.label}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                        )}
                         <TableCell>
                           <Button size="icon" variant="ghost" onClick={() => setEditingId(null)}>
                             <Check className="h-4 w-4 text-green-600" />
@@ -309,6 +360,13 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                         <TableCell className="text-center">{item.quantidade}</TableCell>
                         <TableCell className="text-right">{formatCurrency(item.valor_unitario)}</TableCell>
                         <TableCell className="font-medium text-right">{formatCurrency(item.valor_total)}</TableCell>
+                        {requireCentroCusto && (
+                          <TableCell>
+                            <span className="text-xs">
+                              {CENTROS_CUSTO.find(cc => cc.value === item.centro_custo)?.label || '-'}
+                            </span>
+                          </TableCell>
+                        )}
                         {!readOnly && (
                           <TableCell>
                             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
