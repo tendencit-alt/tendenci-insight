@@ -120,7 +120,7 @@ export default function ActivityCenter() {
   // Buscar atividades quando filtros mudam
   useEffect(() => {
     fetchActivities();
-  }, [filters]);
+  }, [filters.module, filters.actionType, filters.userId, filters.period, filters.search, filters.startDate?.getTime(), filters.endDate?.getTime()]);
 
   // Configurar realtime
   useEffect(() => {
