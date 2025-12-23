@@ -431,15 +431,6 @@ export function ProductionKanban({ productionTypeId, filters, onOrderClick }: Pr
     >
       <ScrollArea className="w-full">
         <div className="flex gap-4 pb-4 min-w-max">
-          {/* Coluna de OPs sem fase atribuída */}
-          <DroppableColumn
-            id="waiting"
-            title="Nova OP"
-            color="#6b7280"
-            orders={ordersWithoutPhase}
-            onCardClick={handleCardClick}
-          />
-
           {/* Colunas por fase */}
           {uniquePhases.map((phase) => {
             const phaseOrders = productionTypeId 
