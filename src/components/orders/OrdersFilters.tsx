@@ -22,6 +22,7 @@ interface OrdersFiltersProps {
 
 const ORDER_STATUSES = [
   { value: 'rascunho', label: 'Rascunho' },
+  { value: 'ativo', label: 'Ativo' },
   { value: 'aguardando_aprovacao', label: 'Aguardando Aprovação' },
   { value: 'aprovado', label: 'Aprovado' },
   { value: 'em_producao', label: 'Em Produção' },
