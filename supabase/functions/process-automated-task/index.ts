@@ -25,6 +25,12 @@ function formatBrazilianPhoneWithFallback(phone: string): {
   
   console.log(`📱 Formatando número - Original: "${original}" → Limpo: "${clean}"`)
   
+  // Remover zeros no início (ex: 016997085338 → 16997085338)
+  while (clean.startsWith('0') && clean.length > 10) {
+    clean = clean.substring(1)
+    console.log(`🔄 Removendo zero inicial: "${clean}"`)
+  }
+  
   // Remover 55 duplicados no início
   while (clean.startsWith('55') && clean.length > 11) {
     clean = clean.substring(2)
