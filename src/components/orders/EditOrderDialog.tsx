@@ -508,19 +508,57 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
             const productionType = productionTypes.find(pt => pt.name === productionTypeName);
             if (!productionType) continue;
 
-            const { error: opError } = await supabase.from('production_orders').insert({
-              title: `${item.descricao} - Pedido #${order.order_number}`,
-              production_type_id: productionType.id,
-              deal_id: formData.deal_id || null,
-              client_id: formData.client_id,
-              order_id: orderId,
-              order_item_id: item.id,
-              value: item.valor_total,
-              status: 'aguardando',
-              priority: 'normal',
-            });
+            // Buscar a primeira fase template do tipo de produção
+            const { data: firstPhaseTemplate } = await supabase
+              .from('production_phase_templates')
+              .select('id')
+              .eq('production_type_id', productionType.id)
+              .eq('active', true)
+              .order('position')
+              .limit(1)
+              .single();
 
-            if (!opError) opsCreated++;
+            // Criar a OP
+            const { data: newOP, error: opError } = await supabase
+              .from('production_orders')
+              .insert({
+                title: `${item.descricao} - Pedido #${order.order_number}`,
+                production_type_id: productionType.id,
+                deal_id: formData.deal_id || null,
+                client_id: formData.client_id,
+                order_id: orderId,
+                order_item_id: item.id,
+                value: item.valor_total,
+                status: 'aguardando',
+                priority: 'normal',
+              })
+              .select('id')
+              .single();
+
+            if (!opError && newOP) {
+              opsCreated++;
+
+              // Se tiver fase template, criar a fase inicial e vincular à OP
+              if (firstPhaseTemplate) {
+                const { data: newPhase } = await supabase
+                  .from('production_phases')
+                  .insert({
+                    production_order_id: newOP.id,
+                    phase_template_id: firstPhaseTemplate.id,
+                    status: 'em_andamento',
+                    started_at: new Date().toISOString()
+                  })
+                  .select('id')
+                  .single();
+
+                if (newPhase) {
+                  await supabase
+                    .from('production_orders')
+                    .update({ current_phase_id: newPhase.id })
+                    .eq('id', newOP.id);
+                }
+              }
+            }
           }
         }
       }
