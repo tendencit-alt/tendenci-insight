@@ -67,11 +67,15 @@ export function ProductionKPIs({ productionTypeId, filters }: ProductionKPIsProp
     ? ((metrics.concluidas_no_prazo / metrics.total_concluidas) * 100).toFixed(1)
     : '0';
 
+  // Total de OPs ativas (não concluídas nem canceladas)
+  const opsAtivas = (metrics?.aguardando || 0) + (metrics?.em_andamento || 0) + (metrics?.pausado || 0);
+  const valorOpsAtivas = (metrics?.valor_aguardando || 0) + (metrics?.valor_em_andamento || 0);
+
   const kpiCards = [
     { 
       label: 'Em Produção', 
-      value: metrics?.em_andamento || 0, 
-      subValue: formatCurrency(metrics?.valor_em_andamento || 0),
+      value: opsAtivas, 
+      subValue: formatCurrency(valorOpsAtivas),
       icon: Settings, 
       color: 'text-blue-600',
       bgColor: 'bg-blue-100'
