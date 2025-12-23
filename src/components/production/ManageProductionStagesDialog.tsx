@@ -338,18 +338,51 @@ export function ManageProductionStagesDialog({ open, onOpenChange }: ManageProdu
   };
 
   const handleDeletePhase = async (phaseId: string) => {
-    // Check for linked production_phases
-    const { count } = await supabase
+    // Buscar IDs das production_phases vinculadas a este template
+    const { data: linkedPhases } = await supabase
       .from('production_phases')
-      .select('id', { count: 'exact', head: true })
+      .select('id')
       .eq('phase_template_id', phaseId);
     
-    if (count && count > 0) {
-      toast.error(`Não é possível excluir: ${count} ordem(s) usando esta fase`);
+    const linkedPhaseIds = linkedPhases?.map(p => p.id) || [];
+    
+    // Verificar se há OPs ATUALMENTE nesta fase (current_phase_id aponta para uma dessas fases)
+    let activeCount = 0;
+    if (linkedPhaseIds.length > 0) {
+      const { count } = await supabase
+        .from('production_orders')
+        .select('id', { count: 'exact', head: true })
+        .in('current_phase_id', linkedPhaseIds)
+        .neq('status', 'concluido')
+        .neq('status', 'cancelado');
+      
+      activeCount = count || 0;
+    }
+    
+    if (activeCount > 0) {
+      toast.error(`Não é possível excluir: ${activeCount} OP(s) atualmente nesta fase`);
       return;
     }
     
+    // Confirmar exclusão
+    const phaseName = phases.find(p => p.id === phaseId)?.name || 'esta fase';
+    const confirmed = window.confirm(
+      `Tem certeza que deseja excluir "${phaseName}"?\n\nIsso também limpará o histórico de fases antigas vinculadas.`
+    );
+    
+    if (!confirmed) return;
+    
     setSaving(true);
+    
+    // Limpar histórico de production_phases (fases órfãs/antigas)
+    if (linkedPhaseIds.length > 0) {
+      await supabase
+        .from('production_phases')
+        .delete()
+        .eq('phase_template_id', phaseId);
+    }
+    
+    // Agora excluir o template
     const { error } = await supabase
       .from('production_phase_templates')
       .delete()
@@ -359,9 +392,10 @@ export function ManageProductionStagesDialog({ open, onOpenChange }: ManageProdu
       toast.error('Erro ao excluir fase');
       console.error(error);
     } else {
-      toast.success('Fase excluída');
+      toast.success('Fase excluída com sucesso');
       if (selectedTypeId) fetchPhases(selectedTypeId);
       queryClient.invalidateQueries({ queryKey: ['production-phase-templates'] });
+      queryClient.invalidateQueries({ queryKey: ['production-orders'] });
     }
     setSaving(false);
   };
