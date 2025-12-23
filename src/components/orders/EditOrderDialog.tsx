@@ -477,10 +477,55 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
         position: index,
       }));
 
-      const { error: itemsError } = await supabase.from('order_items').insert(itemsToInsert);
+      const { data: insertedItems, error: itemsError } = await supabase
+        .from('order_items')
+        .insert(itemsToInsert)
+        .select('id, descricao, centro_custo, valor_total');
       if (itemsError) throw itemsError;
 
-      // 4. SYNC: Se observações foram alteradas, registrar no order_history
+      // 4. Se mudou para ativo, criar OPs automaticamente
+      let opsCreated = 0;
+      if (shouldBeAtivo && insertedItems) {
+        const centroCustoMap: Record<string, string> = {
+          'moveis_planejados': 'Móveis Planejados',
+          'producao_tendenci': 'Produção Tendenci',
+          'revenda': 'Revenda'
+        };
+
+        // Buscar tipos de produção ativos
+        const { data: productionTypes } = await supabase
+          .from('production_types')
+          .select('id, name')
+          .eq('active', true);
+
+        if (productionTypes) {
+          for (const item of insertedItems) {
+            if (!item.centro_custo) continue;
+
+            const productionTypeName = centroCustoMap[item.centro_custo];
+            if (!productionTypeName) continue;
+
+            const productionType = productionTypes.find(pt => pt.name === productionTypeName);
+            if (!productionType) continue;
+
+            const { error: opError } = await supabase.from('production_orders').insert({
+              title: `${item.descricao} - Pedido #${order.order_number}`,
+              production_type_id: productionType.id,
+              deal_id: formData.deal_id || null,
+              client_id: formData.client_id,
+              order_id: orderId,
+              order_item_id: item.id,
+              value: item.valor_total,
+              status: 'aguardando',
+              priority: 'normal',
+            });
+
+            if (!opError) opsCreated++;
+          }
+        }
+      }
+
+      // 5. SYNC: Se observações foram alteradas, registrar no order_history
       const originalObs = order.entrega_observacoes || order.observacoes_internas || order.observacoes_nf || '';
       if (formData.observacoes && formData.observacoes !== originalObs) {
         await supabase.from('order_history').insert({
@@ -494,9 +539,11 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
         });
       }
 
-      toast.success(shouldBeAtivo && order?.status === 'rascunho' 
-        ? 'Pedido atualizado e ativado!' 
-        : 'Pedido e cliente atualizados com sucesso!');
+      if (shouldBeAtivo && order?.status === 'rascunho') {
+        toast.success(`Pedido ativado! ${opsCreated > 0 ? `${opsCreated} ordem(ns) de produção criada(s).` : ''}`);
+      } else {
+        toast.success('Pedido e cliente atualizados com sucesso!');
+      }
       onSuccess();
       onOpenChange(false);
     } catch (error: any) {
