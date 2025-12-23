@@ -897,21 +897,45 @@ export function MasterIdeasNotepad() {
                             </p>
                           )}
 
-                          {/* Attachments indicators */}
-                          {idea.attachments.length > 0 && (
+                          {/* Image Thumbnails */}
+                          {idea.attachments.filter(a => a.fileType === 'image').length > 0 && (
+                            <div className="flex gap-2 mb-3 flex-wrap">
+                              {idea.attachments
+                                .filter(a => a.fileType === 'image')
+                                .slice(0, 4)
+                                .map((att, idx) => (
+                                  <div
+                                    key={att.id || idx}
+                                    className="w-16 h-16 rounded-md overflow-hidden cursor-pointer hover:opacity-80 transition-opacity border bg-muted"
+                                    onClick={() => openImageLightbox(idea.attachments.filter(a => a.fileType === 'image'), idx)}
+                                  >
+                                    <img
+                                      src={att.url}
+                                      alt={att.fileName}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </div>
+                                ))}
+                              {idea.attachments.filter(a => a.fileType === 'image').length > 4 && (
+                                <div 
+                                  className="w-16 h-16 rounded-md flex items-center justify-center bg-muted border cursor-pointer hover:bg-muted/80 transition-colors"
+                                  onClick={() => openImageLightbox(idea.attachments.filter(a => a.fileType === 'image'), 4)}
+                                >
+                                  <span className="text-xs text-muted-foreground font-medium">
+                                    +{idea.attachments.filter(a => a.fileType === 'image').length - 4}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          
+                          {/* Audio indicators */}
+                          {idea.attachments.filter(a => a.fileType === 'audio').length > 0 && (
                             <div className="flex gap-2 mb-3">
-                              {idea.attachments.filter(a => a.fileType === 'image').length > 0 && (
-                                <Badge variant="outline" className="text-xs">
-                                  <Image className="h-3 w-3 mr-1" />
-                                  {idea.attachments.filter(a => a.fileType === 'image').length}
-                                </Badge>
-                              )}
-                              {idea.attachments.filter(a => a.fileType === 'audio').length > 0 && (
-                                <Badge variant="outline" className="text-xs">
-                                  <Mic className="h-3 w-3 mr-1" />
-                                  {idea.attachments.filter(a => a.fileType === 'audio').length}
-                                </Badge>
-                              )}
+                              <Badge variant="outline" className="text-xs">
+                                <Mic className="h-3 w-3 mr-1" />
+                                {idea.attachments.filter(a => a.fileType === 'audio').length} áudio(s)
+                              </Badge>
                             </div>
                           )}
 
@@ -952,6 +976,11 @@ export function MasterIdeasNotepad() {
 
                           {/* Actions */}
                           <div className="flex flex-wrap gap-2">
+                            {/* View Detail button */}
+                            <Button size="sm" variant="outline" onClick={() => openIdeaDetail(idea)}>
+                              <Eye className="h-3 w-3 mr-1" />
+                              Ver Detalhes
+                            </Button>
                             {/* Author/Admin actions */}
                             {canEdit(idea) && idea.status === 'em_pauta' && (
                               <Button size="sm" variant="outline" onClick={() => startEditing(idea)}>
