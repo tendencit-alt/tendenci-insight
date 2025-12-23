@@ -17,11 +17,13 @@ import {
   Link2,
   AlertTriangle,
   Activity,
-  Package
+  Package,
+  AlertCircle
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ModuloAutomacoes } from "@/components/automacoes/ModuloAutomacoes";
 import { EndpointsReference } from "@/components/automacoes/EndpointsReference";
+import { SystemErrorsTab } from "@/components/automacoes/SystemErrorsTab";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -43,6 +45,7 @@ export default function AutomacoesDocumentacao() {
   const [automacoesMetas, setAutomacoesMetas] = useState<any[]>([]);
   const [automacoesEstoque, setAutomacoesEstoque] = useState<any[]>([]);
   const [logsRecentes, setLogsRecentes] = useState<any[]>([]);
+  const [openErrorCount, setOpenErrorCount] = useState(0);
 
   const fetchData = async () => {
     try {
@@ -54,7 +57,8 @@ export default function AutomacoesDocumentacao() {
         { data: productionLogs },
         { data: campaigns },
         { data: sequences },
-        { data: notifications }
+        { data: notifications },
+        { data: systemErrors }
       ] = await Promise.all([
         supabase
           .from('crm_tasks')
@@ -89,8 +93,17 @@ export default function AutomacoesDocumentacao() {
           .select('*')
           .eq('type', 'automation_failure')
           .order('created_at', { ascending: false })
+          .limit(50),
+        supabase
+          .from('system_errors')
+          .select('*')
+          .eq('status', 'open')
+          .order('created_at', { ascending: false })
           .limit(50)
       ]);
+
+      // Set open error count for badge
+      setOpenErrorCount(systemErrors?.length || 0);
 
       // Calculate KPIs - total de automações fixas + dinâmicas
       const fixedAutomations = 24; // Total de automações fixas documentadas
@@ -465,7 +478,7 @@ export default function AutomacoesDocumentacao() {
 
         {/* Tabs por módulo */}
         <Tabs defaultValue="crm" className="space-y-4">
-          <TabsList className="grid grid-cols-7 w-full max-w-4xl">
+          <TabsList className="grid grid-cols-8 w-full max-w-5xl">
             <TabsTrigger value="crm" className="flex items-center gap-2">
               <MessageSquare className="h-4 w-4" />
               CRM
@@ -485,6 +498,15 @@ export default function AutomacoesDocumentacao() {
             <TabsTrigger value="estoque" className="flex items-center gap-2">
               <Package className="h-4 w-4" />
               Estoque
+            </TabsTrigger>
+            <TabsTrigger value="erros" className="flex items-center gap-2 relative">
+              <AlertCircle className="h-4 w-4" />
+              Erros
+              {openErrorCount > 0 && (
+                <Badge variant="destructive" className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs">
+                  {openErrorCount > 9 ? '9+' : openErrorCount}
+                </Badge>
+              )}
             </TabsTrigger>
             <TabsTrigger value="endpoints" className="flex items-center gap-2">
               <Link2 className="h-4 w-4" />
@@ -539,6 +561,10 @@ export default function AutomacoesDocumentacao() {
               automacoes={automacoesEstoque}
               loading={loading}
             />
+          </TabsContent>
+
+          <TabsContent value="erros">
+            <SystemErrorsTab onErrorCountChange={setOpenErrorCount} />
           </TabsContent>
 
           <TabsContent value="endpoints">
