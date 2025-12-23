@@ -9,17 +9,14 @@ import {
 } from '../_shared/timezone.ts'
 
 /**
- * dispatch-followup v3.0
+ * dispatch-followup v4.0
  * 
- * MODO HÍBRIDO:
- * 1. Tenta envio DIRETO via send-followup-whatsapp (preferencial)
- * 2. Fallback para n8n webhook se configurado
- * 
- * CORREÇÕES:
- * - Envio direto elimina dependência do n8n
- * - Proteção robusta contra execução fora do horário
- * - Limite de falhas consecutivas (máx 3 em 24h)
- * - Verificação de Evolution API antes de enviar
+ * MODO n8n + OpenAI COMO PADRÃO:
+ * 1. Health check do n8n antes de enviar
+ * 2. Retry automático com backoff
+ * 3. Fallback para envio direto apenas se n8n falhar
+ * 4. Desabilita deals com excesso de falhas
+ * 5. Alertas automáticos em system_errors
  */
 
 interface DispatchRequest {
@@ -87,7 +84,31 @@ function formatBrazilianPhone(phone: string | null): string | null {
 // Máximo de falhas consecutivas permitidas em 24h
 const MAX_CONSECUTIVE_FAILURES = 3
 
-// Envio direto via edge function interna
+// Limite global de falhas por hora (pausa sistema)
+const MAX_GLOBAL_FAILURES_PER_HOUR = 10
+
+// Verificar saúde do n8n webhook
+async function checkN8nHealth(webhookUrl: string): Promise<boolean> {
+  try {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 5000)
+    
+    const response = await fetch(webhookUrl, { 
+      method: 'HEAD',
+      signal: controller.signal
+    })
+    
+    clearTimeout(timeoutId)
+    
+    // HEAD pode retornar 405 (Method Not Allowed) mas indica que o servidor está online
+    return response.ok || response.status === 405
+  } catch (error) {
+    console.warn('⚠️ n8n health check failed:', error)
+    return false
+  }
+}
+
+// Envio direto via edge function interna (FALLBACK)
 async function sendDirectFollowup(
   supabaseUrl: string,
   supabaseKey: string,
@@ -127,6 +148,73 @@ async function sendDirectFollowup(
   }
 }
 
+// Envio via n8n com retry
+async function sendN8nFollowup(
+  webhookUrl: string,
+  lead: LeadForFollowup,
+  callbackUrl: string,
+  maxRetries: number = 2
+): Promise<{ success: boolean; error?: string }> {
+  let lastError = ''
+  
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      if (attempt > 0) {
+        const delayMs = attempt === 1 ? 5000 : 15000
+        console.log(`🔄 Retry ${attempt}/${maxRetries} após ${delayMs/1000}s...`)
+        await new Promise(r => setTimeout(r, delayMs))
+      }
+      
+      const response = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...lead,
+          callback_url: callbackUrl
+        })
+      })
+      
+      if (response.ok) {
+        return { success: true }
+      }
+      
+      const errText = await response.text()
+      lastError = `HTTP ${response.status}: ${errText.substring(0, 200)}`
+      console.warn(`⚠️ n8n attempt ${attempt + 1} failed:`, lastError)
+      
+    } catch (e: any) {
+      lastError = e.message
+      console.warn(`⚠️ n8n attempt ${attempt + 1} error:`, lastError)
+    }
+  }
+  
+  return { success: false, error: lastError }
+}
+
+// Registrar erro no system_errors
+async function logSystemError(
+  supabase: any,
+  title: string,
+  module: string,
+  description: string,
+  severity: string = 'high',
+  metadata: Record<string, any> = {}
+): Promise<void> {
+  try {
+    await supabase.from('system_errors').insert({
+      title,
+      module,
+      description,
+      severity,
+      status: 'open',
+      metadata
+    })
+    console.log(`🚨 System error logged: ${title}`)
+  } catch (e) {
+    console.error('Failed to log system error:', e)
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -136,7 +224,7 @@ Deno.serve(async (req) => {
 
   try {
     console.log('═══════════════════════════════════════════════════════════')
-    console.log('🚀 [DISPATCH-FOLLOWUP v3.0] Iniciando...')
+    console.log('🚀 [DISPATCH-FOLLOWUP v4.0] Iniciando (n8n + OpenAI)...')
     console.log('═══════════════════════════════════════════════════════════')
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
@@ -156,8 +244,9 @@ Deno.serve(async (req) => {
     }
 
     const ignoreTimeFilter = body.ignore_time_filter || false
-    const sendMode = body.mode || 'direct' // Padrão: envio direto
-    const sendLimit = body.limit || 10 // Máximo por execução
+    // ✅ MUDANÇA: Padrão agora é 'n8n' para usar OpenAI
+    const sendMode = body.mode || 'n8n'
+    const sendLimit = body.limit || 10
     
     console.log(`📋 Modo: ${sendMode}, Limite: ${sendLimit}, IgnoreTime: ${ignoreTimeFilter}`)
 
@@ -171,7 +260,6 @@ Deno.serve(async (req) => {
     
     console.log(`🕐 Hora Brasil: ${hour}h, Dia: ${dayNames[day]}, Horário Comercial: ${isBusinessHours}`)
     
-    // PROTEÇÃO: Apenas teste explícito pode ignorar horário
     const isTestMode = req.headers.get('X-Test-Mode') === 'true'
     
     if (!isBusinessHours && !isTestMode) {
@@ -191,7 +279,41 @@ Deno.serve(async (req) => {
     }
 
     // ═══════════════════════════════════════════════════════════
-    // BUSCAR DEALS COM FALHAS RECENTES (PARA EXCLUIR)
+    // VERIFICAR LIMITE GLOBAL DE FALHAS/HORA
+    // ═══════════════════════════════════════════════════════════
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString()
+    
+    const { count: recentGlobalFailures } = await supabase
+      .from('followup_logs')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'failed')
+      .gte('created_at', oneHourAgo)
+    
+    if ((recentGlobalFailures || 0) >= MAX_GLOBAL_FAILURES_PER_HOUR) {
+      console.error(`🚨 SISTEMA PAUSADO: ${recentGlobalFailures} falhas na última hora`)
+      
+      await logSystemError(
+        supabase,
+        'Sistema de Follow-up Pausado',
+        'dispatch-followup',
+        `${recentGlobalFailures} falhas na última hora. Sistema pausado automaticamente.`,
+        'critical',
+        { failures_last_hour: recentGlobalFailures, threshold: MAX_GLOBAL_FAILURES_PER_HOUR }
+      )
+      
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Sistema pausado por excesso de falhas',
+          failures_last_hour: recentGlobalFailures,
+          threshold: MAX_GLOBAL_FAILURES_PER_HOUR
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // BUSCAR DEALS COM FALHAS RECENTES E DESABILITAR
     // ═══════════════════════════════════════════════════════════
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
     
@@ -208,14 +330,69 @@ Deno.serve(async (req) => {
       }
     }
     
-    const dealsToExclude = new Set(
-      Object.entries(failureCountByDeal)
-        .filter(([_, count]) => count >= MAX_CONSECUTIVE_FAILURES)
-        .map(([dealId]) => dealId)
-    )
+    const dealsToDisable = Object.entries(failureCountByDeal)
+      .filter(([_, count]) => count >= MAX_CONSECUTIVE_FAILURES)
+      .map(([dealId]) => dealId)
     
-    if (dealsToExclude.size > 0) {
-      console.log(`⛔ ${dealsToExclude.size} deals bloqueados por ${MAX_CONSECUTIVE_FAILURES}+ falhas`)
+    // ✅ CORREÇÃO: Desabilitar followup_enabled para deals com excesso de falhas
+    if (dealsToDisable.length > 0) {
+      console.log(`⛔ Desabilitando ${dealsToDisable.length} deals por excesso de falhas`)
+      
+      const { error: disableError } = await supabase
+        .from('crm_deals')
+        .update({ 
+          followup_enabled: false
+        })
+        .in('id', dealsToDisable)
+      
+      if (disableError) {
+        console.error('Erro ao desabilitar deals:', disableError)
+      } else {
+        // Registrar na timeline de cada deal
+        for (const dealId of dealsToDisable) {
+          await supabase.from('crm_timeline').insert({
+            deal_id: dealId,
+            message: `Follow-up automático desabilitado: ${MAX_CONSECUTIVE_FAILURES}+ falhas em 24h`,
+            update_type: 'Sistema - Alerta'
+          })
+        }
+        
+        // Alertar no system_errors
+        await logSystemError(
+          supabase,
+          `${dealsToDisable.length} deals desabilitados por falhas`,
+          'dispatch-followup',
+          `Deals desabilitados automaticamente por ${MAX_CONSECUTIVE_FAILURES}+ falhas em 24h`,
+          'medium',
+          { deal_ids: dealsToDisable }
+        )
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // VERIFICAR SAÚDE DO N8N (SE MODO N8N)
+    // ═══════════════════════════════════════════════════════════
+    const n8nWebhook = body.webhook_url || Deno.env.get('N8N_FOLLOWUP_WEBHOOK_URL')
+    let n8nHealthy = false
+    
+    if (sendMode === 'n8n' || sendMode === 'hybrid') {
+      if (n8nWebhook) {
+        n8nHealthy = await checkN8nHealth(n8nWebhook)
+        console.log(`🔌 n8n health check: ${n8nHealthy ? '✅ Online' : '❌ Offline'}`)
+        
+        if (!n8nHealthy) {
+          await logSystemError(
+            supabase,
+            'n8n Webhook Offline',
+            'dispatch-followup',
+            'Não foi possível conectar ao webhook do n8n. Usando fallback direto.',
+            'high',
+            { webhook_url: n8nWebhook?.substring(0, 50) + '...' }
+          )
+        }
+      } else {
+        console.warn('⚠️ N8N_FOLLOWUP_WEBHOOK_URL não configurada')
+      }
     }
 
     // Buscar etapa "Follow Up"
@@ -229,7 +406,7 @@ Deno.serve(async (req) => {
       console.log(`✅ Etapa Follow Up: ${followupStage.name}`)
     }
 
-    // Buscar deals elegíveis
+    // Buscar deals elegíveis (excluindo os que acabaram de ser desabilitados)
     let query = supabase
       .from('crm_deals')
       .select(`
@@ -272,7 +449,8 @@ Deno.serve(async (req) => {
     
     const eligibleLeads = (leads || [])
       .filter(deal => {
-        if (dealsToExclude.has(deal.id)) return false
+        // Não incluir deals que acabaram de ser desabilitados
+        if (dealsToDisable.includes(deal.id)) return false
         
         const currentCount = deal.followup_count || 0
         const maxFollowups = deal.max_followups || 5
@@ -284,7 +462,7 @@ Deno.serve(async (req) => {
         
         return mostRecentDate.getTime() < cutoffTimestamp
       })
-      .slice(0, sendLimit) // Limitar quantidade
+      .slice(0, sendLimit)
       .map(deal => {
         const leadsData = deal.leads
         const clientData = Array.isArray(leadsData) 
@@ -324,71 +502,75 @@ Deno.serve(async (req) => {
           message: 'Nenhum lead elegível',
           dispatched: 0,
           eligible: 0,
-          excluded_by_failures: dealsToExclude.size
+          disabled_deals: dealsToDisable.length
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
     // ═══════════════════════════════════════════════════════════
-    // ENVIO - MODO HÍBRIDO
+    // ENVIO - PRIORIDADE N8N COM FALLBACK
     // ═══════════════════════════════════════════════════════════
-    const results = { success: 0, failed: 0, errors: [] as string[] }
-    
-    const n8nWebhook = body.webhook_url || Deno.env.get('N8N_FOLLOWUP_WEBHOOK_URL')
-    const useDirectMode = sendMode === 'direct' || sendMode === 'hybrid'
-    const useN8nFallback = sendMode === 'n8n' || (sendMode === 'hybrid' && n8nWebhook)
+    const results = { success: 0, failed: 0, via_n8n: 0, via_direct: 0, errors: [] as string[] }
+    const callbackUrl = `${supabaseUrl}/functions/v1/update-followup-history`
 
     for (const lead of eligibleLeads) {
       console.log(`📤 Enviando: ${lead.client_name} (FU #${lead.followup_number})...`)
       
       let sent = false
       let errorMsg = ''
+      let sentVia = ''
       
-      // Tentar envio direto primeiro (se habilitado)
-      if (useDirectMode && !sent) {
+      // ✅ PRIORIDADE 1: Tentar n8n (com retry automático)
+      if ((sendMode === 'n8n' || sendMode === 'hybrid') && n8nWebhook && n8nHealthy) {
+        // Criar log como pending antes de enviar
+        await supabase.from('followup_logs').insert({
+          deal_id: lead.deal_id,
+          followup_number: lead.followup_number,
+          status: 'pending',
+          message_sent: 'Enviado para n8n + OpenAI'
+        })
+        
+        const n8nResult = await sendN8nFollowup(n8nWebhook, lead, callbackUrl, 2)
+        
+        if (n8nResult.success) {
+          console.log(`✅ [N8N] ${lead.client_name} enviado`)
+          results.success++
+          results.via_n8n++
+          sent = true
+          sentVia = 'n8n'
+        } else {
+          console.warn(`⚠️ [N8N] Falha após retries: ${n8nResult.error}`)
+          errorMsg = n8nResult.error || 'Erro no n8n'
+          
+          // Atualizar log para failed
+          await supabase
+            .from('followup_logs')
+            .update({ 
+              status: 'failed', 
+              error_message: errorMsg.substring(0, 500) 
+            })
+            .eq('deal_id', lead.deal_id)
+            .eq('followup_number', lead.followup_number)
+            .eq('status', 'pending')
+        }
+      }
+      
+      // ✅ FALLBACK: Envio direto se n8n falhou ou não está configurado
+      if (!sent && (sendMode === 'hybrid' || sendMode === 'direct' || !n8nHealthy)) {
+        console.log(`🔄 Tentando fallback direto para ${lead.client_name}...`)
+        
         const directResult = await sendDirectFollowup(supabaseUrl, supabaseKey, lead)
         
         if (directResult.success) {
           console.log(`✅ [DIRETO] ${lead.client_name} enviado`)
           results.success++
+          results.via_direct++
           sent = true
+          sentVia = 'direct'
         } else {
-          console.warn(`⚠️ [DIRETO] Falha: ${directResult.error}`)
+          console.error(`❌ [DIRETO] Falha: ${directResult.error}`)
           errorMsg = directResult.error || 'Erro no envio direto'
-        }
-      }
-      
-      // Fallback para n8n (se configurado e ainda não enviou)
-      if (useN8nFallback && !sent && n8nWebhook) {
-        try {
-          const response = await fetch(n8nWebhook, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              ...lead,
-              callback_url: `${supabaseUrl}/functions/v1/update-followup-history`
-            })
-          })
-          
-          if (response.ok) {
-            console.log(`✅ [N8N] ${lead.client_name} enviado`)
-            results.success++
-            sent = true
-            
-            // Registrar como pending (n8n vai confirmar depois)
-            await supabase.from('followup_logs').insert({
-              deal_id: lead.deal_id,
-              followup_number: lead.followup_number,
-              status: 'pending',
-              message_sent: 'Enviado para n8n'
-            })
-          } else {
-            const errText = await response.text()
-            errorMsg = `N8N: ${errText}`
-          }
-        } catch (e: any) {
-          errorMsg = `N8N: ${e.message}`
         }
       }
       
@@ -398,12 +580,22 @@ Deno.serve(async (req) => {
         results.failed++
         results.errors.push(`${lead.client_name}: ${errorMsg}`)
         
-        await supabase.from('followup_logs').insert({
-          deal_id: lead.deal_id,
-          followup_number: lead.followup_number,
-          status: 'failed',
-          error_message: errorMsg.substring(0, 500)
-        })
+        // Garantir que existe um log de falha
+        const { data: existingLog } = await supabase
+          .from('followup_logs')
+          .select('id')
+          .eq('deal_id', lead.deal_id)
+          .eq('followup_number', lead.followup_number)
+          .maybeSingle()
+        
+        if (!existingLog) {
+          await supabase.from('followup_logs').insert({
+            deal_id: lead.deal_id,
+            followup_number: lead.followup_number,
+            status: 'failed',
+            error_message: errorMsg.substring(0, 500)
+          })
+        }
       }
       
       // Delay entre envios para não sobrecarregar
@@ -411,7 +603,7 @@ Deno.serve(async (req) => {
     }
 
     const elapsed = Date.now() - startTime
-    console.log(`🏁 Concluído: ${results.success} ✅, ${results.failed} ❌ (${elapsed}ms)`)
+    console.log(`🏁 Concluído: ${results.success} ✅ (n8n: ${results.via_n8n}, direto: ${results.via_direct}), ${results.failed} ❌ (${elapsed}ms)`)
     console.log('═══════════════════════════════════════════════════════════')
 
     return new Response(
@@ -420,11 +612,14 @@ Deno.serve(async (req) => {
         message: `${results.success} enviados, ${results.failed} falhas`,
         mode: sendMode,
         dispatched: results.success,
+        via_n8n: results.via_n8n,
+        via_direct: results.via_direct,
         failed: results.failed,
         eligible: eligibleLeads.length,
-        excluded_by_failures: dealsToExclude.size,
+        disabled_deals: dealsToDisable.length,
+        n8n_healthy: n8nHealthy,
         elapsed_ms: elapsed,
-        errors: results.errors.slice(0, 5) // Limitar erros retornados
+        errors: results.errors.slice(0, 5)
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
