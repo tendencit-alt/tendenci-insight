@@ -28,11 +28,13 @@ Deno.serve(async (req) => {
       .select(`
         id,
         architect_id,
-        titulo,
-        mensagem,
         data_agendamento,
         whatsapp_number,
-        created_by,
+        observacoes,
+        canal,
+        metadata,
+        vendedor_id,
+        audio_url,
         architects:architect_id (
           id,
           name,
@@ -67,9 +69,9 @@ Deno.serve(async (req) => {
 
     for (const task of pendingTasks) {
       const architectData = Array.isArray(task.architects) ? task.architects[0] : task.architects
-      console.log(`\n🔄 Processando tarefa ${task.id} - ${task.titulo}`)
-      console.log(`   Arquiteto: ${architectData?.name || 'N/A'}`)
-      console.log(`   Agendamento: ${task.data_agendamento}`)
+      const taskTitle = (task.metadata as any)?.titulo || task.observacoes || 'Tarefa automatizada'
+      console.log(`\n🔄 Processando tarefa ${task.id} - ${taskTitle}`)
+      console.log(`   Arquiteto: ${architectData?.name || 'N/A}'}`)
 
       try {
         // Mark as processing
