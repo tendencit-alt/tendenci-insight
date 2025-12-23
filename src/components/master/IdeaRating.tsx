@@ -94,7 +94,7 @@ export function IdeaRating({ ideaId, onRatingChange, size = 'md' }: IdeaRatingPr
     }
   };
 
-  const displayRating = hoveredRating ?? ratingData.userRating ?? 0;
+  const displayRating = hoveredRating ?? ratingData.averageRating;
 
   const sizeConfig = SIZE_CONFIG[size];
 
