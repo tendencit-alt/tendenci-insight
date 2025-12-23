@@ -33,7 +33,7 @@ export function InactiveArchitects({ refreshKey }: InactiveArchitectsProps) {
 
   const fetchInactive = async () => {
     setLoading(true);
-    const { data, error } = await supabase.rpc('architect_inactivity', { days_threshold: 30 });
+    const { data, error } = await supabase.rpc('architect_inactivity', { days_threshold: 60 });
     
     if (!error && data) {
       setInactive(data as InactiveArchitect[]);
@@ -68,7 +68,7 @@ export function InactiveArchitects({ refreshKey }: InactiveArchitectsProps) {
           <div className="flex items-center gap-3">
             <Clock className="w-6 h-6 text-primary" />
             <div>
-              <h3 className="text-lg font-semibold">🕒 Arquitetos Inativos + de 45 Dias que já enviaram projetos</h3>
+              <h3 className="text-lg font-semibold">🕒 Arquitetos Inativos + de 60 Dias que já enviaram projetos</h3>
               <p className="text-sm text-muted-foreground">
                 {inactive.length} arquitetos precisam de atenção
               </p>
