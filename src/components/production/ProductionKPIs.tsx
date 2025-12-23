@@ -123,11 +123,13 @@ export function ProductionKPIs({ productionTypeId, filters }: ProductionKPIsProp
               {kpi.value}
             </p>
             {'subValue' in kpi && kpi.subValue && (
-              <p className="text-xs font-medium text-muted-foreground">
-                {kpi.subValue}
-              </p>
+              <div className="mt-1 px-2 py-1 rounded-md bg-emerald-500/15">
+                <p className="text-sm font-bold text-emerald-600">
+                  {kpi.subValue}
+                </p>
+              </div>
             )}
-            <p className="text-xs text-muted-foreground truncate">
+            <p className="text-xs text-muted-foreground truncate mt-1">
               {kpi.label}
             </p>
           </CardContent>
