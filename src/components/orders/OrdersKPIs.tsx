@@ -26,20 +26,23 @@ export function OrdersKPIs({ filters }: OrdersKPIsProps) {
         p_date_field: filters.dateField || 'data_emissao',
       });
       if (error) throw error;
-      return data as {
-        total_pedidos: number;
-        valor_total: number;
-        ticket_medio: number;
-        rascunho: number;
-        aguardando_aprovacao: number;
-        aprovado: number;
-        em_producao: number;
-        faturado: number;
-        entregue: number;
-        cancelado: number;
-        valor_aprovado: number;
-        valor_em_producao: number;
+      const result = data?.[0] || {
+        total_pedidos: 0,
+        valor_total: 0,
+        ticket_medio: 0,
+        rascunho: 0,
+        ativo: 0,
+        aguardando_aprovacao: 0,
+        aprovado: 0,
+        em_producao: 0,
+        faturado: 0,
+        entregue: 0,
+        cancelado: 0,
+        valor_aprovado: 0,
+        valor_em_producao: 0,
+        valor_ativo: 0,
       };
+      return result;
     },
   });
 
@@ -63,7 +66,7 @@ export function OrdersKPIs({ filters }: OrdersKPIsProps) {
             </Card>
           ))}
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
           {[...Array(7)].map((_, i) => (
             <Card key={i}>
               <CardContent className="p-3">
@@ -106,6 +109,12 @@ export function OrdersKPIs({ filters }: OrdersKPIsProps) {
       value: formatCurrency(metrics?.valor_total || 0),
       icon: DollarSign,
       color: 'text-green-500',
+    },
+    {
+      label: 'Ativos',
+      value: metrics?.ativo || 0,
+      icon: CheckCircle,
+      color: 'text-blue-500',
     },
     {
       label: 'Aguardando',
@@ -159,7 +168,7 @@ export function OrdersKPIs({ filters }: OrdersKPIsProps) {
       </div>
 
       {/* KPIs secundários */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
         {kpis.map((kpi) => (
           <Card key={kpi.label} className="hover:shadow-md transition-shadow">
             <CardContent className="p-3">

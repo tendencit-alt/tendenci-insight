@@ -2965,6 +2965,7 @@ export type Database = {
           id: string
           notes: string | null
           order_id: string | null
+          order_item_id: string | null
           order_number: number
           planned_end_date: string | null
           planned_start_date: string | null
@@ -2994,6 +2995,7 @@ export type Database = {
           id?: string
           notes?: string | null
           order_id?: string | null
+          order_item_id?: string | null
           order_number?: number
           planned_end_date?: string | null
           planned_start_date?: string | null
@@ -3023,6 +3025,7 @@ export type Database = {
           id?: string
           notes?: string | null
           order_id?: string | null
+          order_item_id?: string | null
           order_number?: number
           planned_end_date?: string | null
           planned_start_date?: string | null
@@ -3072,6 +3075,13 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_orders_order_item_id_fkey"
+            columns: ["order_item_id"]
+            isOneToOne: false
+            referencedRelation: "order_items"
             referencedColumns: ["id"]
           },
           {
@@ -5946,7 +5956,22 @@ export type Database = {
               p_status?: string
               p_vendedor_id?: string
             }
-            Returns: Json
+            Returns: {
+              aguardando_aprovacao: number
+              aprovado: number
+              ativo: number
+              cancelado: number
+              em_producao: number
+              entregue: number
+              faturado: number
+              rascunho: number
+              ticket_medio: number
+              total_pedidos: number
+              valor_aprovado: number
+              valor_ativo: number
+              valor_em_producao: number
+              valor_total: number
+            }[]
           }
       production_metrics:
         | {

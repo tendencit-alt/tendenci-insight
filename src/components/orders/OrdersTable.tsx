@@ -34,6 +34,7 @@ interface OrdersTableProps {
 
 const STATUS_CONFIG: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline'; color: string }> = {
   rascunho: { label: 'Rascunho', variant: 'secondary', color: 'bg-gray-100 text-gray-700' },
+  ativo: { label: 'Ativo', variant: 'default', color: 'bg-blue-100 text-blue-700' },
   aguardando_aprovacao: { label: 'Aguardando', variant: 'outline', color: 'bg-yellow-100 text-yellow-700' },
   aprovado: { label: 'Aprovado', variant: 'default', color: 'bg-green-100 text-green-700' },
   em_producao: { label: 'Em Produção', variant: 'default', color: 'bg-purple-100 text-purple-700' },
@@ -46,7 +47,7 @@ const ITEMS_PER_PAGE = 20;
 
 export function OrdersTable({ orders, isLoading, onSelectOrder, onEditOrder, onDeleteOrder }: OrdersTableProps) {
   const { isMaster } = usePermissions();
-  const isEditable = (status: string) => ['rascunho', 'aguardando_aprovacao'].includes(status);
+  const isEditable = (status: string) => ['rascunho', 'ativo', 'aguardando_aprovacao'].includes(status);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
 

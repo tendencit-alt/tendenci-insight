@@ -327,7 +327,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
   const total = subtotal - descontoTotal + Number(formData.valor_frete || 0);
 
   const totalPercentual = parcelas.reduce((sum, p) => sum + p.percentual, 0);
-  const isEditable = order?.status === 'rascunho' || order?.status === 'aguardando_aprovacao';
+  const isEditable = order?.status === 'rascunho' || order?.status === 'ativo' || order?.status === 'aguardando_aprovacao';
 
   // Busca automática de CEP
   const handleCepSearch = async (cep: string) => {
@@ -404,6 +404,21 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
       const parcelasPrincipal = parcelas[0];
       const parcelasSecundaria = parcelas.length > 1 ? parcelas[1] : null;
 
+      // Verificar se deve mudar status para 'ativo'
+      const allItemsHaveCentroCusto = items.length > 0 && items.every(i => i.centro_custo);
+      const hasPaymentMethod = !!parcelasPrincipal?.forma_pagamento;
+      const hasDeliveryType = !!formData.tipo_entrega;
+      const hasClient = !!formData.client_id;
+      
+      const shouldBeAtivo = order?.status === 'rascunho' && 
+        hasClient && 
+        items.length > 0 && 
+        allItemsHaveCentroCusto && 
+        hasPaymentMethod && 
+        hasDeliveryType;
+      
+      const newStatus = shouldBeAtivo ? 'ativo' : order?.status;
+
       const { error: orderError } = await supabase
         .from('orders')
         .update({
@@ -438,6 +453,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
           subtotal,
           valor_total: total,
           centro_custo: null, // centro_custo agora é por item
+          status: newStatus,
         })
         .eq('id', orderId);
 
@@ -478,7 +494,9 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
         });
       }
 
-      toast.success('Pedido e cliente atualizados com sucesso!');
+      toast.success(shouldBeAtivo && order?.status === 'rascunho' 
+        ? 'Pedido atualizado e ativado!' 
+        : 'Pedido e cliente atualizados com sucesso!');
       onSuccess();
       onOpenChange(false);
     } catch (error: any) {
