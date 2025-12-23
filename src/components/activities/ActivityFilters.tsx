@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Select,
   SelectContent,
@@ -9,9 +11,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Filter } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Search, Filter, CalendarIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ActivityFiltersState } from "@/pages/ActivityCenter";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 
 interface ActivityFiltersProps {
   filters: ActivityFiltersState;
@@ -56,6 +66,7 @@ const periodOptions = [
   { value: "today", label: "Hoje" },
   { value: "last_7_days", label: "Últimos 7 Dias" },
   { value: "last_30_days", label: "Últimos 30 Dias" },
+  { value: "custom", label: "Personalizado" },
   { value: "all", label: "Tudo" },
 ];
 
@@ -77,8 +88,16 @@ export function ActivityFilters({ filters, onFiltersChange }: ActivityFiltersPro
     }
   };
 
-  const updateFilter = (key: keyof ActivityFiltersState, value: string) => {
+  const updateFilter = (key: keyof ActivityFiltersState, value: string | Date | null) => {
     onFiltersChange({ ...filters, [key]: value });
+  };
+
+  const handlePeriodChange = (value: string) => {
+    if (value !== "custom") {
+      onFiltersChange({ ...filters, period: value, startDate: null, endDate: null });
+    } else {
+      onFiltersChange({ ...filters, period: value });
+    }
   };
 
   return (
@@ -171,7 +190,7 @@ export function ActivityFilters({ filters, onFiltersChange }: ActivityFiltersPro
             <Label>Período</Label>
             <Select
               value={filters.period}
-              onValueChange={(value) => updateFilter("period", value)}
+              onValueChange={handlePeriodChange}
             >
               <SelectTrigger>
                 <SelectValue />
@@ -186,6 +205,78 @@ export function ActivityFilters({ filters, onFiltersChange }: ActivityFiltersPro
             </Select>
           </div>
         </div>
+
+        {/* Date Range Pickers - show when custom period is selected */}
+        {filters.period === "custom" && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 p-4 bg-muted/50 rounded-lg border">
+            <div className="space-y-2">
+              <Label>Data Início</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !filters.startDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {filters.startDate ? (
+                      format(filters.startDate, "dd/MM/yyyy", { locale: ptBR })
+                    ) : (
+                      <span>Selecione a data</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={filters.startDate || undefined}
+                    onSelect={(date) => updateFilter("startDate", date || null)}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                    locale={ptBR}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Data Fim</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !filters.endDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {filters.endDate ? (
+                      format(filters.endDate, "dd/MM/yyyy", { locale: ptBR })
+                    ) : (
+                      <span>Selecione a data</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={filters.endDate || undefined}
+                    onSelect={(date) => updateFilter("endDate", date || null)}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                    locale={ptBR}
+                    disabled={(date) => 
+                      filters.startDate ? date < filters.startDate : false
+                    }
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

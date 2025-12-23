@@ -8,37 +8,21 @@ import {
   TrendingUp,
   Clock,
 } from "lucide-react";
-import { SystemActivity } from "@/pages/ActivityCenter";
-import { format, isToday, startOfHour, subHours } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { SystemActivity, ActivityFiltersState } from "@/pages/ActivityCenter";
 
 interface ActivityKPIsProps {
   activities: SystemActivity[];
+  filters: ActivityFiltersState;
 }
 
-export function ActivityKPIs({ activities }: ActivityKPIsProps) {
+export function ActivityKPIs({ activities, filters }: ActivityKPIsProps) {
   const stats = useMemo(() => {
-    const now = new Date();
-    const todayActivities = activities.filter((a) => isToday(new Date(a.created_at)));
-    
-    // Atividades por hora (últimas 24h)
-    const hourlyData: { hour: string; count: number }[] = [];
-    for (let i = 23; i >= 0; i--) {
-      const hourStart = startOfHour(subHours(now, i));
-      const hourEnd = startOfHour(subHours(now, i - 1));
-      const count = activities.filter((a) => {
-        const actDate = new Date(a.created_at);
-        return actDate >= hourStart && actDate < hourEnd;
-      }).length;
-      hourlyData.push({
-        hour: format(hourStart, "HH:mm"),
-        count,
-      });
-    }
+    // Use the filtered activities directly - they already match the selected period
+    const filteredActivities = activities;
 
     // Usuário mais ativo
     const userCounts: Record<string, { name: string; count: number }> = {};
-    todayActivities.forEach((a) => {
+    filteredActivities.forEach((a) => {
       const userId = a.user_id || "sistema";
       const userName = a.user_name || "Sistema";
       if (!userCounts[userId]) {
@@ -50,33 +34,33 @@ export function ActivityKPIs({ activities }: ActivityKPIsProps) {
 
     // Módulo mais ativo
     const moduleCounts: Record<string, number> = {};
-    todayActivities.forEach((a) => {
+    filteredActivities.forEach((a) => {
       moduleCounts[a.module] = (moduleCounts[a.module] || 0) + 1;
     });
     const topModule = Object.entries(moduleCounts).sort((a, b) => b[1] - a[1])[0];
 
     // Contagens específicas
-    const comments = todayActivities.filter((a) =>
+    const comments = filteredActivities.filter((a) =>
       ["comment", "crm_comment"].includes(a.action_type)
     ).length;
-    const tasksCompleted = todayActivities.filter((a) =>
+    const tasksCompleted = filteredActivities.filter((a) =>
       ["task_completed", "prospec_task_completed"].includes(a.action_type)
     ).length;
-
-    // Atividades na última hora
-    const oneHourAgo = subHours(now, 1);
-    const lastHourActivities = activities.filter(
-      (a) => new Date(a.created_at) >= oneHourAgo
+    const tasksCreated = filteredActivities.filter((a) =>
+      ["task_created", "prospec_task_created"].includes(a.action_type)
+    ).length;
+    const stageChanges = filteredActivities.filter((a) =>
+      a.action_type === "stage_change"
     ).length;
 
     return {
-      total: todayActivities.length,
+      total: filteredActivities.length,
       comments,
       tasksCompleted,
-      lastHourActivities,
+      tasksCreated,
+      stageChanges,
       topUser,
       topModule,
-      hourlyData,
       uniqueUsers: Object.keys(userCounts).length,
     };
   }, [activities]);
@@ -91,14 +75,33 @@ export function ActivityKPIs({ activities }: ActivityKPIsProps) {
     estoque: "Estoque",
   };
 
+  const getPeriodLabel = () => {
+    switch (filters.period) {
+      case "last_hour":
+        return "Última Hora";
+      case "today":
+        return "Hoje";
+      case "last_7_days":
+        return "7 Dias";
+      case "last_30_days":
+        return "30 Dias";
+      case "custom":
+        return "Período";
+      case "all":
+        return "Total";
+      default:
+        return "Período";
+    }
+  };
+
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-      {/* Total hoje */}
+      {/* Total no período */}
       <Card className="bg-gradient-to-br from-primary/10 to-primary/5">
         <CardContent className="pt-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-muted-foreground">Hoje</p>
+              <p className="text-sm text-muted-foreground">{getPeriodLabel()}</p>
               <p className="text-2xl font-bold">{stats.total}</p>
               <p className="text-xs text-muted-foreground">atividades</p>
             </div>
@@ -107,14 +110,14 @@ export function ActivityKPIs({ activities }: ActivityKPIsProps) {
         </CardContent>
       </Card>
 
-      {/* Última hora */}
+      {/* Tarefas Criadas */}
       <Card className="bg-gradient-to-br from-green-500/10 to-green-500/5">
         <CardContent className="pt-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-muted-foreground">Última Hora</p>
-              <p className="text-2xl font-bold">{stats.lastHourActivities}</p>
-              <p className="text-xs text-muted-foreground">atividades</p>
+              <p className="text-sm text-muted-foreground">Tarefas Criadas</p>
+              <p className="text-2xl font-bold">{stats.tasksCreated}</p>
+              <p className="text-xs text-muted-foreground">no período</p>
             </div>
             <Clock className="h-8 w-8 text-green-500/50" />
           </div>
@@ -128,7 +131,7 @@ export function ActivityKPIs({ activities }: ActivityKPIsProps) {
             <div>
               <p className="text-sm text-muted-foreground">Comentários</p>
               <p className="text-2xl font-bold">{stats.comments}</p>
-              <p className="text-xs text-muted-foreground">hoje</p>
+              <p className="text-xs text-muted-foreground">no período</p>
             </div>
             <MessageSquare className="h-8 w-8 text-blue-500/50" />
           </div>
@@ -142,7 +145,7 @@ export function ActivityKPIs({ activities }: ActivityKPIsProps) {
             <div>
               <p className="text-sm text-muted-foreground">Concluídas</p>
               <p className="text-2xl font-bold">{stats.tasksCompleted}</p>
-              <p className="text-xs text-muted-foreground">tarefas hoje</p>
+              <p className="text-xs text-muted-foreground">tarefas</p>
             </div>
             <CheckCircle className="h-8 w-8 text-emerald-500/50" />
           </div>
