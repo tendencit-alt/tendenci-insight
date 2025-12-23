@@ -10,6 +10,7 @@ import { CreateProductionOrderDialog } from '@/components/production/CreateProdu
 import { ProductionFilters } from '@/components/production/ProductionFilters';
 import { ProductionKPIs } from '@/components/production/ProductionKPIs';
 import { ProductionSLAAlerts } from '@/components/production/ProductionSLAAlerts';
+import { ProductionSLAChart } from '@/components/production/ProductionSLAChart';
 import { ProductionOrderDetailSheet } from '@/components/production/ProductionOrderDetailSheet';
 import { ManageProductionStagesDialog } from '@/components/production/ManageProductionStagesDialog';
 import { ManageProductionAutomationsDialog } from '@/components/production/ManageProductionAutomationsDialog';
@@ -261,6 +262,9 @@ export default function Production() {
             </TabsContent>
           ))}
         </Tabs>
+
+        {/* Gráfico SLA após o Kanban */}
+        <ProductionSLAChart productionTypeId={currentTypeId} />
 
         {/* Dialog de criação */}
         <CreateProductionOrderDialog 
