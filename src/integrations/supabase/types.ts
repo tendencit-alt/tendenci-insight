@@ -841,6 +841,7 @@ export type Database = {
           attachment_path: string | null
           attachment_type: string | null
           bairro: string | null
+          boleto_status: string | null
           cep: string | null
           city: string | null
           complemento: string | null
@@ -870,6 +871,7 @@ export type Database = {
           attachment_path?: string | null
           attachment_type?: string | null
           bairro?: string | null
+          boleto_status?: string | null
           cep?: string | null
           city?: string | null
           complemento?: string | null
@@ -899,6 +901,7 @@ export type Database = {
           attachment_path?: string | null
           attachment_type?: string | null
           bairro?: string | null
+          boleto_status?: string | null
           cep?: string | null
           city?: string | null
           complemento?: string | null

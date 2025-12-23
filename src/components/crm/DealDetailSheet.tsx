@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { EditDealDialog } from "./EditDealDialog";
+import { EditClientDialog } from "./EditClientDialog";
 import { CreateArchitectDialog } from "@/components/architects/CreateArchitectDialog";
 import { CreateOrderDialog } from "@/components/orders/CreateOrderDialog";
 
@@ -83,6 +84,7 @@ export function DealDetailSheet({
   const [showCreateOrderPrompt, setShowCreateOrderPrompt] = useState(false);
   const [followupEnabled, setFollowupEnabled] = useState(deal?.followup_enabled ?? true);
   const [isUpdatingFollowup, setIsUpdatingFollowup] = useState(false);
+  const [isEditClientOpen, setIsEditClientOpen] = useState(false);
 
   const fetchProject = async () => {
     if (!deal?.id) return;
@@ -616,13 +618,15 @@ export function DealDetailSheet({
                   <User className="h-5 w-5 text-primary" />
                   <h3 className="font-semibold text-lg">Cliente</h3>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setIsEditDialogOpen(true)}
-                >
-                  <Edit className="h-4 w-4" />
-                </Button>
+                {deal.lead?.client?.id && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsEditClientOpen(true)}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
               {deal.lead?.client ? (
                 <div className="space-y-2">
@@ -1249,6 +1253,16 @@ export function DealDetailSheet({
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Edit Client Dialog */}
+        {deal.lead?.client?.id && (
+          <EditClientDialog
+            open={isEditClientOpen}
+            onOpenChange={setIsEditClientOpen}
+            clientId={deal.lead.client.id}
+            onSuccess={onSuccess}
+          />
+        )}
       </SheetContent>
     </Sheet>
   );
