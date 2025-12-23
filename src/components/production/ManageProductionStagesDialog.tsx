@@ -16,12 +16,14 @@ import {
   Check,
   X,
   Loader2,
-  Clock
+  Clock,
+  ShieldAlert
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import { getTailwindColor } from '@/utils/tailwindColors';
+import { usePermissions } from '@/hooks/usePermissions';
 
 interface ManageProductionStagesDialogProps {
   open: boolean;
@@ -78,6 +80,7 @@ const generateSlug = (name: string) => {
 
 export function ManageProductionStagesDialog({ open, onOpenChange }: ManageProductionStagesDialogProps) {
   const queryClient = useQueryClient();
+  const { isMaster, loading: permissionsLoading } = usePermissions();
   
   // Types state
   const [types, setTypes] = useState<ProductionType[]>([]);
@@ -477,6 +480,24 @@ export function ManageProductionStagesDialog({ open, onOpenChange }: ManageProdu
           </DialogTitle>
         </DialogHeader>
         
+        {permissionsLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
+        ) : !isMaster ? (
+          <div className="flex flex-col items-center justify-center py-12 gap-4 text-center">
+            <ShieldAlert className="h-12 w-12 text-destructive" />
+            <div>
+              <h3 className="font-semibold text-lg">Acesso Restrito</h3>
+              <p className="text-muted-foreground">
+                Apenas usuários Master podem gerenciar tipos e etapas de produção.
+              </p>
+            </div>
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Fechar
+            </Button>
+          </div>
+        ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Left Column - Production Types */}
           <div className="space-y-3">
@@ -817,6 +838,7 @@ export function ManageProductionStagesDialog({ open, onOpenChange }: ManageProdu
             </ScrollArea>
           </div>
         </div>
+        )}
       </DialogContent>
     </Dialog>
   );

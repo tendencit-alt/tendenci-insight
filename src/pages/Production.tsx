@@ -195,10 +195,12 @@ export default function Production() {
                 Automações
               </Button>
             )}
-            <Button variant="outline" onClick={() => setConfigDialogOpen(true)} className="gap-2">
-              <Settings className="h-4 w-4" />
-              Configurar Etapas
-            </Button>
+            {isMaster && (
+              <Button variant="outline" onClick={() => setConfigDialogOpen(true)} className="gap-2">
+                <Settings className="h-4 w-4" />
+                Configurar Etapas
+              </Button>
+            )}
             <Button onClick={() => setCreateDialogOpen(true)} className="gap-2">
               <Plus className="h-4 w-4" />
               Nova OP
