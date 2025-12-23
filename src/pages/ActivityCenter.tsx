@@ -31,6 +31,8 @@ export interface ActivityFiltersState {
   userId: string;
   period: string;
   search: string;
+  startDate: Date | null;
+  endDate: Date | null;
 }
 
 export default function ActivityCenter() {
@@ -42,6 +44,8 @@ export default function ActivityCenter() {
     userId: "all",
     period: "today",
     search: "",
+    startDate: null,
+    endDate: null,
   });
   const [isRealtime, setIsRealtime] = useState(true);
   const { toast } = useToast();
@@ -72,7 +76,13 @@ export default function ActivityCenter() {
 
       // Filtro por período
       const now = new Date();
-      if (filters.period === "today") {
+      if (filters.period === "custom" && filters.startDate && filters.endDate) {
+        const startOfDay = new Date(filters.startDate);
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(filters.endDate);
+        endOfDay.setHours(23, 59, 59, 999);
+        query = query.gte("created_at", startOfDay.toISOString()).lte("created_at", endOfDay.toISOString());
+      } else if (filters.period === "today") {
         const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
         query = query.gte("created_at", startOfDay);
       } else if (filters.period === "last_hour") {
@@ -192,7 +202,7 @@ export default function ActivityCenter() {
         </div>
 
         {/* KPIs */}
-        <ActivityKPIs activities={activities} />
+        <ActivityKPIs activities={activities} filters={filters} />
 
         {/* Filters */}
         <ActivityFilters filters={filters} onFiltersChange={setFilters} />
