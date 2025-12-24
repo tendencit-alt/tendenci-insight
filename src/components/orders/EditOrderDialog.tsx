@@ -215,6 +215,35 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
     setParcelas(novasParcelas);
   };
 
+  // Atualizar valor da parcela e recalcular percentual (sincronização bidirecional)
+  const atualizarValorParcela = (id: string, novoValor: number) => {
+    const valorSeguro = isNaN(novoValor) ? 0 : novoValor;
+    // Usar totalSemTaxa como base para calcular percentual
+    const baseParaCalculo = totalSemTaxa > 0 ? totalSemTaxa : 1;
+    const novoPercentual = (valorSeguro / baseParaCalculo) * 100;
+    atualizarPercentual(id, novoPercentual);
+  };
+
+  // Atualizar carência do boleto
+  const atualizarCarenciaBoleto = (id: string, carencia: 30 | 60) => {
+    const novasParcelas = parcelas.map(p =>
+      p.id === id ? { ...p, carencia_boleto: carencia } : p
+    );
+    setParcelas(novasParcelas);
+  };
+
+  // Atualizar número de parcelas
+  const atualizarNumeroParcelas = (id: string, delta: number) => {
+    const novasParcelas = parcelas.map(p => {
+      if (p.id === id) {
+        const novoNumero = Math.max(1, Math.min(12, (p.numero_parcelas || 1) + delta));
+        return { ...p, numero_parcelas: novoNumero };
+      }
+      return p;
+    });
+    setParcelas(novasParcelas);
+  };
+
   const [items, setItems] = useState<OrderItem[]>([]);
   
   // Estado para dados editáveis do cliente
@@ -1177,157 +1206,324 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
               </div>
 
               <div className="space-y-3">
-                {parcelas.map((parcela, index) => (
-                  <div key={parcela.id} className="grid grid-cols-12 gap-2 items-end p-3 bg-muted/30 rounded-lg relative">
+                {parcelas.map((parcela, index) => {
+                  const valorParcela = totalSemTaxa * (parcela.percentual / 100);
+                  const taxaBoletoParcelaPercentual = parcela.forma_pagamento === 'boleto' 
+                    ? (TAXAS_BOLETO[parcela.carencia_boleto || 30]?.[parcela.numero_parcelas || 1] || 0) 
+                    : 0;
+                  const taxaBoletoParcelaValor = valorParcela * (taxaBoletoParcelaPercentual / 100);
+                  
+                  return (
+                  <div key={parcela.id} className={`p-3 bg-muted/30 rounded-lg relative ${parcela.forma_pagamento === 'boleto' ? 'space-y-3' : ''}`}>
                     {index === 0 && parcelas.length > 1 && (
                       <Badge className="absolute -top-2 left-2 text-xs" variant="default">
                         Entrada
                       </Badge>
                     )}
                     
-                    <div className={`${FORMAS_COM_PARCELAS.includes(parcela.forma_pagamento) ? 'col-span-2' : 'col-span-3'} space-y-1`}>
-                      <Label className="text-xs">Forma *</Label>
-                      <Select
-                        value={parcela.forma_pagamento || "_placeholder"}
-                        onValueChange={(v) => {
-                          const newParcelas = [...parcelas];
-                          newParcelas[index].forma_pagamento = v === "_placeholder" ? "" : v;
-                          // Reset parcelas se mudou para forma sem parcelas
-                          if (!FORMAS_COM_PARCELAS.includes(v)) {
-                            newParcelas[index].numero_parcelas = 1;
-                          }
-                          setParcelas(newParcelas);
-                        }}
-                        disabled={!isEditable}
-                      >
-                        <SelectTrigger className="h-9">
-                          <SelectValue placeholder="Selecione" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="_placeholder" disabled>Selecione</SelectItem>
-                          {FORMAS_PAGAMENTO.map((f) => (
-                            <SelectItem key={f.value} value={f.value}>
-                              {f.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Carência - só para boleto */}
-                    {parcela.forma_pagamento === 'boleto' && (
-                      <div className="col-span-1 space-y-1">
-                        <Label className="text-xs">Carência</Label>
-                        <Select
-                          value={String(parcela.carencia_boleto || 30)}
-                          onValueChange={(v) => {
-                            const newParcelas = [...parcelas];
-                            newParcelas[index].carencia_boleto = Number(v) as 30 | 60;
-                            setParcelas(newParcelas);
-                          }}
-                          disabled={!isEditable}
-                        >
-                          <SelectTrigger className="h-10">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="30">30 dias</SelectItem>
-                            <SelectItem value="60">60 dias</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
-
-                    {/* Parcelas - só para boleto e cartão de crédito */}
-                    {FORMAS_COM_PARCELAS.includes(parcela.forma_pagamento) && (
-                      <div className={`${parcela.forma_pagamento === 'boleto' ? 'col-span-1' : 'col-span-2'} space-y-1`}>
-                        <Label className="text-xs">Parcelas</Label>
-                        <div className="flex items-center h-10 border rounded-lg overflow-hidden bg-background">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="h-10 w-10 rounded-none hover:bg-destructive/10 hover:text-destructive text-lg font-bold"
-                            disabled={!isEditable}
-                            onClick={() => {
-                              const newParcelas = [...parcelas];
-                              newParcelas[index].numero_parcelas = Math.max(1, (parcela.numero_parcelas || 1) - 1);
-                              setParcelas(newParcelas);
-                            }}
-                          >
-                            −
-                          </Button>
-                          <div className="flex-1 h-10 flex items-center justify-center bg-muted/50 text-base font-semibold min-w-[50px]">
-                            {parcela.numero_parcelas || 1}x
+                    {/* Layout para Boleto - expandido com toggle buttons e taxa inline */}
+                    {parcela.forma_pagamento === 'boleto' ? (
+                      <>
+                        {/* Primeira linha: Forma + Carência + Parcelas */}
+                        <div className="grid grid-cols-12 gap-2 items-end">
+                          <div className="col-span-3 space-y-1">
+                            <Label className="text-xs">Forma *</Label>
+                            <Select
+                              value={parcela.forma_pagamento}
+                              onValueChange={(v) => {
+                                const newParcelas = [...parcelas];
+                                newParcelas[index].forma_pagamento = v === "_placeholder" ? "" : v;
+                                if (!FORMAS_COM_PARCELAS.includes(v)) {
+                                  newParcelas[index].numero_parcelas = 1;
+                                }
+                                setParcelas(newParcelas);
+                              }}
+                              disabled={!isEditable}
+                            >
+                              <SelectTrigger className="h-10">
+                                <SelectValue placeholder="Selecione" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="_placeholder" disabled>Selecione</SelectItem>
+                                {FORMAS_PAGAMENTO.map((f) => (
+                                  <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </div>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="h-10 w-10 rounded-none hover:bg-primary/10 hover:text-primary text-lg font-bold"
-                            disabled={!isEditable}
-                            onClick={() => {
+
+                          {/* Carência como toggle buttons */}
+                          <div className="col-span-3 space-y-1">
+                            <Label className="text-xs">Carência</Label>
+                            <div className="flex gap-1 h-10">
+                              <Button
+                                type="button"
+                                variant={(parcela.carencia_boleto || 30) === 30 ? 'default' : 'outline'}
+                                size="sm"
+                                className={`flex-1 h-10 ${(parcela.carencia_boleto || 30) === 30 ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
+                                onClick={() => atualizarCarenciaBoleto(parcela.id, 30)}
+                                disabled={!isEditable}
+                              >
+                                30d
+                              </Button>
+                              <Button
+                                type="button"
+                                variant={parcela.carencia_boleto === 60 ? 'default' : 'outline'}
+                                size="sm"
+                                className={`flex-1 h-10 ${parcela.carencia_boleto === 60 ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
+                                onClick={() => atualizarCarenciaBoleto(parcela.id, 60)}
+                                disabled={!isEditable}
+                              >
+                                60d
+                              </Button>
+                            </div>
+                          </div>
+
+                          {/* Parcelas com +/- */}
+                          <div className="col-span-2 space-y-1">
+                            <Label className="text-xs">Parcelas</Label>
+                            <div className="flex items-center h-10 border rounded-lg overflow-hidden bg-background">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-10 w-8 rounded-none hover:bg-destructive/10 hover:text-destructive text-lg font-bold p-0"
+                                onClick={() => atualizarNumeroParcelas(parcela.id, -1)}
+                                disabled={!isEditable}
+                              >
+                                −
+                              </Button>
+                              <div className="flex-1 h-10 flex items-center justify-center bg-muted/50 text-base font-semibold">
+                                {parcela.numero_parcelas || 1}x
+                              </div>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-10 w-8 rounded-none hover:bg-primary/10 hover:text-primary text-lg font-bold p-0"
+                                onClick={() => atualizarNumeroParcelas(parcela.id, 1)}
+                                disabled={!isEditable}
+                              >
+                                +
+                              </Button>
+                            </div>
+                          </div>
+
+                          {/* Vencimento */}
+                          <div className="col-span-3 space-y-1">
+                            <Label className="text-xs">Vencimento</Label>
+                            <Input
+                              type="date"
+                              className="h-10"
+                              value={parcela.data_vencimento}
+                              onChange={(e) => {
+                                const newParcelas = [...parcelas];
+                                newParcelas[index].data_vencimento = e.target.value;
+                                setParcelas(newParcelas);
+                              }}
+                              disabled={!isEditable}
+                            />
+                          </div>
+
+                          <div className="col-span-1 flex items-end justify-center">
+                            {index > 0 && isEditable && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-9 w-9 text-destructive hover:text-destructive"
+                                onClick={() => removerFormaPagamento(parcela.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Segunda linha: % + Valor editável + Taxa inline */}
+                        <div className="grid grid-cols-12 gap-2 items-end">
+                          <div className="col-span-2 space-y-1">
+                            <Label className="text-xs">% do Total</Label>
+                            <Input
+                              type="number"
+                              className="h-10"
+                              value={parcela.percentual}
+                              onChange={(e) => atualizarPercentual(parcela.id, Number(e.target.value))}
+                              min={0}
+                              max={100}
+                              disabled={!isEditable}
+                            />
+                          </div>
+
+                          <div className="col-span-2 space-y-1">
+                            <Label className="text-xs">Valor (R$)</Label>
+                            <Input
+                              type="number"
+                              className="h-10"
+                              value={Math.round(valorParcela * 100) / 100}
+                              onChange={(e) => atualizarValorParcela(parcela.id, Number(e.target.value))}
+                              min={0}
+                              step={0.01}
+                              disabled={!isEditable}
+                            />
+                          </div>
+
+                          {/* Taxa inline */}
+                          <div className="col-span-8">
+                            <div className="flex items-center gap-3 h-10 px-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
+                              <div className="flex-1">
+                                <span className="text-xs text-blue-700 dark:text-blue-300">
+                                  Taxa {(parcela.carencia_boleto || 30)}d / {parcela.numero_parcelas || 1}x: 
+                                  <strong className="ml-1">{taxaBoletoParcelaPercentual.toFixed(2)}%</strong>
+                                  <span className="mx-1">→</span>
+                                  <strong>{formatCurrency(taxaBoletoParcelaValor)}</strong>
+                                </span>
+                              </div>
+                              <div className="flex gap-1">
+                                <Button
+                                  type="button"
+                                  variant={taxaBoleto.responsavel === 'cliente' ? 'default' : 'outline'}
+                                  size="sm"
+                                  className={`h-7 text-xs ${taxaBoleto.responsavel === 'cliente' ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
+                                  onClick={() => setTaxaBoleto({...taxaBoleto, responsavel: 'cliente'})}
+                                  disabled={!isEditable}
+                                >
+                                  Cliente
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant={taxaBoleto.responsavel === 'tendenci' ? 'default' : 'outline'}
+                                  size="sm"
+                                  className={`h-7 text-xs ${taxaBoleto.responsavel === 'tendenci' ? 'bg-green-600 hover:bg-green-700' : ''}`}
+                                  onClick={() => setTaxaBoleto({...taxaBoleto, responsavel: 'tendenci'})}
+                                  disabled={!isEditable}
+                                >
+                                  Tendenci
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      /* Layout padrão para outras formas de pagamento */
+                      <div className="grid grid-cols-12 gap-2 items-end">
+                        <div className={`${FORMAS_COM_PARCELAS.includes(parcela.forma_pagamento) ? 'col-span-2' : 'col-span-3'} space-y-1`}>
+                          <Label className="text-xs">Forma *</Label>
+                          <Select
+                            value={parcela.forma_pagamento || "_placeholder"}
+                            onValueChange={(v) => {
                               const newParcelas = [...parcelas];
-                              newParcelas[index].numero_parcelas = Math.min(12, (parcela.numero_parcelas || 1) + 1);
+                              newParcelas[index].forma_pagamento = v === "_placeholder" ? "" : v;
+                              if (!FORMAS_COM_PARCELAS.includes(v)) {
+                                newParcelas[index].numero_parcelas = 1;
+                              }
                               setParcelas(newParcelas);
                             }}
+                            disabled={!isEditable}
                           >
-                            +
-                          </Button>
+                            <SelectTrigger className="h-9">
+                              <SelectValue placeholder="Selecione" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="_placeholder" disabled>Selecione</SelectItem>
+                              {FORMAS_PAGAMENTO.map((f) => (
+                                <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {/* Parcelas - só para cartão de crédito */}
+                        {parcela.forma_pagamento === 'cartao_credito' && (
+                          <div className="col-span-2 space-y-1">
+                            <Label className="text-xs">Parcelas</Label>
+                            <div className="flex items-center h-10 border rounded-lg overflow-hidden bg-background">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-10 w-10 rounded-none hover:bg-destructive/10 hover:text-destructive text-lg font-bold"
+                                onClick={() => atualizarNumeroParcelas(parcela.id, -1)}
+                                disabled={!isEditable}
+                              >
+                                −
+                              </Button>
+                              <div className="flex-1 h-10 flex items-center justify-center bg-muted/50 text-base font-semibold min-w-[50px]">
+                                {parcela.numero_parcelas || 1}x
+                              </div>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-10 w-10 rounded-none hover:bg-primary/10 hover:text-primary text-lg font-bold"
+                                onClick={() => atualizarNumeroParcelas(parcela.id, 1)}
+                                disabled={!isEditable}
+                              >
+                                +
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                        
+                        <div className={`${FORMAS_COM_PARCELAS.includes(parcela.forma_pagamento) ? 'col-span-2' : 'col-span-3'} space-y-1`}>
+                          <Label className="text-xs">% do Total</Label>
+                          <Input
+                            type="number"
+                            className="h-10"
+                            value={parcela.percentual}
+                            onChange={(e) => atualizarPercentual(parcela.id, Number(e.target.value))}
+                            min={0}
+                            max={100}
+                            disabled={!isEditable}
+                          />
+                        </div>
+
+                        <div className="col-span-2 space-y-1">
+                          <Label className="text-xs">Valor (R$)</Label>
+                          <Input
+                            type="number"
+                            className="h-10"
+                            value={Math.round(valorParcela * 100) / 100}
+                            onChange={(e) => atualizarValorParcela(parcela.id, Number(e.target.value))}
+                            min={0}
+                            step={0.01}
+                            disabled={!isEditable}
+                          />
+                        </div>
+
+                        <div className="col-span-2 space-y-1">
+                          <Label className="text-xs">Vencimento</Label>
+                          <Input
+                            type="date"
+                            className="h-10"
+                            value={parcela.data_vencimento}
+                            onChange={(e) => {
+                              const newParcelas = [...parcelas];
+                              newParcelas[index].data_vencimento = e.target.value;
+                              setParcelas(newParcelas);
+                            }}
+                            disabled={!isEditable}
+                          />
+                        </div>
+
+                        <div className="col-span-1 flex items-end justify-center">
+                          {index > 0 && isEditable && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-9 w-9 text-destructive hover:text-destructive"
+                              onClick={() => removerFormaPagamento(parcela.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
                       </div>
                     )}
-                    
-                    <div className={`${FORMAS_COM_PARCELAS.includes(parcela.forma_pagamento) ? 'col-span-2' : 'col-span-3'} space-y-1`}>
-                      <Label className="text-xs">% do Total</Label>
-                      <Input
-                        type="number"
-                        className="h-10"
-                        value={parcela.percentual}
-                        onChange={(e) => atualizarPercentual(parcela.id, Number(e.target.value))}
-                        min={0}
-                        max={100}
-                        disabled={!isEditable}
-                      />
-                    </div>
-
-                    <div className="col-span-2 space-y-1">
-                      <Label className="text-xs">Valor</Label>
-                      <p className="h-10 flex items-center text-sm font-medium text-primary bg-muted/30 rounded-lg px-3">
-                        {formatCurrency(total * (parcela.percentual / 100))}
-                      </p>
-                    </div>
-
-                    <div className="col-span-2 space-y-1">
-                      <Label className="text-xs">Vencimento</Label>
-                      <Input
-                        type="date"
-                        className="h-10"
-                        value={parcela.data_vencimento}
-                        onChange={(e) => {
-                          const newParcelas = [...parcelas];
-                          newParcelas[index].data_vencimento = e.target.value;
-                          setParcelas(newParcelas);
-                        }}
-                        disabled={!isEditable}
-                      />
-                    </div>
-
-                    <div className="col-span-1 flex items-end justify-center">
-                      {index > 0 && isEditable && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="h-9 w-9 text-destructive hover:text-destructive"
-                          onClick={() => removerFormaPagamento(parcela.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
                   </div>
-                ))}
+                )})}
               </div>
 
               {/* Resumo de valores */}
@@ -1450,52 +1646,6 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
               </Card>
             )}
 
-            {/* Card de Taxa de Boleto */}
-            {parcelaBoleto && taxaBoleto.percentual > 0 && (
-              <Card className="p-4 bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800">
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-blue-800 dark:text-blue-200">
-                        Taxa Boleto {taxaBoleto.carencia}d / {taxaBoleto.numeroParcelas}x ({taxaBoleto.percentual}%)
-                      </p>
-                      <p className="text-lg font-bold text-blue-900 dark:text-blue-100">
-                        {formatCurrency(taxaBoleto.valor)}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      variant={taxaBoleto.responsavel === 'cliente' ? 'default' : 'outline'}
-                      size="sm"
-                      disabled={!isEditable}
-                      className={taxaBoleto.responsavel === 'cliente' ? 'bg-blue-600 hover:bg-blue-700' : ''}
-                      onClick={() => setTaxaBoleto({...taxaBoleto, responsavel: 'cliente'})}
-                    >
-                      Taxa Cliente
-                    </Button>
-                    <Button
-                      type="button"
-                      variant={taxaBoleto.responsavel === 'tendenci' ? 'default' : 'outline'}
-                      size="sm"
-                      disabled={!isEditable}
-                      className={taxaBoleto.responsavel === 'tendenci' ? 'bg-green-600 hover:bg-green-700' : ''}
-                      onClick={() => setTaxaBoleto({...taxaBoleto, responsavel: 'tendenci'})}
-                    >
-                      Taxa Tendenci
-                    </Button>
-                  </div>
-                  
-                  <p className="text-xs text-blue-700 dark:text-blue-300">
-                    {taxaBoleto.responsavel === 'cliente' 
-                      ? '✓ Taxa será adicionada ao valor total do pedido' 
-                      : '✓ Taxa será absorvida pela Tendenci (não será cobrada do cliente)'}
-                  </p>
-                </div>
-              </Card>
-            )}
 
             <div className="space-y-2">
               <Label>Observação de Pagamento</Label>
