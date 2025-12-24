@@ -179,7 +179,7 @@ function ProductionCardSimpleComponent({ order, onClick, isDragging, automationA
             {order.client && (
               <div className="flex items-center gap-1">
                 <Package className="h-3 w-3 shrink-0" />
-                <span className="truncate">{order.client.name}</span>
+                <span className="truncate font-medium">{order.client.name}</span>
               </div>
             )}
 
