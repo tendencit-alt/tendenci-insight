@@ -155,7 +155,7 @@ function ProductionCardSimpleComponent({ order, onClick, isDragging, automationA
                 <span className="text-xs font-mono text-muted-foreground block">
                   OP-{String(order.order_number).padStart(4, '0')}
                 </span>
-                <p className="font-medium text-sm truncate">{order.title}</p>
+                <p className="font-medium text-sm line-clamp-2">{order.title}</p>
               </div>
             </div>
             <Badge className={cn("shrink-0 text-xs", priorityColors[order.priority])}>
