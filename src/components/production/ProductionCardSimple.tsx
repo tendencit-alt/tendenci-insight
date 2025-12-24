@@ -1,6 +1,6 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, User, Package, GripVertical, Clock, Timer, Link2, AlertTriangle, Siren } from 'lucide-react';
+import { GripVertical, Siren } from 'lucide-react';
 import { format, differenceInDays, differenceInHours, isPast } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { getTailwindColor } from '@/utils/tailwindColors';
@@ -53,18 +53,15 @@ const priorityColors: Record<string, string> = {
 };
 
 const priorityLabels: Record<string, string> = {
-  baixa: 'Baixa',
-  normal: 'Normal',
-  alta: 'Alta',
-  urgente: 'Urgente'
+  baixa: 'B',
+  normal: 'N',
+  alta: 'A',
+  urgente: 'U'
 };
 
 function ProductionCardSimpleComponent({ order, onClick, isDragging, automationAlert }: ProductionCardSimpleProps) {
   const isOverdue = order.planned_end_date && isPast(new Date(order.planned_end_date));
-  const daysRemaining = order.planned_end_date 
-    ? differenceInDays(new Date(order.planned_end_date), new Date())
-    : null;
-
+  
   // Cálculos de tempo na fase
   const daysInPhase = order.current_phase?.started_at 
     ? differenceInDays(new Date(), new Date(order.current_phase.started_at))
@@ -89,6 +86,11 @@ function ProductionCardSimpleComponent({ order, onClick, isDragging, automationA
   
   const hasAutomationAlert = automationAlert && automationAlert.dias_excedidos > 0;
 
+  // Format value
+  const formattedValue = order.value 
+    ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 }).format(order.value)
+    : null;
+
   return (
     <Card 
       className={cn(
@@ -108,133 +110,67 @@ function ProductionCardSimpleComponent({ order, onClick, isDragging, automationA
         }
       }}
     >
-      <CardContent className="p-3 space-y-2">
-        {/* Automation Alert Badge */}
-        {hasAutomationAlert && (
-          <div className="p-1.5 rounded-md bg-destructive/10 border border-destructive/30">
-            <div className="flex items-center gap-1.5 text-destructive text-xs font-semibold">
-              <Siren className="h-3 w-3" />
-              <span>ATRASADO - {automationAlert.dias_excedidos}d útil(eis)</span>
-            </div>
-          </div>
-        )}
-
-        {/* Header: OP Number, Title, Priority */}
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex items-center gap-2 flex-1 min-w-0">
-            <GripVertical className="h-4 w-4 text-muted-foreground shrink-0" />
-            <div className="min-w-0">
-              <span className="text-xs font-mono text-muted-foreground block">
-                OP-{String(order.order_number).padStart(4, '0')}
-              </span>
-              <p className="font-medium text-sm truncate">{order.title}</p>
-            </div>
-          </div>
-          <Badge className={cn("shrink-0 text-xs", priorityColors[order.priority])}>
-            {priorityLabels[order.priority] || order.priority}
+      <CardContent className="p-2 space-y-1">
+        {/* Linha 1: Grip + Alerta + OP + Título + Prioridade */}
+        <div className="flex items-center gap-1.5">
+          <GripVertical className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+          {hasAutomationAlert && <Siren className="h-3.5 w-3.5 text-destructive shrink-0" />}
+          <span className="text-[10px] font-mono text-muted-foreground shrink-0">
+            OP-{String(order.order_number).padStart(4, '0')}
+          </span>
+          <span className="text-xs font-medium truncate flex-1 min-w-0">{order.title}</span>
+          <Badge className={cn("shrink-0 text-[10px] px-1 py-0 h-4", priorityColors[order.priority])}>
+            {priorityLabels[order.priority] || order.priority.charAt(0).toUpperCase()}
           </Badge>
         </div>
-
-        {/* Production Type Badge */}
-        {order.production_type && (
-          <Badge variant="outline" className="text-xs">
-            <span 
-              className="w-1.5 h-1.5 rounded-full mr-1" 
-              style={{ backgroundColor: getTailwindColor(order.production_type.color) }}
-            />
-            {order.production_type.name}
-          </Badge>
-        )}
-
-        {/* Info Section */}
-        <div className="space-y-1 text-xs text-muted-foreground">
-          {order.client && (
-            <div className="flex items-center gap-1">
-              <Package className="h-3 w-3 shrink-0" />
-              <span className="truncate">{order.client.name}</span>
-            </div>
+        
+        {/* Linha 2: Tipo + Cliente/Responsável + Data prazo */}
+        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+          {order.production_type && (
+            <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 shrink-0">
+              <span 
+                className="w-1.5 h-1.5 rounded-full mr-1" 
+                style={{ backgroundColor: getTailwindColor(order.production_type.color) }}
+              />
+              <span className="max-w-[60px] truncate">{order.production_type.name}</span>
+            </Badge>
           )}
-
-          {order.responsible && (
-            <div className="flex items-center gap-1">
-              <User className="h-3 w-3 shrink-0" />
-              <span className="truncate">{order.responsible.full_name}</span>
-            </div>
-          )}
-
-          {order.deal && (
-            <div className="flex items-center gap-1 text-primary">
-              <Link2 className="h-3 w-3 shrink-0" />
-              <span className="truncate">{order.deal.title}</span>
-            </div>
+          <span className="truncate flex-1 min-w-0">
+            {order.client?.name || order.responsible?.full_name || '-'}
+          </span>
+          {order.planned_end_date && (
+            <span className={cn(
+              "shrink-0 text-[10px] font-medium",
+              isOverdue && "text-destructive"
+            )}>
+              {format(new Date(order.planned_end_date), 'dd/MM')}
+            </span>
           )}
         </div>
-
-        {/* Phase Time & SLA Section - Simplified */}
-        {order.current_phase?.started_at && (
-          <div className={cn(
-            "rounded-md p-1.5 text-xs flex items-center justify-between",
-            slaStatus === 'exceeded' && "bg-destructive/10",
-            slaStatus === 'warning' && "bg-amber-500/10",
-            slaStatus === 'ok' && "bg-emerald-500/10",
-            !slaStatus && "bg-muted/50"
-          )}>
-            <div className="flex items-center gap-1">
-              <Timer className="h-3 w-3" />
-              <span className="font-medium">
+        
+        {/* Linha 3: Valor + Tempo na fase + SLA */}
+        <div className="flex items-center justify-between text-[11px]">
+          <span className="font-semibold text-primary">
+            {formattedValue || '-'}
+          </span>
+          <div className="flex items-center gap-1.5">
+            {daysInPhase !== null && (
+              <span className={cn(
+                "px-1.5 py-0.5 rounded text-[10px] font-medium",
+                slaStatus === 'exceeded' && "bg-destructive/10 text-destructive",
+                slaStatus === 'warning' && "bg-amber-500/10 text-amber-600",
+                slaStatus === 'ok' && "bg-emerald-500/10 text-emerald-600",
+                !slaStatus && "bg-muted text-muted-foreground"
+              )}>
                 {daysInPhase === 0 ? 'Hoje' : `${daysInPhase}d`}
-              </span>
-            </div>
-            {slaDays && (
-              <Badge 
-                variant="outline" 
-                className={cn(
-                  "text-[10px] px-1 py-0",
-                  slaStatus === 'exceeded' && "border-destructive text-destructive",
-                  slaStatus === 'warning' && "border-amber-500 text-amber-600",
-                  slaStatus === 'ok' && "border-emerald-500 text-emerald-600"
-                )}
-              >
-                SLA: {slaDays}d
-              </Badge>
-            )}
-          </div>
-        )}
-
-        {/* Deadline */}
-        {order.planned_end_date && (
-          <div className={cn(
-            "flex items-center justify-between text-xs pt-1 border-t",
-            isOverdue && "text-destructive font-medium",
-            daysRemaining !== null && daysRemaining <= 3 && daysRemaining > 0 && "text-amber-600 font-medium"
-          )}>
-            <div className="flex items-center gap-1">
-              <Calendar className="h-3 w-3" />
-              <span>{format(new Date(order.planned_end_date), 'dd/MM')}</span>
-            </div>
-            {daysRemaining !== null && (
-              <span className="text-xs">
-                {isOverdue 
-                  ? `${Math.abs(daysRemaining)}d atrasado` 
-                  : daysRemaining === 0 
-                  ? 'Hoje'
-                  : `${daysRemaining}d`
-                }
+                {slaDays && ` / ${slaDays}d`}
               </span>
             )}
           </div>
-        )}
-
-        {/* Value */}
-        {order.value && order.value > 0 && (
-          <div className="text-sm font-semibold text-primary pt-1 border-t">
-            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 }).format(order.value)}
-          </div>
-        )}
+        </div>
       </CardContent>
     </Card>
   );
 }
 
-// Memoize to prevent unnecessary re-renders
 export const ProductionCardSimple = memo(ProductionCardSimpleComponent);

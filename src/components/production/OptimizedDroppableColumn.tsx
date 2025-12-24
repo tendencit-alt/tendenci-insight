@@ -94,7 +94,7 @@ function OptimizedDroppableColumnComponent({
   }, [orders]);
 
   return (
-    <div className="flex-shrink-0 w-[300px] flex flex-col">
+    <div className="flex-shrink-0 w-[260px] flex flex-col">
       {/* Header fixo */}
       <div 
         className="flex items-center justify-between mb-2 p-2 rounded-lg sticky top-0 z-10"
