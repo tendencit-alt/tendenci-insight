@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePermissions } from '@/hooks/usePermissions';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,7 +17,7 @@ import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
 import { OrderItemsTable } from './OrderItemsTable';
 import { AddressForm } from './AddressForm';
-import { User } from 'lucide-react';
+import { User, Calendar } from 'lucide-react';
 import { Loader2, AlertTriangle, Plus, Search } from 'lucide-react';
 
 const FORMAS_PAGAMENTO = [
@@ -125,6 +126,7 @@ const initialClientData: ClientData = {
 
 export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: EditOrderDialogProps) {
   const { user } = useAuth();
+  const { isMaster } = usePermissions();
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('cliente');
   const [loadingCep, setLoadingCep] = useState(false);
@@ -151,6 +153,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
     valor_frete: 0,
     transportadora_nome: '',
     transportadora_cnpj: '',
+    data_emissao: '',
   });
 
   const [parcelas, setParcelas] = useState<PagamentoParcela[]>([
@@ -241,6 +244,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
         valor_frete: order.valor_frete || 0,
         transportadora_nome: order.transportadora_nome || '',
         transportadora_cnpj: order.transportadora_cnpj || '',
+        data_emissao: order.data_emissao ? order.data_emissao.slice(0, 16) : '',
       });
     }
   }, [order]);
@@ -454,6 +458,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
           valor_total: total,
           centro_custo: null, // centro_custo agora é por item
           status: newStatus,
+          ...(isMaster && formData.data_emissao ? { data_emissao: new Date(formData.data_emissao).toISOString() } : {}),
         })
         .eq('id', orderId);
 
@@ -617,6 +622,25 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
           </TabsList>
 
           <TabsContent value="cliente" className="space-y-4">
+            {/* Campo de Data de Emissão - Apenas para Master */}
+            {isMaster && (
+              <div className="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
+                <div className="flex items-center gap-2 mb-3">
+                  <Calendar className="h-4 w-4 text-amber-600 dark:text-amber-500" />
+                  <Label className="text-amber-700 dark:text-amber-400 font-medium">Data de Emissão (Master)</Label>
+                </div>
+                <Input 
+                  type="datetime-local"
+                  value={formData.data_emissao}
+                  onChange={(e) => setFormData({ ...formData, data_emissao: e.target.value })}
+                  className="max-w-xs border-amber-300 dark:border-amber-700"
+                />
+                <p className="text-xs text-amber-600 dark:text-amber-500 mt-2">
+                  Campo disponível apenas para administradores. Alterar com cuidado.
+                </p>
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Cliente *</Label>
