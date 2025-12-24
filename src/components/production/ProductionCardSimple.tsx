@@ -176,10 +176,10 @@ function ProductionCardSimpleComponent({ order, onClick, isDragging, automationA
 
           {/* Info Section: Client, Responsible, Deal */}
           <div className="space-y-1 text-xs text-muted-foreground">
-            {order.client && (
-              <div className="flex items-center gap-1">
-                <Package className="h-3 w-3 shrink-0" />
-                <span className="truncate font-medium">{order.client.name}</span>
+          {order.client && (
+              <div className="flex items-center gap-1.5 text-sm text-foreground">
+                <Package className="h-3.5 w-3.5 shrink-0" />
+                <span className="truncate font-semibold">{order.client.name}</span>
               </div>
             )}
 
