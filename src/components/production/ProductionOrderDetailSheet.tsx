@@ -111,7 +111,8 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
             started_at,
             completed_at,
             notes,
-            phase_template_id
+            phase_template_id,
+            position
           `)
           .eq('production_order_id', orderId)
       ]);
@@ -175,15 +176,41 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
       if (!order) return;
       
       const phasesArr = Array.isArray(order.phases) ? order.phases : [];
-      const sortedPhasesInner = [...phasesArr].sort(
-        (a, b) => (a.phase_template?.position || 0) - (b.phase_template?.position || 0)
-      );
+      // Ordenar por position da própria fase, depois do template
+      const sortedPhasesInner = [...phasesArr].sort((a, b) => {
+        const posA = a.position ?? a.phase_template?.position ?? 999;
+        const posB = b.position ?? b.phase_template?.position ?? 999;
+        return posA - posB;
+      });
       
+      // Encontrar fase atual (em_andamento)
       const currentPhaseIndex = sortedPhasesInner.findIndex(p => p.status === 'em_andamento');
-      const nextPhase = sortedPhasesInner[currentPhaseIndex + 1];
       
-      if (!nextPhase) {
-        // Última fase - concluir OP
+      // Se nenhuma fase em andamento, encontrar a primeira pendente
+      let phaseToComplete: typeof sortedPhasesInner[0] | null = null;
+      let nextPhaseToStart: typeof sortedPhasesInner[0] | null = null;
+      
+      if (currentPhaseIndex >= 0) {
+        phaseToComplete = sortedPhasesInner[currentPhaseIndex];
+        nextPhaseToStart = sortedPhasesInner[currentPhaseIndex + 1] || null;
+      } else {
+        // Nenhuma fase em andamento - iniciar a primeira pendente
+        nextPhaseToStart = sortedPhasesInner.find(p => p.status === 'pendente') || null;
+      }
+      
+      if (!nextPhaseToStart && !phaseToComplete) {
+        // Nenhuma fase para avançar
+        toast.error('Nenhuma fase disponível para avançar');
+        return;
+      }
+      
+      if (!nextPhaseToStart && phaseToComplete) {
+        // Última fase - concluir fase atual e OP
+        await supabase
+          .from('production_phases')
+          .update({ status: 'concluido', completed_at: new Date().toISOString() })
+          .eq('id', phaseToComplete.id);
+          
         await supabase
           .from('production_orders')
           .update({ status: 'concluido', actual_end_date: new Date().toISOString() })
@@ -191,29 +218,31 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
         return;
       }
 
-      // Concluir fase atual
-      if (currentPhaseIndex >= 0) {
+      // Concluir fase atual se existir
+      if (phaseToComplete) {
         await supabase
           .from('production_phases')
           .update({ status: 'concluido', completed_at: new Date().toISOString() })
-          .eq('id', sortedPhasesInner[currentPhaseIndex].id);
+          .eq('id', phaseToComplete.id);
       }
 
       // Iniciar próxima fase
-      await supabase
-        .from('production_phases')
-        .update({ status: 'em_andamento', started_at: new Date().toISOString() })
-        .eq('id', nextPhase.id);
+      if (nextPhaseToStart) {
+        await supabase
+          .from('production_phases')
+          .update({ status: 'em_andamento', started_at: new Date().toISOString() })
+          .eq('id', nextPhaseToStart.id);
 
-      // Atualizar OP
-      await supabase
-        .from('production_orders')
-        .update({ 
-          current_phase_id: nextPhase.id,
-          status: 'em_producao',
-          actual_start_date: order.actual_start_date || new Date().toISOString()
-        })
-        .eq('id', orderId);
+        // Atualizar OP
+        await supabase
+          .from('production_orders')
+          .update({ 
+            current_phase_id: nextPhaseToStart.id,
+            status: 'em_producao',
+            actual_start_date: order.actual_start_date || new Date().toISOString()
+          })
+          .eq('id', orderId);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['production-order-detail', orderId] });
@@ -267,18 +296,23 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
   if (!orderId) return null;
 
   const phasesArray = Array.isArray(order?.phases) ? order.phases : [];
-  const sortedPhases = [...phasesArray].sort(
-    (a, b) => (a.phase_template?.position || 0) - (b.phase_template?.position || 0)
-  );
+  // Ordenar por position da própria fase, depois do template
+  const sortedPhases = [...phasesArray].sort((a, b) => {
+    const posA = a.position ?? a.phase_template?.position ?? 999;
+    const posB = b.position ?? b.phase_template?.position ?? 999;
+    return posA - posB;
+  });
 
   const completedPhases = sortedPhases.filter(p => p.status === 'concluido').length;
   const totalPhases = sortedPhases.length;
   const progress = totalPhases > 0 ? (completedPhases / totalPhases) * 100 : 0;
 
-  const currentPhase = sortedPhases.find(p => p.status === 'em_andamento');
-  const nextPhase = currentPhase 
-    ? sortedPhases[sortedPhases.findIndex(p => p.id === currentPhase.id) + 1]
-    : sortedPhases[0];
+  // Encontrar fase atual e próxima de forma robusta
+  const currentPhaseIndex = sortedPhases.findIndex(p => p.status === 'em_andamento');
+  const currentPhase = currentPhaseIndex >= 0 ? sortedPhases[currentPhaseIndex] : null;
+  const nextPhase = currentPhaseIndex >= 0 
+    ? sortedPhases[currentPhaseIndex + 1] 
+    : sortedPhases.find(p => p.status === 'pendente');
 
   return (
     <>
