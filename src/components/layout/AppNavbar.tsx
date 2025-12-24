@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import * as LucideIcons from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { LogOut, User, Menu, Edit2, ChevronDown, Package } from "lucide-react";
+import { LogOut, User, Menu, Edit2, ChevronDown, Factory, DollarSign, Database, Settings } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,10 +33,16 @@ interface MenuItem {
   module: string;
   position: number;
   visible: boolean;
+  category: string;
 }
 
-// Módulos que serão agrupados no dropdown "Operacional"
-const OPERATIONAL_MODULES = ['estoque', 'compras', 'fornecedores', 'producao', 'pedidos'];
+// Configuração das categorias para dropdowns
+const CATEGORY_CONFIG: Record<string, { label: string; icon: React.ElementType }> = {
+  producao: { label: 'Produção', icon: Factory },
+  financeiro: { label: 'Financeiro', icon: DollarSign },
+  cadastros: { label: 'Cadastros', icon: Database },
+  master: { label: 'Configurações', icon: Settings },
+};
 
 export function AppNavbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -52,7 +58,6 @@ export function AppNavbar() {
   useEffect(() => {
     fetchMenuItems();
 
-    // Realtime subscription
     const channel = supabase
       .channel('menu_items_changes')
       .on(
@@ -81,7 +86,7 @@ export function AppNavbar() {
       .order('position', { ascending: true });
 
     if (!error && data) {
-      setMenuItems(data);
+      setMenuItems(data as MenuItem[]);
     }
   };
 
@@ -98,22 +103,39 @@ export function AppNavbar() {
     return Icon || LucideIcons.HelpCircle;
   };
 
-  const visibleMenuItems = menuItems.filter((item) => {
-    if (loading) return true;
-    if (item.module) {
-      return hasModuleAccess(item.module as any);
-    }
-    return true;
-  });
+  const visibleMenuItems = useMemo(() => {
+    return menuItems.filter((item) => {
+      if (loading) return true;
+      // Itens master só aparecem para admins
+      if (item.category === 'master' && !isMaster) return false;
+      if (item.module) {
+        return hasModuleAccess(item.module as any);
+      }
+      return true;
+    });
+  }, [menuItems, loading, isMaster, hasModuleAccess]);
 
-  // Separar itens regulares dos operacionais
-  const regularItems = visibleMenuItems.filter(
-    item => !OPERATIONAL_MODULES.includes(item.module)
-  );
-  
-  const operationalItems = visibleMenuItems.filter(
-    item => OPERATIONAL_MODULES.includes(item.module)
-  );
+  // Agrupar itens por categoria
+  const itemsByCategory = useMemo(() => {
+    const grouped: Record<string, MenuItem[]> = {
+      comercial: [],
+      producao: [],
+      financeiro: [],
+      cadastros: [],
+      master: [],
+    };
+
+    visibleMenuItems.forEach(item => {
+      const category = item.category || 'comercial';
+      if (grouped[category]) {
+        grouped[category].push(item);
+      } else {
+        grouped.comercial.push(item);
+      }
+    });
+
+    return grouped;
+  }, [visibleMenuItems]);
 
   const getRoleColor = (role: string) => {
     const colors: Record<string, string> = {
@@ -133,6 +155,67 @@ export function AppNavbar() {
     return labels[role] || role;
   };
 
+  // Renderizar dropdown de categoria
+  const renderCategoryDropdown = (category: string) => {
+    const items = itemsByCategory[category];
+    if (!items || items.length === 0) return null;
+
+    const config = CATEGORY_CONFIG[category];
+    if (!config) return null;
+
+    const CategoryIcon = config.icon;
+
+    return (
+      <DropdownMenu key={category}>
+        <DropdownMenuTrigger asChild>
+          <Button 
+            variant="ghost" 
+            className="flex items-center gap-1 px-2 py-1.5 h-auto text-[11px] rounded-md hover:bg-muted/50"
+          >
+            <CategoryIcon className="h-3.5 w-3.5 flex-shrink-0" />
+            <span className="whitespace-nowrap">{config.label}</span>
+            <ChevronDown className="h-3 w-3" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="w-48 bg-card border border-border shadow-lg">
+          {items.map((item) => {
+            const IconComponent = getIconComponent(item.icon);
+            return (
+              <DropdownMenuItem key={item.id} asChild className="cursor-pointer">
+                <NavLink
+                  to={item.route}
+                  className="flex items-center gap-2 w-full px-2 py-2"
+                  activeClassName="bg-primary/10 text-primary font-medium"
+                >
+                  <IconComponent className="h-4 w-4" />
+                  <span>{item.label}</span>
+                  {isMaster && (
+                    <button
+                      onClick={(e) => handleEditMenuItem(item, e)}
+                      className="ml-auto opacity-50 hover:opacity-100 transition-opacity"
+                      title="Editar"
+                    >
+                      <Edit2 className="h-3 w-3" />
+                    </button>
+                  )}
+                </NavLink>
+              </DropdownMenuItem>
+            );
+          })}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  };
+
+  // Categorias para renderizar no mobile com separadores
+  const mobileCategories = [
+    { key: 'comercial', label: 'Comercial' },
+    { key: 'producao', label: 'Produção' },
+    { key: 'financeiro', label: 'Financeiro' },
+    { key: 'cadastros', label: 'Cadastros' },
+    ...(isMaster ? [{ key: 'master', label: 'Configurações' }] : []),
+  ];
+
   return (
     <nav className="sticky top-0 z-50 h-14 border-b border-border/40 bg-card/95 backdrop-blur-[12px] supports-[backdrop-filter]:bg-card/95 shadow-sm">
       <div className="flex items-center h-full px-3 max-w-[1800px] mx-auto gap-2">
@@ -141,8 +224,8 @@ export function AppNavbar() {
         
         {/* Desktop Menu Items */}
         <div className="hidden xl:flex items-center gap-0.5 flex-1">
-          {/* Itens regulares */}
-          {regularItems.map((item) => {
+          {/* Itens Comerciais (principais, sempre visíveis) */}
+          {itemsByCategory.comercial.map((item) => {
             const IconComponent = getIconComponent(item.icon);
             return (
               <div key={item.id} className="relative group">
@@ -168,47 +251,11 @@ export function AppNavbar() {
             );
           })}
 
-          {/* Dropdown Operacional */}
-          {operationalItems.length > 0 && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  className="flex items-center gap-1 px-2 py-1.5 h-auto text-[11px] rounded-md hover:bg-muted/50"
-                >
-                  <Package className="h-3.5 w-3.5 flex-shrink-0" />
-                  <span className="whitespace-nowrap">Operacional</span>
-                  <ChevronDown className="h-3 w-3" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-48 bg-card border border-border shadow-lg">
-                {operationalItems.map((item) => {
-                  const IconComponent = getIconComponent(item.icon);
-                  return (
-                    <DropdownMenuItem key={item.id} asChild className="cursor-pointer">
-                      <NavLink
-                        to={item.route}
-                        className="flex items-center gap-2 w-full px-2 py-2"
-                        activeClassName="bg-primary/10 text-primary font-medium"
-                      >
-                        <IconComponent className="h-4 w-4" />
-                        <span>{item.label}</span>
-                        {isMaster && (
-                          <button
-                            onClick={(e) => handleEditMenuItem(item, e)}
-                            className="ml-auto opacity-50 hover:opacity-100 transition-opacity"
-                            title="Editar"
-                          >
-                            <Edit2 className="h-3 w-3" />
-                          </button>
-                        )}
-                      </NavLink>
-                    </DropdownMenuItem>
-                  );
-                })}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
+          {/* Dropdowns por categoria */}
+          {renderCategoryDropdown('producao')}
+          {renderCategoryDropdown('financeiro')}
+          {renderCategoryDropdown('cadastros')}
+          {isMaster && renderCategoryDropdown('master')}
         </div>
 
         {/* Mobile Menu Button */}
@@ -227,24 +274,36 @@ export function AppNavbar() {
                 </p>
               </div>
               <div className="flex-1 overflow-y-auto p-4">
-                <div className="space-y-1">
-                  {visibleMenuItems.map((item) => {
-                    const IconComponent = getIconComponent(item.icon);
-                    return (
-                      <NavLink
-                        key={item.id}
-                        to={item.route}
-                        end={item.route === "/"}
-                        onClick={() => setMobileMenuOpen(false)}
-                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-300 hover:bg-muted"
-                        activeClassName="bg-primary text-primary-foreground font-semibold shadow-[0_0_12px_rgba(212,30,30,0.6)]"
-                      >
-                        <IconComponent className="h-5 w-5 flex-shrink-0" />
-                        <span>{item.label}</span>
-                      </NavLink>
-                    );
-                  })}
-                </div>
+                {mobileCategories.map((cat) => {
+                  const items = itemsByCategory[cat.key];
+                  if (!items || items.length === 0) return null;
+
+                  return (
+                    <div key={cat.key} className="mb-4">
+                      <p className="text-xs text-muted-foreground font-semibold tracking-wider uppercase mb-2 px-3">
+                        {cat.label}
+                      </p>
+                      <div className="space-y-1">
+                        {items.map((item) => {
+                          const IconComponent = getIconComponent(item.icon);
+                          return (
+                            <NavLink
+                              key={item.id}
+                              to={item.route}
+                              end={item.route === "/"}
+                              onClick={() => setMobileMenuOpen(false)}
+                              className="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-300 hover:bg-muted"
+                              activeClassName="bg-primary text-primary-foreground font-semibold shadow-[0_0_12px_rgba(212,30,30,0.6)]"
+                            >
+                              <IconComponent className="h-5 w-5 flex-shrink-0" />
+                              <span>{item.label}</span>
+                            </NavLink>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </SheetContent>
