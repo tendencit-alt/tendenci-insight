@@ -5815,6 +5815,10 @@ export type Database = {
         Returns: Json
       }
       calculate_business_days: { Args: { start_date: string }; Returns: number }
+      calculate_production_deadline: {
+        Args: { p_production_type_id: string; p_start_date?: string }
+        Returns: string
+      }
       calculate_seller_rankings: { Args: never; Returns: undefined }
       can_delete_architects: { Args: never; Returns: boolean }
       can_delete_master_idea: { Args: never; Returns: boolean }
