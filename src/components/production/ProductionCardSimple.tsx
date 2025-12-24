@@ -359,43 +359,18 @@ function ProductionCardSimpleComponent({ order, onClick, isDragging, automationA
           )}
         </div>
 
-        {/* Footer: Dates & Value */}
+        {/* Footer: Value & Urgent Button */}
         <div className="flex flex-col gap-2 pt-1 border-t border-border">
           <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-            <div className="flex items-center gap-2">
-              {totalDays !== null && (
-                <div className="flex items-center gap-0.5">
-                  <Clock className="h-2.5 w-2.5" />
-                  <span>{totalDays === 0 ? 'Hoje' : `${totalDays}d`}</span>
-                </div>
-              )}
-              {order.planned_end_date && (
-                <div className={cn(
-                  "flex items-center gap-0.5",
-                  isOverdue && "text-destructive font-medium",
-                  daysRemaining !== null && daysRemaining <= 3 && daysRemaining > 0 && "text-warning font-medium"
-                )}>
-                  <Calendar className="h-2.5 w-2.5" />
-                  <span>
-                    {format(new Date(order.planned_end_date), 'dd/MM')}
-                    {daysRemaining !== null && (
-                      <span className="ml-0.5">
-                        {isOverdue 
-                          ? `(-${Math.abs(daysRemaining)}d)` 
-                          : daysRemaining === 0 
-                          ? '(Hoje)'
-                          : `(${daysRemaining}d)`
-                        }
-                      </span>
-                    )}
-                  </span>
-                </div>
-              )}
+            <div className="flex items-center gap-1">
+              <span className="text-muted-foreground">Valor:</span>
             </div>
-            {order.value && order.value > 0 && (
+            {order.value && order.value > 0 ? (
               <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 font-bold text-[11px] px-2">
                 {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 }).format(order.value)}
               </Badge>
+            ) : (
+              <span className="text-muted-foreground text-[10px]">Não informado</span>
             )}
           </div>
           
