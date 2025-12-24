@@ -253,12 +253,31 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     queryFn: async () => {
       const { data } = await supabase
         .from('architects')
-        .select('id, name, company')
+        .select('id, name, company, commission_percent')
         .eq('active', true)
         .order('name');
       return data || [];
     },
   });
+
+  // Estado para RT (Repasse Técnico)
+  const [rtConfig, setRtConfig] = useState({
+    habilitado: false,
+    percentual: 10,
+  });
+
+  // Auto-preencher RT quando arquiteto é selecionado
+  useEffect(() => {
+    if (formData.architect_id) {
+      const selectedArchitect = architects?.find(a => a.id === formData.architect_id);
+      if (selectedArchitect?.commission_percent) {
+        setRtConfig(prev => ({
+          ...prev,
+          percentual: Number(selectedArchitect.commission_percent)
+        }));
+      }
+    }
+  }, [formData.architect_id, architects]);
 
   const { data: deals, refetch: refetchDeals } = useQuery({
     queryKey: ['deals-for-order'],
@@ -443,6 +462,10 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
           taxa_boleto_responsavel: taxaBoleto.responsavel,
           numero_parcelas_boleto: taxaBoleto.numeroParcelas,
           carencia_boleto: taxaBoleto.carencia,
+          // Campos de RT (Repasse Técnico)
+          rt_habilitado: rtConfig.habilitado,
+          rt_percentual: rtConfig.habilitado ? rtConfig.percentual : 0,
+          rt_valor: rtConfig.habilitado ? (total * (rtConfig.percentual / 100)) : 0,
         })
         .select()
         .single();
@@ -597,7 +620,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                   </div>
                 </div>
 
-                <div className="space-y-2">
+              <div className="space-y-2">
                   <Label>Arquiteto</Label>
                   <Select
                     value={formData.architect_id || "_none"}
@@ -616,6 +639,59 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                     </SelectContent>
                   </Select>
                 </div>
+
+                {/* RT - Repasse Técnico */}
+                {formData.architect_id && (
+                  <Card className="col-span-2 p-4 border-primary/20 bg-primary/5">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <Label className="font-medium">RT - Repasse Técnico</Label>
+                        {architects?.find(a => a.id === formData.architect_id)?.commission_percent && (
+                          <Badge variant="outline" className="text-xs">
+                            Padrão: {architects.find(a => a.id === formData.architect_id)?.commission_percent}%
+                          </Badge>
+                        )}
+                      </div>
+                      <Switch
+                        checked={rtConfig.habilitado}
+                        onCheckedChange={(checked) => setRtConfig(prev => ({ ...prev, habilitado: checked }))}
+                      />
+                    </div>
+                    
+                    {rtConfig.habilitado && (
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <Label className="text-xs text-muted-foreground">Percentual</Label>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="number"
+                              min="0"
+                              max="100"
+                              step="0.5"
+                              value={rtConfig.percentual}
+                              onChange={(e) => setRtConfig(prev => ({ 
+                                ...prev, 
+                                percentual: parseFloat(e.target.value) || 0 
+                              }))}
+                              className="w-24"
+                            />
+                            <span className="text-muted-foreground">%</span>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-1">
+                          <Label className="text-xs text-muted-foreground">Valor Calculado</Label>
+                          <div className="text-lg font-semibold text-primary">
+                            {formatCurrency(total * (rtConfig.percentual / 100))}
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            sobre {formatCurrency(total)}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </Card>
+                )}
 
                 <div className="space-y-2">
                   <Label>Negócio Vinculado</Label>

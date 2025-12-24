@@ -402,10 +402,39 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
   const { data: architects } = useQuery({
     queryKey: ['architects-for-order'],
     queryFn: async () => {
-      const { data } = await supabase.from('architects').select('id, name, company').eq('active', true).order('name');
+      const { data } = await supabase.from('architects').select('id, name, company, commission_percent').eq('active', true).order('name');
       return data || [];
     },
   });
+
+  // Estado para RT (Repasse Técnico)
+  const [rtConfig, setRtConfig] = useState({
+    habilitado: false,
+    percentual: 10,
+  });
+
+  // Carregar RT do order existente
+  useEffect(() => {
+    if (order) {
+      setRtConfig({
+        habilitado: (order as any).rt_habilitado || false,
+        percentual: Number((order as any).rt_percentual) || 10,
+      });
+    }
+  }, [order]);
+
+  // Auto-preencher RT quando arquiteto muda (apenas se RT não estiver habilitado)
+  useEffect(() => {
+    if (formData.architect_id && !rtConfig.habilitado) {
+      const selectedArchitect = architects?.find(a => a.id === formData.architect_id);
+      if (selectedArchitect?.commission_percent) {
+        setRtConfig(prev => ({
+          ...prev,
+          percentual: Number(selectedArchitect.commission_percent)
+        }));
+      }
+    }
+  }, [formData.architect_id, architects]);
 
   // Query de paymentConditions removida - agora usamos CONDICOES_PAGAMENTO constante
 
@@ -652,6 +681,10 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
           taxa_boleto_responsavel: taxaBoleto.responsavel,
           numero_parcelas_boleto: taxaBoleto.numeroParcelas,
           carencia_boleto: taxaBoleto.carencia,
+          // Campos de RT (Repasse Técnico)
+          rt_habilitado: rtConfig.habilitado,
+          rt_percentual: rtConfig.habilitado ? rtConfig.percentual : 0,
+          rt_valor: rtConfig.habilitado ? (total * (rtConfig.percentual / 100)) : 0,
           ...(isMaster && formData.data_emissao ? { data_emissao: new Date(formData.data_emissao).toISOString() } : {}),
         })
         .eq('id', orderId);
@@ -879,6 +912,61 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
               </div>
 
             </div>
+
+            {/* RT - Repasse Técnico */}
+            {formData.architect_id && (
+              <Card className="p-4 border-primary/20 bg-primary/5">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Label className="font-medium">RT - Repasse Técnico</Label>
+                    {architects?.find(a => a.id === formData.architect_id)?.commission_percent && (
+                      <Badge variant="outline" className="text-xs">
+                        Padrão: {architects.find(a => a.id === formData.architect_id)?.commission_percent}%
+                      </Badge>
+                    )}
+                  </div>
+                  <Switch
+                    checked={rtConfig.habilitado}
+                    onCheckedChange={(checked) => setRtConfig(prev => ({ ...prev, habilitado: checked }))}
+                    disabled={!isEditable}
+                  />
+                </div>
+                
+                {rtConfig.habilitado && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">Percentual</Label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.5"
+                          value={rtConfig.percentual}
+                          onChange={(e) => setRtConfig(prev => ({ 
+                            ...prev, 
+                            percentual: parseFloat(e.target.value) || 0 
+                          }))}
+                          className="w-24"
+                          disabled={!isEditable}
+                        />
+                        <span className="text-muted-foreground">%</span>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">Valor Calculado</Label>
+                      <div className="text-lg font-semibold text-primary">
+                        {formatCurrency(total * (rtConfig.percentual / 100))}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        sobre {formatCurrency(total)}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </Card>
+            )}
 
             {selectedClient && (
               <div className="space-y-6 border rounded-lg p-4">
