@@ -319,6 +319,15 @@ export function ProductionKanban({ productionTypeId, filters, onOrderClick }: Pr
         return;
       }
 
+      // Verificar se a fase de destino é fase final (is_end_phase)
+      const { data: targetTemplate } = await supabase
+        .from('production_phase_templates')
+        .select('is_end_phase')
+        .eq('id', correctPhaseTemplateId)
+        .single();
+
+      const isEndPhase = targetTemplate?.is_end_phase === true;
+
       // Caso normal: movendo entre fases
       // Concluir fase atual
       await supabase
@@ -337,6 +346,8 @@ export function ProductionKanban({ productionTypeId, filters, onOrderClick }: Pr
         .eq('phase_template_id', correctPhaseTemplateId)
         .single();
 
+      const now = new Date().toISOString();
+
       if (!newPhase) {
         // Fase não existe - criar automaticamente
         const { data: createdPhase, error: createError } = await supabase
@@ -344,8 +355,9 @@ export function ProductionKanban({ productionTypeId, filters, onOrderClick }: Pr
           .insert({
             production_order_id: orderId,
             phase_template_id: correctPhaseTemplateId,
-            status: 'em_andamento',
-            started_at: new Date().toISOString()
+            status: isEndPhase ? 'concluido' : 'em_andamento',
+            started_at: now,
+            completed_at: isEndPhase ? now : null
           })
           .select('id')
           .single();
@@ -353,21 +365,33 @@ export function ProductionKanban({ productionTypeId, filters, onOrderClick }: Pr
         if (createError) throw new Error('Erro ao criar fase: ' + createError.message);
         newPhase = createdPhase;
       } else {
-        // Iniciar fase existente
+        // Atualizar fase existente - concluir se for fase final
         await supabase
           .from('production_phases')
           .update({ 
-            status: 'em_andamento',
-            started_at: new Date().toISOString()
+            status: isEndPhase ? 'concluido' : 'em_andamento',
+            started_at: now,
+            completed_at: isEndPhase ? now : null
           })
           .eq('id', newPhase.id);
       }
 
-      // Atualizar a OP
-      await supabase
-        .from('production_orders')
-        .update({ current_phase_id: newPhase.id })
-        .eq('id', orderId);
+      // Atualizar a OP - se for fase final, marcar como concluído
+      if (isEndPhase) {
+        await supabase
+          .from('production_orders')
+          .update({ 
+            current_phase_id: newPhase.id,
+            status: 'concluido',
+            actual_end_date: now
+          })
+          .eq('id', orderId);
+      } else {
+        await supabase
+          .from('production_orders')
+          .update({ current_phase_id: newPhase.id })
+          .eq('id', orderId);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['production-orders'] });
