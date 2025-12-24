@@ -665,7 +665,7 @@ export function ManageProductionStagesDialog({ open, onOpenChange }: ManageProdu
                         <div>
                           <Label className="text-xs flex items-center gap-1">
                             <Clock className="h-3 w-3" />
-                            SLA (horas)
+                            Prazo (horas)
                           </Label>
                           <Input
                             type="number"
@@ -677,7 +677,7 @@ export function ManageProductionStagesDialog({ open, onOpenChange }: ManageProdu
                         <div>
                           <Label className="text-xs flex items-center gap-1">
                             <Clock className="h-3 w-3" />
-                            SLA (dias úteis)
+                            Prazo (dias úteis)
                           </Label>
                           <Input
                             type="number"
@@ -725,7 +725,7 @@ export function ManageProductionStagesDialog({ open, onOpenChange }: ManageProdu
                             <div>
                               <Label className="text-xs flex items-center gap-1">
                                 <Clock className="h-3 w-3" />
-                                SLA (horas)
+                                Prazo (horas)
                               </Label>
                               <Input
                                 type="number"
@@ -737,7 +737,7 @@ export function ManageProductionStagesDialog({ open, onOpenChange }: ManageProdu
                             <div>
                               <Label className="text-xs flex items-center gap-1">
                                 <Clock className="h-3 w-3" />
-                                SLA (dias úteis)
+                                Prazo (dias úteis)
                               </Label>
                               <Input
                                 type="number"
