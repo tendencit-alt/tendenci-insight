@@ -1,9 +1,9 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
-import { ProductionCard } from './ProductionCard';
-import { DroppableColumn } from './DroppableColumn';
+import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, pointerWithin, PointerSensor, useSensor, useSensors, TouchSensor, KeyboardSensor } from '@dnd-kit/core';
+import { ProductionCardSimple } from './ProductionCardSimple';
+import { OptimizedDroppableColumn } from './OptimizedDroppableColumn';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
@@ -25,12 +25,21 @@ export function ProductionKanban({ productionTypeId, filters, onOrderClick }: Pr
   const queryClient = useQueryClient();
   const [activeOrder, setActiveOrder] = useState<any>(null);
 
+  // Sensores otimizados para melhor responsividade
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8,
+        distance: 5, // Reduzido para resposta mais rápida
+        tolerance: 5,
       },
-    })
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 150, // Delay menor para touch
+        tolerance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor)
   );
 
   // Buscar fases (templates) baseado no tipo selecionado
@@ -50,7 +59,8 @@ export function ProductionKanban({ productionTypeId, filters, onOrderClick }: Pr
       const { data, error } = await query;
       if (error) throw error;
       return data;
-    }
+    },
+    staleTime: 30000, // Cache por 30 segundos
   });
 
   // Buscar ordens de produção com suas fases atuais
@@ -126,11 +136,38 @@ export function ProductionKanban({ productionTypeId, filters, onOrderClick }: Pr
       const { data, error } = await query.order('created_at', { ascending: false });
       if (error) throw error;
       return data;
-    }
+    },
+    staleTime: 10000, // Cache por 10 segundos
   });
 
-  // Realtime subscription
+  // Buscar alertas de automação de forma separada e menos frequente
+  const { data: automationAlerts } = useQuery({
+    queryKey: ['production-automation-alerts'],
+    queryFn: async () => {
+      try {
+        const { data, error } = await supabase.rpc('check_production_automations');
+        if (error) throw error;
+        
+        // Converter para Map para acesso O(1)
+        const alertsMap = new Map<string, any>();
+        if (data) {
+          data.forEach((alert: any) => {
+            alertsMap.set(alert.order_id, alert);
+          });
+        }
+        return alertsMap;
+      } catch {
+        return new Map();
+      }
+    },
+    staleTime: 60000, // Cache por 1 minuto
+    refetchInterval: 60000, // Atualizar a cada 1 minuto
+  });
+
+  // Realtime subscription com debounce
   useEffect(() => {
+    let debounceTimer: NodeJS.Timeout;
+    
     const channel = supabase
       .channel('production-orders-realtime')
       .on(
@@ -141,7 +178,10 @@ export function ProductionKanban({ productionTypeId, filters, onOrderClick }: Pr
           table: 'production_orders'
         },
         () => {
-          queryClient.invalidateQueries({ queryKey: ['production-orders'] });
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(() => {
+            queryClient.invalidateQueries({ queryKey: ['production-orders'] });
+          }, 500);
         }
       )
       .on(
@@ -152,12 +192,16 @@ export function ProductionKanban({ productionTypeId, filters, onOrderClick }: Pr
           table: 'production_phases'
         },
         () => {
-          queryClient.invalidateQueries({ queryKey: ['production-orders'] });
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(() => {
+            queryClient.invalidateQueries({ queryKey: ['production-orders'] });
+          }, 500);
         }
       )
       .subscribe();
 
     return () => {
+      clearTimeout(debounceTimer);
       supabase.removeChannel(channel);
     };
   }, [queryClient]);
@@ -262,6 +306,7 @@ export function ProductionKanban({ productionTypeId, filters, onOrderClick }: Pr
           .eq('id', orderId);
         
         if (updateError) throw new Error('Erro ao atualizar OP: ' + updateError.message);
+        return;
       }
 
       // Caso normal: movendo entre fases
@@ -324,24 +369,17 @@ export function ProductionKanban({ productionTypeId, filters, onOrderClick }: Pr
     }
   });
 
-  // Agrupar OPs por fase atual - usar match por nome para compatibilidade
+  // Agrupar OPs por fase atual - memoizado
   const ordersByPhase = useMemo(() => {
     return phases.reduce((acc, phase) => {
       acc[phase.id] = orders.filter(order => {
-        // Match por ID exato primeiro
         if (order.current_phase?.phase_template?.id === phase.id) return true;
-        // Match por nome da fase (para compatibilidade entre tipos)
         if (order.current_phase?.phase_template?.name === phase.name) return true;
         return false;
       });
       return acc;
     }, {} as Record<string, typeof orders>);
   }, [phases, orders]);
-
-  // OPs sem fase (aguardando início)
-  const ordersWithoutPhase = useMemo(() => {
-    return orders.filter(order => !order.current_phase);
-  }, [orders]);
 
   const uniquePhases = useMemo(() => {
     return productionTypeId 
@@ -354,13 +392,13 @@ export function ProductionKanban({ productionTypeId, filters, onOrderClick }: Pr
         }, [] as typeof phases);
   }, [phases, productionTypeId]);
 
-  const handleDragStart = (event: DragStartEvent) => {
+  const handleDragStart = useCallback((event: DragStartEvent) => {
     const { active } = event;
     const order = orders.find(o => o.id === active.id);
     setActiveOrder(order);
-  };
+  }, [orders]);
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
     setActiveOrder(null);
 
@@ -373,7 +411,7 @@ export function ProductionKanban({ productionTypeId, filters, onOrderClick }: Pr
     if (targetId.startsWith('column-')) {
       const phaseTemplateId = targetId.replace('column-', '');
       
-      if (phaseTemplateId === 'waiting') return; // Não pode voltar para aguardando
+      if (phaseTemplateId === 'waiting') return;
 
       const order = orders.find(o => o.id === orderId);
       const currentPhaseName = order?.current_phase?.phase_template?.name;
@@ -386,8 +424,6 @@ export function ProductionKanban({ productionTypeId, filters, onOrderClick }: Pr
 
       const fromWaiting = !order?.current_phase;
 
-      // Na aba "Todos" (sem productionTypeId), usar nome da fase ao invés de ID
-      // Isso garante que o sistema encontre a fase correta para o tipo de produção da OP
       if (!productionTypeId && targetPhase) {
         moveToPhase.mutate({ 
           orderId, 
@@ -402,17 +438,17 @@ export function ProductionKanban({ productionTypeId, filters, onOrderClick }: Pr
         });
       }
     }
-  };
+  }, [orders, phases, productionTypeId, moveToPhase]);
 
-  const handleCardClick = (orderId: string) => {
+  const handleCardClick = useCallback((orderId: string) => {
     onOrderClick?.(orderId);
-  };
+  }, [onOrderClick]);
 
   if (phasesLoading || ordersLoading) {
     return (
       <div className="flex gap-4 overflow-x-auto pb-4">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="flex-shrink-0 w-[280px]">
+          <div key={i} className="flex-shrink-0 w-[300px]">
             <Skeleton className="h-10 w-full mb-3" />
             <Skeleton className="h-32 w-full mb-2" />
             <Skeleton className="h-32 w-full" />
@@ -425,26 +461,26 @@ export function ProductionKanban({ productionTypeId, filters, onOrderClick }: Pr
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCenter}
+      collisionDetection={pointerWithin}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
       <ScrollArea className="w-full">
         <div className="flex gap-4 pb-4 min-w-max">
-          {/* Colunas por fase */}
           {uniquePhases.map((phase) => {
             const phaseOrders = productionTypeId 
               ? ordersByPhase[phase.id] || []
               : orders.filter(order => order.current_phase?.phase_template?.name === phase.name);
             
             return (
-              <DroppableColumn
+              <OptimizedDroppableColumn
                 key={phase.id}
                 id={phase.id}
                 title={phase.name}
                 color={phase.color}
                 orders={phaseOrders}
                 onCardClick={handleCardClick}
+                automationAlerts={automationAlerts}
               />
             );
           })}
@@ -452,13 +488,15 @@ export function ProductionKanban({ productionTypeId, filters, onOrderClick }: Pr
         <ScrollBar orientation="horizontal" />
       </ScrollArea>
 
-      <DragOverlay>
+      <DragOverlay dropAnimation={null}>
         {activeOrder ? (
-          <ProductionCard 
-            order={activeOrder}
-            onClick={() => {}}
-            isDragging
-          />
+          <div className="opacity-90 rotate-3 scale-105">
+            <ProductionCardSimple 
+              order={activeOrder}
+              onClick={() => {}}
+              isDragging
+            />
+          </div>
         ) : null}
       </DragOverlay>
     </DndContext>
