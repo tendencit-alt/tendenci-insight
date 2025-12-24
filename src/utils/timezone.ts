@@ -97,3 +97,13 @@ export function getDaysAgoBrasilAsUTC(days: number): Date {
   const startOfToday = getStartOfDayBrasilAsUTC();
   return new Date(startOfToday.getTime() - (days * 24 * 60 * 60 * 1000));
 }
+
+/**
+ * Parseia uma data no formato YYYY-MM-DD sem problemas de timezone
+ * Útil para campos do tipo 'date' do banco (sem hora)
+ */
+export function parseDateOnly(dateString: string | null | undefined): Date | null {
+  if (!dateString) return null;
+  const [year, month, day] = dateString.split('T')[0].split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
