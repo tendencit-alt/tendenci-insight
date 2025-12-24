@@ -58,7 +58,7 @@ export function ProductionFilters({ filters, onFiltersChange, onExport }: Produc
       <div className="relative flex-1 min-w-[200px] max-w-xs">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="Buscar OP..."
+          placeholder="Buscar OP, cliente, produto..."
           value={filters.search}
           onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })}
           className="pl-9"
