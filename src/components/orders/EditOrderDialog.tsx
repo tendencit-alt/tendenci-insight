@@ -1080,26 +1080,39 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                     {FORMAS_COM_PARCELAS.includes(parcela.forma_pagamento) && (
                       <div className="col-span-1 space-y-1">
                         <Label className="text-xs">Parcelas</Label>
-                        <Select
-                          value={String(parcela.numero_parcelas || 1)}
-                          onValueChange={(v) => {
-                            const newParcelas = [...parcelas];
-                            newParcelas[index].numero_parcelas = Number(v);
-                            setParcelas(newParcelas);
-                          }}
-                          disabled={!isEditable}
-                        >
-                          <SelectTrigger className="h-9">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {Array.from({ length: 12 }, (_, i) => i + 1).map((n) => (
-                              <SelectItem key={n} value={String(n)}>
-                                {n}x
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <div className="flex items-center h-9">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="h-9 w-8 rounded-r-none"
+                            disabled={!isEditable}
+                            onClick={() => {
+                              const newParcelas = [...parcelas];
+                              newParcelas[index].numero_parcelas = Math.max(1, (parcela.numero_parcelas || 1) - 1);
+                              setParcelas(newParcelas);
+                            }}
+                          >
+                            -
+                          </Button>
+                          <div className="h-9 w-10 flex items-center justify-center border-y bg-background text-sm font-medium">
+                            {parcela.numero_parcelas || 1}x
+                          </div>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="h-9 w-8 rounded-l-none"
+                            disabled={!isEditable}
+                            onClick={() => {
+                              const newParcelas = [...parcelas];
+                              newParcelas[index].numero_parcelas = Math.min(12, (parcela.numero_parcelas || 1) + 1);
+                              setParcelas(newParcelas);
+                            }}
+                          >
+                            +
+                          </Button>
+                        </div>
                       </div>
                     )}
                     
