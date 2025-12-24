@@ -361,6 +361,13 @@ async function processNextInQueue(supabase: any) {
     // Marcar dispatch como concluído
     console.log(`✅ [PROCESS] Dispatch ${nextInQueue.dispatch_id} concluído!`)
     
+    // Buscar info do dispatch para verificar se é recorrente
+    const { data: dispatchInfo } = await supabase
+      .from('tendenci_campaign_dispatches')
+      .select('is_recurrent')
+      .eq('id', nextInQueue.dispatch_id)
+      .single()
+    
     await supabase
       .from('tendenci_campaign_dispatches')
       .update({
@@ -371,11 +378,42 @@ async function processNextInQueue(supabase: any) {
       })
       .eq('id', nextInQueue.dispatch_id)
 
-    // Atualizar status da campanha
-    await supabase
+    // Buscar info da campanha para verificar tipo de agendamento
+    const { data: campanhaInfo } = await supabase
       .from('tendenci_prospec_arq_campaigns')
-      .update({ status: 'enviado' })
+      .select('tipo_agendamento, agendar_automatico, data_fim')
       .eq('id', nextInQueue.campanha_id)
+      .single()
+
+    // Para campanhas recorrentes, manter status 'agendado' se ainda estiver no período
+    if (campanhaInfo?.tipo_agendamento === 'recorrente' && campanhaInfo?.agendar_automatico) {
+      const hoje = new Date().toISOString().split('T')[0]
+      const dataFim = campanhaInfo.data_fim
+      
+      if (!dataFim || hoje <= dataFim) {
+        console.log(`📅 [PROCESS] Campanha recorrente - mantendo status 'agendado'`)
+        await supabase
+          .from('tendenci_prospec_arq_campaigns')
+          .update({ 
+            status: 'agendado',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', nextInQueue.campanha_id)
+      } else {
+        // Período encerrado
+        console.log(`📅 [PROCESS] Período recorrente encerrado - marcando como 'enviado'`)
+        await supabase
+          .from('tendenci_prospec_arq_campaigns')
+          .update({ status: 'enviado' })
+          .eq('id', nextInQueue.campanha_id)
+      }
+    } else {
+      // Campanha única ou não agendada - marcar como enviado
+      await supabase
+        .from('tendenci_prospec_arq_campaigns')
+        .update({ status: 'enviado' })
+        .eq('id', nextInQueue.campanha_id)
+    }
 
     return {
       success: true,
@@ -434,11 +472,13 @@ Deno.serve(async (req) => {
     }
 
     // 🚀 MODO 2: Iniciar nova campanha (criar fila e dispatch)
-    const { campanha_id, arquiteto_ids } = body as ExecuteCampaignRequest
+    const { campanha_id, arquiteto_ids, from_scheduler } = body as ExecuteCampaignRequest
 
-    // Obter usuário autenticado
+    // Obter usuário autenticado (bypass se chamado pelo scheduler)
     const authHeader = req.headers.get('Authorization')
-    if (!authHeader) {
+    
+    // Se não é do scheduler, precisa de autenticação
+    if (!from_scheduler && !authHeader) {
       return new Response(
         JSON.stringify({ 
           success: false,
@@ -451,20 +491,30 @@ Deno.serve(async (req) => {
       )
     }
 
-    const token = authHeader.replace('Bearer ', '')
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token)
-    
-    if (userError || !user) {
-      return new Response(
-        JSON.stringify({ 
-          success: false,
-          error: 'Usuário não encontrado'
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 401
-        }
-      )
+    let userId: string | null = null
+
+    if (from_scheduler) {
+      // Chamada do scheduler - usa service role, não precisa de user
+      console.log('🤖 [MAIN] Chamada do scheduler - bypass de autenticação')
+      userId = 'scheduler' // Identificador para logs
+    } else {
+      // Chamada normal - validar usuário
+      const token = authHeader!.replace('Bearer ', '')
+      const { data: { user }, error: userError } = await supabase.auth.getUser(token)
+      
+      if (userError || !user) {
+        return new Response(
+          JSON.stringify({ 
+            success: false,
+            error: 'Usuário não encontrado'
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 401
+          }
+        )
+      }
+      userId = user.id
     }
 
     console.log(`📋 [MAIN] Nova campanha ${campanha_id} com ${arquiteto_ids.length} arquitetos`)
@@ -516,13 +566,14 @@ Deno.serve(async (req) => {
       .from('tendenci_campaign_dispatches')
       .insert({
         campanha_id,
-        user_id: user.id,
+        user_id: userId,
         total_arquitetos: arquiteto_ids.length,
         status: 'em_andamento',
         progresso_percentual: 0,
         enviados_sucesso: 0,
         enviados_erro: 0,
-        iniciado_em: new Date().toISOString()
+        iniciado_em: new Date().toISOString(),
+        is_recurrent: from_scheduler ? true : false
       })
       .select()
       .single()
