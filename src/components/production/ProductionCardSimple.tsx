@@ -322,36 +322,39 @@ function ProductionCardSimpleComponent({ order, onClick, isDragging, automationA
         )}
 
         {/* Contador de Dias para Entrega Final */}
-        {order.planned_end_date && (
-          <div className={cn(
-            "rounded p-1.5 text-center",
-            isOverdue && "bg-destructive/15 border border-destructive/30",
-            !isOverdue && daysRemaining !== null && daysRemaining <= 3 && "bg-warning/15 border border-warning/30",
-            !isOverdue && daysRemaining !== null && daysRemaining > 3 && "bg-emerald-500/10 border border-emerald-500/20"
-          )}>
-            <div className="flex items-center justify-center gap-1.5 text-[11px] font-medium">
-              <Calendar className="h-3 w-3" />
-              {isOverdue ? (
-                <span className="text-destructive">
-                  Atrasado {Math.abs(daysRemaining || 0)}d
-                </span>
-              ) : daysRemaining === 0 ? (
-                <span className="text-warning">
-                  Entrega HOJE
-                </span>
-              ) : (
-                <span className={cn(
-                  daysRemaining !== null && daysRemaining <= 3 ? "text-warning" : "text-emerald-600"
-                )}>
-                  {daysRemaining}d para entrega
-                </span>
-              )}
-            </div>
+        <div className={cn(
+          "rounded p-1.5 text-center",
+          !order.planned_end_date && "bg-muted/50 border border-dashed border-muted-foreground/30",
+          order.planned_end_date && isOverdue && "bg-destructive/15 border border-destructive/30",
+          order.planned_end_date && !isOverdue && daysRemaining !== null && daysRemaining <= 3 && "bg-warning/15 border border-warning/30",
+          order.planned_end_date && !isOverdue && daysRemaining !== null && daysRemaining > 3 && "bg-emerald-500/10 border border-emerald-500/20"
+        )}>
+          <div className="flex items-center justify-center gap-1.5 text-[11px] font-medium">
+            <Calendar className="h-3 w-3" />
+            {!order.planned_end_date ? (
+              <span className="text-muted-foreground">Sem prazo definido</span>
+            ) : isOverdue ? (
+              <span className="text-destructive">
+                Atrasado {Math.abs(daysRemaining || 0)}d
+              </span>
+            ) : daysRemaining === 0 ? (
+              <span className="text-warning">
+                Entrega HOJE
+              </span>
+            ) : (
+              <span className={cn(
+                daysRemaining !== null && daysRemaining <= 3 ? "text-warning" : "text-emerald-600"
+              )}>
+                {daysRemaining}d para entrega
+              </span>
+            )}
+          </div>
+          {order.planned_end_date && (
             <p className="text-[9px] text-muted-foreground mt-0.5">
               Prazo: {format(new Date(order.planned_end_date), 'dd/MM/yyyy')}
             </p>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Footer: Dates & Value */}
         <div className="flex flex-col gap-2 pt-1 border-t border-border">
