@@ -42,20 +42,23 @@ interface ProductionMetrics {
 export function ProductionKPIs({ productionTypeId, filters }: ProductionKPIsProps) {
   const queryClient = useQueryClient();
 
-  // Sempre buscar métricas de TODOS os tipos para o KPI "Total em Produção"
-  const { data: metricsAll, isLoading: loadingAll } = useQuery({
-    queryKey: ['production-metrics-all', filters],
+  // Query direta para calcular o TOTAL de TODOS os tipos em produção (exceto cancelado)
+  const { data: totalEmProducao, isLoading: loadingTotal } = useQuery({
+    queryKey: ['production-total-all'],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('production_metrics', {
-        p_type_id: null, // Sempre null para pegar todos
-        p_status: filters?.status || null,
-        p_priority: filters?.priority || null,
-        p_responsible_id: filters?.responsible && filters.responsible !== 'all' ? filters.responsible : null
-      });
+      const { data, error } = await supabase
+        .from('production_orders')
+        .select('value, status')
+        .neq('status', 'cancelado');
+      
       if (error) throw error;
-      return data as unknown as ProductionMetrics;
+      
+      const total = data.reduce((acc, order) => acc + (order.value || 0), 0);
+      const count = data.length;
+      
+      return { total, count };
     },
-    staleTime: 10000,
+    staleTime: 5000,
   });
 
   // Métricas do tipo selecionado (para atrasadas e urgentes)
@@ -74,7 +77,7 @@ export function ProductionKPIs({ productionTypeId, filters }: ProductionKPIsProp
     staleTime: 10000,
   });
 
-  const isLoading = loadingAll || loadingType;
+  const isLoading = loadingTotal || loadingType;
 
   // Realtime subscription para atualizar KPIs quando OPs mudam
   useEffect(() => {
@@ -93,6 +96,7 @@ export function ProductionKPIs({ productionTypeId, filters }: ProductionKPIsProp
           clearTimeout(debounceTimer);
           debounceTimer = setTimeout(() => {
             queryClient.invalidateQueries({ queryKey: ['production-metrics'] });
+            queryClient.invalidateQueries({ queryKey: ['production-total-all'] });
           }, 500);
         }
       )
@@ -107,6 +111,7 @@ export function ProductionKPIs({ productionTypeId, filters }: ProductionKPIsProp
           clearTimeout(debounceTimer);
           debounceTimer = setTimeout(() => {
             queryClient.invalidateQueries({ queryKey: ['production-metrics'] });
+            queryClient.invalidateQueries({ queryKey: ['production-total-all'] });
           }, 500);
         }
       )
@@ -126,9 +131,9 @@ export function ProductionKPIs({ productionTypeId, filters }: ProductionKPIsProp
     }).format(value);
   };
 
-  // Total de OPs ativas de TODOS os tipos (não concluídas nem canceladas)
-  const opsAtivasTotal = (metricsAll?.aguardando || 0) + (metricsAll?.em_andamento || 0) + (metricsAll?.pausado || 0);
-  const valorOpsAtivasTotal = (metricsAll?.valor_aguardando || 0) + (metricsAll?.valor_em_andamento || 0);
+  // Total de OPs de TODOS os tipos (exceto canceladas)
+  const opsAtivasTotal = totalEmProducao?.count || 0;
+  const valorOpsAtivasTotal = totalEmProducao?.total || 0;
 
   const kpiCards = [
     { 
