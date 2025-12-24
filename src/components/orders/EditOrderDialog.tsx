@@ -25,9 +25,12 @@ const FORMAS_PAGAMENTO = [
   { value: 'cartao_credito', label: 'Cartão de Crédito' },
   { value: 'cartao_debito', label: 'Cartão de Débito' },
   { value: 'boleto', label: 'Boleto' },
+  { value: 'transferencia', label: 'Transferência' },
   { value: 'permuta', label: 'Permuta' },
   { value: 'dinheiro', label: 'Dinheiro' },
 ];
+
+const FORMAS_COM_PARCELAS = ['boleto', 'cartao_credito'];
 
 const TIPOS_ENTREGA = [
   { value: 'a_combinar', label: 'A combinar' },
@@ -71,6 +74,7 @@ interface PagamentoParcela {
   forma_pagamento: string;
   percentual: number;
   data_vencimento: string;
+  numero_parcelas: number;
 }
 
 interface ClientData {
@@ -155,7 +159,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
   });
 
   const [parcelas, setParcelas] = useState<PagamentoParcela[]>([
-    { id: '1', forma_pagamento: '', percentual: 100, data_vencimento: '' }
+    { id: '1', forma_pagamento: '', percentual: 100, data_vencimento: '', numero_parcelas: 1 }
   ]);
 
   // Adicionar nova forma de pagamento
@@ -168,7 +172,8 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
         id: String(Date.now()),
         forma_pagamento: '',
         percentual: 0,
-        data_vencimento: hoje.toISOString().split('T')[0]
+        data_vencimento: hoje.toISOString().split('T')[0],
+        numero_parcelas: 1
       }
     ]);
   };
@@ -230,7 +235,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
     if (order) {
       // Parse parcelas from observacao_pagamento if it's JSON
       let parcelasData: PagamentoParcela[] = [
-        { id: '1', forma_pagamento: order.forma_pagamento || '', percentual: order.percentual_forma_1 || 100, data_vencimento: order.data_primeiro_vencimento?.split('T')[0] || '' }
+        { id: '1', forma_pagamento: order.forma_pagamento || '', percentual: order.percentual_forma_1 || 100, data_vencimento: order.data_primeiro_vencimento?.split('T')[0] || '', numero_parcelas: 1 }
       ];
       
       if (order.percentual_forma_2 > 0 && order.forma_pagamento_2) {
@@ -238,7 +243,8 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
           id: '2',
           forma_pagamento: order.forma_pagamento_2,
           percentual: order.percentual_forma_2,
-          data_vencimento: ''
+          data_vencimento: '',
+          numero_parcelas: 1
         });
       }
 
@@ -247,7 +253,10 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
         try {
           const parsed = JSON.parse(order.observacao_pagamento);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            parcelasData = parsed;
+            parcelasData = parsed.map((p: any) => ({
+              ...p,
+              numero_parcelas: p.numero_parcelas || 1
+            }));
           }
         } catch {}
       }
@@ -1032,19 +1041,23 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
               <div className="space-y-3">
                 {parcelas.map((parcela, index) => (
                   <div key={parcela.id} className="grid grid-cols-12 gap-2 items-end p-3 bg-muted/30 rounded-lg relative">
-                    {index === 0 && (
+                    {index === 0 && parcelas.length > 1 && (
                       <Badge className="absolute -top-2 left-2 text-xs" variant="default">
                         Entrada
                       </Badge>
                     )}
                     
-                    <div className="col-span-3 space-y-1">
+                    <div className={`${FORMAS_COM_PARCELAS.includes(parcela.forma_pagamento) ? 'col-span-2' : 'col-span-3'} space-y-1`}>
                       <Label className="text-xs">Forma *</Label>
                       <Select
                         value={parcela.forma_pagamento || "_placeholder"}
                         onValueChange={(v) => {
                           const newParcelas = [...parcelas];
                           newParcelas[index].forma_pagamento = v === "_placeholder" ? "" : v;
+                          // Reset parcelas se mudou para forma sem parcelas
+                          if (!FORMAS_COM_PARCELAS.includes(v)) {
+                            newParcelas[index].numero_parcelas = 1;
+                          }
                           setParcelas(newParcelas);
                         }}
                         disabled={!isEditable}
@@ -1062,6 +1075,33 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                         </SelectContent>
                       </Select>
                     </div>
+
+                    {/* Parcelas - só para boleto e cartão de crédito */}
+                    {FORMAS_COM_PARCELAS.includes(parcela.forma_pagamento) && (
+                      <div className="col-span-1 space-y-1">
+                        <Label className="text-xs">Parcelas</Label>
+                        <Select
+                          value={String(parcela.numero_parcelas || 1)}
+                          onValueChange={(v) => {
+                            const newParcelas = [...parcelas];
+                            newParcelas[index].numero_parcelas = Number(v);
+                            setParcelas(newParcelas);
+                          }}
+                          disabled={!isEditable}
+                        >
+                          <SelectTrigger className="h-9">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Array.from({ length: 12 }, (_, i) => i + 1).map((n) => (
+                              <SelectItem key={n} value={String(n)}>
+                                {n}x
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
                     
                     <div className="col-span-2 space-y-1">
                       <Label className="text-xs">% do Total</Label>
@@ -1076,7 +1116,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                       />
                     </div>
 
-                    <div className="col-span-3 space-y-1">
+                    <div className="col-span-2 space-y-1">
                       <Label className="text-xs">Valor</Label>
                       <p className="h-9 flex items-center text-sm font-medium text-primary">
                         {formatCurrency(total * (parcela.percentual / 100))}
