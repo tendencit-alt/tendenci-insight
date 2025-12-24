@@ -324,15 +324,18 @@ function ProductionCardSimpleComponent({ order, onClick, isDragging, automationA
         {/* Contador de Dias para Entrega Final */}
         <div className={cn(
           "rounded p-1.5 text-center",
-          !order.planned_end_date && "bg-muted/50 border border-dashed border-muted-foreground/30",
-          order.planned_end_date && isOverdue && "bg-destructive/15 border border-destructive/30",
-          order.planned_end_date && !isOverdue && daysRemaining !== null && daysRemaining <= 3 && "bg-warning/15 border border-warning/30",
-          order.planned_end_date && !isOverdue && daysRemaining !== null && daysRemaining > 3 && "bg-emerald-500/10 border border-emerald-500/20"
+          order.status === 'finalizado' && "bg-emerald-500/15 border border-emerald-500/30",
+          order.status !== 'finalizado' && !order.planned_end_date && "bg-destructive/15 border border-destructive/30",
+          order.status !== 'finalizado' && order.planned_end_date && isOverdue && "bg-destructive/15 border border-destructive/30",
+          order.status !== 'finalizado' && order.planned_end_date && !isOverdue && daysRemaining !== null && daysRemaining <= 3 && "bg-warning/15 border border-warning/30",
+          order.status !== 'finalizado' && order.planned_end_date && !isOverdue && daysRemaining !== null && daysRemaining > 3 && "bg-emerald-500/10 border border-emerald-500/20"
         )}>
           <div className="flex items-center justify-center gap-1.5 text-[11px] font-medium">
             <Calendar className="h-3 w-3" />
-            {!order.planned_end_date ? (
-              <span className="text-muted-foreground">Sem prazo definido</span>
+            {order.status === 'finalizado' ? (
+              <span className="text-emerald-600">Finalizado e Entregue</span>
+            ) : !order.planned_end_date ? (
+              <span className="text-destructive font-semibold">Sem prazo definido</span>
             ) : isOverdue ? (
               <span className="text-destructive">
                 Atrasado {Math.abs(daysRemaining || 0)}d
@@ -349,7 +352,7 @@ function ProductionCardSimpleComponent({ order, onClick, isDragging, automationA
               </span>
             )}
           </div>
-          {order.planned_end_date && (
+          {order.planned_end_date && order.status !== 'finalizado' && (
             <p className="text-[9px] text-muted-foreground mt-0.5">
               Prazo: {format(new Date(order.planned_end_date), 'dd/MM/yyyy')}
             </p>
