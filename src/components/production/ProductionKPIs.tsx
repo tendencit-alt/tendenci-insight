@@ -42,7 +42,24 @@ interface ProductionMetrics {
 export function ProductionKPIs({ productionTypeId, filters }: ProductionKPIsProps) {
   const queryClient = useQueryClient();
 
-  const { data: metrics, isLoading } = useQuery({
+  // Sempre buscar métricas de TODOS os tipos para o KPI "Total em Produção"
+  const { data: metricsAll, isLoading: loadingAll } = useQuery({
+    queryKey: ['production-metrics-all', filters],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('production_metrics', {
+        p_type_id: null, // Sempre null para pegar todos
+        p_status: filters?.status || null,
+        p_priority: filters?.priority || null,
+        p_responsible_id: filters?.responsible && filters.responsible !== 'all' ? filters.responsible : null
+      });
+      if (error) throw error;
+      return data as unknown as ProductionMetrics;
+    },
+    staleTime: 10000,
+  });
+
+  // Métricas do tipo selecionado (para atrasadas e urgentes)
+  const { data: metrics, isLoading: loadingType } = useQuery({
     queryKey: ['production-metrics', productionTypeId, filters],
     queryFn: async () => {
       const { data, error } = await supabase.rpc('production_metrics', {
@@ -54,8 +71,10 @@ export function ProductionKPIs({ productionTypeId, filters }: ProductionKPIsProp
       if (error) throw error;
       return data as unknown as ProductionMetrics;
     },
-    staleTime: 10000, // Cache por 10 segundos
+    staleTime: 10000,
   });
+
+  const isLoading = loadingAll || loadingType;
 
   // Realtime subscription para atualizar KPIs quando OPs mudam
   useEffect(() => {
@@ -107,15 +126,15 @@ export function ProductionKPIs({ productionTypeId, filters }: ProductionKPIsProp
     }).format(value);
   };
 
-  // Total de OPs ativas (não concluídas nem canceladas)
-  const opsAtivas = (metrics?.aguardando || 0) + (metrics?.em_andamento || 0) + (metrics?.pausado || 0);
-  const valorOpsAtivas = (metrics?.valor_aguardando || 0) + (metrics?.valor_em_andamento || 0);
+  // Total de OPs ativas de TODOS os tipos (não concluídas nem canceladas)
+  const opsAtivasTotal = (metricsAll?.aguardando || 0) + (metricsAll?.em_andamento || 0) + (metricsAll?.pausado || 0);
+  const valorOpsAtivasTotal = (metricsAll?.valor_aguardando || 0) + (metricsAll?.valor_em_andamento || 0);
 
   const kpiCards = [
     { 
-      label: 'Em Produção', 
-      value: opsAtivas, 
-      subValue: formatCurrency(valorOpsAtivas),
+      label: 'Total em Produção', 
+      value: opsAtivasTotal, 
+      subValue: formatCurrency(valorOpsAtivasTotal),
       icon: Settings, 
       color: 'text-blue-600',
       bgColor: 'bg-blue-100'
