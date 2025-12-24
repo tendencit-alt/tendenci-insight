@@ -227,7 +227,7 @@ function ProductionCardSimpleComponent({ order, onClick, isDragging, automationA
                           slaStatus === 'ok' && "border-emerald-500 text-emerald-600"
                         )}
                       >
-                        SLA: {slaDays}d
+                        Prazo: {slaDays}d
                       </Badge>
                     )}
                   </div>
