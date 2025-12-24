@@ -75,20 +75,39 @@ function ProductionCardSimpleComponent({ order, onClick, isDragging, automationA
     ? differenceInDays(new Date(order.planned_end_date), new Date())
     : null;
 
-  // Mutation para toggle de urgência
+  // Mutation para toggle de urgência com registro no histórico
   const toggleUrgent = useMutation({
     mutationFn: async () => {
       const newPriority = order.priority === 'urgente' ? 'normal' : 'urgente';
+      
+      // 1. Atualizar prioridade
       const { error } = await supabase
         .from('production_orders')
         .update({ priority: newPriority })
         .eq('id', order.id);
       if (error) throw error;
+      
+      // 2. Registrar no histórico
+      const { data: { user } } = await supabase.auth.getUser();
+      await supabase
+        .from('production_logs')
+        .insert({
+          production_order_id: order.id,
+          action_type: 'priority_change',
+          description: newPriority === 'urgente' 
+            ? 'Ordem marcada como URGENTE' 
+            : 'Urgência removida - voltou para prioridade normal',
+          from_status: order.priority,
+          to_status: newPriority,
+          created_by: user?.id
+        });
+      
       return newPriority;
     },
     onSuccess: (newPriority) => {
       queryClient.invalidateQueries({ queryKey: ['production-orders'] });
       queryClient.invalidateQueries({ queryKey: ['production-metrics'] });
+      queryClient.invalidateQueries({ queryKey: ['production-order-logs'] });
       toast.success(newPriority === 'urgente' ? 'Marcado como urgente!' : 'Urgência removida');
     },
     onError: () => {
@@ -173,33 +192,9 @@ function ProductionCardSimpleComponent({ order, onClick, isDragging, automationA
               <span className="text-[10px] font-mono text-muted-foreground">
                 OP-{String(order.order_number).padStart(4, '0')}
               </span>
-              <div className="flex items-center gap-1">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleUrgent.mutate();
-                      }}
-                      className={cn(
-                        "p-1 rounded-md transition-colors",
-                        order.priority === 'urgente' 
-                          ? "bg-orange-100 text-orange-600 hover:bg-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:hover:bg-orange-900/50" 
-                          : "bg-muted text-muted-foreground hover:bg-muted/80"
-                      )}
-                      disabled={toggleUrgent.isPending}
-                    >
-                      <Zap className={cn("h-3 w-3", toggleUrgent.isPending && "animate-pulse")} />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="top">
-                    <p className="text-xs">{order.priority === 'urgente' ? 'Remover urgência' : 'Marcar como urgente'}</p>
-                  </TooltipContent>
-                </Tooltip>
-                <Badge className={cn("text-[10px] h-4 px-1.5", priorityColors[order.priority])}>
-                  {priorityLabels[order.priority] || order.priority}
-                </Badge>
-              </div>
+              <Badge className={cn("text-[10px] h-4 px-1.5", priorityColors[order.priority])}>
+                {priorityLabels[order.priority] || order.priority}
+              </Badge>
             </div>
             <p className="font-medium text-xs leading-tight line-clamp-2 mt-0.5">{order.title}</p>
           </div>
@@ -327,42 +322,63 @@ function ProductionCardSimpleComponent({ order, onClick, isDragging, automationA
         )}
 
         {/* Footer: Dates & Value */}
-        <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-1 border-t border-border">
-          <div className="flex items-center gap-2">
-            {totalDays !== null && (
-              <div className="flex items-center gap-0.5">
-                <Clock className="h-2.5 w-2.5" />
-                <span>{totalDays === 0 ? 'Hoje' : `${totalDays}d`}</span>
-              </div>
-            )}
-            {order.planned_end_date && (
-              <div className={cn(
-                "flex items-center gap-0.5",
-                isOverdue && "text-destructive font-medium",
-                daysRemaining !== null && daysRemaining <= 3 && daysRemaining > 0 && "text-warning font-medium"
-              )}>
-                <Calendar className="h-2.5 w-2.5" />
-                <span>
-                  {format(new Date(order.planned_end_date), 'dd/MM')}
-                  {daysRemaining !== null && (
-                    <span className="ml-0.5">
-                      {isOverdue 
-                        ? `(-${Math.abs(daysRemaining)}d)` 
-                        : daysRemaining === 0 
-                        ? '(Hoje)'
-                        : `(${daysRemaining}d)`
-                      }
-                    </span>
-                  )}
-                </span>
-              </div>
+        <div className="flex flex-col gap-2 pt-1 border-t border-border">
+          <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+            <div className="flex items-center gap-2">
+              {totalDays !== null && (
+                <div className="flex items-center gap-0.5">
+                  <Clock className="h-2.5 w-2.5" />
+                  <span>{totalDays === 0 ? 'Hoje' : `${totalDays}d`}</span>
+                </div>
+              )}
+              {order.planned_end_date && (
+                <div className={cn(
+                  "flex items-center gap-0.5",
+                  isOverdue && "text-destructive font-medium",
+                  daysRemaining !== null && daysRemaining <= 3 && daysRemaining > 0 && "text-warning font-medium"
+                )}>
+                  <Calendar className="h-2.5 w-2.5" />
+                  <span>
+                    {format(new Date(order.planned_end_date), 'dd/MM')}
+                    {daysRemaining !== null && (
+                      <span className="ml-0.5">
+                        {isOverdue 
+                          ? `(-${Math.abs(daysRemaining)}d)` 
+                          : daysRemaining === 0 
+                          ? '(Hoje)'
+                          : `(${daysRemaining}d)`
+                        }
+                      </span>
+                    )}
+                  </span>
+                </div>
+              )}
+            </div>
+            {order.value && order.value > 0 && (
+              <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 font-bold text-[11px] px-2">
+                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 }).format(order.value)}
+              </Badge>
             )}
           </div>
-          {order.value && order.value > 0 && (
-            <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 font-bold text-[11px] px-2">
-              {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 }).format(order.value)}
-            </Badge>
-          )}
+          
+          {/* Botão de Urgente - Centralizado */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleUrgent.mutate();
+            }}
+            disabled={toggleUrgent.isPending}
+            className={cn(
+              "w-full h-7 rounded-md text-xs font-medium flex items-center justify-center gap-1.5 transition-colors",
+              order.priority === 'urgente' 
+                ? "bg-destructive/15 text-destructive border border-destructive/30 hover:bg-destructive/25" 
+                : "bg-muted text-muted-foreground border border-border hover:bg-muted/80",
+              toggleUrgent.isPending && "opacity-50 cursor-not-allowed"
+            )}
+          >
+            <Zap className={cn("h-3.5 w-3.5", toggleUrgent.isPending && "animate-pulse")} />
+            {order.priority === 'urgente' ? '✓ Urgente' : 'Marcar Urgente'}
+          </button>
         </div>
       </CardContent>
     </Card>

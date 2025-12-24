@@ -28,7 +28,8 @@ import {
   FileText,
   DollarSign,
   Pencil,
-  Trash2
+  Trash2,
+  Zap
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -254,6 +255,48 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
     }
   });
 
+  // Mutation para toggle de urgência
+  const toggleUrgentMutation = useMutation({
+    mutationFn: async () => {
+      if (!order) return;
+      const newPriority = order.priority === 'urgente' ? 'normal' : 'urgente';
+      
+      // 1. Atualizar prioridade
+      const { error } = await supabase
+        .from('production_orders')
+        .update({ priority: newPriority })
+        .eq('id', orderId);
+      if (error) throw error;
+      
+      // 2. Registrar no histórico
+      const { data: { user } } = await supabase.auth.getUser();
+      await supabase
+        .from('production_logs')
+        .insert({
+          production_order_id: orderId,
+          action_type: 'priority_change',
+          description: newPriority === 'urgente' 
+            ? 'Ordem marcada como URGENTE' 
+            : 'Urgência removida - voltou para prioridade normal',
+          from_status: order.priority,
+          to_status: newPriority,
+          created_by: user?.id
+        });
+      
+      return newPriority;
+    },
+    onSuccess: (newPriority) => {
+      queryClient.invalidateQueries({ queryKey: ['production-order-detail', orderId] });
+      queryClient.invalidateQueries({ queryKey: ['production-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['production-metrics'] });
+      queryClient.invalidateQueries({ queryKey: ['production-order-logs', orderId] });
+      toast.success(newPriority === 'urgente' ? 'Marcado como urgente!' : 'Urgência removida');
+    },
+    onError: () => {
+      toast.error('Erro ao alterar prioridade');
+    }
+  });
+
   // Mutation para excluir OP
   const deleteMutation = useMutation({
     mutationFn: async () => {
@@ -454,6 +497,26 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
                       </div>
                     </div>
                   )}
+
+                  {/* Toggle de Urgência */}
+                  <div className="flex items-center gap-3">
+                    <Zap className="h-4 w-4 text-muted-foreground" />
+                    <div className="flex-1">
+                      <p className="text-sm text-muted-foreground">Prioridade</p>
+                      <p className={`font-medium ${order.priority === 'urgente' ? 'text-destructive' : ''}`}>
+                        {order.priority === 'urgente' ? 'URGENTE' : order.priority?.charAt(0).toUpperCase() + order.priority?.slice(1) || 'Normal'}
+                      </p>
+                    </div>
+                    <Button
+                      variant={order.priority === 'urgente' ? 'destructive' : 'outline'}
+                      size="sm"
+                      onClick={() => toggleUrgentMutation.mutate()}
+                      disabled={toggleUrgentMutation.isPending}
+                    >
+                      <Zap className="h-4 w-4 mr-1" />
+                      {order.priority === 'urgente' ? 'Remover Urgência' : 'Marcar Urgente'}
+                    </Button>
+                  </div>
 
                   {order.planned_end_date && (
                     <div className="flex items-center gap-3">
