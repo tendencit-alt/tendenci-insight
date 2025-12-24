@@ -535,6 +535,36 @@ export type Database = {
           },
         ]
       }
+      boleto_rates: {
+        Row: {
+          active: boolean | null
+          carencia_dias: number
+          created_at: string | null
+          id: string
+          installments: number
+          rate_percent: number
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          carencia_dias: number
+          created_at?: string | null
+          id?: string
+          installments: number
+          rate_percent: number
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          carencia_dias?: number
+          created_at?: string | null
+          id?: string
+          installments?: number
+          rate_percent?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       budget_global_costs: {
         Row: {
           active: boolean | null
@@ -2282,6 +2312,7 @@ export type Database = {
         Row: {
           approved_by: string | null
           architect_id: string | null
+          carencia_boleto: number | null
           centro_custo: string | null
           client_id: string | null
           condicao_pagamento: string | null
@@ -2308,6 +2339,7 @@ export type Database = {
           forma_pagamento_2: string | null
           id: string
           motivo_cancelamento: string | null
+          numero_parcelas_boleto: number | null
           numero_parcelas_cartao: number | null
           observacao_pagamento: string | null
           observacoes_internas: string | null
@@ -2318,6 +2350,9 @@ export type Database = {
           percentual_forma_2: number | null
           status: string | null
           subtotal: number | null
+          taxa_boleto_percentual: number | null
+          taxa_boleto_responsavel: string | null
+          taxa_boleto_valor: number | null
           taxa_cartao_percentual: number | null
           taxa_cartao_responsavel: string | null
           taxa_cartao_valor: number | null
@@ -2332,6 +2367,7 @@ export type Database = {
         Insert: {
           approved_by?: string | null
           architect_id?: string | null
+          carencia_boleto?: number | null
           centro_custo?: string | null
           client_id?: string | null
           condicao_pagamento?: string | null
@@ -2358,6 +2394,7 @@ export type Database = {
           forma_pagamento_2?: string | null
           id?: string
           motivo_cancelamento?: string | null
+          numero_parcelas_boleto?: number | null
           numero_parcelas_cartao?: number | null
           observacao_pagamento?: string | null
           observacoes_internas?: string | null
@@ -2368,6 +2405,9 @@ export type Database = {
           percentual_forma_2?: number | null
           status?: string | null
           subtotal?: number | null
+          taxa_boleto_percentual?: number | null
+          taxa_boleto_responsavel?: string | null
+          taxa_boleto_valor?: number | null
           taxa_cartao_percentual?: number | null
           taxa_cartao_responsavel?: string | null
           taxa_cartao_valor?: number | null
@@ -2382,6 +2422,7 @@ export type Database = {
         Update: {
           approved_by?: string | null
           architect_id?: string | null
+          carencia_boleto?: number | null
           centro_custo?: string | null
           client_id?: string | null
           condicao_pagamento?: string | null
@@ -2408,6 +2449,7 @@ export type Database = {
           forma_pagamento_2?: string | null
           id?: string
           motivo_cancelamento?: string | null
+          numero_parcelas_boleto?: number | null
           numero_parcelas_cartao?: number | null
           observacao_pagamento?: string | null
           observacoes_internas?: string | null
@@ -2418,6 +2460,9 @@ export type Database = {
           percentual_forma_2?: number | null
           status?: string | null
           subtotal?: number | null
+          taxa_boleto_percentual?: number | null
+          taxa_boleto_responsavel?: string | null
+          taxa_boleto_valor?: number | null
           taxa_cartao_percentual?: number | null
           taxa_cartao_responsavel?: string | null
           taxa_cartao_valor?: number | null
