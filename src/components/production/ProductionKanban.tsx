@@ -379,10 +379,16 @@ export function ProductionKanban({ productionTypeId, filters, onOrderClick }: Pr
     }
   });
 
+  // OPs sem fase atual (fallback para primeira coluna)
+  const ordersWithoutPhase = useMemo(() => {
+    return orders.filter(order => !order.current_phase);
+  }, [orders]);
+
   // Agrupar OPs por fase atual - memoizado
   const ordersByPhase = useMemo(() => {
     return phases.reduce((acc, phase) => {
       acc[phase.id] = orders.filter(order => {
+        if (!order.current_phase) return false; // Serão mostrados na primeira coluna via fallback
         if (order.current_phase?.phase_template?.id === phase.id) return true;
         if (order.current_phase?.phase_template?.name === phase.name) return true;
         return false;
@@ -477,10 +483,19 @@ export function ProductionKanban({ productionTypeId, filters, onOrderClick }: Pr
     >
       <ScrollArea className="w-full">
         <div className="flex gap-4 pb-4 min-w-max">
-          {uniquePhases.map((phase) => {
+          {uniquePhases.map((phase, index) => {
+            // Para a primeira coluna, incluir também OPs sem fase atual (fallback)
+            const isFirstColumn = index === 0;
+            
             const phaseOrders = productionTypeId 
-              ? ordersByPhase[phase.id] || []
-              : orders.filter(order => order.current_phase?.phase_template?.name === phase.name);
+              ? [
+                  ...(ordersByPhase[phase.id] || []),
+                  ...(isFirstColumn ? ordersWithoutPhase : [])
+                ]
+              : [
+                  ...orders.filter(order => order.current_phase?.phase_template?.name === phase.name),
+                  ...(isFirstColumn ? ordersWithoutPhase : [])
+                ];
             
             return (
               <OptimizedDroppableColumn
