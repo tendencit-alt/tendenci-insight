@@ -928,6 +928,33 @@ export type Database = {
         }
         Relationships: []
       }
+      credit_card_rates: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          id: string
+          installments: number
+          rate_percent: number
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          id?: string
+          installments: number
+          rate_percent: number
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          id?: string
+          installments?: number
+          rate_percent?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       crm_activities: {
         Row: {
           by_user_id: string | null
@@ -2281,6 +2308,7 @@ export type Database = {
           forma_pagamento_2: string | null
           id: string
           motivo_cancelamento: string | null
+          numero_parcelas_cartao: number | null
           observacao_pagamento: string | null
           observacoes_internas: string | null
           observacoes_nf: string | null
@@ -2290,6 +2318,9 @@ export type Database = {
           percentual_forma_2: number | null
           status: string | null
           subtotal: number | null
+          taxa_cartao_percentual: number | null
+          taxa_cartao_responsavel: string | null
+          taxa_cartao_valor: number | null
           tipo_entrega: string | null
           transportadora_cnpj: string | null
           transportadora_nome: string | null
@@ -2327,6 +2358,7 @@ export type Database = {
           forma_pagamento_2?: string | null
           id?: string
           motivo_cancelamento?: string | null
+          numero_parcelas_cartao?: number | null
           observacao_pagamento?: string | null
           observacoes_internas?: string | null
           observacoes_nf?: string | null
@@ -2336,6 +2368,9 @@ export type Database = {
           percentual_forma_2?: number | null
           status?: string | null
           subtotal?: number | null
+          taxa_cartao_percentual?: number | null
+          taxa_cartao_responsavel?: string | null
+          taxa_cartao_valor?: number | null
           tipo_entrega?: string | null
           transportadora_cnpj?: string | null
           transportadora_nome?: string | null
@@ -2373,6 +2408,7 @@ export type Database = {
           forma_pagamento_2?: string | null
           id?: string
           motivo_cancelamento?: string | null
+          numero_parcelas_cartao?: number | null
           observacao_pagamento?: string | null
           observacoes_internas?: string | null
           observacoes_nf?: string | null
@@ -2382,6 +2418,9 @@ export type Database = {
           percentual_forma_2?: number | null
           status?: string | null
           subtotal?: number | null
+          taxa_cartao_percentual?: number | null
+          taxa_cartao_responsavel?: string | null
+          taxa_cartao_valor?: number | null
           tipo_entrega?: string | null
           transportadora_cnpj?: string | null
           transportadora_nome?: string | null
