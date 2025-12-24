@@ -4392,6 +4392,7 @@ export type Database = {
           erro_mensagem: string | null
           id: string
           iniciado_em: string | null
+          is_recurrent: boolean | null
           progresso_percentual: number
           status: string
           total_arquitetos: number
@@ -4408,6 +4409,7 @@ export type Database = {
           erro_mensagem?: string | null
           id?: string
           iniciado_em?: string | null
+          is_recurrent?: boolean | null
           progresso_percentual?: number
           status?: string
           total_arquitetos?: number
@@ -4424,6 +4426,7 @@ export type Database = {
           erro_mensagem?: string | null
           id?: string
           iniciado_em?: string | null
+          is_recurrent?: boolean | null
           progresso_percentual?: number
           status?: string
           total_arquitetos?: number
@@ -4909,6 +4912,7 @@ export type Database = {
           status: string | null
           tipo_agendamento: string | null
           tipo_envio: string | null
+          ultimo_disparo_em: string | null
           updated_at: string | null
           vendedor_id: string | null
           webhook_n8n: string | null
@@ -4939,6 +4943,7 @@ export type Database = {
           status?: string | null
           tipo_agendamento?: string | null
           tipo_envio?: string | null
+          ultimo_disparo_em?: string | null
           updated_at?: string | null
           vendedor_id?: string | null
           webhook_n8n?: string | null
@@ -4969,6 +4974,7 @@ export type Database = {
           status?: string | null
           tipo_agendamento?: string | null
           tipo_envio?: string | null
+          ultimo_disparo_em?: string | null
           updated_at?: string | null
           vendedor_id?: string | null
           webhook_n8n?: string | null
