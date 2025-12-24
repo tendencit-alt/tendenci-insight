@@ -32,6 +32,13 @@ const FORMAS_PAGAMENTO = [
 
 const FORMAS_COM_PARCELAS = ['boleto', 'cartao_credito'];
 
+// Taxas de cartão de crédito por número de parcelas (fallback)
+const TAXAS_CARTAO_CREDITO: Record<number, number> = {
+  1: 2.80, 2: 3.95, 3: 4.69, 4: 5.41,
+  5: 6.13, 6: 6.84, 7: 7.30, 8: 8.00,
+  9: 8.90, 10: 9.38, 11: 10.05, 12: 10.72
+};
+
 const TIPOS_ENTREGA = [
   { value: 'a_combinar', label: 'A combinar' },
   { value: 'entrega_tendenci', label: 'Entrega Tendenci' },
@@ -204,6 +211,14 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
   // Estado para dados editáveis do cliente
   const [clientData, setClientData] = useState<ClientData>(initialClientData);
 
+  // Estado para taxas de cartão de crédito
+  const [taxaCartao, setTaxaCartao] = useState({
+    percentual: 0,
+    valor: 0,
+    responsavel: 'cliente' as 'cliente' | 'tendenci',
+    numeroParcelas: 1
+  });
+
   const { data: order, refetch } = useQuery({
     queryKey: ['order-for-edit', orderId],
     queryFn: async () => {
@@ -291,6 +306,14 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
         transportadora_cnpj: order.transportadora_cnpj || '',
         data_emissao: order.data_emissao ? order.data_emissao.slice(0, 16) : '',
       });
+
+      // Carregar dados de taxa de cartão do pedido
+      setTaxaCartao({
+        percentual: Number(order.taxa_cartao_percentual) || 0,
+        valor: Number(order.taxa_cartao_valor) || 0,
+        responsavel: (order.taxa_cartao_responsavel as 'cliente' | 'tendenci') || 'cliente',
+        numeroParcelas: order.numero_parcelas_cartao || 1
+      });
     }
   }, [order]);
 
@@ -367,7 +390,32 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
   const subtotal = items.reduce((sum, item) => sum + item.valor_total, 0);
   const descontoPerc = subtotal * (formData.desconto_percentual / 100);
   const descontoTotal = descontoPerc + Number(formData.desconto_valor || 0);
-  const total = subtotal - descontoTotal + Number(formData.valor_frete || 0);
+  const totalSemTaxa = subtotal - descontoTotal + Number(formData.valor_frete || 0);
+
+  // Calcular taxa de cartão automaticamente
+  const parcelaCartao = parcelas.find(p => p.forma_pagamento === 'cartao_credito');
+  const numParcelasCartao = parcelaCartao?.numero_parcelas || 1;
+  const taxaPercentual = parcelaCartao ? (TAXAS_CARTAO_CREDITO[numParcelasCartao] || 0) : 0;
+  const valorBaseCartao = parcelaCartao ? totalSemTaxa * (parcelaCartao.percentual / 100) : 0;
+  const valorTaxaCalculada = valorBaseCartao * (taxaPercentual / 100);
+
+  // Atualizar estado de taxa quando mudar parcelas
+  useEffect(() => {
+    if (parcelaCartao) {
+      setTaxaCartao(prev => ({
+        ...prev,
+        percentual: taxaPercentual,
+        valor: valorTaxaCalculada,
+        numeroParcelas: numParcelasCartao
+      }));
+    } else {
+      setTaxaCartao({ percentual: 0, valor: 0, responsavel: 'cliente', numeroParcelas: 1 });
+    }
+  }, [parcelas, totalSemTaxa, taxaPercentual, valorTaxaCalculada, numParcelasCartao, parcelaCartao]);
+
+  // Total final: inclui taxa se responsável for cliente
+  const taxaAplicada = taxaCartao.responsavel === 'cliente' ? taxaCartao.valor : 0;
+  const total = totalSemTaxa + taxaAplicada;
 
   const totalPercentual = parcelas.reduce((sum, p) => sum + p.percentual, 0);
   
@@ -508,6 +556,11 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
           valor_total: total,
           centro_custo: null, // centro_custo agora é por item
           status: newStatus,
+          // Campos de taxa de cartão
+          taxa_cartao_percentual: taxaCartao.percentual,
+          taxa_cartao_valor: taxaCartao.valor,
+          taxa_cartao_responsavel: taxaCartao.responsavel,
+          numero_parcelas_cartao: taxaCartao.numeroParcelas,
           ...(isMaster && formData.data_emissao ? { data_emissao: new Date(formData.data_emissao).toISOString() } : {}),
         })
         .eq('id', orderId);
@@ -1229,6 +1282,53 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                 </Alert>
               )}
             </div>
+
+            {/* Card de Taxa de Cartão de Crédito */}
+            {parcelaCartao && taxaCartao.percentual > 0 && (
+              <Card className="p-4 bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-amber-800 dark:text-amber-200">
+                        Taxa Cartão {taxaCartao.numeroParcelas}x ({taxaCartao.percentual}%)
+                      </p>
+                      <p className="text-lg font-bold text-amber-900 dark:text-amber-100">
+                        {formatCurrency(taxaCartao.valor)}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant={taxaCartao.responsavel === 'cliente' ? 'default' : 'outline'}
+                      size="sm"
+                      disabled={!isEditable}
+                      className={taxaCartao.responsavel === 'cliente' ? 'bg-amber-600 hover:bg-amber-700' : ''}
+                      onClick={() => setTaxaCartao({...taxaCartao, responsavel: 'cliente'})}
+                    >
+                      Taxa Cliente
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={taxaCartao.responsavel === 'tendenci' ? 'default' : 'outline'}
+                      size="sm"
+                      disabled={!isEditable}
+                      className={taxaCartao.responsavel === 'tendenci' ? 'bg-green-600 hover:bg-green-700' : ''}
+                      onClick={() => setTaxaCartao({...taxaCartao, responsavel: 'tendenci'})}
+                    >
+                      Taxa Tendenci
+                    </Button>
+                  </div>
+                  
+                  <p className="text-xs text-amber-700 dark:text-amber-300">
+                    {taxaCartao.responsavel === 'cliente' 
+                      ? '✓ Taxa será adicionada ao valor total do pedido' 
+                      : '✓ Taxa será absorvida pela Tendenci (não será cobrada do cliente)'}
+                  </p>
+                </div>
+              </Card>
+            )}
 
             <div className="space-y-2">
               <Label>Observação de Pagamento</Label>

@@ -424,6 +424,23 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
                       <span>{formatCurrency(order.valor_frete)}</span>
                     </div>
                   )}
+                  {/* Taxa de Cartão de Crédito */}
+                  {order.taxa_cartao_valor > 0 && (
+                    <div className={`flex justify-between items-center ${order.taxa_cartao_responsavel === 'tendenci' ? 'text-muted-foreground' : 'text-amber-600'}`}>
+                      <span className="flex items-center gap-2">
+                        Taxa Cartão {order.numero_parcelas_cartao}x ({order.taxa_cartao_percentual}%):
+                        <Badge 
+                          variant={order.taxa_cartao_responsavel === 'cliente' ? 'destructive' : 'secondary'}
+                          className="text-xs"
+                        >
+                          {order.taxa_cartao_responsavel === 'cliente' ? 'Cliente paga' : 'Tendenci absorve'}
+                        </Badge>
+                      </span>
+                      <span className={order.taxa_cartao_responsavel === 'tendenci' ? 'line-through' : ''}>
+                        {formatCurrency(order.taxa_cartao_valor)}
+                      </span>
+                    </div>
+                  )}
                   <Separator />
                   <div className="flex justify-between font-bold text-lg">
                     <span>Total:</span>
