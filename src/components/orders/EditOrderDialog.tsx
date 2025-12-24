@@ -366,6 +366,13 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
   const total = subtotal - descontoTotal + Number(formData.valor_frete || 0);
 
   const totalPercentual = parcelas.reduce((sum, p) => sum + p.percentual, 0);
+  
+  // Validação rigorosa: valor das formas de pagamento deve ser igual ao total
+  const valorTotalPagamento = parcelas.reduce((sum, p) => sum + (total * (p.percentual / 100)), 0);
+  const diferencaPagamento = Math.abs(valorTotalPagamento - total);
+  const isPagamentoValorCorreto = diferencaPagamento < 0.01;
+  const isPagamentoValid = parcelas.length > 0 && parcelas.every(p => p.forma_pagamento) && totalPercentual === 100 && isPagamentoValorCorreto;
+  
   const isEditable = order?.status === 'rascunho' || order?.status === 'ativo' || order?.status === 'aguardando_aprovacao';
 
   // Busca automática de CEP
@@ -615,6 +622,14 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
           description: 'Observação atualizada',
           created_by: user?.id
         });
+      }
+
+      // 6. SYNC: Atualizar valor do deal no CRM se vinculado
+      if (formData.deal_id) {
+        await supabase
+          .from('crm_deals')
+          .update({ value: total })
+          .eq('id', formData.deal_id);
       }
 
       if (shouldBeAtivo && order?.status === 'rascunho') {
@@ -1168,12 +1183,24 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                 ))}
               </div>
 
-              {/* Resumo de percentuais */}
-              <div className="flex items-center justify-between pt-2 border-t">
-                <span className="text-sm text-muted-foreground">Total dos percentuais:</span>
-                <span className={`text-sm font-medium ${totalPercentual === 100 ? 'text-green-600' : 'text-destructive'}`}>
-                  {totalPercentual}%
-                </span>
+              {/* Resumo de valores */}
+              <div className="space-y-2 pt-2 border-t">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Total dos percentuais:</span>
+                  <span className={`text-sm font-medium ${totalPercentual === 100 ? 'text-green-600' : 'text-destructive'}`}>
+                    {totalPercentual}%
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Valor do Pedido:</span>
+                  <span className="text-sm font-medium">{formatCurrency(total)}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Total Formas de Pagamento:</span>
+                  <span className={`text-sm font-medium ${isPagamentoValorCorreto ? 'text-green-600' : 'text-destructive'}`}>
+                    {formatCurrency(valorTotalPagamento)}
+                  </span>
+                </div>
               </div>
 
               {totalPercentual !== 100 && (
@@ -1181,6 +1208,15 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                   <AlertTriangle className="h-4 w-4" />
                   <AlertDescription>
                     O total dos percentuais deve ser exatamente 100%.
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {totalPercentual === 100 && !isPagamentoValorCorreto && (
+                <Alert variant="destructive" className="mt-2">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>
+                    O valor total das formas de pagamento ({formatCurrency(valorTotalPagamento)}) deve ser igual ao valor do pedido ({formatCurrency(total)}).
                   </AlertDescription>
                 </Alert>
               )}

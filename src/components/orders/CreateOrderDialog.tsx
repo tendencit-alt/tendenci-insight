@@ -227,7 +227,13 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
   const allItemsHaveCentroCusto = items.length > 0 && items.every(item => !!item.centro_custo);
   const isItensValid = items.length > 0 && allItemsHaveCentroCusto;
   const totalPercentual = parcelas.reduce((sum, p) => sum + p.percentual, 0);
-  const isPagamentoValid = parcelas.length > 0 && parcelas.every(p => p.forma_pagamento) && totalPercentual === 100;
+  
+  // Validação rigorosa: valor das formas de pagamento deve ser igual ao total
+  const valorTotalPagamento = parcelas.reduce((sum, p) => sum + (total * (p.percentual / 100)), 0);
+  const diferencaPagamento = Math.abs(valorTotalPagamento - total);
+  const isPagamentoValorCorreto = diferencaPagamento < 0.01;
+  
+  const isPagamentoValid = parcelas.length > 0 && parcelas.every(p => p.forma_pagamento) && totalPercentual === 100 && isPagamentoValorCorreto;
   const isEntregaValid = !!formData.tipo_entrega;
   const isFormValid = isClienteValid && isItensValid && isPagamentoValid && isEntregaValid;
 
@@ -342,6 +348,14 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
           description: 'Observação adicionada na criação do pedido',
           created_by: user?.id
         });
+      }
+
+      // SYNC: Atualizar valor do deal no CRM se vinculado
+      if (formData.deal_id) {
+        await supabase
+          .from('crm_deals')
+          .update({ value: total })
+          .eq('id', formData.deal_id);
       }
 
       toast.success(`Pedido #${order.order_number} criado com sucesso!`);
@@ -771,12 +785,24 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                   ))}
                 </div>
 
-                {/* Resumo de percentuais */}
-                <div className="flex items-center justify-between pt-2 border-t">
-                  <span className="text-sm text-muted-foreground">Total dos percentuais:</span>
-                  <span className={`text-sm font-medium ${totalPercentual === 100 ? 'text-green-600' : 'text-destructive'}`}>
-                    {totalPercentual}%
-                  </span>
+                {/* Resumo de valores */}
+                <div className="space-y-2 pt-2 border-t">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Total dos percentuais:</span>
+                    <span className={`text-sm font-medium ${totalPercentual === 100 ? 'text-green-600' : 'text-destructive'}`}>
+                      {totalPercentual}%
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Valor do Pedido:</span>
+                    <span className="text-sm font-medium">{formatCurrency(total)}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Total Formas de Pagamento:</span>
+                    <span className={`text-sm font-medium ${isPagamentoValorCorreto ? 'text-green-600' : 'text-destructive'}`}>
+                      {formatCurrency(valorTotalPagamento)}
+                    </span>
+                  </div>
                 </div>
 
                 {totalPercentual !== 100 && (
@@ -784,6 +810,15 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                     <AlertTriangle className="h-4 w-4" />
                     <AlertDescription>
                       O total dos percentuais deve ser exatamente 100%.
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                {totalPercentual === 100 && !isPagamentoValorCorreto && (
+                  <Alert variant="destructive" className="mt-2">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription>
+                      O valor total das formas de pagamento ({formatCurrency(valorTotalPagamento)}) deve ser igual ao valor do pedido ({formatCurrency(total)}).
                     </AlertDescription>
                   </Alert>
                 )}
