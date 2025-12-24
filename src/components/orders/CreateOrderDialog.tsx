@@ -853,10 +853,22 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                       <span className="text-sm font-medium">+ {formatCurrency(taxaCartao.valor)}</span>
                     </div>
                   )}
+                  {taxaCartao.valor > 0 && taxaCartao.responsavel === 'tendenci' && (
+                    <div className="flex items-center justify-between text-red-600">
+                      <span className="text-sm">Taxas Absorvidas ({taxaCartao.numeroParcelas}x - {taxaCartao.percentual}%):</span>
+                      <span className="text-sm font-medium">- {formatCurrency(taxaCartao.valor)}</span>
+                    </div>
+                  )}
                   <div className="flex items-center justify-between border-t pt-2">
                     <span className="text-sm font-semibold">Total do Pedido:</span>
                     <span className="text-base font-bold text-primary">{formatCurrency(total)}</span>
                   </div>
+                  {taxaCartao.valor > 0 && taxaCartao.responsavel === 'tendenci' && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-semibold text-red-600">Valor Líquido Tendenci:</span>
+                      <span className="text-base font-bold text-red-600">{formatCurrency(totalSemTaxa - taxaCartao.valor)}</span>
+                    </div>
+                  )}
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Total Formas de Pagamento:</span>
                     <span className={`text-sm font-medium ${isPagamentoValorCorreto ? 'text-green-600' : 'text-destructive'}`}>
