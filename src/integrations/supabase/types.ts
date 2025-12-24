@@ -3338,6 +3338,101 @@ export type Database = {
           },
         ]
       }
+      production_product_bom: {
+        Row: {
+          created_at: string | null
+          custo_unitario: number
+          id: string
+          insumo_id: string | null
+          insumo_nome: string
+          notes: string | null
+          production_product_id: string
+          quantidade: number
+          subtotal: number | null
+          unidade: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          custo_unitario?: number
+          id?: string
+          insumo_id?: string | null
+          insumo_nome: string
+          notes?: string | null
+          production_product_id: string
+          quantidade?: number
+          subtotal?: number | null
+          unidade?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          custo_unitario?: number
+          id?: string
+          insumo_id?: string | null
+          insumo_nome?: string
+          notes?: string | null
+          production_product_id?: string
+          quantidade?: number
+          subtotal?: number | null
+          unidade?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_product_bom_insumo_id_fkey"
+            columns: ["insumo_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_product_bom_production_product_id_fkey"
+            columns: ["production_product_id"]
+            isOneToOne: false
+            referencedRelation: "production_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      production_products: {
+        Row: {
+          cmv_total: number | null
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          production_order_id: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          cmv_total?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          production_order_id: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          cmv_total?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          production_order_id?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_products_production_order_id_fkey"
+            columns: ["production_order_id"]
+            isOneToOne: true
+            referencedRelation: "production_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       production_types: {
         Row: {
           active: boolean

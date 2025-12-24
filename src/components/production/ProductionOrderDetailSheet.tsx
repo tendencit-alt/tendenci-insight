@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { 
   AlertDialog,
@@ -29,13 +30,16 @@ import {
   DollarSign,
   Pencil,
   Trash2,
-  Zap
+  Zap,
+  FileSpreadsheet,
+  Info
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { EditProductionOrderDialog } from './EditProductionOrderDialog';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ProductionUpdates } from './ProductionUpdates';
+import { ProductionFichaTecnica } from './ProductionFichaTecnica';
 
 interface ProductionOrderDetailSheetProps {
   orderId: string | null;
@@ -63,6 +67,7 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
   const queryClient = useQueryClient();
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('info');
   const { isMaster } = usePermissions();
 
   // Buscar detalhes da OP com queries separadas para evitar problemas de FK
@@ -464,167 +469,193 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
 
                 <Separator />
 
-                {/* Informações */}
-                <div className="grid gap-4">
-                  {order.client && (
-                    <div className="flex items-center gap-3">
-                      <Package className="h-4 w-4 text-muted-foreground" />
-                      <div>
-                        <p className="text-sm text-muted-foreground">Cliente</p>
-                        <p className="font-medium">{order.client.name}</p>
-                      </div>
-                    </div>
-                  )}
+                {/* Tabs para Informações, Ficha Técnica e Atualizações */}
+                <Tabs value={activeTab} onValueChange={setActiveTab}>
+                  <TabsList className="w-full">
+                    <TabsTrigger value="info" className="flex-1 gap-1.5">
+                      <Info className="h-4 w-4" />
+                      Informações
+                    </TabsTrigger>
+                    <TabsTrigger value="ficha" className="flex-1 gap-1.5">
+                      <FileSpreadsheet className="h-4 w-4" />
+                      Ficha Técnica
+                    </TabsTrigger>
+                    <TabsTrigger value="updates" className="flex-1 gap-1.5">
+                      <Clock className="h-4 w-4" />
+                      Atualizações
+                    </TabsTrigger>
+                  </TabsList>
 
-                  {order.responsible && (
-                    <div className="flex items-center gap-3">
-                      <User className="h-4 w-4 text-muted-foreground" />
-                      <div>
-                        <p className="text-sm text-muted-foreground">Responsável</p>
-                        <p className="font-medium">{order.responsible.full_name}</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {order.value && order.value > 0 && (
-                    <div className="flex items-center gap-3">
-                      <DollarSign className="h-4 w-4 text-muted-foreground" />
-                      <div>
-                        <p className="text-sm text-muted-foreground">Valor</p>
-                        <p className="font-medium">
-                          {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(order.value)}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Toggle de Urgência */}
-                  <div className="flex items-center gap-3">
-                    <Zap className="h-4 w-4 text-muted-foreground" />
-                    <div className="flex-1">
-                      <p className="text-sm text-muted-foreground">Prioridade</p>
-                      <p className={`font-medium ${order.priority === 'urgente' ? 'text-destructive' : ''}`}>
-                        {order.priority === 'urgente' ? 'URGENTE' : order.priority?.charAt(0).toUpperCase() + order.priority?.slice(1) || 'Normal'}
-                      </p>
-                    </div>
-                    <Button
-                      variant={order.priority === 'urgente' ? 'destructive' : 'outline'}
-                      size="sm"
-                      onClick={() => toggleUrgentMutation.mutate()}
-                      disabled={toggleUrgentMutation.isPending}
-                    >
-                      <Zap className="h-4 w-4 mr-1" />
-                      {order.priority === 'urgente' ? 'Remover Urgência' : 'Marcar Urgente'}
-                    </Button>
-                  </div>
-
-                  {order.planned_end_date && (
-                    <div className="flex items-center gap-3">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <div>
-                        <p className="text-sm text-muted-foreground">Prazo</p>
-                        <p className="font-medium">
-                          {format(new Date(order.planned_end_date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {order.description && (
-                    <div className="flex items-start gap-3">
-                      <FileText className="h-4 w-4 text-muted-foreground mt-0.5" />
-                      <div>
-                        <p className="text-sm text-muted-foreground">Descrição</p>
-                        <p className="text-sm">{order.description}</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {order.notes && (
-                    <div className="flex items-start gap-3">
-                      <FileText className="h-4 w-4 text-muted-foreground mt-0.5" />
-                      <div>
-                        <p className="text-sm text-muted-foreground">Observações</p>
-                        <p className="text-sm">{order.notes}</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <Separator />
-
-                {/* Timeline de fases */}
-                <div>
-                  <h3 className="font-medium mb-3">Fases da Produção</h3>
-                  <div className="space-y-3">
-                    {sortedPhases.map((phase, index) => (
-                      <div 
-                        key={phase.id}
-                        className={`flex items-center gap-3 p-3 rounded-lg border ${
-                          phase.status === 'em_andamento' 
-                            ? 'border-primary bg-primary/5' 
-                            : phase.status === 'concluido'
-                            ? 'border-green-500 bg-green-50 dark:bg-green-950/20'
-                            : 'border-border'
-                        }`}
-                      >
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                          phase.status === 'concluido' 
-                            ? 'bg-green-500 text-white'
-                            : phase.status === 'em_andamento'
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-muted text-muted-foreground'
-                        }`}>
-                          {phase.status === 'concluido' ? (
-                            <CheckCircle2 className="h-4 w-4" />
-                          ) : (
-                            index + 1
-                          )}
+                  {/* Tab Informações */}
+                  <TabsContent value="info" className="space-y-4 mt-4">
+                    {/* Informações */}
+                    <div className="grid gap-4">
+                      {order.client && (
+                        <div className="flex items-center gap-3">
+                          <Package className="h-4 w-4 text-muted-foreground" />
+                          <div>
+                            <p className="text-sm text-muted-foreground">Cliente</p>
+                            <p className="font-medium">{order.client.name}</p>
+                          </div>
                         </div>
-                        <div className="flex-1">
-                          <p className="font-medium text-sm">{phase.phase_template?.name}</p>
-                          {phase.started_at && (
-                            <p className="text-xs text-muted-foreground">
-                              {phase.status === 'concluido' && phase.completed_at
-                                ? `Concluído em ${format(new Date(phase.completed_at), 'dd/MM HH:mm')}`
-                                : `Iniciado em ${format(new Date(phase.started_at), 'dd/MM HH:mm')}`
-                              }
+                      )}
+
+                      {order.responsible && (
+                        <div className="flex items-center gap-3">
+                          <User className="h-4 w-4 text-muted-foreground" />
+                          <div>
+                            <p className="text-sm text-muted-foreground">Responsável</p>
+                            <p className="font-medium">{order.responsible.full_name}</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {order.value && order.value > 0 && (
+                        <div className="flex items-center gap-3">
+                          <DollarSign className="h-4 w-4 text-muted-foreground" />
+                          <div>
+                            <p className="text-sm text-muted-foreground">Valor</p>
+                            <p className="font-medium">
+                              {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(order.value)}
                             </p>
-                          )}
+                          </div>
                         </div>
+                      )}
+
+                      {/* Toggle de Urgência */}
+                      <div className="flex items-center gap-3">
+                        <Zap className="h-4 w-4 text-muted-foreground" />
+                        <div className="flex-1">
+                          <p className="text-sm text-muted-foreground">Prioridade</p>
+                          <p className={`font-medium ${order.priority === 'urgente' ? 'text-destructive' : ''}`}>
+                            {order.priority === 'urgente' ? 'URGENTE' : order.priority?.charAt(0).toUpperCase() + order.priority?.slice(1) || 'Normal'}
+                          </p>
+                        </div>
+                        <Button
+                          variant={order.priority === 'urgente' ? 'destructive' : 'outline'}
+                          size="sm"
+                          onClick={() => toggleUrgentMutation.mutate()}
+                          disabled={toggleUrgentMutation.isPending}
+                        >
+                          <Zap className="h-4 w-4 mr-1" />
+                          {order.priority === 'urgente' ? 'Remover Urgência' : 'Marcar Urgente'}
+                        </Button>
                       </div>
-                    ))}
-                  </div>
-                </div>
 
-                <Separator />
+                      {order.planned_end_date && (
+                        <div className="flex items-center gap-3">
+                          <Calendar className="h-4 w-4 text-muted-foreground" />
+                          <div>
+                            <p className="text-sm text-muted-foreground">Prazo</p>
+                            <p className="font-medium">
+                              {format(new Date(order.planned_end_date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                            </p>
+                          </div>
+                        </div>
+                      )}
 
-                {/* Atualizações e Anexos */}
-                <ProductionUpdates orderId={orderId} />
+                      {order.description && (
+                        <div className="flex items-start gap-3">
+                          <FileText className="h-4 w-4 text-muted-foreground mt-0.5" />
+                          <div>
+                            <p className="text-sm text-muted-foreground">Descrição</p>
+                            <p className="text-sm">{order.description}</p>
+                          </div>
+                        </div>
+                      )}
 
-                {/* Histórico de Movimentação */}
-                {logs.length > 0 && (
-                  <>
+                      {order.notes && (
+                        <div className="flex items-start gap-3">
+                          <FileText className="h-4 w-4 text-muted-foreground mt-0.5" />
+                          <div>
+                            <p className="text-sm text-muted-foreground">Observações</p>
+                            <p className="text-sm">{order.notes}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
                     <Separator />
+
+                    {/* Timeline de fases */}
                     <div>
-                      <h3 className="font-medium mb-3">Histórico de Movimentação</h3>
-                      <div className="space-y-2">
-                        {logs.map((log) => (
-                          <div key={log.id} className="flex items-start gap-2 text-sm">
-                            <Clock className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                            <div>
-                              <p>{log.description}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {format(new Date(log.created_at), "dd/MM 'às' HH:mm", { locale: ptBR })}
-                                {log.created_by_profile?.full_name && ` • ${log.created_by_profile.full_name}`}
-                              </p>
+                      <h3 className="font-medium mb-3">Fases da Produção</h3>
+                      <div className="space-y-3">
+                        {sortedPhases.map((phase, index) => (
+                          <div 
+                            key={phase.id}
+                            className={`flex items-center gap-3 p-3 rounded-lg border ${
+                              phase.status === 'em_andamento' 
+                                ? 'border-primary bg-primary/5' 
+                                : phase.status === 'concluido'
+                                ? 'border-green-500 bg-green-50 dark:bg-green-950/20'
+                                : 'border-border'
+                            }`}
+                          >
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                              phase.status === 'concluido' 
+                                ? 'bg-green-500 text-white'
+                                : phase.status === 'em_andamento'
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-muted text-muted-foreground'
+                            }`}>
+                              {phase.status === 'concluido' ? (
+                                <CheckCircle2 className="h-4 w-4" />
+                              ) : (
+                                index + 1
+                              )}
+                            </div>
+                            <div className="flex-1">
+                              <p className="font-medium text-sm">{phase.phase_template?.name}</p>
+                              {phase.started_at && (
+                                <p className="text-xs text-muted-foreground">
+                                  {phase.status === 'concluido' && phase.completed_at
+                                    ? `Concluído em ${format(new Date(phase.completed_at), 'dd/MM HH:mm')}`
+                                    : `Iniciado em ${format(new Date(phase.started_at), 'dd/MM HH:mm')}`
+                                  }
+                                </p>
+                              )}
                             </div>
                           </div>
                         ))}
                       </div>
                     </div>
-                  </>
-                )}
+
+                    {/* Histórico de Movimentação */}
+                    {logs.length > 0 && (
+                      <>
+                        <Separator />
+                        <div>
+                          <h3 className="font-medium mb-3">Histórico de Movimentação</h3>
+                          <div className="space-y-2">
+                            {logs.map((log) => (
+                              <div key={log.id} className="flex items-start gap-2 text-sm">
+                                <Clock className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                                <div>
+                                  <p>{log.description}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {format(new Date(log.created_at), "dd/MM 'às' HH:mm", { locale: ptBR })}
+                                    {log.created_by_profile?.full_name && ` • ${log.created_by_profile.full_name}`}
+                                  </p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </TabsContent>
+
+                  {/* Tab Ficha Técnica */}
+                  <TabsContent value="ficha" className="mt-4">
+                    <ProductionFichaTecnica productionOrderId={orderId!} />
+                  </TabsContent>
+
+                  {/* Tab Atualizações */}
+                  <TabsContent value="updates" className="mt-4">
+                    <ProductionUpdates orderId={orderId} />
+                  </TabsContent>
+                </Tabs>
               </div>
             </>
           ) : (
