@@ -441,6 +441,23 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
                       </span>
                     </div>
                   )}
+                  {/* Taxa de Boleto */}
+                  {(order as any).taxa_boleto_valor > 0 && (
+                    <div className={`flex justify-between items-center ${(order as any).taxa_boleto_responsavel === 'tendenci' ? 'text-muted-foreground' : 'text-blue-600'}`}>
+                      <span className="flex items-center gap-2">
+                        Taxa Boleto {(order as any).carencia_boleto}d / {(order as any).numero_parcelas_boleto}x ({(order as any).taxa_boleto_percentual}%):
+                        <Badge 
+                          variant={(order as any).taxa_boleto_responsavel === 'cliente' ? 'destructive' : 'secondary'}
+                          className="text-xs"
+                        >
+                          {(order as any).taxa_boleto_responsavel === 'cliente' ? 'Cliente paga' : 'Tendenci absorve'}
+                        </Badge>
+                      </span>
+                      <span className={(order as any).taxa_boleto_responsavel === 'tendenci' ? 'line-through' : ''}>
+                        {formatCurrency((order as any).taxa_boleto_valor)}
+                      </span>
+                    </div>
+                  )}
                   <Separator />
                   <div className="flex justify-between font-bold text-lg">
                     <span>Total:</span>

@@ -61,6 +61,14 @@ const TAXAS_CARTAO_CREDITO: Record<number, number> = {
   9: 8.90, 10: 9.38, 11: 10.05, 12: 10.72
 };
 
+// Taxas de boleto por carência e parcelas (fallback)
+const TAXAS_BOLETO: Record<number, Record<number, number>> = {
+  30: { 1: 2.62, 2: 3.89, 3: 5.15, 4: 6.38, 5: 7.59, 6: 8.78, 
+        7: 9.43, 8: 10.53, 9: 11.60, 10: 12.66, 11: 13.70, 12: 14.73 },
+  60: { 1: 5.17, 2: 6.41, 3: 7.63, 4: 8.83, 5: 10.01, 6: 11.17,
+        7: 11.68, 8: 12.74, 9: 13.79, 10: 14.82, 11: 15.84, 12: 16.84 }
+};
+
 const TIPOS_ENTREGA = [
   { value: 'a_combinar', label: 'A combinar' },
   { value: 'entrega_tendenci', label: 'Entrega Tendenci' },
@@ -84,6 +92,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     percentual: number;
     data_vencimento: string;
     numero_parcelas: number;
+    carencia_boleto?: 30 | 60;
   }
 
   const [formData, setFormData] = useState({
@@ -119,6 +128,15 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     valor: 0,
     responsavel: 'cliente' as 'cliente' | 'tendenci',
     numeroParcelas: 1
+  });
+
+  // Estado para taxas de boleto
+  const [taxaBoleto, setTaxaBoleto] = useState({
+    percentual: 0,
+    valor: 0,
+    responsavel: 'cliente' as 'cliente' | 'tendenci',
+    numeroParcelas: 1,
+    carencia: 30 as 30 | 60
   });
 
   // Adicionar nova forma de pagamento
@@ -245,7 +263,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
   const valorBaseCartao = parcelaCartao ? totalSemTaxa * (parcelaCartao.percentual / 100) : 0;
   const valorTaxaCalculada = valorBaseCartao * (taxaPercentual / 100);
   
-  // Atualizar estado de taxa quando mudar parcelas
+  // Atualizar estado de taxa de cartão quando mudar parcelas
   useEffect(() => {
     if (parcelaCartao) {
       setTaxaCartao(prev => ({
@@ -258,10 +276,39 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
       setTaxaCartao({ percentual: 0, valor: 0, responsavel: 'cliente', numeroParcelas: 1 });
     }
   }, [parcelas, totalSemTaxa, taxaPercentual, valorTaxaCalculada, numParcelasCartao, parcelaCartao]);
+
+  // Calcular taxa de boleto automaticamente
+  const parcelaBoleto = parcelas.find(p => p.forma_pagamento === 'boleto');
+  const carenciaBoleto = parcelaBoleto?.carencia_boleto || 30;
+  const numParcelasBoleto = parcelaBoleto?.numero_parcelas || 1;
+  const taxaBoletoPercentual = parcelaBoleto ? (TAXAS_BOLETO[carenciaBoleto]?.[numParcelasBoleto] || 0) : 0;
+  const valorBaseBoleto = parcelaBoleto ? totalSemTaxa * (parcelaBoleto.percentual / 100) : 0;
+  const valorTaxaBoletoCalculada = valorBaseBoleto * (taxaBoletoPercentual / 100);
+
+  // Atualizar estado de taxa de boleto quando mudar parcelas
+  useEffect(() => {
+    if (parcelaBoleto) {
+      setTaxaBoleto(prev => ({
+        ...prev,
+        percentual: taxaBoletoPercentual,
+        valor: valorTaxaBoletoCalculada,
+        numeroParcelas: numParcelasBoleto,
+        carencia: carenciaBoleto
+      }));
+    } else {
+      setTaxaBoleto({ percentual: 0, valor: 0, responsavel: 'cliente', numeroParcelas: 1, carencia: 30 });
+    }
+  }, [parcelas, totalSemTaxa, taxaBoletoPercentual, valorTaxaBoletoCalculada, numParcelasBoleto, carenciaBoleto, parcelaBoleto]);
   
-  // Total final: inclui taxa se responsável for cliente
-  const taxaAplicada = taxaCartao.responsavel === 'cliente' ? taxaCartao.valor : 0;
-  const total = totalSemTaxa + taxaAplicada;
+  // Total final: inclui taxas se responsável for cliente
+  const taxaCartaoAplicada = taxaCartao.responsavel === 'cliente' ? taxaCartao.valor : 0;
+  const taxaBoletoAplicada = taxaBoleto.responsavel === 'cliente' ? taxaBoleto.valor : 0;
+  const total = totalSemTaxa + taxaCartaoAplicada + taxaBoletoAplicada;
+
+  // Valor líquido Tendenci (quando absorve as taxas)
+  const valorLiquidoTendenci = totalSemTaxa 
+    - (taxaCartao.responsavel === 'tendenci' ? taxaCartao.valor : 0)
+    - (taxaBoleto.responsavel === 'tendenci' ? taxaBoleto.valor : 0);
 
   // Validações por etapa
   const isClienteValid = !!formData.client_id;
@@ -360,6 +407,12 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
           taxa_cartao_valor: taxaCartao.valor,
           taxa_cartao_responsavel: taxaCartao.responsavel,
           numero_parcelas_cartao: taxaCartao.numeroParcelas,
+          // Campos de taxa de boleto
+          taxa_boleto_percentual: taxaBoleto.percentual,
+          taxa_boleto_valor: taxaBoleto.valor,
+          taxa_boleto_responsavel: taxaBoleto.responsavel,
+          numero_parcelas_boleto: taxaBoleto.numeroParcelas,
+          carencia_boleto: taxaBoleto.carencia,
         })
         .select()
         .single();
@@ -747,9 +800,32 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                         </Select>
                       </div>
 
+                      {/* Carência - só para boleto */}
+                      {parcela.forma_pagamento === 'boleto' && (
+                        <div className="col-span-1 space-y-1">
+                          <Label className="text-xs">Carência</Label>
+                          <Select
+                            value={String(parcela.carencia_boleto || 30)}
+                            onValueChange={(v) => {
+                              const newParcelas = [...parcelas];
+                              newParcelas[index].carencia_boleto = Number(v) as 30 | 60;
+                              setParcelas(newParcelas);
+                            }}
+                          >
+                            <SelectTrigger className="h-10">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="30">30 dias</SelectItem>
+                              <SelectItem value="60">60 dias</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+
                       {/* Parcelas - só para boleto e cartão de crédito */}
                       {FORMAS_COM_PARCELAS.includes(parcela.forma_pagamento) && (
-                        <div className="col-span-2 space-y-1">
+                        <div className={`${parcela.forma_pagamento === 'boleto' ? 'col-span-1' : 'col-span-2'} space-y-1`}>
                           <Label className="text-xs">Parcelas</Label>
                           <div className="flex items-center h-10 border rounded-lg overflow-hidden bg-background">
                             <Button
@@ -855,20 +931,32 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                   )}
                   {taxaCartao.valor > 0 && taxaCartao.responsavel === 'tendenci' && (
                     <div className="flex items-center justify-between text-red-600">
-                      <span className="text-sm">Taxas Absorvidas ({taxaCartao.numeroParcelas}x - {taxaCartao.percentual}%):</span>
+                      <span className="text-sm">Taxas Cartão Absorvidas ({taxaCartao.numeroParcelas}x - {taxaCartao.percentual}%):</span>
                       <span className="text-sm font-medium">- {formatCurrency(taxaCartao.valor)}</span>
+                    </div>
+                  )}
+                  {taxaBoleto.valor > 0 && taxaBoleto.responsavel === 'cliente' && (
+                    <div className="flex items-center justify-between text-blue-600">
+                      <span className="text-sm">Taxas de Boleto ({taxaBoleto.carencia}d / {taxaBoleto.numeroParcelas}x - {taxaBoleto.percentual}%):</span>
+                      <span className="text-sm font-medium">+ {formatCurrency(taxaBoleto.valor)}</span>
+                    </div>
+                  )}
+                  {taxaBoleto.valor > 0 && taxaBoleto.responsavel === 'tendenci' && (
+                    <div className="flex items-center justify-between text-red-600">
+                      <span className="text-sm">Taxas Boleto Absorvidas ({taxaBoleto.carencia}d / {taxaBoleto.numeroParcelas}x - {taxaBoleto.percentual}%):</span>
+                      <span className="text-sm font-medium">- {formatCurrency(taxaBoleto.valor)}</span>
                     </div>
                   )}
                   <div className="flex items-center justify-between border-t pt-2">
                     <span className="text-sm font-semibold">Total do Pedido:</span>
                     <span className="text-base font-bold text-primary">{formatCurrency(total)}</span>
                   </div>
-                  {taxaCartao.valor > 0 && taxaCartao.responsavel === 'tendenci' && (
+                  {(taxaCartao.valor > 0 && taxaCartao.responsavel === 'tendenci') || (taxaBoleto.valor > 0 && taxaBoleto.responsavel === 'tendenci') ? (
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-semibold text-red-600">Valor Líquido Tendenci:</span>
-                      <span className="text-base font-bold text-red-600">{formatCurrency(totalSemTaxa - taxaCartao.valor)}</span>
+                      <span className="text-base font-bold text-red-600">{formatCurrency(valorLiquidoTendenci)}</span>
                     </div>
-                  )}
+                  ) : null}
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Total Formas de Pagamento:</span>
                     <span className={`text-sm font-medium ${isPagamentoValorCorreto ? 'text-green-600' : 'text-destructive'}`}>
@@ -934,6 +1022,51 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                     
                     <p className="text-xs text-amber-700 dark:text-amber-300">
                       {taxaCartao.responsavel === 'cliente' 
+                        ? '✓ Taxa será adicionada ao valor total do pedido' 
+                        : '✓ Taxa será absorvida pela Tendenci (não será cobrada do cliente)'}
+                    </p>
+                  </div>
+                </Card>
+              )}
+
+              {/* Card de Taxa de Boleto */}
+              {parcelaBoleto && taxaBoleto.percentual > 0 && (
+                <Card className="p-4 bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium text-blue-800 dark:text-blue-200">
+                          Taxa Boleto {taxaBoleto.carencia}d / {taxaBoleto.numeroParcelas}x ({taxaBoleto.percentual}%)
+                        </p>
+                        <p className="text-lg font-bold text-blue-900 dark:text-blue-100">
+                          {formatCurrency(taxaBoleto.valor)}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant={taxaBoleto.responsavel === 'cliente' ? 'default' : 'outline'}
+                        size="sm"
+                        className={taxaBoleto.responsavel === 'cliente' ? 'bg-blue-600 hover:bg-blue-700' : ''}
+                        onClick={() => setTaxaBoleto({...taxaBoleto, responsavel: 'cliente'})}
+                      >
+                        Taxa Cliente
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={taxaBoleto.responsavel === 'tendenci' ? 'default' : 'outline'}
+                        size="sm"
+                        className={taxaBoleto.responsavel === 'tendenci' ? 'bg-green-600 hover:bg-green-700' : ''}
+                        onClick={() => setTaxaBoleto({...taxaBoleto, responsavel: 'tendenci'})}
+                      >
+                        Taxa Tendenci
+                      </Button>
+                    </div>
+                    
+                    <p className="text-xs text-blue-700 dark:text-blue-300">
+                      {taxaBoleto.responsavel === 'cliente' 
                         ? '✓ Taxa será adicionada ao valor total do pedido' 
                         : '✓ Taxa será absorvida pela Tendenci (não será cobrada do cliente)'}
                     </p>
