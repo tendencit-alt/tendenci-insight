@@ -53,9 +53,9 @@ interface ProductionCardSimpleProps {
 
 const priorityColors: Record<string, string> = {
   baixa: 'bg-muted text-muted-foreground',
-  normal: 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300',
-  alta: 'bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300',
-  urgente: 'bg-destructive/20 text-destructive'
+  normal: 'bg-primary/10 text-primary',
+  alta: 'bg-warning/10 text-warning',
+  urgente: 'bg-destructive/10 text-destructive'
 };
 
 const priorityLabels: Record<string, string> = {
@@ -107,65 +107,58 @@ function ProductionCardSimpleComponent({ order, onClick, isDragging, automationA
   const hasAutomationAlert = automationAlert && automationAlert.dias_excedidos > 0;
 
   return (
-    <div
-      style={{ 
-        transform: 'scale(0.8)',
-        transformOrigin: 'top left',
-        width: 'calc(100% / 0.8)',
-        marginBottom: '-20%'
+    <Card 
+      className={cn(
+        "cursor-grab active:cursor-grabbing hover:shadow-md transition-all border-l-4",
+        isDragging && "shadow-lg ring-2 ring-primary rotate-2",
+        hasAutomationAlert && "ring-2 ring-destructive/50",
+        isOverdue && "border-l-destructive",
+        !isOverdue && order.priority === 'urgente' && "border-l-destructive",
+        !isOverdue && order.priority === 'alta' && "border-l-warning",
+        !isOverdue && order.priority === 'normal' && "border-l-primary",
+        !isOverdue && order.priority === 'baixa' && "border-l-muted-foreground"
+      )}
+      onClick={(e) => {
+        if (!isDragging) {
+          e.stopPropagation();
+          onClick();
+        }
       }}
     >
-      <Card 
-        className={cn(
-          "cursor-grab active:cursor-grabbing hover:shadow-md transition-all border-l-4",
-          isDragging && "shadow-lg ring-2 ring-primary rotate-2",
-          hasAutomationAlert && "ring-2 ring-destructive/50 animate-pulse",
-          isOverdue && "border-l-destructive",
-          !isOverdue && order.priority === 'urgente' && "border-l-destructive",
-          !isOverdue && order.priority === 'alta' && "border-l-orange-500",
-          !isOverdue && order.priority === 'normal' && "border-l-blue-500",
-          !isOverdue && order.priority === 'baixa' && "border-l-muted-foreground"
-        )}
-        onClick={(e) => {
-          if (!isDragging) {
-            e.stopPropagation();
-            onClick();
-          }
-        }}
-      >
-        <CardContent className="p-3 space-y-2">
-          {/* Automation Alert Badge - SLA em Dias Úteis */}
-          {hasAutomationAlert && (
-            <div className="p-2 rounded-md bg-destructive/10 border border-destructive/30">
-              <div className="flex items-center gap-1.5 text-destructive text-xs font-semibold">
-                <Siren className="h-4 w-4 animate-bounce" />
-                <span>🚨 ATRASADO - {automationAlert.dias_excedidos} DIA(S) ÚTIL(EIS)</span>
-              </div>
-              <p className="text-[10px] text-muted-foreground mt-1 pl-5">
-                SLA: {automationAlert.prazo_dias_uteis}d úteis | Na fase: {automationAlert.dias_uteis_na_fase}d úteis
-              </p>
+      <CardContent className="p-2.5 space-y-1.5">
+        {/* Automation Alert Badge - SLA em Dias Úteis */}
+        {hasAutomationAlert && (
+          <div className="p-1.5 rounded bg-destructive/10 border border-destructive/30">
+            <div className="flex items-center gap-1 text-destructive text-[10px] font-semibold">
+              <Siren className="h-3 w-3" />
+              <span>ATRASADO - {automationAlert.dias_excedidos}d úteis</span>
             </div>
-          )}
-
-          {/* Header: OP Number, Title, Priority */}
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex items-center gap-2 flex-1 min-w-0">
-              <GripVertical className="h-4 w-4 text-muted-foreground shrink-0" />
-              <div className="min-w-0">
-                <span className="text-xs font-mono text-muted-foreground block">
-                  OP-{String(order.order_number).padStart(4, '0')}
-                </span>
-                <p className="font-medium text-sm line-clamp-2">{order.title}</p>
-              </div>
-            </div>
-            <Badge className={cn("shrink-0 text-xs", priorityColors[order.priority])}>
-              {priorityLabels[order.priority] || order.priority}
-            </Badge>
+            <p className="text-[9px] text-muted-foreground mt-0.5 pl-4">
+              SLA: {automationAlert.prazo_dias_uteis}d | Na fase: {automationAlert.dias_uteis_na_fase}d
+            </p>
           </div>
+        )}
 
-          {/* Production Type Badge */}
+        {/* Header: OP Number, Title, Priority */}
+        <div className="flex items-start gap-1.5">
+          <GripVertical className="h-3 w-3 text-muted-foreground shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between gap-1">
+              <span className="text-[10px] font-mono text-muted-foreground">
+                OP-{String(order.order_number).padStart(4, '0')}
+              </span>
+              <Badge className={cn("text-[10px] h-4 px-1.5", priorityColors[order.priority])}>
+                {priorityLabels[order.priority] || order.priority}
+              </Badge>
+            </div>
+            <p className="font-medium text-xs leading-tight line-clamp-2 mt-0.5">{order.title}</p>
+          </div>
+        </div>
+
+        {/* Production Type & Client */}
+        <div className="flex items-center gap-1.5 flex-wrap">
           {order.production_type && (
-            <Badge variant="outline" className="text-xs">
+            <Badge variant="outline" className="text-[10px] h-4 px-1.5">
               <span 
                 className="w-1.5 h-1.5 rounded-full mr-1" 
                 style={{ backgroundColor: getTailwindColor(order.production_type.color) }}
@@ -173,147 +166,138 @@ function ProductionCardSimpleComponent({ order, onClick, isDragging, automationA
               {order.production_type.name}
             </Badge>
           )}
-
-          {/* Info Section: Client, Responsible, Deal */}
-          <div className="space-y-1 text-xs text-muted-foreground">
           {order.client && (
-              <div className="flex items-center gap-1.5 text-sm text-foreground">
-                <Package className="h-3.5 w-3.5 shrink-0" />
-                <span className="truncate font-semibold">{order.client.name}</span>
-              </div>
-            )}
+            <div className="flex items-center gap-1 text-[11px] text-foreground font-medium">
+              <Package className="h-3 w-3 shrink-0 text-muted-foreground" />
+              <span className="truncate max-w-[120px]">{order.client.name}</span>
+            </div>
+          )}
+        </div>
 
-            {order.responsible && (
-              <div className="flex items-center gap-1">
-                <User className="h-3 w-3 shrink-0" />
-                <span className="truncate">{order.responsible.full_name}</span>
-              </div>
-            )}
+        {/* Info Grid: Responsible & Deal */}
+        <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground">
+          {order.responsible && (
+            <div className="flex items-center gap-1">
+              <User className="h-2.5 w-2.5 shrink-0" />
+              <span className="truncate">{order.responsible.full_name}</span>
+            </div>
+          )}
+          {order.deal && (
+            <div className="flex items-center gap-1 text-primary">
+              <Link2 className="h-2.5 w-2.5 shrink-0" />
+              <span className="truncate">{order.deal.title}</span>
+            </div>
+          )}
+        </div>
 
-            {order.deal && (
-              <div className="flex items-center gap-1 text-primary">
-                <Link2 className="h-3 w-3 shrink-0" />
-                <span className="truncate">{order.deal.title}</span>
-              </div>
-            )}
-          </div>
-
-          {/* Phase Time & SLA Section */}
-          {order.current_phase && (
-            <div className={cn(
-              "rounded-md p-2 text-xs space-y-1",
-              !order.current_phase.started_at && "bg-muted/50 border border-dashed border-muted-foreground/30",
-              order.current_phase.started_at && slaStatus === 'exceeded' && "bg-destructive/10 border border-destructive/20",
-              order.current_phase.started_at && slaStatus === 'warning' && "bg-amber-500/10 border border-amber-500/20",
-              order.current_phase.started_at && slaStatus === 'ok' && "bg-emerald-500/10 border border-emerald-500/20",
-              order.current_phase.started_at && !slaStatus && "bg-muted/50"
-            )}>
-              {order.current_phase.started_at ? (
-                <>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1">
-                      <Timer className="h-3 w-3" />
-                      <span className="font-medium">
-                        {daysInPhase === 0 ? 'Hoje' : `${daysInPhase}d nesta fase`}
-                      </span>
-                    </div>
-                    {slaDays && (
-                      <Badge 
-                        variant="outline" 
-                        className={cn(
-                          "text-[10px] px-1.5 py-0",
-                          slaStatus === 'exceeded' && "border-destructive text-destructive",
-                          slaStatus === 'warning' && "border-amber-500 text-amber-600",
-                          slaStatus === 'ok' && "border-emerald-500 text-emerald-600"
-                        )}
-                      >
-                        Prazo: {slaDays}d
-                      </Badge>
-                    )}
-                  </div>
-                  {slaStatus === 'exceeded' && slaExceededHours > 0 && (
-                    <div className="flex items-center gap-1 text-destructive">
-                      <AlertTriangle className="h-3 w-3" />
-                      <span>
-                        {slaExceededHours >= 24 
-                          ? `${Math.floor(slaExceededHours / 24)}d ${slaExceededHours % 24}h acima`
-                          : `${slaExceededHours}h acima`
-                        }
-                      </span>
-                    </div>
-                  )}
-                </>
-              ) : (
+        {/* Phase Time & SLA Section */}
+        {order.current_phase && (
+          <div className={cn(
+            "rounded p-1.5 text-[10px] space-y-1",
+            !order.current_phase.started_at && "bg-muted/50 border border-dashed border-muted-foreground/30",
+            order.current_phase.started_at && slaStatus === 'exceeded' && "bg-destructive/10 border border-destructive/20",
+            order.current_phase.started_at && slaStatus === 'warning' && "bg-warning/10 border border-warning/20",
+            order.current_phase.started_at && slaStatus === 'ok' && "bg-emerald-500/10 border border-emerald-500/20",
+            order.current_phase.started_at && !slaStatus && "bg-muted/50"
+          )}>
+            {order.current_phase.started_at ? (
+              <>
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1 text-muted-foreground">
-                    <Hourglass className="h-3 w-3" />
-                    <span>Aguardando início</span>
+                  <div className="flex items-center gap-1">
+                    <Timer className="h-2.5 w-2.5" />
+                    <span className="font-medium">
+                      {daysInPhase === 0 ? 'Hoje' : `${daysInPhase}d na fase`}
+                    </span>
                   </div>
                   {slaDays && (
-                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-muted-foreground/50 text-muted-foreground">
-                      SLA: {slaDays}d
+                    <Badge 
+                      variant="outline" 
+                      className={cn(
+                        "text-[9px] h-3.5 px-1",
+                        slaStatus === 'exceeded' && "border-destructive text-destructive",
+                        slaStatus === 'warning' && "border-warning text-warning",
+                        slaStatus === 'ok' && "border-emerald-500 text-emerald-600"
+                      )}
+                    >
+                      Prazo: {slaDays}d
                     </Badge>
                   )}
                 </div>
-              )}
-
-              {/* Alerta Preditivo */}
-              {hasPredictiveDelay && prediction?.etapa_prevista_atraso && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="flex items-center gap-1.5 p-2 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-xs">
-                        <TrendingUp className="h-3 w-3" />
-                        <span className="truncate">⚠️ Risco: {prediction.etapa_prevista_atraso}</span>
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Análise preditiva indica risco de atraso nesta etapa</p>
-                      {prediction.horas_estimadas_extra && prediction.horas_estimadas_extra > 0 && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Tempo extra estimado: {prediction.horas_estimadas_extra < 24 
-                            ? `${prediction.horas_estimadas_extra.toFixed(0)}h`
-                            : `${(prediction.horas_estimadas_extra / 24).toFixed(1)}d`
-                          }
-                        </p>
-                      )}
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
-            </div>
-          )}
-
-          {/* Dates Section */}
-          <div className="space-y-1 text-xs text-muted-foreground border-t pt-2">
-            {/* Total Days */}
-            {totalDays !== null && (
+                {slaStatus === 'exceeded' && slaExceededHours > 0 && (
+                  <div className="flex items-center gap-1 text-destructive">
+                    <AlertTriangle className="h-2.5 w-2.5" />
+                    <span>
+                      {slaExceededHours >= 24 
+                        ? `${Math.floor(slaExceededHours / 24)}d ${slaExceededHours % 24}h acima`
+                        : `${slaExceededHours}h acima`
+                      }
+                    </span>
+                  </div>
+                )}
+              </>
+            ) : (
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
-                  <span>Criado há</span>
+                <div className="flex items-center gap-1 text-muted-foreground">
+                  <Hourglass className="h-2.5 w-2.5" />
+                  <span>Aguardando início</span>
                 </div>
-                <span className="font-medium">{totalDays === 0 ? 'Hoje' : `${totalDays} dias`}</span>
+                {slaDays && (
+                  <Badge variant="outline" className="text-[9px] h-3.5 px-1 border-muted-foreground/50 text-muted-foreground">
+                    SLA: {slaDays}d
+                  </Badge>
+                )}
               </div>
             )}
 
-            {/* Deadline */}
+            {/* Alerta Preditivo */}
+            {hasPredictiveDelay && prediction?.etapa_prevista_atraso && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center gap-1 p-1 rounded bg-warning/10 border border-warning/20 text-warning text-[10px]">
+                      <TrendingUp className="h-2.5 w-2.5" />
+                      <span className="truncate">Risco: {prediction.etapa_prevista_atraso}</span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Análise preditiva indica risco de atraso nesta etapa</p>
+                    {prediction.horas_estimadas_extra && prediction.horas_estimadas_extra > 0 && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Tempo extra estimado: {prediction.horas_estimadas_extra < 24 
+                          ? `${prediction.horas_estimadas_extra.toFixed(0)}h`
+                          : `${(prediction.horas_estimadas_extra / 24).toFixed(1)}d`
+                        }
+                      </p>
+                    )}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+          </div>
+        )}
+
+        {/* Footer: Dates & Value */}
+        <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-1 border-t border-border">
+          <div className="flex items-center gap-2">
+            {totalDays !== null && (
+              <div className="flex items-center gap-0.5">
+                <Clock className="h-2.5 w-2.5" />
+                <span>{totalDays === 0 ? 'Hoje' : `${totalDays}d`}</span>
+              </div>
+            )}
             {order.planned_end_date && (
               <div className={cn(
-                "flex items-center justify-between",
+                "flex items-center gap-0.5",
                 isOverdue && "text-destructive font-medium",
-                daysRemaining !== null && daysRemaining <= 3 && daysRemaining > 0 && "text-amber-600 font-medium"
+                daysRemaining !== null && daysRemaining <= 3 && daysRemaining > 0 && "text-warning font-medium"
               )}>
-                <div className="flex items-center gap-1">
-                  <Calendar className="h-3 w-3" />
-                  <span>Prazo</span>
-                </div>
+                <Calendar className="h-2.5 w-2.5" />
                 <span>
-                  {format(new Date(order.planned_end_date), 'dd/MM/yyyy')}
+                  {format(new Date(order.planned_end_date), 'dd/MM')}
                   {daysRemaining !== null && (
-                    <span className="ml-1">
+                    <span className="ml-0.5">
                       {isOverdue 
-                        ? `(${Math.abs(daysRemaining)}d atrasado)` 
+                        ? `(-${Math.abs(daysRemaining)}d)` 
                         : daysRemaining === 0 
                         ? '(Hoje)'
                         : `(${daysRemaining}d)`
@@ -324,16 +308,14 @@ function ProductionCardSimpleComponent({ order, onClick, isDragging, automationA
               </div>
             )}
           </div>
-
-          {/* Value */}
           {order.value && order.value > 0 && (
-            <div className="text-sm font-semibold text-primary pt-1 border-t">
-              {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(order.value)}
-            </div>
+            <span className="font-semibold text-primary text-[11px]">
+              {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 }).format(order.value)}
+            </span>
           )}
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
