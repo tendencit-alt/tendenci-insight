@@ -10,7 +10,10 @@ import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useFormPersistence } from "@/hooks/useFormPersistence";
-import { Plus, Send, Save, Trash2, Image, FileAudio, MessageSquare, Loader2, CheckCircle, XCircle, Upload, Mic, X, BookOpen, Eye, AlertTriangle, ShieldAlert } from "lucide-react";
+import { Plus, Send, Save, Trash2, Image, FileAudio, MessageSquare, Loader2, CheckCircle, XCircle, Upload, Mic, X, BookOpen, Eye, AlertTriangle, ShieldAlert, Calendar, Clock } from "lucide-react";
+import { ScheduleSelector, ScheduleConfig, defaultScheduleConfig } from "./ScheduleSelector";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Dialog,
@@ -44,6 +47,15 @@ interface Campanha {
   webhook_n8n: string | null;
   whatsapp_connection_id: string | null;
   created_at: string;
+  // Campos de agendamento
+  agendar_automatico: boolean | null;
+  tipo_agendamento: string | null;
+  data_hora_unica: string | null;
+  dias_semana: number[] | null;
+  data_inicio: string | null;
+  data_fim: string | null;
+  horario_inicio: string | null;
+  horario_fim: string | null;
 }
 
 interface WhatsAppConnection {
@@ -116,6 +128,9 @@ export function CampanhasManager() {
     webhookN8n: "",
     whatsappConnectionId: "",
   });
+  
+  // Estado de agendamento
+  const [scheduleConfig, setScheduleConfig] = useState<ScheduleConfig>(defaultScheduleConfig);
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isRecorderOpen, setIsRecorderOpen] = useState(false);
@@ -277,6 +292,7 @@ export function CampanhasManager() {
       webhookN8n: DEFAULT_N8N_WEBHOOK,
       whatsappConnectionId: "",
     });
+    setScheduleConfig(defaultScheduleConfig);
     setImagemFile(null);
     setAudioFile(null);
     setEditingCampanha(null);
@@ -294,6 +310,17 @@ export function CampanhasManager() {
         arquitetosSelecionados: campanha.arquitetos_selecionados || [],
         webhookN8n: campanha.webhook_n8n || "",
         whatsappConnectionId: campanha.whatsapp_connection_id || "",
+      });
+      // Restaurar configuração de agendamento
+      setScheduleConfig({
+        enabled: campanha.agendar_automatico || false,
+        type: (campanha.tipo_agendamento as 'unico' | 'recorrente') || 'unico',
+        dataHoraUnica: campanha.data_hora_unica ? new Date(campanha.data_hora_unica) : null,
+        diasSemana: campanha.dias_semana || [1, 2, 3, 4, 5],
+        horarioInicio: campanha.horario_inicio || '09:00',
+        horarioFim: campanha.horario_fim || '18:00',
+        dataInicio: campanha.data_inicio ? new Date(campanha.data_inicio) : null,
+        dataFim: campanha.data_fim ? new Date(campanha.data_fim) : null,
       });
       // Recarregar arquitetos disponíveis considerando esta campanha em edição
       fetchArquitetosDisponiveis(campanha.id, filtroEtapa);
@@ -499,7 +526,40 @@ export function CampanhasManager() {
       return;
     }
 
+    // Validação de agendamento
+    if (scheduleConfig.enabled) {
+      if (scheduleConfig.type === 'unico' && !scheduleConfig.dataHoraUnica) {
+        toast({
+          title: "Erro",
+          description: "Selecione a data e hora do disparo agendado",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (scheduleConfig.type === 'recorrente') {
+        if (scheduleConfig.diasSemana.length === 0) {
+          toast({
+            title: "Erro",
+            description: "Selecione pelo menos um dia da semana",
+            variant: "destructive",
+          });
+          return;
+        }
+        if (!scheduleConfig.dataInicio) {
+          toast({
+            title: "Erro",
+            description: "Selecione a data de início do período",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+    }
+
     setLoading(true);
+
+    // Determinar status com base no agendamento
+    const status = scheduleConfig.enabled ? 'agendado' : 'rascunho';
 
     const campanhaData = {
       nome: formData.nome,
@@ -510,8 +570,19 @@ export function CampanhasManager() {
       arquitetos_selecionados: formData.arquitetosSelecionados,
       webhook_n8n: formData.webhookN8n.trim() || DEFAULT_N8N_WEBHOOK,
       whatsapp_connection_id: formData.whatsappConnectionId,
-      status: 'rascunho',
+      status,
       updated_at: new Date().toISOString(),
+      // Campos de agendamento
+      agendar_automatico: scheduleConfig.enabled,
+      tipo_agendamento: scheduleConfig.type,
+      data_hora_unica: scheduleConfig.type === 'unico' && scheduleConfig.dataHoraUnica 
+        ? scheduleConfig.dataHoraUnica.toISOString() 
+        : null,
+      dias_semana: scheduleConfig.type === 'recorrente' ? scheduleConfig.diasSemana : null,
+      data_inicio: scheduleConfig.dataInicio?.toISOString() || null,
+      data_fim: scheduleConfig.dataFim?.toISOString() || null,
+      horario_inicio: scheduleConfig.horarioInicio,
+      horario_fim: scheduleConfig.horarioFim,
     };
 
     if (editingCampanha) {
@@ -531,7 +602,12 @@ export function CampanhasManager() {
       }
 
       toast({
-        title: "Campanha atualizada!",
+        title: scheduleConfig.enabled ? "Campanha agendada!" : "Campanha atualizada!",
+        description: scheduleConfig.enabled 
+          ? `Disparo programado para ${scheduleConfig.type === 'unico' && scheduleConfig.dataHoraUnica 
+              ? format(scheduleConfig.dataHoraUnica, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }) 
+              : 'período configurado'}`
+          : undefined,
       });
     } else {
       const { error } = await supabase
@@ -549,8 +625,12 @@ export function CampanhasManager() {
       }
 
       toast({
-        title: "Campanha criada!",
-        description: "Rascunho salvo com sucesso",
+        title: scheduleConfig.enabled ? "Campanha agendada!" : "Campanha criada!",
+        description: scheduleConfig.enabled 
+          ? `Disparo programado para ${scheduleConfig.type === 'unico' && scheduleConfig.dataHoraUnica 
+              ? format(scheduleConfig.dataHoraUnica, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }) 
+              : 'período configurado'}`
+          : "Rascunho salvo com sucesso",
       });
     }
 
@@ -800,6 +880,7 @@ export function CampanhasManager() {
   };
 
   const campanhasRascunho = campanhas.filter(c => c.status === 'rascunho');
+  const campanhasAgendadas = campanhas.filter(c => c.status === 'agendado');
   const campanhasEmAndamento = campanhas.filter(c => ['pendente', 'enviando'].includes(c.status));
   const campanhasEnviadas = campanhas.filter(c => c.status === 'enviado');
   const campanhasComErro = campanhas.filter(c => c.status === 'erro');
@@ -1246,6 +1327,13 @@ export function CampanhasManager() {
               </p>
             </div>
 
+            {/* Seção de Agendamento */}
+            <ScheduleSelector
+              value={scheduleConfig}
+              onChange={setScheduleConfig}
+              totalArquitetos={formData.arquitetosSelecionados.length}
+            />
+
             <div className="space-y-2">
               <Label htmlFor="webhook">Webhook N8N</Label>
               <Input
@@ -1267,8 +1355,17 @@ export function CampanhasManager() {
               className="gap-2"
             >
               {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-              <Save className="w-4 h-4" />
-              Salvar Campanha
+              {scheduleConfig.enabled ? (
+                <>
+                  <Calendar className="w-4 h-4" />
+                  Agendar Campanha
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4" />
+                  Salvar Campanha
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1285,6 +1382,10 @@ export function CampanhasManager() {
       <Tabs defaultValue="criar" className="space-y-6">
         <TabsList className="flex flex-wrap">
           <TabsTrigger value="criar">Criar Campanha</TabsTrigger>
+          <TabsTrigger value="agendadas" className="gap-1">
+            <Calendar className="w-3.5 h-3.5" />
+            Agendadas ({campanhasAgendadas.length})
+          </TabsTrigger>
           <TabsTrigger value="andamento">
             Em Andamento ({campanhasEmAndamento.length})
             {campanhasEmAndamento.length > 0 && (
@@ -1312,6 +1413,83 @@ export function CampanhasManager() {
               </Button>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Tab de Campanhas Agendadas */}
+        <TabsContent value="agendadas" className="space-y-4">
+          {campanhasAgendadas.length === 0 ? (
+            <Card>
+              <CardContent className="p-6 text-center text-muted-foreground">
+                <Calendar className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <p>Nenhuma campanha agendada</p>
+                <p className="text-xs mt-1">Crie uma nova campanha e ative o agendamento</p>
+              </CardContent>
+            </Card>
+          ) : (
+            campanhasAgendadas.map((campanha) => {
+              const proximoDisparo = campanha.tipo_agendamento === 'unico' && campanha.data_hora_unica
+                ? format(new Date(campanha.data_hora_unica), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })
+                : campanha.horario_inicio 
+                  ? `${campanha.horario_inicio} - Dias: ${campanha.dias_semana?.map(d => ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][d]).join(', ')}`
+                  : 'Configuração incompleta';
+              
+              return (
+                <Card key={campanha.id} className="border-primary/30 bg-primary/5">
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          {getTipoIcon(campanha.tipo_envio)}
+                          <CardTitle>{campanha.nome}</CardTitle>
+                          <Badge className="bg-primary/20 text-primary gap-1">
+                            <Calendar className="w-3 h-3" />
+                            Agendada
+                          </Badge>
+                        </div>
+                        <div className="flex flex-col gap-1 text-sm text-muted-foreground">
+                          <div className="flex items-center gap-2">
+                            <Clock className="w-4 h-4" />
+                            <span>Próximo: {proximoDisparo}</span>
+                          </div>
+                          <span>{campanha.arquitetos_selecionados?.length || 0} arquitetos</span>
+                          {campanha.tipo_agendamento === 'recorrente' && campanha.data_fim && (
+                            <span className="text-xs">
+                              Até: {format(new Date(campanha.data_fim), "dd/MM/yyyy", { locale: ptBR })}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleOpenDialog(campanha)}
+                        >
+                          Editar
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={async () => {
+                            if (confirm('Deseja cancelar o agendamento e voltar para rascunho?')) {
+                              await supabase
+                                .from('tendenci_prospec_arq_campaigns')
+                                .update({ status: 'rascunho', agendar_automatico: false })
+                                .eq('id', campanha.id);
+                              toast({ title: 'Agendamento cancelado' });
+                              fetchCampanhas();
+                            }
+                          }}
+                        >
+                          Cancelar
+                        </Button>
+                      </div>
+                    </div>
+                  </CardHeader>
+                </Card>
+              );
+            })
+          )}
         </TabsContent>
 
         <TabsContent value="andamento" className="space-y-4">

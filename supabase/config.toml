@@ -56,3 +56,6 @@ verify_jwt = false
 
 [functions.send-followup-whatsapp]
 verify_jwt = false
+
+[functions.check-scheduled-campaigns]
+verify_jwt = false
