@@ -67,6 +67,7 @@ export function ProductionKanban({ productionTypeId, filters, onOrderClick }: Pr
   const { data: orders = [], isLoading: ordersLoading } = useQuery({
     queryKey: ['production-orders', productionTypeId, filters],
     queryFn: async () => {
+      // First get the base query
       let query = supabase
         .from('production_orders')
         .select(`
@@ -101,10 +102,6 @@ export function ProductionKanban({ productionTypeId, filters, onOrderClick }: Pr
         query = query.eq('responsible_id', filters.responsible);
       }
 
-      if (filters?.search) {
-        query = query.or(`title.ilike.%${filters.search}%,order_number.eq.${parseInt(filters.search) || 0}`);
-      }
-
       // Filtro de período
       if (filters?.period && filters.period !== 'all') {
         let dateFrom: Date;
@@ -135,6 +132,19 @@ export function ProductionKanban({ productionTypeId, filters, onOrderClick }: Pr
       
       const { data, error } = await query.order('created_at', { ascending: false });
       if (error) throw error;
+      
+      // Filtrar por busca no cliente side para incluir nome do cliente e descrição
+      if (filters?.search && filters.search.trim() !== '') {
+        const searchLower = filters.search.toLowerCase().trim();
+        return data.filter(order => {
+          const titleMatch = order.title?.toLowerCase().includes(searchLower);
+          const orderNumberMatch = order.order_number?.toString().includes(searchLower);
+          const clientMatch = order.client?.name?.toLowerCase().includes(searchLower);
+          const descriptionMatch = order.description?.toLowerCase().includes(searchLower);
+          return titleMatch || orderNumberMatch || clientMatch || descriptionMatch;
+        });
+      }
+      
       return data;
     },
     staleTime: 10000, // Cache por 10 segundos
