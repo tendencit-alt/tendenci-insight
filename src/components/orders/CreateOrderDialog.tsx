@@ -844,8 +844,18 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Valor do Pedido:</span>
-                    <span className="text-sm font-medium">{formatCurrency(total)}</span>
+                    <span className="text-sm text-muted-foreground">Valor do Pedido (itens):</span>
+                    <span className="text-sm font-medium">{formatCurrency(totalSemTaxa)}</span>
+                  </div>
+                  {taxaCartao.valor > 0 && taxaCartao.responsavel === 'cliente' && (
+                    <div className="flex items-center justify-between text-amber-600">
+                      <span className="text-sm">Taxas de Cartão ({taxaCartao.numeroParcelas}x - {taxaCartao.percentual}%):</span>
+                      <span className="text-sm font-medium">+ {formatCurrency(taxaCartao.valor)}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between border-t pt-2">
+                    <span className="text-sm font-semibold">Total do Pedido:</span>
+                    <span className="text-base font-bold text-primary">{formatCurrency(total)}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Total Formas de Pagamento:</span>
