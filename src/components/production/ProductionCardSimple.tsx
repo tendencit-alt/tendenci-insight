@@ -1,11 +1,14 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, User, Package, GripVertical, Clock, Timer, Link2, AlertTriangle, Hourglass, TrendingUp, Siren } from 'lucide-react';
+import { Calendar, User, Package, GripVertical, Clock, Timer, Link2, AlertTriangle, Hourglass, TrendingUp, Siren, Zap } from 'lucide-react';
 import { format, differenceInDays, differenceInHours, isPast } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { getTailwindColor } from '@/utils/tailwindColors';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { memo } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface ProductionCardSimpleProps {
   order: {
@@ -66,10 +69,32 @@ const priorityLabels: Record<string, string> = {
 };
 
 function ProductionCardSimpleComponent({ order, onClick, isDragging, automationAlert, prediction }: ProductionCardSimpleProps) {
+  const queryClient = useQueryClient();
   const isOverdue = order.planned_end_date && isPast(new Date(order.planned_end_date));
   const daysRemaining = order.planned_end_date 
     ? differenceInDays(new Date(order.planned_end_date), new Date())
     : null;
+
+  // Mutation para toggle de urgência
+  const toggleUrgent = useMutation({
+    mutationFn: async () => {
+      const newPriority = order.priority === 'urgente' ? 'normal' : 'urgente';
+      const { error } = await supabase
+        .from('production_orders')
+        .update({ priority: newPriority })
+        .eq('id', order.id);
+      if (error) throw error;
+      return newPriority;
+    },
+    onSuccess: (newPriority) => {
+      queryClient.invalidateQueries({ queryKey: ['production-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['production-metrics'] });
+      toast.success(newPriority === 'urgente' ? 'Marcado como urgente!' : 'Urgência removida');
+    },
+    onError: () => {
+      toast.error('Erro ao alterar prioridade');
+    }
+  });
 
   // Cálculos de tempo na fase
   const daysInPhase = order.current_phase?.started_at 
@@ -107,7 +132,8 @@ function ProductionCardSimpleComponent({ order, onClick, isDragging, automationA
   const hasAutomationAlert = automationAlert && automationAlert.dias_excedidos > 0;
 
   return (
-    <Card 
+    <TooltipProvider>
+    <Card
       className={cn(
         "cursor-grab active:cursor-grabbing hover:shadow-md transition-all border-l-4",
         isDragging && "shadow-lg ring-2 ring-primary rotate-2",
@@ -147,9 +173,33 @@ function ProductionCardSimpleComponent({ order, onClick, isDragging, automationA
               <span className="text-[10px] font-mono text-muted-foreground">
                 OP-{String(order.order_number).padStart(4, '0')}
               </span>
-              <Badge className={cn("text-[10px] h-4 px-1.5", priorityColors[order.priority])}>
-                {priorityLabels[order.priority] || order.priority}
-              </Badge>
+              <div className="flex items-center gap-1">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleUrgent.mutate();
+                      }}
+                      className={cn(
+                        "p-1 rounded-md transition-colors",
+                        order.priority === 'urgente' 
+                          ? "bg-orange-100 text-orange-600 hover:bg-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:hover:bg-orange-900/50" 
+                          : "bg-muted text-muted-foreground hover:bg-muted/80"
+                      )}
+                      disabled={toggleUrgent.isPending}
+                    >
+                      <Zap className={cn("h-3 w-3", toggleUrgent.isPending && "animate-pulse")} />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    <p className="text-xs">{order.priority === 'urgente' ? 'Remover urgência' : 'Marcar como urgente'}</p>
+                  </TooltipContent>
+                </Tooltip>
+                <Badge className={cn("text-[10px] h-4 px-1.5", priorityColors[order.priority])}>
+                  {priorityLabels[order.priority] || order.priority}
+                </Badge>
+              </div>
             </div>
             <p className="font-medium text-xs leading-tight line-clamp-2 mt-0.5">{order.title}</p>
           </div>
@@ -316,6 +366,7 @@ function ProductionCardSimpleComponent({ order, onClick, isDragging, automationA
         </div>
       </CardContent>
     </Card>
+    </TooltipProvider>
   );
 }
 
