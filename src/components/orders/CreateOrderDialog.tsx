@@ -18,7 +18,7 @@ import { OrderItemsTable } from './OrderItemsTable';
 
 import { CreateClientDialog } from '@/components/crm/CreateClientDialog';
 import { CreateWonDealDialog } from './CreateWonDealDialog';
-import { Loader2, AlertTriangle, Link, Plus, ChevronRight, Check } from 'lucide-react';
+import { Loader2, AlertTriangle, Link, Plus, ChevronRight, Check, Trash2 } from 'lucide-react';
 
 interface CreateOrderDialogProps {
   open: boolean;
@@ -44,12 +44,11 @@ interface OrderItem {
 
 const FORMAS_PAGAMENTO = [
   { value: 'pix', label: 'PIX' },
+  { value: 'cartao_credito', label: 'Cartão de Crédito' },
+  { value: 'cartao_debito', label: 'Cartão de Débito' },
   { value: 'boleto', label: 'Boleto' },
-  { value: 'cartao_credito', label: 'Cartão Crédito' },
-  { value: 'cartao_debito', label: 'Cartão Débito' },
-  { value: 'transferencia', label: 'Transferência' },
-  { value: 'dinheiro', label: 'Dinheiro' },
   { value: 'permuta', label: 'Permuta' },
+  { value: 'dinheiro', label: 'Dinheiro' },
 ];
 
 const TIPOS_ENTREGA = [
@@ -80,8 +79,6 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     client_id: clientId || '',
     deal_id: dealId || '',
     architect_id: '',
-    condicao_pagamento: '',
-    numero_parcelas: 1,
     observacao_pagamento: '',
     data_entrega_prevista: '',
     tipo_entrega: '',
@@ -105,22 +102,40 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
 
   const [items, setItems] = useState<OrderItem[]>([]);
 
-  // Função para gerar parcelas automaticamente
-  const gerarParcelasAutomaticas = (numParcelas: number) => {
-    const percentual = Number((100 / numParcelas).toFixed(2));
+  // Adicionar nova forma de pagamento
+  const adicionarFormaPagamento = () => {
     const hoje = new Date();
-    
-    return Array.from({ length: numParcelas }, (_, i) => {
-      const vencimento = new Date(hoje);
-      vencimento.setMonth(vencimento.getMonth() + i + 1);
-      
-      return {
-        id: String(i + 1),
-        forma_pagamento: i === 0 ? 'boleto' : '',
-        percentual: i === numParcelas - 1 ? 100 - (percentual * (numParcelas - 1)) : percentual,
-        data_vencimento: vencimento.toISOString().split('T')[0],
-      };
-    });
+    hoje.setMonth(hoje.getMonth() + parcelas.length);
+    setParcelas([
+      ...parcelas,
+      {
+        id: String(Date.now()),
+        forma_pagamento: '',
+        percentual: 0,
+        data_vencimento: hoje.toISOString().split('T')[0]
+      }
+    ]);
+  };
+
+  // Remover forma de pagamento
+  const removerFormaPagamento = (id: string) => {
+    if (parcelas.length <= 1) return;
+    const novasParcelas = parcelas.filter(p => p.id !== id);
+    // Redistribuir percentual se a removida tinha valor
+    const totalAtual = novasParcelas.reduce((sum, p) => sum + p.percentual, 0);
+    if (totalAtual < 100 && novasParcelas.length > 0) {
+      const diff = 100 - totalAtual;
+      novasParcelas[0].percentual += diff;
+    }
+    setParcelas(novasParcelas);
+  };
+
+  // Atualizar percentual de uma parcela
+  const atualizarPercentual = (id: string, novoPercentual: number) => {
+    const novasParcelas = parcelas.map(p =>
+      p.id === id ? { ...p, percentual: Math.max(0, Math.min(100, novoPercentual)) } : p
+    );
+    setParcelas(novasParcelas);
   };
 
   // Query para buscar dados do deal quando vem do CRM
@@ -188,13 +203,6 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
       return data || [];
     },
   });
-
-  // Condições de pagamento simplificadas
-  const CONDICOES_PAGAMENTO = [
-    { value: 'a_vista', label: 'À Vista' },
-    { value: 'parcelado', label: 'Parcelado' },
-    { value: 'permuta', label: 'Permuta' },
-  ];
 
   const selectedClient = clients?.find(c => c.id === formData.client_id);
 
@@ -269,7 +277,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
           percentual_forma_1: parcelasPrincipal?.percentual || 100,
           percentual_forma_2: parcelasSecundaria?.percentual || 0,
           data_primeiro_vencimento: parcelasPrincipal?.data_vencimento || null,
-          condicao_pagamento: formData.condicao_pagamento,
+          condicao_pagamento: null,
           observacao_pagamento: parcelas.length > 2 ? JSON.stringify(parcelas) : (formData.observacao_pagamento || null),
           data_entrega_prevista: formData.data_entrega_prevista || null,
           tipo_entrega: formData.tipo_entrega,
@@ -618,145 +626,121 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
             </TabsContent>
 
             <TabsContent value="pagamento" className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Condição de Pagamento *</Label>
-                  <Select
-                    value={formData.condicao_pagamento || "_none"}
-                    onValueChange={(v) => {
-                      const newCondition = v === "_none" ? "" : v;
-                      setFormData({ ...formData, condicao_pagamento: newCondition, numero_parcelas: 1 });
-                      
-                      // Se À Vista ou Permuta, apenas 1 parcela com 100%
-                      if (newCondition === 'a_vista' || newCondition === 'permuta') {
-                        const hoje = new Date();
-                        hoje.setMonth(hoje.getMonth() + 1);
-                        setParcelas([{
-                          id: '1',
-                          forma_pagamento: newCondition === 'permuta' ? 'permuta' : 'pix',
-                          percentual: 100,
-                          data_vencimento: hoje.toISOString().split('T')[0]
-                        }]);
-                      } else if (newCondition === 'parcelado') {
-                        setParcelas(gerarParcelasAutomaticas(1));
-                      }
-                    }}
+              {/* Formas de Pagamento */}
+              <div className="space-y-4 p-4 border rounded-lg">
+                <div className="flex items-center justify-between">
+                  <Label className="font-medium text-base">Formas de Pagamento</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={adicionarFormaPagamento}
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="_none">Selecione...</SelectItem>
-                      {CONDICOES_PAGAMENTO.map((cond) => (
-                        <SelectItem key={cond.value} value={cond.value}>
-                          {cond.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    <Plus className="h-4 w-4 mr-1" />
+                    Adicionar Forma
+                  </Button>
                 </div>
 
-                {formData.condicao_pagamento === 'parcelado' && (
-                  <div className="space-y-2">
-                    <Label>Número de Parcelas *</Label>
-                    <Select
-                      value={String(formData.numero_parcelas)}
-                      onValueChange={(v) => {
-                        const num = Number(v);
-                        setFormData({ ...formData, numero_parcelas: num });
-                        setParcelas(gerarParcelasAutomaticas(num));
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Array.from({ length: 12 }, (_, i) => i + 1).map((n) => (
-                          <SelectItem key={n} value={String(n)}>
-                            {n}x
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                <div className="space-y-3">
+                  {parcelas.map((parcela, index) => (
+                    <div key={parcela.id} className="grid grid-cols-12 gap-2 items-end p-3 bg-muted/30 rounded-lg relative">
+                      {index === 0 && (
+                        <Badge className="absolute -top-2 left-2 text-xs" variant="default">
+                          Entrada
+                        </Badge>
+                      )}
+                      
+                      <div className="col-span-3 space-y-1">
+                        <Label className="text-xs">Forma *</Label>
+                        <Select
+                          value={parcela.forma_pagamento || "_placeholder"}
+                          onValueChange={(v) => {
+                            const newParcelas = [...parcelas];
+                            newParcelas[index].forma_pagamento = v === "_placeholder" ? "" : v;
+                            setParcelas(newParcelas);
+                          }}
+                        >
+                          <SelectTrigger className="h-9">
+                            <SelectValue placeholder="Selecione" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="_placeholder" disabled>Selecione</SelectItem>
+                            {FORMAS_PAGAMENTO.map((f) => (
+                              <SelectItem key={f.value} value={f.value}>
+                                {f.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div className="col-span-2 space-y-1">
+                        <Label className="text-xs">% do Total</Label>
+                        <Input
+                          type="number"
+                          className="h-9"
+                          value={parcela.percentual}
+                          onChange={(e) => atualizarPercentual(parcela.id, Number(e.target.value))}
+                          min={0}
+                          max={100}
+                        />
+                      </div>
+
+                      <div className="col-span-3 space-y-1">
+                        <Label className="text-xs">Valor</Label>
+                        <p className="h-9 flex items-center text-sm font-medium text-primary">
+                          {formatCurrency(total * (parcela.percentual / 100))}
+                        </p>
+                      </div>
+
+                      <div className="col-span-3 space-y-1">
+                        <Label className="text-xs">Vencimento</Label>
+                        <Input
+                          type="date"
+                          className="h-9"
+                          value={parcela.data_vencimento}
+                          onChange={(e) => {
+                            const newParcelas = [...parcelas];
+                            newParcelas[index].data_vencimento = e.target.value;
+                            setParcelas(newParcelas);
+                          }}
+                        />
+                      </div>
+
+                      <div className="col-span-1 flex items-end justify-center">
+                        {index > 0 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-9 w-9 text-destructive hover:text-destructive"
+                            onClick={() => removerFormaPagamento(parcela.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Resumo de percentuais */}
+                <div className="flex items-center justify-between pt-2 border-t">
+                  <span className="text-sm text-muted-foreground">Total dos percentuais:</span>
+                  <span className={`text-sm font-medium ${totalPercentual === 100 ? 'text-green-600' : 'text-destructive'}`}>
+                    {totalPercentual}%
+                  </span>
+                </div>
+
+                {totalPercentual !== 100 && (
+                  <Alert variant="destructive" className="mt-2">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription>
+                      O total dos percentuais deve ser exatamente 100%.
+                    </AlertDescription>
+                  </Alert>
                 )}
               </div>
-
-              {/* Detalhamento das Parcelas */}
-              {formData.condicao_pagamento && (
-                <div className="space-y-4 p-4 border rounded-lg">
-                  <Label className="font-medium">
-                    {formData.condicao_pagamento === 'parcelado' ? 'Detalhamento das Parcelas' : 'Pagamento'}
-                  </Label>
-
-                  <div className="space-y-3">
-                    {parcelas.map((parcela, index) => (
-                      <div key={parcela.id} className="grid grid-cols-12 gap-2 items-end p-3 bg-muted/30 rounded-lg">
-                        <div className="col-span-4 space-y-1">
-                          <Label className="text-xs">Forma de Pagamento *</Label>
-                          <Select
-                            value={parcela.forma_pagamento || "_placeholder"}
-                            onValueChange={(v) => {
-                              const newParcelas = [...parcelas];
-                              newParcelas[index].forma_pagamento = v === "_placeholder" ? "" : v;
-                              setParcelas(newParcelas);
-                            }}
-                          >
-                            <SelectTrigger className="h-9">
-                              <SelectValue placeholder="-" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="_placeholder" disabled>-</SelectItem>
-                              {FORMAS_PAGAMENTO.map((f) => (
-                                <SelectItem key={f.value} value={f.value}>
-                                  {f.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        
-                        <div className="col-span-2 space-y-1">
-                          <Label className="text-xs">%</Label>
-                          <p className="h-9 flex items-center text-sm font-medium">
-                            {parcela.percentual.toFixed(2)}%
-                          </p>
-                        </div>
-
-                        <div className="col-span-3 space-y-1">
-                          <Label className="text-xs">Valor</Label>
-                          <p className="h-9 flex items-center text-sm font-medium text-primary">
-                            {formatCurrency(total * (parcela.percentual / 100))}
-                          </p>
-                        </div>
-
-                        <div className="col-span-3 space-y-1">
-                          <Label className="text-xs">Vencimento</Label>
-                          <Input
-                            type="date"
-                            className="h-9"
-                            value={parcela.data_vencimento}
-                            onChange={(e) => {
-                              const newParcelas = [...parcelas];
-                              newParcelas[index].data_vencimento = e.target.value;
-                              setParcelas(newParcelas);
-                            }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {totalPercentual !== 100 && (
-                    <Alert variant="destructive" className="mt-2">
-                      <AlertTriangle className="h-4 w-4" />
-                      <AlertDescription>
-                        Total das parcelas: {totalPercentual}%. Deve ser exatamente 100%.
-                      </AlertDescription>
-                    </Alert>
-                  )}
-                </div>
-              )}
 
               <div className="space-y-2">
                 <Label>Observação de Pagamento</Label>
