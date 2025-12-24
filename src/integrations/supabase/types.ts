@@ -5625,6 +5625,7 @@ export type Database = {
       }
       calculate_business_days: { Args: { start_date: string }; Returns: number }
       calculate_seller_rankings: { Args: never; Returns: undefined }
+      can_delete_architects: { Args: never; Returns: boolean }
       can_delete_master_idea: { Args: never; Returns: boolean }
       check_and_expire_goals: { Args: never; Returns: undefined }
       check_and_move_inactive_architects: { Args: never; Returns: undefined }
@@ -5734,6 +5735,10 @@ export type Database = {
           stage: string
           value: number
         }[]
+      }
+      delete_architect_safely: {
+        Args: { p_architect_id: string }
+        Returns: Json
       }
       generate_username_from_email: {
         Args: { email_input: string }

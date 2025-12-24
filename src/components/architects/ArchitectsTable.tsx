@@ -102,17 +102,33 @@ export function ArchitectsTable({ refreshKey, onEdit, onView, onDelete }: Archit
   const handleDelete = async () => {
     if (!deleteId) return;
 
-    const { error } = await supabase
-      .from('architects')
-      .delete()
-      .eq('id', deleteId);
+    // Usar função segura que limpa dados relacionados
+    const { data, error } = await supabase.rpc('delete_architect_safely', {
+      p_architect_id: deleteId
+    });
 
     if (error) {
-      toast.error('Erro ao excluir arquiteto');
-    } else {
-      toast.success('Arquiteto excluído com sucesso');
-      fetchArchitects();
-      onDelete?.();
+      toast.error('Erro ao excluir arquiteto: ' + error.message);
+    } else if (data) {
+      const result = data as { success: boolean; error?: string; details?: { leads: number; deals: number; projetos: number; pedidos: number } };
+      if (!result.success) {
+        // Mostrar detalhes do bloqueio
+        if (result.details) {
+          const details = result.details;
+          const blockers = [];
+          if (details.leads > 0) blockers.push(`${details.leads} lead(s)`);
+          if (details.deals > 0) blockers.push(`${details.deals} deal(s)`);
+          if (details.projetos > 0) blockers.push(`${details.projetos} projeto(s)`);
+          if (details.pedidos > 0) blockers.push(`${details.pedidos} pedido(s)`);
+          toast.error(`Não é possível excluir: arquiteto possui ${blockers.join(', ')} vinculados`);
+        } else {
+          toast.error(result.error || 'Erro ao excluir arquiteto');
+        }
+      } else {
+        toast.success('Arquiteto excluído com sucesso');
+        fetchArchitects();
+        onDelete?.();
+      }
     }
     setDeleteId(null);
   };
@@ -281,14 +297,17 @@ export function ArchitectsTable({ refreshKey, onEdit, onView, onDelete }: Archit
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja excluir este arquiteto? Esta ação não pode ser desfeita.
+            <AlertDialogDescription className="space-y-2">
+              <p>Tem certeza que deseja excluir este arquiteto?</p>
+              <p className="text-sm text-muted-foreground">
+                Todos os dados relacionados (tarefas, campanhas, histórico) serão removidos permanentemente.
+              </p>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Excluir
+              Excluir permanentemente
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
