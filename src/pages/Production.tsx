@@ -20,7 +20,7 @@ import { format, subDays, startOfMonth } from 'date-fns';
 import { usePermissions } from '@/hooks/usePermissions';
 
 export default function Production() {
-  const [selectedType, setSelectedType] = useState<string>('all');
+  const [selectedType, setSelectedType] = useState<string>('');
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
   const [automationsDialogOpen, setAutomationsDialogOpen] = useState(false);
@@ -49,7 +49,7 @@ export default function Production() {
     }
   });
 
-  const currentTypeId = selectedType !== 'all' ? selectedType : undefined;
+  const currentTypeId = selectedType || productionTypes[0]?.id;
 
   // Função para exportar OPs para Excel
   const handleExport = async () => {
@@ -229,11 +229,8 @@ export default function Production() {
         />
 
         {/* Tabs por tipo de produção */}
-        <Tabs value={selectedType} onValueChange={setSelectedType} className="w-full">
+        <Tabs value={selectedType || productionTypes[0]?.id || ''} onValueChange={setSelectedType} className="w-full">
           <TabsList className="w-full justify-start overflow-x-auto">
-            <TabsTrigger value="all" className="min-w-fit">
-              Todos
-            </TabsTrigger>
             {productionTypes.map((type) => (
               <TabsTrigger key={type.id} value={type.id} className="min-w-fit gap-2">
                 <span 
@@ -244,13 +241,6 @@ export default function Production() {
               </TabsTrigger>
             ))}
           </TabsList>
-
-          <TabsContent value="all" className="mt-4">
-            <ProductionKanban 
-              filters={filters} 
-              onOrderClick={(orderId) => setSelectedOrderId(orderId)}
-            />
-          </TabsContent>
 
           {productionTypes.map((type) => (
             <TabsContent key={type.id} value={type.id} className="mt-4">
