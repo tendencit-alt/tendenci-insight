@@ -2044,6 +2044,7 @@ export type Database = {
       }
       menu_items: {
         Row: {
+          category: string | null
           created_at: string | null
           icon: string
           id: string
@@ -2055,6 +2056,7 @@ export type Database = {
           visible: boolean
         }
         Insert: {
+          category?: string | null
           created_at?: string | null
           icon: string
           id?: string
@@ -2066,6 +2068,7 @@ export type Database = {
           visible?: boolean
         }
         Update: {
+          category?: string | null
           created_at?: string | null
           icon?: string
           id?: string
