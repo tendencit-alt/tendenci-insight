@@ -2348,6 +2348,9 @@ export type Database = {
           parcelas: number | null
           percentual_forma_1: number | null
           percentual_forma_2: number | null
+          rt_habilitado: boolean | null
+          rt_percentual: number | null
+          rt_valor: number | null
           status: string | null
           subtotal: number | null
           taxa_boleto_percentual: number | null
@@ -2403,6 +2406,9 @@ export type Database = {
           parcelas?: number | null
           percentual_forma_1?: number | null
           percentual_forma_2?: number | null
+          rt_habilitado?: boolean | null
+          rt_percentual?: number | null
+          rt_valor?: number | null
           status?: string | null
           subtotal?: number | null
           taxa_boleto_percentual?: number | null
@@ -2458,6 +2464,9 @@ export type Database = {
           parcelas?: number | null
           percentual_forma_1?: number | null
           percentual_forma_2?: number | null
+          rt_habilitado?: boolean | null
+          rt_percentual?: number | null
+          rt_valor?: number | null
           status?: string | null
           subtotal?: number | null
           taxa_boleto_percentual?: number | null

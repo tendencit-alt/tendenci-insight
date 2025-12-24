@@ -365,6 +365,23 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
                         {order.architect.phone}
                       </a>
                     )}
+                    
+                    {/* RT - Repasse Técnico */}
+                    {(order as any).rt_habilitado && (
+                      <div className="mt-3 pt-3 border-t">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="secondary" className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                              RT {(order as any).rt_percentual}%
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">Repasse Técnico</span>
+                          </div>
+                          <span className="font-semibold text-amber-600 dark:text-amber-400">
+                            {formatCurrency((order as any).rt_valor)}
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               )}
