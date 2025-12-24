@@ -16,6 +16,7 @@ import { DeleteOrderDialog } from './DeleteOrderDialog';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { parseDateOnly } from '@/utils/timezone';
 import {
   User, Building2, Phone, Mail, MapPin, Calendar, DollarSign,
   Truck, FileText, Clock, CheckCircle, AlertCircle, Loader2, Factory,
@@ -562,14 +563,14 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
                   {order.data_entrega_prevista && (
                     <p className="flex items-center gap-1">
                       <Calendar className="h-3 w-3" />
-                      Previsão: {format(new Date(order.data_entrega_prevista), 'dd/MM/yyyy', { locale: ptBR })}
+                      Previsão: {format(parseDateOnly(order.data_entrega_prevista)!, 'dd/MM/yyyy', { locale: ptBR })}
                     </p>
                   )}
 
                   {order.data_entrega_realizada && (
                     <p className="flex items-center gap-1 text-green-600">
                       <CheckCircle className="h-3 w-3" />
-                      Entregue em: {format(new Date(order.data_entrega_realizada), 'dd/MM/yyyy', { locale: ptBR })}
+                      Entregue em: {format(parseDateOnly(order.data_entrega_realizada)!, 'dd/MM/yyyy', { locale: ptBR })}
                     </p>
                   )}
 

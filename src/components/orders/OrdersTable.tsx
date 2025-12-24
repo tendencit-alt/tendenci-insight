@@ -9,6 +9,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { usePermissions } from '@/hooks/usePermissions';
 import { format, differenceInDays, isPast } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { parseDateOnly } from '@/utils/timezone';
 import { Search, ChevronLeft, ChevronRight, AlertTriangle, ExternalLink, Eye, Pencil, Trash2 } from 'lucide-react';
 
 interface Order {
@@ -73,7 +74,9 @@ export function OrdersTable({ orders, isLoading, onSelectOrder, onEditOrder, onD
   const getDeadlineStatus = (deadline: string | null, status: string) => {
     if (!deadline || status === 'entregue' || status === 'cancelado') return null;
     
-    const deadlineDate = new Date(deadline);
+    const deadlineDate = parseDateOnly(deadline);
+    if (!deadlineDate) return null;
+    
     const daysRemaining = differenceInDays(deadlineDate, new Date());
     
     if (isPast(deadlineDate)) {
@@ -192,7 +195,7 @@ export function OrdersTable({ orders, isLoading, onSelectOrder, onEditOrder, onD
                           {order.data_entrega_prevista ? (
                             <>
                               <span className="text-sm">
-                                {format(new Date(order.data_entrega_prevista), 'dd/MM/yy', { locale: ptBR })}
+                                {format(parseDateOnly(order.data_entrega_prevista)!, 'dd/MM/yy', { locale: ptBR })}
                               </span>
                               {deadlineStatus && (
                                 <Badge className={`${deadlineStatus.color} text-xs px-1`}>
