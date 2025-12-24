@@ -685,30 +685,30 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
 
                       {/* Parcelas - só para boleto e cartão de crédito */}
                       {FORMAS_COM_PARCELAS.includes(parcela.forma_pagamento) && (
-                        <div className="col-span-1 space-y-1">
+                        <div className="col-span-2 space-y-1">
                           <Label className="text-xs">Parcelas</Label>
-                          <div className="flex items-center h-9">
+                          <div className="flex items-center h-10 border rounded-lg overflow-hidden bg-background">
                             <Button
                               type="button"
-                              variant="outline"
-                              size="icon"
-                              className="h-9 w-8 rounded-r-none"
+                              variant="ghost"
+                              size="sm"
+                              className="h-10 w-10 rounded-none hover:bg-destructive/10 hover:text-destructive text-lg font-bold"
                               onClick={() => {
                                 const newParcelas = [...parcelas];
                                 newParcelas[index].numero_parcelas = Math.max(1, (parcela.numero_parcelas || 1) - 1);
                                 setParcelas(newParcelas);
                               }}
                             >
-                              -
+                              −
                             </Button>
-                            <div className="h-9 w-10 flex items-center justify-center border-y bg-background text-sm font-medium">
+                            <div className="flex-1 h-10 flex items-center justify-center bg-muted/50 text-base font-semibold min-w-[50px]">
                               {parcela.numero_parcelas || 1}x
                             </div>
                             <Button
                               type="button"
-                              variant="outline"
-                              size="icon"
-                              className="h-9 w-8 rounded-l-none"
+                              variant="ghost"
+                              size="sm"
+                              className="h-10 w-10 rounded-none hover:bg-primary/10 hover:text-primary text-lg font-bold"
                               onClick={() => {
                                 const newParcelas = [...parcelas];
                                 newParcelas[index].numero_parcelas = Math.min(12, (parcela.numero_parcelas || 1) + 1);
@@ -721,11 +721,11 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                         </div>
                       )}
                       
-                      <div className="col-span-2 space-y-1">
+                      <div className={`${FORMAS_COM_PARCELAS.includes(parcela.forma_pagamento) ? 'col-span-2' : 'col-span-3'} space-y-1`}>
                         <Label className="text-xs">% do Total</Label>
                         <Input
                           type="number"
-                          className="h-9"
+                          className="h-10"
                           value={parcela.percentual}
                           onChange={(e) => atualizarPercentual(parcela.id, Number(e.target.value))}
                           min={0}
@@ -735,16 +735,16 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
 
                       <div className="col-span-2 space-y-1">
                         <Label className="text-xs">Valor</Label>
-                        <p className="h-9 flex items-center text-sm font-medium text-primary">
+                        <p className="h-10 flex items-center text-sm font-medium text-primary bg-muted/30 rounded-lg px-3">
                           {formatCurrency(total * (parcela.percentual / 100))}
                         </p>
                       </div>
 
-                      <div className="col-span-3 space-y-1">
+                      <div className="col-span-2 space-y-1">
                         <Label className="text-xs">Vencimento</Label>
                         <Input
                           type="date"
-                          className="h-9"
+                          className="h-10"
                           value={parcela.data_vencimento}
                           onChange={(e) => {
                             const newParcelas = [...parcelas];
