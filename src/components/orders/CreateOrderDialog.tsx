@@ -135,10 +135,11 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     setParcelas(novasParcelas);
   };
 
-  // Atualizar percentual de uma parcela
+  // Atualizar percentual de uma parcela (sanitizado contra NaN)
   const atualizarPercentual = (id: string, novoPercentual: number) => {
+    const valorSeguro = isNaN(novoPercentual) ? 0 : novoPercentual;
     const novasParcelas = parcelas.map(p =>
-      p.id === id ? { ...p, percentual: Math.max(0, Math.min(100, novoPercentual)) } : p
+      p.id === id ? { ...p, percentual: Math.max(0, Math.min(100, valorSeguro)) } : p
     );
     setParcelas(novasParcelas);
   };
@@ -231,7 +232,8 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
   // Validação rigorosa: valor das formas de pagamento deve ser igual ao total
   const valorTotalPagamento = parcelas.reduce((sum, p) => sum + (total * (p.percentual / 100)), 0);
   const diferencaPagamento = Math.abs(valorTotalPagamento - total);
-  const isPagamentoValorCorreto = diferencaPagamento < 0.01;
+  // Se total é 0 ou negativo, não permite validar como correto
+  const isPagamentoValorCorreto = total > 0 ? diferencaPagamento < 0.01 : false;
   
   const isPagamentoValid = parcelas.length > 0 && parcelas.every(p => p.forma_pagamento) && totalPercentual === 100 && isPagamentoValorCorreto;
   const isEntregaValid = !!formData.tipo_entrega;
@@ -289,7 +291,10 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
           percentual_forma_2: parcelasSecundaria?.percentual || 0,
           data_primeiro_vencimento: parcelasPrincipal?.data_vencimento || null,
           condicao_pagamento: null,
-          observacao_pagamento: parcelas.length > 2 ? JSON.stringify(parcelas) : (formData.observacao_pagamento || null),
+          // Salvar parcelas em JSON se >2 formas OU se alguma tiver parcelamento
+          observacao_pagamento: (parcelas.length > 2 || parcelas.some(p => p.numero_parcelas > 1)) 
+            ? JSON.stringify(parcelas) 
+            : (formData.observacao_pagamento || null),
           data_entrega_prevista: formData.data_entrega_prevista || null,
           tipo_entrega: formData.tipo_entrega,
           entrega_mesmo_endereco: formData.entrega_mesmo_endereco,
