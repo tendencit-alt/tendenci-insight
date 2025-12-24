@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { 
   AlertTriangle, 
-  Clock, 
   ChevronDown, 
   ChevronUp,
   AlertCircle,
@@ -15,8 +14,6 @@ import {
   Zap,
   CalendarClock
 } from 'lucide-react';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 
 interface ProductionSLAAlertsProps {
   productionTypeId?: string;
@@ -50,7 +47,6 @@ interface AutomationAlert {
 export function ProductionSLAAlerts({ productionTypeId, onOrderClick }: ProductionSLAAlertsProps) {
   const [isOpen, setIsOpen] = useState(true);
 
-  // Fetch standard SLA alerts
   const { data: alerts = [], isLoading } = useQuery({
     queryKey: ['production-sla-alerts', productionTypeId],
     queryFn: async () => {
@@ -62,7 +58,6 @@ export function ProductionSLAAlerts({ productionTypeId, onOrderClick }: Producti
     }
   });
 
-  // Fetch automation-based alerts (SLA em dias úteis)
   const { data: automationAlerts = [] } = useQuery({
     queryKey: ['production-automation-alerts', productionTypeId],
     queryFn: async () => {
@@ -80,21 +75,25 @@ export function ProductionSLAAlerts({ productionTypeId, onOrderClick }: Producti
 
   const totalAlerts = alerts.length + automationAlerts.length;
 
-  if (isLoading) {
-    return null;
-  }
-
-  if (totalAlerts === 0) {
-    return null;
-  }
+  if (isLoading) return null;
+  if (totalAlerts === 0) return null;
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'urgente': return 'bg-red-100 text-red-700 border-red-200';
-      case 'alta': return 'bg-orange-100 text-orange-700 border-orange-200';
-      case 'normal': return 'bg-blue-100 text-blue-700 border-blue-200';
-      case 'baixa': return 'bg-gray-100 text-gray-700 border-gray-200';
-      default: return 'bg-gray-100 text-gray-700 border-gray-200';
+      case 'urgente': return 'bg-destructive/10 text-destructive border-destructive/20';
+      case 'alta': return 'bg-warning/10 text-warning border-warning/20';
+      case 'normal': return 'bg-primary/10 text-primary border-primary/20';
+      case 'baixa': return 'bg-muted text-muted-foreground border-border';
+      default: return 'bg-muted text-muted-foreground border-border';
+    }
+  };
+
+  const getAlertBorderColor = (alertType: string) => {
+    switch (alertType) {
+      case 'prazo_vencido': return 'border-l-destructive';
+      case 'sla_estourado': return 'border-l-warning';
+      case 'prazo_proximo': return 'border-l-primary';
+      default: return 'border-l-muted-foreground';
     }
   };
 
@@ -105,7 +104,7 @@ export function ProductionSLAAlerts({ productionTypeId, onOrderClick }: Producti
 
   const AlertItem = ({ alert }: { alert: SLAAlert }) => (
     <div 
-      className="flex items-center justify-between p-2 rounded-md bg-background hover:bg-muted/50 cursor-pointer transition-colors"
+      className={`flex items-center justify-between p-3 rounded-lg bg-muted/30 border-l-4 ${getAlertBorderColor(alert.alert_type)} hover:bg-muted/50 cursor-pointer transition-all`}
       onClick={() => onOrderClick?.(alert.order_id)}
     >
       <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -124,9 +123,9 @@ export function ProductionSLAAlerts({ productionTypeId, onOrderClick }: Producti
           <span className="hidden sm:inline">{alert.phase_name}</span>
         )}
         {alert.alert_type === 'prazo_proximo' ? (
-          <span className="text-amber-600">em {formatHours(alert.hours_overdue)}</span>
+          <span className="text-primary font-medium">em {formatHours(alert.hours_overdue)}</span>
         ) : (
-          <span className="text-red-600">+{formatHours(alert.hours_overdue)}</span>
+          <span className="text-destructive font-medium">+{formatHours(alert.hours_overdue)}</span>
         )}
       </div>
     </div>
@@ -134,7 +133,7 @@ export function ProductionSLAAlerts({ productionTypeId, onOrderClick }: Producti
 
   const AutomationAlertItem = ({ alert }: { alert: AutomationAlert }) => (
     <div 
-      className="flex items-center justify-between p-2 rounded-md bg-background hover:bg-muted/50 cursor-pointer transition-colors"
+      className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border-l-4 border-l-destructive hover:bg-muted/50 cursor-pointer transition-all"
       onClick={() => onOrderClick?.(alert.order_id)}
     >
       <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -150,7 +149,7 @@ export function ProductionSLAAlerts({ productionTypeId, onOrderClick }: Producti
       </div>
       <div className="flex items-center gap-2 text-xs shrink-0">
         <span className="hidden sm:inline text-muted-foreground">{alert.fase_nome}</span>
-        <Badge variant="destructive" className="text-xs">
+        <Badge className="text-xs bg-destructive/10 text-destructive border border-destructive/20">
           +{alert.dias_excedidos} dias úteis
         </Badge>
       </div>
@@ -159,16 +158,16 @@ export function ProductionSLAAlerts({ productionTypeId, onOrderClick }: Producti
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-      <Card className="border-amber-200 bg-amber-50/50">
+      <Card className="border-border bg-card/50">
         <CollapsibleTrigger asChild>
-          <CardHeader className="py-3 cursor-pointer hover:bg-amber-100/50 transition-colors">
+          <CardHeader className="py-3 cursor-pointer hover:bg-muted/50 transition-colors">
             <CardTitle className="flex items-center justify-between text-sm">
               <div className="flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-amber-600" />
-                <span className="text-amber-800">
-                  Alertas de Produção
-                </span>
-                <Badge variant="secondary" className="bg-amber-200 text-amber-800">
+                <div className="p-1.5 rounded-md bg-warning/10">
+                  <AlertTriangle className="h-4 w-4 text-warning" />
+                </div>
+                <span className="font-medium">Alertas de Produção</span>
+                <Badge variant="secondary" className="text-xs">
                   {totalAlerts}
                 </Badge>
               </div>
@@ -184,15 +183,20 @@ export function ProductionSLAAlerts({ productionTypeId, onOrderClick }: Producti
         </CollapsibleTrigger>
         
         <CollapsibleContent>
-          <CardContent className="pt-0 pb-3 space-y-3">
-            {/* Automação SLA em Dias Úteis Excedido */}
+          <CardContent className="pt-0 pb-4 space-y-4">
+            {/* Prazo de Dias Úteis Excedido */}
             {automationAlerts.length > 0 && (
-              <div className="space-y-1">
-                <div className="flex items-center gap-2 text-xs font-medium text-destructive">
-                  <Zap className="h-3.5 w-3.5" />
-                  🚨 SLA Dias Úteis Excedido ({automationAlerts.length})
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-xs font-medium">
+                  <div className="p-1 rounded bg-destructive/10">
+                    <Zap className="h-3 w-3 text-destructive" />
+                  </div>
+                  <span className="text-destructive">Prazo de Dias Úteis Excedido</span>
+                  <Badge variant="destructive" className="h-5 text-[10px]">
+                    {automationAlerts.length}
+                  </Badge>
                 </div>
-                <div className="space-y-1 pl-5">
+                <div className="space-y-2">
                   {automationAlerts.map((alert) => (
                     <AutomationAlertItem key={alert.order_id} alert={alert} />
                   ))}
@@ -202,12 +206,17 @@ export function ProductionSLAAlerts({ productionTypeId, onOrderClick }: Producti
 
             {/* Prazo Vencido */}
             {prazoVencido.length > 0 && (
-              <div className="space-y-1">
-                <div className="flex items-center gap-2 text-xs font-medium text-red-700">
-                  <AlertCircle className="h-3.5 w-3.5" />
-                  Prazo Vencido ({prazoVencido.length})
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-xs font-medium">
+                  <div className="p-1 rounded bg-destructive/10">
+                    <AlertCircle className="h-3 w-3 text-destructive" />
+                  </div>
+                  <span className="text-destructive">Prazo Vencido</span>
+                  <Badge variant="destructive" className="h-5 text-[10px]">
+                    {prazoVencido.length}
+                  </Badge>
                 </div>
-                <div className="space-y-1 pl-5">
+                <div className="space-y-2">
                   {prazoVencido.map((alert) => (
                     <AlertItem key={`${alert.order_id}-${alert.alert_type}`} alert={alert} />
                   ))}
@@ -215,14 +224,19 @@ export function ProductionSLAAlerts({ productionTypeId, onOrderClick }: Producti
               </div>
             )}
 
-            {/* SLA Estourado */}
+            {/* Prazo de Fase Excedido */}
             {slaEstourado.length > 0 && (
-              <div className="space-y-1">
-                <div className="flex items-center gap-2 text-xs font-medium text-orange-700">
-                  <Timer className="h-3.5 w-3.5" />
-                  SLA da Fase Excedido ({slaEstourado.length})
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-xs font-medium">
+                  <div className="p-1 rounded bg-warning/10">
+                    <Timer className="h-3 w-3 text-warning" />
+                  </div>
+                  <span className="text-warning">Prazo de Fase Excedido</span>
+                  <Badge className="h-5 text-[10px] bg-warning/10 text-warning border border-warning/20">
+                    {slaEstourado.length}
+                  </Badge>
                 </div>
-                <div className="space-y-1 pl-5">
+                <div className="space-y-2">
                   {slaEstourado.map((alert) => (
                     <AlertItem key={`${alert.order_id}-${alert.alert_type}`} alert={alert} />
                   ))}
@@ -232,12 +246,17 @@ export function ProductionSLAAlerts({ productionTypeId, onOrderClick }: Producti
 
             {/* Prazo Próximo */}
             {prazoProximo.length > 0 && (
-              <div className="space-y-1">
-                <div className="flex items-center gap-2 text-xs font-medium text-amber-700">
-                  <CalendarClock className="h-3.5 w-3.5" />
-                  Prazo Próximo - 3 dias ({prazoProximo.length})
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-xs font-medium">
+                  <div className="p-1 rounded bg-primary/10">
+                    <CalendarClock className="h-3 w-3 text-primary" />
+                  </div>
+                  <span className="text-primary">Prazo Próximo - 3 dias</span>
+                  <Badge className="h-5 text-[10px] bg-primary/10 text-primary border border-primary/20">
+                    {prazoProximo.length}
+                  </Badge>
                 </div>
-                <div className="space-y-1 pl-5">
+                <div className="space-y-2">
                   {prazoProximo.map((alert) => (
                     <AlertItem key={`${alert.order_id}-${alert.alert_type}`} alert={alert} />
                   ))}
