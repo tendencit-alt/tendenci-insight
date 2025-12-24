@@ -1,5 +1,11 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
 import { logSystemError } from '../_shared/logError.ts'
+import { 
+  getNowBrasil, 
+  getCurrentHourBrasil, 
+  getCurrentDayOfWeekBrasil,
+  getStartOfDayBrasilAsUTC 
+} from '../_shared/timezone.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -20,6 +26,7 @@ interface Campaign {
   data_hora_unica: string | null
   horario_inicio: string | null
   horario_fim: string | null
+  ultimo_disparo_em: string | null
 }
 
 Deno.serve(async (req) => {
@@ -34,13 +41,17 @@ Deno.serve(async (req) => {
   try {
     console.log('🕐 [check-scheduled-campaigns] Verificando campanhas agendadas...')
 
-    const now = new Date()
-    const currentHour = now.getHours()
-    const currentMinute = now.getMinutes()
-    const currentDayOfWeek = now.getDay() // 0 = domingo, 6 = sábado
+    // Usar timezone Brasil para todas as verificações
+    const nowBrasil = getNowBrasil()
+    const currentHour = getCurrentHourBrasil()
+    const currentMinute = nowBrasil.getUTCMinutes()
+    const currentDayOfWeek = getCurrentDayOfWeekBrasil() // 0 = domingo, 6 = sábado
 
-    console.log(`📅 Data/Hora atual: ${now.toISOString()}`)
-    console.log(`⏰ Hora: ${currentHour}:${currentMinute}, Dia da semana: ${currentDayOfWeek}`)
+    // Data de hoje em formato YYYY-MM-DD (Brasil)
+    const hojeBrasil = `${nowBrasil.getUTCFullYear()}-${String(nowBrasil.getUTCMonth() + 1).padStart(2, '0')}-${String(nowBrasil.getUTCDate()).padStart(2, '0')}`
+    
+    console.log(`📅 Data Brasil: ${hojeBrasil}`)
+    console.log(`⏰ Hora Brasil: ${currentHour}:${String(currentMinute).padStart(2, '0')}, Dia da semana: ${currentDayOfWeek}`)
 
     // Buscar campanhas com status 'agendado'
     const { data: campanhasAgendadas, error: fetchError } = await supabase
@@ -81,13 +92,14 @@ Deno.serve(async (req) => {
         // Agendamento único - verificar data/hora exata
         if (campanha.data_hora_unica) {
           const scheduledTime = new Date(campanha.data_hora_unica)
-          const diffMinutes = (now.getTime() - scheduledTime.getTime()) / (1000 * 60)
+          const nowUTC = new Date()
+          const diffMinutes = (nowUTC.getTime() - scheduledTime.getTime()) / (1000 * 60)
           
-          // Disparar se estamos dentro de 5 minutos após o horário agendado
-          if (diffMinutes >= 0 && diffMinutes <= 5) {
+          // Disparar se estamos dentro de 10 minutos após o horário agendado (margem maior para cron de 5 min)
+          if (diffMinutes >= 0 && diffMinutes <= 10) {
             shouldDispatch = true
             reason = `Agendamento único: ${scheduledTime.toISOString()}`
-          } else if (diffMinutes > 5) {
+          } else if (diffMinutes > 10) {
             // Passou do horário - marcar como erro
             console.log(`⏰ Campanha ${campanha.nome} passou do horário agendado`)
             await supabase
@@ -112,11 +124,12 @@ Deno.serve(async (req) => {
         const horarioInicio = campanha.horario_inicio || '09:00'
         const horarioFim = campanha.horario_fim || '18:00'
         
-        // Verificar período
+        // Verificar período de início
         if (campanha.data_inicio) {
-          const dataInicio = new Date(campanha.data_inicio)
-          if (now < dataInicio) {
-            console.log(`📅 Campanha ${campanha.nome} ainda não iniciou (início: ${dataInicio.toISOString()})`)
+          const dataInicio = new Date(campanha.data_inicio + 'T00:00:00')
+          const dataInicioStr = campanha.data_inicio
+          if (hojeBrasil < dataInicioStr) {
+            console.log(`📅 Campanha ${campanha.nome} ainda não iniciou (início: ${dataInicioStr})`)
             results.push({ 
               campaignId: campanha.id, 
               nome: campanha.nome, 
@@ -126,11 +139,11 @@ Deno.serve(async (req) => {
           }
         }
         
+        // Verificar período de fim
         if (campanha.data_fim) {
-          const dataFim = new Date(campanha.data_fim)
-          dataFim.setHours(23, 59, 59, 999)
-          if (now > dataFim) {
-            console.log(`📅 Campanha ${campanha.nome} encerrada (fim: ${dataFim.toISOString()})`)
+          const dataFimStr = campanha.data_fim
+          if (hojeBrasil > dataFimStr) {
+            console.log(`📅 Campanha ${campanha.nome} encerrada (fim: ${dataFimStr})`)
             await supabase
               .from('tendenci_prospec_arq_campaigns')
               .update({ 
@@ -167,19 +180,37 @@ Deno.serve(async (req) => {
         const fimMinutos = horaFim * 60 + (minFim || 0)
         const agoraMinutos = currentHour * 60 + currentMinute
         
-        // Verificar se está dentro da janela de horário (com 5 min de tolerância no início)
-        if (agoraMinutos >= inicioMinutos && agoraMinutos <= inicioMinutos + 5) {
-          // Verificar se já disparou hoje
-          const hoje = now.toISOString().split('T')[0]
+        // Verificar se está dentro da janela de horário INTEIRA (não só os primeiros 5 min)
+        if (agoraMinutos >= inicioMinutos && agoraMinutos <= fimMinutos) {
+          // Verificar se já disparou hoje usando campo ultimo_disparo_em
+          if (campanha.ultimo_disparo_em) {
+            const ultimoDisparo = new Date(campanha.ultimo_disparo_em)
+            // Converter ultimo disparo para data Brasil
+            const BRASIL_OFFSET_MS = -3 * 60 * 60 * 1000
+            const ultimoDisparoBrasil = new Date(ultimoDisparo.getTime() + BRASIL_OFFSET_MS)
+            const dataUltimoDisparo = `${ultimoDisparoBrasil.getUTCFullYear()}-${String(ultimoDisparoBrasil.getUTCMonth() + 1).padStart(2, '0')}-${String(ultimoDisparoBrasil.getUTCDate()).padStart(2, '0')}`
+            
+            if (dataUltimoDisparo === hojeBrasil) {
+              console.log(`⚠️ Campanha ${campanha.nome} já foi disparada hoje (${dataUltimoDisparo})`)
+              results.push({ 
+                campaignId: campanha.id, 
+                nome: campanha.nome, 
+                action: 'already_dispatched_today' 
+              })
+              continue
+            }
+          }
+          
+          // Fallback: verificar dispatches de hoje também
+          const startOfDayUTC = getStartOfDayBrasilAsUTC()
           const { data: dispatchesToday } = await supabase
             .from('tendenci_campaign_dispatches')
             .select('id')
             .eq('campaign_id', campanha.id)
-            .gte('created_at', `${hoje}T00:00:00`)
-            .lt('created_at', `${hoje}T23:59:59`)
+            .gte('created_at', startOfDayUTC.toISOString())
           
           if (dispatchesToday && dispatchesToday.length > 0) {
-            console.log(`⚠️ Campanha ${campanha.nome} já foi disparada hoje`)
+            console.log(`⚠️ Campanha ${campanha.nome} já foi disparada hoje (via dispatches)`)
             results.push({ 
               campaignId: campanha.id, 
               nome: campanha.nome, 
@@ -226,24 +257,41 @@ Deno.serve(async (req) => {
         }
 
         try {
-          // Chamar a edge function execute-campaign-background
-          const { data: execData, error: execError } = await supabase.functions.invoke(
-            'execute-campaign-background',
+          // Atualizar ultimo_disparo_em ANTES de disparar (para evitar duplicatas se o cron rodar rápido)
+          await supabase
+            .from('tendenci_prospec_arq_campaigns')
+            .update({ 
+              ultimo_disparo_em: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', campanha.id)
+
+          // Chamar a edge function execute-campaign-background usando fetch direto (bypass auth)
+          const response = await fetch(
+            `${supabaseUrl}/functions/v1/execute-campaign-background`,
             {
-              body: {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${supabaseServiceKey}`,
+                'Content-Type': 'application/json',
+                'apikey': Deno.env.get('SUPABASE_ANON_KEY') || ''
+              },
+              body: JSON.stringify({
                 campanha_id: campanha.id,
                 arquiteto_ids: arquitetosIds,
                 from_scheduler: true
-              }
+              })
             }
           )
 
-          if (execError) {
-            console.error(`❌ Erro ao disparar campanha ${campanha.nome}:`, execError)
+          const result = await response.json()
+
+          if (!response.ok || result.error) {
+            console.error(`❌ Erro ao disparar campanha ${campanha.nome}:`, result.error)
             await logSystemError(supabase, {
               title: `Erro no agendamento: ${campanha.nome}`,
               module: 'campanhas',
-              description: execError.message,
+              description: result.error || 'Erro desconhecido',
               severity: 'high',
               source: 'edge_function',
               metadata: { campaign_id: campanha.id }
@@ -262,8 +310,12 @@ Deno.serve(async (req) => {
               action: 'dispatched' 
             })
 
-            // Para agendamento único, mudar status para 'enviando' (execute-campaign-background faz isso)
-            // Para recorrente, manter como 'agendado' para próximos disparos
+            // Para agendamento único, o status muda para 'enviando' pelo execute-campaign-background
+            // Para recorrente, precisamos manter como 'agendado' após conclusão do dispatch
+            if (campanha.tipo_agendamento === 'recorrente') {
+              // Não precisa fazer nada aqui - o status será restaurado quando o dispatch concluir
+              console.log(`📅 Campanha recorrente ${campanha.nome} - status será mantido como 'agendado'`)
+            }
           }
         } catch (invokeError: any) {
           console.error(`❌ Exceção ao invocar disparo:`, invokeError)
