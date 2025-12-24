@@ -56,16 +56,28 @@ export function useFileUpload({
     const fileExt = file.name.split(".").pop()?.toLowerCase();
     const fileName = `${folderPath}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
 
+    // Mapeamento completo de MIME types para extensões que browsers podem não reconhecer
+    const mimeTypeMap: Record<string, string> = {
+      'skp': 'application/vnd.sketchup.skp',
+      'dwg': 'application/x-dwg',
+      'xlsm': 'application/vnd.ms-excel.sheet.macroenabled.12',
+      'doc': 'application/msword',
+      'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'xls': 'application/vnd.ms-excel',
+      'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'txt': 'text/plain',
+      'pdf': 'application/pdf',
+      'png': 'image/png',
+      'jpg': 'image/jpeg',
+      'jpeg': 'image/jpeg',
+      'gif': 'image/gif',
+      'webp': 'image/webp',
+    };
+
     // Determinar contentType correto baseado na extensão
     let contentType = file.type;
     if (!contentType || contentType === 'application/octet-stream') {
-      if (fileExt === 'skp') {
-        contentType = 'application/vnd.sketchup.skp';
-      } else if (fileExt === 'dwg') {
-        contentType = 'image/vnd.dwg';
-      } else if (fileExt === 'xlsm') {
-        contentType = 'application/vnd.ms-excel.sheet.macroenabled.12';
-      }
+      contentType = mimeTypeMap[fileExt || ''] || 'application/octet-stream';
     }
 
     console.log(`Uploading ${file.name} with type: ${contentType}, size: ${file.size}`);
