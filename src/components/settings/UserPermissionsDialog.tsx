@@ -41,7 +41,8 @@ const MODULE_LABELS: Record<AppModule, string> = {
   'fornecedores': 'Fornecedores',
   'estoque': 'Estoque',
   'compras': 'Compras',
-  'pedidos': 'Pedidos'
+  'pedidos': 'Pedidos',
+  'fichas_tecnicas': 'Fichas Técnicas'
 };
 
 const ALL_MODULES: AppModule[] = [
