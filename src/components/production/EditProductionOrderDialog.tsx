@@ -151,6 +151,8 @@ export function EditProductionOrderDialog({ open, onOpenChange, orderId }: EditP
         throw new Error('Preencha os campos obrigatórios');
       }
 
+      const previousStatus = order?.status;
+
       const { error } = await supabase
         .from('production_orders')
         .update({
@@ -171,6 +173,27 @@ export function EditProductionOrderDialog({ open, onOpenChange, orderId }: EditP
         .eq('id', orderId);
 
       if (error) throw error;
+
+      // Sincronizar fases se status mudou para concluido
+      if (formData.status === 'concluido' && previousStatus !== 'concluido') {
+        await supabase
+          .from('production_phases')
+          .update({ 
+            status: 'concluido', 
+            completed_at: new Date().toISOString() 
+          })
+          .eq('production_order_id', orderId)
+          .neq('status', 'concluido');
+      }
+
+      // Sincronizar fases se status mudou para cancelado
+      if (formData.status === 'cancelado' && previousStatus !== 'cancelado') {
+        await supabase
+          .from('production_phases')
+          .update({ status: 'cancelado' })
+          .eq('production_order_id', orderId)
+          .in('status', ['pendente', 'em_andamento']);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['production-orders'] });
