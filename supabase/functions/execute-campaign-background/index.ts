@@ -8,6 +8,7 @@ const corsHeaders = {
 interface ExecuteCampaignRequest {
   campanha_id: string
   arquiteto_ids: string[]
+  from_scheduler?: boolean
 }
 
 interface ProcessNextRequest {
