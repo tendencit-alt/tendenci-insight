@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { LogOut, User, Menu, Edit2, ChevronDown, Factory, DollarSign, Database, Settings } from "lucide-react";
+import { LogOut, User, Menu, Edit2, ChevronDown, Factory, DollarSign, Database, Settings, Briefcase } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,6 +38,7 @@ interface MenuItem {
 
 // Configuração das categorias para dropdowns
 const CATEGORY_CONFIG: Record<string, { label: string; icon: React.ElementType }> = {
+  comercial: { label: 'Comercial', icon: Briefcase },
   producao: { label: 'Produção', icon: Factory },
   financeiro: { label: 'Financeiro', icon: DollarSign },
   cadastros: { label: 'Cadastros', icon: Database },
@@ -170,14 +171,18 @@ export function AppNavbar() {
         <DropdownMenuTrigger asChild>
           <Button 
             variant="ghost" 
-            className="flex items-center gap-1 px-2 py-1.5 h-auto text-[11px] rounded-md hover:bg-muted/50"
+            className="flex items-center gap-1.5 px-3 py-1.5 h-auto text-xs rounded-md hover:bg-muted/50"
           >
-            <CategoryIcon className="h-3.5 w-3.5 flex-shrink-0" />
-            <span className="whitespace-nowrap">{config.label}</span>
-            <ChevronDown className="h-3 w-3" />
+            <CategoryIcon className="h-4 w-4 flex-shrink-0" />
+            <span className="whitespace-nowrap font-medium">{config.label}</span>
+            <ChevronDown className="h-3 w-3 opacity-60" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-48 bg-card border border-border shadow-lg">
+        <DropdownMenuContent align="start" className="w-52 bg-card border border-border shadow-lg">
+          <DropdownMenuLabel className="text-xs text-muted-foreground uppercase tracking-wider">
+            {config.label}
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
           {items.map((item) => {
             const IconComponent = getIconComponent(item.icon);
             return (
@@ -216,6 +221,9 @@ export function AppNavbar() {
     ...(isMaster ? [{ key: 'master', label: 'Configurações' }] : []),
   ];
 
+  // Ordem das categorias no desktop
+  const desktopCategories = ['comercial', 'producao', 'financeiro', 'cadastros'];
+
   return (
     <nav className="sticky top-0 z-50 h-14 border-b border-border/40 bg-card/95 backdrop-blur-[12px] supports-[backdrop-filter]:bg-card/95 shadow-sm">
       <div className="flex items-center h-full px-3 max-w-[1800px] mx-auto gap-2">
@@ -223,38 +231,11 @@ export function AppNavbar() {
         <img src={tendenciLogo} alt="Tendenci" className="h-7 w-auto flex-shrink-0" />
         
         {/* Desktop Menu Items */}
-        <div className="hidden xl:flex items-center gap-0.5 flex-1">
-          {/* Itens Comerciais (principais, sempre visíveis) */}
-          {itemsByCategory.comercial.map((item) => {
-            const IconComponent = getIconComponent(item.icon);
-            return (
-              <div key={item.id} className="relative group">
-                <NavLink
-                  to={item.route}
-                  end={item.route === "/"}
-                  className="flex items-center gap-1 px-2 py-1.5 text-[11px] rounded-md transition-all duration-300 hover:bg-muted/50"
-                  activeClassName="bg-primary text-primary-foreground font-semibold shadow-sm"
-                >
-                  <IconComponent className="h-3.5 w-3.5 flex-shrink-0" />
-                  <span className="whitespace-nowrap">{item.label}</span>
-                </NavLink>
-                {isMaster && (
-                  <button
-                    onClick={(e) => handleEditMenuItem(item, e)}
-                    className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity bg-primary text-primary-foreground rounded-full p-0.5 shadow-lg hover:scale-110"
-                    title="Editar item do menu"
-                  >
-                    <Edit2 className="h-2 w-2" />
-                  </button>
-                )}
-              </div>
-            );
-          })}
-
+        <div className="hidden xl:flex items-center gap-1 flex-1 ml-4">
           {/* Dropdowns por categoria */}
-          {renderCategoryDropdown('producao')}
-          {renderCategoryDropdown('financeiro')}
-          {renderCategoryDropdown('cadastros')}
+          {desktopCategories.map(cat => renderCategoryDropdown(cat))}
+          
+          {/* Master/Configurações - só para admins */}
           {isMaster && renderCategoryDropdown('master')}
         </div>
 
