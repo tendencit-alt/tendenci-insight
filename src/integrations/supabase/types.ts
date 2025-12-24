@@ -4894,9 +4894,12 @@ export type Database = {
           created_by: string | null
           criterio_interesse: Json | null
           data_fim: string | null
+          data_hora_unica: string | null
           data_inicio: string | null
           descricao: string | null
           dias_semana: number[] | null
+          horario_fim: string | null
+          horario_inicio: string | null
           horarios: Json | null
           id: string
           intervalo_minimo_minutos: number | null
@@ -4904,6 +4907,7 @@ export type Database = {
           segmento_id: string | null
           sequencia_id: string | null
           status: string | null
+          tipo_agendamento: string | null
           tipo_envio: string | null
           updated_at: string | null
           vendedor_id: string | null
@@ -4920,9 +4924,12 @@ export type Database = {
           created_by?: string | null
           criterio_interesse?: Json | null
           data_fim?: string | null
+          data_hora_unica?: string | null
           data_inicio?: string | null
           descricao?: string | null
           dias_semana?: number[] | null
+          horario_fim?: string | null
+          horario_inicio?: string | null
           horarios?: Json | null
           id?: string
           intervalo_minimo_minutos?: number | null
@@ -4930,6 +4937,7 @@ export type Database = {
           segmento_id?: string | null
           sequencia_id?: string | null
           status?: string | null
+          tipo_agendamento?: string | null
           tipo_envio?: string | null
           updated_at?: string | null
           vendedor_id?: string | null
@@ -4946,9 +4954,12 @@ export type Database = {
           created_by?: string | null
           criterio_interesse?: Json | null
           data_fim?: string | null
+          data_hora_unica?: string | null
           data_inicio?: string | null
           descricao?: string | null
           dias_semana?: number[] | null
+          horario_fim?: string | null
+          horario_inicio?: string | null
           horarios?: Json | null
           id?: string
           intervalo_minimo_minutos?: number | null
@@ -4956,6 +4967,7 @@ export type Database = {
           segmento_id?: string | null
           sequencia_id?: string | null
           status?: string | null
+          tipo_agendamento?: string | null
           tipo_envio?: string | null
           updated_at?: string | null
           vendedor_id?: string | null
