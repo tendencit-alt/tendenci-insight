@@ -309,9 +309,9 @@ function ProductionCardSimpleComponent({ order, onClick, isDragging, automationA
             )}
           </div>
           {order.value && order.value > 0 && (
-            <span className="font-semibold text-primary text-[11px]">
+            <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 font-bold text-[11px] px-2">
               {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 }).format(order.value)}
-            </span>
+            </Badge>
           )}
         </div>
       </CardContent>
