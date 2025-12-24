@@ -31,6 +31,7 @@ import N8nFollowupGuide from "./pages/N8nFollowupGuide";
 import N8nConversationGuide from "./pages/N8nConversationGuide";
 import IAWhatsAppSetup from "./pages/IAWhatsAppSetup";
 import Production from "./pages/Production";
+import FichasTecnicas from "./pages/FichasTecnicas";
 import Orders from "./pages/Orders";
 import Suppliers from "./pages/Suppliers";
 import Inventory from "./pages/Inventory";
@@ -61,6 +62,7 @@ const App = () => (
             <Route path="/settings/users" element={<ProtectedRoute><PermissionGuard module="configuracoes"><UserManagement /></PermissionGuard></ProtectedRoute>} />
             <Route path="/prospeccao" element={<ProtectedRoute><PermissionGuard module="arquitetos"><Prospeccao /></PermissionGuard></ProtectedRoute>} />
             <Route path="/producao" element={<ProtectedRoute><PermissionGuard module="producao"><Production /></PermissionGuard></ProtectedRoute>} />
+            <Route path="/fichas-tecnicas" element={<ProtectedRoute><PermissionGuard module="fichas_tecnicas"><FichasTecnicas /></PermissionGuard></ProtectedRoute>} />
             <Route path="/pedidos" element={<ProtectedRoute><PermissionGuard module="pedidos"><Orders /></PermissionGuard></ProtectedRoute>} />
             <Route path="/fornecedores" element={<ProtectedRoute><PermissionGuard module="fornecedores"><Suppliers /></PermissionGuard></ProtectedRoute>} />
             <Route path="/estoque" element={<ProtectedRoute><PermissionGuard module="estoque"><Inventory /></PermissionGuard></ProtectedRoute>} />
