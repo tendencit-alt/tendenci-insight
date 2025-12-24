@@ -215,6 +215,9 @@ export default function Production() {
           filters={filters}
         />
 
+        {/* Gráfico Tempo Médio por Fase vs Prazo */}
+        <ProductionSLAChart productionTypeId={currentTypeId} />
+
         {/* Alertas de SLA */}
         <ProductionSLAAlerts 
           productionTypeId={currentTypeId}
@@ -252,9 +255,6 @@ export default function Production() {
             </TabsContent>
           ))}
         </Tabs>
-
-        {/* Gráfico SLA após o Kanban */}
-        <ProductionSLAChart productionTypeId={currentTypeId} />
 
         {/* Dialog de criação */}
         <CreateProductionOrderDialog 
