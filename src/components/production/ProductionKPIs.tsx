@@ -4,9 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { 
   Settings, 
-  DollarSign, 
   AlertTriangle,
-  Target,
   Zap
 } from 'lucide-react';
 
@@ -63,10 +61,6 @@ export function ProductionKPIs({ productionTypeId, filters }: ProductionKPIsProp
     }).format(value);
   };
 
-  const taxaNoPrazo = metrics?.total_concluidas 
-    ? ((metrics.concluidas_no_prazo / metrics.total_concluidas) * 100).toFixed(1)
-    : '0';
-
   // Total de OPs ativas (não concluídas nem canceladas)
   const opsAtivas = (metrics?.aguardando || 0) + (metrics?.em_andamento || 0) + (metrics?.pausado || 0);
   const valorOpsAtivas = (metrics?.valor_aguardando || 0) + (metrics?.valor_em_andamento || 0);
@@ -88,13 +82,6 @@ export function ProductionKPIs({ productionTypeId, filters }: ProductionKPIsProp
       bgColor: 'bg-red-100'
     },
     { 
-      label: 'No Prazo', 
-      value: `${taxaNoPrazo}%`, 
-      icon: Target, 
-      color: 'text-indigo-600',
-      bgColor: 'bg-indigo-100'
-    },
-    { 
       label: 'Urgentes', 
       value: metrics?.urgente || 0, 
       icon: Zap, 
@@ -105,8 +92,8 @@ export function ProductionKPIs({ productionTypeId, filters }: ProductionKPIsProp
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {[...Array(4)].map((_, i) => (
+      <div className="grid grid-cols-3 gap-3">
+        {[...Array(3)].map((_, i) => (
           <Skeleton key={i} className="h-24 rounded-lg" />
         ))}
       </div>
@@ -114,7 +101,7 @@ export function ProductionKPIs({ productionTypeId, filters }: ProductionKPIsProp
   }
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+    <div className="grid grid-cols-3 gap-3">
       {kpiCards.map((kpi) => (
         <Card key={kpi.label} className="hover:shadow-md transition-shadow">
           <CardContent className="p-3">
