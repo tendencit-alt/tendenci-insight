@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MessageSquare, Users, Loader2, CheckCircle, XCircle, Clock } from "lucide-react";
+import { MessageSquare, Users, Loader2, CheckCircle, XCircle, Clock, AlertCircle, Timer } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useQuery } from "@tanstack/react-query";
 
 interface DispatchResult {
   type: 'followup' | 'group';
@@ -13,13 +14,90 @@ interface DispatchResult {
   failed: number;
   message: string;
   timestamp: Date;
+  source?: 'cron' | 'manual';
 }
+
+interface CooldownInfo {
+  active: boolean;
+  lastDispatch?: {
+    time: string;
+    source: string;
+    type: 'followup' | 'group';
+  };
+  minutesRemaining?: number;
+}
+
+const COOLDOWN_MINUTES = 30;
 
 export function FollowupDispatchPanel() {
   const [isDispatchingFollowup, setIsDispatchingFollowup] = useState(false);
   const [isDispatchingGroup, setIsDispatchingGroup] = useState(false);
   const [lastResults, setLastResults] = useState<DispatchResult[]>([]);
   const { toast } = useToast();
+
+  // Buscar status de cooldown
+  const { data: cooldownInfo, refetch: refetchCooldown } = useQuery({
+    queryKey: ['dispatch-cooldown'],
+    queryFn: async (): Promise<{ followup: CooldownInfo; group: CooldownInfo }> => {
+      const cooldownMinutesAgo = new Date(Date.now() - COOLDOWN_MINUTES * 60 * 1000).toISOString();
+      
+      // Verificar último follow-up
+      const { data: lastFollowup } = await supabase
+        .from('followup_logs')
+        .select('created_at, source, status')
+        .in('status', ['sent', 'pending'])
+        .gte('created_at', cooldownMinutesAgo)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      // Verificar último convite de grupo
+      const { data: lastGroup } = await supabase
+        .from('crm_deals')
+        .select('group_invite_sent_at')
+        .eq('group_invite_sent', true)
+        .gte('group_invite_sent_at', cooldownMinutesAgo)
+        .order('group_invite_sent_at', { ascending: false })
+        .limit(1);
+      
+      const followupCooldown: CooldownInfo = { active: false };
+      const groupCooldown: CooldownInfo = { active: false };
+      
+      if (lastFollowup?.[0]) {
+        const lastTime = new Date(lastFollowup[0].created_at);
+        const minutesElapsed = Math.floor((Date.now() - lastTime.getTime()) / 60000);
+        const minutesRemaining = COOLDOWN_MINUTES - minutesElapsed;
+        
+        if (minutesRemaining > 0) {
+          followupCooldown.active = true;
+          followupCooldown.minutesRemaining = minutesRemaining;
+          followupCooldown.lastDispatch = {
+            time: lastTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+            source: lastFollowup[0].source || 'cron',
+            type: 'followup'
+          };
+        }
+      }
+      
+      if (lastGroup?.[0]?.group_invite_sent_at) {
+        const lastTime = new Date(lastGroup[0].group_invite_sent_at);
+        const minutesElapsed = Math.floor((Date.now() - lastTime.getTime()) / 60000);
+        const minutesRemaining = COOLDOWN_MINUTES - minutesElapsed;
+        
+        if (minutesRemaining > 0) {
+          groupCooldown.active = true;
+          groupCooldown.minutesRemaining = minutesRemaining;
+          groupCooldown.lastDispatch = {
+            time: lastTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+            source: 'unknown',
+            type: 'group'
+          };
+        }
+      }
+      
+      return { followup: followupCooldown, group: groupCooldown };
+    },
+    refetchInterval: 60000 // Atualizar a cada minuto
+  });
 
   const dispatchFollowups = async () => {
     setIsDispatchingFollowup(true);
@@ -41,10 +119,12 @@ export function FollowupDispatchPanel() {
         dispatched: data?.dispatched || 0,
         failed: data?.failed || 0,
         message: data?.message || `${data?.dispatched || 0} follow-ups enviados`,
-        timestamp: new Date()
+        timestamp: new Date(),
+        source: 'manual'
       };
 
       setLastResults(prev => [result, ...prev].slice(0, 5));
+      refetchCooldown();
 
       toast({
         title: "Follow-ups Disparados",
@@ -57,7 +137,8 @@ export function FollowupDispatchPanel() {
         dispatched: 0,
         failed: 0,
         message: err.message || "Erro ao disparar follow-ups",
-        timestamp: new Date()
+        timestamp: new Date(),
+        source: 'manual'
       };
 
       setLastResults(prev => [result, ...prev].slice(0, 5));
@@ -91,10 +172,12 @@ export function FollowupDispatchPanel() {
         dispatched: data?.dispatched || 0,
         failed: data?.failed || 0,
         message: data?.message || `${data?.dispatched || 0} convites enviados`,
-        timestamp: new Date()
+        timestamp: new Date(),
+        source: 'manual'
       };
 
       setLastResults(prev => [result, ...prev].slice(0, 5));
+      refetchCooldown();
 
       toast({
         title: "Convites de Grupo Disparados",
@@ -107,7 +190,8 @@ export function FollowupDispatchPanel() {
         dispatched: 0,
         failed: 0,
         message: err.message || "Erro ao enviar convites",
-        timestamp: new Date()
+        timestamp: new Date(),
+        source: 'manual'
       };
 
       setLastResults(prev => [result, ...prev].slice(0, 5));
@@ -154,6 +238,18 @@ export function FollowupDispatchPanel() {
                 48h
               </Badge>
             </div>
+            
+            {/* Indicador de Cooldown Follow-up */}
+            {cooldownInfo?.followup?.active && (
+              <div className="flex items-center gap-2 text-xs text-amber-600 bg-amber-500/10 px-2 py-1.5 rounded">
+                <Timer className="h-3 w-3" />
+                <span>
+                  Último disparo ({cooldownInfo.followup.lastDispatch?.source}) às {cooldownInfo.followup.lastDispatch?.time}
+                  {cooldownInfo.followup.minutesRemaining && ` • ${cooldownInfo.followup.minutesRemaining}min restantes`}
+                </span>
+              </div>
+            )}
+            
             <Button 
               onClick={dispatchFollowups} 
               disabled={isDispatchingFollowup}
@@ -168,6 +264,9 @@ export function FollowupDispatchPanel() {
                 <>
                   <MessageSquare className="h-4 w-4 mr-2" />
                   Disparar Follow-ups
+                  {cooldownInfo?.followup?.active && (
+                    <AlertCircle className="h-3 w-3 ml-2 text-amber-500" />
+                  )}
                 </>
               )}
             </Button>
@@ -190,6 +289,18 @@ export function FollowupDispatchPanel() {
                 7 dias
               </Badge>
             </div>
+            
+            {/* Indicador de Cooldown Grupo */}
+            {cooldownInfo?.group?.active && (
+              <div className="flex items-center gap-2 text-xs text-amber-600 bg-amber-500/10 px-2 py-1.5 rounded">
+                <Timer className="h-3 w-3" />
+                <span>
+                  Último convite às {cooldownInfo.group.lastDispatch?.time}
+                  {cooldownInfo.group.minutesRemaining && ` • ${cooldownInfo.group.minutesRemaining}min restantes`}
+                </span>
+              </div>
+            )}
+            
             <Button 
               onClick={dispatchGroupInvites} 
               disabled={isDispatchingGroup}
@@ -205,6 +316,9 @@ export function FollowupDispatchPanel() {
                 <>
                   <Users className="h-4 w-4 mr-2" />
                   Enviar Convites
+                  {cooldownInfo?.group?.active && (
+                    <AlertCircle className="h-3 w-3 ml-2 text-amber-500" />
+                  )}
                 </>
               )}
             </Button>
@@ -232,7 +346,12 @@ export function FollowupDispatchPanel() {
                     <span className="text-xs font-medium">
                       {result.type === 'followup' ? 'Follow-up' : 'Grupo'}
                     </span>
-                    <span className="text-xs text-muted-foreground truncate">
+                    {result.source === 'manual' && (
+                      <Badge variant="outline" className="text-[10px] px-1 py-0">
+                        manual
+                      </Badge>
+                    )}
+                    <span className="text-xs text-muted-foreground truncate max-w-[120px]">
                       {result.message}
                     </span>
                   </div>
@@ -247,7 +366,9 @@ export function FollowupDispatchPanel() {
 
         {/* Aviso de Horário */}
         <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded text-center">
-          ⏰ <strong>Horário comercial:</strong> 9h às 18h (Seg-Sex). Disparos fora deste horário serão ignorados pelo sistema.
+          ⏰ <strong>Horário comercial:</strong> 9h às 18h (Seg-Sex). Disparos fora deste horário serão ignorados pelo sistema automático.
+          <br />
+          <span className="text-amber-600">⚠️ Disparos manuais sobrepõem o cooldown de {COOLDOWN_MINUTES}min do CRON.</span>
         </div>
       </CardContent>
     </Card>

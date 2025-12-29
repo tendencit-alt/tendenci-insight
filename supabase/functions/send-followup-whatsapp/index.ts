@@ -3,17 +3,14 @@ import { corsHeaders } from '../_shared/cors.ts'
 import { formatBrasilDateTime } from '../_shared/timezone.ts'
 
 /**
- * send-followup-whatsapp
+ * send-followup-whatsapp v2.0
  * 
  * Edge function para envio DIRETO de follow-up via Evolution API
- * Elimina dependência do n8n para envio de mensagens
  * 
- * Fluxo:
- * 1. Recebe dados do lead/deal
- * 2. Gera mensagem de follow-up baseada no histórico
- * 3. Envia via Evolution API (instância dinâmica do banco)
- * 4. Atualiza histórico do deal
- * 5. Registra logs
+ * MELHORIAS v2.0:
+ * - Tratamento de erro no upsert
+ * - Prevenção de logs duplicados
+ * - Source propagado corretamente
  */
 
 interface SendFollowupRequest {
@@ -29,6 +26,7 @@ interface SendFollowupRequest {
   owner_name?: string | null
   product_type?: string | null
   categoria?: string | null
+  source?: 'cron' | 'manual'
 }
 
 interface FollowupResult {
@@ -84,11 +82,6 @@ function generateFollowupMessage(
   let message = templateData.template
     .replace('{nome}', nome)
     .replace('{produto}', produto)
-  
-  // Se há histórico, podemos personalizar mais (futuro: usar IA)
-  if (conversationHistory && conversationHistory.length > 100) {
-    // Futuro: usar Lovable AI para gerar mensagem contextualizada
-  }
   
   return message
 }
@@ -217,6 +210,57 @@ async function sendWhatsAppMessage(
   }
 }
 
+// Salva log de followup com tratamento de duplicação
+async function saveFollowupLog(
+  supabase: any,
+  dealId: string,
+  followupNumber: number,
+  status: string,
+  source: string,
+  messageSent?: string,
+  errorMessage?: string
+): Promise<void> {
+  try {
+    // Primeiro verificar se já existe
+    const { data: existingLog } = await supabase
+      .from('followup_logs')
+      .select('id')
+      .eq('deal_id', dealId)
+      .eq('followup_number', followupNumber)
+      .maybeSingle()
+    
+    if (existingLog) {
+      // Atualizar log existente
+      await supabase
+        .from('followup_logs')
+        .update({
+          status,
+          source,
+          message_sent: messageSent,
+          error_message: errorMessage,
+          sent_at: status === 'sent' ? new Date().toISOString() : undefined
+        })
+        .eq('deal_id', dealId)
+        .eq('followup_number', followupNumber)
+      console.log('✅ followup_logs atualizado')
+    } else {
+      // Inserir novo log
+      await supabase.from('followup_logs').insert({
+        deal_id: dealId,
+        followup_number: followupNumber,
+        status,
+        source,
+        message_sent: messageSent,
+        error_message: errorMessage,
+        sent_at: status === 'sent' ? new Date().toISOString() : undefined
+      })
+      console.log('✅ followup_logs inserido')
+    }
+  } catch (error: any) {
+    console.error('⚠️ Erro ao salvar followup_logs (não crítico):', error.message)
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -226,7 +270,7 @@ Deno.serve(async (req) => {
   
   try {
     console.log('═══════════════════════════════════════════════════════════')
-    console.log('📤 [SEND-FOLLOWUP-WHATSAPP] Iniciando envio direto...')
+    console.log('📤 [SEND-FOLLOWUP-WHATSAPP v2.0] Iniciando envio direto...')
     console.log('═══════════════════════════════════════════════════════════')
     
     const supabase = createClient(
@@ -295,7 +339,8 @@ Deno.serve(async (req) => {
     
     // Parsear request
     const body: SendFollowupRequest = await req.json()
-    console.log(`📋 Deal: ${body.deal_id}, Cliente: ${body.client_name}, Follow-up #${body.followup_number}`)
+    const dispatchSource = body.source || 'cron'
+    console.log(`📋 Deal: ${body.deal_id}, Cliente: ${body.client_name}, Follow-up #${body.followup_number}, Source: ${dispatchSource}`)
     
     // Validações
     if (!body.deal_id || !body.client_phone || !body.client_name) {
@@ -309,13 +354,15 @@ Deno.serve(async (req) => {
     if (!healthCheck.online) {
       console.error('❌ Evolution API offline:', healthCheck.error)
       
-      // Registrar falha
-      await supabase.from('followup_logs').insert({
-        deal_id: body.deal_id,
-        followup_number: body.followup_number,
-        status: 'failed',
-        error_message: `Evolution API offline: ${healthCheck.error}`
-      })
+      await saveFollowupLog(
+        supabase,
+        body.deal_id,
+        body.followup_number,
+        'failed',
+        dispatchSource,
+        undefined,
+        `Evolution API offline: ${healthCheck.error}`
+      )
       
       return new Response(
         JSON.stringify({
@@ -330,9 +377,7 @@ Deno.serve(async (req) => {
     if (!healthCheck.connected) {
       console.error(`❌ Instância ${instanceName} desconectada`)
       
-      // ═══════════════════════════════════════════════════════════
-      // SINCRONIZAR STATUS NO BANCO DE DADOS
-      // ═══════════════════════════════════════════════════════════
+      // Sincronizar status no banco
       console.log(`🔄 Atualizando status da instância ${instanceName} para 'disconnected'...`)
       await supabase
         .from('tendenci_whatsapp_connections')
@@ -342,12 +387,15 @@ Deno.serve(async (req) => {
         })
         .eq('instance_name', instanceName)
       
-      await supabase.from('followup_logs').insert({
-        deal_id: body.deal_id,
-        followup_number: body.followup_number,
-        status: 'failed',
-        error_message: `Instância ${instanceName} desconectada`
-      })
+      await saveFollowupLog(
+        supabase,
+        body.deal_id,
+        body.followup_number,
+        'failed',
+        dispatchSource,
+        undefined,
+        `Instância ${instanceName} desconectada`
+      )
       
       // Logar erro no sistema
       await supabase.from('system_errors').insert({
@@ -374,12 +422,15 @@ Deno.serve(async (req) => {
     if (!phoneResult.formatted) {
       console.error(`❌ Número inválido: ${phoneResult.error}`)
       
-      await supabase.from('followup_logs').insert({
-        deal_id: body.deal_id,
-        followup_number: body.followup_number,
-        status: 'failed',
-        error_message: `Número inválido: ${phoneResult.error}`
-      })
+      await saveFollowupLog(
+        supabase,
+        body.deal_id,
+        body.followup_number,
+        'failed',
+        dispatchSource,
+        undefined,
+        `Número inválido: ${phoneResult.error}`
+      )
       
       return new Response(
         JSON.stringify({
@@ -414,12 +465,15 @@ Deno.serve(async (req) => {
     if (!sendResult.success) {
       console.error(`❌ Falha no envio: ${sendResult.error}`)
       
-      await supabase.from('followup_logs').insert({
-        deal_id: body.deal_id,
-        followup_number: body.followup_number,
-        status: 'failed',
-        error_message: sendResult.error
-      })
+      await saveFollowupLog(
+        supabase,
+        body.deal_id,
+        body.followup_number,
+        'failed',
+        dispatchSource,
+        undefined,
+        sendResult.error
+      )
       
       return new Response(
         JSON.stringify({
@@ -457,25 +511,18 @@ Deno.serve(async (req) => {
       })
       .eq('id', body.deal_id)
     
-    // Registrar log de sucesso (com tratamento de erro)
-    const { error: logError } = await supabase.from('followup_logs').upsert({
-      deal_id: body.deal_id,
-      followup_number: body.followup_number,
-      status: 'sent',
-      message_sent: message,
-      sent_at: new Date().toISOString()
-    }, { 
-      onConflict: 'deal_id,followup_number',
-      ignoreDuplicates: false 
-    })
+    // Registrar log de sucesso
+    await saveFollowupLog(
+      supabase,
+      body.deal_id,
+      body.followup_number,
+      'sent',
+      dispatchSource,
+      message,
+      undefined
+    )
     
-    if (logError) {
-      console.error('⚠️ Erro ao salvar followup_logs (não crítico):', logError.message)
-    } else {
-      console.log('✅ followup_logs registrado com sucesso')
-    }
-    
-    // Registrar na timeline (com tratamento de erro)
+    // Registrar na timeline
     const { error: timelineError } = await supabase.from('crm_timeline').insert({
       deal_id: body.deal_id,
       message: `Follow-up automático #${body.followup_number} enviado via WhatsApp`,
@@ -498,19 +545,20 @@ Deno.serve(async (req) => {
         deal_id: body.deal_id,
         message_sent: message,
         messageId: sendResult.messageId,
-        elapsed_ms: elapsed
+        instance: instanceName,
+        elapsed_ms: elapsed,
+        source: dispatchSource
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     )
     
   } catch (error: any) {
     console.error('💥 Erro:', error)
     console.log('═══════════════════════════════════════════════════════════')
-    
     return new Response(
-      JSON.stringify({
-        success: false,
-        error: error.message
+      JSON.stringify({ 
+        success: false, 
+        error: error.message 
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     )
