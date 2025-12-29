@@ -8,6 +8,19 @@ const corsHeaders = {
 // Cooldown em minutos para evitar sobreposição de disparos
 const DISPATCH_COOLDOWN_MINUTES = 30
 
+// Limite global de falhas por hora (pausa sistema)
+const MAX_GLOBAL_FAILURES_PER_HOUR = 10
+
+/**
+ * dispatch-group-invites v2.0
+ * 
+ * MELHORIAS v2.0:
+ * - Registro de falhas em system_errors
+ * - Proteção contra excesso de falhas globais
+ * - Source corretamente propagado
+ * - Melhor logging
+ */
+
 /**
  * Verifica se estamos em horário comercial (Brasil)
  */
@@ -26,13 +39,39 @@ function isBusinessHours(): boolean {
   return isWeekday && isWorkingHours
 }
 
+// Registrar erro no system_errors
+async function logSystemError(
+  supabase: any,
+  title: string,
+  module: string,
+  description: string,
+  severity: string = 'high',
+  metadata: Record<string, any> = {}
+): Promise<void> {
+  try {
+    await supabase.from('system_errors').insert({
+      title,
+      module,
+      description,
+      severity,
+      status: 'open',
+      metadata
+    })
+    console.log(`🚨 System error logged: ${title}`)
+  } catch (e) {
+    console.error('Failed to log system error:', e)
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
 
   const startTime = Date.now()
-  console.log('🚀 [dispatch-group-invites] Iniciando dispatch...')
+  console.log('═══════════════════════════════════════════════════════════')
+  console.log('🚀 [dispatch-group-invites v2.0] Iniciando dispatch...')
+  console.log('═══════════════════════════════════════════════════════════')
 
   try {
     const supabase = createClient(
@@ -59,7 +98,7 @@ Deno.serve(async (req) => {
     // ═══════════════════════════════════════════════════════════
     const cooldownMinutesAgo = new Date(Date.now() - DISPATCH_COOLDOWN_MINUTES * 60 * 1000).toISOString()
     
-    // Verificar disparos recentes de convites de grupo (usar crm_timeline como referência)
+    // Verificar disparos recentes de convites de grupo
     const { data: recentDispatches } = await supabase
       .from('crm_deals')
       .select('group_invite_sent_at')
@@ -83,7 +122,8 @@ Deno.serve(async (req) => {
             dispatched: 0,
             skipped: 0,
             failed: 0,
-            skipped_reason: 'cooldown_active'
+            skipped_reason: 'cooldown_active',
+            source: dispatchSource
           }),
           { 
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -96,6 +136,44 @@ Deno.serve(async (req) => {
       }
     }
 
+    // ═══════════════════════════════════════════════════════════
+    // VERIFICAR LIMITE GLOBAL DE FALHAS/HORA
+    // ═══════════════════════════════════════════════════════════
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString()
+    
+    // Contar falhas recentes no system_errors relacionadas a group invites
+    const { count: recentGlobalFailures } = await supabase
+      .from('system_errors')
+      .select('*', { count: 'exact', head: true })
+      .eq('module', 'group-invite')
+      .gte('created_at', oneHourAgo)
+    
+    if ((recentGlobalFailures || 0) >= MAX_GLOBAL_FAILURES_PER_HOUR) {
+      console.error(`🚨 SISTEMA PAUSADO: ${recentGlobalFailures} falhas na última hora`)
+      
+      await logSystemError(
+        supabase,
+        'Sistema de Convites de Grupo Pausado',
+        'group-invite',
+        `${recentGlobalFailures} falhas na última hora. Sistema pausado automaticamente.`,
+        'critical',
+        { failures_last_hour: recentGlobalFailures, threshold: MAX_GLOBAL_FAILURES_PER_HOUR }
+      )
+      
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Sistema pausado por excesso de falhas',
+          failures_last_hour: recentGlobalFailures,
+          threshold: MAX_GLOBAL_FAILURES_PER_HOUR
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 503 
+        }
+      )
+    }
+
     // Verificar horário comercial
     if (!ignoreBusinessHours && !isBusinessHours()) {
       console.log('⏰ Fora do horário comercial. Abortando.')
@@ -105,7 +183,8 @@ Deno.serve(async (req) => {
           message: 'Fora do horário comercial (9h-18h, Seg-Sex)',
           dispatched: 0,
           skipped: 0,
-          failed: 0
+          failed: 0,
+          source: dispatchSource
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -122,7 +201,19 @@ Deno.serve(async (req) => {
     })
 
     if (eligibleResponse.error) {
-      throw new Error(`Erro ao buscar elegíveis: ${eligibleResponse.error.message}`)
+      const errorMsg = `Erro ao buscar elegíveis: ${eligibleResponse.error.message}`
+      console.error(`❌ ${errorMsg}`)
+      
+      await logSystemError(
+        supabase,
+        'Erro ao buscar deals elegíveis',
+        'group-invite',
+        errorMsg,
+        'high',
+        { error: eligibleResponse.error }
+      )
+      
+      throw new Error(errorMsg)
     }
 
     const eligibleData = eligibleResponse.data
@@ -137,7 +228,8 @@ Deno.serve(async (req) => {
           message: 'Nenhum deal elegível para convite',
           dispatched: 0,
           skipped: 0,
-          failed: 0
+          failed: 0,
+          source: dispatchSource
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -160,7 +252,8 @@ Deno.serve(async (req) => {
             deal_id: deal.deal_id,
             client_name: deal.client_name,
             client_phone: deal.client_phone,
-            owner_id: deal.owner_id
+            owner_id: deal.owner_id,
+            source: dispatchSource
           }
         })
 
@@ -172,6 +265,21 @@ Deno.serve(async (req) => {
             success: false,
             error: sendResponse.error.message
           })
+          
+          // ✅ CORREÇÃO v2.0: Registrar falha em system_errors
+          await logSystemError(
+            supabase,
+            `Falha ao enviar convite de grupo`,
+            'group-invite',
+            `Deal ${deal.deal_id} (${deal.client_name}): ${sendResponse.error.message}`,
+            'medium',
+            { 
+              deal_id: deal.deal_id, 
+              client_name: deal.client_name,
+              error: sendResponse.error.message,
+              source: dispatchSource
+            }
+          )
         } else {
           console.log(`✅ Sucesso deal ${deal.deal_id}`)
           dispatched++
@@ -193,12 +301,27 @@ Deno.serve(async (req) => {
           success: false,
           error: errMsg
         })
+        
+        // ✅ CORREÇÃO v2.0: Registrar falha em system_errors
+        await logSystemError(
+          supabase,
+          `Erro inesperado ao enviar convite de grupo`,
+          'group-invite',
+          `Deal ${deal.deal_id}: ${errMsg}`,
+          'high',
+          { 
+            deal_id: deal.deal_id, 
+            error: errMsg,
+            source: dispatchSource
+          }
+        )
       }
     }
 
     const elapsed = Date.now() - startTime
     console.log(`🏁 [dispatch-group-invites] Concluído em ${elapsed}ms`)
     console.log(`📊 Resultados: ${dispatched} enviados, ${failed} falhas`)
+    console.log('═══════════════════════════════════════════════════════════')
 
     return new Response(
       JSON.stringify({
@@ -207,7 +330,8 @@ Deno.serve(async (req) => {
         failed,
         total_eligible: deals.length,
         results,
-        elapsed_ms: elapsed
+        elapsed_ms: elapsed,
+        source: dispatchSource
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -218,6 +342,7 @@ Deno.serve(async (req) => {
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido'
     console.error('❌ Erro:', error)
+    console.log('═══════════════════════════════════════════════════════════')
     return new Response(
       JSON.stringify({ 
         success: false, 

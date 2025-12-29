@@ -9,14 +9,13 @@ import {
 } from '../_shared/timezone.ts'
 
 /**
- * dispatch-followup v5.0
+ * dispatch-followup v5.1
  * 
- * MODO DIRETO COMO PADRÃO (sem dependência do n8n):
- * 1. Busca deals elegíveis para follow-up
- * 2. Envia via send-followup-whatsapp (que usa instância dinâmica)
- * 3. Fallback para n8n apenas se explicitamente configurado
- * 4. Desabilita deals com excesso de falhas
- * 5. Alertas automáticos em system_errors
+ * MELHORIAS v5.1:
+ * - Cooldown verifica qualquer status (não apenas 'sent')
+ * - Source corretamente propagado em todos os logs
+ * - Prevenção de logs duplicados
+ * - Melhor tratamento de erros
  */
 
 interface DispatchRequest {
@@ -116,7 +115,8 @@ async function checkN8nHealth(webhookUrl: string): Promise<boolean> {
 async function sendDirectFollowup(
   supabaseUrl: string,
   supabaseKey: string,
-  lead: LeadForFollowup
+  lead: LeadForFollowup,
+  source: string
 ): Promise<{ success: boolean; error?: string; messageId?: string }> {
   try {
     const response = await fetch(`${supabaseUrl}/functions/v1/send-followup-whatsapp`, {
@@ -136,7 +136,8 @@ async function sendDirectFollowup(
         owner_id: lead.owner_id,
         owner_name: lead.owner_name,
         product_type: lead.product_type,
-        categoria: lead.categoria
+        categoria: lead.categoria,
+        source: source
       })
     })
     
@@ -228,7 +229,7 @@ Deno.serve(async (req) => {
 
   try {
     console.log('═══════════════════════════════════════════════════════════')
-    console.log('🚀 [DISPATCH-FOLLOWUP v5.0] Iniciando (modo direto)...')
+    console.log('🚀 [DISPATCH-FOLLOWUP v5.1] Iniciando (modo direto)...')
     console.log('═══════════════════════════════════════════════════════════')
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
@@ -248,7 +249,7 @@ Deno.serve(async (req) => {
     }
 
     const ignoreTimeFilter = body.ignore_time_filter || false
-    // ✅ MUDANÇA v5: Padrão agora é 'direct' para eliminar dependência do n8n
+    // Padrão agora é 'direct' para eliminar dependência do n8n
     const sendMode = body.mode || 'direct'
     const sendLimit = body.limit || 10
     const dispatchSource = body.source || 'cron'
@@ -257,13 +258,14 @@ Deno.serve(async (req) => {
 
     // ═══════════════════════════════════════════════════════════
     // VERIFICAÇÃO DE COOLDOWN (evitar sobreposição)
+    // ✅ CORREÇÃO v5.1: Verificar qualquer status recente (não só 'sent')
     // ═══════════════════════════════════════════════════════════
     const cooldownMinutesAgo = new Date(Date.now() - DISPATCH_COOLDOWN_MINUTES * 60 * 1000).toISOString()
     
     const { data: recentDispatches } = await supabase
       .from('followup_logs')
-      .select('created_at, source')
-      .eq('status', 'sent')
+      .select('created_at, source, status')
+      .in('status', ['sent', 'pending'])
       .gte('created_at', cooldownMinutesAgo)
       .order('created_at', { ascending: false })
       .limit(1)
@@ -273,10 +275,11 @@ Deno.serve(async (req) => {
     if (recentDispatch) {
       const recentTime = new Date(recentDispatch.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
       const recentSource = recentDispatch.source || 'cron'
+      const recentStatus = recentDispatch.status
       
       if (dispatchSource === 'cron') {
         // CRON aborta silenciosamente se houve disparo recente
-        console.log(`⏸️ CRON abortado: disparo recente (${recentSource}) às ${recentTime} - cooldown ${DISPATCH_COOLDOWN_MINUTES}min ativo`)
+        console.log(`⏸️ CRON abortado: disparo recente (${recentSource}/${recentStatus}) às ${recentTime} - cooldown ${DISPATCH_COOLDOWN_MINUTES}min ativo`)
         return new Response(
           JSON.stringify({ 
             success: true, 
@@ -284,13 +287,13 @@ Deno.serve(async (req) => {
             dispatched: 0,
             eligible: 0,
             skipped_reason: 'cooldown_active',
-            recent_dispatch: { time: recentTime, source: recentSource }
+            recent_dispatch: { time: recentTime, source: recentSource, status: recentStatus }
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       } else {
         // Manual prossegue com aviso
-        console.log(`⚠️ Disparo manual sobrepondo disparo recente (${recentSource}) às ${recentTime}`)
+        console.log(`⚠️ Disparo manual sobrepondo disparo recente (${recentSource}/${recentStatus}) às ${recentTime}`)
       }
     }
 
@@ -378,7 +381,7 @@ Deno.serve(async (req) => {
       .filter(([_, count]) => count >= MAX_CONSECUTIVE_FAILURES)
       .map(([dealId]) => dealId)
     
-    // ✅ CORREÇÃO: Desabilitar followup_enabled para deals com excesso de falhas
+    // Desabilitar followup_enabled para deals com excesso de falhas
     if (dealsToDisable.length > 0) {
       console.log(`⛔ Desabilitando ${dealsToDisable.length} deals por excesso de falhas`)
       
@@ -567,14 +570,24 @@ Deno.serve(async (req) => {
       
       // ✅ PRIORIDADE 1: Tentar n8n (com retry automático)
       if ((sendMode === 'n8n' || sendMode === 'hybrid') && n8nWebhook && n8nHealthy) {
-        // Criar log como pending antes de enviar
-        await supabase.from('followup_logs').insert({
-          deal_id: lead.deal_id,
-          followup_number: lead.followup_number,
-          status: 'pending',
-          message_sent: 'Enviado para n8n + OpenAI',
-          source: dispatchSource
-        })
+        // Verificar se já existe log para evitar duplicação
+        const { data: existingLog } = await supabase
+          .from('followup_logs')
+          .select('id, status')
+          .eq('deal_id', lead.deal_id)
+          .eq('followup_number', lead.followup_number)
+          .maybeSingle()
+        
+        if (!existingLog) {
+          // Criar log como pending antes de enviar
+          await supabase.from('followup_logs').insert({
+            deal_id: lead.deal_id,
+            followup_number: lead.followup_number,
+            status: 'pending',
+            message_sent: 'Enviado para n8n + OpenAI',
+            source: dispatchSource
+          })
+        }
         
         const n8nResult = await sendN8nFollowup(n8nWebhook, lead, callbackUrl, 2)
         
@@ -593,7 +606,8 @@ Deno.serve(async (req) => {
             .from('followup_logs')
             .update({ 
               status: 'failed', 
-              error_message: errorMsg.substring(0, 500) 
+              error_message: errorMsg.substring(0, 500),
+              source: dispatchSource
             })
             .eq('deal_id', lead.deal_id)
             .eq('followup_number', lead.followup_number)
@@ -605,7 +619,7 @@ Deno.serve(async (req) => {
       if (!sent && (sendMode === 'hybrid' || sendMode === 'direct' || !n8nHealthy)) {
         console.log(`🔄 Tentando fallback direto para ${lead.client_name}...`)
         
-        const directResult = await sendDirectFollowup(supabaseUrl, supabaseKey, lead)
+        const directResult = await sendDirectFollowup(supabaseUrl, supabaseKey, lead, dispatchSource)
         
         if (directResult.success) {
           console.log(`✅ [DIRETO] ${lead.client_name} enviado`)
@@ -625,7 +639,7 @@ Deno.serve(async (req) => {
         results.failed++
         results.errors.push(`${lead.client_name}: ${errorMsg}`)
         
-        // Garantir que existe um log de falha
+        // ✅ CORREÇÃO v5.1: Verificar se já existe log antes de criar
         const { data: existingLog } = await supabase
           .from('followup_logs')
           .select('id')
@@ -641,6 +655,17 @@ Deno.serve(async (req) => {
             error_message: errorMsg.substring(0, 500),
             source: dispatchSource
           })
+        } else {
+          // Atualizar log existente
+          await supabase
+            .from('followup_logs')
+            .update({ 
+              status: 'failed', 
+              error_message: errorMsg.substring(0, 500),
+              source: dispatchSource
+            })
+            .eq('deal_id', lead.deal_id)
+            .eq('followup_number', lead.followup_number)
         }
       }
       
@@ -665,6 +690,7 @@ Deno.serve(async (req) => {
         disabled_deals: dealsToDisable.length,
         n8n_healthy: n8nHealthy,
         elapsed_ms: elapsed,
+        source: dispatchSource,
         errors: results.errors.slice(0, 5)
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

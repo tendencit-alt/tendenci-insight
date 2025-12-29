@@ -17,35 +17,55 @@ interface EligibleDeal {
 }
 
 /**
+ * get-eligible-group-invites v2.0
+ * 
+ * MELHORIAS v2.0:
+ * - Função formatBrazilianPhone padronizada
+ * - Melhor logging
+ */
+
+/**
  * Formata número de telefone brasileiro para WhatsApp
+ * Padronizado com as outras edge functions
  */
 function formatBrazilianPhone(phone: string | null): string | null {
   if (!phone) return null
   
   let clean = phone.replace(/\D/g, '')
   
-  // Remover zeros à esquerda
+  // Remove 55 duplicados
+  while (clean.startsWith('55') && clean.length > 11) {
+    clean = clean.substring(2)
+  }
+  
+  // Remove zeros à esquerda
   while (clean.startsWith('0')) {
     clean = clean.substring(1)
   }
   
-  if (clean.length < 10 || clean.length > 13) return null
+  // Validação: muito curto ou muito longo
+  if (clean.length < 10 || clean.length > 11) {
+    console.log(`⏭️ Telefone inválido: ${phone} → ${clean} (${clean.length} dígitos)`)
+    return null
+  }
   
   // Normalizar para 11 dígitos (DDD + 9 + 8 dígitos)
   if (clean.length === 10) {
     clean = clean.slice(0, 2) + '9' + clean.slice(2)
-  } else if (clean.length === 12 && clean.startsWith('55')) {
-    clean = clean.slice(2, 4) + '9' + clean.slice(4)
-  } else if (clean.length === 13 && clean.startsWith('55')) {
-    clean = clean.slice(2)
   }
   
-  if (clean.length !== 11) return null
-  
+  // Validação do DDD
   const ddd = parseInt(clean.slice(0, 2))
-  if (ddd < 11 || ddd > 99) return null
+  if (ddd < 11 || ddd > 99) {
+    console.log(`⏭️ DDD inválido: ${ddd}`)
+    return null
+  }
   
-  if (clean[2] !== '9') return null
+  // Validação do 9° dígito
+  if (clean[2] !== '9') {
+    console.log(`⏭️ Falta 9° dígito: ${clean}`)
+    return null
+  }
   
   return clean
 }
@@ -56,7 +76,9 @@ Deno.serve(async (req) => {
   }
 
   const startTime = Date.now()
-  console.log('🔍 [get-eligible-group-invites] Iniciando busca...')
+  console.log('═══════════════════════════════════════════════════════════')
+  console.log('🔍 [get-eligible-group-invites v2.0] Iniciando busca...')
+  console.log('═══════════════════════════════════════════════════════════')
 
   try {
     const supabase = createClient(
@@ -118,6 +140,8 @@ Deno.serve(async (req) => {
     console.log(`📊 Deals encontrados (pré-filtro): ${deals?.length || 0}`)
 
     const eligibleDeals: EligibleDeal[] = []
+    let skippedNoPhone = 0
+    let skippedInvalidPhone = 0
 
     for (const deal of deals || []) {
       // Extrair dados do cliente
@@ -125,14 +149,14 @@ Deno.serve(async (req) => {
       const client = lead?.clients as any
       
       if (!client?.phone) {
-        console.log(`⏭️ Deal ${deal.id} sem telefone de cliente`)
+        skippedNoPhone++
         continue
       }
 
       // Validar e formatar telefone
       const formattedPhone = formatBrazilianPhone(client.phone)
       if (!formattedPhone) {
-        console.log(`⏭️ Deal ${deal.id} com telefone inválido: ${client.phone}`)
+        skippedInvalidPhone++
         continue
       }
 
@@ -156,8 +180,10 @@ Deno.serve(async (req) => {
     }
 
     const elapsed = Date.now() - startTime
+    console.log(`📊 Filtrados: ${skippedNoPhone} sem telefone, ${skippedInvalidPhone} telefone inválido`)
     console.log(`✅ [get-eligible-group-invites] Concluído em ${elapsed}ms`)
     console.log(`📊 Deals elegíveis: ${eligibleDeals.length}`)
+    console.log('═══════════════════════════════════════════════════════════')
 
     return new Response(
       JSON.stringify({
@@ -165,7 +191,11 @@ Deno.serve(async (req) => {
         eligible_count: eligibleDeals.length,
         deals: eligibleDeals,
         cutoff_date: cutoffDate,
-        elapsed_ms: elapsed
+        elapsed_ms: elapsed,
+        skipped: {
+          no_phone: skippedNoPhone,
+          invalid_phone: skippedInvalidPhone
+        }
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -176,6 +206,7 @@ Deno.serve(async (req) => {
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido'
     console.error('❌ Erro:', error)
+    console.log('═══════════════════════════════════════════════════════════')
     return new Response(
       JSON.stringify({ 
         success: false, 
