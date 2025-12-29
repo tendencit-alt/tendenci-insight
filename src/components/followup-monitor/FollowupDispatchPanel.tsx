@@ -28,7 +28,8 @@ export function FollowupDispatchPanel() {
         body: { 
           mode: "direct", 
           limit: 10,
-          ignore_business_hours: false 
+          ignore_business_hours: false,
+          source: "manual"
         }
       });
 
@@ -77,7 +78,8 @@ export function FollowupDispatchPanel() {
       const { data, error } = await supabase.functions.invoke("dispatch-group-invites", {
         body: { 
           limit: 30,
-          ignore_business_hours: false 
+          ignore_business_hours: false,
+          source: "manual"
         }
       });
 
