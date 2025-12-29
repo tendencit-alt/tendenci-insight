@@ -1211,6 +1211,8 @@ export type Database = {
           followup_count: number | null
           followup_enabled: boolean | null
           from_ai: boolean | null
+          group_invite_sent: boolean | null
+          group_invite_sent_at: string | null
           id: string
           last_followup_at: string | null
           last_interaction: string | null
@@ -1242,6 +1244,8 @@ export type Database = {
           followup_count?: number | null
           followup_enabled?: boolean | null
           from_ai?: boolean | null
+          group_invite_sent?: boolean | null
+          group_invite_sent_at?: string | null
           id?: string
           last_followup_at?: string | null
           last_interaction?: string | null
@@ -1273,6 +1277,8 @@ export type Database = {
           followup_count?: number | null
           followup_enabled?: boolean | null
           from_ai?: boolean | null
+          group_invite_sent?: boolean | null
+          group_invite_sent_at?: string | null
           id?: string
           last_followup_at?: string | null
           last_interaction?: string | null
