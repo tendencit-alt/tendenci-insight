@@ -24,7 +24,11 @@ interface DispatchRequest {
   ignore_time_filter?: boolean
   mode?: 'direct' | 'n8n' | 'hybrid'
   limit?: number
+  source?: 'cron' | 'manual'
 }
+
+// Cooldown em minutos para evitar sobreposição de disparos
+const DISPATCH_COOLDOWN_MINUTES = 30
 
 interface LeadForFollowup {
   deal_id: string
@@ -247,8 +251,48 @@ Deno.serve(async (req) => {
     // ✅ MUDANÇA v5: Padrão agora é 'direct' para eliminar dependência do n8n
     const sendMode = body.mode || 'direct'
     const sendLimit = body.limit || 10
+    const dispatchSource = body.source || 'cron'
     
-    console.log(`📋 Modo: ${sendMode}, Limite: ${sendLimit}, IgnoreTime: ${ignoreTimeFilter}`)
+    console.log(`📋 Modo: ${sendMode}, Limite: ${sendLimit}, IgnoreTime: ${ignoreTimeFilter}, Source: ${dispatchSource}`)
+
+    // ═══════════════════════════════════════════════════════════
+    // VERIFICAÇÃO DE COOLDOWN (evitar sobreposição)
+    // ═══════════════════════════════════════════════════════════
+    const cooldownMinutesAgo = new Date(Date.now() - DISPATCH_COOLDOWN_MINUTES * 60 * 1000).toISOString()
+    
+    const { data: recentDispatches } = await supabase
+      .from('followup_logs')
+      .select('created_at, source')
+      .eq('status', 'sent')
+      .gte('created_at', cooldownMinutesAgo)
+      .order('created_at', { ascending: false })
+      .limit(1)
+    
+    const recentDispatch = recentDispatches?.[0]
+    
+    if (recentDispatch) {
+      const recentTime = new Date(recentDispatch.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+      const recentSource = recentDispatch.source || 'cron'
+      
+      if (dispatchSource === 'cron') {
+        // CRON aborta silenciosamente se houve disparo recente
+        console.log(`⏸️ CRON abortado: disparo recente (${recentSource}) às ${recentTime} - cooldown ${DISPATCH_COOLDOWN_MINUTES}min ativo`)
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            message: `Cooldown ativo - disparo ${recentSource} recente às ${recentTime}`,
+            dispatched: 0,
+            eligible: 0,
+            skipped_reason: 'cooldown_active',
+            recent_dispatch: { time: recentTime, source: recentSource }
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      } else {
+        // Manual prossegue com aviso
+        console.log(`⚠️ Disparo manual sobrepondo disparo recente (${recentSource}) às ${recentTime}`)
+      }
+    }
 
     // ═══════════════════════════════════════════════════════════
     // VERIFICAÇÃO DE HORÁRIO COMERCIAL (CRÍTICA)
@@ -528,7 +572,8 @@ Deno.serve(async (req) => {
           deal_id: lead.deal_id,
           followup_number: lead.followup_number,
           status: 'pending',
-          message_sent: 'Enviado para n8n + OpenAI'
+          message_sent: 'Enviado para n8n + OpenAI',
+          source: dispatchSource
         })
         
         const n8nResult = await sendN8nFollowup(n8nWebhook, lead, callbackUrl, 2)
@@ -593,7 +638,8 @@ Deno.serve(async (req) => {
             deal_id: lead.deal_id,
             followup_number: lead.followup_number,
             status: 'failed',
-            error_message: errorMsg.substring(0, 500)
+            error_message: errorMsg.substring(0, 500),
+            source: dispatchSource
           })
         }
       }

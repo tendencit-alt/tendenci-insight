@@ -1655,6 +1655,7 @@ export type Database = {
           id: string
           message_sent: string | null
           sent_at: string | null
+          source: string | null
           status: string | null
         }
         Insert: {
@@ -1665,6 +1666,7 @@ export type Database = {
           id?: string
           message_sent?: string | null
           sent_at?: string | null
+          source?: string | null
           status?: string | null
         }
         Update: {
@@ -1675,6 +1677,7 @@ export type Database = {
           id?: string
           message_sent?: string | null
           sent_at?: string | null
+          source?: string | null
           status?: string | null
         }
         Relationships: [

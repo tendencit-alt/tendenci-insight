@@ -5,6 +5,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Cooldown em minutos para evitar sobreposição de disparos
+const DISPATCH_COOLDOWN_MINUTES = 30
+
 /**
  * Verifica se estamos em horário comercial (Brasil)
  */
@@ -38,7 +41,7 @@ Deno.serve(async (req) => {
     )
 
     // Parâmetros opcionais
-    let body: { limit?: number; ignore_business_hours?: boolean } = {}
+    let body: { limit?: number; ignore_business_hours?: boolean; source?: 'cron' | 'manual' } = {}
     try {
       body = await req.json()
     } catch {
@@ -47,6 +50,51 @@ Deno.serve(async (req) => {
 
     const limit = body.limit || 30
     const ignoreBusinessHours = body.ignore_business_hours || false
+    const dispatchSource = body.source || 'cron'
+    
+    console.log(`📋 Limite: ${limit}, IgnoreBusinessHours: ${ignoreBusinessHours}, Source: ${dispatchSource}`)
+
+    // ═══════════════════════════════════════════════════════════
+    // VERIFICAÇÃO DE COOLDOWN (evitar sobreposição)
+    // ═══════════════════════════════════════════════════════════
+    const cooldownMinutesAgo = new Date(Date.now() - DISPATCH_COOLDOWN_MINUTES * 60 * 1000).toISOString()
+    
+    // Verificar disparos recentes de convites de grupo (usar crm_timeline como referência)
+    const { data: recentDispatches } = await supabase
+      .from('crm_deals')
+      .select('group_invite_sent_at')
+      .eq('group_invite_sent', true)
+      .gte('group_invite_sent_at', cooldownMinutesAgo)
+      .order('group_invite_sent_at', { ascending: false })
+      .limit(1)
+    
+    const recentDispatch = recentDispatches?.[0]
+    
+    if (recentDispatch && recentDispatch.group_invite_sent_at) {
+      const recentTime = new Date(recentDispatch.group_invite_sent_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+      
+      if (dispatchSource === 'cron') {
+        // CRON aborta silenciosamente se houve disparo recente
+        console.log(`⏸️ CRON abortado: convite recente às ${recentTime} - cooldown ${DISPATCH_COOLDOWN_MINUTES}min ativo`)
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            message: `Cooldown ativo - convite recente às ${recentTime}`,
+            dispatched: 0,
+            skipped: 0,
+            failed: 0,
+            skipped_reason: 'cooldown_active'
+          }),
+          { 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 200 
+          }
+        )
+      } else {
+        // Manual prossegue com aviso
+        console.log(`⚠️ Disparo manual sobrepondo convite recente às ${recentTime}`)
+      }
+    }
 
     // Verificar horário comercial
     if (!ignoreBusinessHours && !isBusinessHours()) {
