@@ -251,7 +251,7 @@ Deno.serve(async (req) => {
       }
 
       const currentCount = deal.followup_count || 0
-      const maxFollowups = deal.max_followups || 999
+      const maxFollowups = deal.max_followups || 5 // Default: 5 follow-ups
 
       // Verificar limite de follow-ups
       if (currentCount >= maxFollowups) {
