@@ -127,14 +127,14 @@ export function FollowupDispatchPanel() {
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="text-base flex items-center gap-2">
+        <CardTitle className="text-lg flex items-center gap-2">
           <MessageSquare className="h-5 w-5" />
-          Disparo Manual
+          Disparo Manual de Follow-ups
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Botões de Disparo */}
-        <div className="grid grid-cols-1 gap-3">
+        {/* Grid 2 colunas para os botões */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Follow-up Normal */}
           <div className="p-4 border rounded-lg space-y-3">
             <div className="flex items-center justify-between">
@@ -143,11 +143,11 @@ export function FollowupDispatchPanel() {
                   <MessageSquare className="h-4 w-4 text-blue-500" />
                   Follow-ups I.A.
                 </h4>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Deals sem resposta há +48h na etapa Follow Up
+                <p className="text-sm text-muted-foreground mt-1">
+                  Envia mensagens de acompanhamento para deals sem resposta há mais de 48 horas na etapa Follow Up.
                 </p>
               </div>
-              <Badge variant="outline" className="text-xs">
+              <Badge variant="outline" className="text-xs flex-shrink-0">
                 <Clock className="h-3 w-3 mr-1" />
                 48h
               </Badge>
@@ -156,7 +156,6 @@ export function FollowupDispatchPanel() {
               onClick={dispatchFollowups} 
               disabled={isDispatchingFollowup}
               className="w-full"
-              size="sm"
             >
               {isDispatchingFollowup ? (
                 <>
@@ -180,11 +179,11 @@ export function FollowupDispatchPanel() {
                   <Users className="h-4 w-4 text-green-500" />
                   Convites de Grupo
                 </h4>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Deals há +7 dias no pipeline (1x por cliente)
+                <p className="text-sm text-muted-foreground mt-1">
+                  Envia convite para o grupo do WhatsApp. Válido para deals há mais de 7 dias no pipeline (1x por cliente).
                 </p>
               </div>
-              <Badge variant="outline" className="text-xs">
+              <Badge variant="outline" className="text-xs flex-shrink-0">
                 <Clock className="h-3 w-3 mr-1" />
                 7 dias
               </Badge>
@@ -194,7 +193,6 @@ export function FollowupDispatchPanel() {
               disabled={isDispatchingGroup}
               variant="outline"
               className="w-full"
-              size="sm"
             >
               {isDispatchingGroup ? (
                 <>
@@ -213,11 +211,9 @@ export function FollowupDispatchPanel() {
 
         {/* Histórico de Disparos */}
         {lastResults.length > 0 && (
-          <div className="space-y-2">
-            <h5 className="text-sm font-medium text-muted-foreground">
-              Últimos Disparos
-            </h5>
-            <div className="space-y-2 max-h-40 overflow-y-auto">
+          <div className="border-t pt-4 space-y-2">
+            <h5 className="text-sm font-medium">Últimos Disparos</h5>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
               {lastResults.map((result, index) => (
                 <div 
                   key={index} 
@@ -231,14 +227,14 @@ export function FollowupDispatchPanel() {
                     ) : (
                       <XCircle className="h-4 w-4 text-destructive" />
                     )}
-                    <span className="text-xs">
+                    <span className="text-xs font-medium">
                       {result.type === 'followup' ? 'Follow-up' : 'Grupo'}
                     </span>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-xs text-muted-foreground truncate">
                       {result.message}
                     </span>
                   </div>
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-xs text-muted-foreground flex-shrink-0">
                     {formatTime(result.timestamp)}
                   </span>
                 </div>
@@ -248,9 +244,8 @@ export function FollowupDispatchPanel() {
         )}
 
         {/* Aviso de Horário */}
-        <div className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">
-          <strong>Horário comercial:</strong> 9h às 18h (Seg-Sex). 
-          Disparos fora deste horário serão ignorados.
+        <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded text-center">
+          ⏰ <strong>Horário comercial:</strong> 9h às 18h (Seg-Sex). Disparos fora deste horário serão ignorados pelo sistema.
         </div>
       </CardContent>
     </Card>
