@@ -1646,6 +1646,110 @@ export type Database = {
           },
         ]
       }
+      dispatch_session_items: {
+        Row: {
+          client_name: string
+          client_phone: string | null
+          created_at: string | null
+          deal_id: string
+          error_message: string | null
+          followup_number: number | null
+          id: string
+          processed_at: string | null
+          processing_started_at: string | null
+          session_id: string
+          status: string
+        }
+        Insert: {
+          client_name: string
+          client_phone?: string | null
+          created_at?: string | null
+          deal_id: string
+          error_message?: string | null
+          followup_number?: number | null
+          id?: string
+          processed_at?: string | null
+          processing_started_at?: string | null
+          session_id: string
+          status?: string
+        }
+        Update: {
+          client_name?: string
+          client_phone?: string | null
+          created_at?: string | null
+          deal_id?: string
+          error_message?: string | null
+          followup_number?: number | null
+          id?: string
+          processed_at?: string | null
+          processing_started_at?: string | null
+          session_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dispatch_session_items_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "dispatch_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dispatch_sessions: {
+        Row: {
+          avg_time_per_lead_ms: number | null
+          completed_at: string | null
+          created_at: string | null
+          estimated_duration_seconds: number | null
+          failed_count: number
+          id: string
+          metadata: Json | null
+          processed: number
+          skipped_count: number
+          source: string
+          started_at: string | null
+          status: string
+          success_count: number
+          total_leads: number
+          type: string
+        }
+        Insert: {
+          avg_time_per_lead_ms?: number | null
+          completed_at?: string | null
+          created_at?: string | null
+          estimated_duration_seconds?: number | null
+          failed_count?: number
+          id?: string
+          metadata?: Json | null
+          processed?: number
+          skipped_count?: number
+          source?: string
+          started_at?: string | null
+          status?: string
+          success_count?: number
+          total_leads?: number
+          type: string
+        }
+        Update: {
+          avg_time_per_lead_ms?: number | null
+          completed_at?: string | null
+          created_at?: string | null
+          estimated_duration_seconds?: number | null
+          failed_count?: number
+          id?: string
+          metadata?: Json | null
+          processed?: number
+          skipped_count?: number
+          source?: string
+          started_at?: string | null
+          status?: string
+          success_count?: number
+          total_leads?: number
+          type?: string
+        }
+        Relationships: []
+      }
       followup_logs: {
         Row: {
           created_at: string | null
