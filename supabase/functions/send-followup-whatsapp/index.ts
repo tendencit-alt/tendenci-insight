@@ -11,7 +11,7 @@ import { formatBrasilDateTime } from '../_shared/timezone.ts'
  * Fluxo:
  * 1. Recebe dados do lead/deal
  * 2. Gera mensagem de follow-up baseada no histórico
- * 3. Envia via Evolution API (instância IA-Atendimento)
+ * 3. Envia via Evolution API (instância dinâmica do banco)
  * 4. Atualiza histórico do deal
  * 5. Registra logs
  */
@@ -329,6 +329,18 @@ Deno.serve(async (req) => {
     
     if (!healthCheck.connected) {
       console.error(`❌ Instância ${instanceName} desconectada`)
+      
+      // ═══════════════════════════════════════════════════════════
+      // SINCRONIZAR STATUS NO BANCO DE DADOS
+      // ═══════════════════════════════════════════════════════════
+      console.log(`🔄 Atualizando status da instância ${instanceName} para 'disconnected'...`)
+      await supabase
+        .from('tendenci_whatsapp_connections')
+        .update({ 
+          status: 'disconnected', 
+          updated_at: new Date().toISOString() 
+        })
+        .eq('instance_name', instanceName)
       
       await supabase.from('followup_logs').insert({
         deal_id: body.deal_id,
