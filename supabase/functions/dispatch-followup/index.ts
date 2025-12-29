@@ -9,12 +9,12 @@ import {
 } from '../_shared/timezone.ts'
 
 /**
- * dispatch-followup v4.0
+ * dispatch-followup v5.0
  * 
- * MODO n8n + OpenAI COMO PADRÃO:
- * 1. Health check do n8n antes de enviar
- * 2. Retry automático com backoff
- * 3. Fallback para envio direto apenas se n8n falhar
+ * MODO DIRETO COMO PADRÃO (sem dependência do n8n):
+ * 1. Busca deals elegíveis para follow-up
+ * 2. Envia via send-followup-whatsapp (que usa instância dinâmica)
+ * 3. Fallback para n8n apenas se explicitamente configurado
  * 4. Desabilita deals com excesso de falhas
  * 5. Alertas automáticos em system_errors
  */
@@ -224,7 +224,7 @@ Deno.serve(async (req) => {
 
   try {
     console.log('═══════════════════════════════════════════════════════════')
-    console.log('🚀 [DISPATCH-FOLLOWUP v4.0] Iniciando (n8n + OpenAI)...')
+    console.log('🚀 [DISPATCH-FOLLOWUP v5.0] Iniciando (modo direto)...')
     console.log('═══════════════════════════════════════════════════════════')
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
@@ -244,8 +244,8 @@ Deno.serve(async (req) => {
     }
 
     const ignoreTimeFilter = body.ignore_time_filter || false
-    // ✅ MUDANÇA: Padrão agora é 'n8n' para usar OpenAI
-    const sendMode = body.mode || 'n8n'
+    // ✅ MUDANÇA v5: Padrão agora é 'direct' para eliminar dependência do n8n
+    const sendMode = body.mode || 'direct'
     const sendLimit = body.limit || 10
     
     console.log(`📋 Modo: ${sendMode}, Limite: ${sendLimit}, IgnoreTime: ${ignoreTimeFilter}`)
