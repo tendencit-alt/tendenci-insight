@@ -8,6 +8,7 @@ import { FollowupActivityFeed } from "@/components/followup-monitor/FollowupActi
 import { FollowupCharts } from "@/components/followup-monitor/FollowupCharts";
 import { FollowupFailuresPanel } from "@/components/followup-monitor/FollowupFailuresPanel";
 import { FollowupAuditPanel } from "@/components/followup-monitor/FollowupAuditPanel";
+import { FollowupDispatchPanel } from "@/components/followup-monitor/FollowupDispatchPanel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Activity, RefreshCw, Bot, Zap } from "lucide-react";
@@ -256,8 +257,12 @@ export default function ActivityCenter() {
             {/* Gráficos */}
             <FollowupCharts />
 
-            {/* Feed de Atividade + Painéis */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Painel de Disparo + Feed + Painéis */}
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+              {/* Painel de Disparo Manual */}
+              <FollowupDispatchPanel />
+
+              {/* Feed de Atividade */}
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base flex items-center gap-2">
