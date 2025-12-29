@@ -28,17 +28,25 @@ export function FollowupMonitorKPIs() {
 
   const fetchStats = async () => {
     try {
-      // Buscar stage de Follow Up
+      // Buscar stage de Follow Up com pipeline_id
       const { data: followupStage } = await supabase
         .from("crm_stages")
-        .select("id")
+        .select("id, pipeline_id")
         .eq("name", "Follow Up (I.A)")
         .single();
 
+      if (!followupStage) {
+        console.error("Stage 'Follow Up (I.A)' não encontrado");
+        setLoading(false);
+        return;
+      }
+
+      // Buscar Lead do MESMO pipeline para evitar duplicatas
       const { data: leadStage } = await supabase
         .from("crm_stages")
         .select("id")
         .eq("name", "Lead")
+        .eq("pipeline_id", followupStage.pipeline_id)
         .single();
 
       const now = new Date();

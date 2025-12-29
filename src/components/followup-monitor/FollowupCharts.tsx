@@ -48,17 +48,25 @@ export function FollowupCharts() {
       const today = new Date();
       const sevenDaysAgo = subDays(today, 7);
 
-      // Buscar stages
+      // Buscar stage de Follow Up com pipeline_id
       const { data: followupStage } = await supabase
         .from("crm_stages")
-        .select("id")
+        .select("id, pipeline_id")
         .eq("name", "Follow Up (I.A)")
         .single();
 
+      if (!followupStage) {
+        console.error("Stage 'Follow Up (I.A)' não encontrado");
+        setLoading(false);
+        return;
+      }
+
+      // Buscar Lead do MESMO pipeline para evitar duplicatas
       const { data: leadStage } = await supabase
         .from("crm_stages")
         .select("id")
         .eq("name", "Lead")
+        .eq("pipeline_id", followupStage.pipeline_id)
         .single();
 
       // Buscar logs de follow-up dos últimos 7 dias
@@ -112,15 +120,13 @@ export function FollowupCharts() {
       });
       setTrendData(trendArray);
 
-      // Processar dados de status (PieChart)
+      // Processar dados de status (PieChart) - apenas sent e failed existem no banco
       const sentCount = followupLogs?.filter((l) => l.status === "sent").length || 0;
       const failedCount = followupLogs?.filter((l) => l.status === "failed").length || 0;
-      const pendingCount = followupLogs?.filter((l) => l.status === "pending").length || 0;
 
       setStatusData([
         { name: "Sucesso", value: sentCount, color: "#22c55e" },
         { name: "Falha", value: failedCount, color: "#ef4444" },
-        { name: "Pendente", value: pendingCount, color: "#f59e0b" },
       ]);
 
       // Processar dados de conversão (BarChart)
