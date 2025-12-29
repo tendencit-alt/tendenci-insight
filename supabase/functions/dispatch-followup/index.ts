@@ -9,13 +9,12 @@ import {
 } from '../_shared/timezone.ts'
 
 /**
- * dispatch-followup v5.1
+ * dispatch-followup v6.0
  * 
- * MELHORIAS v5.1:
- * - Cooldown verifica qualquer status (não apenas 'sent')
- * - Source corretamente propagado em todos os logs
- * - Prevenção de logs duplicados
- * - Melhor tratamento de erros
+ * MELHORIAS v6.0:
+ * - Tracking de sessão em tempo real (dispatch_sessions + dispatch_session_items)
+ * - Atualização em tempo real do progresso
+ * - Cálculo de tempo estimado
  */
 
 interface DispatchRequest {
@@ -26,8 +25,9 @@ interface DispatchRequest {
   source?: 'cron' | 'manual'
 }
 
-// Cooldown em minutos para evitar sobreposição de disparos
 const DISPATCH_COOLDOWN_MINUTES = 30
+const MAX_CONSECUTIVE_FAILURES = 3
+const MAX_GLOBAL_FAILURES_PER_HOUR = 10
 
 interface LeadForFollowup {
   deal_id: string
@@ -46,72 +46,28 @@ interface LeadForFollowup {
   type: 'followup_trigger'
 }
 
-// Formata número brasileiro para WhatsApp
 function formatBrazilianPhone(phone: string | null): string | null {
   if (!phone) return null
-  
   let cleaned = phone.replace(/\D/g, '')
-  
-  if (cleaned.startsWith('5555')) {
-    cleaned = cleaned.substring(2)
-  }
-  
-  if (cleaned.startsWith('0')) {
-    cleaned = cleaned.substring(1)
-  }
-  
-  if (cleaned.startsWith('550')) {
-    cleaned = '55' + cleaned.substring(3)
-  }
-  
+  if (cleaned.startsWith('5555')) cleaned = cleaned.substring(2)
+  if (cleaned.startsWith('0')) cleaned = cleaned.substring(1)
+  if (cleaned.startsWith('550')) cleaned = '55' + cleaned.substring(3)
   if (cleaned.length === 10 && !cleaned.startsWith('55')) {
     cleaned = cleaned.substring(0, 2) + '9' + cleaned.substring(2)
   }
-  
   if (cleaned.length === 12 && cleaned.startsWith('55')) {
     cleaned = cleaned.substring(0, 4) + '9' + cleaned.substring(4)
   }
-  
   if (!cleaned.startsWith('55') && cleaned.length >= 10) {
     cleaned = '55' + cleaned
   }
-  
   if (cleaned.length < 12 || cleaned.length > 13) {
     console.warn(`⚠️ Telefone inválido: ${phone} -> ${cleaned}`)
     return null
   }
-  
   return cleaned
 }
 
-// Máximo de falhas consecutivas permitidas em 24h
-const MAX_CONSECUTIVE_FAILURES = 3
-
-// Limite global de falhas por hora (pausa sistema)
-const MAX_GLOBAL_FAILURES_PER_HOUR = 10
-
-// Verificar saúde do n8n webhook
-async function checkN8nHealth(webhookUrl: string): Promise<boolean> {
-  try {
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 5000)
-    
-    const response = await fetch(webhookUrl, { 
-      method: 'HEAD',
-      signal: controller.signal
-    })
-    
-    clearTimeout(timeoutId)
-    
-    // HEAD pode retornar 405 (Method Not Allowed) mas indica que o servidor está online
-    return response.ok || response.status === 405
-  } catch (error) {
-    console.warn('⚠️ n8n health check failed:', error)
-    return false
-  }
-}
-
-// Envio direto via edge function interna (FALLBACK)
 async function sendDirectFollowup(
   supabaseUrl: string,
   supabaseKey: string,
@@ -137,66 +93,16 @@ async function sendDirectFollowup(
         owner_name: lead.owner_name,
         product_type: lead.product_type,
         categoria: lead.categoria,
-        source: source
+        source
       })
     })
-    
     const data = await response.json()
-    
-    if (data.success) {
-      return { success: true, messageId: data.messageId }
-    } else {
-      return { success: false, error: data.error || 'Erro desconhecido' }
-    }
+    return data.success ? { success: true, messageId: data.messageId } : { success: false, error: data.error || 'Erro desconhecido' }
   } catch (error: any) {
     return { success: false, error: error.message }
   }
 }
 
-// Envio via n8n com retry
-async function sendN8nFollowup(
-  webhookUrl: string,
-  lead: LeadForFollowup,
-  callbackUrl: string,
-  maxRetries: number = 2
-): Promise<{ success: boolean; error?: string }> {
-  let lastError = ''
-  
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    try {
-      if (attempt > 0) {
-        const delayMs = attempt === 1 ? 5000 : 15000
-        console.log(`🔄 Retry ${attempt}/${maxRetries} após ${delayMs/1000}s...`)
-        await new Promise(r => setTimeout(r, delayMs))
-      }
-      
-      const response = await fetch(webhookUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...lead,
-          callback_url: callbackUrl
-        })
-      })
-      
-      if (response.ok) {
-        return { success: true }
-      }
-      
-      const errText = await response.text()
-      lastError = `HTTP ${response.status}: ${errText.substring(0, 200)}`
-      console.warn(`⚠️ n8n attempt ${attempt + 1} failed:`, lastError)
-      
-    } catch (e: any) {
-      lastError = e.message
-      console.warn(`⚠️ n8n attempt ${attempt + 1} error:`, lastError)
-    }
-  }
-  
-  return { success: false, error: lastError }
-}
-
-// Registrar erro no system_errors
 async function logSystemError(
   supabase: any,
   title: string,
@@ -206,17 +112,124 @@ async function logSystemError(
   metadata: Record<string, any> = {}
 ): Promise<void> {
   try {
-    await supabase.from('system_errors').insert({
-      title,
-      module,
-      description,
-      severity,
-      status: 'open',
-      metadata
-    })
+    await supabase.from('system_errors').insert({ title, module, description, severity, status: 'open', metadata })
     console.log(`🚨 System error logged: ${title}`)
   } catch (e) {
     console.error('Failed to log system error:', e)
+  }
+}
+
+// Criar sessão de disparo
+async function createDispatchSession(
+  supabase: any,
+  type: 'followup' | 'group_invite',
+  source: string,
+  totalLeads: number
+): Promise<string | null> {
+  try {
+    const { data, error } = await supabase
+      .from('dispatch_sessions')
+      .insert({
+        type,
+        source,
+        status: 'running',
+        total_leads: totalLeads,
+        processed: 0,
+        success_count: 0,
+        failed_count: 0,
+        skipped_count: 0,
+        started_at: new Date().toISOString()
+      })
+      .select('id')
+      .single()
+    
+    if (error) {
+      console.error('❌ Erro ao criar sessão de disparo:', error)
+      return null
+    }
+    
+    console.log(`📋 Sessão de disparo criada: ${data.id}`)
+    return data.id
+  } catch (e) {
+    console.error('❌ Erro ao criar sessão:', e)
+    return null
+  }
+}
+
+// Criar itens da sessão
+async function createSessionItems(
+  supabase: any,
+  sessionId: string,
+  leads: LeadForFollowup[]
+): Promise<void> {
+  try {
+    const items = leads.map(lead => ({
+      session_id: sessionId,
+      deal_id: lead.deal_id,
+      client_name: lead.client_name,
+      client_phone: lead.client_phone,
+      followup_number: lead.followup_number,
+      status: 'pending'
+    }))
+    
+    await supabase.from('dispatch_session_items').insert(items)
+    console.log(`📝 ${items.length} itens criados na sessão`)
+  } catch (e) {
+    console.error('❌ Erro ao criar itens da sessão:', e)
+  }
+}
+
+// Atualizar item da sessão
+async function updateSessionItem(
+  supabase: any,
+  sessionId: string,
+  dealId: string,
+  status: 'processing' | 'sent' | 'failed' | 'skipped',
+  errorMessage?: string
+): Promise<void> {
+  try {
+    const update: Record<string, any> = { status }
+    
+    if (status === 'processing') {
+      update.processing_started_at = new Date().toISOString()
+    } else {
+      update.processed_at = new Date().toISOString()
+      if (errorMessage) {
+        update.error_message = errorMessage.substring(0, 500)
+      }
+    }
+    
+    await supabase
+      .from('dispatch_session_items')
+      .update(update)
+      .eq('session_id', sessionId)
+      .eq('deal_id', dealId)
+  } catch (e) {
+    console.error('❌ Erro ao atualizar item:', e)
+  }
+}
+
+// Atualizar sessão
+async function updateSession(
+  supabase: any,
+  sessionId: string,
+  updates: {
+    processed?: number
+    success_count?: number
+    failed_count?: number
+    skipped_count?: number
+    status?: 'running' | 'completed' | 'failed'
+    avg_time_per_lead_ms?: number
+  }
+): Promise<void> {
+  try {
+    const data: Record<string, any> = { ...updates }
+    if (updates.status === 'completed' || updates.status === 'failed') {
+      data.completed_at = new Date().toISOString()
+    }
+    await supabase.from('dispatch_sessions').update(data).eq('id', sessionId)
+  } catch (e) {
+    console.error('❌ Erro ao atualizar sessão:', e)
   }
 }
 
@@ -229,39 +242,28 @@ Deno.serve(async (req) => {
 
   try {
     console.log('═══════════════════════════════════════════════════════════')
-    console.log('🚀 [DISPATCH-FOLLOWUP v5.1] Iniciando (modo direto)...')
+    console.log('🚀 [DISPATCH-FOLLOWUP v6.0] Iniciando com tracking realtime...')
     console.log('═══════════════════════════════════════════════════════════')
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    // Parsear body
     let body: DispatchRequest = {}
     try {
       const text = await req.text()
-      if (text) {
-        body = JSON.parse(text)
-      }
-    } catch {
-      // Body vazio - ok para CRON
-    }
+      if (text) body = JSON.parse(text)
+    } catch { /* Body vazio - ok para CRON */ }
 
     const ignoreTimeFilter = body.ignore_time_filter || false
-    // Padrão agora é 'direct' para eliminar dependência do n8n
     const sendMode = body.mode || 'direct'
     const sendLimit = body.limit || 10
     const dispatchSource = body.source || 'cron'
     
-    console.log(`📋 Modo: ${sendMode}, Limite: ${sendLimit}, IgnoreTime: ${ignoreTimeFilter}, Source: ${dispatchSource}`)
+    console.log(`📋 Modo: ${sendMode}, Limite: ${sendLimit}, Source: ${dispatchSource}`)
 
-    // ═══════════════════════════════════════════════════════════
-    // VERIFICAÇÃO DE COOLDOWN (evitar sobreposição)
-    // ✅ CORREÇÃO v5.1: Verificar qualquer status recente (não só 'sent')
-    // ═══════════════════════════════════════════════════════════
+    // Verificação de cooldown
     const cooldownMinutesAgo = new Date(Date.now() - DISPATCH_COOLDOWN_MINUTES * 60 * 1000).toISOString()
-    
     const { data: recentDispatches } = await supabase
       .from('followup_logs')
       .select('created_at, source, status')
@@ -271,65 +273,46 @@ Deno.serve(async (req) => {
       .limit(1)
     
     const recentDispatch = recentDispatches?.[0]
-    
-    if (recentDispatch) {
+    if (recentDispatch && dispatchSource === 'cron') {
       const recentTime = new Date(recentDispatch.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-      const recentSource = recentDispatch.source || 'cron'
-      const recentStatus = recentDispatch.status
-      
-      if (dispatchSource === 'cron') {
-        // CRON aborta silenciosamente se houve disparo recente
-        console.log(`⏸️ CRON abortado: disparo recente (${recentSource}/${recentStatus}) às ${recentTime} - cooldown ${DISPATCH_COOLDOWN_MINUTES}min ativo`)
-        return new Response(
-          JSON.stringify({ 
-            success: true, 
-            message: `Cooldown ativo - disparo ${recentSource} recente às ${recentTime}`,
-            dispatched: 0,
-            eligible: 0,
-            skipped_reason: 'cooldown_active',
-            recent_dispatch: { time: recentTime, source: recentSource, status: recentStatus }
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-      } else {
-        // Manual prossegue com aviso
-        console.log(`⚠️ Disparo manual sobrepondo disparo recente (${recentSource}/${recentStatus}) às ${recentTime}`)
-      }
+      console.log(`⏸️ CRON abortado: disparo recente às ${recentTime}`)
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: `Cooldown ativo`,
+          dispatched: 0,
+          eligible: 0,
+          skipped_reason: 'cooldown_active'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
 
-    // ═══════════════════════════════════════════════════════════
-    // VERIFICAÇÃO DE HORÁRIO COMERCIAL (CRÍTICA)
-    // ═══════════════════════════════════════════════════════════
+    // Verificação de horário comercial
     const isBusinessHours = isBusinessHoursBrasil()
     const hour = getCurrentHourBrasil()
     const day = getCurrentDayOfWeekBrasil()
     const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab']
     
-    console.log(`🕐 Hora Brasil: ${hour}h, Dia: ${dayNames[day]}, Horário Comercial: ${isBusinessHours}`)
+    console.log(`🕐 Hora Brasil: ${hour}h, Dia: ${dayNames[day]}`)
     
     const isTestMode = req.headers.get('X-Test-Mode') === 'true'
-    
     if (!isBusinessHours && !isTestMode) {
-      console.log('⏰ BLOQUEADO: Fora do horário comercial (9h-18h, Seg-Sex)')
-      console.log('═══════════════════════════════════════════════════════════')
+      console.log('⏰ BLOQUEADO: Fora do horário comercial')
       return new Response(
         JSON.stringify({ 
           success: true, 
           message: 'Fora do horário comercial',
           dispatched: 0,
           eligible: 0,
-          skipped_reason: 'outside_business_hours',
-          debug: { hour, day: dayNames[day], isBusinessHours, isTestMode }
+          skipped_reason: 'outside_business_hours'
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // ═══════════════════════════════════════════════════════════
-    // VERIFICAR LIMITE GLOBAL DE FALHAS/HORA
-    // ═══════════════════════════════════════════════════════════
+    // Verificar limite global de falhas
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString()
-    
     const { count: recentGlobalFailures } = await supabase
       .from('followup_logs')
       .select('*', { count: 'exact', head: true })
@@ -338,32 +321,16 @@ Deno.serve(async (req) => {
     
     if ((recentGlobalFailures || 0) >= MAX_GLOBAL_FAILURES_PER_HOUR) {
       console.error(`🚨 SISTEMA PAUSADO: ${recentGlobalFailures} falhas na última hora`)
-      
-      await logSystemError(
-        supabase,
-        'Sistema de Follow-up Pausado',
-        'dispatch-followup',
-        `${recentGlobalFailures} falhas na última hora. Sistema pausado automaticamente.`,
-        'critical',
-        { failures_last_hour: recentGlobalFailures, threshold: MAX_GLOBAL_FAILURES_PER_HOUR }
-      )
-      
+      await logSystemError(supabase, 'Sistema de Follow-up Pausado', 'dispatch-followup',
+        `${recentGlobalFailures} falhas na última hora`, 'critical', { failures_last_hour: recentGlobalFailures })
       return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: 'Sistema pausado por excesso de falhas',
-          failures_last_hour: recentGlobalFailures,
-          threshold: MAX_GLOBAL_FAILURES_PER_HOUR
-        }),
+        JSON.stringify({ success: false, error: 'Sistema pausado por excesso de falhas' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // ═══════════════════════════════════════════════════════════
-    // BUSCAR DEALS COM FALHAS RECENTES E DESABILITAR
-    // ═══════════════════════════════════════════════════════════
+    // Buscar deals com falhas recentes e desabilitar
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
-    
     const { data: recentFailures } = await supabase
       .from('followup_logs')
       .select('deal_id')
@@ -381,65 +348,9 @@ Deno.serve(async (req) => {
       .filter(([_, count]) => count >= MAX_CONSECUTIVE_FAILURES)
       .map(([dealId]) => dealId)
     
-    // Desabilitar followup_enabled para deals com excesso de falhas
     if (dealsToDisable.length > 0) {
       console.log(`⛔ Desabilitando ${dealsToDisable.length} deals por excesso de falhas`)
-      
-      const { error: disableError } = await supabase
-        .from('crm_deals')
-        .update({ 
-          followup_enabled: false
-        })
-        .in('id', dealsToDisable)
-      
-      if (disableError) {
-        console.error('Erro ao desabilitar deals:', disableError)
-      } else {
-        // Registrar na timeline de cada deal
-        for (const dealId of dealsToDisable) {
-          await supabase.from('crm_timeline').insert({
-            deal_id: dealId,
-            message: `Follow-up automático desabilitado: ${MAX_CONSECUTIVE_FAILURES}+ falhas em 24h`,
-            update_type: 'Sistema - Alerta'
-          })
-        }
-        
-        // Alertar no system_errors
-        await logSystemError(
-          supabase,
-          `${dealsToDisable.length} deals desabilitados por falhas`,
-          'dispatch-followup',
-          `Deals desabilitados automaticamente por ${MAX_CONSECUTIVE_FAILURES}+ falhas em 24h`,
-          'medium',
-          { deal_ids: dealsToDisable }
-        )
-      }
-    }
-
-    // ═══════════════════════════════════════════════════════════
-    // VERIFICAR SAÚDE DO N8N (SE MODO N8N)
-    // ═══════════════════════════════════════════════════════════
-    const n8nWebhook = body.webhook_url || Deno.env.get('N8N_FOLLOWUP_WEBHOOK_URL')
-    let n8nHealthy = false
-    
-    if (sendMode === 'n8n' || sendMode === 'hybrid') {
-      if (n8nWebhook) {
-        n8nHealthy = await checkN8nHealth(n8nWebhook)
-        console.log(`🔌 n8n health check: ${n8nHealthy ? '✅ Online' : '❌ Offline'}`)
-        
-        if (!n8nHealthy) {
-          await logSystemError(
-            supabase,
-            'n8n Webhook Offline',
-            'dispatch-followup',
-            'Não foi possível conectar ao webhook do n8n. Usando fallback direto.',
-            'high',
-            { webhook_url: n8nWebhook?.substring(0, 50) + '...' }
-          )
-        }
-      } else {
-        console.warn('⚠️ N8N_FOLLOWUP_WEBHOOK_URL não configurada')
-      }
+      await supabase.from('crm_deals').update({ followup_enabled: false }).in('id', dealsToDisable)
     }
 
     // Buscar etapa "Follow Up"
@@ -449,77 +360,42 @@ Deno.serve(async (req) => {
       .ilike('name', '%Follow Up%')
       .maybeSingle()
 
-    if (followupStage) {
-      console.log(`✅ Etapa Follow Up: ${followupStage.name}`)
-    }
-
-    // Buscar deals elegíveis (excluindo os que acabaram de ser desabilitados)
+    // Buscar deals elegíveis
     let query = supabase
       .from('crm_deals')
       .select(`
-        id,
-        lead_id,
-        title,
-        conversation_history,
-        followup_count,
-        max_followups,
-        owner_id,
-        product_type,
-        categoria,
-        last_interaction,
-        last_followup_at,
-        leads(
-          id,
-          client_id,
-          clients(name, phone)
-        ),
+        id, lead_id, title, conversation_history, followup_count, max_followups,
+        owner_id, product_type, categoria, last_interaction, last_followup_at,
+        leads(id, client_id, clients(name, phone)),
         profiles:owner_id(full_name)
       `)
       .eq('followup_enabled', true)
       .eq('status', 'aberto')
 
-    if (followupStage?.id) {
-      query = query.eq('stage_id', followupStage.id)
-    }
-
+    if (followupStage?.id) query = query.eq('stage_id', followupStage.id)
     const { data: leads, error: leadsError } = await query
 
-    if (leadsError) {
-      console.error('❌ Erro ao buscar leads:', leadsError)
-      throw leadsError
-    }
-
+    if (leadsError) throw leadsError
     console.log(`📊 Deals com follow-up ativo: ${leads?.length || 0}`)
 
-    // Cutoff de 48h
     const cutoffTimestamp = get48HoursCutoffUTC()
     
     const eligibleLeads = (leads || [])
       .filter(deal => {
-        // Não incluir deals que acabaram de ser desabilitados
         if (dealsToDisable.includes(deal.id)) return false
-        
         const currentCount = deal.followup_count || 0
         const maxFollowups = deal.max_followups || 5
-        
         if (currentCount >= maxFollowups) return false
-        
         const mostRecentDate = getMostRecentDate(deal.last_interaction, deal.last_followup_at)
         if (!mostRecentDate) return true
-        
         return mostRecentDate.getTime() < cutoffTimestamp
       })
       .slice(0, sendLimit)
       .map(deal => {
         const leadsData = deal.leads
-        const clientData = Array.isArray(leadsData) 
-          ? leadsData[0]?.clients 
-          : (leadsData as any)?.clients
-        
+        const clientData = Array.isArray(leadsData) ? leadsData[0]?.clients : (leadsData as any)?.clients
         const phone = formatBrazilianPhone(clientData?.phone)
         const clientName = clientData?.name || 'Cliente'
-        const followupNumber = (deal.followup_count || 0) + 1
-        
         return {
           deal_id: deal.id,
           session_id: deal.id,
@@ -528,7 +404,7 @@ Deno.serve(async (req) => {
           conversation_history: deal.conversation_history,
           followup_count: deal.followup_count || 0,
           max_followups: deal.max_followups || 5,
-          followup_number: followupNumber,
+          followup_number: (deal.followup_count || 0) + 1,
           owner_id: deal.owner_id,
           owner_name: (deal.profiles as any)?.full_name || null,
           product_type: deal.product_type,
@@ -542,104 +418,61 @@ Deno.serve(async (req) => {
     console.log(`✅ Elegíveis para envio: ${eligibleLeads.length}`)
 
     if (eligibleLeads.length === 0) {
-      console.log('═══════════════════════════════════════════════════════════')
       return new Response(
-        JSON.stringify({ 
-          success: true, 
-          message: 'Nenhum lead elegível',
-          dispatched: 0,
-          eligible: 0,
-          disabled_deals: dealsToDisable.length
-        }),
+        JSON.stringify({ success: true, message: 'Nenhum lead elegível', dispatched: 0, eligible: 0 }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
     // ═══════════════════════════════════════════════════════════
-    // ENVIO - PRIORIDADE N8N COM FALLBACK
+    // CRIAR SESSÃO DE DISPARO (REALTIME)
     // ═══════════════════════════════════════════════════════════
-    const results = { success: 0, failed: 0, via_n8n: 0, via_direct: 0, errors: [] as string[] }
-    const callbackUrl = `${supabaseUrl}/functions/v1/update-followup-history`
+    const sessionId = await createDispatchSession(supabase, 'followup', dispatchSource, eligibleLeads.length)
+    
+    if (sessionId) {
+      await createSessionItems(supabase, sessionId, eligibleLeads)
+    }
 
-    for (const lead of eligibleLeads) {
-      console.log(`📤 Enviando: ${lead.client_name} (FU #${lead.followup_number})...`)
+    // ═══════════════════════════════════════════════════════════
+    // ENVIO COM TRACKING EM TEMPO REAL
+    // ═══════════════════════════════════════════════════════════
+    const results = { success: 0, failed: 0, via_direct: 0, errors: [] as string[] }
+    const processingTimes: number[] = []
+
+    for (let i = 0; i < eligibleLeads.length; i++) {
+      const lead = eligibleLeads[i]
+      const leadStartTime = Date.now()
       
-      let sent = false
-      let errorMsg = ''
-      let sentVia = ''
+      console.log(`📤 [${i+1}/${eligibleLeads.length}] Enviando: ${lead.client_name} (FU #${lead.followup_number})...`)
       
-      // ✅ PRIORIDADE 1: Tentar n8n (com retry automático)
-      if ((sendMode === 'n8n' || sendMode === 'hybrid') && n8nWebhook && n8nHealthy) {
-        // Verificar se já existe log para evitar duplicação
-        const { data: existingLog } = await supabase
-          .from('followup_logs')
-          .select('id, status')
-          .eq('deal_id', lead.deal_id)
-          .eq('followup_number', lead.followup_number)
-          .maybeSingle()
-        
-        if (!existingLog) {
-          // Criar log como pending antes de enviar
-          await supabase.from('followup_logs').insert({
-            deal_id: lead.deal_id,
-            followup_number: lead.followup_number,
-            status: 'pending',
-            message_sent: 'Enviado para n8n + OpenAI',
-            source: dispatchSource
-          })
-        }
-        
-        const n8nResult = await sendN8nFollowup(n8nWebhook, lead, callbackUrl, 2)
-        
-        if (n8nResult.success) {
-          console.log(`✅ [N8N] ${lead.client_name} enviado`)
-          results.success++
-          results.via_n8n++
-          sent = true
-          sentVia = 'n8n'
-        } else {
-          console.warn(`⚠️ [N8N] Falha após retries: ${n8nResult.error}`)
-          errorMsg = n8nResult.error || 'Erro no n8n'
-          
-          // Atualizar log para failed
-          await supabase
-            .from('followup_logs')
-            .update({ 
-              status: 'failed', 
-              error_message: errorMsg.substring(0, 500),
-              source: dispatchSource
-            })
-            .eq('deal_id', lead.deal_id)
-            .eq('followup_number', lead.followup_number)
-            .eq('status', 'pending')
-        }
+      // Atualizar status para processing
+      if (sessionId) {
+        await updateSessionItem(supabase, sessionId, lead.deal_id, 'processing')
       }
       
-      // ✅ FALLBACK: Envio direto se n8n falhou ou não está configurado
-      if (!sent && (sendMode === 'hybrid' || sendMode === 'direct' || !n8nHealthy)) {
-        console.log(`🔄 Tentando fallback direto para ${lead.client_name}...`)
-        
-        const directResult = await sendDirectFollowup(supabaseUrl, supabaseKey, lead, dispatchSource)
-        
-        if (directResult.success) {
-          console.log(`✅ [DIRETO] ${lead.client_name} enviado`)
-          results.success++
-          results.via_direct++
-          sent = true
-          sentVia = 'direct'
-        } else {
-          console.error(`❌ [DIRETO] Falha: ${directResult.error}`)
-          errorMsg = directResult.error || 'Erro no envio direto'
-        }
-      }
+      // Envio direto
+      const directResult = await sendDirectFollowup(supabaseUrl, supabaseKey, lead, dispatchSource)
+      const leadElapsed = Date.now() - leadStartTime
+      processingTimes.push(leadElapsed)
       
-      // Se falhou em todos os métodos
-      if (!sent) {
-        console.error(`❌ ${lead.client_name}: ${errorMsg}`)
+      if (directResult.success) {
+        console.log(`✅ ${lead.client_name} enviado em ${leadElapsed}ms`)
+        results.success++
+        results.via_direct++
+        
+        if (sessionId) {
+          await updateSessionItem(supabase, sessionId, lead.deal_id, 'sent')
+        }
+      } else {
+        console.error(`❌ ${lead.client_name}: ${directResult.error}`)
         results.failed++
-        results.errors.push(`${lead.client_name}: ${errorMsg}`)
+        results.errors.push(`${lead.client_name}: ${directResult.error}`)
         
-        // ✅ CORREÇÃO v5.1: Verificar se já existe log antes de criar
+        if (sessionId) {
+          await updateSessionItem(supabase, sessionId, lead.deal_id, 'failed', directResult.error)
+        }
+        
+        // Log de erro
         const { data: existingLog } = await supabase
           .from('followup_logs')
           .select('id')
@@ -652,29 +485,39 @@ Deno.serve(async (req) => {
             deal_id: lead.deal_id,
             followup_number: lead.followup_number,
             status: 'failed',
-            error_message: errorMsg.substring(0, 500),
+            error_message: (directResult.error || '').substring(0, 500),
             source: dispatchSource
           })
-        } else {
-          // Atualizar log existente
-          await supabase
-            .from('followup_logs')
-            .update({ 
-              status: 'failed', 
-              error_message: errorMsg.substring(0, 500),
-              source: dispatchSource
-            })
-            .eq('deal_id', lead.deal_id)
-            .eq('followup_number', lead.followup_number)
         }
       }
       
-      // Delay entre envios para não sobrecarregar
+      // Atualizar sessão com progresso
+      if (sessionId) {
+        const avgTime = processingTimes.reduce((a, b) => a + b, 0) / processingTimes.length
+        await updateSession(supabase, sessionId, {
+          processed: i + 1,
+          success_count: results.success,
+          failed_count: results.failed,
+          avg_time_per_lead_ms: Math.round(avgTime)
+        })
+      }
+      
+      // Delay entre envios
       await new Promise(r => setTimeout(r, 2000))
     }
 
+    // Finalizar sessão
+    if (sessionId) {
+      await updateSession(supabase, sessionId, {
+        status: 'completed',
+        processed: eligibleLeads.length,
+        success_count: results.success,
+        failed_count: results.failed
+      })
+    }
+
     const elapsed = Date.now() - startTime
-    console.log(`🏁 Concluído: ${results.success} ✅ (n8n: ${results.via_n8n}, direto: ${results.via_direct}), ${results.failed} ❌ (${elapsed}ms)`)
+    console.log(`🏁 Concluído: ${results.success} ✅, ${results.failed} ❌ (${elapsed}ms)`)
     console.log('═══════════════════════════════════════════════════════════')
 
     return new Response(
@@ -683,12 +526,9 @@ Deno.serve(async (req) => {
         message: `${results.success} enviados, ${results.failed} falhas`,
         mode: sendMode,
         dispatched: results.success,
-        via_n8n: results.via_n8n,
-        via_direct: results.via_direct,
         failed: results.failed,
         eligible: eligibleLeads.length,
-        disabled_deals: dealsToDisable.length,
-        n8n_healthy: n8nHealthy,
+        session_id: sessionId,
         elapsed_ms: elapsed,
         source: dispatchSource,
         errors: results.errors.slice(0, 5)
@@ -698,7 +538,6 @@ Deno.serve(async (req) => {
 
   } catch (error: any) {
     console.error('💥 Erro:', error)
-    console.log('═══════════════════════════════════════════════════════════')
     return new Response(
       JSON.stringify({ error: error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
