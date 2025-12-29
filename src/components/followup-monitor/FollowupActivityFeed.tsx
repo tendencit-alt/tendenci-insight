@@ -33,17 +33,25 @@ export function FollowupActivityFeed({ isRealtime = true }: FollowupActivityFeed
     try {
       const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
-      // Buscar stages
+      // Buscar stage de Follow Up com pipeline_id
       const { data: followupStage } = await supabase
         .from("crm_stages")
-        .select("id")
+        .select("id, pipeline_id")
         .eq("name", "Follow Up (I.A)")
         .single();
 
+      if (!followupStage) {
+        console.error("Stage 'Follow Up (I.A)' não encontrado");
+        setLoading(false);
+        return;
+      }
+
+      // Buscar Lead do MESMO pipeline para evitar duplicatas
       const { data: leadStage } = await supabase
         .from("crm_stages")
         .select("id")
         .eq("name", "Lead")
+        .eq("pipeline_id", followupStage.pipeline_id)
         .single();
 
       // 1. Follow-up logs (enviados e falhas)
@@ -199,6 +207,7 @@ export function FollowupActivityFeed({ isRealtime = true }: FollowupActivityFeed
           event: "INSERT",
           schema: "public",
           table: "crm_deal_history",
+          filter: "action_type=eq.stage_change",
         },
         async (payload) => {
           const history = payload.new as any;
