@@ -3,8 +3,13 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { ActivityFeed } from "@/components/activities/ActivityFeed";
 import { ActivityFilters } from "@/components/activities/ActivityFilters";
 import { ActivityKPIs } from "@/components/activities/ActivityKPIs";
+import { FollowupMonitorKPIs } from "@/components/followup-monitor/FollowupMonitorKPIs";
+import { FollowupActivityFeed } from "@/components/followup-monitor/FollowupActivityFeed";
+import { FollowupCharts } from "@/components/followup-monitor/FollowupCharts";
+import { FollowupFailuresPanel } from "@/components/followup-monitor/FollowupFailuresPanel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Activity, RefreshCw } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Activity, RefreshCw, Bot, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -48,6 +53,7 @@ export default function ActivityCenter() {
     endDate: null,
   });
   const [isRealtime, setIsRealtime] = useState(true);
+  const [activeTab, setActiveTab] = useState("activities");
   const { toast } = useToast();
 
   const fetchActivities = async () => {
@@ -201,29 +207,77 @@ export default function ActivityCenter() {
           </div>
         </div>
 
-        {/* KPIs */}
-        <ActivityKPIs activities={activities} filters={filters} />
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="grid w-full max-w-md grid-cols-2">
+            <TabsTrigger value="activities" className="flex items-center gap-2">
+              <Zap className="h-4 w-4" />
+              Atividades
+            </TabsTrigger>
+            <TabsTrigger value="followups" className="flex items-center gap-2">
+              <Bot className="h-4 w-4" />
+              Follow-ups IA
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Filters */}
-        <ActivityFilters filters={filters} onFiltersChange={setFilters} />
+          {/* Tab: Atividades */}
+          <TabsContent value="activities" className="space-y-6 mt-6">
+            {/* KPIs */}
+            <ActivityKPIs activities={activities} filters={filters} />
 
-        {/* Feed */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Activity className="h-5 w-5" />
-              Feed de Atividades
-              {isRealtime && (
-                <span className="text-xs bg-green-500/10 text-green-500 px-2 py-0.5 rounded-full">
-                  Atualização automática
-                </span>
-              )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ActivityFeed activities={activities} loading={loading} />
-          </CardContent>
-        </Card>
+            {/* Filters */}
+            <ActivityFilters filters={filters} onFiltersChange={setFilters} />
+
+            {/* Feed */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Activity className="h-5 w-5" />
+                  Feed de Atividades
+                  {isRealtime && (
+                    <span className="text-xs bg-green-500/10 text-green-500 px-2 py-0.5 rounded-full">
+                      Atualização automática
+                    </span>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ActivityFeed activities={activities} loading={loading} />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Tab: Follow-ups IA */}
+          <TabsContent value="followups" className="space-y-6 mt-6">
+            {/* KPIs de Follow-up */}
+            <FollowupMonitorKPIs />
+
+            {/* Gráficos */}
+            <FollowupCharts />
+
+            {/* Feed de Atividade + Painel de Falhas */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Bot className="h-5 w-5" />
+                    Atividade em Tempo Real
+                    {isRealtime && (
+                      <span className="text-xs bg-green-500/10 text-green-500 px-2 py-0.5 rounded-full">
+                        Auto-scroll
+                      </span>
+                    )}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <FollowupActivityFeed isRealtime={isRealtime} />
+                </CardContent>
+              </Card>
+
+              <FollowupFailuresPanel />
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </DashboardLayout>
   );
