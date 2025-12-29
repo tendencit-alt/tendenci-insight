@@ -309,22 +309,31 @@ Deno.serve(async (req) => {
             return dealLast8 === clientLast8
           })
 
-          if (matchingDeals.length > 0) {
+        if (matchingDeals.length > 0) {
             console.log(`✅ Found ${matchingDeals.length} follow-up deal(s) for this client`)
             
             for (const deal of matchingDeals) {
               console.log(`🔄 Processing deal: ${deal.title}`)
+              console.log(`📊 Deal followup_count: ${deal.followup_count}`)
+              
+              // ========== VALIDAR SE HOUVE FOLLOW-UP REAL ANTES DE MOVER ==========
+              const hadRealFollowup = (deal.followup_count || 0) > 0
               
               // ========== MOVER PARA ETAPA "LEAD" SE CLIENTE RESPONDEU ==========
               const updateData: any = {
                 last_interaction: new Date().toISOString()
               }
               
-              // Se cliente respondeu (não opt-out), mover para Lead
-              if (!hasOptOut && leadStage?.id) {
+              // Se cliente respondeu (não opt-out) E houve follow-up real, mover para Lead
+              if (!hasOptOut && leadStage?.id && hadRealFollowup) {
                 updateData.stage_id = leadStage.id
                 updateData.stage_entered_at = new Date().toISOString()
-                console.log('🔄 Movendo deal para etapa Lead:', leadStage.id)
+                console.log('🔄 Movendo deal para etapa Lead (follow-up real confirmado):', leadStage.id)
+              } else if (!hasOptOut && leadStage?.id && !hadRealFollowup) {
+                // Se não houve follow-up, ainda move mas com descrição diferente
+                updateData.stage_id = leadStage.id
+                updateData.stage_entered_at = new Date().toISOString()
+                console.log('🔄 Movendo deal para etapa Lead (mensagem direta, sem follow-up prévio):', leadStage.id)
               }
               
               // Se opt-out detectado, desabilitar follow-ups
@@ -363,12 +372,14 @@ Deno.serve(async (req) => {
                   console.log('✅ Log de resposta do cliente criado')
                 }
                 
-                // Timeline message
+                // Timeline message - DIFERENCIADA baseado se houve follow-up real
                 let timelineMessage: string
                 if (hasOptOut) {
                   timelineMessage = '🛑 Cliente solicitou PARAR follow-ups. Sistema desativado.'
-                } else if (leadStage?.id) {
-                  timelineMessage = '🎉 Cliente respondeu! Movido automaticamente para etapa "Lead" para atendimento humano.'
+                } else if (leadStage?.id && hadRealFollowup) {
+                  timelineMessage = '🎉 Cliente respondeu ao follow-up! Movido automaticamente para etapa "Lead".'
+                } else if (leadStage?.id && !hadRealFollowup) {
+                  timelineMessage = '💬 Cliente enviou mensagem (sem follow-up prévio). Movido para etapa "Lead".'
                 } else {
                   timelineMessage = '🎉 Cliente respondeu! Ciclo de follow-up pausado.'
                 }
@@ -381,8 +392,13 @@ Deno.serve(async (req) => {
                     update_type: 'Sistema - Follow-up'
                   })
                 
-                // Registrar mudança de etapa no histórico se moveu para Lead
+                // Registrar mudança de etapa no histórico - COM DESCRIÇÃO CORRETA
                 if (!hasOptOut && leadStage?.id && followupStage?.id) {
+                  // Descrição diferenciada baseado se houve follow-up real
+                  const historyDescription = hadRealFollowup 
+                    ? 'Movido automaticamente: Cliente respondeu ao follow-up'
+                    : 'Movido automaticamente: Cliente enviou mensagem (sem follow-up prévio)'
+                  
                   await supabase
                     .from('crm_deal_history')
                     .insert({
@@ -390,7 +406,7 @@ Deno.serve(async (req) => {
                       action_type: 'stage_change',
                       from_stage_id: followupStage.id,
                       to_stage_id: leadStage.id,
-                      description: 'Movido automaticamente: Cliente respondeu ao follow-up'
+                      description: historyDescription
                     })
                 }
                 

@@ -92,13 +92,21 @@ export function FollowupMonitorKPIs() {
         ? Math.round(((sentWeek || 0) / totalAttempts) * 100) 
         : 0;
 
-      // Movidos para Lead (deals que saíram do Follow Up para Lead nos últimos 7 dias)
-      const { count: movedToLead } = await supabase
+      // Movidos para Lead COM follow-up real (verificar se deal tinha followup_count > 0)
+      // Primeiro buscar os deals que foram movidos
+      const { data: movedDealsHistory } = await supabase
         .from("crm_deal_history")
-        .select("*", { count: "exact", head: true })
+        .select("deal_id, description")
         .eq("from_stage_id", followupStage?.id || "")
         .eq("to_stage_id", leadStage?.id || "")
         .gte("moved_at", weekStart);
+
+      // Filtrar apenas os que tiveram follow-up real (descrição contém "respondeu ao follow-up")
+      const realFollowupMoves = (movedDealsHistory || []).filter(move => 
+        move.description?.includes("respondeu ao follow-up")
+      );
+      
+      const movedToLead = realFollowupMoves.length;
 
       // Convites de grupo enviados
       const { count: groupInvites } = await supabase
