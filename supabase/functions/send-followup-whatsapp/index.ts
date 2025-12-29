@@ -236,10 +236,61 @@ Deno.serve(async (req) => {
     
     const evolutionUrl = Deno.env.get('EVOLUTION_API_URL')
     const evolutionApiKey = Deno.env.get('EVOLUTION_API_KEY')
-    const instanceName = 'IA-Atendimento' // Instância padrão
     
     if (!evolutionUrl || !evolutionApiKey) {
       throw new Error('Evolution API não configurada (EVOLUTION_API_URL ou EVOLUTION_API_KEY)')
+    }
+    
+    // ═══════════════════════════════════════════════════════════
+    // BUSCAR INSTÂNCIA WHATSAPP DINAMICAMENTE DO BANCO
+    // ═══════════════════════════════════════════════════════════
+    console.log('🔍 Buscando instância WhatsApp conectada...')
+    
+    // Primeiro: tentar instância marcada como IA
+    let { data: iaConnection, error: iaError } = await supabase
+      .from('tendenci_whatsapp_connections')
+      .select('instance_name, status, phone_number')
+      .eq('is_ia_instance', true)
+      .eq('status', 'connected')
+      .limit(1)
+      .maybeSingle()
+    
+    let instanceName: string
+    
+    if (iaConnection) {
+      instanceName = iaConnection.instance_name
+      console.log(`✅ Usando instância IA: ${instanceName} (${iaConnection.phone_number})`)
+    } else {
+      // Fallback: qualquer instância conectada
+      const { data: anyConnection } = await supabase
+        .from('tendenci_whatsapp_connections')
+        .select('instance_name, status, phone_number')
+        .eq('status', 'connected')
+        .limit(1)
+        .maybeSingle()
+      
+      if (!anyConnection) {
+        console.error('❌ Nenhuma instância WhatsApp conectada!')
+        
+        await supabase.from('system_errors').insert({
+          title: 'Nenhum WhatsApp conectado',
+          module: 'followup',
+          description: 'Não há instâncias WhatsApp conectadas para enviar follow-up',
+          severity: 'critical',
+          source: 'send-followup-whatsapp'
+        })
+        
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: 'Nenhuma instância WhatsApp conectada. Reconecte pelo menos uma instância.'
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 503 }
+        )
+      }
+      
+      instanceName = anyConnection.instance_name
+      console.log(`⚠️ Usando instância alternativa: ${instanceName} (${anyConnection.phone_number})`)
     }
     
     // Parsear request
