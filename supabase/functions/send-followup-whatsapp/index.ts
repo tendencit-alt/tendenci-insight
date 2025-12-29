@@ -457,8 +457,8 @@ Deno.serve(async (req) => {
       })
       .eq('id', body.deal_id)
     
-    // Registrar log de sucesso
-    await supabase.from('followup_logs').upsert({
+    // Registrar log de sucesso (com tratamento de erro)
+    const { error: logError } = await supabase.from('followup_logs').upsert({
       deal_id: body.deal_id,
       followup_number: body.followup_number,
       status: 'sent',
@@ -469,12 +469,24 @@ Deno.serve(async (req) => {
       ignoreDuplicates: false 
     })
     
-    // Registrar na timeline
-    await supabase.from('crm_timeline').insert({
+    if (logError) {
+      console.error('⚠️ Erro ao salvar followup_logs (não crítico):', logError.message)
+    } else {
+      console.log('✅ followup_logs registrado com sucesso')
+    }
+    
+    // Registrar na timeline (com tratamento de erro)
+    const { error: timelineError } = await supabase.from('crm_timeline').insert({
       deal_id: body.deal_id,
       message: `Follow-up automático #${body.followup_number} enviado via WhatsApp`,
       update_type: 'Sistema - Follow-up'
     })
+    
+    if (timelineError) {
+      console.error('⚠️ Erro ao salvar crm_timeline (não crítico):', timelineError.message)
+    } else {
+      console.log('✅ crm_timeline registrado com sucesso')
+    }
     
     const elapsed = Date.now() - startTime
     console.log(`🏁 Concluído em ${elapsed}ms`)
