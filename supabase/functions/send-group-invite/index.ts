@@ -334,7 +334,7 @@ Até lá! 🎉`
       .insert({
         deal_id,
         message: `📣 Convite automático enviado para grupo de ofertas: ${GROUP_LINK}`,
-        update_type: 'Sistema - Convite Grupo'
+        update_type: 'Observação'
       })
 
     if (timelineError) {
