@@ -257,11 +257,11 @@ export default function ActivityCenter() {
             {/* Gráficos */}
             <FollowupCharts />
 
-            {/* Painel de Disparo + Feed + Painéis */}
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-              {/* Painel de Disparo Manual */}
-              <FollowupDispatchPanel />
+            {/* Painel de Disparo em destaque */}
+            <FollowupDispatchPanel />
 
+            {/* Grid 3 colunas para os demais componentes */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Feed de Atividade */}
               <Card>
                 <CardHeader className="pb-3">
