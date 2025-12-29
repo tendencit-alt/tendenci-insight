@@ -4,10 +4,30 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { ExternalLink, Send, MessageCircle, ArrowRight, AlertTriangle, Users } from "lucide-react";
-import { format } from "date-fns";
+import { format, isToday, isYesterday } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
+
+// Formatar data/hora de forma inteligente
+const formatEventTime = (timestamp: string) => {
+  const date = new Date(timestamp);
+  const timeStr = format(date, "HH:mm");
+  
+  if (isToday(date)) {
+    return `Hoje ${timeStr}`;
+  }
+  if (isYesterday(date)) {
+    return `Ontem ${timeStr}`;
+  }
+  return format(date, "dd/MM HH:mm");
+};
 
 interface FollowupEvent {
   id: string;
@@ -346,50 +366,74 @@ export function FollowupActivityFeed({ isRealtime = true }: FollowupActivityFeed
   }
 
   return (
-    <ScrollArea className="h-[400px]">
-      <div className="space-y-2">
-        {events.map((event) => {
-          const config = getEventConfig(event.type);
-          const Icon = config.icon;
+    <TooltipProvider>
+      <ScrollArea className="h-[400px]">
+        <div className="space-y-2">
+          {events.map((event) => {
+            const config = getEventConfig(event.type);
+            const Icon = config.icon;
 
-          return (
-            <div
-              key={event.id}
-              className="flex items-center gap-4 p-3 rounded-lg hover:bg-muted/50 transition-colors"
-            >
-              <div className={`p-2 rounded-full ${config.bgColor}`}>
-                <Icon className={`h-4 w-4 ${config.color}`} />
-              </div>
-
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <Badge className={config.badgeClass}>
-                    {getEventLabel(event.type)}
-                  </Badge>
-                  <span className="font-medium truncate">{event.dealTitle}</span>
+            return (
+              <div
+                key={event.id}
+                className={`flex items-start gap-4 p-3 rounded-lg hover:bg-muted/50 transition-colors ${
+                  event.type === "failed" ? "border border-destructive/30 bg-destructive/5" : ""
+                }`}
+              >
+                <div className={`p-2 rounded-full ${config.bgColor} shrink-0 mt-0.5`}>
+                  <Icon className={`h-4 w-4 ${config.color}`} />
                 </div>
-                <p className="text-sm text-muted-foreground truncate">
-                  {event.message}
-                </p>
-              </div>
 
-              <div className="flex items-center gap-2 shrink-0">
-                <span className="text-xs text-muted-foreground">
-                  {format(new Date(event.timestamp), "HH:mm", { locale: ptBR })}
-                </span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Badge className={config.badgeClass}>
+                      {getEventLabel(event.type)}
+                    </Badge>
+                    <span className="font-medium truncate">{event.dealTitle}</span>
+                    <span className="text-xs text-muted-foreground ml-auto shrink-0">
+                      {formatEventTime(event.timestamp)}
+                    </span>
+                  </div>
+                  
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {event.type === "failed" 
+                      ? `Follow-up #${event.followupNumber} falhou`
+                      : event.message
+                    }
+                  </p>
+
+                  {/* Mostrar motivo do erro para falhas */}
+                  {event.type === "failed" && event.errorMessage && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="flex items-center gap-1.5 mt-2 p-2 rounded bg-destructive/10 border border-destructive/20 cursor-help">
+                          <AlertTriangle className="h-3.5 w-3.5 text-destructive shrink-0" />
+                          <span className="text-xs text-destructive font-medium truncate">
+                            {event.errorMessage}
+                          </span>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="max-w-[400px]">
+                        <p className="text-sm font-medium mb-1">Motivo do erro:</p>
+                        <p className="text-sm">{event.errorMessage}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+                </div>
+
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8"
+                  className="h-8 w-8 shrink-0"
                   onClick={() => window.open(`/crm?deal=${event.dealId}`, "_blank")}
                 >
                   <ExternalLink className="h-4 w-4" />
                 </Button>
               </div>
-            </div>
-          );
-        })}
-      </div>
-    </ScrollArea>
+            );
+          })}
+        </div>
+      </ScrollArea>
+    </TooltipProvider>
   );
 }
