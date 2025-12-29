@@ -59,3 +59,12 @@ verify_jwt = false
 
 [functions.check-scheduled-campaigns]
 verify_jwt = false
+
+[functions.get-eligible-group-invites]
+verify_jwt = false
+
+[functions.send-group-invite]
+verify_jwt = false
+
+[functions.dispatch-group-invites]
+verify_jwt = false
