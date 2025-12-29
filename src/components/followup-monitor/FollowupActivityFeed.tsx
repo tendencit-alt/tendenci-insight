@@ -106,19 +106,14 @@ export function FollowupActivityFeed({ isRealtime = true }: FollowupActivityFeed
         .order("moved_at", { ascending: false })
         .limit(50);
 
-      // 3. Convites de grupo enviados (via timeline)
-      const { data: groupInvites } = await supabase
-        .from("crm_timeline")
-        .select(`
-          id,
-          deal_id,
-          created_at,
-          message,
-          crm_deals!inner(title)
-        `)
-        .ilike("message", "%Convite automático%")
-        .gte("created_at", weekAgo)
-        .order("created_at", { ascending: false })
+      // 3. Convites de grupo enviados (buscar diretamente de crm_deals)
+      const { data: groupInviteDeals } = await supabase
+        .from("crm_deals")
+        .select("id, title, group_invite_sent_at")
+        .eq("group_invite_sent", true)
+        .not("group_invite_sent_at", "is", null)
+        .gte("group_invite_sent_at", weekAgo)
+        .order("group_invite_sent_at", { ascending: false })
         .limit(30);
 
       // Mapear eventos
@@ -150,14 +145,14 @@ export function FollowupActivityFeed({ isRealtime = true }: FollowupActivityFeed
         });
       });
 
-      groupInvites?.forEach((invite: any) => {
+      groupInviteDeals?.forEach((deal: any) => {
         allEvents.push({
-          id: invite.id,
+          id: `group-${deal.id}`,
           type: "group_invite",
-          timestamp: invite.created_at,
-          dealId: invite.deal_id,
-          dealTitle: invite.crm_deals?.title || "Deal desconhecido",
-          message: "Convite de grupo enviado",
+          timestamp: deal.group_invite_sent_at,
+          dealId: deal.id,
+          dealTitle: deal.title || "Deal desconhecido",
+          message: "Convite de grupo WhatsApp enviado",
         });
       });
 
@@ -266,6 +261,41 @@ export function FollowupActivityFeed({ isRealtime = true }: FollowupActivityFeed
             toast({
               title: "Cliente respondeu!",
               description: `${deal?.title} foi movido para Lead`,
+            });
+          }
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "crm_deals",
+        },
+        async (payload) => {
+          const deal = payload.new as any;
+          const oldDeal = payload.old as any;
+          
+          // Verificar se é uma nova atualização de convite de grupo
+          if (deal.group_invite_sent && deal.group_invite_sent_at && !oldDeal.group_invite_sent) {
+            const newEvent: FollowupEvent = {
+              id: `group-${deal.id}`,
+              type: "group_invite",
+              timestamp: deal.group_invite_sent_at,
+              dealId: deal.id,
+              dealTitle: deal.title || "Deal desconhecido",
+              message: "Convite de grupo WhatsApp enviado",
+            };
+
+            setEvents((prev) => {
+              // Evitar duplicatas
+              if (prev.some(e => e.id === newEvent.id)) return prev;
+              return [newEvent, ...prev].slice(0, 100);
+            });
+
+            toast({
+              title: "Convite de grupo enviado!",
+              description: deal.title,
             });
           }
         }
