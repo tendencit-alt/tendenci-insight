@@ -18,6 +18,8 @@ const initialForm = {
   localizacao: "",
   horario_funcionamento: "",
   descricao: "",
+  diferenciais: "",
+  publico_alvo: "",
 };
 
 export default function IAConfigNegocio({ config, onSave, saving }: Props) {
@@ -35,6 +37,8 @@ export default function IAConfigNegocio({ config, onSave, saving }: Props) {
         localizacao: (config.localizacao as string) || "",
         horario_funcionamento: (config.horario_funcionamento as string) || "",
         descricao: (config.descricao as string) || "",
+        diferenciais: (config.diferenciais as string) || "",
+        publico_alvo: (config.publico_alvo as string) || "",
       });
     }
   }, [config, hasRestoredData]);
@@ -91,12 +95,30 @@ export default function IAConfigNegocio({ config, onSave, saving }: Props) {
       </div>
 
       <EnhancedTextarea
-        label="Descrição do Negócio (para contextualizar a IA)"
+        label="Descrição do Negócio"
         value={form.descricao}
         onChange={(value) => setForm({ ...form, descricao: value })}
-        placeholder="Descreva seu negócio, história, diferenciais, público-alvo..."
-        rows={5}
-        context="Descrição do negócio para IA"
+        placeholder="O que a empresa faz, história, missão, visão. Ex: Somos uma empresa de móveis planejados fundada em 2010, especializada em ambientes corporativos e residenciais de alto padrão..."
+        rows={4}
+        context="Descrição do negócio - história, missão e o que a empresa faz"
+      />
+
+      <EnhancedTextarea
+        label="Diferenciais Competitivos"
+        value={form.diferenciais}
+        onChange={(value) => setForm({ ...form, diferenciais: value })}
+        placeholder="O que diferencia sua empresa dos concorrentes. Ex: Fabricação própria, garantia de 5 anos, atendimento personalizado, entrega em 30 dias, uso de materiais premium..."
+        rows={4}
+        context="Diferenciais competitivos da empresa para destacar ao cliente"
+      />
+
+      <EnhancedTextarea
+        label="Público-Alvo"
+        value={form.publico_alvo}
+        onChange={(value) => setForm({ ...form, publico_alvo: value })}
+        placeholder="Quem são seus clientes ideais. Ex: Arquitetos especificadores, construtoras de médio e grande porte, clientes finais classe A/B que buscam qualidade e personalização..."
+        rows={4}
+        context="Público-alvo e perfil de cliente ideal para adaptar a abordagem"
       />
 
       <div className="flex justify-end">
