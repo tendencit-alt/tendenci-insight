@@ -380,9 +380,8 @@ export function IAAgentTester({ isConfigComplete, completedSections, totalSectio
                                   <img 
                                     src={m.url} 
                                     alt={m.productName} 
-                                    className="w-full h-auto max-h-48 object-cover"
+                                    className="w-full h-auto rounded-t-lg"
                                     onError={(e) => {
-                                      // Fallback para imagem quebrada
                                       (e.target as HTMLImageElement).style.display = 'none';
                                       (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
                                     }}
@@ -397,7 +396,7 @@ export function IAAgentTester({ isConfigComplete, completedSections, totalSectio
                                   <video 
                                     src={m.url} 
                                     controls 
-                                    className="w-full h-auto max-h-48"
+                                    className="w-full h-auto rounded-t-lg"
                                     onError={(e) => {
                                       (e.target as HTMLVideoElement).style.display = 'none';
                                       (e.target as HTMLVideoElement).nextElementSibling?.classList.remove('hidden');
