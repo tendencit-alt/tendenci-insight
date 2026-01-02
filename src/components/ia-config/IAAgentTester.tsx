@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Bot, Send, Trash2, Loader2, User, RefreshCw, MessageSquare, Lock } from "lucide-react";
+import { Bot, Send, Trash2, Loader2, User, RefreshCw, MessageSquare, Lock, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -217,6 +217,15 @@ export function IAAgentTester({ isConfigComplete, completedSections, totalSectio
   return (
     <Card>
       <CardHeader>
+        {completedSections < totalSections && (
+          <div className="flex items-center gap-2 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg mb-4">
+            <AlertCircle className="h-4 w-4 text-yellow-500 shrink-0" />
+            <span className="text-sm text-yellow-700 dark:text-yellow-400">
+              Algumas seções ainda não estão configuradas ({completedSections}/{totalSections}). 
+              O agente pode não responder de forma ideal.
+            </span>
+          </div>
+        )}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-primary/10 rounded-lg">
