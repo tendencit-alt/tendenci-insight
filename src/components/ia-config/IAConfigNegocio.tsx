@@ -18,6 +18,7 @@ const initialForm = {
   localizacao: "",
   horario_funcionamento: "",
   descricao: "",
+  produtos_servicos: "",
   diferenciais: "",
   publico_alvo: "",
 };
@@ -37,6 +38,7 @@ export default function IAConfigNegocio({ config, onSave, saving }: Props) {
         localizacao: (config.localizacao as string) || "",
         horario_funcionamento: (config.horario_funcionamento as string) || "",
         descricao: (config.descricao as string) || "",
+        produtos_servicos: (config.produtos_servicos as string) || "",
         diferenciais: (config.diferenciais as string) || "",
         publico_alvo: (config.publico_alvo as string) || "",
       });
@@ -101,6 +103,15 @@ export default function IAConfigNegocio({ config, onSave, saving }: Props) {
         placeholder="O que a empresa faz, história, missão, visão. Ex: Somos uma empresa de móveis planejados fundada em 2010, especializada em ambientes corporativos e residenciais de alto padrão..."
         rows={4}
         context="Descrição do negócio - história, missão e o que a empresa faz"
+      />
+
+      <EnhancedTextarea
+        label="Produtos e Serviços"
+        value={form.produtos_servicos}
+        onChange={(value) => setForm({ ...form, produtos_servicos: value })}
+        placeholder="Liste os principais produtos e serviços oferecidos. Ex: Móveis planejados para cozinha, dormitórios e home office; Projeto 3D gratuito; Instalação inclusa; Manutenção pós-venda..."
+        rows={4}
+        context="Produtos e serviços oferecidos pela empresa para o agente conhecer e oferecer"
       />
 
       <EnhancedTextarea
