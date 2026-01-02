@@ -572,10 +572,33 @@ ${vendas.script_followup}\n`;
       products.forEach((p: any) => {
         prodSection += `\n## ${p.nome}
 Categoria: ${p.categoria || 'Geral'}
-Preço: ${p.preco_min && p.preco_max ? `R$ ${p.preco_min} - R$ ${p.preco_max}` : 'Sob consulta'}
+Preço: ${p.preco_min && p.preco_max ? `R$ ${p.preco_min} - R$ ${p.preco_max}` : (p.preco_base ? `R$ ${p.preco_base}` : 'Sob consulta')}
 ${p.descricao || ''}
 ${p.quando_oferecer ? `Oferecer quando: ${p.quando_oferecer}` : ''}
 ${p.diferenciais && p.diferenciais.length > 0 ? `Diferenciais: ${p.diferenciais.join(', ')}` : ''}`;
+        
+        // Add image info
+        if (p.imagem_url) {
+          prodSection += `\nImagem principal disponível: Sim`;
+        }
+        if (p.galeria && p.galeria.length > 0) {
+          prodSection += `\nGaleria de imagens: ${p.galeria.length} fotos`;
+        }
+        
+        // Add videos info - support both new videos array and legacy video_url
+        const videosArray = Array.isArray(p.videos) ? p.videos : [];
+        const hasLegacyVideo = p.video_url && !videosArray.find((v: any) => v.url === p.video_url);
+        const totalVideos = videosArray.length + (hasLegacyVideo ? 1 : 0);
+        
+        if (totalVideos > 0) {
+          prodSection += `\nVídeos disponíveis: ${totalVideos}`;
+          videosArray.forEach((v: any, i: number) => {
+            prodSection += `\n  - ${v.nome || `Vídeo ${i + 1}`}: ${v.url}`;
+          });
+          if (hasLegacyVideo) {
+            prodSection += `\n  - Vídeo principal: ${p.video_url}`;
+          }
+        }
       });
       promptSections.push(prodSection);
     }
