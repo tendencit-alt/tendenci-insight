@@ -1,9 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Save, Plus, Trash2, Package, Calendar, DollarSign, Hash, AlertTriangle, Search, FileText, HelpCircle, MessageSquare, Zap, Target, User } from "lucide-react";
+import { Loader2, Save, Plus, Trash2, Package, Calendar, DollarSign, Hash, AlertTriangle, Search, FileText, HelpCircle, MessageSquare, Zap, Target, User, Check } from "lucide-react";
 import { useFormPersistence } from "@/hooks/useFormPersistence";
 import { FormSaveIndicator } from "@/components/ui/FormSaveIndicator";
 import { EnhancedTextarea } from "@/components/ui/enhanced-textarea";
@@ -106,6 +105,7 @@ export default function IAConfigQualificacao({ config, onSave, saving }: Props) 
     true
   );
   const [novaPergunta, setNovaPergunta] = useState("");
+  const isInitializedRef = useRef(false);
 
   // Garantir que arrays sempre existam (proteção contra dados do localStorage incompletos)
   const perguntasPermitidas = form.perguntas_permitidas || [];
@@ -113,7 +113,10 @@ export default function IAConfigQualificacao({ config, onSave, saving }: Props) 
   const criteriosLead = form.criterios_lead || { quente: '', morno: '', frio: '' };
 
   useEffect(() => {
-    if (config && !hasRestoredData) {
+    // Só inicializa UMA vez, e apenas se não houver dados restaurados
+    if (isInitializedRef.current || hasRestoredData) return;
+    
+    if (config && Object.keys(config).length > 0) {
       const criterios = config.criterios_lead as Record<string, string> || {};
       setForm({
         pode_fazer_perguntas: (config.pode_fazer_perguntas as string) || "sim_poucas",
@@ -127,6 +130,7 @@ export default function IAConfigQualificacao({ config, onSave, saving }: Props) 
           frio: criterios.frio || "",
         },
       });
+      isInitializedRef.current = true;
     }
   }, [config, hasRestoredData]);
 
@@ -286,30 +290,25 @@ export default function IAConfigQualificacao({ config, onSave, saving }: Props) 
               const Icon = option.icon;
               const isChecked = perguntasPermitidas.includes(option.id);
               return (
-                <div
+                <button
                   key={option.id}
-                  role="button"
-                  tabIndex={0}
+                  type="button"
                   onClick={() => togglePerguntaPermitida(option.id, !isChecked)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      togglePerguntaPermitida(option.id, !isChecked);
-                    }
-                  }}
                   className={cn(
-                    "flex items-start gap-3 p-4 rounded-lg border-2 transition-all text-left cursor-pointer",
+                    "flex items-start gap-3 p-4 rounded-lg border-2 transition-all text-left",
                     isChecked 
                       ? "border-primary bg-primary/5" 
                       : "border-border hover:border-primary/50 hover:bg-muted/50"
                   )}
                 >
-                  <Checkbox 
-                    checked={isChecked}
-                    onCheckedChange={(checked) => togglePerguntaPermitida(option.id, !!checked)}
-                    onClick={(e) => e.stopPropagation()}
-                    className="mt-0.5"
-                  />
+                  <div className={cn(
+                    "h-4 w-4 shrink-0 rounded-sm border mt-0.5 flex items-center justify-center",
+                    isChecked 
+                      ? "bg-primary border-primary text-primary-foreground" 
+                      : "border-primary"
+                  )}>
+                    {isChecked && <Check className="h-3 w-3" />}
+                  </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <Icon className={cn("h-4 w-4", isChecked ? "text-primary" : "text-muted-foreground")} />
@@ -319,7 +318,7 @@ export default function IAConfigQualificacao({ config, onSave, saving }: Props) 
                     </div>
                     <span className="text-xs text-muted-foreground">{option.description}</span>
                   </div>
-                </div>
+                </button>
               );
             })}
           </div>
