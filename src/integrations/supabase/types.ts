@@ -5025,6 +5025,7 @@ export type Database = {
       }
       tendenci_ia_conhecimento: {
         Row: {
+          arquivo_url: string | null
           ativo: boolean | null
           categoria: string | null
           conteudo: string
@@ -5032,10 +5033,13 @@ export type Database = {
           id: string
           palavras_chave: string[] | null
           prioridade: number | null
+          tipo: string | null
+          tipo_arquivo: string | null
           titulo: string
           updated_at: string | null
         }
         Insert: {
+          arquivo_url?: string | null
           ativo?: boolean | null
           categoria?: string | null
           conteudo: string
@@ -5043,10 +5047,13 @@ export type Database = {
           id?: string
           palavras_chave?: string[] | null
           prioridade?: number | null
+          tipo?: string | null
+          tipo_arquivo?: string | null
           titulo: string
           updated_at?: string | null
         }
         Update: {
+          arquivo_url?: string | null
           ativo?: boolean | null
           categoria?: string | null
           conteudo?: string
@@ -5054,6 +5061,8 @@ export type Database = {
           id?: string
           palavras_chave?: string[] | null
           prioridade?: number | null
+          tipo?: string | null
+          tipo_arquivo?: string | null
           titulo?: string
           updated_at?: string | null
         }
@@ -5066,11 +5075,14 @@ export type Database = {
           created_at: string | null
           descricao: string | null
           diferenciais: string[] | null
+          galeria: string[] | null
           id: string
+          imagem_url: string | null
           nome: string
           preco_base: number | null
           quando_oferecer: string | null
           updated_at: string | null
+          video_url: string | null
         }
         Insert: {
           ativo?: boolean | null
@@ -5078,11 +5090,14 @@ export type Database = {
           created_at?: string | null
           descricao?: string | null
           diferenciais?: string[] | null
+          galeria?: string[] | null
           id?: string
+          imagem_url?: string | null
           nome: string
           preco_base?: number | null
           quando_oferecer?: string | null
           updated_at?: string | null
+          video_url?: string | null
         }
         Update: {
           ativo?: boolean | null
@@ -5090,11 +5105,14 @@ export type Database = {
           created_at?: string | null
           descricao?: string | null
           diferenciais?: string[] | null
+          galeria?: string[] | null
           id?: string
+          imagem_url?: string | null
           nome?: string
           preco_base?: number | null
           quando_oferecer?: string | null
           updated_at?: string | null
+          video_url?: string | null
         }
         Relationships: []
       }

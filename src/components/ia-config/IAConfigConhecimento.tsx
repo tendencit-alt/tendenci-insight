@@ -4,12 +4,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Plus, Pencil, Trash2, BookOpen, Search } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, BookOpen, Search, FileText, Download, X, Upload } from "lucide-react";
 
 interface Conhecimento {
   id: string;
@@ -19,12 +19,26 @@ interface Conhecimento {
   palavras_chave: string[];
   prioridade: number;
   ativo: boolean;
+  tipo: string | null;
+  arquivo_url: string | null;
+  tipo_arquivo: string | null;
 }
+
+const TIPOS_CONHECIMENTO = [
+  { value: "faq", label: "FAQ" },
+  { value: "politica", label: "Política" },
+  { value: "guia", label: "Guia" },
+  { value: "documento", label: "Documento" },
+  { value: "catalogo", label: "Catálogo" },
+  { value: "manual", label: "Manual" },
+  { value: "outro", label: "Outro" },
+];
 
 export default function IAConfigConhecimento() {
   const [conhecimentos, setConhecimentos] = useState<Conhecimento[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<Conhecimento | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -35,6 +49,9 @@ export default function IAConfigConhecimento() {
     palavras_chave: "",
     prioridade: 0,
     ativo: true,
+    tipo: "faq",
+    arquivo_url: "",
+    tipo_arquivo: "",
   });
 
   useEffect(() => {
@@ -67,6 +84,9 @@ export default function IAConfigConhecimento() {
       palavras_chave: "",
       prioridade: 0,
       ativo: true,
+      tipo: "faq",
+      arquivo_url: "",
+      tipo_arquivo: "",
     });
     setDialogOpen(true);
   };
@@ -80,8 +100,41 @@ export default function IAConfigConhecimento() {
       palavras_chave: item.palavras_chave?.join(", ") || "",
       prioridade: item.prioridade,
       ativo: item.ativo,
+      tipo: item.tipo || "faq",
+      arquivo_url: item.arquivo_url || "",
+      tipo_arquivo: item.tipo_arquivo || "",
     });
     setDialogOpen(true);
+  };
+
+  const uploadFile = async (file: File) => {
+    try {
+      setUploading(true);
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `conhecimento/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("ia-assets")
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage.from("ia-assets").getPublicUrl(filePath);
+      
+      setForm(prev => ({ 
+        ...prev, 
+        arquivo_url: data.publicUrl,
+        tipo_arquivo: file.type || fileExt || "unknown"
+      }));
+
+      toast.success("Arquivo enviado!");
+    } catch (error) {
+      console.error("Erro no upload:", error);
+      toast.error("Erro ao enviar arquivo");
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -96,6 +149,9 @@ export default function IAConfigConhecimento() {
         palavras_chave: form.palavras_chave.split(",").map(k => k.trim()).filter(k => k),
         prioridade: form.prioridade,
         ativo: form.ativo,
+        tipo: form.tipo || null,
+        arquivo_url: form.arquivo_url || null,
+        tipo_arquivo: form.tipo_arquivo || null,
       };
 
       if (editingItem) {
@@ -162,8 +218,16 @@ export default function IAConfigConhecimento() {
     item.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.conteudo.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.categoria?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.tipo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.palavras_chave?.some(k => k.toLowerCase().includes(searchTerm.toLowerCase()))
   );
+
+  const getFileIcon = (tipoArquivo: string | null) => {
+    if (!tipoArquivo) return <FileText className="h-4 w-4" />;
+    if (tipoArquivo.includes("pdf")) return <FileText className="h-4 w-4 text-red-500" />;
+    if (tipoArquivo.includes("image")) return <FileText className="h-4 w-4 text-blue-500" />;
+    return <FileText className="h-4 w-4" />;
+  };
 
   if (loading) {
     return (
@@ -192,7 +256,7 @@ export default function IAConfigConhecimento() {
               Novo Conhecimento
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {editingItem ? "Editar Conhecimento" : "Novo Conhecimento"}
@@ -211,14 +275,33 @@ export default function IAConfigConhecimento() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="categoria">Categoria</Label>
-                  <Input
-                    id="categoria"
-                    value={form.categoria}
-                    onChange={(e) => setForm({ ...form, categoria: e.target.value })}
-                    placeholder="Ex: FAQ, Política, Produto"
-                  />
+                  <Label htmlFor="tipo">Tipo</Label>
+                  <Select
+                    value={form.tipo}
+                    onValueChange={(v) => setForm({ ...form, tipo: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o tipo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TIPOS_CONHECIMENTO.map((tipo) => (
+                        <SelectItem key={tipo.value} value={tipo.value}>
+                          {tipo.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="categoria">Categoria</Label>
+                <Input
+                  id="categoria"
+                  value={form.categoria}
+                  onChange={(e) => setForm({ ...form, categoria: e.target.value })}
+                  placeholder="Ex: Entrega, Pagamento, Garantia"
+                />
               </div>
 
               <div className="space-y-2">
@@ -231,6 +314,49 @@ export default function IAConfigConhecimento() {
                   rows={6}
                   required
                 />
+              </div>
+
+              {/* Upload de Arquivo */}
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  Arquivo Anexo (PDF, Documento, Imagem)
+                </Label>
+                {form.arquivo_url ? (
+                  <div className="flex items-center gap-2 p-3 border rounded-lg bg-muted/50">
+                    {getFileIcon(form.tipo_arquivo)}
+                    <span className="flex-1 text-sm truncate">{form.arquivo_url.split("/").pop()}</span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => window.open(form.arquivo_url, "_blank")}
+                    >
+                      <Download className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setForm({ ...form, arquivo_url: "", tipo_arquivo: "" })}
+                    >
+                      <X className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="file"
+                      accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
+                      disabled={uploading}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) uploadFile(file);
+                      }}
+                    />
+                    {uploading && <Loader2 className="h-4 w-4 animate-spin" />}
+                  </div>
+                )}
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
@@ -293,8 +419,19 @@ export default function IAConfigConhecimento() {
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <h4 className="font-medium">{item.titulo}</h4>
+                    {item.tipo && (
+                      <Badge variant="outline" className="text-xs">
+                        {TIPOS_CONHECIMENTO.find(t => t.value === item.tipo)?.label || item.tipo}
+                      </Badge>
+                    )}
                     {item.categoria && (
-                      <Badge variant="outline">{item.categoria}</Badge>
+                      <Badge variant="secondary" className="text-xs">{item.categoria}</Badge>
+                    )}
+                    {item.arquivo_url && (
+                      <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700">
+                        <FileText className="h-3 w-3 mr-1" />
+                        Arquivo
+                      </Badge>
                     )}
                     {!item.ativo && (
                       <Badge variant="secondary">Inativo</Badge>
