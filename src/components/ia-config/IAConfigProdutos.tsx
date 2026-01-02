@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Plus, Pencil, Trash2, Package } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, Package, Upload, X, Image, Video } from "lucide-react";
 
 interface Produto {
   id: string;
@@ -20,12 +20,16 @@ interface Produto {
   diferenciais: string[];
   quando_oferecer: string | null;
   ativo: boolean;
+  imagem_url: string | null;
+  galeria: string[];
+  video_url: string | null;
 }
 
 export default function IAConfigProdutos() {
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingProduto, setEditingProduto] = useState<Produto | null>(null);
   const [form, setForm] = useState({
@@ -36,6 +40,9 @@ export default function IAConfigProdutos() {
     diferenciais: "",
     quando_oferecer: "",
     ativo: true,
+    imagem_url: "",
+    galeria: [] as string[],
+    video_url: "",
   });
 
   useEffect(() => {
@@ -69,6 +76,9 @@ export default function IAConfigProdutos() {
       diferenciais: "",
       quando_oferecer: "",
       ativo: true,
+      imagem_url: "",
+      galeria: [],
+      video_url: "",
     });
     setDialogOpen(true);
   };
@@ -83,8 +93,49 @@ export default function IAConfigProdutos() {
       diferenciais: produto.diferenciais?.join("\n") || "",
       quando_oferecer: produto.quando_oferecer || "",
       ativo: produto.ativo,
+      imagem_url: produto.imagem_url || "",
+      galeria: produto.galeria || [],
+      video_url: produto.video_url || "",
     });
     setDialogOpen(true);
+  };
+
+  const uploadImage = async (file: File, isGallery = false) => {
+    try {
+      setUploading(true);
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `produtos/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("ia-assets")
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage.from("ia-assets").getPublicUrl(filePath);
+      const publicUrl = data.publicUrl;
+
+      if (isGallery) {
+        setForm(prev => ({ ...prev, galeria: [...prev.galeria, publicUrl] }));
+      } else {
+        setForm(prev => ({ ...prev, imagem_url: publicUrl }));
+      }
+
+      toast.success("Imagem enviada!");
+    } catch (error) {
+      console.error("Erro no upload:", error);
+      toast.error("Erro ao enviar imagem");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeGalleryImage = (index: number) => {
+    setForm(prev => ({
+      ...prev,
+      galeria: prev.galeria.filter((_, i) => i !== index)
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -100,6 +151,9 @@ export default function IAConfigProdutos() {
         diferenciais: form.diferenciais.split("\n").filter(d => d.trim()),
         quando_oferecer: form.quando_oferecer || null,
         ativo: form.ativo,
+        imagem_url: form.imagem_url || null,
+        galeria: form.galeria,
+        video_url: form.video_url || null,
       };
 
       if (editingProduto) {
@@ -183,7 +237,7 @@ export default function IAConfigProdutos() {
               Novo Produto
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {editingProduto ? "Editar Produto" : "Novo Produto"}
@@ -239,6 +293,105 @@ export default function IAConfigProdutos() {
                 />
               </div>
 
+              {/* Imagem Principal */}
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Image className="h-4 w-4" />
+                  Imagem Principal
+                </Label>
+                {form.imagem_url ? (
+                  <div className="relative inline-block">
+                    <img
+                      src={form.imagem_url}
+                      alt="Imagem do produto"
+                      className="h-32 w-32 object-cover rounded-lg border"
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute -top-2 -right-2 h-6 w-6"
+                      onClick={() => setForm({ ...form, imagem_url: "" })}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      disabled={uploading}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) uploadImage(file, false);
+                      }}
+                      className="max-w-xs"
+                    />
+                    {uploading && <Loader2 className="h-4 w-4 animate-spin" />}
+                  </div>
+                )}
+              </div>
+
+              {/* Galeria */}
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Image className="h-4 w-4" />
+                  Galeria de Imagens
+                </Label>
+                <div className="flex flex-wrap gap-2">
+                  {form.galeria.map((url, index) => (
+                    <div key={index} className="relative inline-block">
+                      <img
+                        src={url}
+                        alt={`Galeria ${index + 1}`}
+                        className="h-20 w-20 object-cover rounded-lg border"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="absolute -top-2 -right-2 h-5 w-5"
+                        onClick={() => removeGalleryImage(index)}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                  <label className="flex items-center justify-center h-20 w-20 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={uploading}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) uploadImage(file, true);
+                      }}
+                    />
+                    {uploading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Plus className="h-6 w-6 text-muted-foreground" />
+                    )}
+                  </label>
+                </div>
+              </div>
+
+              {/* Vídeo */}
+              <div className="space-y-2">
+                <Label htmlFor="video_url" className="flex items-center gap-2">
+                  <Video className="h-4 w-4" />
+                  URL do Vídeo (YouTube, Vimeo, etc.)
+                </Label>
+                <Input
+                  id="video_url"
+                  value={form.video_url}
+                  onChange={(e) => setForm({ ...form, video_url: e.target.value })}
+                  placeholder="https://www.youtube.com/watch?v=..."
+                />
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="diferenciais">Diferenciais (um por linha)</Label>
                 <Textarea
@@ -288,6 +441,7 @@ export default function IAConfigProdutos() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead>Imagem</TableHead>
               <TableHead>Produto</TableHead>
               <TableHead>Categoria</TableHead>
               <TableHead>Preço Base</TableHead>
@@ -298,6 +452,19 @@ export default function IAConfigProdutos() {
           <TableBody>
             {produtos.map((produto) => (
               <TableRow key={produto.id}>
+                <TableCell>
+                  {produto.imagem_url ? (
+                    <img
+                      src={produto.imagem_url}
+                      alt={produto.nome}
+                      className="h-10 w-10 object-cover rounded"
+                    />
+                  ) : (
+                    <div className="h-10 w-10 bg-muted rounded flex items-center justify-center">
+                      <Image className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                  )}
+                </TableCell>
                 <TableCell>
                   <div>
                     <p className="font-medium">{produto.nome}</p>
