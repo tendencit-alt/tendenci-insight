@@ -127,21 +127,28 @@ export default function IAConfigQualificacao({ config, onSave, saving }: Props) 
 
   const addPergunta = () => {
     if (novaPergunta.trim()) {
-      setForm({ ...form, perguntas_obrigatorias: [...form.perguntas_obrigatorias, novaPergunta.trim()] });
+      setForm((prev) => ({
+        ...prev,
+        perguntas_obrigatorias: [...prev.perguntas_obrigatorias, novaPergunta.trim()]
+      }));
       setNovaPergunta("");
     }
   };
 
   const removePergunta = (index: number) => {
-    setForm({ ...form, perguntas_obrigatorias: form.perguntas_obrigatorias.filter((_, i) => i !== index) });
+    setForm((prev) => ({
+      ...prev,
+      perguntas_obrigatorias: prev.perguntas_obrigatorias.filter((_, i) => i !== index)
+    }));
   };
 
   const togglePerguntaPermitida = (id: string, checked: boolean) => {
-    if (checked) {
-      setForm({ ...form, perguntas_permitidas: [...form.perguntas_permitidas, id] });
-    } else {
-      setForm({ ...form, perguntas_permitidas: form.perguntas_permitidas.filter(p => p !== id) });
-    }
+    setForm((prev) => ({
+      ...prev,
+      perguntas_permitidas: checked
+        ? [...prev.perguntas_permitidas, id]
+        : prev.perguntas_permitidas.filter(p => p !== id)
+    }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -215,7 +222,7 @@ export default function IAConfigQualificacao({ config, onSave, saving }: Props) 
                 key={option.id}
                 option={option}
                 selected={form.pode_fazer_perguntas === option.id}
-                onClick={() => setForm({ ...form, pode_fazer_perguntas: option.id })}
+                onClick={() => setForm((prev) => ({ ...prev, pode_fazer_perguntas: option.id }))}
               />
             ))}
           </div>
@@ -243,7 +250,7 @@ export default function IAConfigQualificacao({ config, onSave, saving }: Props) 
                 key={option.id}
                 option={option}
                 selected={form.perguntas_por_vez === option.id}
-                onClick={() => setForm({ ...form, perguntas_por_vez: option.id })}
+                onClick={() => setForm((prev) => ({ ...prev, perguntas_por_vez: option.id }))}
                 showIcon={false}
               />
             ))}
@@ -275,7 +282,11 @@ export default function IAConfigQualificacao({ config, onSave, saving }: Props) 
                   key={option.id}
                   role="button"
                   tabIndex={0}
-                  onClick={() => togglePerguntaPermitida(option.id, !isChecked)}
+                  onClick={(e) => {
+                    // Evita toggle duplo se clicou no Checkbox
+                    if ((e.target as HTMLElement).closest('button[role="checkbox"]')) return;
+                    togglePerguntaPermitida(option.id, !isChecked);
+                  }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault();
@@ -331,7 +342,7 @@ export default function IAConfigQualificacao({ config, onSave, saving }: Props) 
                 key={option.id}
                 option={option}
                 selected={form.cliente_com_pressa === option.id}
-                onClick={() => setForm({ ...form, cliente_com_pressa: option.id })}
+                onClick={() => setForm((prev) => ({ ...prev, cliente_com_pressa: option.id }))}
               />
             ))}
           </div>
@@ -404,10 +415,10 @@ export default function IAConfigQualificacao({ config, onSave, saving }: Props) 
               </div>
               <EnhancedTextarea
                 value={form.criterios_lead.quente}
-                onChange={(value) => setForm({
-                  ...form,
-                  criterios_lead: { ...form.criterios_lead, quente: value }
-                })}
+                onChange={(value) => setForm((prev) => ({
+                  ...prev,
+                  criterios_lead: { ...prev.criterios_lead, quente: value }
+                }))}
                 placeholder="Ex: Tem orçamento definido, prazo curto, já conhece a empresa..."
                 rows={4}
                 context="Critérios para classificar lead como quente - alta probabilidade de conversão"
@@ -421,10 +432,10 @@ export default function IAConfigQualificacao({ config, onSave, saving }: Props) 
               </div>
               <EnhancedTextarea
                 value={form.criterios_lead.morno}
-                onChange={(value) => setForm({
-                  ...form,
-                  criterios_lead: { ...form.criterios_lead, morno: value }
-                })}
+                onChange={(value) => setForm((prev) => ({
+                  ...prev,
+                  criterios_lead: { ...prev.criterios_lead, morno: value }
+                }))}
                 placeholder="Ex: Interessado mas sem urgência, pesquisando opções..."
                 rows={4}
                 context="Critérios para classificar lead como morno - interesse moderado"
@@ -438,10 +449,10 @@ export default function IAConfigQualificacao({ config, onSave, saving }: Props) 
               </div>
               <EnhancedTextarea
                 value={form.criterios_lead.frio}
-                onChange={(value) => setForm({
-                  ...form,
-                  criterios_lead: { ...form.criterios_lead, frio: value }
-                })}
+                onChange={(value) => setForm((prev) => ({
+                  ...prev,
+                  criterios_lead: { ...prev.criterios_lead, frio: value }
+                }))}
                 placeholder="Ex: Apenas curiosidade, sem orçamento definido..."
                 rows={4}
                 context="Critérios para classificar lead como frio - baixa probabilidade imediata"
