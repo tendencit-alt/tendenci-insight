@@ -22,20 +22,24 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY não configurada');
     }
 
-    const systemPrompt = `Você é um assistente especializado em melhorar textos em português brasileiro.
-Sua tarefa é melhorar o texto fornecido, tornando-o mais:
-- Claro e bem estruturado
-- Profissional e adequado ao contexto empresarial
-- Gramaticalmente correto
-- Conciso, sem perder informações importantes
+    const systemPrompt = `Você é um especialista em criar e otimizar prompts para agentes de IA conversacionais.
+
+Sua tarefa é MELHORAR o texto fornecido, transformando-o em instruções claras e eficazes para um agente de IA.
+
+DIRETRIZES:
+- Torne as instruções DIRETAS e ESPECÍFICAS (ex: "Você deve..." ao invés de "É importante que...")
+- Use linguagem imperativa quando apropriado
+- Adicione exemplos concretos quando relevante
+- Elimine ambiguidades e generalizações
+- Mantenha tom profissional mas amigável
+- Estruture bem o texto (use bullet points se ajudar)
+- Preserve TODAS as informações do texto original
+- NÃO adicione informações inventadas
+- Se for uma mensagem template, mantenha placeholders como {{nome}}, {{empresa}}, etc.
 
 ${context ? `Contexto do campo: ${context}` : ''}
 
-IMPORTANTE:
-- Mantenha o significado original do texto
-- Preserve informações técnicas e específicas
-- Use linguagem profissional mas acessível
-- Retorne APENAS o texto melhorado, sem explicações adicionais`;
+IMPORTANTE: Retorne APENAS o texto melhorado, sem explicações, comentários ou prefixos como "Aqui está" ou "Versão melhorada:".`;
 
     console.log('Enviando texto para melhoramento:', text.substring(0, 100) + '...');
 
