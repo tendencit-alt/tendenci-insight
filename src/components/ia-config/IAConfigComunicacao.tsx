@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
-import { Loader2, Save, MessageSquare } from "lucide-react";
+import { Loader2, Save, MessageSquare, Plus, Trash2 } from "lucide-react";
 import { useFormPersistence } from "@/hooks/useFormPersistence";
 import { FormSaveIndicator } from "@/components/ui/FormSaveIndicator";
 import { EnhancedTextarea } from "@/components/ui/enhanced-textarea";
@@ -14,6 +15,11 @@ interface Props {
   config: Record<string, unknown>;
   onSave: (config: Record<string, unknown>) => void;
   saving: boolean;
+}
+
+interface ExemploResposta {
+  pergunta: string;
+  resposta: string;
 }
 
 const initialForm = {
@@ -29,7 +35,7 @@ const initialForm = {
   msg_boas_vindas: "",
   msg_despedida: "",
   msg_ausencia: "",
-  exemplos_respostas: "",
+  exemplos_respostas: [] as ExemploResposta[],
 };
 
 const tamanhoOptions = [
@@ -125,6 +131,15 @@ export default function IAConfigComunicacao({ config, onSave, saving }: Props) {
 
   useEffect(() => {
     if (config && !hasRestoredData) {
+      // Handle backward compatibility - exemplos_respostas could be string or array
+      let exemplos: ExemploResposta[] = [];
+      if (Array.isArray(config.exemplos_respostas)) {
+        exemplos = config.exemplos_respostas as ExemploResposta[];
+      } else if (typeof config.exemplos_respostas === 'string' && config.exemplos_respostas) {
+        // Convert old string format to new array format
+        exemplos = [{ pergunta: "", resposta: config.exemplos_respostas }];
+      }
+      
       setForm({
         tamanho_mensagem: (config.tamanho_mensagem as string) || "media",
         max_mensagens_sequencia: (config.max_mensagens_sequencia as string) || "2-3",
@@ -138,10 +153,30 @@ export default function IAConfigComunicacao({ config, onSave, saving }: Props) {
         msg_boas_vindas: (config.msg_boas_vindas as string) || "",
         msg_despedida: (config.msg_despedida as string) || "",
         msg_ausencia: (config.msg_ausencia as string) || "",
-        exemplos_respostas: (config.exemplos_respostas as string) || "",
+        exemplos_respostas: exemplos,
       });
     }
   }, [config, hasRestoredData]);
+
+  const addExemplo = () => {
+    setForm({
+      ...form,
+      exemplos_respostas: [...form.exemplos_respostas, { pergunta: "", resposta: "" }]
+    });
+  };
+
+  const removeExemplo = (index: number) => {
+    setForm({
+      ...form,
+      exemplos_respostas: form.exemplos_respostas.filter((_, i) => i !== index)
+    });
+  };
+
+  const updateExemplo = (index: number, field: 'pergunta' | 'resposta', value: string) => {
+    const updated = [...form.exemplos_respostas];
+    updated[index] = { ...updated[index], [field]: value };
+    setForm({ ...form, exemplos_respostas: updated });
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -294,14 +329,71 @@ export default function IAConfigComunicacao({ config, onSave, saving }: Props) {
           context="Mensagem de ausência de agente senior - deve ser acolhedora, explicar a situação e indicar próximos passos claros"
         />
 
-        <EnhancedTextarea
-          label="Exemplos de Respostas Ideais"
-          value={form.exemplos_respostas}
-          onChange={(value) => setForm({ ...form, exemplos_respostas: value })}
-          placeholder="Cole aqui exemplos de respostas que você considera ideais para seu negócio. O agente usará como referência de estilo e tom..."
-          rows={5}
-          context="Exemplos de respostas ideais para treinamento do agente - mantenha o estilo e melhore a clareza"
-        />
+        {/* Exemplos de Respostas Ideais */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <Label className="text-base font-semibold">Exemplos de Respostas Ideais</Label>
+              <p className="text-sm text-muted-foreground mt-1">
+                Adicione perguntas comuns e como você gostaria que o agente respondesse
+              </p>
+            </div>
+            <Button type="button" variant="outline" size="sm" onClick={addExemplo}>
+              <Plus className="h-4 w-4 mr-1" />
+              Adicionar
+            </Button>
+          </div>
+          
+          {form.exemplos_respostas.length === 0 ? (
+            <div className="p-4 bg-muted/50 rounded-lg border border-dashed text-center">
+              <p className="text-sm text-muted-foreground">
+                Nenhum exemplo adicionado.<br />
+                <span className="text-xs">Clique em "Adicionar" para ensinar o agente com exemplos de como você quer que ele responda.</span>
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {form.exemplos_respostas.map((exemplo, index) => (
+                <Card key={index} className="border-muted">
+                  <CardContent className="pt-4 space-y-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded">
+                        Exemplo {index + 1}
+                      </span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={() => removeExemplo(index)}
+                      >
+                        <Trash2 className="h-3 w-3 text-destructive" />
+                      </Button>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm">Pergunta do Cliente</Label>
+                      <Input
+                        value={exemplo.pergunta}
+                        onChange={(e) => updateExemplo(index, 'pergunta', e.target.value)}
+                        placeholder="Ex: Vocês fazem entrega para outras cidades?"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm">Resposta Ideal</Label>
+                      <EnhancedTextarea
+                        value={exemplo.resposta}
+                        onChange={(value) => updateExemplo(index, 'resposta', value)}
+                        placeholder="Ex: Sim! Atendemos toda a região metropolitana e cidades num raio de até 100km. O frete é calculado conforme a distância. Qual seria a cidade de entrega?"
+                        rows={3}
+                        context="Resposta ideal do agente de vendas senior - mantenha o tom profissional e acolhedor"
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Preview */}

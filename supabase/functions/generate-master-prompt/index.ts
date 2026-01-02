@@ -281,8 +281,24 @@ ${comunicacao.usar_audios ? '- **Áudio:** Você pode enviar áudios curtos quan
     }
     
     if (comunicacao.exemplos_respostas) {
-      comunicacaoSection += `\n\n## Exemplos de Como Responder (Use como referência de estilo)
-${comunicacao.exemplos_respostas}`;
+      const exemplos = comunicacao.exemplos_respostas;
+      if (Array.isArray(exemplos) && exemplos.length > 0) {
+        comunicacaoSection += `\n\n## Exemplos de Como Responder (Use como referência de estilo)`;
+        exemplos.forEach((ex: any, i: number) => {
+          if (ex.pergunta || ex.resposta) {
+            comunicacaoSection += `\n\n**Exemplo ${i + 1}:**`;
+            if (ex.pergunta) {
+              comunicacaoSection += `\n- Cliente: "${ex.pergunta}"`;
+            }
+            if (ex.resposta) {
+              comunicacaoSection += `\n- Resposta ideal: "${ex.resposta}"`;
+            }
+          }
+        });
+      } else if (typeof exemplos === 'string' && exemplos.trim()) {
+        // Backward compatibility with old string format
+        comunicacaoSection += `\n\n## Exemplos de Como Responder (Use como referência de estilo)\n${exemplos}`;
+      }
     }
     
     promptSections.push(comunicacaoSection);
