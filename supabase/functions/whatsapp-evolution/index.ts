@@ -633,6 +633,45 @@ Deno.serve(async (req) => {
           .eq('instance_name', instanceName)
       }
 
+      // Auto-configurar webhook para Supabase após gerar QR Code
+      const supabaseWebhookUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/whatsapp-webhook`
+      console.log('🔧 Auto-configuring webhook on reconnect:', supabaseWebhookUrl)
+      
+      try {
+        const webhookResp = await fetch(`${evolutionUrl}/webhook/set/${instanceName}`, {
+          method: 'POST',
+          headers: {
+            'apikey': evolutionApiKey,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            webhook: {
+              url: supabaseWebhookUrl,
+              enabled: true,
+              webhookByEvents: false,
+              events: ['MESSAGES_UPSERT', 'CONNECTION_UPDATE', 'QRCODE_UPDATED']
+            }
+          })
+        })
+        
+        if (webhookResp.ok) {
+          console.log('✅ Webhook auto-configured on reconnect')
+          
+          // Atualizar banco com webhook configurado
+          await supabase
+            .from('tendenci_whatsapp_connections')
+            .update({ 
+              webhook_url: supabaseWebhookUrl,
+              webhook_configured: true
+            })
+            .eq('instance_name', instanceName)
+        } else {
+          console.warn('⚠️ Webhook auto-config failed:', webhookResp.status)
+        }
+      } catch (err) {
+        console.warn('⚠️ Webhook auto-config error:', err)
+      }
+
       return new Response(
         JSON.stringify({ qrCode: qrCodeBase64 }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
