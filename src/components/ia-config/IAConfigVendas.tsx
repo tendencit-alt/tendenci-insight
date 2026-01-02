@@ -174,7 +174,7 @@ export default function IAConfigVendas({ config, onSave, saving }: Props) {
         onChange={(value) => setForm({ ...form, quando_transferir: value })}
         placeholder="Ex: Quando o cliente pedir para falar com alguém, reclamações, valores acima de X..."
         rows={3}
-        context="Critérios para transferir atendimento para humano"
+        context="Instruções sobre critérios e situações para transferir o atendimento para um vendedor humano - usar linguagem imperativa"
       />
 
       {/* Script de Follow-up */}
@@ -184,7 +184,7 @@ export default function IAConfigVendas({ config, onSave, saving }: Props) {
         onChange={(value) => setForm({ ...form, script_followup: value })}
         placeholder="Modelo de mensagem para follow-up após alguns dias sem resposta..."
         rows={3}
-        context="Script de follow-up de vendas"
+        context="Modelo de mensagem de follow-up de vendas para reengajar cliente - manter como mensagem natural, não instruções"
       />
 
       {/* Promoções Ativas */}

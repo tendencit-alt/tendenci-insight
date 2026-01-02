@@ -113,7 +113,7 @@ export default function IAConfigComportamento({ config, onSave, saving }: Props)
         onChange={(value) => setForm({ ...form, limites_negociacao: value })}
         placeholder="Ex: Desconto máximo de 10%, não parcelar em mais de 12x, não incluir frete grátis para pedidos abaixo de R$500..."
         rows={4}
-        context="Limites de negociação para vendas"
+        context="Instruções de limites de negociação que o agente deve seguir durante vendas - transformar em regras claras e imperativas"
       />
 
       {/* Quando pedir ajuda */}
@@ -123,7 +123,7 @@ export default function IAConfigComportamento({ config, onSave, saving }: Props)
         onChange={(value) => setForm({ ...form, pedir_ajuda_quando: value })}
         placeholder="Ex: Reclamações graves, solicitação de reembolso, dúvidas técnicas complexas, cliente muito insatisfeito..."
         rows={4}
-        context="Situações para pedir ajuda humana"
+        context="Instruções sobre situações em que o agente deve transferir o atendimento para um humano - usar linguagem imperativa"
       />
 
       {/* Clientes difíceis */}
@@ -133,7 +133,7 @@ export default function IAConfigComportamento({ config, onSave, saving }: Props)
         onChange={(value) => setForm({ ...form, clientes_dificeis: value })}
         placeholder="Ex: Manter a calma, não discutir, validar sentimentos, oferecer soluções, escalar se necessário..."
         rows={4}
-        context="Estratégias para lidar com clientes difíceis"
+        context="Estratégias e instruções para o agente lidar com clientes difíceis ou insatisfeitos - usar comandos diretos"
       />
 
       <div className="flex justify-end">

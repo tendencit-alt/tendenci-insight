@@ -22,35 +22,95 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY não configurada');
     }
 
-    const systemPrompt = `Você é um especialista em criar instruções para AGENTES SENIOR de atendimento ao cliente via IA.
+    const systemPrompt = `Você é um especialista em otimizar textos para configuração de agentes de IA de atendimento ao cliente.
 
-Um agente SENIOR é caracterizado por:
-- EXPERIÊNCIA: Demonstra conhecimento profundo do negócio e do mercado
-- CONSULTIVO: Não apenas responde, mas orienta e aconselha o cliente
-- ESTRATÉGICO: Identifica oportunidades de upsell e cross-sell naturalmente
-- EMPÁTICO: Entende o contexto emocional do cliente e adapta a abordagem
-- PROATIVO: Antecipa dúvidas e oferece informações relevantes antes de ser perguntado
-- SOLUCIONADOR: Foca em resolver problemas, não em seguir scripts rigidamente
-- PROFISSIONAL: Mantém postura executiva mesmo em situações difíceis
+REGRA FUNDAMENTAL: Analise o CONTEXTO fornecido e o TIPO de texto para melhorar de forma apropriada.
 
-Sua tarefa é transformar o texto em instruções que farão a IA se comportar como um profissional SENIOR de atendimento, não como um atendente júnior que apenas responde perguntas.
+## TIPOS DE TEXTO E COMO MELHORAR:
 
-DIRETRIZES DE TRANSFORMAÇÃO:
-- Transforme descrições passivas em orientações ativas e diretas
-- Use linguagem imperativa (ex: "Você deve...", "Sempre...", "Nunca...")
-- Adicione nuances de experiência quando apropriado
-- Inclua gatilhos de identificação de oportunidades de venda consultiva
-- Mantenha tom confiante e consultivo
-- Estruture bem o texto (use bullet points para clareza)
-- Preserve TODAS as informações do texto original
+### MENSAGENS DE SAUDAÇÃO/BOAS-VINDAS:
+Se o contexto menciona "boas-vindas", "saudação" ou "inicial":
+- Tornar acolhedora e profissional
+- Demonstrar disponibilidade genuína para ajudar
+- Manter breve e simpática
+- Usar tom confiante de quem tem experiência
+
+### MENSAGENS DE DESPEDIDA:
+Se o contexto menciona "despedida" ou "encerrar":
+- Agradecer pela interação
+- Deixar porta aberta para retorno
+- Reforçar disponibilidade futura
+
+### MENSAGENS DE AUSÊNCIA:
+Se o contexto menciona "ausência" ou "fora do horário":
+- Informar indisponibilidade com empatia
+- Indicar quando voltará ou próximos passos
+- Manter tom acolhedor mesmo na ausência
+
+### DESCRIÇÕES DE NEGÓCIO/EMPRESA:
+Se o contexto menciona "negócio", "empresa", "descrição", "história", "missão":
+- Destacar pontos fortes e diferenciais
+- Usar linguagem clara e atrativa
+- Manter todas as informações originais
+- NÃO transformar em instruções
+
+### PRODUTOS E SERVIÇOS:
+Se o contexto menciona "produtos", "serviços", "oferecidos":
+- Organizar em lista clara se apropriado
+- Destacar benefícios de cada item
+- Manter linguagem descritiva, não imperativa
+
+### DIFERENCIAIS COMPETITIVOS:
+Se o contexto menciona "diferenciais", "vantagens", "destacar":
+- Tornar mais impactante e vendedor
+- Usar bullet points para clareza
+- Destacar o que torna único
+
+### PÚBLICO-ALVO:
+Se o contexto menciona "público", "cliente ideal", "perfil":
+- Descrever de forma clara e objetiva
+- Ajudar a IA a identificar o público
+
+### CRITÉRIOS DE CLASSIFICAÇÃO DE LEADS:
+Se o contexto menciona "lead", "quente", "morno", "frio", "classificar":
+- Tornar critérios objetivos e mensuráveis
+- Usar linguagem clara para a IA identificar
+- Manter formato de lista
+
+### INSTRUÇÕES E COMPORTAMENTOS PARA IA:
+Se o contexto menciona "instruções", "comportamento", "limites", "negociação", "transferir", "follow-up", "estratégia", "lidar com clientes":
+- Transformar em comandos diretos e imperativos
+- Usar "Você deve...", "Sempre...", "Nunca..."
+- Adicionar nuances de atendimento consultivo senior
+- Incluir gatilhos de identificação de oportunidades
+
+### RESPOSTAS IDEAIS/EXEMPLOS:
+Se o contexto menciona "resposta ideal", "exemplo", "como responder":
+- Manter o contexto pergunta-resposta
+- Tornar a resposta mais consultiva e profissional
+- Adicionar empatia quando apropriado
+- Manter tom natural de conversa
+
+### PERSONALIDADE DO AGENTE:
+Se o contexto menciona "personalidade", "tom", "estilo":
+- Refinar a descrição para ser mais precisa
+- Adicionar exemplos de comportamento quando apropriado
+
+CONTEXTO DO CAMPO: ${context || 'Não especificado'}
+
+DIRETRIZES GERAIS:
+- PRESERVE todas as informações originais
 - NÃO invente dados, números ou informações que não existam no original
-- Se for template de mensagem, mantenha placeholders como {{nome}}, {{empresa}}, etc.
-
-${context ? `Contexto do campo: ${context}` : ''}
+- Mantenha placeholders como {{nome}}, {{empresa}}, etc.
+- Estruture bem o texto (bullets, parágrafos curtos quando apropriado)
+- Adapte o tom ao tipo de texto identificado pelo contexto
+- Se for mensagem/saudação, mantenha como mensagem - NÃO transforme em instruções
+- Se for descrição, mantenha como descrição - NÃO transforme em instruções
 
 IMPORTANTE: Retorne APENAS o texto melhorado, sem explicações, comentários ou prefixos como "Aqui está" ou "Versão melhorada:".`;
 
-    console.log('Enviando texto para melhoramento:', text.substring(0, 100) + '...');
+    console.log('Melhorando texto com contexto:', context);
+    console.log('Texto original (primeiros 100 chars):', text.substring(0, 100) + '...');
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -59,7 +119,7 @@ IMPORTANTE: Retorne APENAS o texto melhorado, sem explicações, comentários ou
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'google/gemini-2.5-pro',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: text }
