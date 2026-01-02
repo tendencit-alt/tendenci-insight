@@ -6068,22 +6068,22 @@ export type Database = {
       }
       get_campaign_evolution: {
         Args: {
-          p_end_date?: string
-          p_start_date?: string
+          p_end_date: string
+          p_start_date: string
           p_vendedor_id?: string
         }
         Returns: Json
       }
       get_campaign_metrics: {
         Args: {
-          p_end_date?: string
-          p_start_date?: string
+          p_end_date: string
+          p_start_date: string
           p_vendedor_id?: string
         }
         Returns: Json
       }
       get_campaign_vendor_comparison: {
-        Args: { p_end_date?: string; p_start_date?: string }
+        Args: { p_end_date: string; p_start_date: string }
         Returns: Json
       }
       get_current_goals_status: {
