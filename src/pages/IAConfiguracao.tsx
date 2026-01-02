@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Building2, User, MessageSquare, Target, ShoppingCart, Package, Brain, Shield, BookOpen, Loader2, Check, ExternalLink, Workflow } from "lucide-react";
+import { ArrowLeft, Building2, User, MessageSquare, Target, ShoppingCart, Package, Brain, Shield, BookOpen, Loader2, ExternalLink, Workflow, CheckCircle2, AlertCircle, Circle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
 import { toast } from "sonner";
@@ -17,6 +17,9 @@ import IAConfigConhecimento from "@/components/ia-config/IAConfigConhecimento";
 import IAConfigComportamento from "@/components/ia-config/IAConfigComportamento";
 import IAConfigRegras from "@/components/ia-config/IAConfigRegras";
 import MasterPromptPreview from "@/components/ia-config/MasterPromptPreview";
+import { IAProgressIndicator } from "@/components/ia-config/IAProgressIndicator";
+import { IAConfigOverview } from "@/components/ia-config/IAConfigOverview";
+import { Progress } from "@/components/ui/progress";
 
 interface IAConfig {
   id: string;
@@ -37,16 +40,43 @@ type IAConfigRow = {
   updated_by: string | null;
 }
 
+// Campos obrigatórios por seção para calcular progresso
+const REQUIRED_FIELDS: Record<string, string[]> = {
+  negocio: ['nome_empresa', 'ramo'],
+  identidade: ['nome_ia'],
+  comunicacao: ['msg_boas_vindas'],
+  qualificacao: ['perguntas'],
+  vendas: ['tecnicas'],
+  comportamento: ['comportamentos'],
+  regras: ['regras']
+};
+
 export default function IAConfiguracao() {
   const navigate = useNavigate();
   const [configs, setConfigs] = useState<Record<string, IAConfig>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("negocio");
+  const [produtosCount, setProdutosCount] = useState(0);
+  const [conhecimentoCount, setConhecimentoCount] = useState(0);
 
   useEffect(() => {
     loadConfigs();
+    loadCounts();
   }, []);
+
+  const loadCounts = async () => {
+    try {
+      const [produtosRes, conhecimentoRes] = await Promise.all([
+        supabase.from("tendenci_ia_produtos").select("id", { count: 'exact', head: true }),
+        supabase.from("tendenci_ia_conhecimento").select("id", { count: 'exact', head: true })
+      ]);
+      setProdutosCount(produtosRes.count || 0);
+      setConhecimentoCount(conhecimentoRes.count || 0);
+    } catch (error) {
+      console.error("Erro ao carregar contadores:", error);
+    }
+  };
 
   const loadConfigs = async () => {
     try {
@@ -108,11 +138,71 @@ export default function IAConfiguracao() {
     { id: "comunicacao", label: "Comunicação", icon: MessageSquare, description: "Como a IA se comunica" },
     { id: "qualificacao", label: "Qualificação", icon: Target, description: "Perguntas e critérios" },
     { id: "vendas", label: "Vendas", icon: ShoppingCart, description: "Técnicas e scripts" },
-    { id: "produtos", label: "Produtos", icon: Package, description: "Catálogo de produtos" },
-    { id: "conhecimento", label: "Conhecimento", icon: BookOpen, description: "Base de conhecimento" },
+    { id: "produtos", label: "Produtos", icon: Package, description: "Catálogo de produtos", count: produtosCount },
+    { id: "conhecimento", label: "Conhecimento", icon: BookOpen, description: "Base de conhecimento", count: conhecimentoCount },
     { id: "comportamento", label: "Comportamento", icon: Brain, description: "Regras de comportamento" },
     { id: "regras", label: "Regras", icon: Shield, description: "Regras de negócio" },
   ];
+
+  // Calcular status de cada seção
+  const getSectionStatus = (secao: string): 'complete' | 'partial' | 'empty' => {
+    // Produtos e conhecimento são especiais - baseados em contagem
+    if (secao === 'produtos') return produtosCount > 0 ? 'complete' : 'empty';
+    if (secao === 'conhecimento') return conhecimentoCount > 0 ? 'complete' : 'empty';
+
+    const config = configs[secao]?.config as Record<string, unknown> | undefined;
+    if (!config) return 'empty';
+
+    const requiredFields = REQUIRED_FIELDS[secao] || [];
+    const filledFields = Object.entries(config).filter(([key, value]) => {
+      if (Array.isArray(value)) return value.length > 0;
+      return value !== null && value !== undefined && value !== '';
+    });
+
+    if (filledFields.length === 0) return 'empty';
+    
+    const hasAllRequired = requiredFields.every(field => {
+      const value = config[field];
+      if (Array.isArray(value)) return value.length > 0;
+      return value !== null && value !== undefined && value !== '';
+    });
+
+    return hasAllRequired ? 'complete' : 'partial';
+  };
+
+  // Calcular progresso geral
+  const progressData = useMemo(() => {
+    const sections = tabs.map(tab => ({
+      key: tab.id,
+      label: tab.label,
+      status: getSectionStatus(tab.id),
+      icon: tab.icon
+    }));
+
+    const completed = sections.filter(s => s.status === 'complete').length;
+    return { sections, completed, total: sections.length };
+  }, [configs, produtosCount, conhecimentoCount]);
+
+  // Contar regras e técnicas
+  const regrasCount = useMemo(() => {
+    const regrasConfig = configs.regras?.config as Record<string, unknown> | undefined;
+    const regras = regrasConfig?.regras as unknown[] | undefined;
+    return Array.isArray(regras) ? regras.length : 0;
+  }, [configs]);
+
+  const tecnicasCount = useMemo(() => {
+    const vendasConfig = configs.vendas?.config as Record<string, unknown> | undefined;
+    const tecnicas = vendasConfig?.tecnicas as unknown[] | undefined;
+    return Array.isArray(tecnicas) ? tecnicas.length : 0;
+  }, [configs]);
+
+  const getStatusIcon = (status: 'complete' | 'partial' | 'empty') => {
+    switch (status) {
+      case 'complete': return <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />;
+      case 'partial': return <AlertCircle className="h-3.5 w-3.5 text-yellow-500" />;
+      case 'empty': return <Circle className="h-3.5 w-3.5 text-muted-foreground" />;
+    }
+  };
 
   if (loading) {
     return (
@@ -122,23 +212,46 @@ export default function IAConfiguracao() {
     );
   }
 
+  const percentage = progressData.total > 0 ? Math.round((progressData.completed / progressData.total) * 100) : 0;
+
   return (
     <div className="min-h-screen bg-background">
       <div className="border-b bg-card">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold">Configuração da IA de Atendimento</h1>
-              <p className="text-muted-foreground">Instância: Matheus</p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+              <div>
+                <h1 className="text-2xl font-bold">Configuração da IA de Atendimento</h1>
+                <p className="text-sm text-muted-foreground">
+                  {progressData.completed} de {progressData.total} seções configuradas
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="text-right">
+                <span className="text-2xl font-bold text-primary">{percentage}%</span>
+                <p className="text-xs text-muted-foreground">Progresso</p>
+              </div>
+              <div className="w-24">
+                <Progress value={percentage} className="h-2" />
+              </div>
             </div>
           </div>
         </div>
       </div>
 
       <div className="container mx-auto px-4 py-6 space-y-6">
+        {/* Cards de Resumo */}
+        <IAConfigOverview 
+          produtosCount={produtosCount}
+          conhecimentoCount={conhecimentoCount}
+          regrasCount={regrasCount}
+          tecnicasCount={tecnicasCount}
+        />
+
         {/* Card de Integração n8n */}
         <Card className="border-primary/20 bg-gradient-to-r from-primary/5 to-transparent">
           <CardContent className="flex items-center justify-between py-4">
@@ -167,18 +280,27 @@ export default function IAConfiguracao() {
             {tabs.map((tab) => {
               const Icon = tab.icon;
               const isSaving = saving === tab.id;
+              const status = getSectionStatus(tab.id);
+              const tabCount = 'count' in tab ? tab.count : undefined;
+              
               return (
                 <TabsTrigger
                   key={tab.id}
                   value={tab.id}
-                  className="flex items-center gap-2 px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg border"
+                  className="flex items-center gap-2 px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-lg border relative"
                 >
                   {isSaving ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
                     <Icon className="h-4 w-4" />
                   )}
-                  {tab.label}
+                  <span>{tab.label}</span>
+                  {tabCount !== undefined && tabCount > 0 && (
+                    <span className="ml-1 px-1.5 py-0.5 text-xs bg-primary/20 rounded-full">
+                      {tabCount}
+                    </span>
+                  )}
+                  <span className="ml-1">{getStatusIcon(status)}</span>
                 </TabsTrigger>
               );
             })}
