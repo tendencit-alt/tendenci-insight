@@ -180,6 +180,9 @@ Horário de funcionamento: ${negocio.horario_funcionamento || ''}`;
     if (negocio.descricao) {
       negocioSection += `\n\n## Sobre a Empresa\n${negocio.descricao}`;
     }
+    if (negocio.produtos_servicos) {
+      negocioSection += `\n\n## Produtos e Serviços\n${negocio.produtos_servicos}`;
+    }
     if (negocio.diferenciais) {
       negocioSection += `\n\n## Diferenciais Competitivos\n${negocio.diferenciais}`;
     }
