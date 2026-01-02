@@ -271,12 +271,19 @@ export default function IAConfigQualificacao({ config, onSave, saving }: Props) 
               const Icon = option.icon;
               const isChecked = form.perguntas_permitidas.includes(option.id);
               return (
-                <button
+                <div
                   key={option.id}
-                  type="button"
+                  role="button"
+                  tabIndex={0}
                   onClick={() => togglePerguntaPermitida(option.id, !isChecked)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      togglePerguntaPermitida(option.id, !isChecked);
+                    }
+                  }}
                   className={cn(
-                    "flex items-start gap-3 p-4 rounded-lg border-2 transition-all text-left",
+                    "flex items-start gap-3 p-4 rounded-lg border-2 transition-all text-left cursor-pointer",
                     isChecked 
                       ? "border-primary bg-primary/5" 
                       : "border-border hover:border-primary/50 hover:bg-muted/50"
@@ -284,6 +291,7 @@ export default function IAConfigQualificacao({ config, onSave, saving }: Props) 
                 >
                   <Checkbox 
                     checked={isChecked}
+                    onCheckedChange={(checked) => togglePerguntaPermitida(option.id, !!checked)}
                     className="mt-0.5"
                   />
                   <div className="flex-1">
@@ -295,7 +303,7 @@ export default function IAConfigQualificacao({ config, onSave, saving }: Props) 
                     </div>
                     <span className="text-xs text-muted-foreground">{option.description}</span>
                   </div>
-                </button>
+                </div>
               );
             })}
           </div>
