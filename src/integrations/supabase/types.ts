@@ -5083,6 +5083,7 @@ export type Database = {
           quando_oferecer: string | null
           updated_at: string | null
           video_url: string | null
+          videos: Json | null
         }
         Insert: {
           ativo?: boolean | null
@@ -5098,6 +5099,7 @@ export type Database = {
           quando_oferecer?: string | null
           updated_at?: string | null
           video_url?: string | null
+          videos?: Json | null
         }
         Update: {
           ativo?: boolean | null
@@ -5113,6 +5115,7 @@ export type Database = {
           quando_oferecer?: string | null
           updated_at?: string | null
           video_url?: string | null
+          videos?: Json | null
         }
         Relationships: []
       }

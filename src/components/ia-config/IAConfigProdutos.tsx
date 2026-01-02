@@ -9,7 +9,14 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Plus, Pencil, Trash2, Package, Upload, X, Image, Video } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, Package, X, Image, Video, Link, Upload, Play } from "lucide-react";
+import type { Json } from "@/integrations/supabase/types";
+
+interface VideoItem {
+  type: "upload" | "url";
+  url: string;
+  nome?: string;
+}
 
 interface Produto {
   id: string;
@@ -23,15 +30,29 @@ interface Produto {
   imagem_url: string | null;
   galeria: string[];
   video_url: string | null;
+  videos: VideoItem[];
 }
+
+// Helper to safely parse videos from JSON
+const parseVideos = (videos: unknown): VideoItem[] => {
+  if (!Array.isArray(videos)) return [];
+  return videos.filter((v): v is VideoItem => 
+    typeof v === 'object' && v !== null && 
+    typeof (v as VideoItem).url === 'string' &&
+    ((v as VideoItem).type === 'upload' || (v as VideoItem).type === 'url')
+  );
+};
 
 export default function IAConfigProdutos() {
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingProduto, setEditingProduto] = useState<Produto | null>(null);
+  const [videoUrlInput, setVideoUrlInput] = useState("");
+  const [showVideoUrlInput, setShowVideoUrlInput] = useState(false);
   const [form, setForm] = useState({
     nome: "",
     descricao: "",
@@ -43,6 +64,7 @@ export default function IAConfigProdutos() {
     imagem_url: "",
     galeria: [] as string[],
     video_url: "",
+    videos: [] as VideoItem[],
   });
 
   useEffect(() => {
@@ -57,7 +79,14 @@ export default function IAConfigProdutos() {
         .order("nome");
 
       if (error) throw error;
-      setProdutos(data || []);
+      
+      // Parse videos from JSON and handle legacy video_url
+      const parsedData: Produto[] = (data || []).map(p => ({
+        ...p,
+        videos: parseVideos(p.videos)
+      }));
+      
+      setProdutos(parsedData);
     } catch (error) {
       console.error("Erro ao carregar produtos:", error);
       toast.error("Erro ao carregar produtos");
@@ -79,12 +108,26 @@ export default function IAConfigProdutos() {
       imagem_url: "",
       galeria: [],
       video_url: "",
+      videos: [],
     });
+    setVideoUrlInput("");
+    setShowVideoUrlInput(false);
     setDialogOpen(true);
   };
 
   const openEditDialog = (produto: Produto) => {
     setEditingProduto(produto);
+    
+    // Migrate legacy video_url to videos array if needed
+    let videosArray: VideoItem[] = Array.isArray(produto.videos) ? [...produto.videos] : [];
+    if (produto.video_url && !videosArray.find(v => v.url === produto.video_url)) {
+      videosArray.push({
+        type: "url",
+        url: produto.video_url,
+        nome: "Vídeo principal (legado)"
+      });
+    }
+    
     setForm({
       nome: produto.nome,
       descricao: produto.descricao || "",
@@ -96,7 +139,10 @@ export default function IAConfigProdutos() {
       imagem_url: produto.imagem_url || "",
       galeria: produto.galeria || [],
       video_url: produto.video_url || "",
+      videos: videosArray,
     });
+    setVideoUrlInput("");
+    setShowVideoUrlInput(false);
     setDialogOpen(true);
   };
 
@@ -131,6 +177,100 @@ export default function IAConfigProdutos() {
     }
   };
 
+  const uploadVideo = async (file: File) => {
+    try {
+      setUploadingVideo(true);
+      
+      // Validate size (max 50MB)
+      if (file.size > 50 * 1024 * 1024) {
+        toast.error("Vídeo deve ter no máximo 50MB");
+        return;
+      }
+      
+      // Validate type
+      if (!file.type.startsWith("video/")) {
+        toast.error("Arquivo deve ser um vídeo");
+        return;
+      }
+      
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `produtos/videos/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("ia-assets")
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage.from("ia-assets").getPublicUrl(filePath);
+      
+      setForm(prev => ({
+        ...prev,
+        videos: [...prev.videos, {
+          type: "upload" as const,
+          url: data.publicUrl,
+          nome: file.name
+        }]
+      }));
+
+      toast.success("Vídeo enviado!");
+    } catch (error) {
+      console.error("Erro no upload de vídeo:", error);
+      toast.error("Erro ao enviar vídeo");
+    } finally {
+      setUploadingVideo(false);
+    }
+  };
+
+  const addVideoUrl = () => {
+    if (!videoUrlInput.trim()) {
+      toast.error("Informe a URL do vídeo");
+      return;
+    }
+    
+    // Basic URL validation
+    try {
+      new URL(videoUrlInput);
+    } catch {
+      toast.error("URL inválida");
+      return;
+    }
+    
+    setForm(prev => ({
+      ...prev,
+      videos: [...prev.videos, {
+        type: "url" as const,
+        url: videoUrlInput.trim(),
+        nome: getVideoName(videoUrlInput)
+      }]
+    }));
+    
+    setVideoUrlInput("");
+    setShowVideoUrlInput(false);
+    toast.success("Vídeo adicionado!");
+  };
+
+  const getVideoName = (url: string): string => {
+    try {
+      const urlObj = new URL(url);
+      if (urlObj.hostname.includes("youtube")) return "YouTube";
+      if (urlObj.hostname.includes("vimeo")) return "Vimeo";
+      if (urlObj.hostname.includes("tiktok")) return "TikTok";
+      if (urlObj.hostname.includes("instagram")) return "Instagram";
+      return urlObj.hostname;
+    } catch {
+      return "Vídeo externo";
+    }
+  };
+
+  const removeVideo = (index: number) => {
+    setForm(prev => ({
+      ...prev,
+      videos: prev.videos.filter((_, i) => i !== index)
+    }));
+  };
+
   const removeGalleryImage = (index: number) => {
     setForm(prev => ({
       ...prev,
@@ -154,6 +294,7 @@ export default function IAConfigProdutos() {
         imagem_url: form.imagem_url || null,
         galeria: form.galeria,
         video_url: form.video_url || null,
+        videos: JSON.parse(JSON.stringify(form.videos)) as Json,
       };
 
       if (editingProduto) {
@@ -378,18 +519,105 @@ export default function IAConfigProdutos() {
                 </div>
               </div>
 
-              {/* Vídeo */}
-              <div className="space-y-2">
-                <Label htmlFor="video_url" className="flex items-center gap-2">
+              {/* Vídeos */}
+              <div className="space-y-3">
+                <Label className="flex items-center gap-2">
                   <Video className="h-4 w-4" />
-                  URL do Vídeo (YouTube, Vimeo, etc.)
+                  Vídeos do Produto
                 </Label>
-                <Input
-                  id="video_url"
-                  value={form.video_url}
-                  onChange={(e) => setForm({ ...form, video_url: e.target.value })}
-                  placeholder="https://www.youtube.com/watch?v=..."
-                />
+                
+                {/* Lista de vídeos */}
+                <div className="flex flex-wrap gap-2">
+                  {form.videos.map((video, index) => (
+                    <div key={index} className="relative group">
+                      <div className="flex items-center gap-2 p-2 pr-8 border rounded-lg bg-muted/30 min-w-[150px]">
+                        <div className="h-10 w-10 bg-primary/10 rounded flex items-center justify-center flex-shrink-0">
+                          <Play className="h-4 w-4 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{video.nome || `Vídeo ${index + 1}`}</p>
+                          <Badge variant="secondary" className="text-xs">
+                            {video.type === "upload" ? "Upload" : "URL"}
+                          </Badge>
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="absolute -top-2 -right-2 h-5 w-5"
+                        onClick={() => removeVideo(index)}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Botões de adicionar vídeo */}
+                <div className="flex flex-wrap gap-2">
+                  {/* Upload de vídeo */}
+                  <label className="cursor-pointer">
+                    <input
+                      type="file"
+                      accept="video/*"
+                      className="hidden"
+                      disabled={uploadingVideo}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) uploadVideo(file);
+                      }}
+                    />
+                    <div className="flex items-center gap-2 px-3 py-2 border-2 border-dashed rounded-lg hover:bg-muted/50 transition-colors">
+                      {uploadingVideo ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Upload className="h-4 w-4" />
+                      )}
+                      <span className="text-sm">Enviar Vídeo</span>
+                    </div>
+                  </label>
+                  
+                  {/* Adicionar URL */}
+                  {!showVideoUrlInput ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowVideoUrlInput(true)}
+                    >
+                      <Link className="h-4 w-4 mr-2" />
+                      Adicionar URL
+                    </Button>
+                  ) : (
+                    <div className="flex items-center gap-2 flex-1 min-w-[250px]">
+                      <Input
+                        placeholder="https://youtube.com/watch?v=..."
+                        value={videoUrlInput}
+                        onChange={(e) => setVideoUrlInput(e.target.value)}
+                        className="flex-1"
+                      />
+                      <Button type="button" size="sm" onClick={addVideoUrl}>
+                        Adicionar
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          setShowVideoUrlInput(false);
+                          setVideoUrlInput("");
+                        }}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+                
+                <p className="text-xs text-muted-foreground">
+                  💡 Formatos aceitos: MP4, MOV, WebM (máx 50MB) ou URLs do YouTube, Vimeo, etc.
+                </p>
               </div>
 
               <div className="space-y-2">
@@ -445,6 +673,7 @@ export default function IAConfigProdutos() {
               <TableHead>Produto</TableHead>
               <TableHead>Categoria</TableHead>
               <TableHead>Preço Base</TableHead>
+              <TableHead>Mídia</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="w-[100px]">Ações</TableHead>
             </TableRow>
@@ -481,6 +710,22 @@ export default function IAConfigProdutos() {
                     ? new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(produto.preco_base)
                     : "-"
                   }
+                </TableCell>
+                <TableCell>
+                  <div className="flex gap-1">
+                    {(produto.galeria?.length || 0) > 0 && (
+                      <Badge variant="secondary" className="text-xs">
+                        <Image className="h-3 w-3 mr-1" />
+                        {produto.galeria.length}
+                      </Badge>
+                    )}
+                    {((produto.videos?.length || 0) > 0 || produto.video_url) && (
+                      <Badge variant="secondary" className="text-xs">
+                        <Video className="h-3 w-3 mr-1" />
+                        {(produto.videos?.length || 0) + (produto.video_url && !(produto.videos || []).find(v => v.url === produto.video_url) ? 1 : 0)}
+                      </Badge>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell>
                   <Switch
