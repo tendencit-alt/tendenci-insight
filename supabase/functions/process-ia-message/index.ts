@@ -46,6 +46,15 @@ serve(async (req) => {
   const evolutionApiUrl = Deno.env.get("EVOLUTION_API_URL");
   const evolutionApiKey = Deno.env.get("EVOLUTION_API_KEY");
 
+  // Validar variáveis de ambiente críticas
+  if (!evolutionApiUrl || !evolutionApiKey) {
+    console.error("❌ Evolution API credentials not configured");
+    return new Response(
+      JSON.stringify({ success: false, error: "Evolution API not configured" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+
   const supabase = createClient(supabaseUrl, supabaseKey);
 
   try {
@@ -113,9 +122,8 @@ serve(async (req) => {
               "Authorization": `Bearer ${supabaseKey}`,
             },
             body: JSON.stringify({
-              audioData: audioUrl || audioBase64,
+              audio: audioUrl || audioBase64,
               mimeType: mimetype,
-              isBase64: !audioUrl && !!audioBase64,
             }),
           });
           
@@ -163,7 +171,7 @@ serve(async (req) => {
     const { data: productsData } = await supabase
       .from("tendenci_ia_produtos")
       .select("*")
-      .eq("active", true);
+      .eq("ativo", true);
 
     const products = (productsData as Product[]) || [];
 
@@ -171,7 +179,7 @@ serve(async (req) => {
     const { data: knowledgeData } = await supabase
       .from("tendenci_ia_conhecimento")
       .select("*")
-      .eq("active", true);
+      .eq("ativo", true);
 
     const knowledge = (knowledgeData as Knowledge[]) || [];
 

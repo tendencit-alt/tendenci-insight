@@ -115,7 +115,7 @@ export default function IAWhatsAppSetup() {
       // Buscar instância usando is_ia_instance = true (mais robusto que ilike)
       const { data, error } = await supabase
         .from('tendenci_whatsapp_connections')
-        .select('id, instance_name, status, phone_number, qr_code_base64, is_ia_instance')
+        .select('id, instance_name, status, phone_number, qr_code_base64, is_ia_instance, webhook_url')
         .eq('is_ia_instance', true)
         .maybeSingle();
 
@@ -128,6 +128,14 @@ export default function IAWhatsAppSetup() {
           setQrCode(data.qr_code_base64);
         }
         addLog(`Conexão encontrada: ${data.instance_name} (${data.status})`, 'success');
+        
+        // Verificar se webhook está configurado para Supabase
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+        if (!data.webhook_url) {
+          addLog('⚠️ ATENÇÃO: Webhook não configurado! Clique em "Reconfigurar Webhook" para ativar o atendimento por IA.', 'warning');
+        } else if (!data.webhook_url.includes(supabaseUrl)) {
+          addLog('⚠️ ATENÇÃO: Webhook pode estar desatualizado. Considere reconfigurar.', 'warning');
+        }
         
         // Se está conectando, iniciar polling
         if (data.status === 'connecting') {
