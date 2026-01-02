@@ -16,6 +16,7 @@ import IAConfigProdutos from "@/components/ia-config/IAConfigProdutos";
 import IAConfigConhecimento from "@/components/ia-config/IAConfigConhecimento";
 import IAConfigComportamento from "@/components/ia-config/IAConfigComportamento";
 import IAConfigRegras from "@/components/ia-config/IAConfigRegras";
+import MasterPromptPreview from "@/components/ia-config/MasterPromptPreview";
 
 interface IAConfig {
   id: string;
@@ -137,7 +138,9 @@ export default function IAConfiguracao() {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-6">
+      <div className="container mx-auto px-4 py-6 space-y-6">
+        <MasterPromptPreview />
+        
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="flex flex-wrap h-auto gap-2 bg-transparent p-0">
             {tabs.map((tab) => {

@@ -68,3 +68,6 @@ verify_jwt = false
 
 [functions.dispatch-group-invites]
 verify_jwt = false
+
+[functions.generate-master-prompt]
+verify_jwt = false
