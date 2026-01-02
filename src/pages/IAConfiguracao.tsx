@@ -17,6 +17,7 @@ import IAConfigConhecimento from "@/components/ia-config/IAConfigConhecimento";
 import IAConfigComportamento from "@/components/ia-config/IAConfigComportamento";
 import IAConfigRegras from "@/components/ia-config/IAConfigRegras";
 import MasterPromptPreview from "@/components/ia-config/MasterPromptPreview";
+import { IAAgentTester } from "@/components/ia-config/IAAgentTester";
 import { IAProgressIndicator } from "@/components/ia-config/IAProgressIndicator";
 import { IAConfigOverview } from "@/components/ia-config/IAConfigOverview";
 import { Progress } from "@/components/ui/progress";
@@ -274,6 +275,8 @@ export default function IAConfiguracao() {
         </Card>
 
         <MasterPromptPreview />
+
+        <IAAgentTester />
         
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="flex flex-wrap h-auto gap-2 bg-transparent p-0">
