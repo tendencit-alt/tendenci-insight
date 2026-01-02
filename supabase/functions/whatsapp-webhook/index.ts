@@ -57,7 +57,16 @@ Deno.serve(async (req) => {
       .single()
 
     if (connectionData?.is_ia_instance && event === 'messages.upsert') {
-      console.log('🤖 Instância IA detectada! Processando mensagem internamente com Lovable AI...')
+      console.log('🤖 IA INSTANCE DETECTED - Processing with Lovable AI', {
+        instanceName: instance,
+        isIaInstance: connectionData.is_ia_instance,
+        webhookUrl: connectionData.webhook_url,
+        userId: connectionData.user_id,
+        event: event,
+        remoteJid: data?.key?.remoteJid,
+        fromMe: data?.key?.fromMe,
+        timestamp: new Date().toISOString()
+      });
       
       try {
         // Chamar a nova edge function que processa com Lovable AI
