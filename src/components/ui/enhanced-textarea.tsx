@@ -176,7 +176,7 @@ export function EnhancedTextarea({
                       type="button"
                       variant="ghost"
                       size="sm"
-                      className="h-7 w-7 p-0"
+                      className="h-7 px-2 gap-1"
                       onClick={handleImproveText}
                       disabled={isImproving || !value}
                     >
@@ -185,10 +185,11 @@ export function EnhancedTextarea({
                       ) : (
                         <Sparkles className="h-4 w-4" />
                       )}
+                      <span className="text-xs">Melhorar</span>
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>Melhorar texto com IA</p>
+                    <p>Melhorar Texto com IA</p>
                   </TooltipContent>
                 </Tooltip>
               )}
