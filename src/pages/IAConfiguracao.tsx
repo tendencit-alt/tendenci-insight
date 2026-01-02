@@ -276,7 +276,11 @@ export default function IAConfiguracao() {
 
         <MasterPromptPreview />
 
-        <IAAgentTester />
+              <IAAgentTester 
+                isConfigComplete={progressData.completed === progressData.total}
+                completedSections={progressData.completed}
+                totalSections={progressData.total}
+              />
         
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="flex flex-wrap h-auto gap-2 bg-transparent p-0">

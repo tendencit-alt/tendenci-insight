@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Bot, Send, Trash2, Loader2, User, RefreshCw, MessageSquare } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { Bot, Send, Trash2, Loader2, User, RefreshCw, MessageSquare, Lock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -12,6 +13,12 @@ import { cn } from "@/lib/utils";
 interface Message {
   role: "user" | "assistant";
   content: string;
+}
+
+interface IAAgentTesterProps {
+  isConfigComplete: boolean;
+  completedSections: number;
+  totalSections: number;
 }
 
 const SUGESTOES = [
@@ -22,7 +29,8 @@ const SUGESTOES = [
   "Estou com pressa, preciso pra semana que vem",
 ];
 
-export function IAAgentTester() {
+export function IAAgentTester({ isConfigComplete, completedSections, totalSections }: IAAgentTesterProps) {
+  const progressPercentage = totalSections > 0 ? Math.round((completedSections / totalSections) * 100) : 0;
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -166,6 +174,45 @@ export function IAAgentTester() {
     setMessages([]);
     toast.success("Conversa limpa");
   };
+
+  if (!isConfigComplete) {
+    return (
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-muted/50 rounded-lg">
+              <Bot className="h-5 w-5 text-muted-foreground" />
+            </div>
+            <div>
+              <CardTitle>Testar Agente IA</CardTitle>
+              <CardDescription>
+                Complete todas as configurações para testar o agente
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8 space-y-4">
+            <div className="p-4 bg-muted/50 rounded-full w-fit mx-auto">
+              <Lock className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <div>
+              <h3 className="font-medium">Configure todas as seções primeiro</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Complete todas as configurações para liberar o teste do agente
+              </p>
+            </div>
+            <div className="max-w-xs mx-auto space-y-2">
+              <Progress value={progressPercentage} className="h-2" />
+              <p className="text-xs text-muted-foreground">
+                {completedSections} de {totalSections} seções configuradas ({progressPercentage}%)
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
