@@ -129,8 +129,8 @@ export function CampanhasKPIDashboard() {
         });
 
       if (metricsError) throw metricsError;
-      if (metricsData && typeof metricsData === 'object') {
-        setMetrics(metricsData as unknown as CampaignMetrics);
+      if (Array.isArray(metricsData) && metricsData.length > 0) {
+        setMetrics(metricsData[0] as CampaignMetrics);
       }
 
       // Fetch evolution
