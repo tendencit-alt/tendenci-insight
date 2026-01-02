@@ -1821,6 +1821,42 @@ export type Database = {
         }
         Relationships: []
       }
+      ia_conversations: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          instance_name: string
+          media_type: string | null
+          media_url: string | null
+          metadata: Json | null
+          phone_number: string
+          role: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          instance_name: string
+          media_type?: string | null
+          media_url?: string | null
+          metadata?: Json | null
+          phone_number: string
+          role: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          instance_name?: string
+          media_type?: string | null
+          media_url?: string | null
+          metadata?: Json | null
+          phone_number?: string
+          role?: string
+        }
+        Relationships: []
+      }
       lead_attachments: {
         Row: {
           file_name: string

@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { ArrowLeft, Bot, Loader2, QrCode, Wifi, WifiOff, RefreshCw, CheckCircle2, ExternalLink, AlertCircle, RotateCcw, Settings2, AlertTriangle } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-const N8N_WEBHOOK_URL = "https://n8n.agendacorretor.online/webhook/receber-mensagens";
+// Não precisamos mais do N8N para atendimento - tudo processado internamente pelo Lovable
 
 type LogEntry = {
   time: string;
@@ -155,13 +155,12 @@ export default function IAWhatsAppSetup() {
     try {
       addLog('🚀 Iniciando criação da instância...', 'info');
       addLog(`📝 Nome: ${instanceName}`, 'info');
-      addLog(`🔗 Webhook: ${N8N_WEBHOOK_URL}`, 'info');
+      addLog(`🔗 Webhook: Supabase (processamento interno)`, 'info');
       
       const { data, error } = await supabase.functions.invoke('whatsapp-evolution', {
         body: {
           action: 'create-ia',
-          instanceName: instanceName.trim(),
-          webhookUrl: N8N_WEBHOOK_URL
+          instanceName: instanceName.trim()
         }
       });
 
@@ -442,49 +441,9 @@ export default function IAWhatsAppSetup() {
     }
   };
 
-  // Conexão DIRETA Evolution → n8n (bypass Supabase)
+  // Esta função não é mais necessária - processamento agora é interno
   const handleDirectN8nConnection = async () => {
-    const currentInstanceName = existingConnection?.instance_name || instanceName;
-    if (!currentInstanceName) {
-      toast.error("Nenhuma instância configurada");
-      return;
-    }
-
-    setIsVerifyingWebhook(true);
-    addLog('🚀 Configurando conexão DIRETA Evolution → n8n...', 'info');
-    addLog(`📡 URL destino: ${N8N_WEBHOOK_URL}`, 'info');
-
-    try {
-      const { data, error } = await supabase.functions.invoke('whatsapp-evolution', {
-        body: {
-          action: 'reconfigure-webhook-direct',
-          instanceName: currentInstanceName,
-          directWebhookUrl: N8N_WEBHOOK_URL
-        }
-      });
-
-      if (error) throw error;
-
-      if (data?.success) {
-        addLog('✅ Conexão DIRETA configurada com sucesso!', 'success');
-        addLog(`📡 Webhook agora aponta diretamente para: ${data.webhookUrl}`, 'success');
-        if (data.verification) {
-          addLog(`✅ Verificação: URL = ${data.verification.url || data.verification.webhook?.url}`, 'success');
-        }
-        toast.success("🎉 Conexão direta Evolution → n8n ativada!");
-        setWebhookStatus(null);
-        // Verificar novamente
-        setTimeout(() => handleVerifyWebhook(), 1000);
-      } else {
-        addLog(`❌ Falha ao configurar: ${data?.error}`, 'error');
-        toast.error(data?.error || "Erro ao configurar conexão direta");
-      }
-    } catch (err: any) {
-      addLog(`❌ Erro: ${err.message}`, 'error');
-      toast.error("Erro ao configurar conexão direta");
-    } finally {
-      setIsVerifyingWebhook(false);
-    }
+    toast.info("O processamento agora é feito internamente pelo Lovable AI - não precisa mais do n8n para atendimento!");
   };
 
   const getStatusBadge = () => {
@@ -550,14 +509,14 @@ export default function IAWhatsAppSetup() {
             <div className="p-3 rounded-lg bg-muted/50 border">
               <div className="flex items-center gap-2 text-sm">
                 <ExternalLink className="h-4 w-4 text-primary" />
-                <span className="font-medium">Webhook N8N:</span>
+                <span className="font-medium">Processamento:</span>
               </div>
-              <code className="text-xs text-muted-foreground break-all mt-1 block">
-                {N8N_WEBHOOK_URL}
-              </code>
+              <p className="text-xs text-muted-foreground mt-1">
+                Mensagens processadas internamente com Lovable AI
+              </p>
               <Badge variant="outline" className="mt-2 text-green-600 border-green-600">
                 <CheckCircle2 className="h-3 w-3 mr-1" />
-                Configurado automaticamente
+                Automático - Sem configuração externa
               </Badge>
             </div>
 
@@ -682,7 +641,7 @@ export default function IAWhatsAppSetup() {
 
               <div className="p-3 rounded-lg bg-white dark:bg-background border">
                 <p className="text-sm text-muted-foreground">
-                  ✅ Todas as mensagens recebidas serão enviadas para o seu fluxo n8n automaticamente.
+                  ✅ Todas as mensagens recebidas são processadas automaticamente pela Lovable AI.
                 </p>
               </div>
 
@@ -815,7 +774,7 @@ export default function IAWhatsAppSetup() {
           </CardHeader>
           <CardContent className="text-xs space-y-2 text-muted-foreground">
             <p><strong>Instância:</strong> {instanceName}</p>
-            <p><strong>Webhook:</strong> {N8N_WEBHOOK_URL}</p>
+            <p><strong>Processamento:</strong> Lovable AI (interno)</p>
             <p><strong>Eventos:</strong> MESSAGES_UPSERT, CONNECTION_UPDATE</p>
             <p><strong>Status:</strong> {status}</p>
             <p><strong>Polling:</strong> {pollingRef.current ? 'Ativo (10 min)' : 'Inativo'}</p>
