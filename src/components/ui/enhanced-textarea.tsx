@@ -15,6 +15,7 @@ interface EnhancedTextareaProps extends Omit<TextareaProps, 'onChange'> {
   enableImprove?: boolean;
   appendMode?: boolean;
   label?: string;
+  helperText?: string;
 }
 
 export function EnhancedTextarea({
@@ -25,6 +26,7 @@ export function EnhancedTextarea({
   enableImprove = true,
   appendMode = false,
   label,
+  helperText,
   className,
   ...props
 }: EnhancedTextareaProps) {
@@ -204,6 +206,10 @@ export function EnhancedTextarea({
         className={className}
         {...props}
       />
+
+      {helperText && (
+        <p className="text-xs text-muted-foreground">{helperText}</p>
+      )}
 
       <Dialog open={showRecordingModal} onOpenChange={setShowRecordingModal}>
         <DialogContent className="sm:max-w-md">

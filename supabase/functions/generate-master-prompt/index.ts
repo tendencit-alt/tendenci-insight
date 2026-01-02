@@ -384,19 +384,186 @@ ${perguntasObrigatorias.map((p: string, i: number) => `${i + 1}. "${p}"`).join('
     
     promptSections.push(qualSection);
 
-    // 5. VENDAS
+    // 5. VENDAS - Configuração completa para agente senior
     const vendas = configs.vendas || {};
-    let vendasSection = `# TÉCNICAS DE VENDAS\n`;
     
-    if (vendas.tecnicas && Array.isArray(vendas.tecnicas)) {
-      vendasSection += `Técnicas a usar:\n${vendas.tecnicas.map((t: any) => `- ${t.nome}: ${t.descricao}`).join('\n')}\n`;
+    // Mapear valores para descrições
+    const conducaoDescricoes: Record<string, string> = {
+      sutil: 'Avance de forma suave e natural, sem pressionar. Deixe o cliente no controle.',
+      moderado: 'Equilibre informar com conduzir. Faça sugestões sem ser insistente.',
+      sempre_fechar: 'Sempre busque oportunidades de fechamento. Seja proativo em avançar a venda.'
+    };
+    
+    const apresentacaoPrecosDescricoes: Record<string, string> = {
+      valor_direto: 'Informe o preço de forma objetiva e clara quando perguntado.',
+      valor_beneficios: 'Apresente o preço junto com os benefícios e valor agregado.',
+      explica_antes: 'Contextualize e explique o produto antes de mencionar o preço.'
+    };
+    
+    const tabelaPrecosDescricoes: Record<string, string> = {
+      nunca_enviar: 'Não envie tabela de preços. Fale sobre produtos específicos.',
+      apenas_resumo: 'Pode enviar um resumo simplificado dos principais itens/preços.',
+      tabela_completa: 'Pode enviar tabela completa de preços quando solicitado.'
+    };
+    
+    const sugestaoPacotesDescricoes: Record<string, string> = {
+      sim: 'Sugira ativamente planos e pacotes que se adequem à necessidade do cliente.',
+      se_pedir: 'Fale sobre pacotes apenas se o cliente perguntar diretamente.',
+      nao: 'Não sugira pacotes, foque em produtos/serviços individuais.'
+    };
+    
+    const orcamentoBaixoDescricoes: Record<string, string> = {
+      explicar_valor: 'Justifique o preço mostrando benefícios, qualidade e custo-benefício.',
+      alternativa_barata: 'Sugira opções mais acessíveis ou condições de pagamento facilitadas.',
+      chamar_humano: 'Encaminhe para um atendente humano negociar condições especiais.'
+    };
+    
+    const oferecerDescontoDescricoes: Record<string, string> = {
+      nunca: 'Não ofereça descontos em nenhuma situação.',
+      se_configurado: 'Ofereça apenas as promoções e descontos pré-definidos.',
+      com_aprovacao: 'Consulte um humano antes de oferecer qualquer desconto.'
+    };
+    
+    const pedidoForaRegraDescricoes: Record<string, string> = {
+      negar_educadamente: 'Recuse de forma gentil e profissional, explicando as limitações.',
+      explicar_politica: 'Explique detalhadamente a política de preços e condições.',
+      chamar_humano: 'Encaminhe para um humano analisar o caso especial.'
+    };
+    
+    const ctasLabels: Record<string, string> = {
+      posso_explicar: 'Posso explicar melhor?',
+      vejo_disponibilidade: 'Vejo disponibilidade para você?',
+      vamos_avancar: 'Vamos avançar para o próximo passo?',
+      gerar_orcamento: 'Posso gerar um orçamento personalizado?'
+    };
+    
+    const objetivosLabels: Record<string, string> = {
+      informar: 'Esclarecer dúvidas e informar',
+      qualificar: 'Coletar informações e qualificar',
+      vender: 'Buscar oportunidades de fechamento',
+      agendar: 'Marcar reuniões ou consultas',
+      suporte: 'Resolver problemas e dar suporte'
+    };
+    
+    const objetivos = vendas.objetivos_principais || [];
+    const conducao = vendas.conducao_conversa || 'moderado';
+    const apresentacaoPrecos = vendas.apresentacao_precos || 'valor_direto';
+    const tabelaPrecos = vendas.tabela_precos || 'apenas_resumo';
+    const sugestaoPacotes = vendas.sugestao_pacotes || 'sim';
+    const orcamentoBaixo = vendas.cliente_orcamento_baixo || 'explicar_valor';
+    const oferecerDesconto = vendas.oferecer_desconto || 'se_configurado';
+    const pedidoForaRegra = vendas.pedido_fora_regra || 'chamar_humano';
+    const ctasDisponiveis = vendas.ctas_disponiveis || [];
+    const perguntasVendas = vendas.perguntas_vendas || [];
+    
+    let vendasSection = `# TÉCNICAS DE VENDAS E CONVERSÃO\n`;
+    
+    // Objetivos
+    if (objetivos.length > 0) {
+      vendasSection += `\n## Objetivos Principais
+O agente deve balancear os seguintes objetivos:
+${objetivos.map((obj: string) => `- ✓ ${objetivosLabels[obj] || obj}`).join('\n')}\n`;
     }
-    if (vendas.gatilhos && Array.isArray(vendas.gatilhos)) {
-      vendasSection += `\nGatilhos mentais:\n${vendas.gatilhos.map((g: any) => `- ${g.tipo}: ${g.exemplo}`).join('\n')}\n`;
+    
+    // Condução
+    vendasSection += `\n## Condução da Conversa
+**Estilo: ${conducao.charAt(0).toUpperCase() + conducao.slice(1).replace('_', ' ')}**
+${conducaoDescricoes[conducao] || conducaoDescricoes.moderado}\n`;
+    
+    // Estratégia de Preços
+    vendasSection += `\n## Estratégia de Preços
+- **Apresentação:** ${apresentacaoPrecosDescricoes[apresentacaoPrecos] || ''}
+- **Tabela de preços:** ${tabelaPrecosDescricoes[tabelaPrecos] || ''}
+- **Sugestão de pacotes:** ${sugestaoPacotesDescricoes[sugestaoPacotes] || ''}\n`;
+    
+    // Situações Especiais
+    vendasSection += `\n## Situações Especiais
+- **Cliente com orçamento baixo:** ${orcamentoBaixoDescricoes[orcamentoBaixo] || ''}
+- **Oferecer desconto:** ${oferecerDescontoDescricoes[oferecerDesconto] || ''}
+- **Pedido fora da regra:** ${pedidoForaRegraDescricoes[pedidoForaRegra] || ''}\n`;
+    
+    // CTAs
+    if (ctasDisponiveis.length > 0) {
+      vendasSection += `\n## CTAs Disponíveis
+Use estas chamadas para ação durante a conversa:
+${ctasDisponiveis.map((cta: string) => `- "${ctasLabels[cta] || cta}"`).join('\n')}\n`;
     }
-    if (vendas.objecoes && Array.isArray(vendas.objecoes)) {
-      vendasSection += `\nTratamento de objeções:\n${vendas.objecoes.map((o: any) => `- "${o.objecao}" → ${o.resposta}`).join('\n')}`;
+    
+    // Perguntas obrigatórias para vendas
+    if (perguntasVendas.length > 0) {
+      vendasSection += `\n## Perguntas Obrigatórias para Vendas
+Sempre tente coletar estas informações:
+${perguntasVendas.map((p: string, i: number) => `${i + 1}. ${p}`).join('\n')}\n`;
     }
+    
+    // Ofertas Especiais
+    if (vendas.promocoes) {
+      vendasSection += `\n## Ofertas Especiais Ativas
+${vendas.promocoes}\n`;
+    }
+    
+    // Técnicas de fechamento
+    if (vendas.tecnicas) {
+      vendasSection += `\n## Técnicas de Fechamento
+${vendas.tecnicas}\n`;
+    }
+    
+    // Lidar com objeções - texto geral
+    if (vendas.objecoes_texto) {
+      vendasSection += `\n## Como Lidar com Objeções
+${vendas.objecoes_texto}\n`;
+    }
+    
+    // Estratégias por temperatura
+    if (vendas.estrategia_lead_quente || vendas.estrategia_lead_morno || vendas.estrategia_lead_frio) {
+      vendasSection += `\n## Estratégia por Temperatura do Lead\n`;
+      
+      if (vendas.estrategia_lead_quente) {
+        vendasSection += `\n### 🔥 Lead Quente (Pronto para Comprar)
+${vendas.estrategia_lead_quente}\n`;
+      }
+      
+      if (vendas.estrategia_lead_morno) {
+        vendasSection += `\n### 🌡️ Lead Morno (Avaliando Opções)
+${vendas.estrategia_lead_morno}\n`;
+      }
+      
+      if (vendas.estrategia_lead_frio) {
+        vendasSection += `\n### ❄️ Lead Frio (Apenas Pesquisando)
+${vendas.estrategia_lead_frio}\n`;
+      }
+    }
+    
+    // Objeções estruturadas
+    if (vendas.objecoes && Array.isArray(vendas.objecoes) && vendas.objecoes.length > 0) {
+      vendasSection += `\n## Objeções Mapeadas
+Quando o cliente disser:
+${vendas.objecoes.map((o: any) => `- "${o.objecao}" → ${o.resposta}`).join('\n')}\n`;
+    }
+    
+    // Links de direcionamento
+    if (vendas.links_direcionamento && Array.isArray(vendas.links_direcionamento) && vendas.links_direcionamento.length > 0) {
+      vendasSection += `\n## Links de Direcionamento
+Use estes links quando apropriado:
+${vendas.links_direcionamento.map((l: any) => `- **${l.nome}:** ${l.url}`).join('\n')}\n`;
+    }
+    
+    // Backward compatibility - old fields
+    if (vendas.gatilhos_urgencia && Array.isArray(vendas.gatilhos_urgencia) && vendas.gatilhos_urgencia.length > 0) {
+      vendasSection += `\n## Gatilhos de Urgência
+${vendas.gatilhos_urgencia.map((g: string) => `- ${g}`).join('\n')}\n`;
+    }
+    
+    if (vendas.quando_transferir) {
+      vendasSection += `\n## Quando Transferir para Humano
+${vendas.quando_transferir}\n`;
+    }
+    
+    if (vendas.script_followup) {
+      vendasSection += `\n## Script de Follow-up
+${vendas.script_followup}\n`;
+    }
+    
     promptSections.push(vendasSection);
 
     // 6. PRODUTOS
