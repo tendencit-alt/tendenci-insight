@@ -1,13 +1,13 @@
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Loader2, Save } from "lucide-react";
 import { useFormPersistence } from "@/hooks/useFormPersistence";
 import { FormSaveIndicator } from "@/components/ui/FormSaveIndicator";
+import { EnhancedTextarea } from "@/components/ui/enhanced-textarea";
 
 interface Props {
   config: Record<string, unknown>;
@@ -113,38 +113,32 @@ export default function IAConfigComunicacao({ config, onSave, saving }: Props) {
       </div>
 
       <div className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="msg_boas_vindas">Mensagem de Boas-Vindas</Label>
-          <Textarea
-            id="msg_boas_vindas"
-            value={form.msg_boas_vindas}
-            onChange={(e) => setForm({ ...form, msg_boas_vindas: e.target.value })}
-            placeholder="Olá! 👋 Seja bem-vindo à Tendenci. Como posso ajudar você hoje?"
-            rows={3}
-          />
-        </div>
+        <EnhancedTextarea
+          label="Mensagem de Boas-Vindas"
+          value={form.msg_boas_vindas}
+          onChange={(value) => setForm({ ...form, msg_boas_vindas: value })}
+          placeholder="Olá! 👋 Seja bem-vindo à Tendenci. Como posso ajudar você hoje?"
+          rows={3}
+          context="Mensagem de boas-vindas para clientes"
+        />
 
-        <div className="space-y-2">
-          <Label htmlFor="msg_despedida">Mensagem de Despedida</Label>
-          <Textarea
-            id="msg_despedida"
-            value={form.msg_despedida}
-            onChange={(e) => setForm({ ...form, msg_despedida: e.target.value })}
-            placeholder="Foi um prazer atender você! Qualquer dúvida, é só chamar. 😊"
-            rows={3}
-          />
-        </div>
+        <EnhancedTextarea
+          label="Mensagem de Despedida"
+          value={form.msg_despedida}
+          onChange={(value) => setForm({ ...form, msg_despedida: value })}
+          placeholder="Foi um prazer atender você! Qualquer dúvida, é só chamar. 😊"
+          rows={3}
+          context="Mensagem de despedida para clientes"
+        />
 
-        <div className="space-y-2">
-          <Label htmlFor="msg_ausencia">Mensagem de Ausência (fora do horário)</Label>
-          <Textarea
-            id="msg_ausencia"
-            value={form.msg_ausencia}
-            onChange={(e) => setForm({ ...form, msg_ausencia: e.target.value })}
-            placeholder="Olá! No momento estamos fora do horário de atendimento. Retornaremos em breve!"
-            rows={3}
-          />
-        </div>
+        <EnhancedTextarea
+          label="Mensagem de Ausência (fora do horário)"
+          value={form.msg_ausencia}
+          onChange={(value) => setForm({ ...form, msg_ausencia: value })}
+          placeholder="Olá! No momento estamos fora do horário de atendimento. Retornaremos em breve!"
+          rows={3}
+          context="Mensagem de ausência fora do horário"
+        />
       </div>
 
       <div className="flex justify-end">
