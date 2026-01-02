@@ -90,7 +90,7 @@ Deno.serve(async (req) => {
       // Buscar conexão atual no banco
       const { data: currentConn } = await supabase
         .from('tendenci_whatsapp_connections')
-        .select('status, phone_number, connected_at')
+        .select('status, phone_number, connected_at, is_ia_instance, webhook_url')
         .eq('instance_name', instanceName)
         .single()
 
@@ -128,11 +128,58 @@ Deno.serve(async (req) => {
         console.log('ℹ️ No update needed - status unchanged')
       }
 
+      // 🔧 AUTO-CONFIGURAR WEBHOOK para instâncias de IA quando conectado mas sem webhook
+      let webhookConfigured = false
+      const supabaseWebhookUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/whatsapp-webhook`
+      
+      if (currentConn?.is_ia_instance && isConnected) {
+        const webhookMissing = !currentConn.webhook_url || !currentConn.webhook_url.includes('/functions/v1/whatsapp-webhook')
+        
+        if (webhookMissing) {
+          console.log('🔧 Auto-configuring webhook for IA instance...')
+          
+          try {
+            const webhookResp = await fetch(`${evolutionUrl}/webhook/set/${instanceName}`, {
+              method: 'POST',
+              headers: {
+                'apikey': evolutionApiKey,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                webhook: {
+                  url: supabaseWebhookUrl,
+                  enabled: true,
+                  webhookByEvents: false,
+                  events: ['MESSAGES_UPSERT', 'CONNECTION_UPDATE', 'QRCODE_UPDATED']
+                }
+              })
+            })
+
+            if (webhookResp.ok) {
+              console.log('✅ Webhook auto-configured for IA instance:', supabaseWebhookUrl)
+              
+              // Atualizar banco com webhook
+              await supabase
+                .from('tendenci_whatsapp_connections')
+                .update({ webhook_url: supabaseWebhookUrl })
+                .eq('instance_name', instanceName)
+              
+              webhookConfigured = true
+            } else {
+              console.warn('⚠️ Failed to auto-configure webhook:', webhookResp.status)
+            }
+          } catch (err) {
+            console.error('❌ Error auto-configuring webhook:', err)
+          }
+        }
+      }
+
       return new Response(
         JSON.stringify({ 
           status: mappedStatus, 
           phoneNumber,
-          isConnected
+          isConnected,
+          webhookConfigured
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
