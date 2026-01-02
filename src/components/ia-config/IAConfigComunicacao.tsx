@@ -1,12 +1,13 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Loader2, Save } from "lucide-react";
+import { useFormPersistence } from "@/hooks/useFormPersistence";
+import { FormSaveIndicator } from "@/components/ui/FormSaveIndicator";
 
 interface Props {
   config: Record<string, unknown>;
@@ -14,19 +15,25 @@ interface Props {
   saving: boolean;
 }
 
+const initialForm = {
+  tamanho_max_msg: 500,
+  usar_emojis: "moderado",
+  usar_audios: false,
+  tempo_resposta_ms: 2000,
+  msg_boas_vindas: "",
+  msg_despedida: "",
+  msg_ausencia: "",
+};
+
 export default function IAConfigComunicacao({ config, onSave, saving }: Props) {
-  const [form, setForm] = useState({
-    tamanho_max_msg: 500,
-    usar_emojis: "moderado",
-    usar_audios: false,
-    tempo_resposta_ms: 2000,
-    msg_boas_vindas: "",
-    msg_despedida: "",
-    msg_ausencia: "",
-  });
+  const [form, setForm, clearPersistedData, hasRestoredData] = useFormPersistence(
+    'ia_config_comunicacao',
+    initialForm,
+    true
+  );
 
   useEffect(() => {
-    if (config) {
+    if (config && !hasRestoredData) {
       setForm({
         tamanho_max_msg: (config.tamanho_max_msg as number) || 500,
         usar_emojis: (config.usar_emojis as string) || "moderado",
@@ -37,15 +44,17 @@ export default function IAConfigComunicacao({ config, onSave, saving }: Props) {
         msg_ausencia: (config.msg_ausencia as string) || "",
       });
     }
-  }, [config]);
+  }, [config, hasRestoredData]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSave(form);
+    clearPersistedData();
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      <FormSaveIndicator hasRestoredData={hasRestoredData} />
       <div className="grid gap-6 md:grid-cols-2">
         <div className="space-y-2">
           <Label>Tamanho Máximo de Mensagens</Label>

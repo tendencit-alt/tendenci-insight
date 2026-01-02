@@ -5,6 +5,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Save, Plus, Trash2 } from "lucide-react";
+import { useFormPersistence } from "@/hooks/useFormPersistence";
+import { FormSaveIndicator } from "@/components/ui/FormSaveIndicator";
 
 interface Props {
   config: Record<string, unknown>;
@@ -22,20 +24,26 @@ const camposDisponiveis = [
   { id: "prazo", label: "Prazo" },
 ];
 
+const initialForm = {
+  perguntas: [] as string[],
+  criterios_lead: {
+    quente: "",
+    morno: "",
+    frio: "",
+  },
+  campos_obrigatorios: ["nome", "telefone"],
+};
+
 export default function IAConfigQualificacao({ config, onSave, saving }: Props) {
-  const [form, setForm] = useState({
-    perguntas: [] as string[],
-    criterios_lead: {
-      quente: "",
-      morno: "",
-      frio: "",
-    },
-    campos_obrigatorios: ["nome", "telefone"],
-  });
+  const [form, setForm, clearPersistedData, hasRestoredData] = useFormPersistence(
+    'ia_config_qualificacao',
+    initialForm,
+    true
+  );
   const [novaPergunta, setNovaPergunta] = useState("");
 
   useEffect(() => {
-    if (config) {
+    if (config && !hasRestoredData) {
       const criterios = config.criterios_lead as Record<string, string> || {};
       setForm({
         perguntas: (config.perguntas as string[]) || [],
@@ -47,7 +55,7 @@ export default function IAConfigQualificacao({ config, onSave, saving }: Props) 
         campos_obrigatorios: (config.campos_obrigatorios as string[]) || ["nome", "telefone"],
       });
     }
-  }, [config]);
+  }, [config, hasRestoredData]);
 
   const addPergunta = () => {
     if (novaPergunta.trim()) {
@@ -71,10 +79,12 @@ export default function IAConfigQualificacao({ config, onSave, saving }: Props) 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSave(form);
+    clearPersistedData();
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      <FormSaveIndicator hasRestoredData={hasRestoredData} />
       <div className="space-y-4">
         <Label>Campos Obrigatórios a Coletar</Label>
         <div className="flex flex-wrap gap-4">
