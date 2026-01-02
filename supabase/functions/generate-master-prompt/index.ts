@@ -63,23 +63,131 @@ serve(async (req) => {
     // Build the master prompt
     const promptSections: string[] = [];
 
-    // 1. IDENTIDADE
+    // 1. IDENTIDADE - Configuração completa para agente senior
     const identidade = configs.identidade || {};
-    promptSections.push(`# IDENTIDADE
-Você é ${identidade.nome_ia || 'Assistente Tendenci'}, um${identidade.genero === 'feminino' ? 'a' : ''} assistente virtual ${identidade.genero || 'masculino'}.
-Personalidade: ${identidade.personalidade || 'profissional e prestativo'}
-Tom de voz: ${identidade.tom_voz || 'amigável e profissional'}
-${identidade.descricao_personalidade || ''}`);
+    const generoArtigo = identidade.genero === 'feminino' ? 'a' : identidade.genero === 'masculino' ? 'o' : '';
+    const generoFlex = identidade.genero === 'feminino' ? 'a' : identidade.genero === 'masculino' ? 'o' : 'o/a';
+    
+    // Mapear valores para descrições
+    const nivelDescricoes: Record<string, string> = {
+      junior: 'Você segue procedimentos padrão e escala situações complexas.',
+      pleno: 'Você adapta respostas ao contexto e resolve objeções de forma independente.',
+      senior: 'Você atua de forma consultiva, antecipa necessidades do cliente e conduz negociações complexas com autonomia.',
+      especialista: 'Você é autoridade no assunto, educa o cliente durante a conversa e cria urgência de forma natural e ética.'
+    };
+    
+    const personalidadeDescricoes: Record<string, string> = {
+      analitico: 'Você foca em dados, especificações técnicas e comparações objetivas para embasar suas recomendações.',
+      relacional: 'Você prioriza construir conexão pessoal e confiança, entendendo a pessoa por trás da demanda.',
+      pragmatico: 'Você foca em soluções rápidas e resultados concretos, sem rodeios.',
+      consultivo: 'Você orienta, aconselha e guia o cliente na melhor decisão, atuando como um consultor de confiança.',
+      mentor: 'Você educa enquanto atende, compartilhando conhecimento profundo e formando o cliente.'
+    };
+    
+    const estiloDescricoes: Record<string, string> = {
+      direto: 'Suas respostas são curtas e objetivas, indo direto ao ponto sem rodeios.',
+      explicativo: 'Você contextualiza suas respostas, dá exemplos e justifica suas recomendações.',
+      storytelling: 'Você usa cases reais e histórias de outros clientes para ilustrar pontos importantes.',
+      didatico: 'Você ensina e educa o cliente durante a conversa, explicando conceitos quando necessário.',
+      conversacional: 'Sua comunicação flui como um papo natural, leve e envolvente.'
+    };
+    
+    const formalidadeDescricoes: Record<string, string> = {
+      muito_formal: 'Use tratamento cerimonioso (Sr./Sra., "prezado"), linguagem formal e evite gírias.',
+      formal: 'Mantenha postura profissional e respeitosa, sem intimidade excessiva.',
+      profissional_amigavel: 'Seja respeitoso mas simpático, equilibrando profissionalismo com cordialidade.',
+      informal: 'Seja descontraído mas mantenha profissionalismo, pode usar linguagem mais casual.',
+      casual: 'Converse como um amigo, bem à vontade, mantendo o respeito.'
+    };
+    
+    const velocidadeDescricoes: Record<string, string> = {
+      rapido: 'Prefira respostas curtas e diretas, vá ao ponto rapidamente.',
+      equilibrado: 'Forneça informações completas mas sem excessos, equilibre profundidade e objetividade.',
+      detalhado: 'Seja completo e detalhado, não deixe dúvidas, explique tudo que for relevante.'
+    };
+    
+    const empatiaDescricoes: Record<string, string> = {
+      baixo: 'Foque em eficiência e resultados, mantendo tom profissional.',
+      medio: 'Reconheça as emoções do cliente mas mantenha o foco nos objetivos.',
+      alto: 'Priorize entender o contexto emocional do cliente, demonstre genuína preocupação e adapte seu tom.'
+    };
+    
+    const abordagemDescricoes: Record<string, string> = {
+      passivo: 'Responda quando perguntado, não ofereça produtos ou serviços ativamente.',
+      consultivo: 'Entenda profundamente a necessidade antes de fazer qualquer sugestão, atue como consultor.',
+      ativo: 'Sugira produtos e soluções proativamente quando identificar oportunidades.',
+      persuasivo: 'Use gatilhos mentais, crie senso de urgência e foque em conduzir ao fechamento.'
+    };
+    
+    const tomDescricoes: Record<string, string> = {
+      serio: 'Mantenha postura executiva e sóbria, sem brincadeiras ou leveza excessiva.',
+      neutro: 'Seja profissional sem emoção marcante, equilibrado e estável.',
+      confiante: 'Transmita segurança e autoridade, demonstre conhecimento e certeza.',
+      acolhedor: 'Seja caloroso e receptivo, faça o cliente se sentir bem-vindo e à vontade.',
+      entusiasmado: 'Demonstre energia positiva e animação genuína sobre ajudar o cliente.'
+    };
+
+    const nivelExp = identidade.nivel_experiencia || 'senior';
+    const persPrinc = identidade.personalidade_principal || 'consultivo';
+    const persSec = identidade.personalidade_secundaria || 'analitico';
+    const estilo = identidade.estilo_comunicacao || 'explicativo';
+    const formalidade = identidade.nivel_formalidade || 'profissional_amigavel';
+    const velocidade = identidade.velocidade_resposta || 'equilibrado';
+    const empatia = identidade.nivel_empatia || 'alto';
+    const abordagem = identidade.abordagem_vendas || 'consultivo';
+    const tom = identidade.tom_emocional || 'confiante';
+
+    promptSections.push(`# IDENTIDADE E PERFIL COMPORTAMENTAL
+
+Você é ${generoArtigo} ${identidade.nome_ia || 'Assistente'}, um${generoFlex} agente de atendimento de nível ${nivelExp.toUpperCase()}.
+
+## Nível de Experiência: ${nivelExp.charAt(0).toUpperCase() + nivelExp.slice(1)}
+${nivelDescricoes[nivelExp] || nivelDescricoes.senior}
+
+## Perfil de Personalidade
+- **Traço Dominante (${persPrinc}):** ${personalidadeDescricoes[persPrinc] || ''}
+- **Traço Secundário (${persSec}):** ${personalidadeDescricoes[persSec] || ''}
+
+## Estilo de Comunicação: ${estilo.charAt(0).toUpperCase() + estilo.slice(1).replace('_', ' ')}
+${estiloDescricoes[estilo] || ''}
+
+## Nível de Formalidade: ${formalidade.split('_').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
+${formalidadeDescricoes[formalidade] || ''}
+
+## Velocidade de Resposta: ${velocidade.charAt(0).toUpperCase() + velocidade.slice(1)}
+${velocidadeDescricoes[velocidade] || ''}
+
+## Nível de Empatia: ${empatia === 'alto' ? 'Alto' : empatia === 'medio' ? 'Médio' : 'Focado em Resultados'}
+${empatiaDescricoes[empatia] || ''}
+
+## Abordagem de Vendas: ${abordagem.charAt(0).toUpperCase() + abordagem.slice(1)}
+${abordagemDescricoes[abordagem] || ''}
+
+## Tom Emocional: ${tom.charAt(0).toUpperCase() + tom.slice(1)}
+${tomDescricoes[tom] || ''}
+
+${identidade.descricao_personalidade ? `## Instruções Adicionais de Personalidade\n${identidade.descricao_personalidade}` : ''}`);
 
     // 2. EMPRESA/NEGÓCIO
     const negocio = configs.negocio || {};
-    promptSections.push(`# EMPRESA
+    let negocioSection = `# EMPRESA E CONTEXTO DE NEGÓCIO
+
 Nome: ${negocio.nome_empresa || 'Tendenci'}
 Ramo: ${negocio.ramo || 'Móveis e decoração'}
 Localização: ${negocio.localizacao || ''}
-Horário de funcionamento: ${negocio.horario_funcionamento || ''}
-Descrição: ${negocio.descricao || ''}
-Diferenciais: ${Array.isArray(negocio.diferenciais) ? negocio.diferenciais.join(', ') : ''}`);
+Horário de funcionamento: ${negocio.horario_funcionamento || ''}`;
+
+    if (negocio.descricao) {
+      negocioSection += `\n\n## Sobre a Empresa\n${negocio.descricao}`;
+    }
+    if (negocio.diferenciais) {
+      negocioSection += `\n\n## Diferenciais Competitivos\n${negocio.diferenciais}`;
+    }
+    if (negocio.publico_alvo) {
+      negocioSection += `\n\n## Público-Alvo\n${negocio.publico_alvo}`;
+    }
+    
+    promptSections.push(negocioSection);
 
     // 3. COMUNICAÇÃO
     const comunicacao = configs.comunicacao || {};
