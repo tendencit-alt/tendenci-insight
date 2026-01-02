@@ -39,16 +39,31 @@ const SUGESTOES = [
 // Função para detectar e extrair marcadores de mídia do conteúdo
 // Formato: [FOTO_PRODUTO:url:nome] ou [VIDEO_PRODUTO:url:nome]
 function parseMediaFromContent(content: string): { cleanContent: string; media: MediaItem[] } {
-  const mediaRegex = /\[(FOTO_PRODUTO|VIDEO_PRODUTO):([^:\]]+):([^\]]+)\]/g;
+  // Regex robusta: captura URL completa (pode ter vários :) e nome do produto
+  const mediaRegex = /\[(FOTO_PRODUTO|VIDEO_PRODUTO):(.+?):([^\]:]+)\]/g;
   const media: MediaItem[] = [];
   let match;
   
   while ((match = mediaRegex.exec(content)) !== null) {
+    let url = match[2].trim();
+    
+    // Normalizar URL - garantir protocolo https
+    if (url.startsWith('//')) {
+      url = 'https:' + url;
+    } else if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      url = 'https://' + url;
+    }
+    
     media.push({
       type: match[1] === "FOTO_PRODUTO" ? "image" : "video",
-      url: match[2].trim(),
+      url: url,
       productName: match[3].trim()
     });
+  }
+  
+  // Debug log
+  if (media.length > 0) {
+    console.log("Mídia detectada:", media);
   }
   
   // Remover marcadores do texto
