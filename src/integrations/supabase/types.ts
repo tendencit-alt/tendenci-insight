@@ -5025,11 +5025,16 @@ export type Database = {
       }
       tendenci_ia_conhecimento: {
         Row: {
+          aplicacao: string[] | null
           arquivo_url: string | null
+          arquivos: Json | null
           ativo: boolean | null
+          autor: string | null
           categoria: string | null
           conteudo: string
+          contexto_uso: string | null
           created_at: string | null
+          fonte: string | null
           id: string
           palavras_chave: string[] | null
           prioridade: number | null
@@ -5037,13 +5042,20 @@ export type Database = {
           tipo_arquivo: string | null
           titulo: string
           updated_at: string | null
+          validade: string | null
+          videos: Json | null
         }
         Insert: {
+          aplicacao?: string[] | null
           arquivo_url?: string | null
+          arquivos?: Json | null
           ativo?: boolean | null
+          autor?: string | null
           categoria?: string | null
           conteudo: string
+          contexto_uso?: string | null
           created_at?: string | null
+          fonte?: string | null
           id?: string
           palavras_chave?: string[] | null
           prioridade?: number | null
@@ -5051,13 +5063,20 @@ export type Database = {
           tipo_arquivo?: string | null
           titulo: string
           updated_at?: string | null
+          validade?: string | null
+          videos?: Json | null
         }
         Update: {
+          aplicacao?: string[] | null
           arquivo_url?: string | null
+          arquivos?: Json | null
           ativo?: boolean | null
+          autor?: string | null
           categoria?: string | null
           conteudo?: string
+          contexto_uso?: string | null
           created_at?: string | null
+          fonte?: string | null
           id?: string
           palavras_chave?: string[] | null
           prioridade?: number | null
@@ -5065,6 +5084,8 @@ export type Database = {
           tipo_arquivo?: string | null
           titulo?: string
           updated_at?: string | null
+          validade?: string | null
+          videos?: Json | null
         }
         Relationships: []
       }

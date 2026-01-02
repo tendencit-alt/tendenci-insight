@@ -606,11 +606,88 @@ ${p.diferenciais && p.diferenciais.length > 0 ? `Diferenciais: ${p.diferenciais.
     // 7. CONHECIMENTO
     if (conhecimento && conhecimento.length > 0) {
       let conhecSection = `# BASE DE CONHECIMENTO\n`;
-      conhecimento.forEach((c: any) => {
-        conhecSection += `\n## ${c.titulo} (${c.tipo})
-${c.conteudo}
-${c.palavras_chave && c.palavras_chave.length > 0 ? `Tags: ${c.palavras_chave.join(', ')}` : ''}`;
+      
+      // Group by type
+      const tiposUnicos = [...new Set(conhecimento.map((c: any) => c.tipo || 'geral'))];
+      
+      tiposUnicos.forEach((tipo: string) => {
+        const itensDoTipo = conhecimento.filter((c: any) => (c.tipo || 'geral') === tipo);
+        const tipoLabel = {
+          faq: 'FAQ - Perguntas Frequentes',
+          politica: 'Políticas',
+          guia: 'Guias',
+          documento: 'Documentos',
+          catalogo: 'Catálogos',
+          manual: 'Manuais',
+          livro: 'Livros e Referências',
+          video_aula: 'Vídeo-Aulas',
+          script: 'Scripts de Atendimento',
+          case: 'Cases de Sucesso',
+          processo: 'Processos',
+          tecnico: 'Documentação Técnica',
+          geral: 'Geral'
+        }[tipo] || tipo;
+        
+        conhecSection += `\n## ${tipoLabel}\n`;
+        
+        itensDoTipo.forEach((c: any) => {
+          conhecSection += `\n### ${c.titulo}`;
+          
+          // Application context
+          if (c.aplicacao && Array.isArray(c.aplicacao) && c.aplicacao.length > 0) {
+            const aplicacaoLabels = c.aplicacao.map((a: string) => ({
+              vendas: 'Vendas',
+              suporte: 'Suporte',
+              onboarding: 'Onboarding',
+              objecoes: 'Objeções',
+              fechamento: 'Fechamento',
+              pos_venda: 'Pós-Venda',
+              qualificacao: 'Qualificação',
+              geral: 'Geral'
+            }[a] || a)).join(', ');
+            conhecSection += `\n**Usar em:** ${aplicacaoLabels}`;
+          }
+          
+          // Context of use
+          if (c.contexto_uso) {
+            conhecSection += `\n**Contexto:** ${c.contexto_uso}`;
+          }
+          
+          // Source and author
+          if (c.fonte || c.autor) {
+            const metaInfo = [c.fonte, c.autor ? `Autor: ${c.autor}` : null].filter(Boolean).join(' | ');
+            conhecSection += `\n**Fonte:** ${metaInfo}`;
+          }
+          
+          // Main content
+          conhecSection += `\n${c.conteudo}`;
+          
+          // Files
+          const arquivos = Array.isArray(c.arquivos) ? c.arquivos : [];
+          if (arquivos.length > 0) {
+            conhecSection += `\n**Materiais de apoio:**`;
+            arquivos.forEach((arq: any) => {
+              conhecSection += `\n  - Documento: ${arq.nome || arq.url}`;
+            });
+          }
+          
+          // Videos
+          const videos = Array.isArray(c.videos) ? c.videos : [];
+          if (videos.length > 0) {
+            videos.forEach((vid: any) => {
+              conhecSection += `\n  - Vídeo: ${vid.nome || 'Vídeo'} (${vid.url})`;
+            });
+          }
+          
+          // Keywords
+          if (c.palavras_chave && c.palavras_chave.length > 0) {
+            conhecSection += `\nTags: ${c.palavras_chave.join(', ')}`;
+          }
+          
+          conhecSection += '\n';
+        });
       });
+      
       promptSections.push(conhecSection);
     }
 
