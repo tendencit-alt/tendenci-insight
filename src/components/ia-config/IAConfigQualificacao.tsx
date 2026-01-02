@@ -3,10 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Save, Plus, Trash2 } from "lucide-react";
+import { Loader2, Save, Plus, Trash2, Package, Calendar, DollarSign, Hash, AlertTriangle, Search, FileText, HelpCircle, MessageSquare, Zap, Target, User } from "lucide-react";
 import { useFormPersistence } from "@/hooks/useFormPersistence";
 import { FormSaveIndicator } from "@/components/ui/FormSaveIndicator";
 import { EnhancedTextarea } from "@/components/ui/enhanced-textarea";
+import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface Props {
   config: Record<string, unknown>;
@@ -14,24 +16,87 @@ interface Props {
   saving: boolean;
 }
 
-const camposDisponiveis = [
-  { id: "nome", label: "Nome" },
-  { id: "telefone", label: "Telefone" },
-  { id: "email", label: "E-mail" },
-  { id: "cidade", label: "Cidade" },
-  { id: "empresa", label: "Empresa" },
-  { id: "orcamento", label: "Orçamento" },
-  { id: "prazo", label: "Prazo" },
+const perguntasPermitidasOptions = [
+  { id: "o_que_precisa", label: "O que precisa", description: "Qual a necessidade do cliente", icon: Package },
+  { id: "para_quando", label: "Para quando", description: "Prazo ou urgência", icon: Calendar },
+  { id: "orcamento", label: "Orçamento", description: "Quanto pode investir", icon: DollarSign },
+  { id: "quantidade", label: "Quantidade", description: "Volume ou tamanho do pedido", icon: Hash },
+  { id: "urgencia", label: "Urgência", description: "Nível de prioridade", icon: AlertTriangle },
+  { id: "como_conheceu", label: "Como conheceu", description: "Como chegou até nós", icon: Search },
+  { id: "ja_tem_projeto", label: "Já tem projeto", description: "Se já tem projeto/arquiteto", icon: FileText },
+];
+
+const podeFazerPerguntasOptions = [
+  { 
+    id: "sim_poucas", 
+    label: "Sim, poucas e objetivas", 
+    description: "Pergunta apenas o essencial para ajudar",
+    icon: MessageSquare
+  },
+  { 
+    id: "apenas_essencial", 
+    label: "Apenas o essencial", 
+    description: "Mínimo de perguntas possível",
+    icon: Target
+  },
+  { 
+    id: "nao_responder", 
+    label: "Não, só responder", 
+    description: "Nunca pergunta, apenas responde",
+    icon: HelpCircle
+  },
+];
+
+const perguntasPorVezOptions = [
+  { 
+    id: "1", 
+    label: "Apenas 1 por vez", 
+    description: "Mais natural, uma pergunta de cada vez"
+  },
+  { 
+    id: "2", 
+    label: "Até 2", 
+    description: "Pode combinar 2 perguntas relacionadas"
+  },
+  { 
+    id: "ilimitado", 
+    label: "Quantas forem necessárias", 
+    description: "Não recomendado, pode parecer interrogatório"
+  },
+];
+
+const clienteComPressaOptions = [
+  { 
+    id: "pular_qualificacao", 
+    label: "Pular qualificação", 
+    description: "Vai direto sem perguntar nada",
+    icon: Zap
+  },
+  { 
+    id: "ir_direto_solucao", 
+    label: "Ir direto para solução", 
+    description: "Oferece opção mais rápida",
+    icon: Target
+  },
+  { 
+    id: "encaminhar_humano", 
+    label: "Encaminhar para humano", 
+    description: "Transfere para atendente",
+    icon: User
+  },
 ];
 
 const initialForm = {
-  perguntas: [] as string[],
+  pode_fazer_perguntas: "sim_poucas",
+  perguntas_por_vez: "1",
+  perguntas_permitidas: ["o_que_precisa", "orcamento"],
+  cliente_com_pressa: "ir_direto_solucao",
+  perguntas_obrigatorias: [] as string[],
   criterios_lead: {
     quente: "",
     morno: "",
     frio: "",
   },
-  campos_obrigatorios: ["nome", "telefone"],
 };
 
 export default function IAConfigQualificacao({ config, onSave, saving }: Props) {
@@ -46,168 +111,348 @@ export default function IAConfigQualificacao({ config, onSave, saving }: Props) 
     if (config && !hasRestoredData) {
       const criterios = config.criterios_lead as Record<string, string> || {};
       setForm({
-        perguntas: (config.perguntas as string[]) || [],
+        pode_fazer_perguntas: (config.pode_fazer_perguntas as string) || "sim_poucas",
+        perguntas_por_vez: (config.perguntas_por_vez as string) || "1",
+        perguntas_permitidas: (config.perguntas_permitidas as string[]) || ["o_que_precisa", "orcamento"],
+        cliente_com_pressa: (config.cliente_com_pressa as string) || "ir_direto_solucao",
+        perguntas_obrigatorias: (config.perguntas as string[]) || (config.perguntas_obrigatorias as string[]) || [],
         criterios_lead: {
           quente: criterios.quente || "",
           morno: criterios.morno || "",
           frio: criterios.frio || "",
         },
-        campos_obrigatorios: (config.campos_obrigatorios as string[]) || ["nome", "telefone"],
       });
     }
   }, [config, hasRestoredData]);
 
   const addPergunta = () => {
     if (novaPergunta.trim()) {
-      setForm({ ...form, perguntas: [...form.perguntas, novaPergunta.trim()] });
+      setForm({ ...form, perguntas_obrigatorias: [...form.perguntas_obrigatorias, novaPergunta.trim()] });
       setNovaPergunta("");
     }
   };
 
   const removePergunta = (index: number) => {
-    setForm({ ...form, perguntas: form.perguntas.filter((_, i) => i !== index) });
+    setForm({ ...form, perguntas_obrigatorias: form.perguntas_obrigatorias.filter((_, i) => i !== index) });
   };
 
-  const toggleCampo = (campo: string, checked: boolean) => {
+  const togglePerguntaPermitida = (id: string, checked: boolean) => {
     if (checked) {
-      setForm({ ...form, campos_obrigatorios: [...form.campos_obrigatorios, campo] });
+      setForm({ ...form, perguntas_permitidas: [...form.perguntas_permitidas, id] });
     } else {
-      setForm({ ...form, campos_obrigatorios: form.campos_obrigatorios.filter(c => c !== campo) });
+      setForm({ ...form, perguntas_permitidas: form.perguntas_permitidas.filter(p => p !== id) });
     }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(form);
+    // Map perguntas_obrigatorias to perguntas for backward compatibility
+    onSave({
+      ...form,
+      perguntas: form.perguntas_obrigatorias,
+    });
     clearPersistedData();
   };
 
-  return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <FormSaveIndicator hasRestoredData={hasRestoredData} />
-      <div className="space-y-4">
-        <Label>Campos Obrigatórios a Coletar</Label>
-        <div className="flex flex-wrap gap-4">
-          {camposDisponiveis.map((campo) => (
-            <div key={campo.id} className="flex items-center gap-2">
-              <Checkbox
-                id={campo.id}
-                checked={form.campos_obrigatorios.includes(campo.id)}
-                onCheckedChange={(checked) => toggleCampo(campo.id, checked as boolean)}
-              />
-              <label htmlFor={campo.id} className="text-sm">{campo.label}</label>
-            </div>
-          ))}
+  const SelectCard = ({ 
+    option, 
+    selected, 
+    onClick,
+    showIcon = true
+  }: { 
+    option: { id: string; label: string; description: string; icon?: any }; 
+    selected: boolean; 
+    onClick: () => void;
+    showIcon?: boolean;
+  }) => {
+    const Icon = option.icon;
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className={cn(
+          "flex flex-col items-start p-4 rounded-lg border-2 transition-all text-left w-full",
+          selected 
+            ? "border-primary bg-primary/5" 
+            : "border-border hover:border-primary/50 hover:bg-muted/50"
+        )}
+      >
+        <div className="flex items-center gap-2 mb-1">
+          {showIcon && Icon && <Icon className={cn("h-4 w-4", selected ? "text-primary" : "text-muted-foreground")} />}
+          <span className={cn("font-medium text-sm", selected ? "text-primary" : "text-foreground")}>
+            {option.label}
+          </span>
         </div>
-      </div>
+        <span className="text-xs text-muted-foreground">{option.description}</span>
+      </button>
+    );
+  };
 
-      <div className="space-y-4">
-        <Label>Perguntas de Qualificação</Label>
-        <p className="text-sm text-muted-foreground">
-          Adicione perguntas que a IA deve fazer para qualificar o lead
-        </p>
+  return (
+    <TooltipProvider>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <FormSaveIndicator hasRestoredData={hasRestoredData} />
         
-        <div className="flex gap-2">
-          <Input
-            value={novaPergunta}
-            onChange={(e) => setNovaPergunta(e.target.value)}
-            placeholder="Ex: Qual é o seu orçamento disponível?"
-            onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addPergunta())}
-          />
-          <Button type="button" onClick={addPergunta} variant="outline">
-            <Plus className="h-4 w-4" />
+        {/* O Agente Pode Fazer Perguntas? */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Label className="text-base font-semibold">O Agente Pode Fazer Perguntas?</Label>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="max-w-xs">Defina a liberdade do agente para fazer perguntas durante a conversa.</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Defina a liberdade do agente para fazer perguntas.
+          </p>
+          <div className="grid gap-3 md:grid-cols-3">
+            {podeFazerPerguntasOptions.map((option) => (
+              <SelectCard
+                key={option.id}
+                option={option}
+                selected={form.pode_fazer_perguntas === option.id}
+                onClick={() => setForm({ ...form, pode_fazer_perguntas: option.id })}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Perguntas por Vez */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Label className="text-base font-semibold"># Perguntas por Vez</Label>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="max-w-xs">Quantas perguntas seguidas o agente pode fazer em uma mensagem.</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Quantas perguntas seguidas o agente pode fazer?
+          </p>
+          <div className="grid gap-3 md:grid-cols-3">
+            {perguntasPorVezOptions.map((option) => (
+              <SelectCard
+                key={option.id}
+                option={option}
+                selected={form.perguntas_por_vez === option.id}
+                onClick={() => setForm({ ...form, perguntas_por_vez: option.id })}
+                showIcon={false}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Perguntas Permitidas */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Label className="text-base font-semibold">✨ Perguntas Permitidas</Label>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="max-w-xs">Marque quais temas o agente pode perguntar ao cliente.</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Marque o que o agente pode perguntar:
+          </p>
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+            {perguntasPermitidasOptions.map((option) => {
+              const Icon = option.icon;
+              const isChecked = form.perguntas_permitidas.includes(option.id);
+              return (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => togglePerguntaPermitida(option.id, !isChecked)}
+                  className={cn(
+                    "flex items-start gap-3 p-4 rounded-lg border-2 transition-all text-left",
+                    isChecked 
+                      ? "border-primary bg-primary/5" 
+                      : "border-border hover:border-primary/50 hover:bg-muted/50"
+                  )}
+                >
+                  <Checkbox 
+                    checked={isChecked}
+                    className="mt-0.5"
+                  />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Icon className={cn("h-4 w-4", isChecked ? "text-primary" : "text-muted-foreground")} />
+                      <span className={cn("font-medium text-sm", isChecked ? "text-primary" : "text-foreground")}>
+                        {option.label}
+                      </span>
+                    </div>
+                    <span className="text-xs text-muted-foreground">{option.description}</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Cliente com Pressa */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Label className="text-base font-semibold">⚠️ Cliente com Pressa</Label>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="max-w-xs">Como o agente deve agir quando perceber que o cliente está com pressa.</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Se o cliente estiver com pressa, o agente deve:
+          </p>
+          <div className="grid gap-3 md:grid-cols-3">
+            {clienteComPressaOptions.map((option) => (
+              <SelectCard
+                key={option.id}
+                option={option}
+                selected={form.cliente_com_pressa === option.id}
+                onClick={() => setForm({ ...form, cliente_com_pressa: option.id })}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Perguntas Obrigatórias */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Label className="text-base font-semibold">📋 Perguntas Obrigatórias</Label>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="max-w-xs">Perguntas específicas que o agente deve fazer durante a conversa (opcional).</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Perguntas específicas que o agente deve fazer (opcional).
+          </p>
+          
+          <div className="flex gap-2">
+            <Input
+              value={novaPergunta}
+              onChange={(e) => setNovaPergunta(e.target.value)}
+              placeholder="Ex: Qual o melhor horário para entrarmos em contato?"
+              onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addPergunta())}
+            />
+            <Button type="button" onClick={addPergunta} variant="outline">
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <div className="space-y-2">
+            {form.perguntas_obrigatorias.map((pergunta, index) => (
+              <div key={index} className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+                <span className="text-sm text-muted-foreground mr-2">{index + 1}.</span>
+                <span className="flex-1 text-sm">{pergunta}</span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => removePergunta(index)}
+                >
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              </div>
+            ))}
+            {form.perguntas_obrigatorias.length === 0 && (
+              <div className="p-4 bg-muted/50 rounded-lg border border-dashed">
+                <p className="text-sm text-muted-foreground text-center">
+                  Nenhuma pergunta obrigatória configurada.<br />
+                  <span className="text-xs">O agente usará apenas as perguntas permitidas acima.</span>
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Critérios de Leads */}
+        <div className="space-y-4">
+          <Label className="text-base font-semibold">Critérios para Classificação de Leads</Label>
+          
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="h-3 w-3 rounded-full bg-green-500" />
+                <span className="text-sm font-medium">Lead Quente</span>
+              </div>
+              <EnhancedTextarea
+                value={form.criterios_lead.quente}
+                onChange={(value) => setForm({
+                  ...form,
+                  criterios_lead: { ...form.criterios_lead, quente: value }
+                })}
+                placeholder="Ex: Tem orçamento definido, prazo curto, já conhece a empresa..."
+                rows={4}
+                context="Critérios para classificar lead como quente - alta probabilidade de conversão"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="h-3 w-3 rounded-full bg-yellow-500" />
+                <span className="text-sm font-medium">Lead Morno</span>
+              </div>
+              <EnhancedTextarea
+                value={form.criterios_lead.morno}
+                onChange={(value) => setForm({
+                  ...form,
+                  criterios_lead: { ...form.criterios_lead, morno: value }
+                })}
+                placeholder="Ex: Interessado mas sem urgência, pesquisando opções..."
+                rows={4}
+                context="Critérios para classificar lead como morno - interesse moderado"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="h-3 w-3 rounded-full bg-blue-500" />
+                <span className="text-sm font-medium">Lead Frio</span>
+              </div>
+              <EnhancedTextarea
+                value={form.criterios_lead.frio}
+                onChange={(value) => setForm({
+                  ...form,
+                  criterios_lead: { ...form.criterios_lead, frio: value }
+                })}
+                placeholder="Ex: Apenas curiosidade, sem orçamento definido..."
+                rows={4}
+                context="Critérios para classificar lead como frio - baixa probabilidade imediata"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="flex justify-end">
+          <Button type="submit" disabled={saving}>
+            {saving ? (
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            ) : (
+              <Save className="h-4 w-4 mr-2" />
+            )}
+            Salvar
           </Button>
         </div>
-
-        <div className="space-y-2">
-          {form.perguntas.map((pergunta, index) => (
-            <div key={index} className="flex items-center gap-2 p-3 bg-muted rounded-lg">
-              <span className="flex-1">{pergunta}</span>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={() => removePergunta(index)}
-              >
-                <Trash2 className="h-4 w-4 text-destructive" />
-              </Button>
-            </div>
-          ))}
-          {form.perguntas.length === 0 && (
-            <p className="text-sm text-muted-foreground italic">
-              Nenhuma pergunta adicionada ainda
-            </p>
-          )}
-        </div>
-      </div>
-
-      <div className="space-y-4">
-        <Label>Critérios para Classificação de Leads</Label>
-        
-        <div className="grid gap-4 md:grid-cols-3">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="h-3 w-3 rounded-full bg-green-500" />
-              <span className="text-sm font-medium">Lead Quente</span>
-            </div>
-            <EnhancedTextarea
-              value={form.criterios_lead.quente}
-              onChange={(value) => setForm({
-                ...form,
-                criterios_lead: { ...form.criterios_lead, quente: value }
-              })}
-              placeholder="Ex: Tem orçamento definido, prazo curto, já conhece a empresa..."
-              rows={4}
-              context="Critérios para classificar lead como quente"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="h-3 w-3 rounded-full bg-yellow-500" />
-              <span className="text-sm font-medium">Lead Morno</span>
-            </div>
-            <EnhancedTextarea
-              value={form.criterios_lead.morno}
-              onChange={(value) => setForm({
-                ...form,
-                criterios_lead: { ...form.criterios_lead, morno: value }
-              })}
-              placeholder="Ex: Interessado mas sem urgência, pesquisando opções..."
-              rows={4}
-              context="Critérios para classificar lead como morno"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="h-3 w-3 rounded-full bg-blue-500" />
-              <span className="text-sm font-medium">Lead Frio</span>
-            </div>
-            <EnhancedTextarea
-              value={form.criterios_lead.frio}
-              onChange={(value) => setForm({
-                ...form,
-                criterios_lead: { ...form.criterios_lead, frio: value }
-              })}
-              placeholder="Ex: Apenas curiosidade, sem orçamento definido..."
-              rows={4}
-              context="Critérios para classificar lead como frio"
-            />
-          </div>
-        </div>
-      </div>
-
-      <div className="flex justify-end">
-        <Button type="submit" disabled={saving}>
-          {saving ? (
-            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-          ) : (
-            <Save className="h-4 w-4 mr-2" />
-          )}
-          Salvar
-        </Button>
-      </div>
-    </form>
+      </form>
+    </TooltipProvider>
   );
 }

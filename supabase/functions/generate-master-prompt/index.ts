@@ -284,21 +284,85 @@ ${comunicacao.exemplos_respostas}`;
     
     promptSections.push(comunicacaoSection);
 
-    // 4. QUALIFICAÇÃO
+    // 4. QUALIFICAÇÃO - Configuração completa para agente senior
     const qualificacao = configs.qualificacao || {};
-    const perguntas = qualificacao.perguntas_qualificacao || [];
-    const criterios = qualificacao.criterios_classificacao || {};
     
-    let qualSection = `# QUALIFICAÇÃO DE LEADS\n`;
-    if (perguntas.length > 0) {
-      qualSection += `Perguntas importantes a fazer:\n${perguntas.map((p: any, i: number) => `${i + 1}. ${p.pergunta} ${p.obrigatoria ? '(obrigatória)' : ''}`).join('\n')}\n`;
+    // Mapear valores para descrições
+    const podePerguntarDescricoes: Record<string, string> = {
+      sim_poucas: 'Faça apenas perguntas essenciais para ajudar o cliente. Seja objetivo e não pareça um interrogatório.',
+      apenas_essencial: 'Faça o mínimo de perguntas possível. Só pergunte quando for estritamente necessário para atender.',
+      nao_responder: 'Nunca faça perguntas. Apenas responda ao que o cliente perguntar.'
+    };
+    
+    const perguntasPorVezDescricoes: Record<string, string> = {
+      '1': 'Faça apenas UMA pergunta de cada vez. Espere a resposta antes de fazer outra.',
+      '2': 'Pode combinar até 2 perguntas relacionadas em uma mensagem.',
+      'ilimitado': 'Pode fazer quantas perguntas forem necessárias (use com moderação).'
+    };
+    
+    const perguntasPermitidasLabels: Record<string, string> = {
+      o_que_precisa: 'a necessidade do cliente',
+      para_quando: 'o prazo ou urgência',
+      orcamento: 'o orçamento disponível',
+      quantidade: 'a quantidade ou volume',
+      urgencia: 'o nível de prioridade',
+      como_conheceu: 'como conheceu a empresa',
+      ja_tem_projeto: 'se já tem projeto ou arquiteto'
+    };
+    
+    const clientePressaDescricoes: Record<string, string> = {
+      pular_qualificacao: 'Pule toda qualificação e vá direto ao ponto sem perguntar nada.',
+      ir_direto_solucao: 'Ofereça a opção mais rápida disponível e pule qualificações desnecessárias.',
+      encaminhar_humano: 'Transfira imediatamente para um atendente humano.'
+    };
+    
+    const podeFazer = qualificacao.pode_fazer_perguntas || 'sim_poucas';
+    const perguntasPorVez = qualificacao.perguntas_por_vez || '1';
+    const perguntasPermitidas = qualificacao.perguntas_permitidas || ['o_que_precisa', 'orcamento'];
+    const clienteComPressa = qualificacao.cliente_com_pressa || 'ir_direto_solucao';
+    const perguntasObrigatorias = qualificacao.perguntas || qualificacao.perguntas_obrigatorias || [];
+    const criterios = qualificacao.criterios_lead || {};
+    
+    let qualSection = `# QUALIFICAÇÃO DE LEADS
+
+## Estratégia de Perguntas
+- **Liberdade para Perguntar:** ${podePerguntarDescricoes[podeFazer] || podePerguntarDescricoes.sim_poucas}
+- **Perguntas por Vez:** ${perguntasPorVezDescricoes[perguntasPorVez] || perguntasPorVezDescricoes['1']}
+
+## Perguntas Permitidas
+Você pode perguntar sobre:`;
+    
+    // Add allowed questions
+    Object.keys(perguntasPermitidasLabels).forEach(key => {
+      const isAllowed = perguntasPermitidas.includes(key);
+      qualSection += `\n- ${isAllowed ? '✓' : '✗'} ${perguntasPermitidasLabels[key]}${!isAllowed ? ' (não perguntar ativamente)' : ''}`;
+    });
+    
+    qualSection += `
+
+## Cliente com Pressa
+Quando detectar que o cliente está com pressa ou impaciente:
+${clientePressaDescricoes[clienteComPressa] || clientePressaDescricoes.ir_direto_solucao}`;
+    
+    // Add mandatory questions if any
+    if (perguntasObrigatorias.length > 0) {
+      qualSection += `
+
+## Perguntas Obrigatórias
+Sempre tente fazer estas perguntas durante a conversa:
+${perguntasObrigatorias.map((p: string, i: number) => `${i + 1}. "${p}"`).join('\n')}`;
     }
+    
+    // Add lead classification criteria
     if (criterios.quente || criterios.morno || criterios.frio) {
-      qualSection += `\nClassificação de temperatura:
-- Quente: ${criterios.quente || 'Cliente pronto para comprar'}
-- Morno: ${criterios.morno || 'Cliente interessado mas com dúvidas'}
-- Frio: ${criterios.frio || 'Cliente apenas pesquisando'}`;
+      qualSection += `
+
+## Classificação de Temperatura do Lead
+- 🟢 **Lead Quente:** ${criterios.quente || 'Cliente pronto para comprar, com orçamento e prazo definidos'}
+- 🟡 **Lead Morno:** ${criterios.morno || 'Cliente interessado mas ainda com dúvidas ou pesquisando opções'}
+- 🔵 **Lead Frio:** ${criterios.frio || 'Cliente apenas pesquisando, sem urgência ou orçamento definido'}`;
     }
+    
     promptSections.push(qualSection);
 
     // 5. VENDAS
