@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Building2, User, MessageSquare, Target, ShoppingCart, Package, Brain, Shield, BookOpen, Loader2, ExternalLink, Workflow, CheckCircle2, AlertCircle, Circle, Activity, History, Wifi } from "lucide-react";
+import { ArrowLeft, Building2, User, MessageSquare, Target, ShoppingCart, Package, Brain, Shield, BookOpen, Loader2, CheckCircle2, AlertCircle, Circle, Activity, History, Wifi } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
 import { toast } from "sonner";
@@ -21,6 +21,7 @@ import { IAAgentTester } from "@/components/ia-config/IAAgentTester";
 import { IAProgressIndicator } from "@/components/ia-config/IAProgressIndicator";
 import { IAConfigOverview } from "@/components/ia-config/IAConfigOverview";
 import { IAActivityMonitor } from "@/components/ia-config/IAActivityMonitor";
+import { IAWhatsAppConnection } from "@/components/ia-config/IAWhatsAppConnection";
 import { Progress } from "@/components/ui/progress";
 
 interface IAConfig {
@@ -254,50 +255,36 @@ export default function IAConfiguracao() {
           tecnicasCount={tecnicasCount}
         />
 
-        {/* Ações Rápidas */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="border-primary/20 bg-gradient-to-r from-primary/5 to-transparent cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/ia-whatsapp")}>
-            <CardContent className="flex items-center gap-4 py-4">
-              <div className="p-3 bg-primary/10 rounded-lg">
-                <Wifi className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <h3 className="font-semibold">Conexão WhatsApp</h3>
-                <p className="text-sm text-muted-foreground">
-                  Conectar ou verificar status
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Conexão WhatsApp */}
+        <Card className="border-primary/20">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Wifi className="h-5 w-5" />
+              Conexão WhatsApp
+            </CardTitle>
+            <CardDescription>
+              Gerencie a conexão do WhatsApp para atendimento por IA
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <IAWhatsAppConnection />
+          </CardContent>
+        </Card>
 
-          <Card className="border-green-500/20 bg-gradient-to-r from-green-500/5 to-transparent cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/ia-conversas")}>
-            <CardContent className="flex items-center gap-4 py-4">
-              <div className="p-3 bg-green-500/10 rounded-lg">
-                <History className="h-6 w-6 text-green-600" />
-              </div>
-              <div>
-                <h3 className="font-semibold">Histórico de Conversas</h3>
-                <p className="text-sm text-muted-foreground">
-                  Ver todas as conversas
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-orange-500/20 bg-gradient-to-r from-orange-500/5 to-transparent cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/n8n-conversa")}>
-            <CardContent className="flex items-center gap-4 py-4">
-              <div className="p-3 bg-orange-500/10 rounded-lg">
-                <Workflow className="h-6 w-6 text-orange-600" />
-              </div>
-              <div>
-                <h3 className="font-semibold">Documentação n8n</h3>
-                <p className="text-sm text-muted-foreground">
-                  Para disparos automáticos
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        {/* Ação Rápida - Histórico */}
+        <Card className="border-green-500/20 bg-gradient-to-r from-green-500/5 to-transparent cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/ia-conversas")}>
+          <CardContent className="flex items-center gap-4 py-4">
+            <div className="p-3 bg-green-500/10 rounded-lg">
+              <History className="h-6 w-6 text-green-600" />
+            </div>
+            <div>
+              <h3 className="font-semibold">Histórico de Conversas</h3>
+              <p className="text-sm text-muted-foreground">
+                Ver todas as conversas da IA
+              </p>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Monitor de Atividade */}
         <Card>
