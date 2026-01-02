@@ -6072,7 +6072,12 @@ export type Database = {
           p_start_date: string
           p_vendedor_id?: string
         }
-        Returns: Json
+        Returns: {
+          convertidos: number
+          data: string
+          envios: number
+          respostas: number
+        }[]
       }
       get_campaign_metrics: {
         Args: {
@@ -6080,12 +6085,32 @@ export type Database = {
           p_start_date: string
           p_vendedor_id?: string
         }
-        Returns: Json
+        Returns: {
+          taxa_conversao: number
+          taxa_resposta: number
+          total_campanhas: number
+          total_convertidos: number
+          total_envios: number
+          total_respostas: number
+        }[]
       }
-      get_campaign_vendor_comparison: {
-        Args: { p_end_date: string; p_start_date: string }
-        Returns: Json
-      }
+      get_campaign_vendor_comparison:
+        | { Args: { p_end_date: string; p_start_date: string }; Returns: Json }
+        | {
+            Args: {
+              p_end_date: string
+              p_start_date: string
+              p_vendedor_id?: string
+            }
+            Returns: {
+              taxa_resposta: number
+              total_convertidos: number
+              total_envios: number
+              total_respostas: number
+              vendedor_id: string
+              vendedor_nome: string
+            }[]
+          }
       get_current_goals_status: {
         Args: { p_user_id?: string }
         Returns: {
