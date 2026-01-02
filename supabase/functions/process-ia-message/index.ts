@@ -96,9 +96,14 @@ serve(async (req) => {
       userMessage = message.extendedTextMessage.text;
     } else if (message?.audioMessage) {
       mediaType = "audio";
-      // Try to get audio URL for transcription
-      const audioUrl = messageData.media?.url || messageData.message?.audioMessage?.url;
-      if (audioUrl) {
+      // Try to get audio URL or base64 for transcription
+      const audioUrl = messageData.media?.url || message.audioMessage?.url;
+      const audioBase64 = messageData.media?.base64;
+      const mimetype = message.audioMessage?.mimetype || "audio/ogg";
+      
+      console.log(`🎙️ Audio message received - URL: ${audioUrl ? 'yes' : 'no'}, Base64: ${audioBase64 ? 'yes' : 'no'}`);
+      
+      if (audioUrl || audioBase64) {
         try {
           // Transcribe audio using Gemini
           const transcribeResponse = await fetch(`${supabaseUrl}/functions/v1/transcribe-audio-gemini`, {
@@ -108,8 +113,9 @@ serve(async (req) => {
               "Authorization": `Bearer ${supabaseKey}`,
             },
             body: JSON.stringify({
-              audioData: audioUrl,
-              mimeType: message.audioMessage.mimetype || "audio/ogg",
+              audioData: audioUrl || audioBase64,
+              mimeType: mimetype,
+              isBase64: !audioUrl && !!audioBase64,
             }),
           });
           
@@ -118,14 +124,17 @@ serve(async (req) => {
             userMessage = transcribeResult.text || "[Áudio não transcrito]";
             console.log(`🎙️ Transcribed audio: ${userMessage.substring(0, 100)}...`);
           } else {
+            const errorText = await transcribeResponse.text();
+            console.error(`🎙️ Transcription failed (${transcribeResponse.status}): ${errorText}`);
             userMessage = "[Mensagem de áudio - não foi possível transcrever]";
           }
         } catch (e) {
-          console.error("Error transcribing audio:", e);
-          userMessage = "[Mensagem de áudio]";
+          console.error("🎙️ Error transcribing audio:", e);
+          userMessage = "[Mensagem de áudio - erro na transcrição]";
         }
       } else {
-        userMessage = "[Mensagem de áudio]";
+        console.warn("🎙️ Audio message without URL or base64 data:", JSON.stringify(messageData.media || {}).substring(0, 200));
+        userMessage = "[Áudio recebido - dados não disponíveis]";
       }
     } else if (message?.imageMessage) {
       mediaType = "image";

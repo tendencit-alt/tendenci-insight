@@ -125,7 +125,7 @@ export function IAActivityMonitor() {
     });
   };
 
-  const isOnline = connectionStatus?.status === "open";
+  const isOnline = connectionStatus?.status === "connected";
 
   return (
     <div className="space-y-4">

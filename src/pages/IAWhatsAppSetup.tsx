@@ -441,10 +441,6 @@ export default function IAWhatsAppSetup() {
     }
   };
 
-  // Esta função não é mais necessária - processamento agora é interno
-  const handleDirectN8nConnection = async () => {
-    toast.info("O processamento agora é feito internamente pelo Lovable AI - não precisa mais do n8n para atendimento!");
-  };
 
   const getStatusBadge = () => {
     switch (status) {
@@ -491,7 +487,7 @@ export default function IAWhatsAppSetup() {
               {getStatusBadge()}
             </CardTitle>
             <CardDescription>
-              A IA será conectada automaticamente ao seu fluxo n8n
+              A IA processa mensagens automaticamente com Lovable AI
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -662,17 +658,7 @@ export default function IAWhatsAppSetup() {
                   </Button>
                 </div>
                 
-                {/* Botão para conexão DIRETA Evolution → n8n */}
-                <Button 
-                  onClick={handleDirectN8nConnection} 
-                  disabled={isVerifyingWebhook}
-                  className="w-full bg-green-600 hover:bg-green-700"
-                >
-                  <ExternalLink className={`h-4 w-4 mr-2 ${isVerifyingWebhook ? 'animate-spin' : ''}`} />
-                  🚀 Conectar DIRETO ao n8n (Recomendado)
-                </Button>
-                
-                {/* Botão alternativo para proxy Supabase */}
+                {/* Botão para reconfigurar webhook para Supabase */}
                 <Button 
                   onClick={handleReconfigureWebhook} 
                   disabled={isVerifyingWebhook}
@@ -680,7 +666,7 @@ export default function IAWhatsAppSetup() {
                   variant="outline"
                 >
                   <Settings2 className={`h-4 w-4 mr-2 ${isVerifyingWebhook ? 'animate-spin' : ''}`} />
-                  Usar Proxy Supabase (alternativo)
+                  Reconfigurar Webhook
                 </Button>
               </div>
             </CardContent>
