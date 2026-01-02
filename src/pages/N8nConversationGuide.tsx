@@ -1,10 +1,12 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Copy, MessageSquare, ArrowRight, Database, Bot, CheckCircle, AlertCircle } from "lucide-react";
+import { Copy, MessageSquare, ArrowRight, Database, Bot, CheckCircle, AlertCircle, Search, Package, BookOpen, Wrench } from "lucide-react";
 import { toast } from "sonner";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 const N8nConversationGuide = () => {
   const copyToClipboard = (text: string, label: string) => {
@@ -78,6 +80,11 @@ const N8nConversationGuide = () => {
 
   // Endpoint do Prompt Master
   const promptMasterEndpoint = "https://emnwuzrysqoiwapzmnbv.supabase.co/functions/v1/generate-master-prompt";
+  
+  // Novos endpoints de busca
+  const searchProductsEndpoint = "https://emnwuzrysqoiwapzmnbv.supabase.co/functions/v1/search-products";
+  const searchKnowledgeEndpoint = "https://emnwuzrysqoiwapzmnbv.supabase.co/functions/v1/search-knowledge";
+  const getIADataEndpoint = "https://emnwuzrysqoiwapzmnbv.supabase.co/functions/v1/get-ia-data";
 
   // JSON do nó para buscar prompt master
   const n8nNodePromptMasterJSON = `{
@@ -98,6 +105,125 @@ const N8nConversationGuide = () => {
   "type": "n8n-nodes-base.httpRequest",
   "typeVersion": 4.2,
   "position": [550, 300]
+}`;
+
+  // Tool: Buscar Produtos
+  const toolBuscarProdutosJSON = `{
+  "parameters": {
+    "name": "buscar_produtos",
+    "description": "Busca produtos no catálogo da empresa. Use quando o cliente perguntar sobre produtos, preços, materiais ou especificações.",
+    "method": "GET",
+    "url": "${searchProductsEndpoint}",
+    "sendQuery": true,
+    "specifyQuery": "keypair",
+    "queryParameters": {
+      "parameters": [
+        {
+          "name": "q",
+          "value": "{search_term}",
+          "description": "Termo de busca do produto"
+        },
+        {
+          "name": "categoria",
+          "value": "{category}",
+          "description": "Categoria opcional para filtrar"
+        }
+      ]
+    },
+    "placeholderDefinitions": {
+      "values": [
+        {
+          "name": "search_term",
+          "description": "Nome ou descrição do produto que o cliente está buscando",
+          "type": "string"
+        },
+        {
+          "name": "category",
+          "description": "Categoria do produto (opcional)",
+          "type": "string"
+        }
+      ]
+    }
+  },
+  "name": "Buscar Produtos",
+  "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+  "typeVersion": 1.1
+}`;
+
+  // Tool: Buscar Conhecimento
+  const toolBuscarConhecimentoJSON = `{
+  "parameters": {
+    "name": "buscar_conhecimento",
+    "description": "Busca informações na base de conhecimento da empresa. Use para FAQs, políticas, garantias, processos e dúvidas gerais.",
+    "method": "GET",
+    "url": "${searchKnowledgeEndpoint}",
+    "sendQuery": true,
+    "specifyQuery": "keypair",
+    "queryParameters": {
+      "parameters": [
+        {
+          "name": "q",
+          "value": "{search_term}",
+          "description": "Termo de busca"
+        },
+        {
+          "name": "tipo",
+          "value": "{type}",
+          "description": "Tipo: faq, documento, guia, politica"
+        }
+      ]
+    },
+    "placeholderDefinitions": {
+      "values": [
+        {
+          "name": "search_term",
+          "description": "Termo ou pergunta a buscar na base de conhecimento",
+          "type": "string"
+        },
+        {
+          "name": "type",
+          "description": "Tipo de documento (opcional): faq, documento, guia, politica",
+          "type": "string"
+        }
+      ]
+    }
+  },
+  "name": "Buscar Conhecimento",
+  "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+  "typeVersion": 1.1
+}`;
+
+  // Tool: Obter Dados IA
+  const toolObterDadosIAJSON = `{
+  "parameters": {
+    "name": "obter_dados_ia",
+    "description": "Obtém todos os dados da IA incluindo configurações, produtos e conhecimento. Use quando precisar de informações gerais da empresa.",
+    "method": "GET",
+    "url": "${getIADataEndpoint}",
+    "sendQuery": true,
+    "specifyQuery": "keypair",
+    "queryParameters": {
+      "parameters": [
+        {
+          "name": "type",
+          "value": "{data_type}",
+          "description": "Tipo: all, config, products, knowledge"
+        }
+      ]
+    },
+    "placeholderDefinitions": {
+      "values": [
+        {
+          "name": "data_type",
+          "description": "Tipo de dados: all (tudo), config (configurações), products (produtos), knowledge (conhecimento)",
+          "type": "string"
+        }
+      ]
+    }
+  },
+  "name": "Obter Dados IA",
+  "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+  "typeVersion": 1.1
 }`;
 
   // Workflow completo para importar
@@ -461,10 +587,304 @@ const N8nConversationGuide = () => {
           </CardContent>
         </Card>
 
+        {/* NOVA SEÇÃO: Ferramentas de Busca para AI Agent */}
+        <Card className="border-orange-200 dark:border-orange-800">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-orange-700 dark:text-orange-300">
+              <Wrench className="h-5 w-5" />
+              3. Ferramentas de Busca (Tools) para AI Agent
+            </CardTitle>
+            <CardDescription>
+              Configure estas tools no nó AI Agent para permitir buscas automáticas em produtos e conhecimento
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Alert className="border-orange-200 bg-orange-50 dark:bg-orange-950/30">
+              <Wrench className="h-4 w-4 text-orange-600" />
+              <AlertDescription className="text-orange-700 dark:text-orange-300">
+                <strong>Como funciona:</strong> O AI Agent usa estas tools automaticamente quando o cliente faz perguntas. 
+                Exemplo: "Quanto custa a mesa?" → O agente busca produtos → Responde com informações reais.
+              </AlertDescription>
+            </Alert>
+
+            <Accordion type="single" collapsible className="w-full">
+              {/* Tool 1: Buscar Produtos */}
+              <AccordionItem value="tool-produtos">
+                <AccordionTrigger className="hover:no-underline">
+                  <div className="flex items-center gap-2">
+                    <Package className="h-4 w-4 text-blue-600" />
+                    <span className="font-semibold">Tool 1: Buscar Produtos</span>
+                    <Badge variant="outline" className="ml-2">GET</Badge>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="space-y-4 pt-4">
+                  <div className="grid gap-3 text-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium w-24">Endpoint:</span>
+                      <code className="bg-muted px-2 py-1 rounded text-xs flex-1 break-all">{searchProductsEndpoint}</code>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => copyToClipboard(searchProductsEndpoint, "URL Buscar Produtos")}
+                      >
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="font-medium w-24">Parâmetros:</span>
+                      <div className="space-y-1 text-xs">
+                        <p><code className="bg-muted px-1 rounded">q</code> - Termo de busca (obrigatório)</p>
+                        <p><code className="bg-muted px-1 rounded">categoria</code> - Filtrar por categoria (opcional)</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="font-medium w-24">Retorna:</span>
+                      <span className="text-muted-foreground">Lista de produtos com nome, descrição, preço, imagem_url</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="font-medium text-sm mb-2">JSON da Tool (copiar para n8n):</p>
+                    <div className="relative">
+                      <pre className="bg-muted p-3 rounded text-xs overflow-x-auto max-h-48 font-mono">
+                        {toolBuscarProdutosJSON}
+                      </pre>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="absolute top-2 right-2"
+                        onClick={() => copyToClipboard(toolBuscarProdutosJSON, "JSON Tool Buscar Produtos")}
+                      >
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+
+              {/* Tool 2: Buscar Conhecimento */}
+              <AccordionItem value="tool-conhecimento">
+                <AccordionTrigger className="hover:no-underline">
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="h-4 w-4 text-green-600" />
+                    <span className="font-semibold">Tool 2: Buscar Conhecimento</span>
+                    <Badge variant="outline" className="ml-2">GET</Badge>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="space-y-4 pt-4">
+                  <div className="grid gap-3 text-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium w-24">Endpoint:</span>
+                      <code className="bg-muted px-2 py-1 rounded text-xs flex-1 break-all">{searchKnowledgeEndpoint}</code>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => copyToClipboard(searchKnowledgeEndpoint, "URL Buscar Conhecimento")}
+                      >
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="font-medium w-24">Parâmetros:</span>
+                      <div className="space-y-1 text-xs">
+                        <p><code className="bg-muted px-1 rounded">q</code> - Termo de busca (obrigatório)</p>
+                        <p><code className="bg-muted px-1 rounded">tipo</code> - Tipo: faq, documento, guia, politica (opcional)</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="font-medium w-24">Retorna:</span>
+                      <span className="text-muted-foreground">Documentos da base de conhecimento com título, conteúdo, tipo</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="font-medium text-sm mb-2">JSON da Tool (copiar para n8n):</p>
+                    <div className="relative">
+                      <pre className="bg-muted p-3 rounded text-xs overflow-x-auto max-h-48 font-mono">
+                        {toolBuscarConhecimentoJSON}
+                      </pre>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="absolute top-2 right-2"
+                        onClick={() => copyToClipboard(toolBuscarConhecimentoJSON, "JSON Tool Buscar Conhecimento")}
+                      >
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+
+              {/* Tool 3: Obter Dados IA */}
+              <AccordionItem value="tool-dados-ia">
+                <AccordionTrigger className="hover:no-underline">
+                  <div className="flex items-center gap-2">
+                    <Database className="h-4 w-4 text-purple-600" />
+                    <span className="font-semibold">Tool 3: Obter Dados Completos da IA</span>
+                    <Badge variant="outline" className="ml-2">GET</Badge>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="space-y-4 pt-4">
+                  <div className="grid gap-3 text-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium w-24">Endpoint:</span>
+                      <code className="bg-muted px-2 py-1 rounded text-xs flex-1 break-all">{getIADataEndpoint}</code>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => copyToClipboard(getIADataEndpoint, "URL Obter Dados IA")}
+                      >
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="font-medium w-24">Parâmetros:</span>
+                      <div className="space-y-1 text-xs">
+                        <p><code className="bg-muted px-1 rounded">type</code> - all, config, products, knowledge</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="font-medium w-24">Retorna:</span>
+                      <span className="text-muted-foreground">Dados completos da IA (configurações, produtos e/ou conhecimento)</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="font-medium text-sm mb-2">JSON da Tool (copiar para n8n):</p>
+                    <div className="relative">
+                      <pre className="bg-muted p-3 rounded text-xs overflow-x-auto max-h-48 font-mono">
+                        {toolObterDadosIAJSON}
+                      </pre>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="absolute top-2 right-2"
+                        onClick={() => copyToClipboard(toolObterDadosIAJSON, "JSON Tool Obter Dados IA")}
+                      >
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+
+            {/* Passo a Passo para adicionar tools */}
+            <div className="mt-6 p-4 rounded-lg bg-muted/50 border">
+              <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 text-green-600" />
+                Como adicionar Tools ao AI Agent no n8n
+              </h4>
+              <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
+                <li>Abra seu workflow no n8n</li>
+                <li>Clique no nó <strong>AI Agent</strong></li>
+                <li>Na parte inferior do nó, clique em <strong>"Add Tool"</strong></li>
+                <li>Selecione <strong>"HTTP Request Tool"</strong></li>
+                <li>Cole o JSON da tool desejada (copie acima)</li>
+                <li>Repita para cada tool que deseja adicionar</li>
+              </ol>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Exemplos de Uso das Tools */}
+        <Card className="border-green-200 dark:border-green-800">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-green-700 dark:text-green-300">
+              <Search className="h-5 w-5" />
+              4. Exemplos de Uso das Tools
+            </CardTitle>
+            <CardDescription>
+              Veja como o AI Agent utiliza as tools automaticamente
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid md:grid-cols-2 gap-4">
+              {/* Exemplo 1 */}
+              <div className="p-4 rounded-lg border bg-card">
+                <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                  <Package className="h-4 w-4 text-blue-600" />
+                  Cliente pergunta sobre produto
+                </h4>
+                <div className="space-y-2 text-xs">
+                  <p className="bg-blue-50 dark:bg-blue-950/30 p-2 rounded">
+                    <strong>👤 Cliente:</strong> "Quanto custa a mesa de jantar?"
+                  </p>
+                  <p className="text-muted-foreground italic">
+                    → AI Agent chama <code>buscar_produtos</code> com search_term: "mesa de jantar"
+                  </p>
+                  <p className="bg-muted p-2 rounded">
+                    <strong>📦 Tool retorna:</strong> nome, preço R$ 4.500, imagem_url, especificações...
+                  </p>
+                  <p className="bg-green-50 dark:bg-green-950/30 p-2 rounded">
+                    <strong>🤖 IA responde:</strong> "A mesa de jantar em madeira maciça está disponível por R$ 4.500..."
+                  </p>
+                </div>
+              </div>
+
+              {/* Exemplo 2 */}
+              <div className="p-4 rounded-lg border bg-card">
+                <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                  <BookOpen className="h-4 w-4 text-green-600" />
+                  Cliente pergunta sobre política
+                </h4>
+                <div className="space-y-2 text-xs">
+                  <p className="bg-blue-50 dark:bg-blue-950/30 p-2 rounded">
+                    <strong>👤 Cliente:</strong> "Qual é a garantia dos produtos?"
+                  </p>
+                  <p className="text-muted-foreground italic">
+                    → AI Agent chama <code>buscar_conhecimento</code> com search_term: "garantia", tipo: "politica"
+                  </p>
+                  <p className="bg-muted p-2 rounded">
+                    <strong>📚 Tool retorna:</strong> documento com política de garantia completa
+                  </p>
+                  <p className="bg-green-50 dark:bg-green-950/30 p-2 rounded">
+                    <strong>🤖 IA responde:</strong> "Nossos produtos têm garantia de 5 anos contra defeitos de fabricação..."
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Diagrama do fluxo com tools */}
+            <div className="mt-4 p-4 rounded-lg bg-muted/30 border">
+              <h4 className="font-semibold text-sm mb-3">Fluxo Atualizado com Tools</h4>
+              <div className="text-xs font-mono text-center space-y-2">
+                <div className="flex items-center justify-center gap-2 flex-wrap">
+                  <Badge variant="outline" className="py-1">WhatsApp Trigger</Badge>
+                  <ArrowRight className="h-3 w-3" />
+                  <Badge variant="outline" className="py-1">Buscar Prompt Master</Badge>
+                  <ArrowRight className="h-3 w-3" />
+                  <Badge className="py-1 bg-orange-600">AI Agent</Badge>
+                </div>
+                <div className="text-muted-foreground">↓ Tools disponíveis ↓</div>
+                <div className="flex items-center justify-center gap-2 flex-wrap">
+                  <Badge variant="secondary" className="py-1">
+                    <Package className="h-3 w-3 mr-1" />
+                    Buscar Produtos
+                  </Badge>
+                  <Badge variant="secondary" className="py-1">
+                    <BookOpen className="h-3 w-3 mr-1" />
+                    Buscar Conhecimento
+                  </Badge>
+                  <Badge variant="secondary" className="py-1">
+                    <Database className="h-3 w-3 mr-1" />
+                    Obter Dados IA
+                  </Badge>
+                </div>
+                <div className="text-muted-foreground">↓</div>
+                <div className="flex items-center justify-center gap-2">
+                  <Badge className="py-1 bg-green-600">Responder WhatsApp</Badge>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Tabs para diferentes configurações */}
         <Card>
           <CardHeader>
-            <CardTitle>3. Configuração dos Nós HTTP Request</CardTitle>
+            <CardTitle>5. Configuração dos Nós HTTP Request (Salvar Conversas)</CardTitle>
             <CardDescription>
               Você precisará de 2 nós: um para salvar mensagem do cliente, outro para resposta da IA
             </CardDescription>
@@ -610,7 +1030,7 @@ const N8nConversationGuide = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CheckCircle className="h-5 w-5 text-green-500" />
-              3. Workflow Completo (Importar)
+              6. Workflow Completo (Importar)
             </CardTitle>
             <CardDescription>
               Copie e importe no n8n: Menu → Import from JSON
@@ -644,7 +1064,7 @@ const N8nConversationGuide = () => {
         {/* Variáveis Disponíveis */}
         <Card>
           <CardHeader>
-            <CardTitle>4. Variáveis Disponíveis no Workflow</CardTitle>
+            <CardTitle>7. Variáveis Disponíveis no Workflow</CardTitle>
             <CardDescription>
               Use estas expressões nos seus nós
             </CardDescription>
@@ -676,7 +1096,7 @@ const N8nConversationGuide = () => {
           <CardHeader>
             <CardTitle className="text-green-600 flex items-center gap-2">
               <CheckCircle className="h-5 w-5" />
-              5. Resultado no CRM
+              8. Resultado no CRM
             </CardTitle>
             <CardDescription>
               Após configurar, o histórico exibirá a conversa completa
