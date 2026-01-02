@@ -299,18 +299,19 @@ Deno.serve(async (req) => {
       )
     }
 
-    // ========== CREATE-IA (Instância da IA com webhook n8n) ==========
+    // ========== CREATE-IA (Instância da IA - processamento interno Lovable AI) ==========
     if (action === 'create-ia') {
       const iaInstanceName = instanceName || 'IA-Atendimento'
-      const n8nWebhookUrl = body.webhookUrl || 'https://n8n.agendacorretor.online/webhook/receber-mensagens'
+      // Webhook agora aponta diretamente para o Supabase - processamento interno
+      const supabaseWebhookUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/whatsapp-webhook`
       
       console.log('🤖 ========== CREATING IA INSTANCE ==========')
       console.log('🔧 DIAGNOSTIC INFO:')
       console.log('- Evolution URL:', evolutionUrl)
       console.log('- Instance Name:', iaInstanceName)
-      console.log('- Webhook URL:', n8nWebhookUrl)
+      console.log('- Webhook URL (Supabase):', supabaseWebhookUrl)
       console.log('- API Key valid:', evolutionApiKey ? 'YES' : 'NO')
-      console.log('- API Key length:', evolutionApiKey?.length || 0)
+      console.log('- Processamento: Interno (Lovable AI)')
       
       // 1️⃣ Deletar instância existente na Evolution API (se existir)
       console.log('1️⃣ Checking for existing instance to delete...')
@@ -452,15 +453,12 @@ Deno.serve(async (req) => {
         console.warn('⚠️ Could not obtain QR Code after 3 attempts')
       }
       
-      // 6️⃣ Configurar webhook para SUPABASE (proxy) - NÃO direto para n8n
-      // A URL do n8n fica armazenada no banco para o whatsapp-webhook fazer forward
-      console.log('6️⃣ Configuring webhook for Supabase (proxy to n8n)...')
+      // 6️⃣ Configurar webhook para SUPABASE - processamento interno (sem n8n)
+      console.log('6️⃣ Configuring webhook for Supabase (internal processing)...')
       let webhookConfigured = false
       
-      // URL do Supabase - TODAS as instâncias usam esta URL
-      const supabaseWebhookUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/whatsapp-webhook`
       console.log('📡 Supabase webhook URL:', supabaseWebhookUrl)
-      console.log('📡 N8N URL (stored in DB for proxy):', n8nWebhookUrl)
+      console.log('📡 Processamento: Lovable AI interno')
       
       // Formato 1: Com wrapper webhook
       const webhookPayload1 = {
@@ -555,7 +553,7 @@ Deno.serve(async (req) => {
         created_by: null,
         user_id: null,
         webhook_configured: webhookConfigured,
-        webhook_url: n8nWebhookUrl,
+        webhook_url: supabaseWebhookUrl, // Processamento interno - não mais n8n
         is_ia_instance: true
       }
       
@@ -582,9 +580,10 @@ Deno.serve(async (req) => {
           instanceName: iaInstanceName,
           qrCode: qrCodeBase64,
           databaseId: insertedData.id,
-          webhookUrl: n8nWebhookUrl,
+          webhookUrl: supabaseWebhookUrl,
           webhookConfigured,
-          status: 'connecting'
+          status: 'connecting',
+          processing: 'lovable-ai-internal'
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )

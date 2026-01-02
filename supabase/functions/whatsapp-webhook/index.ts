@@ -49,71 +49,77 @@ Deno.serve(async (req) => {
     const { instance, event, data } = payload
     const connectionEvents = ['connection.update', 'qrcode.updated', 'open', 'connection.open']
 
-    // ========== VERIFICAR SE É INSTÂNCIA IA E FAZER PROXY PARA N8N ==========
+    // ========== VERIFICAR SE É INSTÂNCIA IA E PROCESSAR INTERNAMENTE ==========
     const { data: connectionData } = await supabase
       .from('tendenci_whatsapp_connections')
       .select('id, is_ia_instance, webhook_url, user_id')
       .eq('instance_name', instance)
       .single()
 
-    if (connectionData?.is_ia_instance && connectionData?.webhook_url && event === 'messages.upsert') {
-      console.log('🤖 Instância IA detectada! Fazendo proxy para n8n...')
-      console.log('🔗 N8N Webhook URL:', connectionData.webhook_url)
+    if (connectionData?.is_ia_instance && event === 'messages.upsert') {
+      console.log('🤖 Instância IA detectada! Processando mensagem internamente com Lovable AI...')
       
       try {
-        const n8nResponse = await fetch(connectionData.webhook_url, {
+        // Chamar a nova edge function que processa com Lovable AI
+        const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+        const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+        
+        const processResponse = await fetch(`${supabaseUrl}/functions/v1/process-ia-message`, {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
-            'User-Agent': 'Tendenci-Webhook-Proxy/1.0'
+            'Authorization': `Bearer ${supabaseServiceKey}`
           },
-          body: JSON.stringify(payload)
+          body: JSON.stringify({ 
+            payload, 
+            instanceName: instance 
+          })
         })
         
-        const n8nStatus = n8nResponse.status
-        const n8nOk = n8nResponse.ok
+        const processStatus = processResponse.status
+        const processOk = processResponse.ok
+        const responseData = await processResponse.json().catch(() => ({}))
         
-        console.log('📤 N8N Response Status:', n8nStatus, n8nOk ? '✅' : '❌')
+        console.log('📤 Process Response Status:', processStatus, processOk ? '✅' : '❌')
         
-        // Logar resultado do forward
+        // Logar resultado do processamento
         await supabase
           .from('tendenci_webhook_logs')
           .insert({
-            event_type: 'ia_proxy_forward',
+            event_type: 'ia_process_internal',
             instance_name: instance,
             phone_from: data?.key?.remoteJid?.replace('@s.whatsapp.net', '') || null,
-            message_content: `Forward para n8n: ${n8nOk ? 'SUCESSO' : 'FALHA'} (HTTP ${n8nStatus})`,
+            message_content: `Processamento IA interno: ${processOk ? 'SUCESSO' : 'FALHA'} (HTTP ${processStatus})`,
             raw_payload: { 
               original_event: event,
-              n8n_url: connectionData.webhook_url,
-              n8n_status: n8nStatus,
-              n8n_ok: n8nOk 
+              process_status: processStatus,
+              process_ok: processOk,
+              response: responseData
             },
-            processing_status: n8nOk ? 'forwarded' : 'forward_failed'
+            processing_status: processOk ? 'processed' : 'process_failed'
           })
         
-        if (!n8nOk) {
-          console.error('❌ Falha no forward para n8n:', n8nStatus)
+        if (!processOk) {
+          console.error('❌ Falha no processamento IA:', processStatus, responseData)
         } else {
-          console.log('✅ Mensagem encaminhada para n8n com sucesso!')
+          console.log('✅ Mensagem processada pela IA com sucesso!')
         }
-      } catch (forwardError: any) {
-        console.error('💥 Erro ao fazer forward para n8n:', forwardError.message)
+      } catch (processError: any) {
+        console.error('💥 Erro ao processar mensagem IA:', processError.message)
         
         // Logar erro
         await supabase
           .from('tendenci_webhook_logs')
           .insert({
-            event_type: 'ia_proxy_error',
+            event_type: 'ia_process_error',
             instance_name: instance,
             phone_from: data?.key?.remoteJid?.replace('@s.whatsapp.net', '') || null,
-            message_content: `Erro no forward: ${forwardError.message}`,
+            message_content: `Erro no processamento IA: ${processError.message}`,
             raw_payload: { 
               original_event: event,
-              n8n_url: connectionData.webhook_url,
-              error: forwardError.message 
+              error: processError.message 
             },
-            processing_status: 'forward_error'
+            processing_status: 'process_error'
           })
       }
     }
