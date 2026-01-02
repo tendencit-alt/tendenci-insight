@@ -301,7 +301,7 @@ export function IAAgentTester({ isConfigComplete, completedSections, totalSectio
       {completedSections < totalSections && (
         <div className="flex items-center gap-2 p-2 bg-yellow-500/10 border-b border-yellow-500/20 shrink-0">
           <AlertCircle className="h-4 w-4 text-yellow-500 shrink-0" />
-          <span className="text-xs text-yellow-700 dark:text-yellow-400">
+          <span className="text-xs" style={{ color: '#92400e' }}>
             Configuração incompleta ({completedSections}/{totalSections})
           </span>
         </div>
@@ -321,6 +321,7 @@ export function IAAgentTester({ isConfigComplete, completedSections, totalSectio
               key={idx}
               variant="secondary"
               className="cursor-pointer hover:bg-[#DCF8C6] bg-white text-xs py-1"
+              style={{ color: '#111B21' }}
               onClick={() => sendMessage(sugestao)}
             >
               {sugestao}
@@ -341,11 +342,11 @@ export function IAAgentTester({ isConfigComplete, completedSections, totalSectio
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full">
             <div className="bg-[#FCF4CB] rounded-lg p-3 shadow-sm max-w-[280px] text-center">
-              <p className="text-xs text-[#54656F]">
+              <p className="text-xs" style={{ color: '#54656F' }}>
                 🔒 As mensagens são criptografadas de ponta a ponta. Ninguém fora desta conversa pode ler.
               </p>
             </div>
-            <p className="text-xs text-[#8696A0] mt-4">
+            <p className="text-xs mt-4" style={{ color: '#8696A0' }}>
               Envie uma mensagem para testar o agente
             </p>
           </div>
@@ -379,7 +380,7 @@ export function IAAgentTester({ isConfigComplete, completedSections, totalSectio
                 {/* Conteúdo da mensagem */}
                 <div className="p-2 pb-4">
                   {message.content ? (
-                    <p className="text-sm text-[#111B21] whitespace-pre-wrap break-words">
+                    <p className="text-sm whitespace-pre-wrap break-words" style={{ color: '#111B21' }}>
                       {message.content}
                     </p>
                   ) : (
@@ -444,10 +445,10 @@ export function IAAgentTester({ isConfigComplete, completedSections, totalSectio
                 </div>
 
                 {/* Timestamp */}
-                <span className={cn(
-                  "absolute bottom-1 right-2 text-[10px]",
-                  message.role === "user" ? "text-[#667781]" : "text-[#8696A0]"
-                )}>
+                <span 
+                  className="absolute bottom-1 right-2 text-[10px]"
+                  style={{ color: message.role === "user" ? '#667781' : '#8696A0' }}
+                >
                   {message.timestamp}
                   {message.role === "user" && (
                     <span className="ml-1 text-[#53BDEB]">✓✓</span>
@@ -475,6 +476,7 @@ export function IAAgentTester({ isConfigComplete, completedSections, totalSectio
           placeholder="Mensagem"
           disabled={isLoading || !masterPrompt}
           className="flex-1 rounded-full bg-white border-0 h-10 text-sm placeholder:text-[#8696A0]"
+          style={{ color: '#111B21' }}
         />
         <Button 
           type="submit" 
