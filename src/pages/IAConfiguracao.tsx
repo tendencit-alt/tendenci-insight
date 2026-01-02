@@ -277,7 +277,9 @@ export default function IAConfiguracao() {
         <MasterPromptPreview />
 
               <IAAgentTester 
-                isConfigComplete={progressData.completed === progressData.total}
+                isConfigComplete={['negocio', 'identidade', 'comunicacao'].every(
+                  secao => getSectionStatus(secao) !== 'empty'
+                )}
                 completedSections={progressData.completed}
                 totalSections={progressData.total}
               />
