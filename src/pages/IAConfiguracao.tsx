@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Building2, User, MessageSquare, Target, ShoppingCart, Package, Brain, Shield, BookOpen, Loader2, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
 import { toast } from "sonner";
 import IAConfigNegocio from "@/components/ia-config/IAConfigNegocio";
 import IAConfigIdentidade from "@/components/ia-config/IAConfigIdentidade";
@@ -19,7 +20,7 @@ import IAConfigRegras from "@/components/ia-config/IAConfigRegras";
 interface IAConfig {
   id: string;
   secao: string;
-  config: Record<string, unknown>;
+  config: Json;
   ativa: boolean;
   versao: number;
 }
@@ -59,7 +60,7 @@ export default function IAConfiguracao() {
         configMap[item.secao] = {
           id: item.id,
           secao: item.secao,
-          config: (item.config as Record<string, unknown>) || {},
+          config: (item.config as Json) || {},
           ativa: item.ativa ?? true,
           versao: item.versao ?? 1
         };
@@ -73,7 +74,7 @@ export default function IAConfiguracao() {
     }
   };
 
-  const saveConfig = async (secao: string, config: Record<string, unknown>) => {
+  const saveConfig = async (secao: string, config: Json) => {
     setSaving(secao);
     try {
       const { error } = await supabase
@@ -88,7 +89,7 @@ export default function IAConfiguracao() {
 
       setConfigs(prev => ({
         ...prev,
-        [secao]: { ...prev[secao], config, versao: (prev[secao]?.versao || 1) + 1 }
+        [secao]: { ...prev[secao], config, versao: (prev[secao]?.versao || 1) + 1 } as IAConfig
       }));
 
       toast.success("Configuração salva!");
@@ -177,40 +178,40 @@ export default function IAConfiguracao() {
             <CardContent>
               <TabsContent value="negocio" className="mt-0">
                 <IAConfigNegocio 
-                  config={configs.negocio?.config || {}} 
-                  onSave={(config) => saveConfig("negocio", config)}
+                  config={(configs.negocio?.config as Record<string, unknown>) || {}} 
+                  onSave={(config) => saveConfig("negocio", config as Json)}
                   saving={saving === "negocio"}
                 />
               </TabsContent>
 
               <TabsContent value="identidade" className="mt-0">
                 <IAConfigIdentidade 
-                  config={configs.identidade?.config || {}} 
-                  onSave={(config) => saveConfig("identidade", config)}
+                  config={(configs.identidade?.config as Record<string, unknown>) || {}} 
+                  onSave={(config) => saveConfig("identidade", config as Json)}
                   saving={saving === "identidade"}
                 />
               </TabsContent>
 
               <TabsContent value="comunicacao" className="mt-0">
                 <IAConfigComunicacao 
-                  config={configs.comunicacao?.config || {}} 
-                  onSave={(config) => saveConfig("comunicacao", config)}
+                  config={(configs.comunicacao?.config as Record<string, unknown>) || {}} 
+                  onSave={(config) => saveConfig("comunicacao", config as Json)}
                   saving={saving === "comunicacao"}
                 />
               </TabsContent>
 
               <TabsContent value="qualificacao" className="mt-0">
                 <IAConfigQualificacao 
-                  config={configs.qualificacao?.config || {}} 
-                  onSave={(config) => saveConfig("qualificacao", config)}
+                  config={(configs.qualificacao?.config as Record<string, unknown>) || {}} 
+                  onSave={(config) => saveConfig("qualificacao", config as Json)}
                   saving={saving === "qualificacao"}
                 />
               </TabsContent>
 
               <TabsContent value="vendas" className="mt-0">
                 <IAConfigVendas 
-                  config={configs.vendas?.config || {}} 
-                  onSave={(config) => saveConfig("vendas", config)}
+                  config={(configs.vendas?.config as Record<string, unknown>) || {}} 
+                  onSave={(config) => saveConfig("vendas", config as Json)}
                   saving={saving === "vendas"}
                 />
               </TabsContent>
@@ -225,16 +226,16 @@ export default function IAConfiguracao() {
 
               <TabsContent value="comportamento" className="mt-0">
                 <IAConfigComportamento 
-                  config={configs.comportamento?.config || {}} 
-                  onSave={(config) => saveConfig("comportamento", config)}
+                  config={(configs.comportamento?.config as Record<string, unknown>) || {}} 
+                  onSave={(config) => saveConfig("comportamento", config as Json)}
                   saving={saving === "comportamento"}
                 />
               </TabsContent>
 
               <TabsContent value="regras" className="mt-0">
                 <IAConfigRegras 
-                  config={configs.regras?.config || {}} 
-                  onSave={(config) => saveConfig("regras", config)}
+                  config={(configs.regras?.config as Record<string, unknown>) || {}} 
+                  onSave={(config) => saveConfig("regras", config as Json)}
                   saving={saving === "regras"}
                 />
               </TabsContent>
