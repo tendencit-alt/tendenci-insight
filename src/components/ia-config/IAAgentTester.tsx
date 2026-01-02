@@ -1,11 +1,10 @@
 import { useState, useRef, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Bot, Send, Trash2, Loader2, User, RefreshCw, MessageSquare, Lock, AlertCircle, Image, Video } from "lucide-react";
+import { Bot, Send, Trash2, Loader2, RefreshCw, Lock, AlertCircle, Image, Video, Smile, MoreVertical } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -20,6 +19,7 @@ interface Message {
   role: "user" | "assistant";
   content: string;
   media?: MediaItem[];
+  timestamp?: string;
 }
 
 interface IAAgentTesterProps {
@@ -37,9 +37,7 @@ const SUGESTOES = [
 ];
 
 // Função para detectar e extrair marcadores de mídia do conteúdo
-// Formato: [FOTO_PRODUTO:url:nome] ou [VIDEO_PRODUTO:url:nome]
 function parseMediaFromContent(content: string): { cleanContent: string; media: MediaItem[] } {
-  // Regex robusta: captura URL completa (pode ter vários :) e nome do produto
   const mediaRegex = /\[(FOTO_PRODUTO|VIDEO_PRODUTO):(.+?):([^\]:]+)\]/g;
   const media: MediaItem[] = [];
   let match;
@@ -47,7 +45,6 @@ function parseMediaFromContent(content: string): { cleanContent: string; media: 
   while ((match = mediaRegex.exec(content)) !== null) {
     let url = match[2].trim();
     
-    // Normalizar URL - garantir protocolo https
     if (url.startsWith('//')) {
       url = 'https:' + url;
     } else if (!url.startsWith('http://') && !url.startsWith('https://')) {
@@ -61,15 +58,17 @@ function parseMediaFromContent(content: string): { cleanContent: string; media: 
     });
   }
   
-  // Debug log
   if (media.length > 0) {
     console.log("Mídia detectada:", media);
   }
   
-  // Remover marcadores do texto
   const cleanContent = content.replace(mediaRegex, "").trim();
   
   return { cleanContent, media };
+}
+
+function formatTime(date: Date): string {
+  return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 }
 
 export function IAAgentTester({ isConfigComplete, completedSections, totalSections }: IAAgentTesterProps) {
@@ -81,14 +80,12 @@ export function IAAgentTester({ isConfigComplete, completedSections, totalSectio
   const [masterPrompt, setMasterPrompt] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll ao adicionar mensagens
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
 
-  // Carregar master prompt ao montar
   useEffect(() => {
     loadMasterPrompt();
   }, []);
@@ -119,7 +116,11 @@ export function IAAgentTester({ isConfigComplete, completedSections, totalSectio
       return;
     }
 
-    const userMessage: Message = { role: "user", content: text.trim() };
+    const userMessage: Message = { 
+      role: "user", 
+      content: text.trim(),
+      timestamp: formatTime(new Date())
+    };
     setMessages(prev => [...prev, userMessage]);
     setInput("");
     setIsLoading(true);
@@ -158,8 +159,7 @@ export function IAAgentTester({ isConfigComplete, completedSections, totalSectio
       const decoder = new TextDecoder();
       let buffer = "";
 
-      // Adicionar mensagem vazia do assistente
-      setMessages(prev => [...prev, { role: "assistant", content: "" }]);
+      setMessages(prev => [...prev, { role: "assistant", content: "", timestamp: formatTime(new Date()) }]);
 
       while (true) {
         const { done, value } = await reader.read();
@@ -185,7 +185,6 @@ export function IAAgentTester({ isConfigComplete, completedSections, totalSectio
             if (content) {
               assistantContent += content;
               
-              // Parse mídia do conteúdo atual
               const { cleanContent, media } = parseMediaFromContent(assistantContent);
               
               setMessages(prev => {
@@ -202,14 +201,13 @@ export function IAAgentTester({ isConfigComplete, completedSections, totalSectio
               });
             }
           } catch {
-            // JSON incompleto, continuar
+            // JSON incompleto
           }
         }
       }
     } catch (error) {
       console.error("Erro ao enviar mensagem:", error);
       toast.error(error instanceof Error ? error.message : "Erro ao conectar com o agente");
-      // Remover mensagem vazia se houver erro
       setMessages(prev => prev.filter(m => m.content !== ""));
     } finally {
       setIsLoading(false);
@@ -228,233 +226,269 @@ export function IAAgentTester({ isConfigComplete, completedSections, totalSectio
 
   if (!isConfigComplete) {
     return (
-      <Card>
-        <CardHeader>
+      <Card className="overflow-hidden">
+        <div className="bg-[#075E54] text-white p-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-muted/50 rounded-lg">
-              <Bot className="h-5 w-5 text-muted-foreground" />
+            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+              <Bot className="h-5 w-5" />
             </div>
             <div>
-              <CardTitle>Testar Agente IA</CardTitle>
-              <CardDescription>
-                Complete as configurações mínimas para testar o agente
-              </CardDescription>
+              <p className="font-medium">Assistente Tendenci</p>
+              <p className="text-xs text-white/70">offline</p>
             </div>
           </div>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-8 space-y-4">
-            <div className="p-4 bg-muted/50 rounded-full w-fit mx-auto">
-              <Lock className="h-8 w-8 text-muted-foreground" />
-            </div>
-            <div>
-              <h3 className="font-medium">Configure as seções obrigatórias primeiro</h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                Negócio, Identidade e Comunicação são necessárias para o agente funcionar
-              </p>
-            </div>
-            <div className="max-w-xs mx-auto space-y-2">
-              <Progress value={progressPercentage} className="h-2" />
-              <p className="text-xs text-muted-foreground">
-                {completedSections} de {totalSections} seções configuradas ({progressPercentage}%)
-              </p>
-            </div>
+        </div>
+        <div className="p-8 text-center space-y-4 bg-[#ECE5DD]">
+          <div className="p-4 bg-white rounded-full w-fit mx-auto shadow-sm">
+            <Lock className="h-8 w-8 text-muted-foreground" />
           </div>
-        </CardContent>
+          <div>
+            <h3 className="font-medium">Configure as seções obrigatórias primeiro</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              Negócio, Identidade e Comunicação são necessárias
+            </p>
+          </div>
+          <div className="max-w-xs mx-auto space-y-2">
+            <Progress value={progressPercentage} className="h-2" />
+            <p className="text-xs text-muted-foreground">
+              {completedSections} de {totalSections} seções ({progressPercentage}%)
+            </p>
+          </div>
+        </div>
       </Card>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        {completedSections < totalSections && (
-          <div className="flex items-center gap-2 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg mb-4">
-            <AlertCircle className="h-4 w-4 text-yellow-500 shrink-0" />
-            <span className="text-sm text-yellow-700 dark:text-yellow-400">
-              Algumas seções ainda não estão configuradas ({completedSections}/{totalSections}). 
-              O agente pode não responder de forma ideal.
-            </span>
-          </div>
-        )}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-primary/10 rounded-lg">
-              <Bot className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                Testar Agente IA
-                {isLoadingPrompt && <Loader2 className="h-4 w-4 animate-spin" />}
-              </CardTitle>
-              <CardDescription>
-                Simule uma conversa com o agente - suporta envio de fotos e vídeos
-              </CardDescription>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={loadMasterPrompt} disabled={isLoadingPrompt}>
-              <RefreshCw className={cn("h-4 w-4 mr-2", isLoadingPrompt && "animate-spin")} />
-              Atualizar
-            </Button>
-            <Button variant="outline" size="sm" onClick={clearConversation} disabled={messages.length === 0}>
-              <Trash2 className="h-4 w-4 mr-2" />
-              Limpar
-            </Button>
-          </div>
+    <Card className="overflow-hidden flex flex-col h-[600px] md:h-[700px]">
+      {/* Header WhatsApp */}
+      <div className="bg-[#075E54] text-white p-3 flex items-center gap-3 shrink-0">
+        <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+          <Bot className="h-5 w-5" />
         </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Status do Master Prompt */}
-        {!masterPrompt && !isLoadingPrompt && (
-          <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg text-center">
-            ⚠️ Não foi possível carregar as configurações. Clique em "Atualizar" para tentar novamente.
-          </div>
-        )}
+        <div className="flex-1 min-w-0">
+          <p className="font-medium truncate">Assistente Tendenci</p>
+          <p className="text-xs text-white/70">
+            {isLoading ? "digitando..." : isLoadingPrompt ? "carregando..." : "online"}
+          </p>
+        </div>
+        <div className="flex items-center gap-1">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="text-white hover:bg-white/10 h-8 w-8"
+            onClick={loadMasterPrompt}
+            disabled={isLoadingPrompt}
+          >
+            <RefreshCw className={cn("h-4 w-4", isLoadingPrompt && "animate-spin")} />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="text-white hover:bg-white/10 h-8 w-8"
+            onClick={clearConversation}
+            disabled={messages.length === 0}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 h-8 w-8">
+            <MoreVertical className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
 
-        {/* Sugestões de mensagens */}
-        <div className="space-y-2">
-          <span className="text-xs text-muted-foreground">Mensagens sugeridas:</span>
-          <div className="flex flex-wrap gap-2">
-            {SUGESTOES.map((sugestao, idx) => (
-              <Badge
-                key={idx}
-                variant="outline"
-                className="cursor-pointer hover:bg-primary/10 transition-colors"
-                onClick={() => sendMessage(sugestao)}
+      {/* Alertas */}
+      {completedSections < totalSections && (
+        <div className="flex items-center gap-2 p-2 bg-yellow-500/10 border-b border-yellow-500/20 shrink-0">
+          <AlertCircle className="h-4 w-4 text-yellow-500 shrink-0" />
+          <span className="text-xs text-yellow-700 dark:text-yellow-400">
+            Configuração incompleta ({completedSections}/{totalSections})
+          </span>
+        </div>
+      )}
+
+      {!masterPrompt && !isLoadingPrompt && (
+        <div className="p-2 bg-red-500/10 border-b border-red-500/20 shrink-0">
+          <span className="text-xs text-red-600">⚠️ Clique em atualizar para carregar configurações</span>
+        </div>
+      )}
+
+      {/* Sugestões */}
+      <div className="p-2 bg-[#ECE5DD] border-b shrink-0">
+        <div className="flex flex-wrap gap-1.5">
+          {SUGESTOES.map((sugestao, idx) => (
+            <Badge
+              key={idx}
+              variant="secondary"
+              className="cursor-pointer hover:bg-[#DCF8C6] bg-white text-xs py-1"
+              onClick={() => sendMessage(sugestao)}
+            >
+              {sugestao}
+            </Badge>
+          ))}
+        </div>
+      </div>
+
+      {/* Área de mensagens - WhatsApp style */}
+      <div 
+        ref={scrollRef}
+        className="flex-1 overflow-y-auto p-3 space-y-2"
+        style={{ 
+          backgroundColor: '#ECE5DD',
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23c8c8c8' fill-opacity='0.15'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")` 
+        }}
+      >
+        {messages.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full">
+            <div className="bg-[#FCF4CB] rounded-lg p-3 shadow-sm max-w-[280px] text-center">
+              <p className="text-xs text-[#54656F]">
+                🔒 As mensagens são criptografadas de ponta a ponta. Ninguém fora desta conversa pode ler.
+              </p>
+            </div>
+            <p className="text-xs text-[#8696A0] mt-4">
+              Envie uma mensagem para testar o agente
+            </p>
+          </div>
+        ) : (
+          messages.map((message, idx) => (
+            <div
+              key={idx}
+              className={cn(
+                "flex",
+                message.role === "user" ? "justify-end" : "justify-start"
+              )}
+            >
+              <div
+                className={cn(
+                  "relative max-w-[85%] md:max-w-[70%] rounded-lg shadow-sm",
+                  message.role === "user"
+                    ? "bg-[#DCF8C6] rounded-tr-none"
+                    : "bg-white rounded-tl-none"
+                )}
               >
-                {sugestao}
-              </Badge>
-            ))}
-          </div>
-        </div>
+                {/* Tail da mensagem */}
+                <div 
+                  className={cn(
+                    "absolute top-0 w-3 h-3",
+                    message.role === "user" 
+                      ? "-right-2 border-l-8 border-l-[#DCF8C6] border-t-8 border-t-transparent border-b-8 border-b-transparent"
+                      : "-left-2 border-r-8 border-r-white border-t-8 border-t-transparent border-b-8 border-b-transparent"
+                  )}
+                />
 
-        {/* Área de chat */}
-        <div className="border rounded-lg bg-muted/20">
-          <ScrollArea className="h-[400px] p-4" ref={scrollRef}>
-            {messages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-                <MessageSquare className="h-12 w-12 mb-3 opacity-30" />
-                <p className="text-sm">Envie uma mensagem para começar a conversa</p>
-                <p className="text-xs mt-1">Experimente pedir para ver fotos dos produtos!</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {messages.map((message, idx) => (
-                  <div
-                    key={idx}
-                    className={cn(
-                      "flex gap-3",
-                      message.role === "user" ? "justify-end" : "justify-start"
-                    )}
-                  >
-                    {message.role === "assistant" && (
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Bot className="h-4 w-4 text-primary" />
-                      </div>
-                    )}
-                    <div
-                      className={cn(
-                        "max-w-[80%] rounded-lg px-4 py-2",
-                        message.role === "user"
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-card border"
-                      )}
-                    >
-                      <p className="text-sm whitespace-pre-wrap">
-                        {message.content || (
-                          <span className="flex items-center gap-2 text-muted-foreground">
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                            Digitando...
-                          </span>
-                        )}
-                      </p>
-                      
-                      {/* Renderizar mídia */}
-                      {message.media && message.media.length > 0 && (
-                        <div className="mt-3 space-y-2">
-                          {message.media.map((m, mediaIdx) => (
-                            <div key={mediaIdx} className="rounded-lg overflow-hidden border bg-background">
-                              {m.type === "image" ? (
-                                <div className="relative">
-                                  <img 
-                                    src={m.url} 
-                                    alt={m.productName} 
-                                    className="w-full h-auto rounded-t-lg"
-                                    onError={(e) => {
-                                      (e.target as HTMLImageElement).style.display = 'none';
-                                      (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
-                                    }}
-                                  />
-                                  <div className="hidden flex-col items-center justify-center h-32 bg-muted text-muted-foreground">
-                                    <Image className="h-8 w-8 mb-2 opacity-50" />
-                                    <span className="text-xs">Imagem indisponível</span>
-                                  </div>
-                                </div>
-                              ) : (
-                                <div className="relative">
-                                  <video 
-                                    src={m.url} 
-                                    controls 
-                                    className="w-full h-auto rounded-t-lg"
-                                    onError={(e) => {
-                                      (e.target as HTMLVideoElement).style.display = 'none';
-                                      (e.target as HTMLVideoElement).nextElementSibling?.classList.remove('hidden');
-                                    }}
-                                  />
-                                  <div className="hidden flex-col items-center justify-center h-32 bg-muted text-muted-foreground">
-                                    <Video className="h-8 w-8 mb-2 opacity-50" />
-                                    <span className="text-xs">Vídeo indisponível</span>
-                                  </div>
-                                </div>
-                              )}
-                              <div className="p-2 bg-muted/50 flex items-center gap-2">
-                                {m.type === "image" ? (
-                                  <Image className="h-3 w-3 text-muted-foreground" />
-                                ) : (
-                                  <Video className="h-3 w-3 text-muted-foreground" />
-                                )}
-                                <span className="text-xs text-muted-foreground">{m.productName}</span>
+                {/* Conteúdo da mensagem */}
+                <div className="p-2 pb-4">
+                  {message.content ? (
+                    <p className="text-sm text-[#111B21] whitespace-pre-wrap break-words">
+                      {message.content}
+                    </p>
+                  ) : (
+                    <div className="flex items-center gap-1 text-[#8696A0]">
+                      <span className="w-2 h-2 bg-current rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <span className="w-2 h-2 bg-current rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <span className="w-2 h-2 bg-current rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                    </div>
+                  )}
+                  
+                  {/* Mídia */}
+                  {message.media && message.media.length > 0 && (
+                    <div className="mt-2 space-y-2">
+                      {message.media.map((m, mediaIdx) => (
+                        <div key={mediaIdx} className="rounded-lg overflow-hidden">
+                          {m.type === "image" ? (
+                            <div className="relative">
+                              <img 
+                                src={m.url} 
+                                alt={m.productName} 
+                                className="w-full max-w-[280px] h-auto rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                                onClick={() => window.open(m.url, '_blank')}
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).style.display = 'none';
+                                  (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                                }}
+                              />
+                              <div className="hidden flex-col items-center justify-center h-32 bg-[#F0F2F5] rounded-lg text-[#8696A0]">
+                                <Image className="h-8 w-8 mb-2 opacity-50" />
+                                <span className="text-xs">Imagem indisponível</span>
+                              </div>
+                              <div className="absolute bottom-2 left-2 bg-black/50 px-2 py-0.5 rounded text-white text-xs flex items-center gap-1">
+                                <Image className="h-3 w-3" />
+                                {m.productName}
                               </div>
                             </div>
-                          ))}
+                          ) : (
+                            <div className="relative">
+                              <video 
+                                src={m.url} 
+                                controls 
+                                className="w-full max-w-[280px] h-auto rounded-lg"
+                                onError={(e) => {
+                                  (e.target as HTMLVideoElement).style.display = 'none';
+                                  (e.target as HTMLVideoElement).nextElementSibling?.classList.remove('hidden');
+                                }}
+                              />
+                              <div className="hidden flex-col items-center justify-center h-32 bg-[#F0F2F5] rounded-lg text-[#8696A0]">
+                                <Video className="h-8 w-8 mb-2 opacity-50" />
+                                <span className="text-xs">Vídeo indisponível</span>
+                              </div>
+                              <div className="absolute bottom-2 left-2 bg-black/50 px-2 py-0.5 rounded text-white text-xs flex items-center gap-1">
+                                <Video className="h-3 w-3" />
+                                {m.productName}
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      )}
+                      ))}
                     </div>
-                    {message.role === "user" && (
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-                        <User className="h-4 w-4" />
-                      </div>
-                    )}
-                  </div>
-                ))}
+                  )}
+                </div>
+
+                {/* Timestamp */}
+                <span className={cn(
+                  "absolute bottom-1 right-2 text-[10px]",
+                  message.role === "user" ? "text-[#667781]" : "text-[#8696A0]"
+                )}>
+                  {message.timestamp}
+                  {message.role === "user" && (
+                    <span className="ml-1 text-[#53BDEB]">✓✓</span>
+                  )}
+                </span>
               </div>
-            )}
-          </ScrollArea>
+            </div>
+          ))
+        )}
+      </div>
 
-          {/* Input de mensagem */}
-          <form onSubmit={handleSubmit} className="border-t p-3 flex gap-2">
-            <Input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Digite como um cliente..."
-              disabled={isLoading || !masterPrompt}
-              className="flex-1"
-            />
-            <Button type="submit" disabled={isLoading || !input.trim() || !masterPrompt}>
-              {isLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
-            </Button>
-          </form>
-        </div>
-
-        <p className="text-xs text-muted-foreground text-center">
-          Este teste usa as configurações atuais. Peça para ver fotos dos produtos cadastrados!
-        </p>
-      </CardContent>
+      {/* Input WhatsApp style */}
+      <form onSubmit={handleSubmit} className="bg-[#F0F2F5] p-2 flex items-center gap-2 shrink-0">
+        <Button 
+          type="button" 
+          variant="ghost" 
+          size="icon" 
+          className="text-[#54656F] hover:bg-transparent h-10 w-10 shrink-0"
+        >
+          <Smile className="h-6 w-6" />
+        </Button>
+        <Input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Mensagem"
+          disabled={isLoading || !masterPrompt}
+          className="flex-1 rounded-full bg-white border-0 h-10 text-sm placeholder:text-[#8696A0]"
+        />
+        <Button 
+          type="submit" 
+          size="icon"
+          disabled={isLoading || !input.trim() || !masterPrompt}
+          className="bg-[#00A884] hover:bg-[#008069] text-white rounded-full h-10 w-10 shrink-0"
+        >
+          {isLoading ? (
+            <Loader2 className="h-5 w-5 animate-spin" />
+          ) : (
+            <Send className="h-5 w-5" />
+          )}
+        </Button>
+      </form>
     </Card>
   );
 }
