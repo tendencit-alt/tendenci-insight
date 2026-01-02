@@ -189,18 +189,100 @@ Horário de funcionamento: ${negocio.horario_funcionamento || ''}`;
     
     promptSections.push(negocioSection);
 
-    // 3. COMUNICAÇÃO
+    // 3. COMUNICAÇÃO - Configuração completa para agente senior
     const comunicacao = configs.comunicacao || {};
-    const regrasComMsg: string[] = [];
-    if (comunicacao.tamanho_max_msg) regrasComMsg.push(`- Limite suas respostas a no máximo ${comunicacao.tamanho_max_msg} caracteres`);
-    if (comunicacao.usar_emojis) regrasComMsg.push('- Use emojis moderadamente para tornar a conversa mais amigável');
-    if (comunicacao.usar_formatacao) regrasComMsg.push('- Use formatação (negrito, listas) quando apropriado');
     
-    promptSections.push(`# COMUNICAÇÃO
-${regrasComMsg.join('\n')}
-${comunicacao.msg_boas_vindas ? `Mensagem de boas-vindas: "${comunicacao.msg_boas_vindas}"` : ''}
-${comunicacao.msg_ausencia ? `Fora do horário: "${comunicacao.msg_ausencia}"` : ''}
-${comunicacao.assinatura ? `Assinatura: "${comunicacao.assinatura}"` : ''}`);
+    // Mapear valores para descrições detalhadas
+    const tamanhoDescricoes: Record<string, string> = {
+      curta: 'Respostas de 1-2 frases, diretas e objetivas. Vá ao ponto rapidamente.',
+      media: 'Respostas de 3-5 frases. Equilibre informação com objetividade.',
+      longa: 'Respostas detalhadas em parágrafos. Seja completo e contextualizado.',
+      adaptativa: 'Adapte o tamanho ao contexto - curto para confirmações, longo para explicações técnicas.'
+    };
+    
+    const sequenciaDescricoes: Record<string, string> = {
+      '1': 'Envie uma única mensagem completa por vez (mais formal).',
+      '2-3': 'Pode dividir em 2-3 mensagens menores para manter dinamismo.',
+      'ilimitado': 'Envie quantas mensagens forem necessárias para explicar completamente.'
+    };
+    
+    const modoDescricoes: Record<string, string> = {
+      responder: 'Responda objetivamente às perguntas feitas, sem rodeios.',
+      explicar: 'Contextualize e fundamente antes de responder, dê background.',
+      guiar: 'Faça perguntas para entender melhor a necessidade antes de responder.',
+      consultivo: 'Combine explicação com direcionamento estratégico, atue como consultor.'
+    };
+    
+    const linguagemDescricoes: Record<string, string> = {
+      evitar: 'Simplifique toda linguagem técnica. Use analogias do dia-a-dia.',
+      moderado: 'Use termos técnicos quando necessário, mas sempre explique brevemente.',
+      necessario: 'Use a terminologia correta do setor normalmente.',
+      especialista: 'Fale como profissional da área com cliente que entende do assunto.'
+    };
+    
+    const digitacaoDescricoes: Record<string, string> = {
+      perfeito: 'Gramática impecável, pontuação formal, sem abreviações.',
+      natural: 'Permita pequenas variações naturais que parecem mais humanas.',
+      casual: 'Mais descontraído, pode usar abreviações comuns e tom informal.'
+    };
+    
+    const formatacaoDescricoes: Record<string, string> = {
+      nao: 'Use apenas texto corrido, sem formatação especial.',
+      leve: 'Use negrito e emojis pontuais apenas para destaques importantes.',
+      moderado: 'Use listas, negrito e organização visual quando ajudar na clareza.',
+      rico: 'Use todos os recursos de formatação disponíveis para máxima clareza.'
+    };
+    
+    const emojiDescricoes: Record<string, string> = {
+      nao: 'Não use emojis em nenhuma situação.',
+      minimo: 'Use apenas 1-2 emojis por conversa em momentos específicos.',
+      moderado: 'Use emojis pontuais para dar leveza e humanizar a conversa.',
+      frequente: 'Use emojis com frequência para tornar a conversa mais expressiva.'
+    };
+    
+    const tamanho = comunicacao.tamanho_mensagem || 'media';
+    const sequencia = comunicacao.max_mensagens_sequencia || '2-3';
+    const modo = comunicacao.modo_resposta || 'consultivo';
+    const linguagem = comunicacao.linguagem_tecnica || 'moderado';
+    const digitacao = comunicacao.estilo_digitacao || 'natural';
+    const formatacao = comunicacao.usar_formatacao || 'leve';
+    const emojis = comunicacao.usar_emojis || 'moderado';
+    
+    let comunicacaoSection = `# COMUNICAÇÃO E ESTILO DE RESPOSTA
+
+## Formato das Mensagens
+- **Tamanho:** ${tamanhoDescricoes[tamanho] || tamanhoDescricoes.media}
+- **Mensagens Sequenciais:** ${sequenciaDescricoes[sequencia] || sequenciaDescricoes['2-3']}
+
+## Modo de Atuação
+- **Estilo de Resposta:** ${modoDescricoes[modo] || modoDescricoes.consultivo}
+- **Linguagem Técnica:** ${linguagemDescricoes[linguagem] || linguagemDescricoes.moderado}
+
+## Tom e Estilo Visual
+- **Digitação:** ${digitacaoDescricoes[digitacao] || digitacaoDescricoes.natural}
+- **Formatação:** ${formatacaoDescricoes[formatacao] || formatacaoDescricoes.leve}
+- **Emojis:** ${emojiDescricoes[emojis] || emojiDescricoes.moderado}
+${comunicacao.usar_audios ? '- **Áudio:** Você pode enviar áudios curtos quando agregar valor e humanizar a conversa.' : '- **Áudio:** Responda apenas com mensagens de texto.'}`;
+
+    if (comunicacao.msg_boas_vindas || comunicacao.msg_despedida || comunicacao.msg_ausencia) {
+      comunicacaoSection += `\n\n## Mensagens Padrão`;
+      if (comunicacao.msg_boas_vindas) {
+        comunicacaoSection += `\n- **Boas-vindas:** "${comunicacao.msg_boas_vindas}"`;
+      }
+      if (comunicacao.msg_despedida) {
+        comunicacaoSection += `\n- **Despedida:** "${comunicacao.msg_despedida}"`;
+      }
+      if (comunicacao.msg_ausencia) {
+        comunicacaoSection += `\n- **Fora do horário:** "${comunicacao.msg_ausencia}"`;
+      }
+    }
+    
+    if (comunicacao.exemplos_respostas) {
+      comunicacaoSection += `\n\n## Exemplos de Como Responder (Use como referência de estilo)
+${comunicacao.exemplos_respostas}`;
+    }
+    
+    promptSections.push(comunicacaoSection);
 
     // 4. QUALIFICAÇÃO
     const qualificacao = configs.qualificacao || {};
