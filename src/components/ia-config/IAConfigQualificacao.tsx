@@ -290,11 +290,7 @@ export default function IAConfigQualificacao({ config, onSave, saving }: Props) 
                   key={option.id}
                   role="button"
                   tabIndex={0}
-                  onClick={(e) => {
-                    // Evita toggle duplo se clicou no Checkbox
-                    if ((e.target as HTMLElement).closest('button[role="checkbox"]')) return;
-                    togglePerguntaPermitida(option.id, !isChecked);
-                  }}
+                  onClick={() => togglePerguntaPermitida(option.id, !isChecked)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault();
@@ -311,6 +307,7 @@ export default function IAConfigQualificacao({ config, onSave, saving }: Props) 
                   <Checkbox 
                     checked={isChecked}
                     onCheckedChange={(checked) => togglePerguntaPermitida(option.id, !!checked)}
+                    onClick={(e) => e.stopPropagation()}
                     className="mt-0.5"
                   />
                   <div className="flex-1">
