@@ -37,16 +37,17 @@ const SUGESTOES = [
 ];
 
 // Função para detectar e extrair marcadores de mídia do conteúdo
+// Formato: [FOTO_PRODUTO:url:nome] ou [VIDEO_PRODUTO:url:nome]
 function parseMediaFromContent(content: string): { cleanContent: string; media: MediaItem[] } {
-  const mediaRegex = /\[(IMAGE|VIDEO):([^\|]+)\|([^\]]+)\]/g;
+  const mediaRegex = /\[(FOTO_PRODUTO|VIDEO_PRODUTO):([^:\]]+):([^\]]+)\]/g;
   const media: MediaItem[] = [];
   let match;
   
   while ((match = mediaRegex.exec(content)) !== null) {
     media.push({
-      type: match[1].toLowerCase() as "image" | "video",
-      url: match[2],
-      productName: match[3]
+      type: match[1] === "FOTO_PRODUTO" ? "image" : "video",
+      url: match[2].trim(),
+      productName: match[3].trim()
     });
   }
   
