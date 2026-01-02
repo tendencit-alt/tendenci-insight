@@ -5,14 +5,21 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Bot, Send, Trash2, Loader2, User, RefreshCw, MessageSquare, Lock, AlertCircle } from "lucide-react";
+import { Bot, Send, Trash2, Loader2, User, RefreshCw, MessageSquare, Lock, AlertCircle, Image, Video } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
+interface MediaItem {
+  type: "image" | "video";
+  url: string;
+  productName: string;
+}
+
 interface Message {
   role: "user" | "assistant";
   content: string;
+  media?: MediaItem[];
 }
 
 interface IAAgentTesterProps {
@@ -23,11 +30,31 @@ interface IAAgentTesterProps {
 
 const SUGESTOES = [
   "Olá!",
-  "Quanto custa um armário planejado?",
+  "Quero ver fotos dos produtos",
+  "Me mostra a poltrona",
+  "Quanto custa?",
   "Vocês fazem entrega?",
-  "Quero saber mais sobre os produtos",
-  "Estou com pressa, preciso pra semana que vem",
 ];
+
+// Função para detectar e extrair marcadores de mídia do conteúdo
+function parseMediaFromContent(content: string): { cleanContent: string; media: MediaItem[] } {
+  const mediaRegex = /\[(IMAGE|VIDEO):([^\|]+)\|([^\]]+)\]/g;
+  const media: MediaItem[] = [];
+  let match;
+  
+  while ((match = mediaRegex.exec(content)) !== null) {
+    media.push({
+      type: match[1].toLowerCase() as "image" | "video",
+      url: match[2],
+      productName: match[3]
+    });
+  }
+  
+  // Remover marcadores do texto
+  const cleanContent = content.replace(mediaRegex, "").trim();
+  
+  return { cleanContent, media };
+}
 
 export function IAAgentTester({ isConfigComplete, completedSections, totalSections }: IAAgentTesterProps) {
   const progressPercentage = totalSections > 0 ? Math.round((completedSections / totalSections) * 100) : 0;
@@ -93,7 +120,7 @@ export function IAAgentTester({ isConfigComplete, completedSections, totalSectio
             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           },
           body: JSON.stringify({
-            messages: [...messages, userMessage],
+            messages: [...messages.map(m => ({ role: m.role, content: m.content })), { role: "user", content: text.trim() }],
             masterPrompt,
           }),
         }
@@ -141,11 +168,19 @@ export function IAAgentTester({ isConfigComplete, completedSections, totalSectio
             const content = parsed.choices?.[0]?.delta?.content;
             if (content) {
               assistantContent += content;
+              
+              // Parse mídia do conteúdo atual
+              const { cleanContent, media } = parseMediaFromContent(assistantContent);
+              
               setMessages(prev => {
                 const updated = [...prev];
                 const lastIdx = updated.length - 1;
                 if (updated[lastIdx]?.role === "assistant") {
-                  updated[lastIdx] = { ...updated[lastIdx], content: assistantContent };
+                  updated[lastIdx] = { 
+                    ...updated[lastIdx], 
+                    content: cleanContent,
+                    media: media.length > 0 ? media : undefined
+                  };
                 }
                 return updated;
               });
@@ -186,7 +221,7 @@ export function IAAgentTester({ isConfigComplete, completedSections, totalSectio
             <div>
               <CardTitle>Testar Agente IA</CardTitle>
               <CardDescription>
-                Complete todas as configurações para testar o agente
+                Complete as configurações mínimas para testar o agente
               </CardDescription>
             </div>
           </div>
@@ -197,9 +232,9 @@ export function IAAgentTester({ isConfigComplete, completedSections, totalSectio
               <Lock className="h-8 w-8 text-muted-foreground" />
             </div>
             <div>
-              <h3 className="font-medium">Configure todas as seções primeiro</h3>
+              <h3 className="font-medium">Configure as seções obrigatórias primeiro</h3>
               <p className="text-sm text-muted-foreground mt-1">
-                Complete todas as configurações para liberar o teste do agente
+                Negócio, Identidade e Comunicação são necessárias para o agente funcionar
               </p>
             </div>
             <div className="max-w-xs mx-auto space-y-2">
@@ -237,7 +272,7 @@ export function IAAgentTester({ isConfigComplete, completedSections, totalSectio
                 {isLoadingPrompt && <Loader2 className="h-4 w-4 animate-spin" />}
               </CardTitle>
               <CardDescription>
-                Simule uma conversa com o agente usando as configurações atuais
+                Simule uma conversa com o agente - suporta envio de fotos e vídeos
               </CardDescription>
             </div>
           </div>
@@ -285,7 +320,7 @@ export function IAAgentTester({ isConfigComplete, completedSections, totalSectio
               <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
                 <MessageSquare className="h-12 w-12 mb-3 opacity-30" />
                 <p className="text-sm">Envie uma mensagem para começar a conversa</p>
-                <p className="text-xs mt-1">Clique em uma sugestão ou digite abaixo</p>
+                <p className="text-xs mt-1">Experimente pedir para ver fotos dos produtos!</p>
               </div>
             ) : (
               <div className="space-y-4">
@@ -318,6 +353,58 @@ export function IAAgentTester({ isConfigComplete, completedSections, totalSectio
                           </span>
                         )}
                       </p>
+                      
+                      {/* Renderizar mídia */}
+                      {message.media && message.media.length > 0 && (
+                        <div className="mt-3 space-y-2">
+                          {message.media.map((m, mediaIdx) => (
+                            <div key={mediaIdx} className="rounded-lg overflow-hidden border bg-background">
+                              {m.type === "image" ? (
+                                <div className="relative">
+                                  <img 
+                                    src={m.url} 
+                                    alt={m.productName} 
+                                    className="w-full h-auto max-h-48 object-cover"
+                                    onError={(e) => {
+                                      // Fallback para imagem quebrada
+                                      (e.target as HTMLImageElement).style.display = 'none';
+                                      (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                                    }}
+                                  />
+                                  <div className="hidden flex-col items-center justify-center h-32 bg-muted text-muted-foreground">
+                                    <Image className="h-8 w-8 mb-2 opacity-50" />
+                                    <span className="text-xs">Imagem indisponível</span>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="relative">
+                                  <video 
+                                    src={m.url} 
+                                    controls 
+                                    className="w-full h-auto max-h-48"
+                                    onError={(e) => {
+                                      (e.target as HTMLVideoElement).style.display = 'none';
+                                      (e.target as HTMLVideoElement).nextElementSibling?.classList.remove('hidden');
+                                    }}
+                                  />
+                                  <div className="hidden flex-col items-center justify-center h-32 bg-muted text-muted-foreground">
+                                    <Video className="h-8 w-8 mb-2 opacity-50" />
+                                    <span className="text-xs">Vídeo indisponível</span>
+                                  </div>
+                                </div>
+                              )}
+                              <div className="p-2 bg-muted/50 flex items-center gap-2">
+                                {m.type === "image" ? (
+                                  <Image className="h-3 w-3 text-muted-foreground" />
+                                ) : (
+                                  <Video className="h-3 w-3 text-muted-foreground" />
+                                )}
+                                <span className="text-xs text-muted-foreground">{m.productName}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                     {message.role === "user" && (
                       <div className="flex-shrink-0 w-8 h-8 rounded-full bg-muted flex items-center justify-center">
@@ -350,7 +437,7 @@ export function IAAgentTester({ isConfigComplete, completedSections, totalSectio
         </div>
 
         <p className="text-xs text-muted-foreground text-center">
-          Este teste usa as configurações atuais salvas. Salve as alterações antes de testar.
+          Este teste usa as configurações atuais. Peça para ver fotos dos produtos cadastrados!
         </p>
       </CardContent>
     </Card>
