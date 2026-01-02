@@ -86,3 +86,6 @@ verify_jwt = false
 
 [functions.transcribe-audio-gemini]
 verify_jwt = false
+
+[functions.test-agent-chat]
+verify_jwt = false
