@@ -107,6 +107,11 @@ export default function IAConfigQualificacao({ config, onSave, saving }: Props) 
   );
   const [novaPergunta, setNovaPergunta] = useState("");
 
+  // Garantir que arrays sempre existam (proteção contra dados do localStorage incompletos)
+  const perguntasPermitidas = form.perguntas_permitidas || [];
+  const perguntasObrigatorias = form.perguntas_obrigatorias || [];
+  const criteriosLead = form.criterios_lead || { quente: '', morno: '', frio: '' };
+
   useEffect(() => {
     if (config && !hasRestoredData) {
       const criterios = config.criterios_lead as Record<string, string> || {};
@@ -129,7 +134,7 @@ export default function IAConfigQualificacao({ config, onSave, saving }: Props) 
     if (novaPergunta.trim()) {
       setForm((prev) => ({
         ...prev,
-        perguntas_obrigatorias: [...prev.perguntas_obrigatorias, novaPergunta.trim()]
+        perguntas_obrigatorias: [...(prev.perguntas_obrigatorias || []), novaPergunta.trim()]
       }));
       setNovaPergunta("");
     }
@@ -138,17 +143,20 @@ export default function IAConfigQualificacao({ config, onSave, saving }: Props) 
   const removePergunta = (index: number) => {
     setForm((prev) => ({
       ...prev,
-      perguntas_obrigatorias: prev.perguntas_obrigatorias.filter((_, i) => i !== index)
+      perguntas_obrigatorias: (prev.perguntas_obrigatorias || []).filter((_, i) => i !== index)
     }));
   };
 
   const togglePerguntaPermitida = (id: string, checked: boolean) => {
-    setForm((prev) => ({
-      ...prev,
-      perguntas_permitidas: checked
-        ? [...prev.perguntas_permitidas, id]
-        : prev.perguntas_permitidas.filter(p => p !== id)
-    }));
+    setForm((prev) => {
+      const currentPerguntas = prev.perguntas_permitidas || [];
+      return {
+        ...prev,
+        perguntas_permitidas: checked
+          ? [...currentPerguntas, id]
+          : currentPerguntas.filter(p => p !== id)
+      };
+    });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -276,7 +284,7 @@ export default function IAConfigQualificacao({ config, onSave, saving }: Props) 
           <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
             {perguntasPermitidasOptions.map((option) => {
               const Icon = option.icon;
-              const isChecked = form.perguntas_permitidas.includes(option.id);
+              const isChecked = perguntasPermitidas.includes(option.id);
               return (
                 <div
                   key={option.id}
@@ -378,7 +386,7 @@ export default function IAConfigQualificacao({ config, onSave, saving }: Props) 
           </div>
 
           <div className="space-y-2">
-            {form.perguntas_obrigatorias.map((pergunta, index) => (
+            {perguntasObrigatorias.map((pergunta, index) => (
               <div key={index} className="flex items-center gap-2 p-3 bg-muted rounded-lg">
                 <span className="text-sm text-muted-foreground mr-2">{index + 1}.</span>
                 <span className="flex-1 text-sm">{pergunta}</span>
@@ -392,7 +400,7 @@ export default function IAConfigQualificacao({ config, onSave, saving }: Props) 
                 </Button>
               </div>
             ))}
-            {form.perguntas_obrigatorias.length === 0 && (
+            {perguntasObrigatorias.length === 0 && (
               <div className="p-4 bg-muted/50 rounded-lg border border-dashed">
                 <p className="text-sm text-muted-foreground text-center">
                   Nenhuma pergunta obrigatória configurada.<br />
@@ -414,10 +422,10 @@ export default function IAConfigQualificacao({ config, onSave, saving }: Props) 
                 <span className="text-sm font-medium">Lead Quente</span>
               </div>
               <EnhancedTextarea
-                value={form.criterios_lead.quente}
+                value={criteriosLead.quente}
                 onChange={(value) => setForm((prev) => ({
                   ...prev,
-                  criterios_lead: { ...prev.criterios_lead, quente: value }
+                  criterios_lead: { ...(prev.criterios_lead || { quente: '', morno: '', frio: '' }), quente: value }
                 }))}
                 placeholder="Ex: Tem orçamento definido, prazo curto, já conhece a empresa..."
                 rows={4}
@@ -431,10 +439,10 @@ export default function IAConfigQualificacao({ config, onSave, saving }: Props) 
                 <span className="text-sm font-medium">Lead Morno</span>
               </div>
               <EnhancedTextarea
-                value={form.criterios_lead.morno}
+                value={criteriosLead.morno}
                 onChange={(value) => setForm((prev) => ({
                   ...prev,
-                  criterios_lead: { ...prev.criterios_lead, morno: value }
+                  criterios_lead: { ...(prev.criterios_lead || { quente: '', morno: '', frio: '' }), morno: value }
                 }))}
                 placeholder="Ex: Interessado mas sem urgência, pesquisando opções..."
                 rows={4}
@@ -448,10 +456,10 @@ export default function IAConfigQualificacao({ config, onSave, saving }: Props) 
                 <span className="text-sm font-medium">Lead Frio</span>
               </div>
               <EnhancedTextarea
-                value={form.criterios_lead.frio}
+                value={criteriosLead.frio}
                 onChange={(value) => setForm((prev) => ({
                   ...prev,
-                  criterios_lead: { ...prev.criterios_lead, frio: value }
+                  criterios_lead: { ...(prev.criterios_lead || { quente: '', morno: '', frio: '' }), frio: value }
                 }))}
                 placeholder="Ex: Apenas curiosidade, sem orçamento definido..."
                 rows={4}
