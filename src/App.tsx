@@ -39,6 +39,7 @@ import Purchases from "./pages/Purchases";
 import SystemErrors from "./pages/SystemErrors";
 import ActivityCenter from "./pages/ActivityCenter";
 import AutomacoesDocumentacao from "./pages/AutomacoesDocumentacao";
+import IAConfiguracao from "./pages/IAConfiguracao";
 
 const queryClient = new QueryClient();
 
@@ -84,6 +85,7 @@ const App = () => (
             <Route path="/system-errors" element={<ProtectedRoute><SystemErrors /></ProtectedRoute>} />
             <Route path="/atividades" element={<ProtectedRoute><ActivityCenter /></ProtectedRoute>} />
             <Route path="/automacoes" element={<ProtectedRoute><AutomacoesDocumentacao /></ProtectedRoute>} />
+            <Route path="/ia-configuracao" element={<ProtectedRoute><IAConfiguracao /></ProtectedRoute>} />
             {/* Rotas dinâmicas - verificar se é uma rota editada antes de mostrar 404 */}
             <Route path="*" element={
               <ProtectedRoute>

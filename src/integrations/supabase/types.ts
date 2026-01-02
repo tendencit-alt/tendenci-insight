@@ -4990,6 +4990,114 @@ export type Database = {
           },
         ]
       }
+      tendenci_ia_config: {
+        Row: {
+          ativa: boolean | null
+          config: Json
+          created_at: string | null
+          id: string
+          secao: string
+          updated_at: string | null
+          updated_by: string | null
+          versao: number | null
+        }
+        Insert: {
+          ativa?: boolean | null
+          config?: Json
+          created_at?: string | null
+          id?: string
+          secao: string
+          updated_at?: string | null
+          updated_by?: string | null
+          versao?: number | null
+        }
+        Update: {
+          ativa?: boolean | null
+          config?: Json
+          created_at?: string | null
+          id?: string
+          secao?: string
+          updated_at?: string | null
+          updated_by?: string | null
+          versao?: number | null
+        }
+        Relationships: []
+      }
+      tendenci_ia_conhecimento: {
+        Row: {
+          ativo: boolean | null
+          categoria: string | null
+          conteudo: string
+          created_at: string | null
+          id: string
+          palavras_chave: string[] | null
+          prioridade: number | null
+          titulo: string
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          categoria?: string | null
+          conteudo: string
+          created_at?: string | null
+          id?: string
+          palavras_chave?: string[] | null
+          prioridade?: number | null
+          titulo: string
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          categoria?: string | null
+          conteudo?: string
+          created_at?: string | null
+          id?: string
+          palavras_chave?: string[] | null
+          prioridade?: number | null
+          titulo?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      tendenci_ia_produtos: {
+        Row: {
+          ativo: boolean | null
+          categoria: string | null
+          created_at: string | null
+          descricao: string | null
+          diferenciais: string[] | null
+          id: string
+          nome: string
+          preco_base: number | null
+          quando_oferecer: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          categoria?: string | null
+          created_at?: string | null
+          descricao?: string | null
+          diferenciais?: string[] | null
+          id?: string
+          nome: string
+          preco_base?: number | null
+          quando_oferecer?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          categoria?: string | null
+          created_at?: string | null
+          descricao?: string | null
+          diferenciais?: string[] | null
+          id?: string
+          nome?: string
+          preco_base?: number | null
+          quando_oferecer?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       tendenci_prospec_arq_agendamentos: {
         Row: {
           architect_id: string
@@ -6151,6 +6259,7 @@ export type Database = {
           title: string
         }[]
       }
+      get_ia_config: { Args: never; Returns: Json }
       get_monthly_goal_records: {
         Args: { p_month?: string; p_vendedor_id?: string }
         Returns: {
