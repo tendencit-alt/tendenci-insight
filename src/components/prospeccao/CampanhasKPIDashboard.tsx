@@ -18,7 +18,7 @@ import {
   CheckCircle,
   User
 } from "lucide-react";
-import { format, startOfDay, endOfDay, subDays, startOfWeek, startOfMonth, endOfMonth } from "date-fns";
+import { format, startOfDay, endOfDay, subDays, startOfWeek, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { DateRange } from "react-day-picker";
 import {
@@ -34,20 +34,18 @@ import {
 
 interface CampaignMetrics {
   total_campanhas: number;
-  total_enviados: number;
-  total_falhas: number;
+  total_envios: number;
   total_respostas: number;
   total_convertidos: number;
-  taxa_entrega: number;
   taxa_resposta: number;
   taxa_conversao: number;
 }
 
 interface EvolutionData {
   data: string;
-  enviados: number;
+  envios: number;
   respostas: number;
-  erros: number;
+  convertidos: number;
 }
 
 interface Vendedor {
@@ -58,23 +56,21 @@ interface Vendedor {
 interface VendorComparison {
   vendedor_id: string;
   vendedor_nome: string;
-  total_campanhas: number;
-  total_enviados: number;
-  total_falhas: number;
+  total_envios: number;
   total_respostas: number;
   total_convertidos: number;
   taxa_resposta: number;
   taxa_conversao: number;
 }
 
-type DatePreset = 'today' | 'yesterday' | 'last7days' | 'thisWeek' | 'thisMonth' | 'custom';
+type DatePreset = 'today' | 'yesterday' | 'last7days' | 'thisWeek' | 'thisMonth' | 'lastMonth' | 'custom';
 
 export function CampanhasKPIDashboard() {
   const [metrics, setMetrics] = useState<CampaignMetrics | null>(null);
   const [evolution, setEvolution] = useState<EvolutionData[]>([]);
   const [vendorComparison, setVendorComparison] = useState<VendorComparison[]>([]);
   const [loading, setLoading] = useState(true);
-  const [datePreset, setDatePreset] = useState<DatePreset>('thisMonth');
+  const [datePreset, setDatePreset] = useState<DatePreset>('lastMonth');
   const [customRange, setCustomRange] = useState<DateRange | undefined>();
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [vendedores, setVendedores] = useState<Vendedor[]>([]);
@@ -95,6 +91,9 @@ export function CampanhasKPIDashboard() {
         return { from: startOfWeek(now, { weekStartsOn: 1 }), to: endOfDay(now) };
       case 'thisMonth':
         return { from: startOfMonth(now), to: endOfMonth(now) };
+      case 'lastMonth':
+        const lastMonth = subMonths(now, 1);
+        return { from: startOfMonth(lastMonth), to: endOfMonth(lastMonth) };
       case 'custom':
         if (customRange?.from && customRange?.to) {
           return { from: startOfDay(customRange.from), to: endOfDay(customRange.to) };
@@ -194,6 +193,7 @@ export function CampanhasKPIDashboard() {
       case 'last7days': return 'Últimos 7 dias';
       case 'thisWeek': return 'Esta semana';
       case 'thisMonth': return 'Este mês';
+      case 'lastMonth': return 'Mês passado';
       case 'custom': 
         if (customRange?.from && customRange?.to) {
           return `${format(customRange.from, 'dd/MM')} - ${format(customRange.to, 'dd/MM')}`;
@@ -280,6 +280,7 @@ export function CampanhasKPIDashboard() {
               <SelectItem value="last7days">Últimos 7 dias</SelectItem>
               <SelectItem value="thisWeek">Esta semana</SelectItem>
               <SelectItem value="thisMonth">Este mês</SelectItem>
+              <SelectItem value="lastMonth">Mês passado</SelectItem>
               <SelectItem value="custom">Personalizado</SelectItem>
             </SelectContent>
           </Select>
@@ -309,7 +310,7 @@ export function CampanhasKPIDashboard() {
       </div>
 
       {/* KPIs Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         <KPICard 
           title="Campanhas" 
           value={metrics?.total_campanhas || 0} 
@@ -317,19 +318,13 @@ export function CampanhasKPIDashboard() {
         />
         <KPICard 
           title="Mensagens Enviadas" 
-          value={metrics?.total_enviados || 0} 
+          value={metrics?.total_envios || 0} 
           icon={Send}
         />
         <KPICard 
-          title="Falhas de Envio" 
-          value={metrics?.total_falhas || 0} 
-          icon={XCircle}
-        />
-        <KPICard 
-          title="Taxa de Entrega" 
-          value={metrics?.taxa_entrega || 0} 
-          suffix="%" 
-          icon={CheckCircle}
+          title="Respostas Recebidas" 
+          value={metrics?.total_respostas || 0} 
+          icon={MessageCircle}
         />
       </div>
 
@@ -407,7 +402,7 @@ export function CampanhasKPIDashboard() {
                   <Legend />
                   <Line 
                     type="monotone" 
-                    dataKey="enviados" 
+                    dataKey="envios" 
                     name="Enviados"
                     stroke="hsl(var(--primary))" 
                     strokeWidth={2}
@@ -423,11 +418,11 @@ export function CampanhasKPIDashboard() {
                   />
                   <Line 
                     type="monotone" 
-                    dataKey="erros" 
-                    name="Erros"
-                    stroke="hsl(0, 84%, 60%)" 
+                    dataKey="convertidos" 
+                    name="Convertidos"
+                    stroke="hsl(220, 90%, 56%)" 
                     strokeWidth={2}
-                    dot={{ fill: 'hsl(0, 84%, 60%)' }}
+                    dot={{ fill: 'hsl(220, 90%, 56%)' }}
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -451,20 +446,18 @@ export function CampanhasKPIDashboard() {
                 <thead>
                   <tr className="border-b border-border">
                     <th className="text-left py-2 px-3 font-medium text-muted-foreground">Vendedor</th>
-                    <th className="text-center py-2 px-3 font-medium text-muted-foreground">Campanhas</th>
-                    <th className="text-center py-2 px-3 font-medium text-muted-foreground">Arquitetos</th>
+                    <th className="text-center py-2 px-3 font-medium text-muted-foreground">Envios</th>
                     <th className="text-center py-2 px-3 font-medium text-muted-foreground">Respostas</th>
                     <th className="text-center py-2 px-3 font-medium text-muted-foreground">Convertidos</th>
-                    <th className="text-center py-2 px-3 font-medium text-muted-foreground">Contato Iniciado</th>
-                    <th className="text-center py-2 px-3 font-medium text-muted-foreground">Taxa Ativação</th>
+                    <th className="text-center py-2 px-3 font-medium text-muted-foreground">Taxa Resposta</th>
+                    <th className="text-center py-2 px-3 font-medium text-muted-foreground">Taxa Conversão</th>
                   </tr>
                 </thead>
                 <tbody>
                   {vendorComparison.map((vendor, idx) => (
                     <tr key={vendor.vendedor_id} className={idx % 2 === 0 ? 'bg-muted/30' : ''}>
                       <td className="py-2 px-3 font-medium">{vendor.vendedor_nome}</td>
-                      <td className="text-center py-2 px-3">{vendor.total_campanhas}</td>
-                      <td className="text-center py-2 px-3">{vendor.total_enviados}</td>
+                      <td className="text-center py-2 px-3">{vendor.total_envios}</td>
                       <td className="text-center py-2 px-3">{vendor.total_respostas}</td>
                       <td className="text-center py-2 px-3">{vendor.total_convertidos}</td>
                       <td className="text-center py-2 px-3">
