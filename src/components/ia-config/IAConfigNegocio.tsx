@@ -2,11 +2,10 @@ import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Save } from "lucide-react";
 import { useFormPersistence } from "@/hooks/useFormPersistence";
 import { FormSaveIndicator } from "@/components/ui/FormSaveIndicator";
-
+import { EnhancedTextarea } from "@/components/ui/enhanced-textarea";
 interface Props {
   config: Record<string, unknown>;
   onSave: (config: Record<string, unknown>) => void;
@@ -91,16 +90,14 @@ export default function IAConfigNegocio({ config, onSave, saving }: Props) {
         </div>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="descricao">Descrição do Negócio (para contextualizar a IA)</Label>
-        <Textarea
-          id="descricao"
-          value={form.descricao}
-          onChange={(e) => setForm({ ...form, descricao: e.target.value })}
-          placeholder="Descreva seu negócio, história, diferenciais, público-alvo..."
-          rows={5}
-        />
-      </div>
+      <EnhancedTextarea
+        label="Descrição do Negócio (para contextualizar a IA)"
+        value={form.descricao}
+        onChange={(value) => setForm({ ...form, descricao: value })}
+        placeholder="Descreva seu negócio, história, diferenciais, público-alvo..."
+        rows={5}
+        context="Descrição do negócio para IA"
+      />
 
       <div className="flex justify-end">
         <Button type="submit" disabled={saving}>

@@ -2,11 +2,11 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Save, Plus, Trash2 } from "lucide-react";
 import { useFormPersistence } from "@/hooks/useFormPersistence";
 import { FormSaveIndicator } from "@/components/ui/FormSaveIndicator";
+import { EnhancedTextarea } from "@/components/ui/enhanced-textarea";
 
 interface Props {
   config: Record<string, unknown>;
@@ -146,53 +146,53 @@ export default function IAConfigQualificacao({ config, onSave, saving }: Props) 
         
         <div className="grid gap-4 md:grid-cols-3">
           <div className="space-y-2">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 mb-2">
               <div className="h-3 w-3 rounded-full bg-green-500" />
-              <Label htmlFor="lead_quente">Lead Quente</Label>
+              <span className="text-sm font-medium">Lead Quente</span>
             </div>
-            <Textarea
-              id="lead_quente"
+            <EnhancedTextarea
               value={form.criterios_lead.quente}
-              onChange={(e) => setForm({
+              onChange={(value) => setForm({
                 ...form,
-                criterios_lead: { ...form.criterios_lead, quente: e.target.value }
+                criterios_lead: { ...form.criterios_lead, quente: value }
               })}
               placeholder="Ex: Tem orçamento definido, prazo curto, já conhece a empresa..."
               rows={4}
+              context="Critérios para classificar lead como quente"
             />
           </div>
 
           <div className="space-y-2">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 mb-2">
               <div className="h-3 w-3 rounded-full bg-yellow-500" />
-              <Label htmlFor="lead_morno">Lead Morno</Label>
+              <span className="text-sm font-medium">Lead Morno</span>
             </div>
-            <Textarea
-              id="lead_morno"
+            <EnhancedTextarea
               value={form.criterios_lead.morno}
-              onChange={(e) => setForm({
+              onChange={(value) => setForm({
                 ...form,
-                criterios_lead: { ...form.criterios_lead, morno: e.target.value }
+                criterios_lead: { ...form.criterios_lead, morno: value }
               })}
               placeholder="Ex: Interessado mas sem urgência, pesquisando opções..."
               rows={4}
+              context="Critérios para classificar lead como morno"
             />
           </div>
 
           <div className="space-y-2">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 mb-2">
               <div className="h-3 w-3 rounded-full bg-blue-500" />
-              <Label htmlFor="lead_frio">Lead Frio</Label>
+              <span className="text-sm font-medium">Lead Frio</span>
             </div>
-            <Textarea
-              id="lead_frio"
+            <EnhancedTextarea
               value={form.criterios_lead.frio}
-              onChange={(e) => setForm({
+              onChange={(value) => setForm({
                 ...form,
-                criterios_lead: { ...form.criterios_lead, frio: e.target.value }
+                criterios_lead: { ...form.criterios_lead, frio: value }
               })}
               placeholder="Ex: Apenas curiosidade, sem orçamento definido..."
               rows={4}
+              context="Critérios para classificar lead como frio"
             />
           </div>
         </div>

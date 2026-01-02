@@ -2,10 +2,10 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Save, Plus, Trash2 } from "lucide-react";
 import { useFormPersistence } from "@/hooks/useFormPersistence";
 import { FormSaveIndicator } from "@/components/ui/FormSaveIndicator";
+import { EnhancedTextarea } from "@/components/ui/enhanced-textarea";
 
 interface Props {
   config: Record<string, unknown>;
@@ -168,28 +168,24 @@ export default function IAConfigVendas({ config, onSave, saving }: Props) {
       </div>
 
       {/* Quando Transferir */}
-      <div className="space-y-2">
-        <Label htmlFor="quando_transferir">Quando Transferir para Humano</Label>
-        <Textarea
-          id="quando_transferir"
-          value={form.quando_transferir}
-          onChange={(e) => setForm({ ...form, quando_transferir: e.target.value })}
-          placeholder="Ex: Quando o cliente pedir para falar com alguém, reclamações, valores acima de X..."
-          rows={3}
-        />
-      </div>
+      <EnhancedTextarea
+        label="Quando Transferir para Humano"
+        value={form.quando_transferir}
+        onChange={(value) => setForm({ ...form, quando_transferir: value })}
+        placeholder="Ex: Quando o cliente pedir para falar com alguém, reclamações, valores acima de X..."
+        rows={3}
+        context="Critérios para transferir atendimento para humano"
+      />
 
       {/* Script de Follow-up */}
-      <div className="space-y-2">
-        <Label htmlFor="script_followup">Script de Follow-up</Label>
-        <Textarea
-          id="script_followup"
-          value={form.script_followup}
-          onChange={(e) => setForm({ ...form, script_followup: e.target.value })}
-          placeholder="Modelo de mensagem para follow-up após alguns dias sem resposta..."
-          rows={3}
-        />
-      </div>
+      <EnhancedTextarea
+        label="Script de Follow-up"
+        value={form.script_followup}
+        onChange={(value) => setForm({ ...form, script_followup: value })}
+        placeholder="Modelo de mensagem para follow-up após alguns dias sem resposta..."
+        rows={3}
+        context="Script de follow-up de vendas"
+      />
 
       {/* Promoções Ativas */}
       <div className="space-y-3">

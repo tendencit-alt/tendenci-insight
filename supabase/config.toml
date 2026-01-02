@@ -80,3 +80,9 @@ verify_jwt = false
 
 [functions.get-ia-data]
 verify_jwt = false
+
+[functions.improve-text]
+verify_jwt = false
+
+[functions.transcribe-audio-gemini]
+verify_jwt = false

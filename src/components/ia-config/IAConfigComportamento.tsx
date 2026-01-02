@@ -2,11 +2,11 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Save, Plus, Trash2 } from "lucide-react";
 import { useFormPersistence } from "@/hooks/useFormPersistence";
 import { FormSaveIndicator } from "@/components/ui/FormSaveIndicator";
+import { EnhancedTextarea } from "@/components/ui/enhanced-textarea";
 
 interface Props {
   config: Record<string, unknown>;
@@ -107,40 +107,34 @@ export default function IAConfigComportamento({ config, onSave, saving }: Props)
       </div>
 
       {/* Limites de Negociação */}
-      <div className="space-y-2">
-        <Label htmlFor="limites_negociacao">Limites de Negociação</Label>
-        <Textarea
-          id="limites_negociacao"
-          value={form.limites_negociacao}
-          onChange={(e) => setForm({ ...form, limites_negociacao: e.target.value })}
-          placeholder="Ex: Desconto máximo de 10%, não parcelar em mais de 12x, não incluir frete grátis para pedidos abaixo de R$500..."
-          rows={4}
-        />
-      </div>
+      <EnhancedTextarea
+        label="Limites de Negociação"
+        value={form.limites_negociacao}
+        onChange={(value) => setForm({ ...form, limites_negociacao: value })}
+        placeholder="Ex: Desconto máximo de 10%, não parcelar em mais de 12x, não incluir frete grátis para pedidos abaixo de R$500..."
+        rows={4}
+        context="Limites de negociação para vendas"
+      />
 
       {/* Quando pedir ajuda */}
-      <div className="space-y-2">
-        <Label htmlFor="pedir_ajuda_quando">Quando Pedir Ajuda de um Humano</Label>
-        <Textarea
-          id="pedir_ajuda_quando"
-          value={form.pedir_ajuda_quando}
-          onChange={(e) => setForm({ ...form, pedir_ajuda_quando: e.target.value })}
-          placeholder="Ex: Reclamações graves, solicitação de reembolso, dúvidas técnicas complexas, cliente muito insatisfeito..."
-          rows={4}
-        />
-      </div>
+      <EnhancedTextarea
+        label="Quando Pedir Ajuda de um Humano"
+        value={form.pedir_ajuda_quando}
+        onChange={(value) => setForm({ ...form, pedir_ajuda_quando: value })}
+        placeholder="Ex: Reclamações graves, solicitação de reembolso, dúvidas técnicas complexas, cliente muito insatisfeito..."
+        rows={4}
+        context="Situações para pedir ajuda humana"
+      />
 
       {/* Clientes difíceis */}
-      <div className="space-y-2">
-        <Label htmlFor="clientes_dificeis">Como Lidar com Clientes Difíceis</Label>
-        <Textarea
-          id="clientes_dificeis"
-          value={form.clientes_dificeis}
-          onChange={(e) => setForm({ ...form, clientes_dificeis: e.target.value })}
-          placeholder="Ex: Manter a calma, não discutir, validar sentimentos, oferecer soluções, escalar se necessário..."
-          rows={4}
-        />
-      </div>
+      <EnhancedTextarea
+        label="Como Lidar com Clientes Difíceis"
+        value={form.clientes_dificeis}
+        onChange={(value) => setForm({ ...form, clientes_dificeis: value })}
+        placeholder="Ex: Manter a calma, não discutir, validar sentimentos, oferecer soluções, escalar se necessário..."
+        rows={4}
+        context="Estratégias para lidar com clientes difíceis"
+      />
 
       <div className="flex justify-end">
         <Button type="submit" disabled={saving}>
