@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Building2, User, MessageSquare, Target, ShoppingCart, Package, Brain, Shield, BookOpen, Loader2, Check } from "lucide-react";
+import { ArrowLeft, Building2, User, MessageSquare, Target, ShoppingCart, Package, Brain, Shield, BookOpen, Loader2, Check, ExternalLink, Workflow } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
 import { toast } from "sonner";
@@ -139,6 +139,27 @@ export default function IAConfiguracao() {
       </div>
 
       <div className="container mx-auto px-4 py-6 space-y-6">
+        {/* Card de Integração n8n */}
+        <Card className="border-primary/20 bg-gradient-to-r from-primary/5 to-transparent">
+          <CardContent className="flex items-center justify-between py-4">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-primary/10 rounded-lg">
+                <Workflow className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-semibold">Integração com n8n</h3>
+                <p className="text-sm text-muted-foreground">
+                  Configure seu workflow n8n para usar as configurações e dados cadastrados aqui
+                </p>
+              </div>
+            </div>
+            <Button onClick={() => navigate("/n8n-conversa")} className="gap-2">
+              <ExternalLink className="h-4 w-4" />
+              Ver Documentação
+            </Button>
+          </CardContent>
+        </Card>
+
         <MasterPromptPreview />
         
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
