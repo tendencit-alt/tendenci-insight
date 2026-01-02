@@ -2,8 +2,9 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Save, Plus, Trash2, GripVertical } from "lucide-react";
+import { useFormPersistence } from "@/hooks/useFormPersistence";
+import { FormSaveIndicator } from "@/components/ui/FormSaveIndicator";
 
 interface Props {
   config: Record<string, unknown>;
@@ -16,13 +17,19 @@ interface Regra {
   descricao: string;
 }
 
+const initialForm = {
+  regras_personalizadas: [] as Regra[],
+  condicoes_especiais: [] as string[],
+  excecoes: [] as string[],
+  prioridades: [] as string[],
+};
+
 export default function IAConfigRegras({ config, onSave, saving }: Props) {
-  const [form, setForm] = useState({
-    regras_personalizadas: [] as Regra[],
-    condicoes_especiais: [] as string[],
-    excecoes: [] as string[],
-    prioridades: [] as string[],
-  });
+  const [form, setForm, clearPersistedData, hasRestoredData] = useFormPersistence(
+    'ia_config_regras',
+    initialForm,
+    true
+  );
 
   const [novaRegra, setNovaRegra] = useState({ titulo: "", descricao: "" });
   const [novaCondicao, setNovaCondicao] = useState("");
@@ -30,7 +37,7 @@ export default function IAConfigRegras({ config, onSave, saving }: Props) {
   const [novaPrioridade, setNovaPrioridade] = useState("");
 
   useEffect(() => {
-    if (config) {
+    if (config && !hasRestoredData) {
       setForm({
         regras_personalizadas: (config.regras_personalizadas as Regra[]) || [],
         condicoes_especiais: (config.condicoes_especiais as string[]) || [],
@@ -38,7 +45,7 @@ export default function IAConfigRegras({ config, onSave, saving }: Props) {
         prioridades: (config.prioridades as string[]) || [],
       });
     }
-  }, [config]);
+  }, [config, hasRestoredData]);
 
   const addRegra = () => {
     if (novaRegra.titulo.trim() && novaRegra.descricao.trim()) {
@@ -75,10 +82,12 @@ export default function IAConfigRegras({ config, onSave, saving }: Props) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSave(form);
+    clearPersistedData();
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      <FormSaveIndicator hasRestoredData={hasRestoredData} />
       {/* Regras Personalizadas */}
       <div className="space-y-3">
         <Label>📋 Regras de Negócio Personalizadas</Label>

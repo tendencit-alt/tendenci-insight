@@ -5,6 +5,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Save, Plus, Trash2 } from "lucide-react";
+import { useFormPersistence } from "@/hooks/useFormPersistence";
+import { FormSaveIndicator } from "@/components/ui/FormSaveIndicator";
 
 interface Props {
   config: Record<string, unknown>;
@@ -12,18 +14,24 @@ interface Props {
   saving: boolean;
 }
 
+const initialForm = {
+  nunca_fazer: [] as string[],
+  limites_negociacao: "",
+  pedir_ajuda_quando: "",
+  clientes_dificeis: "",
+  nivel_insistencia: "moderado",
+};
+
 export default function IAConfigComportamento({ config, onSave, saving }: Props) {
-  const [form, setForm] = useState({
-    nunca_fazer: [] as string[],
-    limites_negociacao: "",
-    pedir_ajuda_quando: "",
-    clientes_dificeis: "",
-    nivel_insistencia: "moderado",
-  });
+  const [form, setForm, clearPersistedData, hasRestoredData] = useFormPersistence(
+    'ia_config_comportamento',
+    initialForm,
+    true
+  );
   const [novoItem, setNovoItem] = useState("");
 
   useEffect(() => {
-    if (config) {
+    if (config && !hasRestoredData) {
       setForm({
         nunca_fazer: (config.nunca_fazer as string[]) || [],
         limites_negociacao: (config.limites_negociacao as string) || "",
@@ -32,7 +40,7 @@ export default function IAConfigComportamento({ config, onSave, saving }: Props)
         nivel_insistencia: (config.nivel_insistencia as string) || "moderado",
       });
     }
-  }, [config]);
+  }, [config, hasRestoredData]);
 
   const addNuncaFazer = () => {
     if (novoItem.trim()) {
@@ -48,10 +56,12 @@ export default function IAConfigComportamento({ config, onSave, saving }: Props)
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSave(form);
+    clearPersistedData();
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      <FormSaveIndicator hasRestoredData={hasRestoredData} />
       {/* O que NUNCA fazer */}
       <div className="space-y-3">
         <Label className="text-destructive">🚫 O que a IA NUNCA deve fazer</Label>

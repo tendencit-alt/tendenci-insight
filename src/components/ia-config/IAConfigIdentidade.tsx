@@ -1,9 +1,11 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Save } from "lucide-react";
+import { useFormPersistence } from "@/hooks/useFormPersistence";
+import { FormSaveIndicator } from "@/components/ui/FormSaveIndicator";
 
 interface Props {
   config: Record<string, unknown>;
@@ -13,17 +15,23 @@ interface Props {
 
 const avatarOptions = ["🤖", "👩‍💼", "👨‍💼", "🧑‍💻", "💁‍♀️", "💁‍♂️", "🤵", "👩‍🔧", "👨‍🔧", "🎯"];
 
+const initialForm = {
+  nome_ia: "Assistente Tendenci",
+  genero: "neutro",
+  personalidade: "profissional",
+  tom_voz: "consultivo",
+  avatar: "🤖",
+};
+
 export default function IAConfigIdentidade({ config, onSave, saving }: Props) {
-  const [form, setForm] = useState({
-    nome_ia: "Assistente Tendenci",
-    genero: "neutro",
-    personalidade: "profissional",
-    tom_voz: "consultivo",
-    avatar: "🤖",
-  });
+  const [form, setForm, clearPersistedData, hasRestoredData] = useFormPersistence(
+    'ia_config_identidade',
+    initialForm,
+    true
+  );
 
   useEffect(() => {
-    if (config) {
+    if (config && !hasRestoredData) {
       setForm({
         nome_ia: (config.nome_ia as string) || "Assistente Tendenci",
         genero: (config.genero as string) || "neutro",
@@ -32,15 +40,17 @@ export default function IAConfigIdentidade({ config, onSave, saving }: Props) {
         avatar: (config.avatar as string) || "🤖",
       });
     }
-  }, [config]);
+  }, [config, hasRestoredData]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSave(form);
+    clearPersistedData();
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      <FormSaveIndicator hasRestoredData={hasRestoredData} />
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="nome_ia">Nome da IA</Label>

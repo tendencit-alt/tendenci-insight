@@ -4,6 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Save, Plus, Trash2 } from "lucide-react";
+import { useFormPersistence } from "@/hooks/useFormPersistence";
+import { FormSaveIndicator } from "@/components/ui/FormSaveIndicator";
 
 interface Props {
   config: Record<string, unknown>;
@@ -11,15 +13,21 @@ interface Props {
   saving: boolean;
 }
 
+const initialForm = {
+  tecnicas: [] as string[],
+  gatilhos_urgencia: [] as string[],
+  objecoes: [] as { objecao: string; resposta: string }[],
+  quando_transferir: "",
+  script_followup: "",
+  promocoes: [] as string[],
+};
+
 export default function IAConfigVendas({ config, onSave, saving }: Props) {
-  const [form, setForm] = useState({
-    tecnicas: [] as string[],
-    gatilhos_urgencia: [] as string[],
-    objecoes: [] as { objecao: string; resposta: string }[],
-    quando_transferir: "",
-    script_followup: "",
-    promocoes: [] as string[],
-  });
+  const [form, setForm, clearPersistedData, hasRestoredData] = useFormPersistence(
+    'ia_config_vendas',
+    initialForm,
+    true
+  );
 
   const [novaTecnica, setNovaTecnica] = useState("");
   const [novoGatilho, setNovoGatilho] = useState("");
@@ -27,7 +35,7 @@ export default function IAConfigVendas({ config, onSave, saving }: Props) {
   const [novaPromocao, setNovaPromocao] = useState("");
 
   useEffect(() => {
-    if (config) {
+    if (config && !hasRestoredData) {
       setForm({
         tecnicas: (config.tecnicas as string[]) || [],
         gatilhos_urgencia: (config.gatilhos_urgencia as string[]) || [],
@@ -37,7 +45,7 @@ export default function IAConfigVendas({ config, onSave, saving }: Props) {
         promocoes: (config.promocoes as string[]) || [],
       });
     }
-  }, [config]);
+  }, [config, hasRestoredData]);
 
   const addItem = (field: "tecnicas" | "gatilhos_urgencia" | "promocoes", value: string, setter: (v: string) => void) => {
     if (value.trim()) {
@@ -64,10 +72,12 @@ export default function IAConfigVendas({ config, onSave, saving }: Props) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSave(form);
+    clearPersistedData();
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      <FormSaveIndicator hasRestoredData={hasRestoredData} />
       {/* Técnicas de Vendas */}
       <div className="space-y-3">
         <Label>Técnicas de Vendas a Usar</Label>
