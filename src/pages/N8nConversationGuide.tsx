@@ -76,6 +76,30 @@ const N8nConversationGuide = () => {
   "position": [1050, 300]
 }`;
 
+  // Endpoint do Prompt Master
+  const promptMasterEndpoint = "https://emnwuzrysqoiwapzmnbv.supabase.co/functions/v1/generate-master-prompt";
+
+  // JSON do nó para buscar prompt master
+  const n8nNodePromptMasterJSON = `{
+  "parameters": {
+    "method": "GET",
+    "url": "${promptMasterEndpoint}",
+    "sendHeaders": true,
+    "headerParameters": {
+      "parameters": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ]
+    }
+  },
+  "name": "Buscar Prompt Master",
+  "type": "n8n-nodes-base.httpRequest",
+  "typeVersion": 4.2,
+  "position": [550, 300]
+}`;
+
   // Workflow completo para importar
   const n8nFullWorkflowJSON = `{
   "name": "Atualizar Conversa IA → CRM Tendenci",
@@ -103,6 +127,25 @@ const N8nConversationGuide = () => {
     },
     {
       "parameters": {
+        "method": "GET",
+        "url": "${promptMasterEndpoint}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        }
+      },
+      "name": "Buscar Prompt Master",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [550, 450]
+    },
+    {
+      "parameters": {
         "method": "POST",
         "url": "${endpointUrl}",
         "sendHeaders": true,
@@ -121,7 +164,7 @@ const N8nConversationGuide = () => {
       "name": "Salvar Mensagem Cliente",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [650, 300]
+      "position": [750, 300]
     },
     {
       "parameters": {
@@ -132,11 +175,11 @@ const N8nConversationGuide = () => {
           "values": [
             {
               "role": "system",
-              "content": "Você é Matheus, consultor comercial da Tendenci Brasil, especializada em móveis de alto padrão. Seja cordial, profissional e objetivo."
+              "content": "={{ $('Buscar Prompt Master').item.json.prompt }}"
             },
             {
               "role": "user",
-              "content": "={{ $json.mensagem }}"
+              "content": "={{ $('Extrair Dados').item.json.mensagem }}"
             }
           ]
         },
@@ -145,7 +188,7 @@ const N8nConversationGuide = () => {
       "name": "OpenAI Chat",
       "type": "@n8n/n8n-nodes-langchain.openAi",
       "typeVersion": 1.8,
-      "position": [850, 300]
+      "position": [950, 300]
     },
     {
       "parameters": {
@@ -154,7 +197,7 @@ const N8nConversationGuide = () => {
       "name": "Formatar Resposta",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1050, 300]
+      "position": [1150, 300]
     },
     {
       "parameters": {
@@ -176,7 +219,7 @@ const N8nConversationGuide = () => {
       "name": "Salvar Resposta IA",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1250, 300]
+      "position": [1350, 300]
     },
     {
       "parameters": {
@@ -202,12 +245,13 @@ const N8nConversationGuide = () => {
       "name": "Enviar via Evolution",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1450, 300]
+      "position": [1550, 300]
     }
   ],
   "connections": {
     "Webhook Trigger": { "main": [[{ "node": "Extrair Dados", "type": "main", "index": 0 }]] },
-    "Extrair Dados": { "main": [[{ "node": "Salvar Mensagem Cliente", "type": "main", "index": 0 }]] },
+    "Extrair Dados": { "main": [[{ "node": "Buscar Prompt Master", "type": "main", "index": 0 }, { "node": "Salvar Mensagem Cliente", "type": "main", "index": 0 }]] },
+    "Buscar Prompt Master": { "main": [[{ "node": "Salvar Mensagem Cliente", "type": "main", "index": 0 }]] },
     "Salvar Mensagem Cliente": { "main": [[{ "node": "OpenAI Chat", "type": "main", "index": 0 }]] },
     "OpenAI Chat": { "main": [[{ "node": "Formatar Resposta", "type": "main", "index": 0 }]] },
     "Formatar Resposta": { "main": [[{ "node": "Salvar Resposta IA", "type": "main", "index": 0 }]] },
@@ -237,80 +281,164 @@ const N8nConversationGuide = () => {
               Fluxo Completo do Workflow
             </CardTitle>
             <CardDescription>
-              Cada mensagem (cliente e IA) é salva no CRM automaticamente
+              Agora com Prompt Master dinâmico! O n8n busca automaticamente a configuração da IA
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-7 gap-2 text-xs text-center">
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-8 gap-1 text-xs text-center">
               <div className="flex flex-col items-center gap-1">
-                <Badge variant="outline" className="py-2 px-2 w-full">
+                <Badge variant="outline" className="py-2 px-1 w-full text-[10px]">
                   <MessageSquare className="h-3 w-3 mr-1" />
                   Webhook
                 </Badge>
-                <span className="text-muted-foreground">Recebe msg</span>
+                <span className="text-muted-foreground text-[10px]">Recebe msg</span>
               </div>
               <div className="flex items-center justify-center">
-                <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                <ArrowRight className="h-3 w-3 text-muted-foreground" />
               </div>
               <div className="flex flex-col items-center gap-1">
-                <Badge variant="outline" className="py-2 px-2 w-full">Extrair Dados</Badge>
-                <span className="text-muted-foreground">Code node</span>
+                <Badge variant="outline" className="py-2 px-1 w-full text-[10px]">Extrair</Badge>
+                <span className="text-muted-foreground text-[10px]">Code</span>
               </div>
               <div className="flex items-center justify-center">
-                <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                <ArrowRight className="h-3 w-3 text-muted-foreground" />
               </div>
               <div className="flex flex-col items-center gap-1">
-                <Badge className="py-2 px-2 w-full bg-blue-600">
+                <Badge className="py-2 px-1 w-full bg-purple-600 text-[10px]">
+                  Prompt Master
+                </Badge>
+                <span className="text-purple-600 font-medium text-[10px]">GET (dinâmico)</span>
+              </div>
+              <div className="flex items-center justify-center">
+                <ArrowRight className="h-3 w-3 text-muted-foreground" />
+              </div>
+              <div className="flex flex-col items-center gap-1">
+                <Badge className="py-2 px-1 w-full bg-blue-600 text-[10px]">
                   <Database className="h-3 w-3 mr-1" />
-                  Salvar Cliente
+                  Salvar Cli
                 </Badge>
-                <span className="text-blue-600 font-medium">HTTP POST</span>
+                <span className="text-blue-600 font-medium text-[10px]">POST</span>
               </div>
               <div className="flex items-center justify-center">
-                <ArrowRight className="h-4 w-4 text-muted-foreground" />
-              </div>
-              <div className="flex flex-col items-center gap-1">
-                <Badge variant="outline" className="py-2 px-2 w-full">
-                  <Bot className="h-3 w-3 mr-1" />
-                  OpenAI
-                </Badge>
-                <span className="text-muted-foreground">Gera resposta</span>
+                <ArrowRight className="h-3 w-3 text-muted-foreground" />
               </div>
             </div>
             
-            <div className="flex justify-end mt-2">
-              <div className="grid grid-cols-5 gap-2 text-xs text-center">
+            <div className="flex justify-end">
+              <div className="grid grid-cols-6 gap-1 text-xs text-center">
+                <div className="flex flex-col items-center gap-1">
+                  <Badge variant="outline" className="py-2 px-1 w-full text-[10px]">
+                    <Bot className="h-3 w-3 mr-1" />
+                    OpenAI
+                  </Badge>
+                  <span className="text-muted-foreground text-[10px]">Usa prompt</span>
+                </div>
                 <div className="flex items-center justify-center">
-                  <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                  <ArrowRight className="h-3 w-3 text-muted-foreground" />
                 </div>
                 <div className="flex flex-col items-center gap-1">
-                  <Badge variant="outline" className="py-2 px-2 w-full">Formatar</Badge>
-                  <span className="text-muted-foreground">Code node</span>
+                  <Badge variant="outline" className="py-2 px-1 w-full text-[10px]">Formatar</Badge>
+                  <span className="text-muted-foreground text-[10px]">Code</span>
                 </div>
                 <div className="flex items-center justify-center">
-                  <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                  <ArrowRight className="h-3 w-3 text-muted-foreground" />
                 </div>
                 <div className="flex flex-col items-center gap-1">
-                  <Badge className="py-2 px-2 w-full bg-green-600">
+                  <Badge className="py-2 px-1 w-full bg-green-600 text-[10px]">
                     <Database className="h-3 w-3 mr-1" />
                     Salvar IA
                   </Badge>
-                  <span className="text-green-600 font-medium">HTTP POST</span>
+                  <span className="text-green-600 font-medium text-[10px]">POST</span>
                 </div>
                 <div className="flex items-center justify-center">
-                  <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                  <ArrowRight className="h-3 w-3 text-muted-foreground" />
                 </div>
+              </div>
+            </div>
+
+            <div className="p-3 rounded-lg bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800">
+              <p className="text-sm text-purple-700 dark:text-purple-300">
+                <strong>✨ Novo:</strong> O nó "Buscar Prompt Master" carrega automaticamente toda a configuração da IA definida na interface. 
+                Alterou o prompt na interface? O n8n já usa a versão atualizada!
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Endpoint Prompt Master */}
+        <Card className="border-purple-200 dark:border-purple-800">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-purple-700 dark:text-purple-300">
+              <Bot className="h-5 w-5" />
+              1. Endpoint do Prompt Master (NOVO!)
+            </CardTitle>
+            <CardDescription>
+              Busca o prompt configurado na interface para usar no nó OpenAI
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center gap-2">
+              <code className="flex-1 bg-muted p-3 rounded text-sm break-all font-mono">
+                {promptMasterEndpoint}
+              </code>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => copyToClipboard(promptMasterEndpoint, "URL Prompt Master")}
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="flex gap-4 text-sm">
+              <Badge variant="secondary" className="bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300">GET</Badge>
+              <span className="text-muted-foreground">Retorna: {"{ prompt, version, updated_at }"}</span>
+            </div>
+
+            <div className="space-y-2">
+              <p className="font-medium text-sm">Como usar no nó OpenAI:</p>
+              <div className="relative">
+                <pre className="bg-muted p-3 rounded text-xs overflow-x-auto font-mono">
+{`{
+  "role": "system",
+  "content": "={{ $('Buscar Prompt Master').item.json.prompt }}"
+}`}
+                </pre>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="absolute top-2 right-2"
+                  onClick={() => copyToClipboard(`={{ $('Buscar Prompt Master').item.json.prompt }}`, "Expression Prompt")}
+                >
+                  <Copy className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
+
+            <div>
+              <p className="font-medium text-sm mb-2">JSON do Nó (importar no n8n):</p>
+              <div className="relative">
+                <pre className="bg-muted p-3 rounded text-xs overflow-x-auto max-h-32 font-mono">
+                  {n8nNodePromptMasterJSON}
+                </pre>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="absolute top-2 right-2"
+                  onClick={() => copyToClipboard(n8nNodePromptMasterJSON, "JSON Nó Prompt Master")}
+                >
+                  <Copy className="h-3 w-3" />
+                </Button>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Endpoint */}
+        {/* Endpoint Conversa */}
         <Card>
           <CardHeader>
-            <CardTitle>1. Endpoint da Edge Function</CardTitle>
+            <CardTitle>2. Endpoint para Salvar Conversas</CardTitle>
             <CardDescription>
-              Use esta URL nos nós HTTP Request do n8n
+              Use esta URL nos nós HTTP Request para salvar mensagens
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -336,7 +464,7 @@ const N8nConversationGuide = () => {
         {/* Tabs para diferentes configurações */}
         <Card>
           <CardHeader>
-            <CardTitle>2. Configuração dos Nós HTTP Request</CardTitle>
+            <CardTitle>3. Configuração dos Nós HTTP Request</CardTitle>
             <CardDescription>
               Você precisará de 2 nós: um para salvar mensagem do cliente, outro para resposta da IA
             </CardDescription>
