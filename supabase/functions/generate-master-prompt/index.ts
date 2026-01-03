@@ -38,11 +38,12 @@ serve(async (req) => {
       console.error('Error fetching products:', productsError);
     }
 
-    // Fetch knowledge base
+    // Fetch knowledge base - ordenar por prioridade
     const { data: conhecimento, error: conhecimentoError } = await supabase
       .from('tendenci_ia_conhecimento')
       .select('*')
-      .eq('ativo', true);
+      .eq('ativo', true)
+      .order('prioridade', { ascending: true });
 
     if (conhecimentoError) {
       console.error('Error fetching conhecimento:', conhecimentoError);
@@ -607,6 +608,12 @@ ${p.diferenciais && p.diferenciais.length > 0 ? `Diferenciais: ${p.diferenciais.
     if (conhecimento && conhecimento.length > 0) {
       let conhecSection = `# BASE DE CONHECIMENTO\n`;
       
+      // Legenda de níveis de autoridade
+      conhecSection += `\n**Legenda de Níveis:**
+- ⚡ **DEFINITIVO** = Informação oficial e inquestionável - use exatamente como está
+- 📋 **ORIENTAÇÃO** = Diretriz a ser seguida normalmente - pode adaptar tom mas não conteúdo
+- 💡 **SUGESTÃO** = Recomendação flexível - pode adaptar conforme contexto\n`;
+      
       // Group by type
       const tiposUnicos = [...new Set(conhecimento.map((c: any) => c.tipo || 'geral'))];
       
@@ -631,7 +638,32 @@ ${p.diferenciais && p.diferenciais.length > 0 ? `Diferenciais: ${p.diferenciais.
         conhecSection += `\n## ${tipoLabel}\n`;
         
         itensDoTipo.forEach((c: any) => {
-          conhecSection += `\n### ${c.titulo}`;
+          // Authority level indicator
+          const nivelAutoridade: string = c.nivel_autoridade || 'orientacao';
+          const nivelIconMap: Record<string, string> = {
+            definitivo: '⚡',
+            orientacao: '📋',
+            sugestao: '💡'
+          };
+          const nivelIcon = nivelIconMap[nivelAutoridade] || '📋';
+          
+          const grauCerteza: string = c.grau_certeza || 'alto';
+          const certezaLabelMap: Record<string, string> = {
+            absoluto: '🎯 ABSOLUTO',
+            alto: '✅ ALTO',
+            medio: '⚠️ MÉDIO',
+            baixo: '❓ BAIXO'
+          };
+          const certezaLabel = certezaLabelMap[grauCerteza] || '';
+          
+          conhecSection += `\n### ${nivelIcon} ${c.titulo}`;
+          
+          // Show authority and certainty badges
+          if (nivelAutoridade === 'definitivo') {
+            conhecSection += `\n**[${nivelIcon} INFORMAÇÃO DEFINITIVA - ${certezaLabel}]**`;
+          } else if (grauCerteza && grauCerteza !== 'alto') {
+            conhecSection += `\n**[Certeza: ${certezaLabel}]**`;
+          }
           
           // Application context
           if (c.aplicacao && Array.isArray(c.aplicacao) && c.aplicacao.length > 0) {
@@ -695,21 +727,38 @@ ${p.diferenciais && p.diferenciais.length > 0 ? `Diferenciais: ${p.diferenciais.
     const comportamento = configs.comportamento || {};
     let compSection = `# COMPORTAMENTO\n`;
     
-    if (comportamento.nunca_fazer && Array.isArray(comportamento.nunca_fazer)) {
-      compSection += `\nNUNCA faça:\n${comportamento.nunca_fazer.map((n: string) => `- ${n}`).join('\n')}\n`;
+    if (comportamento.sempre_fazer && Array.isArray(comportamento.sempre_fazer) && comportamento.sempre_fazer.length > 0) {
+      compSection += `\n## ✅ SEMPRE faça:\n${comportamento.sempre_fazer.map((s: string) => `- ${s}`).join('\n')}\n`;
     }
-    if (comportamento.sempre_fazer && Array.isArray(comportamento.sempre_fazer)) {
-      compSection += `\nSEMPRE faça:\n${comportamento.sempre_fazer.map((s: string) => `- ${s}`).join('\n')}\n`;
+    if (comportamento.nunca_fazer && Array.isArray(comportamento.nunca_fazer) && comportamento.nunca_fazer.length > 0) {
+      compSection += `\n## 🚫 NUNCA faça:\n${comportamento.nunca_fazer.map((n: string) => `- ${n}`).join('\n')}\n`;
     }
-    if (comportamento.limites) {
-      compSection += `\nLimites: ${comportamento.limites}\n`;
+    
+    // Backward compatibility: aceitar campos antigos
+    const limites = comportamento.limites || comportamento.limites_negociacao;
+    if (limites) {
+      compSection += `\n## Limites de Negociação:\n${limites}\n`;
     }
+    
     if (comportamento.nivel_insistencia) {
-      compSection += `Nível de insistência: ${comportamento.nivel_insistencia}\n`;
+      const insistenciaDesc: Record<string, string> = {
+        baixo: 'Baixo (1-2 tentativas, desiste fácil)',
+        moderado: 'Moderado (3-4 tentativas com intervalos)',
+        alto: 'Alto (5+ tentativas, muito persistente)'
+      };
+      compSection += `\n## Nível de Insistência: ${insistenciaDesc[comportamento.nivel_insistencia] || comportamento.nivel_insistencia}\n`;
     }
-    if (comportamento.quando_transferir_humano) {
-      compSection += `Transferir para humano quando: ${comportamento.quando_transferir_humano}`;
+    
+    // Backward compatibility: aceitar campos antigos
+    const quandoTransferir = comportamento.quando_transferir_humano || comportamento.pedir_ajuda_quando;
+    if (quandoTransferir) {
+      compSection += `\n## Transferir para Humano Quando:\n${quandoTransferir}\n`;
     }
+    
+    if (comportamento.clientes_dificeis) {
+      compSection += `\n## Como Lidar com Clientes Difíceis:\n${comportamento.clientes_dificeis}\n`;
+    }
+    
     promptSections.push(compSection);
 
     // 9. REGRAS

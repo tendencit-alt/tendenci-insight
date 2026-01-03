@@ -49,7 +49,22 @@ interface Conhecimento {
   validade: string | null;
   contexto_uso: string | null;
   aplicacao: string[];
+  nivel_autoridade: string | null;
+  grau_certeza: string | null;
 }
+
+const NIVEIS_AUTORIDADE = [
+  { value: "definitivo", label: "⚡ Definitivo", desc: "Informação oficial e inquestionável" },
+  { value: "orientacao", label: "📋 Orientação", desc: "Diretriz a ser seguida normalmente" },
+  { value: "sugestao", label: "💡 Sugestão", desc: "Recomendação flexível" },
+];
+
+const GRAUS_CERTEZA = [
+  { value: "absoluto", label: "🎯 Absoluto", desc: "100% certo, não há exceções" },
+  { value: "alto", label: "✅ Alto", desc: "Muito confiável, raras exceções" },
+  { value: "medio", label: "⚠️ Médio", desc: "Confiável, mas pode variar" },
+  { value: "baixo", label: "❓ Baixo", desc: "Pode estar desatualizado ou variar" },
+];
 
 const TIPOS_CONHECIMENTO = [
   { value: "faq", label: "FAQ", icon: HelpCircle, color: "text-blue-500" },
@@ -108,7 +123,7 @@ export default function IAConfigConhecimento() {
     conteudo: "",
     categoria: "",
     palavras_chave: "",
-    prioridade: 0,
+    prioridade: 3,
     ativo: true,
     tipo: "faq",
     arquivos: [] as ArquivoItem[],
@@ -118,6 +133,8 @@ export default function IAConfigConhecimento() {
     validade: "",
     contexto_uso: "",
     aplicacao: ["geral"] as string[],
+    nivel_autoridade: "orientacao",
+    grau_certeza: "alto",
   });
 
   useEffect(() => {
@@ -171,7 +188,7 @@ export default function IAConfigConhecimento() {
       conteudo: "",
       categoria: "",
       palavras_chave: "",
-      prioridade: 0,
+      prioridade: 3,
       ativo: true,
       tipo: "faq",
       arquivos: [],
@@ -181,6 +198,8 @@ export default function IAConfigConhecimento() {
       validade: "",
       contexto_uso: "",
       aplicacao: ["geral"],
+      nivel_autoridade: "orientacao",
+      grau_certeza: "alto",
     });
     setVideoUrlInput("");
     setDialogOpen(true);
@@ -193,7 +212,7 @@ export default function IAConfigConhecimento() {
       conteudo: item.conteudo,
       categoria: item.categoria || "",
       palavras_chave: item.palavras_chave?.join(", ") || "",
-      prioridade: item.prioridade,
+      prioridade: item.prioridade || 3,
       ativo: item.ativo,
       tipo: item.tipo || "faq",
       arquivos: item.arquivos || [],
@@ -203,6 +222,8 @@ export default function IAConfigConhecimento() {
       validade: item.validade || "",
       contexto_uso: item.contexto_uso || "",
       aplicacao: item.aplicacao || ["geral"],
+      nivel_autoridade: item.nivel_autoridade || "orientacao",
+      grau_certeza: item.grau_certeza || "alto",
     });
     setVideoUrlInput("");
     setDialogOpen(true);
@@ -340,6 +361,8 @@ export default function IAConfigConhecimento() {
         validade: form.validade || null,
         contexto_uso: form.contexto_uso || null,
         aplicacao: form.aplicacao,
+        nivel_autoridade: form.nivel_autoridade || null,
+        grau_certeza: form.grau_certeza || null,
       };
 
       if (editingItem) {
@@ -646,6 +669,76 @@ export default function IAConfigConhecimento() {
                     rows={6}
                     required
                   />
+                </div>
+
+                {/* Authority levels */}
+                <div className="grid gap-4 md:grid-cols-3">
+                  <div className="space-y-2">
+                    <Label>Nível de Autoridade</Label>
+                    <Select
+                      value={form.nivel_autoridade}
+                      onValueChange={(v) => setForm({ ...form, nivel_autoridade: v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {NIVEIS_AUTORIDADE.map((n) => (
+                          <SelectItem key={n.value} value={n.value}>
+                            <div className="flex flex-col">
+                              <span>{n.label}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      {NIVEIS_AUTORIDADE.find(n => n.value === form.nivel_autoridade)?.desc}
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Grau de Certeza</Label>
+                    <Select
+                      value={form.grau_certeza}
+                      onValueChange={(v) => setForm({ ...form, grau_certeza: v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {GRAUS_CERTEZA.map((g) => (
+                          <SelectItem key={g.value} value={g.value}>
+                            <div className="flex flex-col">
+                              <span>{g.label}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      {GRAUS_CERTEZA.find(g => g.value === form.grau_certeza)?.desc}
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Prioridade de Uso (1-5)</Label>
+                    <Select
+                      value={String(form.prioridade)}
+                      onValueChange={(v) => setForm({ ...form, prioridade: Number(v) })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">1 - Mais alta (usar primeiro)</SelectItem>
+                        <SelectItem value="2">2 - Alta</SelectItem>
+                        <SelectItem value="3">3 - Normal</SelectItem>
+                        <SelectItem value="4">4 - Baixa</SelectItem>
+                        <SelectItem value="5">5 - Mais baixa (usar por último)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </div>
 
