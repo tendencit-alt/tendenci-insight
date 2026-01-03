@@ -221,13 +221,21 @@ export function AppNavbar() {
   };
 
   // Categorias para renderizar no mobile com separadores
-  const mobileCategories = [
-    { key: 'comercial', label: 'Comercial' },
-    { key: 'producao', label: 'Produção' },
-    { key: 'financeiro', label: 'Financeiro' },
-    { key: 'cadastros', label: 'Cadastros' },
-    ...(isMaster ? [{ key: 'master', label: 'Configurações' }] : []),
-  ];
+  const mobileCategories = useMemo(() => {
+    const baseCategories = [
+      { key: 'comercial', label: 'Comercial' },
+      { key: 'producao', label: 'Produção' },
+      { key: 'financeiro', label: 'Financeiro' },
+      { key: 'cadastros', label: 'Cadastros' },
+    ];
+    
+    // Mostrar "Configurações" se o usuário for admin OU se tiver itens visíveis nessa categoria
+    if (isMaster || itemsByCategory.master?.length > 0) {
+      baseCategories.push({ key: 'master', label: 'Configurações' });
+    }
+    
+    return baseCategories;
+  }, [isMaster, itemsByCategory]);
 
   // Ordem das categorias no desktop
   const desktopCategories = ['comercial', 'producao', 'financeiro', 'cadastros'];
@@ -243,8 +251,8 @@ export function AppNavbar() {
           {/* Dropdowns por categoria */}
           {desktopCategories.map(cat => renderCategoryDropdown(cat))}
           
-          {/* Master/Configurações - só para admins */}
-          {isMaster && renderCategoryDropdown('master')}
+          {/* Master/Configurações - mostrar se houver itens visíveis */}
+          {(isMaster || itemsByCategory.master?.length > 0) && renderCategoryDropdown('master')}
         </div>
 
         {/* Mobile Menu Button */}
