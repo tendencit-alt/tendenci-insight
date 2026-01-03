@@ -5,11 +5,19 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Limits
+const MAX_AUDIO_SIZE_MB = 20;
+const MAX_AUDIO_SIZE_BYTES = MAX_AUDIO_SIZE_MB * 1024 * 1024;
+const TRANSCRIPTION_TIMEOUT_MS = 60000; // 60 seconds
+const AI_MODEL = "google/gemini-3-pro-preview";
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const startTime = Date.now();
+  
   try {
     const { audio, mimeType } = await req.json();
 
@@ -33,7 +41,12 @@ serve(async (req) => {
     if (audio.startsWith('http')) {
       console.log('🎙️ Fetching audio from URL...');
       try {
-        const audioResponse = await fetch(audio);
+        const controller = new AbortController();
+        const fetchTimeout = setTimeout(() => controller.abort(), 30000); // 30s timeout for fetch
+        
+        const audioResponse = await fetch(audio, { signal: controller.signal });
+        clearTimeout(fetchTimeout);
+        
         if (!audioResponse.ok) {
           throw new Error(`Failed to fetch audio: ${audioResponse.status}`);
         }
@@ -43,7 +56,34 @@ serve(async (req) => {
           audioMimeType = contentType;
         }
         
+        const contentLength = audioResponse.headers.get('content-length');
+        if (contentLength && parseInt(contentLength) > MAX_AUDIO_SIZE_BYTES) {
+          console.error(`🎙️ Audio too large: ${contentLength} bytes (max: ${MAX_AUDIO_SIZE_BYTES})`);
+          return new Response(
+            JSON.stringify({ 
+              text: "[Áudio muito longo para transcrever. Por favor, envie um áudio mais curto (máximo 5 minutos).]",
+              error: "audio_too_large",
+              warning: "max_size_exceeded"
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        
         const audioBuffer = await audioResponse.arrayBuffer();
+        
+        // Check size after download
+        if (audioBuffer.byteLength > MAX_AUDIO_SIZE_BYTES) {
+          console.error(`🎙️ Audio too large after download: ${audioBuffer.byteLength} bytes`);
+          return new Response(
+            JSON.stringify({ 
+              text: "[Áudio muito longo para transcrever. Por favor, envie um áudio mais curto (máximo 5 minutos).]",
+              error: "audio_too_large",
+              warning: "max_size_exceeded"
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        
         const uint8Array = new Uint8Array(audioBuffer);
         
         // Convert to base64
@@ -55,15 +95,39 @@ serve(async (req) => {
         }
         audioBase64 = btoa(binary);
         
-        console.log(`🎙️ Audio fetched and converted to base64: ${audioBase64.length} chars`);
+        console.log(`🎙️ Audio fetched and converted to base64: ${audioBase64.length} chars (${audioBuffer.byteLength} bytes)`);
       } catch (fetchError) {
         console.error('🎙️ Error fetching audio URL:', fetchError);
+        
+        if (fetchError instanceof Error && fetchError.name === 'AbortError') {
+          return new Response(
+            JSON.stringify({ 
+              text: "[O áudio demorou muito para baixar. Tente enviar novamente.]",
+              error: "fetch_timeout"
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        
         throw new Error(`Falha ao baixar áudio: ${fetchError instanceof Error ? fetchError.message : 'Unknown error'}`);
+      }
+    } else {
+      // Check base64 size (with ~37% overhead)
+      const estimatedSize = audioBase64.length * 0.73; // Rough estimate of decoded size
+      if (estimatedSize > MAX_AUDIO_SIZE_BYTES) {
+        console.error(`🎙️ Base64 audio too large: ~${Math.round(estimatedSize / 1024 / 1024)}MB`);
+        return new Response(
+          JSON.stringify({ 
+            text: "[Áudio muito longo para transcrever. Por favor, envie um áudio mais curto (máximo 5 minutos).]",
+            error: "audio_too_large",
+            warning: "max_size_exceeded"
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
     }
 
     // Determine audio format for Gemini
-    // Gemini supports: audio/wav, audio/mp3, audio/aiff, audio/aac, audio/ogg, audio/flac
     let geminiFormat = 'ogg';
     if (audioMimeType.includes('webm')) {
       geminiFormat = 'webm';
@@ -81,68 +145,120 @@ serve(async (req) => {
 
     console.log(`🎙️ Using Gemini audio format: ${geminiFormat}`);
 
-    // Gemini multimodal with audio - using inline_data format
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-3-pro-preview',
-        messages: [
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: 'Transcreva o áudio a seguir para texto em português brasileiro. Retorne APENAS a transcrição exata do que foi dito, sem comentários adicionais, sem pontuação extra, sem formatação. Se não conseguir entender algo, escreva [inaudível].'
-              },
-              {
-                type: 'image_url',
-                image_url: {
-                  url: `data:${audioMimeType};base64,${audioBase64}`
+    // Set up timeout for transcription
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), TRANSCRIPTION_TIMEOUT_MS);
+
+    try {
+      // Gemini multimodal with audio
+      const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: AI_MODEL,
+          messages: [
+            {
+              role: 'user',
+              content: [
+                {
+                  type: 'text',
+                  text: 'Transcreva o áudio a seguir para texto em português brasileiro. Retorne APENAS a transcrição exata do que foi dito, sem comentários adicionais, sem pontuação extra, sem formatação. Se não conseguir entender algo, escreva [inaudível]. Se o áudio estiver vazio ou só tiver ruído, responda: [áudio vazio ou inaudível]'
+                },
+                {
+                  type: 'image_url',
+                  image_url: {
+                    url: `data:${audioMimeType};base64,${audioBase64}`
+                  }
                 }
-              }
-            ]
-          }
-        ],
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('🎙️ Erro na API Lovable AI:', response.status, errorText);
+              ]
+            }
+          ],
+        }),
+        signal: controller.signal
+      });
       
-      if (response.status === 429) {
-        throw new Error('Limite de requisições excedido. Tente novamente em alguns segundos.');
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('🎙️ Erro na API Lovable AI:', response.status, errorText);
+        
+        if (response.status === 429) {
+          return new Response(
+            JSON.stringify({ 
+              text: "[Sistema temporariamente sobrecarregado. Tente novamente em alguns segundos.]",
+              error: "rate_limited"
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        if (response.status === 402) {
+          return new Response(
+            JSON.stringify({ 
+              text: "[Sistema temporariamente indisponível. Tente novamente mais tarde.]",
+              error: "credits_exhausted"
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        
+        throw new Error(`Erro na API: ${response.status} - ${errorText}`);
       }
-      if (response.status === 402) {
-        throw new Error('Créditos insuficientes. Adicione créditos ao workspace.');
+
+      const result = await response.json();
+      const text = result.choices?.[0]?.message?.content;
+
+      // Validate response
+      if (!text || text.trim().length < 2) {
+        console.warn('🎙️ Empty or too short transcription response');
+        return new Response(
+          JSON.stringify({ 
+            text: "[Áudio não pôde ser transcrito. Pode estar vazio ou com muito ruído.]",
+            warning: "transcription_empty"
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const duration = Date.now() - startTime;
+      console.log(`🎙️ Transcrição concluída em ${duration}ms: ${text.substring(0, 100)}...`);
+
+      return new Response(
+        JSON.stringify({ 
+          text: text.trim(),
+          duration_ms: duration,
+          model: AI_MODEL
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+      
+    } catch (err) {
+      clearTimeout(timeoutId);
+      
+      if (err instanceof Error && err.name === 'AbortError') {
+        console.error('🎙️ Transcription timeout');
+        return new Response(
+          JSON.stringify({ 
+            text: "[Áudio demorou muito para transcrever. Tente enviar um áudio mais curto.]",
+            error: "timeout"
+          }),
+          { status: 408, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
       
-      throw new Error(`Erro na API: ${response.status} - ${errorText}`);
+      throw err;
     }
-
-    const result = await response.json();
-    const text = result.choices?.[0]?.message?.content;
-
-    if (!text) {
-      console.error('🎙️ Resposta vazia da IA:', JSON.stringify(result));
-      throw new Error('Resposta vazia da IA');
-    }
-
-    console.log(`🎙️ Transcrição concluída: ${text.substring(0, 100)}...`);
-
-    return new Response(
-      JSON.stringify({ text: text.trim() }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
 
   } catch (error) {
     console.error('🎙️ Erro na transcrição:', error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Erro desconhecido' }),
+      JSON.stringify({ 
+        error: error instanceof Error ? error.message : 'Erro desconhecido',
+        text: "[Erro ao processar áudio. Tente novamente.]"
+      }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

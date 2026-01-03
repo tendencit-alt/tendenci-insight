@@ -6,10 +6,43 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// ========== CENTRALIZED AI CONFIGURATION ==========
+const AI_MODELS = {
+  primary: "google/gemini-3-pro-preview",
+  fallback: "google/gemini-2.5-flash",
+  lite: "google/gemini-2.5-flash-lite"
+} as const;
+
+const AI_GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
+
 // Debounce time in milliseconds (5 seconds)
 const DEBOUNCE_MS = 5000;
-// Maximum messages to keep in context
-const MAX_CONTEXT_MESSAGES = 50;
+// Maximum messages to keep in context (increased from 50 to 100)
+const MAX_CONTEXT_MESSAGES = 100;
+// Threshold for when to summarize older messages
+const SUMMARIZE_THRESHOLD = 80;
+
+// ========== IN-MEMORY CACHE ==========
+interface CacheEntry<T> {
+  data: T;
+  timestamp: number;
+}
+const configCache = new Map<string, CacheEntry<unknown>>();
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+function getCached<T>(key: string): T | null {
+  const entry = configCache.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.timestamp > CACHE_TTL_MS) {
+    configCache.delete(key);
+    return null;
+  }
+  return entry.data as T;
+}
+
+function setCache<T>(key: string, data: T): void {
+  configCache.set(key, { data, timestamp: Date.now() });
+}
 
 interface Message {
   role: "user" | "assistant" | "system";
@@ -51,6 +84,147 @@ interface ClientMemory {
   preferences: unknown[];
   notes: string | null;
   interaction_count: number;
+}
+
+// ========== AI CALL WITH FALLBACK AND RETRY ==========
+async function fetchWithRetry(
+  url: string,
+  options: RequestInit,
+  maxRetries: number = 3
+): Promise<{ response: Response | null; error?: string; retryCount: number }> {
+  let lastError: string | undefined;
+  
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      const response = await fetch(url, options);
+      
+      if (response.status === 429) {
+        const waitTime = Math.pow(2, i) * 1000;
+        console.warn(`⚠️ Rate limited (429), waiting ${waitTime}ms before retry ${i + 1}/${maxRetries}...`);
+        await new Promise(r => setTimeout(r, waitTime));
+        continue;
+      }
+      
+      if (response.status === 402) {
+        console.error("❌ Credits exhausted (402)");
+        return { response: null, error: "credits_exhausted", retryCount: i };
+      }
+      
+      return { response, retryCount: i };
+    } catch (err) {
+      lastError = err instanceof Error ? err.message : "Unknown error";
+      console.error(`Network error on attempt ${i + 1}:`, lastError);
+      if (i < maxRetries - 1) {
+        await new Promise(r => setTimeout(r, Math.pow(2, i) * 500));
+      }
+    }
+  }
+  
+  return { response: null, error: lastError || "Max retries exceeded", retryCount: maxRetries };
+}
+
+async function callAIWithFallback(
+  messages: { role: string; content: any }[],
+  lovableApiKey: string,
+  options: { maxTokens?: number; temperature?: number; timeout?: number } = {}
+): Promise<{ response: Response | null; model: string; error?: string; fallbackUsed: boolean }> {
+  const { maxTokens = 1500, temperature = 0.7, timeout = 30000 } = options;
+  const models = [AI_MODELS.primary, AI_MODELS.fallback, AI_MODELS.lite];
+  let fallbackUsed = false;
+  
+  for (let i = 0; i < models.length; i++) {
+    const model = models[i];
+    if (i > 0) {
+      fallbackUsed = true;
+      console.log(`🔄 Trying fallback model: ${model}`);
+    } else {
+      console.log(`🧠 Calling primary model: ${model}`);
+    }
+    
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+    
+    try {
+      const { response, error } = await fetchWithRetry(
+        AI_GATEWAY_URL,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${lovableApiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ model, messages, max_tokens: maxTokens, temperature }),
+          signal: controller.signal
+        },
+        3
+      );
+      
+      clearTimeout(timeoutId);
+      
+      if (error === "credits_exhausted") {
+        return { response: null, model, error: "credits_exhausted", fallbackUsed };
+      }
+      
+      if (response && response.ok) {
+        console.log(`✅ Success with model: ${model}`);
+        return { response, model, fallbackUsed };
+      }
+      
+      if (response) {
+        const errorText = await response.text();
+        console.warn(`⚠️ Model ${model} returned ${response.status}: ${errorText.substring(0, 100)}`);
+      }
+    } catch (err) {
+      clearTimeout(timeoutId);
+      console.error(`❌ Error with model ${model}:`, err);
+    }
+  }
+  
+  return { response: null, model: models[models.length - 1], error: "all_models_failed", fallbackUsed: true };
+}
+
+function getGracefulErrorMessage(errorCode: string): string {
+  switch (errorCode) {
+    case "credits_exhausted":
+      return "No momento estou com dificuldades técnicas. Por favor, tente novamente em alguns minutos ou fale com um atendente humano.";
+    case "all_models_failed":
+      return "Desculpe, estou temporariamente indisponível. Por favor, tente novamente em instantes.";
+    default:
+      return "Desculpe, não consegui processar sua mensagem. Tente novamente.";
+  }
+}
+
+// ========== HISTORY SUMMARIZATION ==========
+async function summarizeOldHistory(
+  oldMessages: Message[],
+  lovableApiKey: string
+): Promise<string> {
+  try {
+    const response = await fetch(AI_GATEWAY_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${lovableApiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: AI_MODELS.lite,
+        messages: [
+          { role: "system", content: "Resuma esta conversa em 3-5 pontos principais em português brasileiro. Foque em: produtos mencionados, preferências do cliente, decisões tomadas." },
+          { role: "user", content: oldMessages.map(m => `${m.role === 'user' ? 'Cliente' : 'Atendente'}: ${m.content}`).join("\n") }
+        ],
+        max_tokens: 500,
+        temperature: 0.3,
+      }),
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      return data.choices?.[0]?.message?.content || "";
+    }
+  } catch (err) {
+    console.error("Error summarizing history:", err);
+  }
+  return "";
 }
 
 serve(async (req) => {
@@ -194,27 +368,51 @@ serve(async (req) => {
             };
           }
           
-          const imageAnalysisResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          // Enhanced OCR + Description prompt
+          const imageAnalysisPrompt = `Analise esta imagem enviada por um cliente em contexto de atendimento comercial.
+
+INSTRUÇÕES:
+1. Se houver TEXTO na imagem (prints, documentos, notas):
+   - Transcreva TODO o texto visível de forma exata
+   - Mantenha formatação (quebras de linha, listas)
+
+2. Se for uma FOTO de produto/ambiente:
+   - Descreva detalhadamente o que vê
+   - Identifique produtos, marcas, cores, materiais
+   - Mencione estado/condição se relevante
+
+3. Se for um DOCUMENTO (nota fiscal, orçamento, contrato):
+   - Extraia valores, datas, nomes
+   - Identifique tipo do documento
+   - Destaque informações principais
+
+4. Se for um SCREENSHOT de conversa:
+   - Transcreva as mensagens
+   - Identifique contexto
+
+Responda em português brasileiro de forma clara e organizada.`;
+
+          const imageAnalysisResponse = await fetch(AI_GATEWAY_URL, {
             method: "POST",
             headers: {
               Authorization: `Bearer ${lovableApiKey}`,
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              model: "google/gemini-3-pro-preview",
+              model: AI_MODELS.primary,
               messages: [
                 {
                   role: "user",
                   content: [
                     {
                       type: "text",
-                      text: "Descreva esta imagem de forma detalhada em português brasileiro. Foque em: 1) O que é mostrado na imagem, 2) Cores e características visuais importantes, 3) Qualquer texto visível, 4) Contexto ou propósito aparente. Seja conciso mas completo."
+                      text: imageAnalysisPrompt
                     },
                     imageContent
                   ]
                 }
               ],
-              max_tokens: 500,
+              max_tokens: 800,
             }),
           });
           
@@ -368,34 +566,56 @@ serve(async (req) => {
       console.log(`📝 New client memory created: name="${initialName}"`);
     }
 
-    // ========== LOAD CONFIGURATIONS ==========
-    const { data: configsData } = await supabase
-      .from("tendenci_ia_config")
-      .select("section, config");
+    // ========== LOAD CONFIGURATIONS (with cache) ==========
+    const configCacheKey = `ia_configs_${instanceName}`;
+    let configs: Record<string, Record<string, unknown>> = getCached<Record<string, Record<string, unknown>>>(configCacheKey) || {};
+    
+    if (Object.keys(configs).length === 0) {
+      console.log("📦 Loading configs from database (cache miss)");
+      const { data: configsData } = await supabase
+        .from("tendenci_ia_config")
+        .select("section, config");
 
-    const configs: Record<string, Record<string, unknown>> = {};
-    (configsData as IAConfig[] || []).forEach((c) => {
-      configs[c.section] = c.config || {};
-    });
+      (configsData as IAConfig[] || []).forEach((c) => {
+        configs[c.section] = c.config || {};
+      });
+      setCache(configCacheKey, configs);
+    } else {
+      console.log("📦 Using cached configs");
+    }
 
-    // Load products
-    const { data: productsData } = await supabase
-      .from("tendenci_ia_produtos")
-      .select("id, nome, descricao, preco_base, categoria, imagem_url, video_url, videos, quando_oferecer, diferenciais, ativo")
-      .eq("ativo", true);
+    // Load products (with cache)
+    const productsCacheKey = `ia_products_${instanceName}`;
+    let products: Product[] = getCached<Product[]>(productsCacheKey) || [];
+    
+    if (products.length === 0) {
+      const { data: productsData } = await supabase
+        .from("tendenci_ia_produtos")
+        .select("id, nome, descricao, preco_base, categoria, imagem_url, video_url, videos, quando_oferecer, diferenciais, ativo")
+        .eq("ativo", true);
 
-    const products = (productsData as Product[]) || [];
-    console.log(`📦 Loaded ${products.length} products`);
+      products = (productsData as Product[]) || [];
+      setCache(productsCacheKey, products);
+      console.log(`📦 Loaded ${products.length} products from database`);
+    } else {
+      console.log(`📦 Using ${products.length} cached products`);
+    }
 
-    // Load knowledge base
-    const { data: knowledgeData } = await supabase
-      .from("tendenci_ia_conhecimento")
-      .select("*")
-      .eq("ativo", true);
+    // Load knowledge base (with cache)
+    const knowledgeCacheKey = `ia_knowledge_${instanceName}`;
+    let knowledge: Knowledge[] = getCached<Knowledge[]>(knowledgeCacheKey) || [];
+    
+    if (knowledge.length === 0) {
+      const { data: knowledgeData } = await supabase
+        .from("tendenci_ia_conhecimento")
+        .select("*")
+        .eq("ativo", true);
 
-    const knowledge = (knowledgeData as Knowledge[]) || [];
+      knowledge = (knowledgeData as Knowledge[]) || [];
+      setCache(knowledgeCacheKey, knowledge);
+    }
 
-    // ========== CONVERSATION HISTORY (50 messages) ==========
+    // ========== CONVERSATION HISTORY (100 messages with smart summarization) ==========
     const { data: historyData } = await supabase
       .from("ia_conversations")
       .select("role, content, created_at")
@@ -404,11 +624,24 @@ serve(async (req) => {
       .order("created_at", { ascending: false })
       .limit(MAX_CONTEXT_MESSAGES);
 
-    const conversationHistory: Message[] = (historyData || [])
+    let conversationHistory: Message[] = (historyData || [])
       .reverse()
       .map((h) => ({ role: h.role as "user" | "assistant", content: h.content }));
 
-    console.log(`📚 Loaded ${conversationHistory.length} messages of context`);
+    // If history is large, summarize older messages
+    let historySummary: string | null = null;
+    if (conversationHistory.length > SUMMARIZE_THRESHOLD) {
+      console.log(`📚 History large (${conversationHistory.length}), summarizing older messages...`);
+      const oldMessages = conversationHistory.slice(0, conversationHistory.length - 30);
+      conversationHistory = conversationHistory.slice(-30);
+      
+      historySummary = await summarizeOldHistory(oldMessages, lovableApiKey!);
+      if (historySummary) {
+        console.log(`📚 Summary created: ${historySummary.substring(0, 100)}...`);
+      }
+    }
+
+    console.log(`📚 Using ${conversationHistory.length} messages of context${historySummary ? ' + summary' : ''}`);
 
     // Build master prompt
     const masterPrompt = buildMasterPrompt(configs, products, knowledge, clientMemory, conversationHistory);
@@ -416,29 +649,48 @@ serve(async (req) => {
     // Build messages array for AI
     const messages: Message[] = [
       { role: "system", content: masterPrompt },
-      ...conversationHistory,
-      { role: "user", content: combinedMessage },
     ];
+    
+    // Add history summary if available
+    if (historySummary) {
+      messages.push({ role: "system", content: `[RESUMO DA CONVERSA ANTERIOR]\n${historySummary}` });
+    }
+    
+    messages.push(...conversationHistory);
+    messages.push({ role: "user", content: combinedMessage });
 
-    // Call Lovable AI
+    // Call Lovable AI with fallback
     if (!lovableApiKey) {
       throw new Error("LOVABLE_API_KEY not configured");
     }
 
-    console.log("🧠 Calling Lovable AI...");
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${lovableApiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages,
-        max_tokens: 1500,
-        temperature: 0.7,
-      }),
-    });
+    console.log("🧠 Calling Lovable AI with fallback support...");
+    const startTime = Date.now();
+    const { response: aiResponse, model: usedModel, error: aiError, fallbackUsed } = await callAIWithFallback(
+      messages,
+      lovableApiKey,
+      { maxTokens: 1500, temperature: 0.7 }
+    );
+    const aiDuration = Date.now() - startTime;
+    console.log(`⏱️ AI responded in ${aiDuration}ms using ${usedModel}${fallbackUsed ? ' (fallback)' : ''}`);
+
+    if (!aiResponse || aiError) {
+      console.error("AI call failed:", aiError);
+      const gracefulMessage = getGracefulErrorMessage(aiError || "unknown");
+      
+      // Send graceful error message to user
+      await processAndSendResponse(
+        evolutionApiUrl!,
+        evolutionApiKey!,
+        instanceName,
+        phoneNumber,
+        gracefulMessage
+      );
+      
+      return new Response(JSON.stringify({ success: true, fallback: true, error: aiError }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
@@ -467,14 +719,14 @@ serve(async (req) => {
     if (isResponseTooSimilar(assistantMessage, lastAssistantMessages)) {
       console.log("⚠️ Response too similar to previous, asking for reformulation...");
       
-      const reformulateResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      const reformulateResponse = await fetch(AI_GATEWAY_URL, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${lovableApiKey}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
+          model: AI_MODELS.fallback, // Use fallback for reformulation (faster)
           messages: [
             ...messages,
             { role: "assistant", content: assistantMessage },
