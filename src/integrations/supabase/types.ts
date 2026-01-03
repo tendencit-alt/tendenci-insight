@@ -6755,6 +6755,7 @@ export type Database = {
         | "estoque"
         | "compras"
         | "pedidos"
+        | "ia_configuracao"
       user_role: "admin" | "vendedor" | "arquiteto" | "projetista"
     }
     CompositeTypes: {
@@ -6899,6 +6900,7 @@ export const Constants = {
         "estoque",
         "compras",
         "pedidos",
+        "ia_configuracao",
       ],
       user_role: ["admin", "vendedor", "arquiteto", "projetista"],
     },
