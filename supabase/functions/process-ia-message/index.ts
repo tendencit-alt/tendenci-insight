@@ -658,10 +658,7 @@ async function extractAndSaveClientInfo(
           .maybeSingle();
         
         if (lead) {
-          await supabase
-            .from('leads')
-            .update({ name: formattedName })
-            .eq('id', lead.id);
+          // Note: leads table doesn't have name field - name is stored in clients table
           
           // Update deal title
           const { data: deal } = await supabase
