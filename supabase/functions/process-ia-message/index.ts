@@ -732,7 +732,7 @@ async function createOrUpdateDealFromIA(
         .eq('client_id', clientId);
       
       if (clientLeads && clientLeads.length > 0) {
-        const leadIds = clientLeads.map(l => l.id);
+        const leadIds = clientLeads.map((l: { id: string }) => l.id);
         const { data: dealByClient } = await supabase
           .from('crm_deals')
           .select('id, conversation_history')
