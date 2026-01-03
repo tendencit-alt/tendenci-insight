@@ -458,6 +458,29 @@ serve(async (req) => {
     // Try to extract client name if mentioned
     await extractAndSaveClientInfo(supabase, phoneNumber, instanceName, combinedMessage, clientMemory);
 
+    // ========== CRM INTEGRATION - AUTO CREATE/UPDATE LEAD ==========
+    const updatedHistory: Message[] = [
+      ...conversationHistory,
+      { role: "user", content: combinedMessage },
+      { role: "assistant", content: assistantMessage },
+    ];
+
+    const { shouldCreate, temperature } = shouldCreateLead(updatedHistory, combinedMessage);
+    
+    if (shouldCreate) {
+      console.log(`📋 Creating/updating CRM lead with temperature: ${temperature}`);
+      await createOrUpdateDealFromIA(
+        supabase,
+        phoneNumber,
+        clientMemory?.client_name || pushName || null,
+        updatedHistory,
+        temperature
+      );
+    } else {
+      // Even if we don't create a new lead, update existing deal's history
+      await updateExistingDealHistory(supabase, phoneNumber, updatedHistory);
+    }
+
     console.log("✅ Message processed successfully");
 
     return new Response(JSON.stringify({ success: true }), {
@@ -548,6 +571,250 @@ async function extractAndSaveClientInfo(
       
       break;
     }
+  }
+}
+
+// ========== CRM INTEGRATION FUNCTIONS ==========
+
+// Detect if we should create a lead based on conversation
+function shouldCreateLead(
+  conversationHistory: Message[],
+  userMessage: string
+): { shouldCreate: boolean; temperature: string } {
+  const combined = userMessage.toLowerCase();
+  
+  const keywords = {
+    quente: ['orçamento', 'orcamento', 'comprar', 'preço', 'preco', 'agendar', 'visita', 'medidas', 'fechar', 'pagar', 'pagamento'],
+    morno: ['interesse', 'interessado', 'informações', 'informacoes', 'catálogo', 'catalogo', 'ver mais', 'opções', 'opcoes', 'saber mais'],
+  };
+  
+  // Check for hot keywords
+  if (keywords.quente.some(k => combined.includes(k))) {
+    return { shouldCreate: true, temperature: 'quente' };
+  }
+  
+  // Check for warm keywords
+  if (keywords.morno.some(k => combined.includes(k))) {
+    return { shouldCreate: true, temperature: 'morno' };
+  }
+  
+  // After 6 messages (3 exchanges), create cold lead
+  if (conversationHistory.length >= 6) {
+    return { shouldCreate: true, temperature: 'frio' };
+  }
+  
+  return { shouldCreate: false, temperature: 'frio' };
+}
+
+// Format complete conversation history for CRM
+function formatCompleteHistory(history: Message[]): string {
+  return history.map(m => {
+    const sender = m.role === 'user' ? '👤 Cliente' : '🤖 IA';
+    const timestamp = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+    return `[${timestamp}] ${sender}:\n${m.content}`;
+  }).join('\n\n---\n\n');
+}
+
+// Create or update CRM deal from IA conversation
+async function createOrUpdateDealFromIA(
+  supabase: any,
+  phoneNumber: string,
+  clientName: string | null,
+  conversationHistory: Message[],
+  temperature: string
+): Promise<void> {
+  try {
+    const displayName = clientName || `Cliente ${phoneNumber.slice(-4)}`;
+    const formattedPhone = phoneNumber.replace(/\D/g, '');
+    
+    // Search for existing client by phone
+    let clientId: string | null = null;
+    
+    const { data: existingClient } = await supabase
+      .from('clients')
+      .select('id, name')
+      .or(`phone.eq.${formattedPhone},phone.ilike.%${formattedPhone.slice(-8)}%`)
+      .maybeSingle();
+
+    if (existingClient) {
+      clientId = existingClient.id;
+      console.log(`📋 Found existing client: ${existingClient.name}`);
+      
+      // Update name if we have a better one
+      if (clientName && existingClient.name?.startsWith('Cliente ')) {
+        await supabase
+          .from('clients')
+          .update({ name: clientName })
+          .eq('id', clientId);
+      }
+    } else {
+      // Create new client
+      const { data: newClient, error: clientError } = await supabase
+        .from('clients')
+        .insert({ 
+          name: displayName,
+          phone: formattedPhone,
+          notes: 'Cliente criado automaticamente via IA WhatsApp'
+        })
+        .select('id')
+        .single();
+      
+      if (clientError) {
+        console.error('Error creating client:', clientError);
+        return;
+      }
+      
+      clientId = newClient.id;
+      console.log(`📋 Created new client: ${displayName}`);
+    }
+
+    // Search for existing lead with this phone
+    let leadId: string | null = null;
+    
+    const { data: existingLead } = await supabase
+      .from('leads')
+      .select('id')
+      .eq('client_id', clientId)
+      .maybeSingle();
+
+    if (existingLead) {
+      leadId = existingLead.id;
+    } else {
+      // Create new lead
+      const { data: newLead, error: leadError } = await supabase
+        .from('leads')
+        .insert({ 
+          client_id: clientId,
+          source: 'whatsapp_ia',
+          status: 'novo',
+          temperature: temperature,
+          phone: formattedPhone,
+          name: displayName
+        })
+        .select('id')
+        .single();
+      
+      if (leadError) {
+        console.error('Error creating lead:', leadError);
+        // Continue anyway - some systems don't use leads table
+      } else {
+        leadId = newLead?.id;
+        console.log(`📋 Created new lead with temperature: ${temperature}`);
+      }
+    }
+
+    // Format complete conversation history
+    const fullHistory = formatCompleteHistory(conversationHistory);
+
+    // Search for existing deal from IA
+    const { data: existingDeal } = await supabase
+      .from('crm_deals')
+      .select('id, conversation_history')
+      .eq('from_ai', true)
+      .or(`lead_id.eq.${leadId || 'null'},title.ilike.%${formattedPhone.slice(-4)}%`)
+      .maybeSingle();
+
+    if (existingDeal) {
+      // Update existing deal with new history
+      const { error: updateError } = await supabase
+        .from('crm_deals')
+        .update({ 
+          conversation_history: fullHistory,
+          last_interaction: new Date().toISOString(),
+          ai_status: temperature
+        })
+        .eq('id', existingDeal.id);
+      
+      if (updateError) {
+        console.error('Error updating deal:', updateError);
+      } else {
+        console.log(`📋 Updated CRM deal with complete history (${conversationHistory.length} messages)`);
+      }
+    } else {
+      // Get first pipeline and stage
+      const { data: pipeline } = await supabase
+        .from('crm_pipelines')
+        .select('id')
+        .order('created_at')
+        .limit(1)
+        .single();
+
+      if (!pipeline) {
+        console.log('⚠️ No pipeline found, skipping deal creation');
+        return;
+      }
+
+      const { data: stage } = await supabase
+        .from('crm_stages')
+        .select('id')
+        .eq('pipeline_id', pipeline.id)
+        .order('position')
+        .limit(1)
+        .single();
+
+      if (!stage) {
+        console.log('⚠️ No stage found, skipping deal creation');
+        return;
+      }
+
+      // Create new deal
+      const { error: dealError } = await supabase
+        .from('crm_deals')
+        .insert({
+          title: `Lead IA - ${displayName}`,
+          lead_id: leadId,
+          pipeline_id: pipeline.id,
+          stage_id: stage.id,
+          from_ai: true,
+          conversation_history: fullHistory,
+          ai_status: temperature,
+          last_interaction: new Date().toISOString(),
+          status: 'aberto'
+        });
+      
+      if (dealError) {
+        console.error('Error creating deal:', dealError);
+      } else {
+        console.log(`📋 Created new CRM deal: Lead IA - ${displayName}`);
+      }
+    }
+  } catch (error) {
+    console.error('Error in CRM integration:', error);
+  }
+}
+
+// Update existing deal's conversation history
+async function updateExistingDealHistory(
+  supabase: any,
+  phoneNumber: string,
+  conversationHistory: Message[]
+): Promise<void> {
+  try {
+    const formattedPhone = phoneNumber.replace(/\D/g, '');
+    
+    // Search for existing deal from IA with this phone
+    const { data: existingDeal } = await supabase
+      .from('crm_deals')
+      .select('id')
+      .eq('from_ai', true)
+      .ilike('title', `%${formattedPhone.slice(-4)}%`)
+      .maybeSingle();
+
+    if (existingDeal) {
+      const fullHistory = formatCompleteHistory(conversationHistory);
+      
+      await supabase
+        .from('crm_deals')
+        .update({ 
+          conversation_history: fullHistory,
+          last_interaction: new Date().toISOString()
+        })
+        .eq('id', existingDeal.id);
+      
+      console.log(`📋 Updated existing deal history`);
+    }
+  } catch (error) {
+    console.error('Error updating deal history:', error);
   }
 }
 
