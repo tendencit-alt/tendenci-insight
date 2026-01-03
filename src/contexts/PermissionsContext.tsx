@@ -138,8 +138,9 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
   }, [user, authLoading, fetchPermissions]);
 
   const hasModuleAccess = useCallback((module: AppModule, action: 'view' | 'create' | 'edit' | 'delete' = 'view'): boolean => {
-    // CRÍTICO: Retornar false enquanto ainda está carregando
-    if (loading) return false;
+    // Durante loading, retornar true para permitir renderização do menu
+    // A proteção real acontece no PermissionGuard
+    if (loading) return true;
     if (!permissions) return false;
     if (isMaster) return true;
 
