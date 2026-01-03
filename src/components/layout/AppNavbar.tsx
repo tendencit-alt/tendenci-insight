@@ -107,11 +107,19 @@ export function AppNavbar() {
   const visibleMenuItems = useMemo(() => {
     return menuItems.filter((item) => {
       if (loading) return true;
-      // Itens master só aparecem para admins
-      if (item.category === 'master' && !isMaster) return false;
+      
+      // Se o item tem um módulo associado, verificar permissão primeiro
       if (item.module) {
-        return hasModuleAccess(item.module as any);
+        const hasAccess = hasModuleAccess(item.module as any);
+        // Se tem permissão específica, mostrar (mesmo que seja categoria master)
+        if (hasAccess) return true;
+        // Se não tem permissão, não mostrar
+        return false;
       }
+      
+      // Itens sem módulo na categoria master só aparecem para admins
+      if (item.category === 'master' && !isMaster) return false;
+      
       return true;
     });
   }, [menuItems, loading, isMaster, hasModuleAccess]);
