@@ -23,6 +23,16 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // Buscar configuração de delay
+    const { data: comunicacaoConfig } = await supabase
+      .from("tendenci_ia_config")
+      .select("config")
+      .eq("secao", "comunicacao")
+      .single();
+
+    const tempoResposta = Number(comunicacaoConfig?.config?.tempo_resposta_ms) || 3000;
+    console.log(`⏱️ Delay configurado: ${tempoResposta}ms`);
+
     // Buscar TODOS os produtos para injetar no contexto
     const { data: products, error: productsError } = await supabase
       .from("tendenci_ia_produtos")
@@ -129,6 +139,10 @@ VOCÊ TEM TOTAL CAPACIDADE DE ENVIAR FOTOS E VÍDEOS. Basta usar os marcadores l
       
       throw new Error(`AI API error: ${response.status}`);
     }
+
+    // Aplicar delay configurado ANTES de enviar resposta (simula comportamento real)
+    console.log(`⏳ Aplicando delay de ${tempoResposta}ms antes de enviar resposta...`);
+    await new Promise(resolve => setTimeout(resolve, tempoResposta));
 
     // Stream direto da resposta
     return new Response(response.body, {
