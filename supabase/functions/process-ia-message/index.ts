@@ -459,26 +459,48 @@ serve(async (req) => {
     await extractAndSaveClientInfo(supabase, phoneNumber, instanceName, combinedMessage, clientMemory);
 
     // ========== CRM INTEGRATION - AUTO CREATE/UPDATE LEAD ==========
-    const updatedHistory: Message[] = [
-      ...conversationHistory,
-      { role: "user", content: combinedMessage },
-      { role: "assistant", content: assistantMessage },
-    ];
+    try {
+      const updatedHistory: Message[] = [
+        ...conversationHistory,
+        { role: "user", content: combinedMessage },
+        { role: "assistant", content: assistantMessage },
+      ];
 
-    const { shouldCreate, temperature } = shouldCreateLead(updatedHistory, combinedMessage);
-    
-    if (shouldCreate) {
-      console.log(`📋 Creating/updating CRM lead with temperature: ${temperature}`);
-      await createOrUpdateDealFromIA(
-        supabase,
-        phoneNumber,
-        clientMemory?.client_name || pushName || null,
-        updatedHistory,
-        temperature
-      );
-    } else {
-      // Even if we don't create a new lead, update existing deal's history
-      await updateExistingDealHistory(supabase, phoneNumber, updatedHistory);
+      console.log(`📋 CRM Check: Starting integration for phone ${phoneNumber.slice(-4)}`);
+      console.log(`📋 CRM Check: History has ${updatedHistory.length} messages (${updatedHistory.filter(m => m.role === 'assistant').length} from AI)`);
+      console.log(`📋 CRM Check: Last AI response: ${assistantMessage.slice(0, 80)}...`);
+
+      const { shouldCreate, temperature } = shouldCreateLead(updatedHistory, combinedMessage);
+      
+      console.log(`📋 CRM Check: shouldCreate=${shouldCreate}, temperature=${temperature}`);
+      
+      if (shouldCreate) {
+        console.log(`📋 Creating/updating CRM lead with temperature: ${temperature}`);
+        await createOrUpdateDealFromIA(
+          supabase,
+          phoneNumber,
+          clientMemory?.client_name || pushName || null,
+          updatedHistory,
+          temperature
+        );
+      } else {
+        // Even if we don't create a new lead, update existing deal's history
+        console.log(`📋 Updating existing deal history only`);
+        await updateExistingDealHistory(supabase, phoneNumber, updatedHistory);
+      }
+      
+      console.log(`📋 CRM: Integration completed successfully`);
+    } catch (crmError) {
+      console.error(`❌ CRM Integration Error:`, crmError);
+      // Log error but don't fail the response
+      await supabase.from("system_errors").insert({
+        title: "Erro na integração CRM",
+        description: crmError instanceof Error ? crmError.message : "Unknown CRM error",
+        module: "ia_atendimento",
+        severity: "medium",
+        source: "edge_function",
+        metadata: { function: "process-ia-message", section: "crm_integration", phone: phoneNumber.slice(-4) },
+      });
     }
 
     console.log("✅ Message processed successfully");
@@ -608,10 +630,21 @@ function shouldCreateLead(
 
 // Format complete conversation history for CRM
 function formatCompleteHistory(history: Message[]): string {
-  return history.map(m => {
+  console.log(`📋 Formatting history: ${history.length} messages (${history.filter(m => m.role === 'assistant').length} from AI)`);
+  
+  // Validate history has content
+  if (history.length === 0) {
+    console.log(`⚠️ Empty history passed to formatCompleteHistory`);
+    return '[Histórico vazio]';
+  }
+  
+  return history.map((m, idx) => {
     const sender = m.role === 'user' ? '👤 Cliente' : '🤖 IA';
-    const timestamp = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
-    return `[${timestamp}] ${sender}:\n${m.content}`;
+    // Use a timestamp that reflects the order of messages
+    const timestamp = new Date(Date.now() - (history.length - idx) * 60000).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+    // Ensure content is never empty
+    const content = m.content?.trim() || '[mensagem vazia]';
+    return `[${timestamp}] ${sender}:\n${content}`;
   }).join('\n\n---\n\n');
 }
 
@@ -627,18 +660,27 @@ async function createOrUpdateDealFromIA(
     const displayName = clientName || `Cliente ${phoneNumber.slice(-4)}`;
     const formattedPhone = phoneNumber.replace(/\D/g, '');
     
-    // Search for existing client by phone
+    // Search for existing client by phone - try multiple formats
     let clientId: string | null = null;
+    const phoneSuffix8 = formattedPhone.slice(-8);
+    const phoneSuffix9 = formattedPhone.slice(-9);
     
-    const { data: existingClient } = await supabase
+    console.log(`📋 Client search: phone=${formattedPhone}, suffix8=${phoneSuffix8}`);
+    
+    const { data: existingClient, error: clientSearchError } = await supabase
       .from('clients')
-      .select('id, name')
-      .or(`phone.eq.${formattedPhone},phone.ilike.%${formattedPhone.slice(-8)}%`)
+      .select('id, name, phone')
+      .or(`phone.eq.${formattedPhone},phone.ilike.%${phoneSuffix8}%,phone.ilike.%${phoneSuffix9}%`)
+      .limit(1)
       .maybeSingle();
+
+    if (clientSearchError) {
+      console.error('❌ Error searching client:', clientSearchError);
+    }
 
     if (existingClient) {
       clientId = existingClient.id;
-      console.log(`📋 Found existing client: ${existingClient.name}`);
+      console.log(`📋 Found existing client: ${existingClient.name} (phone: ${existingClient.phone})`);
       
       // Update name if we have a better one
       if (clientName && existingClient.name?.startsWith('Cliente ')) {
@@ -646,26 +688,47 @@ async function createOrUpdateDealFromIA(
           .from('clients')
           .update({ name: clientName })
           .eq('id', clientId);
+        console.log(`📋 Updated client name to: ${clientName}`);
       }
     } else {
-      // Create new client
+      console.log(`📋 No client found, creating new one: ${displayName}`);
+      
+      // Create new client with upsert (handles race conditions)
       const { data: newClient, error: clientError } = await supabase
         .from('clients')
-        .insert({ 
+        .upsert({ 
           name: displayName,
           phone: formattedPhone,
           notes: 'Cliente criado automaticamente via IA WhatsApp'
+        }, { 
+          onConflict: 'phone',
+          ignoreDuplicates: false 
         })
         .select('id')
         .single();
       
       if (clientError) {
-        console.error('Error creating client:', clientError);
-        return;
+        console.error('❌ Error creating/upserting client:', clientError);
+        
+        // Try to find if it was created by another process
+        const { data: retryClient } = await supabase
+          .from('clients')
+          .select('id')
+          .or(`phone.eq.${formattedPhone},phone.ilike.%${phoneSuffix8}%`)
+          .limit(1)
+          .maybeSingle();
+        
+        if (retryClient) {
+          clientId = retryClient.id;
+          console.log(`📋 Found client on retry: ${clientId}`);
+        } else {
+          console.error('❌ Could not create or find client, aborting CRM integration');
+          return;
+        }
+      } else {
+        clientId = newClient.id;
+        console.log(`📋 Created new client: ${displayName} (id: ${clientId})`);
       }
-      
-      clientId = newClient.id;
-      console.log(`📋 Created new client: ${displayName}`);
     }
 
     // Search for existing lead with this phone
