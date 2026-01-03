@@ -42,7 +42,8 @@ const MODULE_LABELS: Record<AppModule, string> = {
   'estoque': 'Estoque',
   'compras': 'Compras',
   'pedidos': 'Pedidos',
-  'fichas_tecnicas': 'Fichas Técnicas'
+  'fichas_tecnicas': 'Fichas Técnicas',
+  'ia_configuracao': 'Configuração da IA'
 };
 
 const ALL_MODULES: AppModule[] = [
@@ -60,7 +61,8 @@ const ALL_MODULES: AppModule[] = [
   'fornecedores',
   'estoque',
   'compras',
-  'pedidos'
+  'pedidos',
+  'ia_configuracao'
 ];
 
 export function UserPermissionsDialog({
