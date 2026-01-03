@@ -1896,6 +1896,45 @@ export type Database = {
         }
         Relationships: []
       }
+      ia_metrics: {
+        Row: {
+          error_code: string | null
+          fallback_used: boolean | null
+          id: string
+          model: string
+          phone_number: string | null
+          response_time_ms: number | null
+          retry_count: number | null
+          success: boolean
+          timestamp: string | null
+          tokens_used: number | null
+        }
+        Insert: {
+          error_code?: string | null
+          fallback_used?: boolean | null
+          id?: string
+          model: string
+          phone_number?: string | null
+          response_time_ms?: number | null
+          retry_count?: number | null
+          success?: boolean
+          timestamp?: string | null
+          tokens_used?: number | null
+        }
+        Update: {
+          error_code?: string | null
+          fallback_used?: boolean | null
+          id?: string
+          model?: string
+          phone_number?: string | null
+          response_time_ms?: number | null
+          retry_count?: number | null
+          success?: boolean
+          timestamp?: string | null
+          tokens_used?: number | null
+        }
+        Relationships: []
+      }
       ia_pending_messages: {
         Row: {
           content: string
