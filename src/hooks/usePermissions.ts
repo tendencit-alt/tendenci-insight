@@ -103,6 +103,13 @@ export function usePermissions() {
 
             if (permError) throw permError;
 
+          console.log('🔐 Permissões carregadas:', {
+            userId: user.id,
+            role: profile.role,
+            permissions: userPermissions,
+            temIAConfig: userPermissions?.some(p => p.module === 'ia_configuracao')
+          });
+          
           setPermissions({
             role: profile.role,
             permissions: userPermissions as ModulePermission[],
