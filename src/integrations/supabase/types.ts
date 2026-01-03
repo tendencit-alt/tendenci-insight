@@ -1821,6 +1821,45 @@ export type Database = {
         }
         Relationships: []
       }
+      ia_client_memory: {
+        Row: {
+          client_name: string | null
+          created_at: string
+          id: string
+          instance_name: string
+          interaction_count: number | null
+          last_interaction: string | null
+          notes: string | null
+          phone_number: string
+          preferences: Json | null
+          updated_at: string
+        }
+        Insert: {
+          client_name?: string | null
+          created_at?: string
+          id?: string
+          instance_name: string
+          interaction_count?: number | null
+          last_interaction?: string | null
+          notes?: string | null
+          phone_number: string
+          preferences?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          client_name?: string | null
+          created_at?: string
+          id?: string
+          instance_name?: string
+          interaction_count?: number | null
+          last_interaction?: string | null
+          notes?: string | null
+          phone_number?: string
+          preferences?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ia_conversations: {
         Row: {
           content: string
@@ -1854,6 +1893,33 @@ export type Database = {
           metadata?: Json | null
           phone_number?: string
           role?: string
+        }
+        Relationships: []
+      }
+      ia_pending_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          instance_name: string
+          phone_number: string
+          processed: boolean | null
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          instance_name: string
+          phone_number: string
+          processed?: boolean | null
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          instance_name?: string
+          phone_number?: string
+          processed?: boolean | null
         }
         Relationships: []
       }
@@ -6145,6 +6211,7 @@ export type Database = {
           title: string
         }[]
       }
+      cleanup_old_pending_messages: { Args: never; Returns: undefined }
       create_daily_architect_goals: { Args: never; Returns: undefined }
       create_goal_reminder_notifications: { Args: never; Returns: undefined }
       crm_agg: {

@@ -6,6 +6,11 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Debounce time in milliseconds (5 seconds)
+const DEBOUNCE_MS = 5000;
+// Maximum messages to keep in context
+const MAX_CONTEXT_MESSAGES = 50;
+
 interface Message {
   role: "user" | "assistant" | "system";
   content: string;
@@ -36,6 +41,16 @@ interface Knowledge {
   conteudo: string;
   categoria: string;
   ativo: boolean;
+}
+
+interface ClientMemory {
+  id: string;
+  phone_number: string;
+  instance_name: string;
+  client_name: string | null;
+  preferences: unknown[];
+  notes: string | null;
+  interaction_count: number;
 }
 
 serve(async (req) => {
@@ -94,7 +109,8 @@ serve(async (req) => {
     }
 
     const phoneNumber = remoteJid.replace("@s.whatsapp.net", "");
-    console.log(`📱 From: ${phoneNumber}`);
+    const pushName = messageData.pushName || "";
+    console.log(`📱 From: ${phoneNumber} (${pushName})`);
 
     // Extract message content
     const message = messageData.message;
@@ -108,7 +124,6 @@ serve(async (req) => {
       userMessage = message.extendedTextMessage.text;
     } else if (message?.audioMessage) {
       mediaType = "audio";
-      // Try to get audio URL or base64 for transcription
       const audioUrl = messageData.media?.url || message.audioMessage?.url;
       const audioBase64 = messageData.media?.base64;
       const mimetype = message.audioMessage?.mimetype || "audio/ogg";
@@ -117,7 +132,6 @@ serve(async (req) => {
       
       if (audioUrl || audioBase64) {
         try {
-          // Transcribe audio using Gemini
           const transcribeResponse = await fetch(`${supabaseUrl}/functions/v1/transcribe-audio-gemini`, {
             method: "POST",
             headers: {
@@ -144,7 +158,7 @@ serve(async (req) => {
           userMessage = "[Mensagem de áudio - erro na transcrição]";
         }
       } else {
-        console.warn("🎙️ Audio message without URL or base64 data:", JSON.stringify(messageData.media || {}).substring(0, 200));
+        console.warn("🎙️ Audio message without URL or base64 data");
         userMessage = "[Áudio recebido - dados não disponíveis]";
       }
     } else if (message?.imageMessage) {
@@ -160,7 +174,105 @@ serve(async (req) => {
 
     console.log(`💬 Message: ${userMessage.substring(0, 100)}...`);
 
-    // Load IA configurations
+    // ========== DEBOUNCE SYSTEM ==========
+    // Check for pending messages from this client
+    const debounceWindow = new Date(Date.now() - DEBOUNCE_MS).toISOString();
+    
+    const { data: pendingMessages } = await supabase
+      .from("ia_pending_messages")
+      .select("*")
+      .eq("phone_number", phoneNumber)
+      .eq("instance_name", instanceName)
+      .eq("processed", false)
+      .gte("created_at", debounceWindow)
+      .order("created_at", { ascending: true });
+
+    // Save current message as pending
+    await supabase.from("ia_pending_messages").insert({
+      phone_number: phoneNumber,
+      instance_name: instanceName,
+      content: userMessage,
+      processed: false,
+    });
+
+    // If there are already pending messages, skip processing (let the timer handle it)
+    if (pendingMessages && pendingMessages.length > 0) {
+      console.log(`⏳ Debouncing: ${pendingMessages.length} pending messages, waiting for more...`);
+      return new Response(JSON.stringify({ success: true, debounced: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Wait for debounce period to collect more messages
+    console.log(`⏳ Waiting ${DEBOUNCE_MS}ms for additional messages...`);
+    await new Promise(resolve => setTimeout(resolve, DEBOUNCE_MS));
+
+    // Fetch all pending messages after waiting
+    const { data: allPendingMessages } = await supabase
+      .from("ia_pending_messages")
+      .select("*")
+      .eq("phone_number", phoneNumber)
+      .eq("instance_name", instanceName)
+      .eq("processed", false)
+      .order("created_at", { ascending: true });
+
+    // Mark all as processed
+    if (allPendingMessages && allPendingMessages.length > 0) {
+      const ids = allPendingMessages.map(m => m.id);
+      await supabase
+        .from("ia_pending_messages")
+        .update({ processed: true })
+        .in("id", ids);
+    }
+
+    // Consolidate all messages
+    const consolidatedMessages = allPendingMessages?.map(m => m.content) || [userMessage];
+    const combinedMessage = consolidatedMessages.length > 1 
+      ? `[O cliente enviou ${consolidatedMessages.length} mensagens seguidas]\n\n${consolidatedMessages.join("\n\n")}`
+      : consolidatedMessages[0];
+
+    console.log(`📨 Processing ${consolidatedMessages.length} consolidated message(s)`);
+
+    // ========== CLIENT MEMORY ==========
+    // Load or create client memory
+    let clientMemory: ClientMemory | null = null;
+    
+    const { data: existingMemory } = await supabase
+      .from("ia_client_memory")
+      .select("*")
+      .eq("phone_number", phoneNumber)
+      .eq("instance_name", instanceName)
+      .single();
+
+    if (existingMemory) {
+      clientMemory = existingMemory as ClientMemory;
+      // Update interaction count
+      await supabase
+        .from("ia_client_memory")
+        .update({ 
+          interaction_count: (clientMemory.interaction_count || 0) + 1,
+          last_interaction: new Date().toISOString(),
+          // Extract name from pushName if not set
+          client_name: clientMemory.client_name || pushName || null,
+        })
+        .eq("id", clientMemory.id);
+    } else {
+      // Create new memory
+      const { data: newMemory } = await supabase
+        .from("ia_client_memory")
+        .insert({
+          phone_number: phoneNumber,
+          instance_name: instanceName,
+          client_name: pushName || null,
+          interaction_count: 1,
+        })
+        .select()
+        .single();
+      
+      clientMemory = newMemory as ClientMemory;
+    }
+
+    // ========== LOAD CONFIGURATIONS ==========
     const { data: configsData } = await supabase
       .from("tendenci_ia_config")
       .select("section, config");
@@ -177,7 +289,7 @@ serve(async (req) => {
       .eq("ativo", true);
 
     const products = (productsData as Product[]) || [];
-    console.log(`📦 Loaded ${products.length} products. First product imagem_url: ${products[0]?.imagem_url || 'none'}`);
+    console.log(`📦 Loaded ${products.length} products`);
 
     // Load knowledge base
     const { data: knowledgeData } = await supabase
@@ -187,27 +299,29 @@ serve(async (req) => {
 
     const knowledge = (knowledgeData as Knowledge[]) || [];
 
-    // Get conversation history (last 10 messages)
+    // ========== CONVERSATION HISTORY (50 messages) ==========
     const { data: historyData } = await supabase
       .from("ia_conversations")
-      .select("role, content")
+      .select("role, content, created_at")
       .eq("phone_number", phoneNumber)
       .eq("instance_name", instanceName)
       .order("created_at", { ascending: false })
-      .limit(10);
+      .limit(MAX_CONTEXT_MESSAGES);
 
     const conversationHistory: Message[] = (historyData || [])
       .reverse()
       .map((h) => ({ role: h.role as "user" | "assistant", content: h.content }));
 
+    console.log(`📚 Loaded ${conversationHistory.length} messages of context`);
+
     // Build master prompt
-    const masterPrompt = buildMasterPrompt(configs, products, knowledge);
+    const masterPrompt = buildMasterPrompt(configs, products, knowledge, clientMemory, conversationHistory);
 
     // Build messages array for AI
     const messages: Message[] = [
       { role: "system", content: masterPrompt },
       ...conversationHistory,
-      { role: "user", content: userMessage },
+      { role: "user", content: combinedMessage },
     ];
 
     // Call Lovable AI
@@ -225,7 +339,8 @@ serve(async (req) => {
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
         messages,
-        max_tokens: 1024,
+        max_tokens: 1500,
+        temperature: 0.7,
       }),
     });
 
@@ -247,6 +362,70 @@ serve(async (req) => {
     
     console.log(`🤖 AI Response: ${assistantMessage.substring(0, 100)}...`);
 
+    // ========== CHECK FOR REPETITION ==========
+    const lastAssistantMessages = conversationHistory
+      .filter(m => m.role === "assistant")
+      .slice(-5)
+      .map(m => m.content);
+
+    if (isResponseTooSimilar(assistantMessage, lastAssistantMessages)) {
+      console.log("⚠️ Response too similar to previous, asking for reformulation...");
+      
+      const reformulateResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${lovableApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [
+            ...messages,
+            { role: "assistant", content: assistantMessage },
+            { role: "user", content: "SISTEMA: Sua resposta está muito similar a mensagens anteriores. Reformule de forma diferente, mais natural e variada, mantendo a mesma informação essencial. Use palavras diferentes, estrutura diferente." }
+          ],
+          max_tokens: 1500,
+          temperature: 0.9,
+        }),
+      });
+
+      if (reformulateResponse.ok) {
+        const reformulateData = await reformulateResponse.json();
+        const newMessage = reformulateData.choices?.[0]?.message?.content;
+        if (newMessage) {
+          assistantMessage = newMessage;
+          console.log("✅ Response reformulated successfully");
+        }
+      }
+    }
+
+    // ========== HUMANIZED DELAY (simulate typing) ==========
+    const typingDelay = Math.min(
+      1500 + (assistantMessage.length * 15), // ~15ms per character
+      6000 // max 6 seconds
+    );
+
+    console.log(`⏱️ Typing delay: ${typingDelay}ms`);
+    
+    // Send typing indicator
+    try {
+      await fetch(`${evolutionApiUrl}/chat/presence/${instanceName}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: evolutionApiKey,
+        },
+        body: JSON.stringify({
+          number: phoneNumber.replace(/\D/g, ""),
+          presence: "composing",
+        }),
+      });
+    } catch (e) {
+      console.log("Could not send typing indicator:", e);
+    }
+
+    await new Promise(resolve => setTimeout(resolve, typingDelay));
+
     // Process media markers and send response
     await processAndSendResponse(
       evolutionApiUrl!,
@@ -262,10 +441,10 @@ serve(async (req) => {
         phone_number: phoneNumber,
         instance_name: instanceName,
         role: "user",
-        content: userMessage,
+        content: combinedMessage,
         media_type: mediaType,
         media_url: mediaUrl,
-        metadata: { pushName: messageData.pushName },
+        metadata: { pushName: messageData.pushName, messagesConsolidated: consolidatedMessages.length },
       },
       {
         phone_number: phoneNumber,
@@ -275,6 +454,9 @@ serve(async (req) => {
         media_type: "text",
       },
     ]);
+
+    // Try to extract client name if mentioned
+    await extractAndSaveClientInfo(supabase, phoneNumber, instanceName, combinedMessage, clientMemory);
 
     console.log("✅ Message processed successfully");
 
@@ -301,26 +483,133 @@ serve(async (req) => {
   }
 });
 
+// Check if response is too similar to previous messages
+function isResponseTooSimilar(newMessage: string, previousMessages: string[]): boolean {
+  if (previousMessages.length === 0) return false;
+
+  const normalize = (text: string) => 
+    text.toLowerCase()
+      .replace(/[^\w\s]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+
+  const newNormalized = normalize(newMessage);
+  
+  for (const prev of previousMessages) {
+    const prevNormalized = normalize(prev);
+    
+    // Check for high similarity (>70% of words match)
+    const newWords = new Set(newNormalized.split(" "));
+    const prevWords = new Set(prevNormalized.split(" "));
+    
+    let matchCount = 0;
+    for (const word of newWords) {
+      if (prevWords.has(word)) matchCount++;
+    }
+    
+    const similarity = matchCount / Math.max(newWords.size, prevWords.size);
+    if (similarity > 0.7) {
+      console.log(`⚠️ Similarity ${(similarity * 100).toFixed(1)}% with previous message`);
+      return true;
+    }
+  }
+  
+  return false;
+}
+
+// Extract client info from message
+async function extractAndSaveClientInfo(
+  supabase: any,
+  phoneNumber: string,
+  instanceName: string,
+  message: string,
+  currentMemory: ClientMemory | null
+): Promise<void> {
+  // Only try to extract if we don't have a name yet
+  if (currentMemory?.client_name) return;
+
+  // Simple patterns to extract names
+  const namePatterns = [
+    /(?:meu nome é|me chamo|sou o|sou a|aqui é o|aqui é a)\s+([A-ZÀ-Ú][a-zà-ú]+(?:\s+[A-ZÀ-Ú][a-zà-ú]+)?)/i,
+    /^([A-ZÀ-Ú][a-zà-ú]+)\s+(?:aqui|falando)/i,
+  ];
+
+  for (const pattern of namePatterns) {
+    const match = message.match(pattern);
+    if (match && match[1]) {
+      const extractedName = match[1].trim();
+      console.log(`📝 Extracted client name: ${extractedName}`);
+      
+      await supabase
+        .from("ia_client_memory")
+        .update({ client_name: extractedName })
+        .eq("phone_number", phoneNumber)
+        .eq("instance_name", instanceName);
+      
+      break;
+    }
+  }
+}
+
 function buildMasterPrompt(
   configs: Record<string, Record<string, unknown>>,
   products: Product[],
-  knowledge: Knowledge[]
+  knowledge: Knowledge[],
+  clientMemory: ClientMemory | null,
+  conversationHistory: Message[]
 ): string {
   const parts: string[] = [];
 
-  // CRITICAL: Context instructions at the top
-  parts.push(`# INSTRUÇÕES GERAIS DE CONTEXTO
-IMPORTANTE: Você está em uma conversa contínua com um cliente via WhatsApp. 
-- LEMBRE o nome do cliente se ele se apresentou anteriormente
-- NÃO REPITA informações que você já deu na mesma conversa
-- CONTINUE do ponto onde a conversa parou
-- MANTENHA coerência com o que foi discutido antes
-- USE o histórico para dar respostas personalizadas
+  // ========== CRITICAL RULES AT THE TOP ==========
+  parts.push(`# 🚨 REGRAS CRÍTICAS - LEIA PRIMEIRO!
 
-VOCÊ PODE E DEVE enviar fotos e vídeos dos produtos!
-Quando recomendar um produto, INCLUA o marcador de mídia na sua resposta.
-Exemplo: "Esse produto é perfeito para você! [FOTO_PRODUTO:url:nome]"
+## NUNCA REPETIR CONTEÚDO
+- JAMAIS repita uma resposta que você já deu nesta conversa
+- NUNCA faça a mesma pergunta duas vezes
+- Se já cumprimentou o cliente, NÃO cumprimente novamente
+- Se já apresentou um produto, NÃO apresente da mesma forma
+- Varie SEMPRE suas palavras - use sinônimos e estruturas diferentes
+- Cada resposta deve ser ÚNICA e diferente das anteriores
+
+## CONTEXTO E MEMÓRIA (${conversationHistory.length} mensagens carregadas)
+- Você tem acesso às últimas ${conversationHistory.length} mensagens desta conversa
+- LEMBRE-SE de TUDO que foi discutido anteriormente
+- ${clientMemory?.client_name ? `O cliente se chama ${clientMemory.client_name} - USE o nome dele!` : "Se o cliente disser o nome, lembre e use nas próximas mensagens"}
+- Se já discutiu preferências, LEMBRE e APLIQUE
+- Trate cada resposta como continuação natural da conversa
+
+## MÚLTIPLAS MENSAGENS DO CLIENTE
+- Se o cliente enviou várias mensagens seguidas, você receberá todas juntas
+- RESPONDA A TODAS as mensagens de uma vez só
+- Não ignore nenhuma parte do que ele disse
+- Organize sua resposta para cobrir todos os pontos mencionados
+
+## TOM E NATURALIDADE
+- Fale como um humano real, não como robô
+- Use linguagem natural e brasileira (tá, né, pra, beleza)
+- Varie o comprimento das frases
+- Às vezes faça perguntas de acompanhamento relevantes
+- Demonstre interesse genuíno pelo cliente
+- Evite frases genéricas como "Entendi!", "Certo!", "Perfeito!" no início
+- NUNCA comece duas respostas da mesma forma
+
+## ENVIO DE MÍDIA
+- VOCÊ PODE E DEVE enviar fotos e vídeos dos produtos!
+- Quando recomendar um produto com foto, INCLUA o marcador na resposta
+- Use: [FOTO_PRODUTO:url:nome] para enviar foto
+- Use: [VIDEO_PRODUTO:url:nome] para enviar vídeo
+- Exemplo: "Olha esse modelo que combina com o que você procura! [FOTO_PRODUTO:url:nome]"
 `);
+
+  // ========== CLIENT MEMORY SECTION ==========
+  if (clientMemory) {
+    parts.push(`# INFORMAÇÕES DO CLIENTE
+- ${clientMemory.client_name ? `Nome: ${clientMemory.client_name}` : "Nome: ainda não informado"}
+- Total de interações: ${clientMemory.interaction_count || 1}
+- ${clientMemory.notes ? `Notas: ${clientMemory.notes}` : ""}
+${clientMemory.client_name ? `\n⚠️ USE o nome "${clientMemory.client_name}" naturalmente na conversa!` : ""}
+`);
+  }
 
   // Identity section
   const identidade = configs["identidade"] || {};
@@ -341,7 +630,7 @@ Horário de funcionamento: ${negocio.horario_funcionamento || "horário comercia
   // Communication section
   const comunicacao = configs["comunicacao"] || {};
   parts.push(`# ESTILO DE COMUNICAÇÃO
-Saudação inicial: ${comunicacao.saudacao || "Olá! Como posso ajudar?"}
+Saudação inicial (use APENAS no primeiro contato): ${comunicacao.saudacao || "Olá! Como posso ajudar?"}
 Despedida: ${comunicacao.despedida || "Obrigado pelo contato!"}
 Mensagens devem ser: ${comunicacao.estilo_mensagem || "claras e objetivas"}
 ${comunicacao.emojis_permitidos ? "Use emojis moderadamente" : "Não use emojis"}
@@ -354,41 +643,38 @@ ${comportamento.instrucoes_gerais || "Seja sempre educado e prestativo."}
 O que NÃO fazer: ${comportamento.restricoes || "Nunca prometa o que não pode cumprir."}
 `);
 
-  // Products section with correct column names
+  // Products section
   if (products.length > 0) {
-    parts.push(`# CATÁLOGO DE PRODUTOS
-Você tem acesso aos seguintes produtos. ENVIE FOTOS quando recomendar um produto!
+    const productsWithMedia = products.filter(p => p.imagem_url || p.video_url || p.videos?.length);
+    
+    parts.push(`# CATÁLOGO DE PRODUTOS (${products.length} produtos, ${productsWithMedia.length} com mídia)
+IMPORTANTE: Quando recomendar um produto, ENVIE a foto junto!
 
 ${products
-  .map(
-    (p) => {
-      const lines = [`## ${p.nome}`];
-      lines.push(`- Categoria: ${p.categoria || "Geral"}`);
-      lines.push(`- Preço: R$ ${p.preco_base?.toFixed(2) || "Sob consulta"}`);
-      if (p.descricao) lines.push(`- Descrição: ${p.descricao}`);
-      if (p.quando_oferecer) lines.push(`- Quando oferecer: ${p.quando_oferecer}`);
-      if (p.diferenciais?.length) lines.push(`- Diferenciais: ${p.diferenciais.join(", ")}`);
-      
-      // Media markers with correct column name (imagem_url)
-      if (p.imagem_url) {
-        lines.push(`- 📸 FOTO DISPONÍVEL: [FOTO_PRODUTO:${p.imagem_url}:${p.nome}]`);
-      }
-      if (p.video_url) {
-        lines.push(`- 🎬 VÍDEO DISPONÍVEL: [VIDEO_PRODUTO:${p.video_url}:${p.nome}]`);
-      }
-      // Additional videos array
-      if (p.videos?.length) {
-        p.videos.forEach(v => {
-          lines.push(`- 🎬 VÍDEO "${v.nome}": [VIDEO_PRODUTO:${v.url}:${v.nome}]`);
-        });
-      }
-      
-      return lines.join("\n");
+  .map((p) => {
+    const lines = [`## ${p.nome}`];
+    lines.push(`- Categoria: ${p.categoria || "Geral"}`);
+    lines.push(`- Preço: R$ ${p.preco_base?.toFixed(2) || "Sob consulta"}`);
+    if (p.descricao) lines.push(`- Descrição: ${p.descricao}`);
+    if (p.quando_oferecer) lines.push(`- Quando oferecer: ${p.quando_oferecer}`);
+    if (p.diferenciais?.length) lines.push(`- Diferenciais: ${p.diferenciais.join(", ")}`);
+    
+    // Media markers
+    if (p.imagem_url) {
+      lines.push(`- 📸 FOTO: [FOTO_PRODUTO:${p.imagem_url}:${p.nome}]`);
     }
-  )
+    if (p.video_url) {
+      lines.push(`- 🎬 VÍDEO: [VIDEO_PRODUTO:${p.video_url}:${p.nome}]`);
+    }
+    if (p.videos?.length) {
+      p.videos.forEach(v => {
+        lines.push(`- 🎬 VÍDEO "${v.nome}": [VIDEO_PRODUTO:${v.url}:${v.nome}]`);
+      });
+    }
+    
+    return lines.join("\n");
+  })
   .join("\n\n")}
-
-⚠️ IMPORTANTE: Use os marcadores [FOTO_PRODUTO:url:nome] e [VIDEO_PRODUTO:url:nome] na sua resposta para enviar mídia ao cliente!
 `);
   }
 
@@ -411,7 +697,7 @@ ${qualificacao.perguntas_qualificacao || ""}
 
   // Rules section
   const regras = configs["regras"] || {};
-  parts.push(`# REGRAS IMPORTANTES
+  parts.push(`# REGRAS ADICIONAIS
 ${regras.regras_gerais || ""}
 ${regras.politica_privacidade || ""}
 `);
@@ -433,19 +719,13 @@ async function processAndSendResponse(
   const photoMatches = [...message.matchAll(photoRegex)];
   const videoMatches = [...message.matchAll(videoRegex)];
 
-  // Debug: Log found media markers
-  console.log(`🖼️ Found ${photoMatches.length} photo markers, ${videoMatches.length} video markers`);
-  if (photoMatches.length > 0) {
-    console.log(`📸 Photos to send:`, photoMatches.map(m => ({ url: m[1], caption: m[2] })));
-  }
-  if (videoMatches.length > 0) {
-    console.log(`🎬 Videos to send:`, videoMatches.map(m => ({ url: m[1], caption: m[2] })));
-  }
+  console.log(`🖼️ Found ${photoMatches.length} photos, ${videoMatches.length} videos`);
 
   // Clean message from markers
   let cleanMessage = message
     .replace(photoRegex, "")
     .replace(videoRegex, "")
+    .replace(/\n{3,}/g, "\n\n") // Remove excessive line breaks
     .trim();
 
   // Send text message first
@@ -456,6 +736,11 @@ async function processAndSendResponse(
     });
   }
 
+  // Small delay between messages
+  if (photoMatches.length > 0 || videoMatches.length > 0) {
+    await new Promise(resolve => setTimeout(resolve, 800));
+  }
+
   // Send photos
   for (const match of photoMatches) {
     const [, url, caption] = match;
@@ -464,6 +749,7 @@ async function processAndSendResponse(
       url: url.trim(),
       caption: `📸 ${caption.trim()}`,
     });
+    await new Promise(resolve => setTimeout(resolve, 500));
   }
 
   // Send videos
@@ -474,6 +760,7 @@ async function processAndSendResponse(
       url: url.trim(),
       caption: `🎬 ${caption.trim()}`,
     });
+    await new Promise(resolve => setTimeout(resolve, 500));
   }
 }
 
