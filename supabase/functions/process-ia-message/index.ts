@@ -164,7 +164,83 @@ serve(async (req) => {
     } else if (message?.imageMessage) {
       mediaType = "image";
       mediaUrl = messageData.media?.url || null;
-      userMessage = message.imageMessage.caption || "[Imagem enviada]";
+      const imageBase64 = messageData.media?.base64 || null;
+      const imageCaption = message.imageMessage.caption || "";
+      
+      console.log(`🖼️ Image message received - URL: ${mediaUrl ? 'yes' : 'no'}, Base64: ${imageBase64 ? 'yes' : 'no'}`);
+      
+      // Analyze image using Gemini multimodal if we have image data
+      if (imageBase64 || mediaUrl) {
+        try {
+          console.log("🖼️ Analyzing image with Gemini Vision...");
+          
+          // Build image content for Gemini
+          let imageContent: any;
+          if (imageBase64) {
+            // Use base64 directly
+            imageContent = {
+              type: "image_url",
+              image_url: {
+                url: `data:image/jpeg;base64,${imageBase64}`
+              }
+            };
+          } else if (mediaUrl) {
+            // Use URL directly - Gemini can fetch it
+            imageContent = {
+              type: "image_url",
+              image_url: {
+                url: mediaUrl
+              }
+            };
+          }
+          
+          const imageAnalysisResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${lovableApiKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: "google/gemini-2.5-flash",
+              messages: [
+                {
+                  role: "user",
+                  content: [
+                    {
+                      type: "text",
+                      text: "Descreva esta imagem de forma detalhada em português brasileiro. Foque em: 1) O que é mostrado na imagem, 2) Cores e características visuais importantes, 3) Qualquer texto visível, 4) Contexto ou propósito aparente. Seja conciso mas completo."
+                    },
+                    imageContent
+                  ]
+                }
+              ],
+              max_tokens: 500,
+            }),
+          });
+          
+          if (imageAnalysisResponse.ok) {
+            const analysisData = await imageAnalysisResponse.json();
+            const imageDescription = analysisData.choices?.[0]?.message?.content;
+            
+            if (imageDescription) {
+              userMessage = `[O cliente enviou uma imagem]\n\n📷 Descrição da imagem: ${imageDescription}${imageCaption ? `\n\n💬 Legenda do cliente: ${imageCaption}` : ""}`;
+              console.log(`🖼️ Image analyzed successfully: ${imageDescription.substring(0, 100)}...`);
+            } else {
+              userMessage = imageCaption || "[Imagem enviada - descrição não disponível]";
+            }
+          } else {
+            const errorText = await imageAnalysisResponse.text();
+            console.error(`🖼️ Image analysis failed (${imageAnalysisResponse.status}): ${errorText}`);
+            userMessage = imageCaption || "[Imagem enviada - não foi possível analisar]";
+          }
+        } catch (e) {
+          console.error("🖼️ Error analyzing image:", e);
+          userMessage = imageCaption || "[Imagem enviada - erro na análise]";
+        }
+      } else {
+        console.warn("🖼️ Image message without URL or base64 data");
+        userMessage = imageCaption || "[Imagem recebida - dados não disponíveis]";
+      }
     } else {
       console.log("⏭️ Unsupported message type");
       return new Response(JSON.stringify({ success: true, skipped: true }), {
