@@ -155,7 +155,6 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
   const hasModuleAccess = useCallback((module: AppModule, action: 'view' | 'create' | 'edit' | 'delete' = 'view'): boolean => {
     // Durante loading, retornar true para permitir renderização do menu
     if (loading) {
-      console.log('[Permissions] Still loading, allowing access to:', module);
       return true;
     }
     
@@ -165,37 +164,38 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
     }
     
     // Se não tem permissões carregadas, bloquear
-    if (!permissions || !permissions.permissions) {
-      console.warn('[Permissions] No permissions loaded for module:', module);
+    if (!permissions?.permissions?.length) {
+      console.warn('[Permissions] No permissions array for module:', module);
       return false;
     }
 
-    const modulePermission = permissions.permissions.find(p => p.module === module);
+    // Buscar permissão do módulo - comparação case-insensitive e trim
+    const normalizedModule = module.toLowerCase().trim();
+    const modulePermission = permissions.permissions.find(p => 
+      p.module?.toLowerCase().trim() === normalizedModule
+    );
     
     if (!modulePermission) {
-      console.log('[Permissions] No permission found for module:', module);
+      console.log('[Permissions] Module not found:', module, 'Available:', permissions.permissions.map(p => p.module));
       return false;
     }
 
     let hasAccess = false;
     switch (action) {
       case 'view':
-        hasAccess = modulePermission.can_view;
+        hasAccess = Boolean(modulePermission.can_view);
         break;
       case 'create':
-        hasAccess = modulePermission.can_create;
+        hasAccess = Boolean(modulePermission.can_create);
         break;
       case 'edit':
-        hasAccess = modulePermission.can_edit;
+        hasAccess = Boolean(modulePermission.can_edit);
         break;
       case 'delete':
-        hasAccess = modulePermission.can_delete;
+        hasAccess = Boolean(modulePermission.can_delete);
         break;
-      default:
-        hasAccess = false;
     }
     
-    console.log('[Permissions] Check:', module, action, '=', hasAccess);
     return hasAccess;
   }, [loading, permissions, isMaster]);
 
