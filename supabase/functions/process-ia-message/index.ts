@@ -1036,11 +1036,9 @@ async function createOrUpdateDealFromIA(
         .from('leads')
         .insert({ 
           client_id: clientId,
-          source: 'whatsapp_ia',
           status: 'novo',
           temperature: temperature,
-          phone: formattedPhone,
-          name: displayName
+          utm_source: 'whatsapp_ia'
         })
         .select('id')
         .single();
