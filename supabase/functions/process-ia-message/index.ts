@@ -496,12 +496,17 @@ serve(async (req) => {
       
       if (shouldCreate) {
         console.log(`📋 Creating/updating CRM lead with temperature: ${temperature}`);
+        
+        // Extract product information from conversation
+        const productInfo = extractProductInfo(updatedHistory, products);
+        
         await createOrUpdateDealFromIA(
           supabase,
           phoneNumber,
           clientMemory?.client_name || pushName || null,
           updatedHistory,
-          temperature
+          temperature,
+          productInfo
         );
       } else {
         // Even if we don't create a new lead, update existing deal's history
@@ -684,6 +689,195 @@ async function extractAndSaveClientInfo(
 
 // ========== CRM INTEGRATION FUNCTIONS ==========
 
+// Extract product information from conversation
+interface ProductInfo {
+  tipoProduto: string | null;
+  categoria: string | null;
+  centroCusto: string | null;
+  observacoes: string;
+}
+
+function extractProductInfo(history: Message[], products: Product[]): ProductInfo {
+  // Combine all messages for analysis
+  const allText = history.map(m => m.content).join(' ').toLowerCase();
+  
+  // Product type keywords mapping
+  const tipoKeywords: Record<string, string[]> = {
+    'Sofá': ['sofá', 'sofa', 'estofado', 'sofas', 'sofás'],
+    'Poltrona': ['poltrona', 'poltronas', 'poltrona decorativa'],
+    'Mesa': ['mesa', 'mesa de jantar', 'mesa de centro', 'mesa lateral', 'mesa de apoio', 'mesas'],
+    'Cadeira': ['cadeira', 'cadeiras', 'cadeira de jantar'],
+    'Banqueta': ['banqueta', 'banquetas', 'banco', 'bancos'],
+    'Aparador': ['aparador', 'aparadores', 'buffet'],
+    'Rack': ['rack', 'painel', 'painel de tv', 'home theater'],
+    'Estante': ['estante', 'estantes', 'prateleira'],
+    'Cama': ['cama', 'cabeceira', 'base de cama'],
+    'Criado-mudo': ['criado', 'criado-mudo', 'mesa de cabeceira'],
+    'Chaise': ['chaise', 'divã', 'recamier'],
+    'Pufe': ['pufe', 'puff', 'pufes'],
+    'Cômoda': ['cômoda', 'comoda', 'gaveteiro'],
+    'Armário': ['armário', 'armario', 'guarda-roupa', 'closet'],
+    'Cozinha': ['cozinha', 'cozinha planejada', 'armário de cozinha'],
+  };
+
+  // Category keywords
+  const categoriaKeywords: Record<string, string[]> = {
+    'Planejados': ['planejado', 'planejada', 'sob medida', 'marcenaria', 'closet', 'armário embutido', 'cozinha planejada', 'móvel planejado'],
+    'Móveis Soltos': ['sofá', 'sofa', 'mesa', 'poltrona', 'cadeira', 'banqueta', 'aparador', 'rack', 'estante', 'pufe', 'chaise'],
+  };
+
+  // Centro de custo keywords
+  const centroKeywords: Record<string, string[]> = {
+    'Náutico': ['barco', 'iate', 'lancha', 'náutico', 'nautico', 'marítimo', 'maritimo', 'embarcação', 'embarcacao', 'veleiro'],
+    'Rústico': ['rústico', 'rustico', 'madeira maciça', 'fazenda', 'country', 'campo', 'chácara', 'chacara', 'sítio', 'sitio'],
+    'Industrial': ['industrial', 'loft', 'metal', 'ferro', 'aço', 'aco', 'moderno industrial'],
+    'Residencial': ['casa', 'apartamento', 'apto', 'residência', 'residencia', 'moradia', 'sala', 'quarto', 'varanda'],
+  };
+
+  // Detect product type
+  let tipoProduto: string | null = null;
+  for (const [tipo, keywords] of Object.entries(tipoKeywords)) {
+    for (const keyword of keywords) {
+      if (allText.includes(keyword)) {
+        tipoProduto = tipo;
+        break;
+      }
+    }
+    if (tipoProduto) break;
+  }
+
+  // Try to match with registered products
+  if (!tipoProduto && products.length > 0) {
+    for (const product of products) {
+      const productName = product.nome.toLowerCase();
+      if (allText.includes(productName.split(' ')[0])) {
+        tipoProduto = product.categoria || product.nome;
+        break;
+      }
+    }
+  }
+
+  // Detect category
+  let categoria: string | null = null;
+  for (const [cat, keywords] of Object.entries(categoriaKeywords)) {
+    for (const keyword of keywords) {
+      if (allText.includes(keyword)) {
+        categoria = cat;
+        break;
+      }
+    }
+    if (categoria) break;
+  }
+
+  // Detect centro de custo
+  let centroCusto: string | null = null;
+  for (const [centro, keywords] of Object.entries(centroKeywords)) {
+    for (const keyword of keywords) {
+      if (allText.includes(keyword)) {
+        centroCusto = centro;
+        break;
+      }
+    }
+    if (centroCusto) break;
+  }
+
+  // Extract characteristics
+  const observacoesParts: string[] = [];
+
+  // Places/seats
+  const lugaresMatch = allText.match(/(\d+)\s*(?:lugares?|pessoas?|assentos?)/i);
+  if (lugaresMatch) {
+    observacoesParts.push(`Lugares: ${lugaresMatch[1]}`);
+  }
+
+  // Dimensions/measurements
+  const medidasPatterns = [
+    /(\d+[,.]?\d*)\s*(?:metros?|m)\s*(?:x|por)\s*(\d+[,.]?\d*)\s*(?:metros?|m)?/gi,
+    /(\d+[,.]?\d*)\s*(?:cm|centímetros?)\s*(?:x|por)\s*(\d+[,.]?\d*)\s*(?:cm)?/gi,
+    /(?:largura|larg\.?)\s*(?:de\s*)?(\d+[,.]?\d*)\s*(?:m|cm|metros?)?/gi,
+    /(?:comprimento|comp\.?)\s*(?:de\s*)?(\d+[,.]?\d*)\s*(?:m|cm|metros?)?/gi,
+    /(?:altura|alt\.?)\s*(?:de\s*)?(\d+[,.]?\d*)\s*(?:m|cm|metros?)?/gi,
+    /(\d+[,.]?\d*)\s*(?:metros?|m)\b/gi,
+  ];
+
+  const medidasEncontradas: string[] = [];
+  for (const pattern of medidasPatterns) {
+    const matches = allText.matchAll(pattern);
+    for (const match of matches) {
+      if (match[0] && !medidasEncontradas.includes(match[0])) {
+        medidasEncontradas.push(match[0]);
+      }
+    }
+  }
+  if (medidasEncontradas.length > 0) {
+    observacoesParts.push(`Medidas: ${medidasEncontradas.slice(0, 3).join(', ')}`);
+  }
+
+  // Materials
+  const materiaisKeywords = [
+    'couro', 'couro natural', 'couro sintético', 'courino',
+    'tecido', 'linho', 'veludo', 'suede', 'chenille', 'sarja',
+    'madeira', 'mdf', 'mdp', 'compensado', 'pinus', 'carvalho', 'freijó',
+    'mármore', 'granito', 'vidro', 'espelho',
+    'aço', 'ferro', 'metal', 'alumínio',
+    'impermeável', 'impermeavel', 'lavável', 'lavavel',
+  ];
+  const materiaisEncontrados = materiaisKeywords.filter(m => allText.includes(m));
+  if (materiaisEncontrados.length > 0) {
+    observacoesParts.push(`Material: ${materiaisEncontrados.slice(0, 3).join(', ')}`);
+  }
+
+  // Colors
+  const coresKeywords = [
+    'branco', 'preto', 'cinza', 'bege', 'marrom', 'caramelo',
+    'azul', 'verde', 'amarelo', 'vermelho', 'rosa', 'roxo',
+    'terracota', 'mostarda', 'nude', 'off-white', 'creme',
+    'natural', 'amadeirado', 'claro', 'escuro',
+  ];
+  const coresEncontradas = coresKeywords.filter(c => allText.includes(c));
+  if (coresEncontradas.length > 0) {
+    observacoesParts.push(`Cor: ${coresEncontradas.slice(0, 2).join(', ')}`);
+  }
+
+  // Environments
+  const ambientesKeywords = [
+    'sala', 'sala de estar', 'living', 'sala de jantar',
+    'quarto', 'suíte', 'suite', 'dormitório', 'dormitorio',
+    'cozinha', 'área gourmet', 'area gourmet', 'varanda', 'sacada', 'terraço', 'terraco',
+    'escritório', 'escritorio', 'home office', 'lavabo', 'banheiro',
+    'área externa', 'area externa', 'jardim', 'piscina',
+  ];
+  const ambientesEncontrados = ambientesKeywords.filter(a => allText.includes(a));
+  if (ambientesEncontrados.length > 0) {
+    observacoesParts.push(`Ambiente: ${ambientesEncontrados.slice(0, 2).join(', ')}`);
+  }
+
+  // Style preferences
+  const estiloKeywords = [
+    'moderno', 'contemporâneo', 'contemporaneo', 'minimalista',
+    'clássico', 'classico', 'rústico', 'rustico', 'industrial',
+    'escandinavo', 'boho', 'retrô', 'retro', 'vintage',
+  ];
+  const estilosEncontrados = estiloKeywords.filter(e => allText.includes(e));
+  if (estilosEncontrados.length > 0) {
+    observacoesParts.push(`Estilo: ${estilosEncontrados.join(', ')}`);
+  }
+
+  // Build observations string
+  const observacoes = observacoesParts.length > 0 
+    ? observacoesParts.join(' | ') 
+    : '';
+
+  console.log(`📦 Product extraction: tipo=${tipoProduto}, cat=${categoria}, centro=${centroCusto}, obs=${observacoes.substring(0, 50)}...`);
+
+  return {
+    tipoProduto,
+    categoria,
+    centroCusto,
+    observacoes,
+  };
+}
+
 // Detect if we should create a lead based on conversation
 function shouldCreateLead(
   conversationHistory: Message[],
@@ -740,7 +934,8 @@ async function createOrUpdateDealFromIA(
   phoneNumber: string,
   clientName: string | null,
   conversationHistory: Message[],
-  temperature: string
+  temperature: string,
+  productInfo: ProductInfo
 ): Promise<void> {
   try {
     // Use real name if available, otherwise use phone suffix
@@ -906,20 +1101,46 @@ async function createOrUpdateDealFromIA(
     console.log(`📋 CRM Debug: existingDeal=${existingDeal?.id || 'none'}, historyMessages=${conversationHistory.length}`);
 
     if (existingDeal) {
-      // Update existing deal with new history
+      // Update existing deal with new history and product info
+      const updateData: Record<string, unknown> = { 
+        conversation_history: fullHistory,
+        last_interaction: new Date().toISOString(),
+        ai_status: temperature
+      };
+      
+      // Add product info if detected
+      if (productInfo.categoria) updateData.categoria = productInfo.categoria;
+      if (productInfo.centroCusto) updateData.centro_custo = productInfo.centroCusto;
+      if (productInfo.tipoProduto) updateData.tipo_produto = productInfo.tipoProduto;
+      
+      // Append observations to existing notes
+      if (productInfo.observacoes) {
+        // Get current note to append
+        const { data: currentDeal } = await supabase
+          .from('crm_deals')
+          .select('note')
+          .eq('id', existingDeal.id)
+          .single();
+        
+        const existingNote = currentDeal?.note || '';
+        const separator = existingNote ? '\n\n---\n' : '';
+        const newNote = `${existingNote}${separator}📦 Detalhes do produto:\n${productInfo.observacoes}`;
+        
+        // Only update if we have new info and it's not already there
+        if (!existingNote.includes(productInfo.observacoes)) {
+          updateData.note = newNote;
+        }
+      }
+      
       const { error: updateError } = await supabase
         .from('crm_deals')
-        .update({ 
-          conversation_history: fullHistory,
-          last_interaction: new Date().toISOString(),
-          ai_status: temperature
-        })
+        .update(updateData)
         .eq('id', existingDeal.id);
       
       if (updateError) {
         console.error('Error updating deal:', updateError);
       } else {
-        console.log(`📋 Updated CRM deal with complete history (${conversationHistory.length} messages)`);
+        console.log(`📋 Updated CRM deal with complete history (${conversationHistory.length} messages) and product info`);
       }
     } else {
       // Get first pipeline and stage
@@ -948,11 +1169,22 @@ async function createOrUpdateDealFromIA(
         return;
       }
 
-      // Create new deal
+      // Build deal title with product info
+      const productLabel = productInfo.tipoProduto || '';
+      const dealTitle = productLabel 
+        ? `Lead IA - ${displayName} (${productLabel})`
+        : `Lead IA - ${displayName}`;
+      
+      // Build observation note
+      const initialNote = productInfo.observacoes 
+        ? `📦 Detalhes do produto:\n${productInfo.observacoes}` 
+        : '';
+
+      // Create new deal with product info
       const { error: dealError } = await supabase
         .from('crm_deals')
         .insert({
-          title: `Lead IA - ${displayName}`,
+          title: dealTitle,
           lead_id: leadId,
           pipeline_id: pipeline.id,
           stage_id: stage.id,
@@ -960,13 +1192,17 @@ async function createOrUpdateDealFromIA(
           conversation_history: fullHistory,
           ai_status: temperature,
           last_interaction: new Date().toISOString(),
-          status: 'aberto'
+          status: 'aberto',
+          categoria: productInfo.categoria,
+          centro_custo: productInfo.centroCusto,
+          tipo_produto: productInfo.tipoProduto,
+          note: initialNote || null,
         });
       
       if (dealError) {
         console.error('Error creating deal:', dealError);
       } else {
-        console.log(`📋 Created new CRM deal: Lead IA - ${displayName}`);
+        console.log(`📋 Created new CRM deal: ${dealTitle} | cat=${productInfo.categoria}, tipo=${productInfo.tipoProduto}`);
       }
     }
   } catch (error) {
