@@ -666,11 +666,12 @@ Responda em português brasileiro de forma clara e organizada.`;
 
     // Calculate maxTokens based on character limit (1 token ≈ 3-4 chars in Portuguese)
     const comunicacaoConfig = configs.comunicacao || {};
-    const limiteCaracteres = comunicacaoConfig.limite_caracteres || 500;
-    const temLimite = limiteCaracteres !== "sem_limite" && limiteCaracteres !== 0;
-    const maxTokens = temLimite ? Math.ceil(Number(limiteCaracteres) / 3) + 50 : 1500; // +50 buffer for safety
+    const limiteCaracteresConfig = Number(comunicacaoConfig.limite_caracteres) || 0;
+    const temLimite = limiteCaracteresConfig > 0;
+    const maxTokens = temLimite ? Math.ceil(limiteCaracteresConfig / 3) + 100 : 1500; // +100 buffer for safety
     
-    console.log(`🧠 Calling Lovable AI with fallback support... (maxTokens: ${maxTokens}, limite: ${limiteCaracteres})`);
+    console.log(`🧠 Calling Lovable AI with fallback support... (maxTokens: ${maxTokens}, limite: ${limiteCaracteresConfig})`);
+
     const startTime = Date.now();
     const { response: aiResponse, model: usedModel, error: aiError, fallbackUsed } = await callAIWithFallback(
       messages,
@@ -714,7 +715,25 @@ Responda em português brasileiro de forma clara e organizada.`;
     const aiData = await aiResponse.json();
     let assistantMessage = aiData.choices?.[0]?.message?.content || "Desculpe, não consegui processar sua mensagem.";
     
-    console.log(`🤖 AI Response: ${assistantMessage.substring(0, 100)}...`);
+    console.log(`🤖 AI Response (${assistantMessage.length} chars): ${assistantMessage.substring(0, 100)}...`);
+
+    // ========== FORCE CHARACTER LIMIT ==========
+    const limiteCaracteres = limiteCaracteresConfig; // Use the pre-calculated value
+    if (limiteCaracteres > 0 && assistantMessage.length > limiteCaracteres) {
+      console.log(`⚠️ Resposta excede limite (${assistantMessage.length}/${limiteCaracteres}). Truncando...`);
+      
+      // Cortar no último espaço antes do limite para não cortar palavras
+      const textoTruncado = assistantMessage.substring(0, limiteCaracteres - 3); // -3 para o "..."
+      const ultimoEspaco = textoTruncado.lastIndexOf(' ');
+      
+      if (ultimoEspaco > limiteCaracteres * 0.7) {
+        assistantMessage = textoTruncado.substring(0, ultimoEspaco) + "...";
+      } else {
+        assistantMessage = textoTruncado + "...";
+      }
+      
+      console.log(`✅ Resposta truncada para ${assistantMessage.length} caracteres`);
+    }
 
     // ========== CHECK FOR REPETITION ==========
     const lastAssistantMessages = conversationHistory
@@ -749,19 +768,33 @@ Responda em português brasileiro de forma clara e organizada.`;
         if (newMessage) {
           assistantMessage = newMessage;
           console.log("✅ Response reformulated successfully");
+          
+          // Re-apply character limit after reformulation
+          if (limiteCaracteres > 0 && assistantMessage.length > limiteCaracteres) {
+            const textoTruncado = assistantMessage.substring(0, limiteCaracteres - 3);
+            const ultimoEspaco = textoTruncado.lastIndexOf(' ');
+            if (ultimoEspaco > limiteCaracteres * 0.7) {
+              assistantMessage = textoTruncado.substring(0, ultimoEspaco) + "...";
+            } else {
+              assistantMessage = textoTruncado + "...";
+            }
+          }
         }
       }
     }
 
     // ========== HUMANIZED DELAY (simulate typing) ==========
-    // Use configured delay from comunicacao settings, or calculate based on message length
-    const configuredDelay = Number(comunicacaoConfig.tempo_resposta_ms) || 2000;
-    const calculatedTypingTime = Math.min(assistantMessage.length * 20, 5000); // ~20ms per char, max 5s
+    // Use configured delay from comunicacao settings - MINIMUM 3 seconds
+    const configuredDelay = Number(comunicacaoConfig?.tempo_resposta_ms) || 5000;
+    const minDelay = Math.max(configuredDelay, 3000); // Mínimo 3 segundos sempre
+    
+    // Calculate typing time based on message length (~40ms per char, max 10s)
+    const calculatedTypingTime = Math.min(assistantMessage.length * 40, 10000);
     
     // Use the larger of: configured minimum delay OR calculated typing time
-    const typingDelay = Math.max(configuredDelay, calculatedTypingTime);
+    const typingDelay = Math.max(minDelay, calculatedTypingTime);
 
-    console.log(`⏱️ Typing delay: ${typingDelay}ms (configured: ${configuredDelay}ms, calculated: ${calculatedTypingTime}ms)`);
+    console.log(`⏱️ DELAY OBRIGATÓRIO: ${typingDelay}ms (config: ${configuredDelay}ms, min: ${minDelay}ms, calc: ${calculatedTypingTime}ms)`);
     
     // Send typing indicator
     try {
