@@ -706,13 +706,48 @@ async function createOrUpdateDealFromIA(
     // Format complete conversation history
     const fullHistory = formatCompleteHistory(conversationHistory);
 
-    // Search for existing deal from IA
-    const { data: existingDeal } = await supabase
-      .from('crm_deals')
-      .select('id, conversation_history')
-      .eq('from_ai', true)
-      .or(`lead_id.eq.${leadId || 'null'},title.ilike.%${formattedPhone.slice(-4)}%`)
-      .maybeSingle();
+    // Search for existing deal from IA - FIXED: use lead_id directly
+    console.log(`📋 CRM Debug: phone=${formattedPhone}, clientId=${clientId}, leadId=${leadId}`);
+    
+    let existingDeal: { id: string; conversation_history: string | null } | null = null;
+    
+    // First try by lead_id if available
+    if (leadId) {
+      const { data: dealByLead } = await supabase
+        .from('crm_deals')
+        .select('id, conversation_history')
+        .eq('from_ai', true)
+        .eq('lead_id', leadId)
+        .maybeSingle();
+      
+      existingDeal = dealByLead;
+      console.log(`📋 CRM Debug: found by lead_id=${dealByLead?.id || 'none'}`);
+    }
+    
+    // If not found by lead, try to find by client through leads table
+    if (!existingDeal && clientId) {
+      const { data: clientLeads } = await supabase
+        .from('leads')
+        .select('id')
+        .eq('client_id', clientId);
+      
+      if (clientLeads && clientLeads.length > 0) {
+        const leadIds = clientLeads.map(l => l.id);
+        const { data: dealByClient } = await supabase
+          .from('crm_deals')
+          .select('id, conversation_history')
+          .eq('from_ai', true)
+          .in('lead_id', leadIds)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        
+        existingDeal = dealByClient;
+        console.log(`📋 CRM Debug: found by client_id=${dealByClient?.id || 'none'}`);
+      }
+    }
+    
+    console.log(`📋 CRM Debug: existingDeal=${existingDeal?.id || 'none'}, historyMessages=${conversationHistory.length}`);
 
     if (existingDeal) {
       // Update existing deal with new history
@@ -783,7 +818,7 @@ async function createOrUpdateDealFromIA(
   }
 }
 
-// Update existing deal's conversation history
+// Update existing deal's conversation history - FIXED: search by client/lead, not title
 async function updateExistingDealHistory(
   supabase: any,
   phoneNumber: string,
@@ -792,12 +827,36 @@ async function updateExistingDealHistory(
   try {
     const formattedPhone = phoneNumber.replace(/\D/g, '');
     
-    // Search for existing deal from IA with this phone
+    // First find client by phone
+    const { data: client } = await supabase
+      .from('clients')
+      .select('id')
+      .or(`phone.eq.${formattedPhone},phone.ilike.%${formattedPhone.slice(-8)}%`)
+      .maybeSingle();
+    
+    if (!client) {
+      console.log(`📋 No client found for phone ${formattedPhone.slice(-4)}`);
+      return;
+    }
+    
+    // Find lead by client_id
+    const { data: lead } = await supabase
+      .from('leads')
+      .select('id')
+      .eq('client_id', client.id)
+      .maybeSingle();
+    
+    if (!lead) {
+      console.log(`📋 No lead found for client ${client.id}`);
+      return;
+    }
+    
+    // Find deal by lead_id
     const { data: existingDeal } = await supabase
       .from('crm_deals')
       .select('id')
       .eq('from_ai', true)
-      .ilike('title', `%${formattedPhone.slice(-4)}%`)
+      .eq('lead_id', lead.id)
       .maybeSingle();
 
     if (existingDeal) {
@@ -811,7 +870,9 @@ async function updateExistingDealHistory(
         })
         .eq('id', existingDeal.id);
       
-      console.log(`📋 Updated existing deal history`);
+      console.log(`📋 Updated existing deal history (${conversationHistory.length} msgs)`);
+    } else {
+      console.log(`📋 No AI deal found for lead ${lead.id}`);
     }
   } catch (error) {
     console.error('Error updating deal history:', error);
