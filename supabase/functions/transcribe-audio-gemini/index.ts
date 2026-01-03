@@ -89,7 +89,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'google/gemini-3-pro-preview',
         messages: [
           {
             role: 'user',
@@ -99,10 +99,9 @@ serve(async (req) => {
                 text: 'Transcreva o áudio a seguir para texto em português brasileiro. Retorne APENAS a transcrição exata do que foi dito, sem comentários adicionais, sem pontuação extra, sem formatação. Se não conseguir entender algo, escreva [inaudível].'
               },
               {
-                type: 'input_audio',
-                input_audio: {
-                  data: audioBase64,
-                  format: geminiFormat
+                type: 'image_url',
+                image_url: {
+                  url: `data:${audioMimeType};base64,${audioBase64}`
                 }
               }
             ]
