@@ -244,32 +244,52 @@ serve(async (req) => {
       .eq("instance_name", instanceName)
       .single();
 
+    // Determine the best name: pushName has priority for new names
+    const determineBestName = (existingName: string | null, newPushName: string): string | null => {
+      // If we have a real pushName from WhatsApp, use it
+      if (newPushName && newPushName.trim().length > 0) {
+        // If existing name is generic (starts with "Cliente") or empty, prefer pushName
+        if (!existingName || existingName.startsWith('Cliente ')) {
+          return newPushName.trim();
+        }
+      }
+      return existingName;
+    };
+
     if (existingMemory) {
       clientMemory = existingMemory as ClientMemory;
-      // Update interaction count
+      const bestName = determineBestName(clientMemory.client_name, pushName);
+      
+      // Update interaction count and name if we have a better one
       await supabase
         .from("ia_client_memory")
         .update({ 
           interaction_count: (clientMemory.interaction_count || 0) + 1,
           last_interaction: new Date().toISOString(),
-          // Extract name from pushName if not set
-          client_name: clientMemory.client_name || pushName || null,
+          client_name: bestName,
         })
         .eq("id", clientMemory.id);
+      
+      // Update the local reference
+      clientMemory.client_name = bestName;
+      
+      console.log(`📝 Client memory updated: name="${bestName}", interactions=${(clientMemory.interaction_count || 0) + 1}`);
     } else {
-      // Create new memory
+      // Create new memory with pushName
+      const initialName = pushName?.trim() || null;
       const { data: newMemory } = await supabase
         .from("ia_client_memory")
         .insert({
           phone_number: phoneNumber,
           instance_name: instanceName,
-          client_name: pushName || null,
+          client_name: initialName,
           interaction_count: 1,
         })
         .select()
         .single();
       
       clientMemory = newMemory as ClientMemory;
+      console.log(`📝 New client memory created: name="${initialName}"`);
     }
 
     // ========== LOAD CONFIGURATIONS ==========
@@ -562,7 +582,7 @@ function isResponseTooSimilar(newMessage: string, previousMessages: string[]): b
   return false;
 }
 
-// Extract client info from message
+// Extract client info from message and update all related records
 async function extractAndSaveClientInfo(
   supabase: any,
   phoneNumber: string,
@@ -570,26 +590,92 @@ async function extractAndSaveClientInfo(
   message: string,
   currentMemory: ClientMemory | null
 ): Promise<void> {
-  // Only try to extract if we don't have a name yet
-  if (currentMemory?.client_name) return;
+  // Only try to extract if we don't have a real name yet (not generic)
+  const hasRealName = currentMemory?.client_name && !currentMemory.client_name.startsWith('Cliente ');
+  if (hasRealName) return;
 
-  // Simple patterns to extract names
+  // Expanded patterns to extract names from various contexts
   const namePatterns = [
-    /(?:meu nome é|me chamo|sou o|sou a|aqui é o|aqui é a)\s+([A-ZÀ-Ú][a-zà-ú]+(?:\s+[A-ZÀ-Ú][a-zà-ú]+)?)/i,
-    /^([A-ZÀ-Ú][a-zà-ú]+)\s+(?:aqui|falando)/i,
+    // Self-introduction patterns
+    /(?:meu nome é|me chamo|sou o|sou a|aqui é o|aqui é a|eu sou|pode me chamar de)\s+([A-ZÀ-Úa-zà-ú][a-zà-ú]+(?:\s+[A-ZÀ-Úa-zà-ú][a-zà-ú]+)?)/i,
+    /^([A-ZÀ-Ú][a-zà-ú]+)\s+(?:aqui|falando|do\s+whatsapp)/i,
+    // Simple "sou X" at start of message
+    /^(?:oi|olá|ola|bom\s+dia|boa\s+tarde|boa\s+noite)?\s*,?\s*(?:sou|aqui\s+é)\s+(?:o\s+|a\s+)?([A-ZÀ-Úa-zà-ú][a-zà-ú]+)/i,
+    // Response to "qual seu nome" type questions
+    /^([A-ZÀ-Úa-zà-ú][a-zà-ú]+)(?:\s+[A-ZÀ-Úa-zà-ú][a-zà-ú]+)?$/i,
+    // "Olá [Nome] aqui"
+    /^(?:oi|olá|ola),?\s+([A-ZÀ-Úa-zà-ú][a-zà-ú]+)\s+aqui/i,
   ];
 
   for (const pattern of namePatterns) {
     const match = message.match(pattern);
     if (match && match[1]) {
       const extractedName = match[1].trim();
-      console.log(`📝 Extracted client name: ${extractedName}`);
       
+      // Skip if it's too short or looks like a common word
+      const commonWords = ['oi', 'ola', 'olá', 'bom', 'boa', 'tudo', 'bem', 'dia', 'tarde', 'noite', 'sim', 'nao', 'não', 'quero', 'preciso', 'tenho'];
+      if (extractedName.length < 3 || commonWords.includes(extractedName.toLowerCase())) {
+        continue;
+      }
+      
+      // Capitalize first letter
+      const formattedName = extractedName.charAt(0).toUpperCase() + extractedName.slice(1).toLowerCase();
+      
+      console.log(`📝 Extracted client name from message: ${formattedName}`);
+      
+      // Update client memory
       await supabase
         .from("ia_client_memory")
-        .update({ client_name: extractedName })
+        .update({ client_name: formattedName })
         .eq("phone_number", phoneNumber)
         .eq("instance_name", instanceName);
+      
+      // Also update the clients table if exists
+      const formattedPhone = phoneNumber.replace(/\D/g, '');
+      const { data: existingClient } = await supabase
+        .from('clients')
+        .select('id, name')
+        .or(`phone.eq.${formattedPhone},phone.ilike.%${formattedPhone.slice(-8)}%`)
+        .maybeSingle();
+      
+      if (existingClient && existingClient.name?.startsWith('Cliente ')) {
+        await supabase
+          .from('clients')
+          .update({ name: formattedName })
+          .eq('id', existingClient.id);
+        console.log(`📝 Updated client table name: ${formattedName}`);
+        
+        // Also update the lead and deal title
+        const { data: lead } = await supabase
+          .from('leads')
+          .select('id')
+          .eq('client_id', existingClient.id)
+          .maybeSingle();
+        
+        if (lead) {
+          await supabase
+            .from('leads')
+            .update({ name: formattedName })
+            .eq('id', lead.id);
+          
+          // Update deal title
+          const { data: deal } = await supabase
+            .from('crm_deals')
+            .select('id, title')
+            .eq('lead_id', lead.id)
+            .eq('from_ai', true)
+            .maybeSingle();
+          
+          if (deal && deal.title?.includes('Cliente ')) {
+            const newTitle = deal.title.replace(/Cliente\s+\d+/, formattedName);
+            await supabase
+              .from('crm_deals')
+              .update({ title: `Lead IA - ${formattedName}` })
+              .eq('id', deal.id);
+            console.log(`📝 Updated deal title: Lead IA - ${formattedName}`);
+          }
+        }
+      }
       
       break;
     }
@@ -657,8 +743,12 @@ async function createOrUpdateDealFromIA(
   temperature: string
 ): Promise<void> {
   try {
-    const displayName = clientName || `Cliente ${phoneNumber.slice(-4)}`;
+    // Use real name if available, otherwise use phone suffix
+    const hasRealName = clientName && !clientName.startsWith('Cliente ');
+    const displayName = hasRealName ? clientName : `Cliente ${phoneNumber.slice(-4)}`;
     const formattedPhone = phoneNumber.replace(/\D/g, '');
+    
+    console.log(`📋 CRM: Creating/updating deal for ${displayName} (hasRealName=${hasRealName})`);
     
     // Search for existing client by phone - try multiple formats
     let clientId: string | null = null;
@@ -682,13 +772,16 @@ async function createOrUpdateDealFromIA(
       clientId = existingClient.id;
       console.log(`📋 Found existing client: ${existingClient.name} (phone: ${existingClient.phone})`);
       
-      // Update name if we have a better one
-      if (clientName && existingClient.name?.startsWith('Cliente ')) {
+      // Update name if we have a real name and existing is generic
+      const hasRealClientName = clientName && !clientName.startsWith('Cliente ');
+      const existingIsGeneric = existingClient.name?.startsWith('Cliente ');
+      
+      if (hasRealClientName && existingIsGeneric) {
         await supabase
           .from('clients')
           .update({ name: clientName })
           .eq('id', clientId);
-        console.log(`📋 Updated client name to: ${clientName}`);
+        console.log(`📋 Updated client name from generic to: ${clientName}`);
       }
     } else {
       console.log(`📋 No client found, creating new one: ${displayName}`);
