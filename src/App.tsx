@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { PermissionsProvider } from "@/contexts/PermissionsContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { PermissionGuard } from "@/components/auth/PermissionGuard";
 import { DynamicRouteHandler } from "@/components/routing/DynamicRouteHandler";
@@ -52,49 +53,51 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <AuthProvider>
-            <Routes>
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/" element={<ProtectedRoute><PermissionGuard module="dashboard"><Index /></PermissionGuard></ProtectedRoute>} />
-            <Route path="/leads" element={<ProtectedRoute><PermissionGuard module="leads"><Leads /></PermissionGuard></ProtectedRoute>} />
-            <Route path="/kanban" element={<ProtectedRoute><PermissionGuard module="crm"><CRM /></PermissionGuard></ProtectedRoute>} />
-            <Route path="/crm" element={<ProtectedRoute><PermissionGuard module="crm"><CRM /></PermissionGuard></ProtectedRoute>} />
-            <Route path="/projects" element={<ProtectedRoute><PermissionGuard module="projetos"><Projects /></PermissionGuard></ProtectedRoute>} />
-            <Route path="/projects/settings" element={<ProtectedRoute><PermissionGuard module="configuracoes"><ProjectSettings /></PermissionGuard></ProtectedRoute>} />
-            <Route path="/settings" element={<ProtectedRoute><PermissionGuard module="configuracoes"><ProjectSettings /></PermissionGuard></ProtectedRoute>} />
-            <Route path="/settings/users" element={<ProtectedRoute><PermissionGuard module="configuracoes"><UserManagement /></PermissionGuard></ProtectedRoute>} />
-            <Route path="/prospeccao" element={<ProtectedRoute><PermissionGuard module="arquitetos"><Prospeccao /></PermissionGuard></ProtectedRoute>} />
-            <Route path="/producao" element={<ProtectedRoute><PermissionGuard module="producao"><Production /></PermissionGuard></ProtectedRoute>} />
-            <Route path="/fichas-tecnicas" element={<ProtectedRoute><PermissionGuard module="fichas_tecnicas"><FichasTecnicas /></PermissionGuard></ProtectedRoute>} />
-            <Route path="/pedidos" element={<ProtectedRoute><PermissionGuard module="pedidos"><Orders /></PermissionGuard></ProtectedRoute>} />
-            <Route path="/fornecedores" element={<ProtectedRoute><PermissionGuard module="fornecedores"><Suppliers /></PermissionGuard></ProtectedRoute>} />
-            <Route path="/estoque" element={<ProtectedRoute><PermissionGuard module="estoque"><Inventory /></PermissionGuard></ProtectedRoute>} />
-            <Route path="/compras" element={<ProtectedRoute><PermissionGuard module="compras"><Purchases /></PermissionGuard></ProtectedRoute>} />
-            <Route path="/metas" element={<ProtectedRoute><PermissionGuard module="metas"><Goals /></PermissionGuard></ProtectedRoute>} />
-            <Route path="/metas/gestao" element={<ProtectedRoute><PermissionGuard module="metas"><GoalsManagement /></PermissionGuard></ProtectedRoute>} />
-            <Route path="/metas/desempenho/:goalId" element={<ProtectedRoute><PermissionGuard module="metas"><SellerPerformance /></PermissionGuard></ProtectedRoute>} />
-        <Route path="/dashboards" element={<ProtectedRoute><DashboardsPersonalizados /></ProtectedRoute>} />
-        <Route path="/dashboards/editar/:id" element={<ProtectedRoute><DashboardEditor /></ProtectedRoute>} />
-        <Route path="/dashboards/view/:id" element={<ProtectedRoute><DashboardView /></ProtectedRoute>} />
-            <Route path="/import-temp" element={<ImportTempArchitects />} />
-            <Route path="/auto-import" element={<AutoImportArchitects />} />
-            <Route path="/final-bulk-import" element={<FinalBulkImport />} />
-            <Route path="/whatsapp-integration-docs" element={<ProtectedRoute><WhatsAppIntegrationDocs /></ProtectedRoute>} />
-            <Route path="/n8n-tarefas" element={<ProtectedRoute><N8nTarefasGuide /></ProtectedRoute>} />
-            <Route path="/n8n-followup" element={<ProtectedRoute><N8nFollowupGuide /></ProtectedRoute>} />
-            <Route path="/n8n-conversa" element={<ProtectedRoute><N8nConversationGuide /></ProtectedRoute>} />
-            <Route path="/ia-whatsapp" element={<ProtectedRoute><IAWhatsAppSetup /></ProtectedRoute>} />
-            <Route path="/system-errors" element={<ProtectedRoute><SystemErrors /></ProtectedRoute>} />
-            <Route path="/atividades" element={<ProtectedRoute><ActivityCenter /></ProtectedRoute>} />
-            <Route path="/automacoes" element={<ProtectedRoute><AutomacoesDocumentacao /></ProtectedRoute>} />
-            <Route path="/ia-configuracao" element={<ProtectedRoute><PermissionGuard module="ia_configuracao"><IAConfiguracao /></PermissionGuard></ProtectedRoute>} />
-            <Route path="/ia-conversas" element={<ProtectedRoute><PermissionGuard module="ia_configuracao"><IAConversations /></PermissionGuard></ProtectedRoute>} />
-            {/* Rotas dinâmicas - verificar se é uma rota editada antes de mostrar 404 */}
-            <Route path="*" element={
-              <ProtectedRoute>
-                <DynamicRouteHandler />
-              </ProtectedRoute>
-            } />
-            </Routes>
+            <PermissionsProvider>
+              <Routes>
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/" element={<ProtectedRoute><PermissionGuard module="dashboard"><Index /></PermissionGuard></ProtectedRoute>} />
+              <Route path="/leads" element={<ProtectedRoute><PermissionGuard module="leads"><Leads /></PermissionGuard></ProtectedRoute>} />
+              <Route path="/kanban" element={<ProtectedRoute><PermissionGuard module="crm"><CRM /></PermissionGuard></ProtectedRoute>} />
+              <Route path="/crm" element={<ProtectedRoute><PermissionGuard module="crm"><CRM /></PermissionGuard></ProtectedRoute>} />
+              <Route path="/projects" element={<ProtectedRoute><PermissionGuard module="projetos"><Projects /></PermissionGuard></ProtectedRoute>} />
+              <Route path="/projects/settings" element={<ProtectedRoute><PermissionGuard module="configuracoes"><ProjectSettings /></PermissionGuard></ProtectedRoute>} />
+              <Route path="/settings" element={<ProtectedRoute><PermissionGuard module="configuracoes"><ProjectSettings /></PermissionGuard></ProtectedRoute>} />
+              <Route path="/settings/users" element={<ProtectedRoute><PermissionGuard module="configuracoes"><UserManagement /></PermissionGuard></ProtectedRoute>} />
+              <Route path="/prospeccao" element={<ProtectedRoute><PermissionGuard module="arquitetos"><Prospeccao /></PermissionGuard></ProtectedRoute>} />
+              <Route path="/producao" element={<ProtectedRoute><PermissionGuard module="producao"><Production /></PermissionGuard></ProtectedRoute>} />
+              <Route path="/fichas-tecnicas" element={<ProtectedRoute><PermissionGuard module="fichas_tecnicas"><FichasTecnicas /></PermissionGuard></ProtectedRoute>} />
+              <Route path="/pedidos" element={<ProtectedRoute><PermissionGuard module="pedidos"><Orders /></PermissionGuard></ProtectedRoute>} />
+              <Route path="/fornecedores" element={<ProtectedRoute><PermissionGuard module="fornecedores"><Suppliers /></PermissionGuard></ProtectedRoute>} />
+              <Route path="/estoque" element={<ProtectedRoute><PermissionGuard module="estoque"><Inventory /></PermissionGuard></ProtectedRoute>} />
+              <Route path="/compras" element={<ProtectedRoute><PermissionGuard module="compras"><Purchases /></PermissionGuard></ProtectedRoute>} />
+              <Route path="/metas" element={<ProtectedRoute><PermissionGuard module="metas"><Goals /></PermissionGuard></ProtectedRoute>} />
+              <Route path="/metas/gestao" element={<ProtectedRoute><PermissionGuard module="metas"><GoalsManagement /></PermissionGuard></ProtectedRoute>} />
+              <Route path="/metas/desempenho/:goalId" element={<ProtectedRoute><PermissionGuard module="metas"><SellerPerformance /></PermissionGuard></ProtectedRoute>} />
+              <Route path="/dashboards" element={<ProtectedRoute><DashboardsPersonalizados /></ProtectedRoute>} />
+              <Route path="/dashboards/editar/:id" element={<ProtectedRoute><DashboardEditor /></ProtectedRoute>} />
+              <Route path="/dashboards/view/:id" element={<ProtectedRoute><DashboardView /></ProtectedRoute>} />
+              <Route path="/import-temp" element={<ImportTempArchitects />} />
+              <Route path="/auto-import" element={<AutoImportArchitects />} />
+              <Route path="/final-bulk-import" element={<FinalBulkImport />} />
+              <Route path="/whatsapp-integration-docs" element={<ProtectedRoute><WhatsAppIntegrationDocs /></ProtectedRoute>} />
+              <Route path="/n8n-tarefas" element={<ProtectedRoute><N8nTarefasGuide /></ProtectedRoute>} />
+              <Route path="/n8n-followup" element={<ProtectedRoute><N8nFollowupGuide /></ProtectedRoute>} />
+              <Route path="/n8n-conversa" element={<ProtectedRoute><N8nConversationGuide /></ProtectedRoute>} />
+              <Route path="/ia-whatsapp" element={<ProtectedRoute><IAWhatsAppSetup /></ProtectedRoute>} />
+              <Route path="/system-errors" element={<ProtectedRoute><SystemErrors /></ProtectedRoute>} />
+              <Route path="/atividades" element={<ProtectedRoute><ActivityCenter /></ProtectedRoute>} />
+              <Route path="/automacoes" element={<ProtectedRoute><AutomacoesDocumentacao /></ProtectedRoute>} />
+              <Route path="/ia-configuracao" element={<ProtectedRoute><PermissionGuard module="ia_configuracao"><IAConfiguracao /></PermissionGuard></ProtectedRoute>} />
+              <Route path="/ia-conversas" element={<ProtectedRoute><PermissionGuard module="ia_configuracao"><IAConversations /></PermissionGuard></ProtectedRoute>} />
+              {/* Rotas dinâmicas - verificar se é uma rota editada antes de mostrar 404 */}
+              <Route path="*" element={
+                <ProtectedRoute>
+                  <DynamicRouteHandler />
+                </ProtectedRoute>
+              } />
+              </Routes>
+            </PermissionsProvider>
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
