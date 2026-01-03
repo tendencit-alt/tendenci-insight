@@ -20,11 +20,14 @@ interface Product {
   id: string;
   nome: string;
   descricao: string;
-  preco: number;
+  preco_base: number;
   categoria: string;
-  foto_url: string | null;
+  imagem_url: string | null;
   video_url: string | null;
-  active: boolean;
+  videos: Array<{nome: string; url: string}> | null;
+  quando_oferecer: string | null;
+  diferenciais: string[] | null;
+  ativo: boolean;
 }
 
 interface Knowledge {
@@ -32,7 +35,7 @@ interface Knowledge {
   titulo: string;
   conteudo: string;
   categoria: string;
-  active: boolean;
+  ativo: boolean;
 }
 
 serve(async (req) => {
@@ -170,10 +173,11 @@ serve(async (req) => {
     // Load products
     const { data: productsData } = await supabase
       .from("tendenci_ia_produtos")
-      .select("*")
+      .select("id, nome, descricao, preco_base, categoria, imagem_url, video_url, videos, quando_oferecer, diferenciais, ativo")
       .eq("ativo", true);
 
     const products = (productsData as Product[]) || [];
+    console.log(`📦 Loaded ${products.length} products. First product imagem_url: ${products[0]?.imagem_url || 'none'}`);
 
     // Load knowledge base
     const { data: knowledgeData } = await supabase
@@ -304,6 +308,20 @@ function buildMasterPrompt(
 ): string {
   const parts: string[] = [];
 
+  // CRITICAL: Context instructions at the top
+  parts.push(`# INSTRUÇÕES GERAIS DE CONTEXTO
+IMPORTANTE: Você está em uma conversa contínua com um cliente via WhatsApp. 
+- LEMBRE o nome do cliente se ele se apresentou anteriormente
+- NÃO REPITA informações que você já deu na mesma conversa
+- CONTINUE do ponto onde a conversa parou
+- MANTENHA coerência com o que foi discutido antes
+- USE o histórico para dar respostas personalizadas
+
+VOCÊ PODE E DEVE enviar fotos e vídeos dos produtos!
+Quando recomendar um produto, INCLUA o marcador de mídia na sua resposta.
+Exemplo: "Esse produto é perfeito para você! [FOTO_PRODUTO:url:nome]"
+`);
+
   // Identity section
   const identidade = configs["identidade"] || {};
   parts.push(`# IDENTIDADE DO AGENTE
@@ -336,24 +354,41 @@ ${comportamento.instrucoes_gerais || "Seja sempre educado e prestativo."}
 O que NÃO fazer: ${comportamento.restricoes || "Nunca prometa o que não pode cumprir."}
 `);
 
-  // Products section
+  // Products section with correct column names
   if (products.length > 0) {
     parts.push(`# CATÁLOGO DE PRODUTOS
-Você tem acesso aos seguintes produtos para recomendar:
+Você tem acesso aos seguintes produtos. ENVIE FOTOS quando recomendar um produto!
 
 ${products
   .map(
-    (p) => `## ${p.nome}
-- Categoria: ${p.categoria || "Geral"}
-- Preço: R$ ${p.preco?.toFixed(2) || "Sob consulta"}
-- Descrição: ${p.descricao || ""}
-${p.foto_url ? `- Para enviar foto use: [FOTO_PRODUTO:${p.foto_url}:${p.nome}]` : ""}
-${p.video_url ? `- Para enviar vídeo use: [VIDEO_PRODUTO:${p.video_url}:${p.nome}]` : ""}
-`
+    (p) => {
+      const lines = [`## ${p.nome}`];
+      lines.push(`- Categoria: ${p.categoria || "Geral"}`);
+      lines.push(`- Preço: R$ ${p.preco_base?.toFixed(2) || "Sob consulta"}`);
+      if (p.descricao) lines.push(`- Descrição: ${p.descricao}`);
+      if (p.quando_oferecer) lines.push(`- Quando oferecer: ${p.quando_oferecer}`);
+      if (p.diferenciais?.length) lines.push(`- Diferenciais: ${p.diferenciais.join(", ")}`);
+      
+      // Media markers with correct column name (imagem_url)
+      if (p.imagem_url) {
+        lines.push(`- 📸 FOTO DISPONÍVEL: [FOTO_PRODUTO:${p.imagem_url}:${p.nome}]`);
+      }
+      if (p.video_url) {
+        lines.push(`- 🎬 VÍDEO DISPONÍVEL: [VIDEO_PRODUTO:${p.video_url}:${p.nome}]`);
+      }
+      // Additional videos array
+      if (p.videos?.length) {
+        p.videos.forEach(v => {
+          lines.push(`- 🎬 VÍDEO "${v.nome}": [VIDEO_PRODUTO:${v.url}:${v.nome}]`);
+        });
+      }
+      
+      return lines.join("\n");
+    }
   )
-  .join("\n")}
+  .join("\n\n")}
 
-IMPORTANTE: Quando mencionar um produto, você pode usar os marcadores acima para enviar mídia.
+⚠️ IMPORTANTE: Use os marcadores [FOTO_PRODUTO:url:nome] e [VIDEO_PRODUTO:url:nome] na sua resposta para enviar mídia ao cliente!
 `);
   }
 
@@ -397,6 +432,15 @@ async function processAndSendResponse(
 
   const photoMatches = [...message.matchAll(photoRegex)];
   const videoMatches = [...message.matchAll(videoRegex)];
+
+  // Debug: Log found media markers
+  console.log(`🖼️ Found ${photoMatches.length} photo markers, ${videoMatches.length} video markers`);
+  if (photoMatches.length > 0) {
+    console.log(`📸 Photos to send:`, photoMatches.map(m => ({ url: m[1], caption: m[2] })));
+  }
+  if (videoMatches.length > 0) {
+    console.log(`🎬 Videos to send:`, videoMatches.map(m => ({ url: m[1], caption: m[2] })));
+  }
 
   // Clean message from markers
   let cleanMessage = message
