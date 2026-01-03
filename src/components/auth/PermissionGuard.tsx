@@ -47,6 +47,7 @@ export function PermissionGuard({ children, module, redirectTo = '/' }: Permissi
             'arquitetos': '/prospeccao',
             'metas': '/metas',
             'configuracoes': '/settings',
+            'ia_configuracao': '/ia-configuracao',
           };
           const targetRoute = routeMap[firstAllowedModule.module] || '/auth';
           console.log('[PermissionGuard] Redirecionando para primeiro módulo permitido:', targetRoute);
