@@ -253,8 +253,8 @@ Horário de funcionamento: ${negocio.horario_funcionamento || ''}`;
     const emojis = comunicacao.usar_emojis || 'moderado';
     
     // Character limit configuration
-    const limiteCaracteres = comunicacao.limite_caracteres || 500;
-    const temLimite = limiteCaracteres !== "sem_limite" && limiteCaracteres !== 0;
+    const limiteCaracteres = Number(comunicacao.limite_caracteres) || 0;
+    const temLimite = limiteCaracteres > 0;
     
     let comunicacaoSection = `# COMUNICAÇÃO E ESTILO DE RESPOSTA
 
@@ -262,14 +262,23 @@ Horário de funcionamento: ${negocio.horario_funcionamento || ''}`;
 - **Tamanho:** ${tamanhoDescricoes[tamanho] || tamanhoDescricoes.media}
 - **Mensagens Sequenciais:** ${sequenciaDescricoes[sequencia] || sequenciaDescricoes['2-3']}
 
-${temLimite ? `## ⚠️ LIMITE DE CARACTERES - REGRA OBRIGATÓRIA
-**SUAS RESPOSTAS DEVEM TER NO MÁXIMO ${limiteCaracteres} CARACTERES.**
-- Seja conciso, direto e objetivo
-- Priorize a informação mais importante primeiro
-- Se precisar dar mais detalhes, pergunte se o cliente quer saber mais
-- Evite repetições e palavras desnecessárias
-- Use frases curtas e impactantes
+${temLimite ? `## ⛔ LIMITE ABSOLUTO DE CARACTERES - REGRA CRÍTICA
 
+**⚠️ VOCÊ TEM EXATAMENTE ${limiteCaracteres} CARACTERES DISPONÍVEIS. NÃO MAIS!**
+
+Antes de responder, você DEVE:
+1. Contar mentalmente os caracteres da sua resposta
+2. Se ultrapassar ${limiteCaracteres}, reescrever MAIS CURTO
+3. Priorizar: saudação curta + informação essencial APENAS
+4. Eliminar: palavras desnecessárias, repetições, formatação pesada
+5. Se precisar de mais espaço, pergunte se o cliente quer detalhes
+
+**EXEMPLOS DE RESPOSTAS CURTAS (até ${limiteCaracteres} chars):**
+- "Olá! Sim, trabalhamos com esse produto. Quer saber valores?"
+- "Boa tarde! Disponível sim. Posso te enviar fotos?"
+- "Claro! Prazo de 30-45 dias. Quer agendar visita?"
+
+**LEMBRE-SE:** Respostas longas serão CORTADAS automaticamente!
 ` : ''}## Modo de Atuação
 - **Estilo de Resposta:** ${modoDescricoes[modo] || modoDescricoes.consultivo}
 - **Linguagem Técnica:** ${linguagemDescricoes[linguagem] || linguagemDescricoes.moderado}
