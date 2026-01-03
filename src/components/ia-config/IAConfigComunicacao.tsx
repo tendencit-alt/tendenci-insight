@@ -32,20 +32,21 @@ const initialForm = {
   usar_emojis: "moderado",
   usar_audios: false,
   tempo_resposta_ms: 2000,
-  limite_caracteres: "500" as string,
+  limite_caracteres: 500, // 0 = sem limite
   msg_boas_vindas: "",
   msg_despedida: "",
   msg_ausencia: "",
   exemplos_respostas: [] as ExemploResposta[],
 };
 
-const limiteCaracteresOptions = [
-  { value: "300", label: "300 caracteres", desc: "Respostas muito curtas e diretas" },
-  { value: "500", label: "500 caracteres", desc: "Respostas curtas mas informativas (recomendado)" },
-  { value: "800", label: "800 caracteres", desc: "Respostas médias com mais detalhes" },
-  { value: "1200", label: "1200 caracteres", desc: "Respostas longas e completas" },
-  { value: "sem_limite", label: "Sem limite", desc: "IA decide o tamanho conforme necessário" },
-];
+const getLimiteDescription = (limite: number): string => {
+  if (limite === 0) return "A IA decidirá o tamanho ideal conforme a pergunta";
+  if (limite <= 200) return "Respostas muito curtas e diretas";
+  if (limite <= 400) return "Respostas curtas mas informativas";
+  if (limite <= 600) return "Respostas médias equilibradas (recomendado)";
+  if (limite <= 800) return "Respostas com bom nível de detalhe";
+  return "Respostas longas e completas";
+};
 
 const tamanhoOptions = [
   { value: "curta", label: "Curta", desc: "1-2 frases diretas, vai ao ponto rapidamente" },
@@ -149,6 +150,19 @@ export default function IAConfigComunicacao({ config, onSave, saving }: Props) {
         exemplos = [{ pergunta: "", resposta: config.exemplos_respostas }];
       }
       
+      // Parse limite_caracteres - handle legacy string values
+      let limiteCaracteres = 500;
+      const rawLimite = config.limite_caracteres;
+      if (typeof rawLimite === 'number') {
+        limiteCaracteres = rawLimite;
+      } else if (typeof rawLimite === 'string') {
+        if (rawLimite === 'sem_limite') {
+          limiteCaracteres = 0;
+        } else {
+          limiteCaracteres = parseInt(rawLimite) || 500;
+        }
+      }
+      
       setForm({
         tamanho_mensagem: (config.tamanho_mensagem as string) || "media",
         max_mensagens_sequencia: (config.max_mensagens_sequencia as string) || "2-3",
@@ -159,7 +173,7 @@ export default function IAConfigComunicacao({ config, onSave, saving }: Props) {
         usar_emojis: (config.usar_emojis as string) || "moderado",
         usar_audios: (config.usar_audios as boolean) || false,
         tempo_resposta_ms: (config.tempo_resposta_ms as number) || 2000,
-        limite_caracteres: String(config.limite_caracteres || "500"),
+        limite_caracteres: limiteCaracteres,
         msg_boas_vindas: (config.msg_boas_vindas as string) || "",
         msg_despedida: (config.msg_despedida as string) || "",
         msg_ausencia: (config.msg_ausencia as string) || "",
@@ -293,17 +307,58 @@ export default function IAConfigComunicacao({ config, onSave, saving }: Props) {
         </div>
       </div>
 
-      {/* Limite de caracteres */}
+      {/* Limite de caracteres e tempo de resposta */}
       <div className="grid gap-6 md:grid-cols-2">
-        <SelectWithDescription
-          label="Limite de Caracteres por Resposta"
-          value={form.limite_caracteres}
-          onChange={(v) => setForm({ ...form, limite_caracteres: v })}
-          options={limiteCaracteresOptions}
-        />
+        {/* Limite de caracteres com slider */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <Label>Limite de Caracteres por Resposta</Label>
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                value={form.limite_caracteres === 0 ? "" : form.limite_caracteres}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value) || 0;
+                  setForm({ ...form, limite_caracteres: Math.min(1000, Math.max(0, val)) });
+                }}
+                className="w-20 text-center h-8"
+                min={0}
+                max={1000}
+                placeholder="∞"
+              />
+              <span className="text-sm text-muted-foreground">chars</span>
+            </div>
+          </div>
+          
+          <Slider
+            value={[form.limite_caracteres === 0 ? 500 : form.limite_caracteres]}
+            onValueChange={([v]) => setForm({ ...form, limite_caracteres: v })}
+            min={100}
+            max={1000}
+            step={50}
+            disabled={form.limite_caracteres === 0}
+            className={form.limite_caracteres === 0 ? "opacity-50" : ""}
+          />
+          
+          <div className="flex items-center gap-2">
+            <Switch
+              checked={form.limite_caracteres === 0}
+              onCheckedChange={(checked) => 
+                setForm({ ...form, limite_caracteres: checked ? 0 : 500 })
+              }
+            />
+            <span className="text-sm text-muted-foreground">
+              Sem limite (IA decide o tamanho)
+            </span>
+          </div>
+          
+          <p className="text-xs text-muted-foreground">
+            {getLimiteDescription(form.limite_caracteres)}
+          </p>
+        </div>
         
         {/* Tempo de resposta */}
-        <div className="space-y-2">
+        <div className="space-y-3">
           <Label>Tempo de Resposta Simulado</Label>
           <div className="space-y-4">
             <Slider
