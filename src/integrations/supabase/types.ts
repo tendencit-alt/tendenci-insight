@@ -5137,7 +5137,9 @@ export type Database = {
           contexto_uso: string | null
           created_at: string | null
           fonte: string | null
+          grau_certeza: string | null
           id: string
+          nivel_autoridade: string | null
           palavras_chave: string[] | null
           prioridade: number | null
           tipo: string | null
@@ -5158,7 +5160,9 @@ export type Database = {
           contexto_uso?: string | null
           created_at?: string | null
           fonte?: string | null
+          grau_certeza?: string | null
           id?: string
+          nivel_autoridade?: string | null
           palavras_chave?: string[] | null
           prioridade?: number | null
           tipo?: string | null
@@ -5179,7 +5183,9 @@ export type Database = {
           contexto_uso?: string | null
           created_at?: string | null
           fonte?: string | null
+          grau_certeza?: string | null
           id?: string
+          nivel_autoridade?: string | null
           palavras_chave?: string[] | null
           prioridade?: number | null
           tipo?: string | null

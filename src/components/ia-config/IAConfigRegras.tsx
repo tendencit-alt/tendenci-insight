@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Save, Plus, Trash2, GripVertical } from "lucide-react";
 import { useFormPersistence } from "@/hooks/useFormPersistence";
 import { FormSaveIndicator } from "@/components/ui/FormSaveIndicator";
@@ -13,6 +14,12 @@ interface Props {
 }
 
 interface Regra {
+  regra: string;
+  prioridade: 'alta' | 'media' | 'baixa';
+}
+
+// Interface antiga para backward compatibility
+interface RegraLegacy {
   titulo: string;
   descricao: string;
 }
@@ -31,15 +38,33 @@ export default function IAConfigRegras({ config, onSave, saving }: Props) {
     true
   );
 
-  const [novaRegra, setNovaRegra] = useState({ titulo: "", descricao: "" });
+  const [novaRegra, setNovaRegra] = useState("");
+  const [novaPrioridadeRegra, setNovaPrioridadeRegra] = useState<'alta' | 'media' | 'baixa'>('media');
   const [novaCondicao, setNovaCondicao] = useState("");
   const [novaExcecao, setNovaExcecao] = useState("");
   const [novaPrioridade, setNovaPrioridade] = useState("");
 
   useEffect(() => {
     if (config && !hasRestoredData) {
+      // Convert legacy format if needed
+      let regras: Regra[] = [];
+      const rawRegras = config.regras_personalizadas as (Regra | RegraLegacy)[] || [];
+      
+      rawRegras.forEach((r: any) => {
+        if ('regra' in r) {
+          // Novo formato
+          regras.push({ regra: r.regra, prioridade: r.prioridade || 'media' });
+        } else if ('titulo' in r && 'descricao' in r) {
+          // Formato legado: converter
+          regras.push({ 
+            regra: `${r.titulo}: ${r.descricao}`, 
+            prioridade: 'media' 
+          });
+        }
+      });
+
       setForm({
-        regras_personalizadas: (config.regras_personalizadas as Regra[]) || [],
+        regras_personalizadas: regras,
         condicoes_especiais: (config.condicoes_especiais as string[]) || [],
         excecoes: (config.excecoes as string[]) || [],
         prioridades: (config.prioridades as string[]) || [],
@@ -48,12 +73,16 @@ export default function IAConfigRegras({ config, onSave, saving }: Props) {
   }, [config, hasRestoredData]);
 
   const addRegra = () => {
-    if (novaRegra.titulo.trim() && novaRegra.descricao.trim()) {
+    if (novaRegra.trim()) {
       setForm({
         ...form,
-        regras_personalizadas: [...form.regras_personalizadas, novaRegra]
+        regras_personalizadas: [...form.regras_personalizadas, { 
+          regra: novaRegra.trim(), 
+          prioridade: novaPrioridadeRegra 
+        }]
       });
-      setNovaRegra({ titulo: "", descricao: "" });
+      setNovaRegra("");
+      setNovaPrioridadeRegra('media');
     }
   };
 
@@ -85,9 +114,28 @@ export default function IAConfigRegras({ config, onSave, saving }: Props) {
     clearPersistedData();
   };
 
+  const getPrioridadeColor = (prioridade: string) => {
+    switch (prioridade) {
+      case 'alta': return 'bg-red-500/10 border-red-500/20 text-red-700';
+      case 'media': return 'bg-yellow-500/10 border-yellow-500/20 text-yellow-700';
+      case 'baixa': return 'bg-blue-500/10 border-blue-500/20 text-blue-700';
+      default: return 'bg-muted';
+    }
+  };
+
+  const getPrioridadeLabel = (prioridade: string) => {
+    switch (prioridade) {
+      case 'alta': return '🔴 Alta';
+      case 'media': return '🟡 Média';
+      case 'baixa': return '🔵 Baixa';
+      default: return prioridade;
+    }
+  };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <FormSaveIndicator hasRestoredData={hasRestoredData} />
+      
       {/* Regras Personalizadas */}
       <div className="space-y-3">
         <Label>📋 Regras de Negócio Personalizadas</Label>
@@ -95,18 +143,24 @@ export default function IAConfigRegras({ config, onSave, saving }: Props) {
           Regras específicas que a IA deve seguir em determinadas situações
         </p>
         
-        <div className="grid gap-2 md:grid-cols-3">
+        <div className="grid gap-2 md:grid-cols-4">
           <Input
-            value={novaRegra.titulo}
-            onChange={(e) => setNovaRegra({ ...novaRegra, titulo: e.target.value })}
-            placeholder="Título da regra"
+            value={novaRegra}
+            onChange={(e) => setNovaRegra(e.target.value)}
+            placeholder="Descrição da regra..."
+            className="md:col-span-2"
+            onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addRegra())}
           />
-          <Input
-            value={novaRegra.descricao}
-            onChange={(e) => setNovaRegra({ ...novaRegra, descricao: e.target.value })}
-            placeholder="Descrição / quando aplicar"
-            className="md:col-span-1"
-          />
+          <Select value={novaPrioridadeRegra} onValueChange={(v) => setNovaPrioridadeRegra(v as 'alta' | 'media' | 'baixa')}>
+            <SelectTrigger>
+              <SelectValue placeholder="Prioridade" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="alta">🔴 Alta - Crítica</SelectItem>
+              <SelectItem value="media">🟡 Média - Importante</SelectItem>
+              <SelectItem value="baixa">🔵 Baixa - Opcional</SelectItem>
+            </SelectContent>
+          </Select>
           <Button type="button" onClick={addRegra} variant="outline">
             <Plus className="h-4 w-4 mr-2" />
             Adicionar
@@ -115,11 +169,11 @@ export default function IAConfigRegras({ config, onSave, saving }: Props) {
 
         <div className="space-y-2">
           {form.regras_personalizadas.map((regra, i) => (
-            <div key={i} className="flex items-start gap-2 p-3 bg-muted rounded-lg">
-              <GripVertical className="h-5 w-5 text-muted-foreground mt-0.5" />
+            <div key={i} className={`flex items-start gap-2 p-3 rounded-lg border ${getPrioridadeColor(regra.prioridade)}`}>
+              <GripVertical className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
               <div className="flex-1">
-                <p className="font-medium">{regra.titulo}</p>
-                <p className="text-sm text-muted-foreground">{regra.descricao}</p>
+                <p className="font-medium">{regra.regra}</p>
+                <p className="text-xs mt-1">{getPrioridadeLabel(regra.prioridade)}</p>
               </div>
               <Button type="button" variant="ghost" size="icon" onClick={() => removeRegra(i)}>
                 <Trash2 className="h-4 w-4 text-destructive" />
