@@ -32,11 +32,20 @@ const initialForm = {
   usar_emojis: "moderado",
   usar_audios: false,
   tempo_resposta_ms: 2000,
+  limite_caracteres: "500" as string,
   msg_boas_vindas: "",
   msg_despedida: "",
   msg_ausencia: "",
   exemplos_respostas: [] as ExemploResposta[],
 };
+
+const limiteCaracteresOptions = [
+  { value: "300", label: "300 caracteres", desc: "Respostas muito curtas e diretas" },
+  { value: "500", label: "500 caracteres", desc: "Respostas curtas mas informativas (recomendado)" },
+  { value: "800", label: "800 caracteres", desc: "Respostas médias com mais detalhes" },
+  { value: "1200", label: "1200 caracteres", desc: "Respostas longas e completas" },
+  { value: "sem_limite", label: "Sem limite", desc: "IA decide o tamanho conforme necessário" },
+];
 
 const tamanhoOptions = [
   { value: "curta", label: "Curta", desc: "1-2 frases diretas, vai ao ponto rapidamente" },
@@ -150,6 +159,7 @@ export default function IAConfigComunicacao({ config, onSave, saving }: Props) {
         usar_emojis: (config.usar_emojis as string) || "moderado",
         usar_audios: (config.usar_audios as boolean) || false,
         tempo_resposta_ms: (config.tempo_resposta_ms as number) || 2000,
+        limite_caracteres: String(config.limite_caracteres || "500"),
         msg_boas_vindas: (config.msg_boas_vindas as string) || "",
         msg_despedida: (config.msg_despedida as string) || "",
         msg_ausencia: (config.msg_ausencia as string) || "",
@@ -283,20 +293,30 @@ export default function IAConfigComunicacao({ config, onSave, saving }: Props) {
         </div>
       </div>
 
-      {/* Tempo de resposta */}
-      <div className="space-y-2">
-        <Label>Tempo de Resposta Simulado</Label>
-        <div className="space-y-4">
-          <Slider
-            value={[form.tempo_resposta_ms]}
-            onValueChange={([v]) => setForm({ ...form, tempo_resposta_ms: v })}
-            min={500}
-            max={5000}
-            step={500}
-          />
-          <p className="text-sm text-muted-foreground">
-            {form.tempo_resposta_ms / 1000}s de delay (para parecer mais humano e não instantâneo)
-          </p>
+      {/* Limite de caracteres */}
+      <div className="grid gap-6 md:grid-cols-2">
+        <SelectWithDescription
+          label="Limite de Caracteres por Resposta"
+          value={form.limite_caracteres}
+          onChange={(v) => setForm({ ...form, limite_caracteres: v })}
+          options={limiteCaracteresOptions}
+        />
+        
+        {/* Tempo de resposta */}
+        <div className="space-y-2">
+          <Label>Tempo de Resposta Simulado</Label>
+          <div className="space-y-4">
+            <Slider
+              value={[form.tempo_resposta_ms]}
+              onValueChange={([v]) => setForm({ ...form, tempo_resposta_ms: v })}
+              min={500}
+              max={5000}
+              step={500}
+            />
+            <p className="text-sm text-muted-foreground">
+              {form.tempo_resposta_ms / 1000}s de delay (para parecer mais humano e não instantâneo)
+            </p>
+          </div>
         </div>
       </div>
 
