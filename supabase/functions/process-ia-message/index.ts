@@ -664,12 +664,18 @@ Responda em português brasileiro de forma clara e organizada.`;
       throw new Error("LOVABLE_API_KEY not configured");
     }
 
-    console.log("🧠 Calling Lovable AI with fallback support...");
+    // Calculate maxTokens based on character limit (1 token ≈ 3-4 chars in Portuguese)
+    const comunicacaoConfig = configs.comunicacao || {};
+    const limiteCaracteres = comunicacaoConfig.limite_caracteres || 500;
+    const temLimite = limiteCaracteres !== "sem_limite" && limiteCaracteres !== 0;
+    const maxTokens = temLimite ? Math.ceil(Number(limiteCaracteres) / 3) + 50 : 1500; // +50 buffer for safety
+    
+    console.log(`🧠 Calling Lovable AI with fallback support... (maxTokens: ${maxTokens}, limite: ${limiteCaracteres})`);
     const startTime = Date.now();
     const { response: aiResponse, model: usedModel, error: aiError, fallbackUsed } = await callAIWithFallback(
       messages,
       lovableApiKey,
-      { maxTokens: 1500, temperature: 0.7 }
+      { maxTokens, temperature: 0.7 }
     );
     const aiDuration = Date.now() - startTime;
     console.log(`⏱️ AI responded in ${aiDuration}ms using ${usedModel}${fallbackUsed ? ' (fallback)' : ''}`);
@@ -748,12 +754,14 @@ Responda em português brasileiro de forma clara e organizada.`;
     }
 
     // ========== HUMANIZED DELAY (simulate typing) ==========
-    const typingDelay = Math.min(
-      1500 + (assistantMessage.length * 15), // ~15ms per character
-      6000 // max 6 seconds
-    );
+    // Use configured delay from comunicacao settings, or calculate based on message length
+    const configuredDelay = Number(comunicacaoConfig.tempo_resposta_ms) || 2000;
+    const calculatedTypingTime = Math.min(assistantMessage.length * 20, 5000); // ~20ms per char, max 5s
+    
+    // Use the larger of: configured minimum delay OR calculated typing time
+    const typingDelay = Math.max(configuredDelay, calculatedTypingTime);
 
-    console.log(`⏱️ Typing delay: ${typingDelay}ms`);
+    console.log(`⏱️ Typing delay: ${typingDelay}ms (configured: ${configuredDelay}ms, calculated: ${calculatedTypingTime}ms)`);
     
     // Send typing indicator
     try {

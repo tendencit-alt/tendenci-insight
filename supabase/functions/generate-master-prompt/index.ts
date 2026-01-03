@@ -252,13 +252,25 @@ Horário de funcionamento: ${negocio.horario_funcionamento || ''}`;
     const formatacao = comunicacao.usar_formatacao || 'leve';
     const emojis = comunicacao.usar_emojis || 'moderado';
     
+    // Character limit configuration
+    const limiteCaracteres = comunicacao.limite_caracteres || 500;
+    const temLimite = limiteCaracteres !== "sem_limite" && limiteCaracteres !== 0;
+    
     let comunicacaoSection = `# COMUNICAÇÃO E ESTILO DE RESPOSTA
 
 ## Formato das Mensagens
 - **Tamanho:** ${tamanhoDescricoes[tamanho] || tamanhoDescricoes.media}
 - **Mensagens Sequenciais:** ${sequenciaDescricoes[sequencia] || sequenciaDescricoes['2-3']}
 
-## Modo de Atuação
+${temLimite ? `## ⚠️ LIMITE DE CARACTERES - REGRA OBRIGATÓRIA
+**SUAS RESPOSTAS DEVEM TER NO MÁXIMO ${limiteCaracteres} CARACTERES.**
+- Seja conciso, direto e objetivo
+- Priorize a informação mais importante primeiro
+- Se precisar dar mais detalhes, pergunte se o cliente quer saber mais
+- Evite repetições e palavras desnecessárias
+- Use frases curtas e impactantes
+
+` : ''}## Modo de Atuação
 - **Estilo de Resposta:** ${modoDescricoes[modo] || modoDescricoes.consultivo}
 - **Linguagem Técnica:** ${linguagemDescricoes[linguagem] || linguagemDescricoes.moderado}
 
@@ -568,10 +580,39 @@ ${vendas.script_followup}\n`;
     promptSections.push(vendasSection);
 
     // 6. PRODUTOS
+    let prodSection = `# PRODUTOS E PERSONALIZAÇÃO\n`;
+    
+    // Add custom products section FIRST
+    prodSection += `
+## 🎨 PRODUTOS PERSONALIZADOS E SOB MEDIDA
+
+**A Tendenci é especializada em móveis sob medida e produtos personalizados.**
+
+### Além dos produtos listados abaixo, oferecemos:
+- **Móveis sob medida** com dimensões específicas para o espaço do cliente
+- **Peças personalizadas** com cores, materiais e acabamentos à escolha
+- **Projetos exclusivos** desenvolvidos em parceria com arquitetos
+- **Adaptações e customizações** dos modelos existentes
+
+### Quando oferecer personalização:
+1. Quando o cliente não encontrar exatamente o que procura nos produtos listados
+2. Quando mencionar medidas específicas ou espaços com dimensões não-padrão
+3. Quando perguntar sobre cores ou materiais específicos
+4. Quando tiver um arquiteto ou designer acompanhando o projeto
+
+### Como abordar:
+- "Esse modelo pode ser adaptado para as medidas do seu espaço. Quer que eu explique como funciona?"
+- "Se preferir algo único, desenvolvemos peças exclusivas. Você tem um projeto ou arquiteto?"
+- "Trabalhamos com móveis sob medida - qual seria o ideal para o seu ambiente?"
+- "Além dos modelos prontos, podemos criar algo exclusivo para você!"
+
+---
+`;
+    
     if (products && products.length > 0) {
-      let prodSection = `# PRODUTOS DISPONÍVEIS\n`;
+      prodSection += `## Catálogo de Produtos\n`;
       products.forEach((p: any) => {
-        prodSection += `\n## ${p.nome}
+        prodSection += `\n### ${p.nome}
 Categoria: ${p.categoria || 'Geral'}
 Preço: ${p.preco_min && p.preco_max ? `R$ ${p.preco_min} - R$ ${p.preco_max}` : (p.preco_base ? `R$ ${p.preco_base}` : 'Sob consulta')}
 ${p.descricao || ''}
@@ -601,8 +642,11 @@ ${p.diferenciais && p.diferenciais.length > 0 ? `Diferenciais: ${p.diferenciais.
           }
         }
       });
-      promptSections.push(prodSection);
+    } else {
+      prodSection += `\n**Nota:** Não há produtos cadastrados no momento, mas trabalhamos com móveis sob medida para qualquer necessidade.`;
     }
+    
+    promptSections.push(prodSection);
 
     // 7. CONHECIMENTO
     if (conhecimento && conhecimento.length > 0) {
