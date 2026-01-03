@@ -448,40 +448,58 @@ Responda em português brasileiro de forma clara e organizada.`;
 
     console.log(`💬 Message: ${userMessage.substring(0, 100)}...`);
 
-    // ========== DEBOUNCE SYSTEM ==========
-    // Check for pending messages from this client
-    const debounceWindow = new Date(Date.now() - DEBOUNCE_MS).toISOString();
+    // ========== DEBOUNCE SYSTEM WITH ATOMIC LOCK ==========
+    // Registrar timestamp de início para cálculo de delay total
+    const processingStartTime = Date.now();
     
-    const { data: pendingMessages } = await supabase
+    // PASSO 1: Salvar mensagem como pendente PRIMEIRO (antes de qualquer verificação)
+    const { data: insertedMessage, error: insertError } = await supabase
       .from("ia_pending_messages")
-      .select("*")
+      .insert({
+        phone_number: phoneNumber,
+        instance_name: instanceName,
+        content: userMessage,
+        processed: false,
+        is_processing: false,
+      })
+      .select()
+      .single();
+
+    if (insertError) {
+      console.error("❌ Error inserting pending message:", insertError);
+    } else {
+      console.log(`📥 Mensagem salva como pendente: ${insertedMessage?.id}`);
+    }
+
+    // PASSO 2: AGUARDAR o período de debounce ANTES de tentar processar
+    // Este é o delay OBRIGATÓRIO de 5 segundos antes de responder
+    console.log(`⏳ AGUARDANDO ${DEBOUNCE_MS}ms OBRIGATÓRIO antes de processar...`);
+    await new Promise(resolve => setTimeout(resolve, DEBOUNCE_MS));
+
+    // PASSO 3: Tentar adquirir lock atômico de processamento
+    // Apenas UMA instância conseguirá obter o lock
+    const { data: lockAcquired, error: lockError } = await supabase
+      .from("ia_pending_messages")
+      .update({ is_processing: true })
       .eq("phone_number", phoneNumber)
       .eq("instance_name", instanceName)
       .eq("processed", false)
-      .gte("created_at", debounceWindow)
-      .order("created_at", { ascending: true });
+      .eq("is_processing", false)
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .select()
+      .single();
 
-    // Save current message as pending
-    await supabase.from("ia_pending_messages").insert({
-      phone_number: phoneNumber,
-      instance_name: instanceName,
-      content: userMessage,
-      processed: false,
-    });
-
-    // If there are already pending messages, skip processing (let the timer handle it)
-    if (pendingMessages && pendingMessages.length > 0) {
-      console.log(`⏳ Debouncing: ${pendingMessages.length} pending messages, waiting for more...`);
-      return new Response(JSON.stringify({ success: true, debounced: true }), {
+    if (lockError || !lockAcquired) {
+      console.log(`🔒 Outra instância está processando ou sem mensagens pendentes. Saindo graciosamente.`);
+      return new Response(JSON.stringify({ success: true, skipped: "another_instance_processing" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Wait for debounce period to collect more messages
-    console.log(`⏳ Waiting ${DEBOUNCE_MS}ms for additional messages...`);
-    await new Promise(resolve => setTimeout(resolve, DEBOUNCE_MS));
+    console.log(`🔓 Lock adquirido! Somos o processador. Lock ID: ${lockAcquired.id}`);
 
-    // Fetch all pending messages after waiting
+    // PASSO 4: Buscar TODAS as mensagens pendentes deste cliente
     const { data: allPendingMessages } = await supabase
       .from("ia_pending_messages")
       .select("*")
@@ -490,22 +508,23 @@ Responda em português brasileiro de forma clara e organizada.`;
       .eq("processed", false)
       .order("created_at", { ascending: true });
 
-    // Mark all as processed
+    // PASSO 5: Marcar todas como processadas atomicamente
     if (allPendingMessages && allPendingMessages.length > 0) {
       const ids = allPendingMessages.map(m => m.id);
       await supabase
         .from("ia_pending_messages")
-        .update({ processed: true })
+        .update({ processed: true, is_processing: false })
         .in("id", ids);
+      console.log(`✅ ${ids.length} mensagens marcadas como processadas`);
     }
 
-    // Consolidate all messages
+    // PASSO 6: Consolidar mensagens
     const consolidatedMessages = allPendingMessages?.map(m => m.content) || [userMessage];
     const combinedMessage = consolidatedMessages.length > 1 
       ? `[O cliente enviou ${consolidatedMessages.length} mensagens seguidas]\n\n${consolidatedMessages.join("\n\n")}`
       : consolidatedMessages[0];
 
-    console.log(`📨 Processing ${consolidatedMessages.length} consolidated message(s)`);
+    console.log(`📨 Processando ${consolidatedMessages.length} mensagem(ns) consolidada(s)`);
 
     // ========== CLIENT MEMORY ==========
     // Load or create client memory
@@ -783,20 +802,26 @@ Responda em português brasileiro de forma clara e organizada.`;
       }
     }
 
-    // ========== HUMANIZED DELAY (simulate typing) ==========
-    // Use configured delay from comunicacao settings - MINIMUM 3 seconds
+    // ========== DELAY GARANTIDO ANTES DE ENVIAR ==========
+    // Calcular quanto tempo já passou desde o início do processamento
+    const tempoDecorrido = Date.now() - processingStartTime;
+    
+    // Use configured delay from comunicacao settings - MINIMUM 5 seconds
     const configuredDelay = Number(comunicacaoConfig?.tempo_resposta_ms) || 5000;
-    const minDelay = Math.max(configuredDelay, 3000); // Mínimo 3 segundos sempre
+    const minDelayTotal = Math.max(configuredDelay, 5000); // Mínimo 5 segundos ABSOLUTO
     
-    // Calculate typing time based on message length (~40ms per char, max 10s)
-    const calculatedTypingTime = Math.min(assistantMessage.length * 40, 10000);
+    // Calculate typing time based on message length (~60ms per char for slower typing, max 12s)
+    const calculatedTypingTime = Math.min(assistantMessage.length * 60, 12000);
     
-    // Use the larger of: configured minimum delay OR calculated typing time
-    const typingDelay = Math.max(minDelay, calculatedTypingTime);
+    // Delay total desejado = máximo entre delay configurado e tempo de digitação
+    const delayTotalDesejado = Math.max(minDelayTotal, calculatedTypingTime);
+    
+    // Calcular delay restante (já contabilizamos o debounce de 5s no início)
+    const delayRestante = Math.max(0, delayTotalDesejado - tempoDecorrido);
 
-    console.log(`⏱️ DELAY OBRIGATÓRIO: ${typingDelay}ms (config: ${configuredDelay}ms, min: ${minDelay}ms, calc: ${calculatedTypingTime}ms)`);
+    console.log(`⏱️ DELAY TOTAL: desejado=${delayTotalDesejado}ms, decorrido=${tempoDecorrido}ms, restante=${delayRestante}ms`);
     
-    // Send typing indicator
+    // Enviar indicador de digitação ANTES do delay
     try {
       await fetch(`${evolutionApiUrl}/chat/presence/${instanceName}`, {
         method: "POST",
@@ -813,7 +838,11 @@ Responda em português brasileiro de forma clara e organizada.`;
       console.log("Could not send typing indicator:", e);
     }
 
-    await new Promise(resolve => setTimeout(resolve, typingDelay));
+    // Aguardar delay restante para completar o tempo mínimo
+    if (delayRestante > 0) {
+      console.log(`⏳ Aguardando ${delayRestante}ms adicionais...`);
+      await new Promise(resolve => setTimeout(resolve, delayRestante));
+    }
 
     // Process media markers and send response
     await processAndSendResponse(

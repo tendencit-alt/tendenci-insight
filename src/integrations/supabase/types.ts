@@ -1941,6 +1941,7 @@ export type Database = {
           created_at: string
           id: string
           instance_name: string
+          is_processing: boolean | null
           phone_number: string
           processed: boolean | null
         }
@@ -1949,6 +1950,7 @@ export type Database = {
           created_at?: string
           id?: string
           instance_name: string
+          is_processing?: boolean | null
           phone_number: string
           processed?: boolean | null
         }
@@ -1957,6 +1959,7 @@ export type Database = {
           created_at?: string
           id?: string
           instance_name?: string
+          is_processing?: boolean | null
           phone_number?: string
           processed?: boolean | null
         }
