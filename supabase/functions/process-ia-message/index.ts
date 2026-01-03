@@ -15,8 +15,8 @@ const AI_MODELS = {
 
 const AI_GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
-// Debounce time in milliseconds (5 seconds)
-const DEBOUNCE_MS = 5000;
+// Debounce time will be loaded from config (default 3 seconds)
+let DEBOUNCE_MS = 3000;
 // Maximum messages to keep in context (increased from 50 to 100)
 const MAX_CONTEXT_MESSAGES = 100;
 // Threshold for when to summarize older messages
@@ -806,20 +806,19 @@ Responda em português brasileiro de forma clara e organizada.`;
     // Calcular quanto tempo já passou desde o início do processamento
     const tempoDecorrido = Date.now() - processingStartTime;
     
-    // Use configured delay from comunicacao settings - MINIMUM 5 seconds
-    const configuredDelay = Number(comunicacaoConfig?.tempo_resposta_ms) || 5000;
-    const minDelayTotal = Math.max(configuredDelay, 5000); // Mínimo 5 segundos ABSOLUTO
+    // Use configured delay from comunicacao settings - SEM MÍNIMO FORÇADO
+    const configuredDelay = Number(comunicacaoConfig?.tempo_resposta_ms) || 3000;
     
     // Calculate typing time based on message length (~60ms per char for slower typing, max 12s)
     const calculatedTypingTime = Math.min(assistantMessage.length * 60, 12000);
     
     // Delay total desejado = máximo entre delay configurado e tempo de digitação
-    const delayTotalDesejado = Math.max(minDelayTotal, calculatedTypingTime);
+    const delayTotalDesejado = Math.max(configuredDelay, calculatedTypingTime);
     
-    // Calcular delay restante (já contabilizamos o debounce de 5s no início)
+    // Calcular delay restante
     const delayRestante = Math.max(0, delayTotalDesejado - tempoDecorrido);
 
-    console.log(`⏱️ DELAY TOTAL: desejado=${delayTotalDesejado}ms, decorrido=${tempoDecorrido}ms, restante=${delayRestante}ms`);
+    console.log(`⏱️ DELAY CONFIG: ${configuredDelay}ms | TYPING: ${calculatedTypingTime}ms | DESEJADO: ${delayTotalDesejado}ms | DECORRIDO: ${tempoDecorrido}ms | RESTANTE: ${delayRestante}ms`);
     
     // Enviar indicador de digitação ANTES do delay
     try {

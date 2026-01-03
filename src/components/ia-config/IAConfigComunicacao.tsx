@@ -359,17 +359,17 @@ export default function IAConfigComunicacao({ config, onSave, saving }: Props) {
         
         {/* Tempo de resposta */}
         <div className="space-y-3">
-          <Label>Tempo de Resposta Simulado</Label>
+          <Label>Tempo de Resposta Mínimo</Label>
           <div className="space-y-4">
             <Slider
               value={[form.tempo_resposta_ms]}
               onValueChange={([v]) => setForm({ ...form, tempo_resposta_ms: v })}
-              min={500}
-              max={5000}
-              step={500}
+              min={1000}
+              max={30000}
+              step={1000}
             />
             <p className="text-sm text-muted-foreground">
-              {form.tempo_resposta_ms / 1000}s de delay (para parecer mais humano e não instantâneo)
+              <strong>{form.tempo_resposta_ms / 1000}s</strong> de delay antes de responder (máximo 30s)
             </p>
           </div>
         </div>

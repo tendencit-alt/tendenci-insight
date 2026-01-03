@@ -313,6 +313,14 @@ export function IAAgentTester({ isConfigComplete, completedSections, totalSectio
         </div>
       )}
 
+      {/* Aviso sobre delay */}
+      <div className="flex items-center gap-2 p-2 bg-blue-500/10 border-b border-blue-500/20 shrink-0">
+        <AlertCircle className="h-4 w-4 text-blue-500 shrink-0" />
+        <span className="text-xs text-blue-700">
+          ⏱️ O delay configurado será aplicado antes de cada resposta (simula o comportamento real)
+        </span>
+      </div>
+
       {/* Sugestões */}
       <div className="p-2 bg-[#ECE5DD] border-b shrink-0">
         <div className="flex flex-wrap gap-1.5">
