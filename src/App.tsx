@@ -86,8 +86,8 @@ const App = () => (
             <Route path="/system-errors" element={<ProtectedRoute><SystemErrors /></ProtectedRoute>} />
             <Route path="/atividades" element={<ProtectedRoute><ActivityCenter /></ProtectedRoute>} />
             <Route path="/automacoes" element={<ProtectedRoute><AutomacoesDocumentacao /></ProtectedRoute>} />
-            <Route path="/ia-configuracao" element={<ProtectedRoute><IAConfiguracao /></ProtectedRoute>} />
-            <Route path="/ia-conversas" element={<ProtectedRoute><IAConversations /></ProtectedRoute>} />
+            <Route path="/ia-configuracao" element={<ProtectedRoute><PermissionGuard module="ia_configuracao"><IAConfiguracao /></PermissionGuard></ProtectedRoute>} />
+            <Route path="/ia-conversas" element={<ProtectedRoute><PermissionGuard module="ia_configuracao"><IAConversations /></PermissionGuard></ProtectedRoute>} />
             {/* Rotas dinâmicas - verificar se é uma rota editada antes de mostrar 404 */}
             <Route path="*" element={
               <ProtectedRoute>
