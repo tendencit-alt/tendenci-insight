@@ -50,11 +50,13 @@ export function AppNavbar() {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const { hasModuleAccess, loading } = usePermissions();
-  const { profile } = useAuth();
-  const { user, signOut } = useAuth();
-
-  const isMaster = profile?.role === 'admin';
+  const { hasModuleAccess, loading, isMaster } = usePermissions();
+  const { profile, user, signOut } = useAuth();
+  
+  // Debug: Log do estado de permissões
+  useEffect(() => {
+    console.log('[AppNavbar] Permissions state:', { loading, isMaster, menuItemsCount: menuItems.length });
+  }, [loading, isMaster, menuItems.length]);
 
   useEffect(() => {
     fetchMenuItems();
@@ -105,16 +107,15 @@ export function AppNavbar() {
   };
 
   const visibleMenuItems = useMemo(() => {
-    return menuItems.filter((item) => {
+    const filtered = menuItems.filter((item) => {
+      // Durante loading, mostrar todos temporariamente
       if (loading) return true;
       
-      // Se o item tem um módulo associado, verificar permissão primeiro
+      // Se o item tem um módulo associado, verificar permissão
       if (item.module) {
         const hasAccess = hasModuleAccess(item.module as any);
-        // Se tem permissão específica, mostrar (mesmo que seja categoria master)
-        if (hasAccess) return true;
-        // Se não tem permissão, não mostrar
-        return false;
+        console.log('[AppNavbar] Menu item check:', item.label, item.module, 'hasAccess:', hasAccess);
+        return hasAccess;
       }
       
       // Itens sem módulo na categoria master só aparecem para admins
@@ -122,6 +123,9 @@ export function AppNavbar() {
       
       return true;
     });
+    
+    console.log('[AppNavbar] Visible items:', filtered.length, 'Master items:', filtered.filter(i => i.category === 'master').map(i => i.label));
+    return filtered;
   }, [menuItems, loading, isMaster, hasModuleAccess]);
 
   // Agrupar itens por categoria

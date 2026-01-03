@@ -72,7 +72,10 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
   const [isMaster, setIsMaster] = useState(false);
 
   const fetchPermissions = useCallback(async () => {
+    console.log('[Permissions] Fetching for user:', user?.id, user?.email);
+    
     if (!user) {
+      console.log('[Permissions] No user, clearing permissions');
       setPermissions(null);
       setIsMaster(false);
       setLoading(false);
@@ -87,13 +90,18 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
         .eq('id', user.id)
         .single();
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error('[Permissions] Profile error:', profileError);
+        throw profileError;
+      }
 
+      console.log('[Permissions] Profile loaded:', profile);
       const isAdmin = profile?.role === 'admin';
       setIsMaster(isAdmin);
 
       // Se for admin, tem todas as permissões
       if (isAdmin) {
+        console.log('[Permissions] User is admin, granting all');
         setPermissions({
           role: profile.role,
           permissions: ALL_MODULES.map(module => ({
@@ -112,8 +120,14 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
           .select('*')
           .eq('user_id', user.id);
 
-        if (permError) throw permError;
+        if (permError) {
+          console.error('[Permissions] User permissions error:', permError);
+          throw permError;
+        }
 
+        console.log('[Permissions] User permissions loaded:', userPermissions?.length, 'items');
+        console.log('[Permissions] IA Config permission:', userPermissions?.find(p => p.module === 'ia_configuracao'));
+        
         setPermissions({
           role: profile.role,
           permissions: userPermissions as ModulePermission[],
@@ -121,9 +135,10 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
         });
       }
     } catch (error) {
-      console.error('Erro ao buscar permissões:', error);
+      console.error('[Permissions] Error:', error);
       setPermissions(null);
     } finally {
+      console.log('[Permissions] Loading complete');
       setLoading(false);
     }
   }, [user]);
@@ -139,26 +154,49 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
 
   const hasModuleAccess = useCallback((module: AppModule, action: 'view' | 'create' | 'edit' | 'delete' = 'view'): boolean => {
     // Durante loading, retornar true para permitir renderização do menu
-    // A proteção real acontece no PermissionGuard
-    if (loading) return true;
-    if (!permissions) return false;
-    if (isMaster) return true;
+    if (loading) {
+      console.log('[Permissions] Still loading, allowing access to:', module);
+      return true;
+    }
+    
+    // Se for admin, tem acesso total
+    if (isMaster) {
+      return true;
+    }
+    
+    // Se não tem permissões carregadas, bloquear
+    if (!permissions || !permissions.permissions) {
+      console.warn('[Permissions] No permissions loaded for module:', module);
+      return false;
+    }
 
     const modulePermission = permissions.permissions.find(p => p.module === module);
-    if (!modulePermission) return false;
+    
+    if (!modulePermission) {
+      console.log('[Permissions] No permission found for module:', module);
+      return false;
+    }
 
+    let hasAccess = false;
     switch (action) {
       case 'view':
-        return modulePermission.can_view;
+        hasAccess = modulePermission.can_view;
+        break;
       case 'create':
-        return modulePermission.can_create;
+        hasAccess = modulePermission.can_create;
+        break;
       case 'edit':
-        return modulePermission.can_edit;
+        hasAccess = modulePermission.can_edit;
+        break;
       case 'delete':
-        return modulePermission.can_delete;
+        hasAccess = modulePermission.can_delete;
+        break;
       default:
-        return false;
+        hasAccess = false;
     }
+    
+    console.log('[Permissions] Check:', module, action, '=', hasAccess);
+    return hasAccess;
   }, [loading, permissions, isMaster]);
 
   const refetch = useCallback(async () => {
