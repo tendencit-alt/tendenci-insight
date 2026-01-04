@@ -129,6 +129,12 @@ export function getDaysUntilDue(isoString: string): {
   }
   
   const dueDate = new Date(isoString);
+  
+  // Validar se a data é válida
+  if (isNaN(dueDate.getTime())) {
+    return { text: "Data inválida", variant: "outline", isOverdue: false };
+  }
+  
   const now = new Date();
   
   // Converter ambas as datas para "dia" em Brasília para comparação
@@ -139,24 +145,28 @@ export function getDaysUntilDue(isoString: string): {
     day: '2-digit'
   });
   
-  const dueDateBrasil = brasilFormatter.format(dueDate); // "2025-01-05"
-  const nowBrasil = brasilFormatter.format(now); // "2025-01-04"
-  
-  // Converter para Date objects para comparação de dias
-  const dueDay = new Date(dueDateBrasil + "T00:00:00");
-  const nowDay = new Date(nowBrasil + "T00:00:00");
-  
-  const diffDays = Math.floor((dueDay.getTime() - nowDay.getTime()) / (1000 * 60 * 60 * 24));
-  
-  // Verificar se já passou (considerando hora também)
-  if (dueDate < now) {
-    return { text: "Atrasada", variant: "destructive", isOverdue: true };
-  } else if (diffDays === 0) {
-    return { text: "Hoje", variant: "default", isOverdue: false };
-  } else if (diffDays === 1) {
-    return { text: "Amanhã", variant: "secondary", isOverdue: false };
-  } else {
-    return { text: `${diffDays}d`, variant: "secondary", isOverdue: false };
+  try {
+    const dueDateBrasil = brasilFormatter.format(dueDate); // "2025-01-05"
+    const nowBrasil = brasilFormatter.format(now); // "2025-01-04"
+    
+    // Converter para Date objects para comparação de dias
+    const dueDay = new Date(dueDateBrasil + "T00:00:00");
+    const nowDay = new Date(nowBrasil + "T00:00:00");
+    
+    const diffDays = Math.floor((dueDay.getTime() - nowDay.getTime()) / (1000 * 60 * 60 * 24));
+    
+    // Verificar se já passou (considerando hora também)
+    if (dueDate < now) {
+      return { text: "Atrasada", variant: "destructive", isOverdue: true };
+    } else if (diffDays === 0) {
+      return { text: "Hoje", variant: "default", isOverdue: false };
+    } else if (diffDays === 1) {
+      return { text: "Amanhã", variant: "secondary", isOverdue: false };
+    } else {
+      return { text: `${diffDays}d`, variant: "secondary", isOverdue: false };
+    }
+  } catch {
+    return { text: "Data inválida", variant: "outline", isOverdue: false };
   }
 }
 
