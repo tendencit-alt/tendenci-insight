@@ -781,47 +781,53 @@ export default function IAConfigProdutos() {
                 </div>
               </div>
 
-              {/* Estoque Independente */}
+              {/* Estoque - Campos Simples */}
               <div className="border rounded-lg p-4 space-y-4 bg-muted/30">
-                <h4 className="font-medium flex items-center gap-2">
-                  <Package className="h-4 w-4" />
-                  Estoque
-                </h4>
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium flex items-center gap-2">
+                    <Package className="h-4 w-4" />
+                    Estoque
+                  </h4>
+                  {form.estoque > 0 && (
+                    <Badge variant="secondary">
+                      {form.estoque} un
+                    </Badge>
+                  )}
+                </div>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <Label>Quantidade em Estoque</Label>
+                    <Label htmlFor="estoque-qty">Quantidade em Estoque</Label>
                     <Input
+                      id="estoque-qty"
                       type="number"
                       min="0"
+                      step="1"
                       value={form.estoque}
                       onChange={(e) => setForm({ ...form, estoque: parseInt(e.target.value) || 0 })}
-                      placeholder="0"
+                      placeholder="Ex: 5"
                     />
-                    <p className="text-xs text-muted-foreground">
-                      Quantidade disponível para venda
-                    </p>
                   </div>
                   <div className="space-y-2">
-                    <Label>Local do Estoque</Label>
+                    <Label htmlFor="estoque-local">Local de Armazenamento</Label>
                     <Select
                       value={form.local_estoque_id || "_none"}
                       onValueChange={(v) => setForm({ ...form, local_estoque_id: v === "_none" ? null : v })}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger id="estoque-local">
                         <SelectValue placeholder="Selecione o local" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="_none">Nenhum</SelectItem>
                         {locations.map(loc => (
                           <SelectItem key={loc.id} value={loc.id}>
-                            {loc.name}
+                            <span className="flex items-center gap-2">
+                              <MapPin className="h-3 w-3" />
+                              {loc.name}
+                            </span>
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                    <p className="text-xs text-muted-foreground">
-                      Onde o produto está armazenado
-                    </p>
                   </div>
                 </div>
 
