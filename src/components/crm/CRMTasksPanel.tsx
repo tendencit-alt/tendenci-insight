@@ -547,20 +547,26 @@ export function CRMTasksPanel({
     }
   };
 
-  // Filtrar tarefas por categoria
+  // Filtrar tarefas por categoria - usando timezone de Brasília
   const allTasks = tasks;
-  const todayTasks = tasks.filter(task => {
-    const dueDate = new Date(task.due_at);
-    const now = new Date();
-    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
-    return dueDate >= startOfDay && dueDate <= endOfDay;
+  
+  // Obter a data de hoje em Brasília
+  const brasilFormatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Sao_Paulo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
   });
+  const todayBrasil = brasilFormatter.format(new Date()); // "2025-01-04"
+  
+  const todayTasks = tasks.filter(task => {
+    const taskDayBrasil = brasilFormatter.format(new Date(task.due_at));
+    return taskDayBrasil === todayBrasil;
+  });
+  
   const futureTasks = tasks.filter(task => {
-    const dueDate = new Date(task.due_at);
-    const now = new Date();
-    const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
-    return dueDate > endOfDay;
+    const taskDayBrasil = brasilFormatter.format(new Date(task.due_at));
+    return taskDayBrasil > todayBrasil;
   });
 
   const TaskCard = ({ task, showRetry = false, showArchive = false }: { task: any; showRetry?: boolean; showArchive?: boolean }) => {
