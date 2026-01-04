@@ -303,6 +303,25 @@ export function ArchitectTasks({ architectId }: ArchitectTasksProps) {
           return;
         }
         
+        // Validar formato do telefone
+        const cleanPhone = newTask.whatsapp_number.replace(/\D/g, '');
+        if (cleanPhone.length < 10) {
+          toast({
+            title: "Telefone muito curto",
+            description: "O número deve ter no mínimo 10 dígitos (DDD + número).",
+            variant: "destructive",
+          });
+          return;
+        }
+        if (cleanPhone.length > 13) {
+          toast({
+            title: "Telefone muito longo",
+            description: "O número deve ter no máximo 13 dígitos.",
+            variant: "destructive",
+          });
+          return;
+        }
+        
         if (!newTask.note || newTask.note.trim() === "") {
           toast({
             title: "Mensagem obrigatória",

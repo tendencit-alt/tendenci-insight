@@ -127,11 +127,11 @@ export function ArchitectTasksPanel({ filters }: ArchitectTasksPanelProps) {
           observacoes,
           status,
           architect_id,
+          archived_at,
           architect:architects(id, name, company, phone),
           vendedor:profiles!tendenci_prospec_arq_agendamentos_vendedor_id_fkey(full_name)
         `)
         .eq("status", "falha")
-        .is("archived_at", null)
         .order("data_agendamento", { ascending: true });
 
       if (!isMaster && user?.id) {
@@ -144,7 +144,9 @@ export function ArchitectTasksPanel({ filters }: ArchitectTasksPanelProps) {
 
       if (error) throw error;
       
-      let filteredData = (data as Task[]) || [];
+      // Filtrar tarefas não arquivadas no frontend (compatível se coluna não existe)
+      let filteredData = ((data as any[]) || []).filter(task => !task.archived_at);
+      
       if (filters?.search) {
         const searchLower = filters.search.toLowerCase();
         filteredData = filteredData.filter(task => 
@@ -154,7 +156,7 @@ export function ArchitectTasksPanel({ filters }: ArchitectTasksPanelProps) {
         );
       }
       
-      setFailedTasks(filteredData);
+      setFailedTasks(filteredData as Task[]);
     } catch (error) {
       console.error("Error fetching failed architect tasks:", error);
     }

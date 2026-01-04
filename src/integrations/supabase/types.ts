@@ -5399,6 +5399,7 @@ export type Database = {
       tendenci_prospec_arq_agendamentos: {
         Row: {
           architect_id: string
+          archived_at: string | null
           audio_url: string | null
           campanha_id: string | null
           canal: string | null
@@ -5419,6 +5420,7 @@ export type Database = {
         }
         Insert: {
           architect_id: string
+          archived_at?: string | null
           audio_url?: string | null
           campanha_id?: string | null
           canal?: string | null
@@ -5439,6 +5441,7 @@ export type Database = {
         }
         Update: {
           architect_id?: string
+          archived_at?: string | null
           audio_url?: string | null
           campanha_id?: string | null
           canal?: string | null
