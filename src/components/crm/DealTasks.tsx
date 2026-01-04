@@ -216,7 +216,7 @@ export function DealTasks({ dealId }: DealTasksProps) {
         return;
       }
 
-      // Validar e sanitizar número de WhatsApp
+      // Validar e sanitizar número de WhatsApp (remove zeros iniciais e formata)
       const whatsappValidation = sanitizeWhatsAppNumber(newTask.whatsapp_number);
       if (whatsappValidation.error) {
         toast({
@@ -227,10 +227,13 @@ export function DealTasks({ dealId }: DealTasksProps) {
         return;
       }
 
-      // Atualizar número formatado no state
-      if (whatsappValidation.number && whatsappValidation.number !== newTask.whatsapp_number) {
-        setNewTask(prev => ({ ...prev, whatsapp_number: whatsappValidation.number! }));
+      // Atualizar número formatado no state IMEDIATAMENTE para usar no insert/update
+      const sanitizedNumber = whatsappValidation.number || newTask.whatsapp_number;
+      if (sanitizedNumber !== newTask.whatsapp_number) {
+        setNewTask(prev => ({ ...prev, whatsapp_number: sanitizedNumber }));
       }
+      // Usar o número sanitizado diretamente na submissão
+      newTask.whatsapp_number = sanitizedNumber;
 
       // Verificar se vendedor tem instância WhatsApp conectada
       const { data: { user } } = await supabase.auth.getUser();
