@@ -8,9 +8,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Plus, Pencil, Trash2, Package, X, Image, Video, Link, Upload, Play, Filter, BoxesIcon } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, Package, X, Image, Video, Link, Upload, Play, Filter, Warehouse, MapPin } from "lucide-react";
 import type { Json } from "@/integrations/supabase/types";
 
 // Categorias predefinidas
@@ -35,6 +36,19 @@ interface VideoItem {
   nome?: string;
 }
 
+interface StockLocation {
+  id: string;
+  name: string;
+  active: boolean;
+  is_default: boolean;
+}
+
+interface EstoquePorLocal {
+  location_id: string;
+  location_name: string;
+  quantidade: number;
+}
+
 interface Produto {
   id: string;
   nome: string;
@@ -51,6 +65,8 @@ interface Produto {
   estoque: number;
   permite_venda_sem_estoque: boolean;
   prazo_entrega_dias: number | null;
+  estoques: EstoquePorLocal[];
+  estoqueTotal: number;
 }
 
 // Helper to safely parse videos from JSON
@@ -65,6 +81,7 @@ const parseVideos = (videos: unknown): VideoItem[] => {
 
 export default function IAConfigProdutos() {
   const [produtos, setProdutos] = useState<Produto[]>([]);
+  const [locations, setLocations] = useState<StockLocation[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -87,9 +104,9 @@ export default function IAConfigProdutos() {
     galeria: [] as string[],
     video_url: "",
     videos: [] as VideoItem[],
-    estoque: 0,
     permite_venda_sem_estoque: false,
     prazo_entrega_dias: null as number | null,
+    estoquesPorLocal: {} as Record<string, number>,
   });
 
   // Filtrar produtos por categoria
@@ -108,32 +125,64 @@ export default function IAConfigProdutos() {
     return contador;
   }, [produtos]);
 
+  // Calcular estoque total do form
+  const estoqueTotal = useMemo(() => {
+    return Object.values(form.estoquesPorLocal).reduce((sum, qty) => sum + (qty || 0), 0);
+  }, [form.estoquesPorLocal]);
+
   useEffect(() => {
-    loadProdutos();
+    loadData();
   }, []);
 
-  const loadProdutos = async () => {
+  const loadData = async () => {
     try {
-      const { data, error } = await supabase
-        .from("tendenci_ia_produtos")
-        .select("*")
-        .order("nome");
+      // Carregar locais e produtos em paralelo
+      const [locationsRes, produtosRes] = await Promise.all([
+        supabase.from("stock_locations").select("*").eq("active", true).order("name"),
+        supabase.from("tendenci_ia_produtos").select("*").order("nome")
+      ]);
 
-      if (error) throw error;
+      if (locationsRes.error) throw locationsRes.error;
+      if (produtosRes.error) throw produtosRes.error;
+
+      setLocations(locationsRes.data || []);
+
+      // Carregar estoques por produto
+      const produtosComEstoque: Produto[] = [];
       
-      // Parse videos from JSON and handle legacy video_url
-      const parsedData: Produto[] = (data || []).map(p => ({
-        ...p,
-        videos: parseVideos(p.videos),
-        estoque: p.estoque ?? 0,
-        permite_venda_sem_estoque: p.permite_venda_sem_estoque ?? false,
-        prazo_entrega_dias: p.prazo_entrega_dias ?? null,
-      }));
+      for (const p of (produtosRes.data || [])) {
+        const { data: estoques } = await supabase
+          .from("tendenci_ia_produtos_estoque")
+          .select(`
+            quantidade,
+            location_id,
+            location:stock_locations(id, name)
+          `)
+          .eq("produto_id", p.id);
+
+        const estoquesFormatados: EstoquePorLocal[] = (estoques || []).map((e: any) => ({
+          location_id: e.location_id,
+          location_name: e.location?.name || "Desconhecido",
+          quantidade: e.quantidade || 0
+        }));
+
+        const estoqueTotal = estoquesFormatados.reduce((sum, e) => sum + e.quantidade, 0);
+
+        produtosComEstoque.push({
+          ...p,
+          videos: parseVideos(p.videos),
+          estoque: p.estoque ?? 0,
+          permite_venda_sem_estoque: p.permite_venda_sem_estoque ?? false,
+          prazo_entrega_dias: p.prazo_entrega_dias ?? null,
+          estoques: estoquesFormatados,
+          estoqueTotal
+        });
+      }
       
-      setProdutos(parsedData);
+      setProdutos(produtosComEstoque);
     } catch (error) {
-      console.error("Erro ao carregar produtos:", error);
-      toast.error("Erro ao carregar produtos");
+      console.error("Erro ao carregar dados:", error);
+      toast.error("Erro ao carregar dados");
     } finally {
       setLoading(false);
     }
@@ -141,6 +190,13 @@ export default function IAConfigProdutos() {
 
   const openNewDialog = () => {
     setEditingProduto(null);
+    
+    // Inicializar estoques por local com 0
+    const estoquesPorLocal: Record<string, number> = {};
+    locations.forEach(loc => {
+      estoquesPorLocal[loc.id] = 0;
+    });
+    
     setForm({
       nome: "",
       descricao: "",
@@ -153,9 +209,9 @@ export default function IAConfigProdutos() {
       galeria: [],
       video_url: "",
       videos: [],
-      estoque: 0,
       permite_venda_sem_estoque: false,
       prazo_entrega_dias: null,
+      estoquesPorLocal,
     });
     setVideoUrlInput("");
     setShowVideoUrlInput(false);
@@ -174,6 +230,13 @@ export default function IAConfigProdutos() {
         nome: "Vídeo principal (legado)"
       });
     }
+
+    // Carregar estoques por local
+    const estoquesPorLocal: Record<string, number> = {};
+    locations.forEach(loc => {
+      const estoque = produto.estoques.find(e => e.location_id === loc.id);
+      estoquesPorLocal[loc.id] = estoque?.quantidade || 0;
+    });
     
     setForm({
       nome: produto.nome,
@@ -187,13 +250,23 @@ export default function IAConfigProdutos() {
       galeria: produto.galeria || [],
       video_url: produto.video_url || "",
       videos: videosArray,
-      estoque: produto.estoque ?? 0,
       permite_venda_sem_estoque: produto.permite_venda_sem_estoque ?? false,
       prazo_entrega_dias: produto.prazo_entrega_dias ?? null,
+      estoquesPorLocal,
     });
     setVideoUrlInput("");
     setShowVideoUrlInput(false);
     setDialogOpen(true);
+  };
+
+  const updateEstoqueLocal = (locationId: string, quantidade: number) => {
+    setForm(prev => ({
+      ...prev,
+      estoquesPorLocal: {
+        ...prev.estoquesPorLocal,
+        [locationId]: Math.max(0, quantidade || 0)
+      }
+    }));
   };
 
   const uploadImage = async (file: File, isGallery = false) => {
@@ -345,10 +418,12 @@ export default function IAConfigProdutos() {
         galeria: form.galeria,
         video_url: form.video_url || null,
         videos: JSON.parse(JSON.stringify(form.videos)) as Json,
-        estoque: form.estoque,
+        estoque: estoqueTotal, // Atualizar estoque total para compatibilidade
         permite_venda_sem_estoque: form.permite_venda_sem_estoque,
         prazo_entrega_dias: form.permite_venda_sem_estoque ? form.prazo_entrega_dias : null,
       };
+
+      let produtoId: string;
 
       if (editingProduto) {
         const { error } = await supabase
@@ -357,18 +432,47 @@ export default function IAConfigProdutos() {
           .eq("id", editingProduto.id);
 
         if (error) throw error;
-        toast.success("Produto atualizado!");
+        produtoId = editingProduto.id;
       } else {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from("tendenci_ia_produtos")
-          .insert([produtoData]);
+          .insert([produtoData])
+          .select("id")
+          .single();
 
         if (error) throw error;
-        toast.success("Produto criado!");
+        produtoId = data.id;
       }
 
+      // Salvar estoques por local
+      for (const [locationId, quantidade] of Object.entries(form.estoquesPorLocal)) {
+        if (quantidade > 0) {
+          const { error: estoqueError } = await supabase
+            .from("tendenci_ia_produtos_estoque")
+            .upsert({
+              produto_id: produtoId,
+              location_id: locationId,
+              quantidade: quantidade
+            }, {
+              onConflict: 'produto_id,location_id'
+            });
+
+          if (estoqueError) {
+            console.error("Erro ao salvar estoque:", estoqueError);
+          }
+        } else {
+          // Remover estoque zerado
+          await supabase
+            .from("tendenci_ia_produtos_estoque")
+            .delete()
+            .eq("produto_id", produtoId)
+            .eq("location_id", locationId);
+        }
+      }
+
+      toast.success(editingProduto ? "Produto atualizado!" : "Produto criado!");
       setDialogOpen(false);
-      loadProdutos();
+      loadData();
     } catch (error) {
       console.error("Erro ao salvar:", error);
       toast.error("Erro ao salvar produto");
@@ -388,7 +492,7 @@ export default function IAConfigProdutos() {
 
       if (error) throw error;
       toast.success("Produto excluído!");
-      loadProdutos();
+      loadData();
     } catch (error) {
       console.error("Erro ao excluir:", error);
       toast.error("Erro ao excluir produto");
@@ -403,7 +507,7 @@ export default function IAConfigProdutos() {
         .eq("id", produto.id);
 
       if (error) throw error;
-      loadProdutos();
+      loadData();
     } catch (error) {
       console.error("Erro ao atualizar:", error);
       toast.error("Erro ao atualizar status");
@@ -524,49 +628,59 @@ export default function IAConfigProdutos() {
                 />
               </div>
 
-              {/* Controle de Estoque */}
+              {/* Controle de Estoque por Local */}
               <div className="border rounded-lg p-4 space-y-4 bg-muted/30">
-                <h4 className="font-medium flex items-center gap-2">
-                  <BoxesIcon className="h-4 w-4" />
-                  Controle de Estoque
-                </h4>
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium flex items-center gap-2">
+                    <Warehouse className="h-4 w-4" />
+                    Estoque por Local
+                  </h4>
+                  <Badge variant="outline" className="font-semibold">
+                    Total: {estoqueTotal} un
+                  </Badge>
+                </div>
                 
-                <div className="grid gap-4 md:grid-cols-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="estoque">Estoque Atual</Label>
-                    <Input
-                      id="estoque"
-                      type="number"
-                      min="0"
-                      value={form.estoque}
-                      onChange={(e) => setForm({ ...form, estoque: parseInt(e.target.value) || 0 })}
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label>Vender sem estoque?</Label>
-                    <div className="flex items-center gap-2 pt-2">
-                      <Switch
-                        checked={form.permite_venda_sem_estoque}
-                        onCheckedChange={(v) => setForm({ ...form, permite_venda_sem_estoque: v })}
-                      />
-                      <span className="text-sm text-muted-foreground">
-                        {form.permite_venda_sem_estoque ? "Sim" : "Não"}
+                <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
+                  {locations.map(loc => (
+                    <div key={loc.id} className="flex items-center gap-2 p-2 rounded-lg bg-background border">
+                      <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      <span className="text-sm font-medium flex-1 truncate" title={loc.name}>
+                        {loc.name}
                       </span>
+                      <Input
+                        type="number"
+                        min="0"
+                        className="w-20 h-8 text-center"
+                        value={form.estoquesPorLocal[loc.id] || 0}
+                        onChange={(e) => updateEstoqueLocal(loc.id, parseInt(e.target.value))}
+                      />
                     </div>
+                  ))}
+                </div>
+
+                {/* Opção de venda sem estoque */}
+                <div className="flex flex-col sm:flex-row gap-4 pt-2 border-t">
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={form.permite_venda_sem_estoque}
+                      onCheckedChange={(v) => setForm({ ...form, permite_venda_sem_estoque: v })}
+                    />
+                    <span className="text-sm">Permitir venda sem estoque (sob encomenda)</span>
                   </div>
                   
                   {form.permite_venda_sem_estoque && (
-                    <div className="space-y-2">
-                      <Label htmlFor="prazo_entrega">Prazo de Entrega (dias)</Label>
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="prazo_entrega" className="text-sm whitespace-nowrap">Prazo:</Label>
                       <Input
                         id="prazo_entrega"
                         type="number"
                         min="1"
+                        className="w-20 h-8"
                         value={form.prazo_entrega_dias ?? ""}
                         onChange={(e) => setForm({ ...form, prazo_entrega_dias: parseInt(e.target.value) || null })}
-                        placeholder="Ex: 15"
+                        placeholder="dias"
                       />
+                      <span className="text-sm text-muted-foreground">dias</span>
                     </div>
                   )}
                 </div>
@@ -864,19 +978,50 @@ export default function IAConfigProdutos() {
                   }
                 </TableCell>
                 <TableCell>
-                  {produto.estoque > 0 ? (
-                    <Badge className="bg-green-500 hover:bg-green-600">
-                      {produto.estoque} un
-                    </Badge>
-                  ) : produto.permite_venda_sem_estoque ? (
-                    <Badge variant="outline" className="text-amber-600 border-amber-400">
-                      Sob encomenda {produto.prazo_entrega_dias ? `(${produto.prazo_entrega_dias}d)` : ""}
-                    </Badge>
-                  ) : (
-                    <Badge variant="destructive">
-                      Sem estoque
-                    </Badge>
-                  )}
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button className="text-left">
+                        {produto.estoqueTotal > 0 ? (
+                          <Badge className="bg-green-500 hover:bg-green-600 cursor-pointer">
+                            {produto.estoqueTotal} un
+                          </Badge>
+                        ) : produto.permite_venda_sem_estoque ? (
+                          <Badge variant="outline" className="text-amber-600 border-amber-400 cursor-pointer">
+                            Sob encomenda {produto.prazo_entrega_dias ? `(${produto.prazo_entrega_dias}d)` : ""}
+                          </Badge>
+                        ) : (
+                          <Badge variant="destructive" className="cursor-pointer">
+                            Sem estoque
+                          </Badge>
+                        )}
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-64" align="start">
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between border-b pb-2">
+                          <span className="font-medium text-sm">Estoque por Local</span>
+                          <Badge variant="secondary">{produto.estoqueTotal} total</Badge>
+                        </div>
+                        {produto.estoques.length > 0 ? (
+                          <div className="space-y-1">
+                            {produto.estoques.map((e, i) => (
+                              <div key={i} className="flex items-center justify-between text-sm">
+                                <span className="flex items-center gap-1.5 text-muted-foreground">
+                                  <MapPin className="h-3 w-3" />
+                                  {e.location_name}
+                                </span>
+                                <span className="font-medium">{e.quantidade}</span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground text-center py-2">
+                            Nenhum estoque registrado
+                          </p>
+                        )}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-1">
