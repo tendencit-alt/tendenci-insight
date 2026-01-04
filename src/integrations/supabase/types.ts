@@ -5261,6 +5261,7 @@ export type Database = {
           permite_venda_sem_estoque: boolean | null
           prazo_entrega_dias: number | null
           preco_base: number | null
+          preco_original: number | null
           quando_oferecer: string | null
           unidade_medida: string | null
           updated_at: string | null
@@ -5288,6 +5289,7 @@ export type Database = {
           permite_venda_sem_estoque?: boolean | null
           prazo_entrega_dias?: number | null
           preco_base?: number | null
+          preco_original?: number | null
           quando_oferecer?: string | null
           unidade_medida?: string | null
           updated_at?: string | null
@@ -5315,6 +5317,7 @@ export type Database = {
           permite_venda_sem_estoque?: boolean | null
           prazo_entrega_dias?: number | null
           preco_base?: number | null
+          preco_original?: number | null
           quando_oferecer?: string | null
           unidade_medida?: string | null
           updated_at?: string | null
