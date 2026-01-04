@@ -5253,6 +5253,8 @@ export type Database = {
           galeria: string[] | null
           id: string
           imagem_url: string | null
+          inventory_location_id: string | null
+          inventory_product_id: string | null
           largura: number | null
           nome: string
           permite_venda_sem_estoque: boolean | null
@@ -5277,6 +5279,8 @@ export type Database = {
           galeria?: string[] | null
           id?: string
           imagem_url?: string | null
+          inventory_location_id?: string | null
+          inventory_product_id?: string | null
           largura?: number | null
           nome: string
           permite_venda_sem_estoque?: boolean | null
@@ -5301,6 +5305,8 @@ export type Database = {
           galeria?: string[] | null
           id?: string
           imagem_url?: string | null
+          inventory_location_id?: string | null
+          inventory_product_id?: string | null
           largura?: number | null
           nome?: string
           permite_venda_sem_estoque?: boolean | null
@@ -5312,7 +5318,22 @@ export type Database = {
           video_url?: string | null
           videos?: Json | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "tendenci_ia_produtos_inventory_location_id_fkey"
+            columns: ["inventory_location_id"]
+            isOneToOne: false
+            referencedRelation: "stock_locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tendenci_ia_produtos_inventory_product_id_fkey"
+            columns: ["inventory_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tendenci_ia_produtos_estoque: {
         Row: {
