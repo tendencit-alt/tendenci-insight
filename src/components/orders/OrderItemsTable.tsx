@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -7,7 +7,12 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Trash2, Edit2, Check, ChevronDown, ChevronUp, Package, X } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Plus, Trash2, Edit2, Check, ChevronDown, ChevronUp, Package, X, Search, Import } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 export interface OrderItem {
   id: string;
@@ -31,10 +36,27 @@ interface OrderItemsTableProps {
   requireCentroCusto?: boolean;
 }
 
+interface ProdutoIA {
+  id: string;
+  nome: string;
+  descricao: string | null;
+  preco_base: number;
+  categoria: string | null;
+  centro_custo: string | null;
+  imagem_url: string | null;
+  estoque: number;
+  ativo: boolean;
+}
+
 const CENTROS_CUSTO = [
   { value: 'moveis_planejados', label: 'Móveis Planejados' },
   { value: 'producao_tendenci', label: 'Produção Tendenci' },
   { value: 'revenda', label: 'Revenda' },
+];
+
+const CATEGORIAS_PRODUTOS = [
+  "Sofá", "Cadeira", "Banqueta", "Tapete", "Quadros", "Aparador",
+  "Bistrô", "Mesa de Centro", "Mesa de Canto", "Rack", "Estante", "Poltrona"
 ];
 
 const emptyItem = {
@@ -54,6 +76,61 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [isAddingItem, setIsAddingItem] = useState(false);
   const [newItem, setNewItem] = useState<Partial<OrderItem>>(emptyItem);
+  
+  // Estados para seletor de produtos
+  const [showProductSelector, setShowProductSelector] = useState(false);
+  const [produtosIA, setProdutosIA] = useState<ProdutoIA[]>([]);
+  const [loadingProdutos, setLoadingProdutos] = useState(false);
+  const [filtroCategoria, setFiltroCategoria] = useState<string>("todas");
+  const [buscaProduto, setBuscaProduto] = useState("");
+
+  const loadProdutosIA = async () => {
+    setLoadingProdutos(true);
+    try {
+      const { data, error } = await supabase
+        .from('tendenci_ia_produtos')
+        .select('id, nome, descricao, preco_base, categoria, centro_custo, imagem_url, estoque, ativo')
+        .eq('ativo', true)
+        .order('nome');
+      
+      if (error) throw error;
+      setProdutosIA(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar produtos:', error);
+      toast.error('Erro ao carregar produtos');
+    } finally {
+      setLoadingProdutos(false);
+    }
+  };
+
+  useEffect(() => {
+    if (showProductSelector && produtosIA.length === 0) {
+      loadProdutosIA();
+    }
+  }, [showProductSelector]);
+
+  const produtosFiltrados = produtosIA.filter(p => {
+    const matchCategoria = filtroCategoria === "todas" || p.categoria === filtroCategoria;
+    const matchBusca = !buscaProduto || p.nome.toLowerCase().includes(buscaProduto.toLowerCase());
+    return matchCategoria && matchBusca;
+  });
+
+  const addProdutoToOrder = (produto: ProdutoIA) => {
+    const newOrderItem: OrderItem = {
+      id: crypto.randomUUID(),
+      descricao: produto.nome,
+      quantidade: 1,
+      valor_unitario: produto.preco_base,
+      valor_total: produto.preco_base,
+      especificacoes: produto.descricao || '',
+      codigo_produto: produto.id.substring(0, 8).toUpperCase(),
+      centro_custo: produto.centro_custo || '',
+      unidade: 'UN',
+    };
+    
+    onItemsChange([...items, newOrderItem]);
+    toast.success(`${produto.nome} adicionado ao pedido`);
+  };
 
   const handleAddItem = () => {
     if (!newItem.descricao || !newItem.valor_unitario) return;
@@ -105,17 +182,128 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
     <div className="space-y-4">
       {/* Header com botão de adicionar */}
       {!readOnly && (
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-2">
             <Package className="h-5 w-5 text-primary" />
             <span className="font-medium">Itens do Pedido ({items.length})</span>
           </div>
-          <Button onClick={() => setIsAddingItem(true)} disabled={isAddingItem} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Adicionar Item
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setShowProductSelector(true)} className="gap-2">
+              <Import className="h-4 w-4" />
+              Importar Produto
+            </Button>
+            <Button onClick={() => setIsAddingItem(true)} disabled={isAddingItem} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Adicionar Manual
+            </Button>
+          </div>
         </div>
       )}
+
+      {/* Modal de seleção de produtos */}
+      <Dialog open={showProductSelector} onOpenChange={setShowProductSelector}>
+        <DialogContent className="max-w-3xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5" />
+              Selecionar Produto Cadastrado
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {/* Busca */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar produto..."
+                value={buscaProduto}
+                onChange={(e) => setBuscaProduto(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            
+            {/* Filtros por categoria */}
+            <div className="flex gap-2 flex-wrap">
+              <Badge
+                variant={filtroCategoria === "todas" ? "default" : "outline"}
+                className="cursor-pointer"
+                onClick={() => setFiltroCategoria("todas")}
+              >
+                Todas
+              </Badge>
+              {CATEGORIAS_PRODUTOS.map(cat => (
+                <Badge
+                  key={cat}
+                  variant={filtroCategoria === cat ? "default" : "outline"}
+                  className="cursor-pointer"
+                  onClick={() => setFiltroCategoria(cat)}
+                >
+                  {cat}
+                </Badge>
+              ))}
+            </div>
+            
+            {/* Lista de produtos */}
+            <ScrollArea className="h-[400px] pr-4">
+              {loadingProdutos ? (
+                <div className="flex items-center justify-center py-8">
+                  <span className="text-muted-foreground">Carregando...</span>
+                </div>
+              ) : produtosFiltrados.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Package className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p>Nenhum produto encontrado</p>
+                </div>
+              ) : (
+                <div className="grid gap-2">
+                  {produtosFiltrados.map(produto => (
+                    <Card
+                      key={produto.id}
+                      className="cursor-pointer hover:border-primary transition-colors"
+                      onClick={() => addProdutoToOrder(produto)}
+                    >
+                      <div className="flex items-center gap-3 p-3">
+                        {produto.imagem_url ? (
+                          <img
+                            src={produto.imagem_url}
+                            alt={produto.nome}
+                            className="w-14 h-14 object-cover rounded"
+                          />
+                        ) : (
+                          <div className="w-14 h-14 bg-muted rounded flex items-center justify-center">
+                            <Package className="h-6 w-6 text-muted-foreground" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">{produto.nome}</p>
+                          <p className="text-sm text-muted-foreground truncate">
+                            {produto.categoria || "Sem categoria"}
+                          </p>
+                          <div className="flex gap-2 mt-1 flex-wrap">
+                            {produto.centro_custo && (
+                              <Badge variant="secondary" className="text-xs">
+                                {CENTROS_CUSTO.find(cc => cc.value === produto.centro_custo)?.label || produto.centro_custo}
+                              </Badge>
+                            )}
+                            <Badge variant="outline" className="text-xs">
+                              {formatCurrency(produto.preco_base)}
+                            </Badge>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <Badge variant={produto.estoque > 0 ? "default" : "secondary"}>
+                            {produto.estoque > 0 ? `${produto.estoque} un` : "Sob encomenda"}
+                          </Badge>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </ScrollArea>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Formulário expandido para adicionar item */}
       {isAddingItem && !readOnly && (
