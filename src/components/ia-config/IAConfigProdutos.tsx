@@ -142,6 +142,7 @@ export default function IAConfigProdutos() {
     nome: "",
     descricao: "",
     preco_base: 0,
+    preco_original: null as number | null,
     categoria: "",
     centro_custo: "",
     diferenciais: "",
@@ -264,6 +265,7 @@ export default function IAConfigProdutos() {
       nome: "",
       descricao: "",
       preco_base: 0,
+      preco_original: null,
       categoria: categoriaFiltro !== "todas" ? categoriaFiltro : "",
       centro_custo: "",
       diferenciais: "",
@@ -310,6 +312,7 @@ export default function IAConfigProdutos() {
       nome: produto.nome,
       descricao: produto.descricao || "",
       preco_base: produto.preco_base,
+      preco_original: (produto as any).preco_original ?? null,
       categoria: produto.categoria || "",
       centro_custo: produto.centro_custo || "",
       diferenciais: produto.diferenciais?.join("\n") || "",
@@ -548,6 +551,7 @@ export default function IAConfigProdutos() {
         nome: form.nome,
         descricao: form.descricao || null,
         preco_base: form.preco_base,
+        preco_original: form.preco_original || null,
         categoria: form.categoria || null,
         centro_custo: form.centro_custo || null,
         diferenciais: form.diferenciais.split("\n").filter(d => d.trim()),
@@ -751,14 +755,43 @@ export default function IAConfigProdutos() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="preco_base">Preço Base (R$)</Label>
+                  <Label htmlFor="preco_original" className="flex items-center gap-2">
+                    <span className="line-through text-muted-foreground">DE:</span> Preço Original (R$)
+                    <span className="text-xs text-muted-foreground">(opcional)</span>
+                  </Label>
+                  <Input
+                    id="preco_original"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={form.preco_original || ""}
+                    onChange={(e) => setForm({ ...form, preco_original: e.target.value ? parseFloat(e.target.value) : null })}
+                    placeholder="Ex: 5000.00"
+                    className="bg-muted/50"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="preco_base" className="flex items-center gap-2">
+                    <span className="text-primary font-bold">POR:</span> Preço Atual (R$)
+                  </Label>
                   <Input
                     id="preco_base"
                     type="number"
                     step="0.01"
                     value={form.preco_base}
                     onChange={(e) => setForm({ ...form, preco_base: parseFloat(e.target.value) || 0 })}
+                    className="border-primary"
                   />
+                  {form.preco_original && form.preco_original > form.preco_base && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <Badge variant="destructive" className="bg-red-500">
+                        {Math.round(((form.preco_original - form.preco_base) / form.preco_original) * 100)}% OFF
+                      </Badge>
+                      <span className="text-muted-foreground">
+                        Economia de R$ {(form.preco_original - form.preco_base).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label>Centro de Custo</Label>
