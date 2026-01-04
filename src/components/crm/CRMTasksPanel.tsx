@@ -559,14 +559,26 @@ export function CRMTasksPanel({
   });
   const todayBrasil = brasilFormatter.format(new Date()); // "2025-01-04"
   
+  // Helper para formatar data com validação
+  const getTaskDayBrasil = (dueAt: string | null | undefined): string | null => {
+    if (!dueAt) return null;
+    try {
+      const date = new Date(dueAt);
+      if (isNaN(date.getTime())) return null;
+      return brasilFormatter.format(date);
+    } catch {
+      return null;
+    }
+  };
+  
   const todayTasks = tasks.filter(task => {
-    const taskDayBrasil = brasilFormatter.format(new Date(task.due_at));
+    const taskDayBrasil = getTaskDayBrasil(task.due_at);
     return taskDayBrasil === todayBrasil;
   });
   
   const futureTasks = tasks.filter(task => {
-    const taskDayBrasil = brasilFormatter.format(new Date(task.due_at));
-    return taskDayBrasil > todayBrasil;
+    const taskDayBrasil = getTaskDayBrasil(task.due_at);
+    return taskDayBrasil && taskDayBrasil > todayBrasil;
   });
 
   const TaskCard = ({ task, showRetry = false, showArchive = false }: { task: any; showRetry?: boolean; showArchive?: boolean }) => {
