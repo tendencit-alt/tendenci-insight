@@ -198,6 +198,17 @@ export function CRMBoard({ pipelineId, onRefresh, autoOpenDealId, onDealOpened, 
 
     const { data: dealsData, error: dealsError } = await dealsQuery.order("stage_position", { ascending: true });
 
+    // Debug log para identificar problemas de visibilidade
+    console.log('🔍 CRM Debug:', {
+      pipelineId,
+      filters,
+      totalDeals: dealsData?.length || 0,
+      categorias: dealsData?.reduce((acc: Record<string, number>, d: any) => {
+        acc[d.categoria || 'null'] = (acc[d.categoria || 'null'] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>)
+    });
+
     if (dealsError) {
       toast({
         title: "Erro ao carregar negócios",

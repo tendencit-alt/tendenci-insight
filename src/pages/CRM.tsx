@@ -58,6 +58,14 @@ export default function CRM() {
       if (savedFilters.status) setSelectedStatus(savedFilters.status);
       if (savedFilters.category) setSelectedCategory(savedFilters.category);
       if (savedFilters.search) setSearchQuery(savedFilters.search);
+    } else {
+      // Se não há filtros salvos, definir categoria padrão baseada na especialização
+      const userEspec = profile?.especializacao;
+      if (userEspec === 'moveis_soltos') {
+        setSelectedCategory('Móveis Soltos');
+      } else if (userEspec === 'moveis_planejados') {
+        setSelectedCategory('Planejados');
+      }
     }
     
     // Verificar se há parâmetro ?deal=ID na URL
@@ -68,7 +76,7 @@ export default function CRM() {
       searchParams.delete('deal');
       setSearchParams(searchParams, { replace: true });
     }
-  }, [user]);
+  }, [user, profile]);
 
   // Salvar filtros sempre que mudarem
   useEffect(() => {
