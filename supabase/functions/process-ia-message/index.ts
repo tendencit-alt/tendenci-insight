@@ -736,22 +736,50 @@ Responda em português brasileiro de forma clara e organizada.`;
     
     console.log(`🤖 AI Response (${assistantMessage.length} chars): ${assistantMessage.substring(0, 100)}...`);
 
-    // ========== FORCE CHARACTER LIMIT ==========
-    const limiteCaracteres = limiteCaracteresConfig; // Use the pre-calculated value
-    if (limiteCaracteres > 0 && assistantMessage.length > limiteCaracteres) {
-      console.log(`⚠️ Resposta excede limite (${assistantMessage.length}/${limiteCaracteres}). Truncando...`);
+    // ========== FORCE CHARACTER LIMIT (PRESERVING MEDIA MARKERS) ==========
+    const limiteCaracteres = limiteCaracteresConfig;
+    
+    // Extract media markers BEFORE character limit check
+    const photoRegex = /\[FOTO_PRODUTO:[^\]]+\]/g;
+    const videoRegex = /\[VIDEO_PRODUTO:[^\]]+\]/g;
+    const photoMarkers = assistantMessage.match(photoRegex) || [];
+    const videoMarkers = assistantMessage.match(videoRegex) || [];
+    
+    console.log(`📸 Media markers in AI response: ${photoMarkers.length} photos, ${videoMarkers.length} videos`);
+    if (photoMarkers.length > 0) {
+      console.log(`📸 Photo markers found:`, photoMarkers);
+    }
+    if (videoMarkers.length > 0) {
+      console.log(`🎬 Video markers found:`, videoMarkers);
+    }
+    
+    // Calculate text length WITHOUT media markers for limit check
+    const textWithoutMarkers = assistantMessage
+      .replace(photoRegex, '')
+      .replace(videoRegex, '')
+      .trim();
+    
+    if (limiteCaracteres > 0 && textWithoutMarkers.length > limiteCaracteres) {
+      console.log(`⚠️ Texto excede limite (${textWithoutMarkers.length}/${limiteCaracteres}). Truncando...`);
       
-      // Cortar no último espaço antes do limite para não cortar palavras
-      const textoTruncado = assistantMessage.substring(0, limiteCaracteres - 3); // -3 para o "..."
+      // Remove markers temporarily
+      let cleanText = textWithoutMarkers;
+      
+      // Truncate only the text part
+      const textoTruncado = cleanText.substring(0, limiteCaracteres - 3);
       const ultimoEspaco = textoTruncado.lastIndexOf(' ');
       
       if (ultimoEspaco > limiteCaracteres * 0.7) {
-        assistantMessage = textoTruncado.substring(0, ultimoEspaco) + "...";
+        cleanText = textoTruncado.substring(0, ultimoEspaco) + "...";
       } else {
-        assistantMessage = textoTruncado + "...";
+        cleanText = textoTruncado + "...";
       }
       
-      console.log(`✅ Resposta truncada para ${assistantMessage.length} caracteres`);
+      // Re-append all media markers (they are NOT counted in char limit)
+      const allMarkers = [...photoMarkers, ...videoMarkers].join(' ');
+      assistantMessage = cleanText + (allMarkers ? ' ' + allMarkers : '');
+      
+      console.log(`✅ Texto truncado para ${cleanText.length} chars, marcadores preservados: ${allMarkers.length} chars`);
     }
 
     // ========== CHECK FOR REPETITION ==========
@@ -788,15 +816,26 @@ Responda em português brasileiro de forma clara e organizada.`;
           assistantMessage = newMessage;
           console.log("✅ Response reformulated successfully");
           
-          // Re-apply character limit after reformulation
-          if (limiteCaracteres > 0 && assistantMessage.length > limiteCaracteres) {
-            const textoTruncado = assistantMessage.substring(0, limiteCaracteres - 3);
+          // Re-apply character limit after reformulation (preserving media markers)
+          const reformPhotoMarkers = assistantMessage.match(photoRegex) || [];
+          const reformVideoMarkers = assistantMessage.match(videoRegex) || [];
+          const reformTextWithoutMarkers = assistantMessage
+            .replace(photoRegex, '')
+            .replace(videoRegex, '')
+            .trim();
+          
+          if (limiteCaracteres > 0 && reformTextWithoutMarkers.length > limiteCaracteres) {
+            const textoTruncado = reformTextWithoutMarkers.substring(0, limiteCaracteres - 3);
             const ultimoEspaco = textoTruncado.lastIndexOf(' ');
+            let cleanText;
             if (ultimoEspaco > limiteCaracteres * 0.7) {
-              assistantMessage = textoTruncado.substring(0, ultimoEspaco) + "...";
+              cleanText = textoTruncado.substring(0, ultimoEspaco) + "...";
             } else {
-              assistantMessage = textoTruncado + "...";
+              cleanText = textoTruncado + "...";
             }
+            // Re-append markers
+            const allMarkers = [...reformPhotoMarkers, ...reformVideoMarkers].join(' ');
+            assistantMessage = cleanText + (allMarkers ? ' ' + allMarkers : '');
           }
         }
       }
@@ -1735,6 +1774,39 @@ function buildMasterPrompt(
     mentor: "educa enquanto vende, compartilha conhecimento profundo"
   };
 
+  // ========== CRITICAL: MEDIA CAPABILITY (FIRST!) ==========
+  const productsWithMedia = products.filter(p => p.imagem_url || p.video_url || p.videos?.length);
+  console.log(`🖼️ Building prompt with ${products.length} products, ${productsWithMedia.length} with media`);
+  
+  if (productsWithMedia.length > 0) {
+    parts.push(`# 📸🎬 CAPACIDADE DE ENVIO DE MÍDIA (MUITO IMPORTANTE!)
+
+⚠️ VOCÊ TEM A CAPACIDADE de enviar fotos e vídeos para o cliente!
+⚠️ NUNCA diga "não consigo enviar fotos" - você PODE e DEVE enviar!
+
+## COMO ENVIAR MÍDIA:
+Basta incluir o marcador na sua resposta:
+- FOTO: [FOTO_PRODUTO:url_da_foto:nome_produto]
+- VÍDEO: [VIDEO_PRODUTO:url_do_video:nome_produto]
+
+## EXEMPLOS PRÁTICOS:
+
+Cliente: "Quero ver mesas"
+Você: "Olha esse modelo que é perfeito! [FOTO_PRODUTO:https://storage.url/mesa.jpg:Mesa 8 lugares]"
+
+Cliente: "Tem poltrona?"  
+Você: "Temos sim! Essa aqui é muito procurada: [FOTO_PRODUTO:https://storage.url/poltrona.jpg:Poltrona Pata de Elefante]"
+
+Cliente: "Me mostra uma foto"
+Você: "Claro! [FOTO_PRODUTO:https://storage.url/produto.jpg:Nome do Produto]"
+
+## REGRA OBRIGATÓRIA:
+- SEMPRE que recomendar um produto que tem foto/vídeo, INCLUA o marcador!
+- Os marcadores são processados automaticamente e a mídia é enviada junto com sua mensagem
+- Você tem ${productsWithMedia.length} produtos com mídia disponível para mostrar!
+`);
+  }
+
   // ========== MASTER PROMPT HEADER ==========
   parts.push(`🧠 INTELIGÊNCIA DE ATENDIMENTO – ${nomeEmpresa.toUpperCase()}
 
@@ -1919,11 +1991,11 @@ ${objecoes.map(o => `**Se o cliente disser:** "${o.objecao}"\n**Responda:** "${o
 
   // ========== PRODUCTS SECTION ==========
   if (products.length > 0) {
-    const productsWithMedia = products.filter(p => p.imagem_url || p.video_url || p.videos?.length);
+    const productsWithMediaLocal = products.filter(p => p.imagem_url || p.video_url || p.videos?.length);
     
-    parts.push(`# 🪵 CATÁLOGO DE PRODUTOS (${products.length} produtos, ${productsWithMedia.length} com mídia)
+    parts.push(`# 🪵 CATÁLOGO DE PRODUTOS (${products.length} produtos, ${productsWithMediaLocal.length} com mídia)
 
-IMPORTANTE: Quando recomendar um produto, ENVIE a foto junto usando o marcador!
+⚠️ REGRA: Quando recomendar um produto com foto, COPIE E COLE o marcador exato abaixo na sua resposta!
 
 ${products.map((p) => {
       const lines = [`## ${p.nome}`];
@@ -1933,15 +2005,18 @@ ${products.map((p) => {
       if (p.quando_oferecer) lines.push(`- Quando oferecer: ${p.quando_oferecer}`);
       if (p.diferenciais?.length) lines.push(`- Diferenciais: ${p.diferenciais.join(", ")}`);
       
-      if (p.imagem_url) {
-        lines.push(`- 📸 FOTO: [FOTO_PRODUTO:${p.imagem_url}:${p.nome}]`);
+      // Only include products with valid URLs
+      if (p.imagem_url && p.imagem_url.startsWith('http')) {
+        lines.push(`- 📸 **PARA ENVIAR FOTO, COPIE:** [FOTO_PRODUTO:${p.imagem_url}:${p.nome}]`);
       }
-      if (p.video_url) {
-        lines.push(`- 🎬 VÍDEO: [VIDEO_PRODUTO:${p.video_url}:${p.nome}]`);
+      if (p.video_url && p.video_url.startsWith('http')) {
+        lines.push(`- 🎬 **PARA ENVIAR VÍDEO, COPIE:** [VIDEO_PRODUTO:${p.video_url}:${p.nome}]`);
       }
       if (p.videos?.length) {
         p.videos.forEach(v => {
-          lines.push(`- 🎬 VÍDEO "${v.nome}": [VIDEO_PRODUTO:${v.url}:${v.nome}]`);
+          if (v.url && v.url.startsWith('http')) {
+            lines.push(`- 🎬 **PARA ENVIAR "${v.nome}", COPIE:** [VIDEO_PRODUTO:${v.url}:${v.nome}]`);
+          }
         });
       }
       
@@ -1988,11 +2063,13 @@ Após isso:
 - RESPONDA A TODAS as mensagens de uma vez só
 - Não ignore nenhuma parte do que ele disse
 
-## Envio de Mídia
+## Envio de Mídia (OBRIGATÓRIO!)
 - VOCÊ PODE E DEVE enviar fotos e vídeos dos produtos!
-- Use: [FOTO_PRODUTO:url:nome] para enviar foto
-- Use: [VIDEO_PRODUTO:url:nome] para enviar vídeo
-- Exemplo: "Olha esse modelo que combina com o que você procura! [FOTO_PRODUTO:url:nome]"
+- Use: [FOTO_PRODUTO:url_completa:nome] para enviar foto
+- Use: [VIDEO_PRODUTO:url_completa:nome] para enviar vídeo
+- NUNCA diga "não consigo enviar fotos" - você TEM essa capacidade!
+- Quando recomendar produto com mídia, SEMPRE inclua o marcador
+- Exemplo: "Olha esse modelo! [FOTO_PRODUTO:https://storage.url/foto.jpg:Mesa Rústica]"
 
 ## Regras Críticas
 - JAMAIS repita uma resposta que você já deu nesta conversa
