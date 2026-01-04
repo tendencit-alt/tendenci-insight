@@ -5246,10 +5246,13 @@ export type Database = {
           created_at: string | null
           descricao: string | null
           diferenciais: string[] | null
+          estoque: number | null
           galeria: string[] | null
           id: string
           imagem_url: string | null
           nome: string
+          permite_venda_sem_estoque: boolean | null
+          prazo_entrega_dias: number | null
           preco_base: number | null
           quando_oferecer: string | null
           updated_at: string | null
@@ -5262,10 +5265,13 @@ export type Database = {
           created_at?: string | null
           descricao?: string | null
           diferenciais?: string[] | null
+          estoque?: number | null
           galeria?: string[] | null
           id?: string
           imagem_url?: string | null
           nome: string
+          permite_venda_sem_estoque?: boolean | null
+          prazo_entrega_dias?: number | null
           preco_base?: number | null
           quando_oferecer?: string | null
           updated_at?: string | null
@@ -5278,10 +5284,13 @@ export type Database = {
           created_at?: string | null
           descricao?: string | null
           diferenciais?: string[] | null
+          estoque?: number | null
           galeria?: string[] | null
           id?: string
           imagem_url?: string | null
           nome?: string
+          permite_venda_sem_estoque?: boolean | null
+          prazo_entrega_dias?: number | null
           preco_base?: number | null
           quando_oferecer?: string | null
           updated_at?: string | null
