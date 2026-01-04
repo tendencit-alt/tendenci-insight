@@ -14,21 +14,10 @@ import { toast } from "sonner";
 import { Loader2, Plus, Pencil, Trash2, Package, X, Image, Video, Link, Upload, Play, Filter, Warehouse, MapPin, Ruler } from "lucide-react";
 import type { Json } from "@/integrations/supabase/types";
 
-// Categorias predefinidas
-const CATEGORIAS = [
-  "Sofá",
-  "Cadeira",
-  "Banqueta",
-  "Tapete",
-  "Quadros",
-  "Aparador",
-  "Bistrô",
-  "Mesa de Centro",
-  "Mesa de Canto",
-  "Rack",
-  "Estante",
-  "Poltrona",
-] as const;
+interface Categoria {
+  id: string;
+  name: string;
+}
 
 const CENTROS_CUSTO = [
   { value: 'moveis_planejados', label: 'Móveis Planejados' },
@@ -99,6 +88,7 @@ const parseVideos = (videos: unknown): VideoItem[] => {
 export default function IAConfigProdutos() {
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [locations, setLocations] = useState<StockLocation[]>([]);
+  const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -108,6 +98,10 @@ export default function IAConfigProdutos() {
   const [videoUrlInput, setVideoUrlInput] = useState("");
   const [showVideoUrlInput, setShowVideoUrlInput] = useState(false);
   const [categoriaFiltro, setCategoriaFiltro] = useState<string>("todas");
+  const [locaisComEstoque, setLocaisComEstoque] = useState<string[]>([]);
+  const [showNewCategoriaDialog, setShowNewCategoriaDialog] = useState(false);
+  const [novaCategoria, setNovaCategoria] = useState("");
+  const [savingCategoria, setSavingCategoria] = useState(false);
   
   const [form, setForm] = useState({
     nome: "",
@@ -158,16 +152,18 @@ export default function IAConfigProdutos() {
 
   const loadData = async () => {
     try {
-      // Carregar locais e produtos em paralelo
-      const [locationsRes, produtosRes] = await Promise.all([
+      // Carregar locais, produtos e categorias em paralelo
+      const [locationsRes, produtosRes, categoriasRes] = await Promise.all([
         supabase.from("stock_locations").select("*").eq("active", true).order("name"),
-        supabase.from("tendenci_ia_produtos").select("*").order("nome")
+        supabase.from("tendenci_ia_produtos").select("*").order("nome"),
+        supabase.from("product_categories").select("id, name").eq("active", true).order("name")
       ]);
 
       if (locationsRes.error) throw locationsRes.error;
       if (produtosRes.error) throw produtosRes.error;
 
       setLocations(locationsRes.data || []);
+      setCategorias(categoriasRes.data || []);
 
       // Carregar estoques por produto
       const produtosComEstoque: Produto[] = [];
@@ -218,11 +214,8 @@ export default function IAConfigProdutos() {
   const openNewDialog = () => {
     setEditingProduto(null);
     
-    // Inicializar estoques por local com 0
-    const estoquesPorLocal: Record<string, number> = {};
-    locations.forEach(loc => {
-      estoquesPorLocal[loc.id] = 0;
-    });
+    // Não inicializar nenhum local - usuário adiciona manualmente
+    setLocaisComEstoque([]);
     
     setForm({
       nome: "",
@@ -239,7 +232,7 @@ export default function IAConfigProdutos() {
       videos: [],
       permite_venda_sem_estoque: false,
       prazo_entrega_dias: null,
-      estoquesPorLocal,
+      estoquesPorLocal: {},
       largura: null,
       comprimento: null,
       altura: null,
@@ -263,12 +256,18 @@ export default function IAConfigProdutos() {
       });
     }
 
-    // Carregar estoques por local
+    // Carregar apenas locais que tem estoque
     const estoquesPorLocal: Record<string, number> = {};
-    locations.forEach(loc => {
-      const estoque = produto.estoques.find(e => e.location_id === loc.id);
-      estoquesPorLocal[loc.id] = estoque?.quantidade || 0;
+    const locaisAtivos: string[] = [];
+    
+    produto.estoques.forEach(e => {
+      if (e.quantidade > 0) {
+        estoquesPorLocal[e.location_id] = e.quantidade;
+        locaisAtivos.push(e.location_id);
+      }
     });
+    
+    setLocaisComEstoque(locaisAtivos);
     
     setForm({
       nome: produto.nome,
@@ -304,6 +303,53 @@ export default function IAConfigProdutos() {
         [locationId]: Math.max(0, quantidade || 0)
       }
     }));
+  };
+
+  const addLocalEstoque = (locationId: string) => {
+    if (locaisComEstoque.includes(locationId)) return;
+    setLocaisComEstoque(prev => [...prev, locationId]);
+    setForm(prev => ({
+      ...prev,
+      estoquesPorLocal: { ...prev.estoquesPorLocal, [locationId]: 0 }
+    }));
+  };
+
+  const removeLocalEstoque = (locationId: string) => {
+    setLocaisComEstoque(prev => prev.filter(id => id !== locationId));
+    setForm(prev => {
+      const newEstoques = { ...prev.estoquesPorLocal };
+      delete newEstoques[locationId];
+      return { ...prev, estoquesPorLocal: newEstoques };
+    });
+  };
+
+  const createCategoria = async () => {
+    if (!novaCategoria.trim()) {
+      toast.error("Informe o nome da categoria");
+      return;
+    }
+    
+    setSavingCategoria(true);
+    try {
+      const { data, error } = await supabase
+        .from("product_categories")
+        .insert({ name: novaCategoria.trim(), active: true })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      setCategorias(prev => [...prev, { id: data.id, name: data.name }]);
+      setForm(prev => ({ ...prev, categoria: data.name }));
+      setNovaCategoria("");
+      setShowNewCategoriaDialog(false);
+      toast.success("Categoria criada!");
+    } catch (error) {
+      console.error("Erro ao criar categoria:", error);
+      toast.error("Erro ao criar categoria");
+    } finally {
+      setSavingCategoria(false);
+    }
   };
 
   const uploadImage = async (file: File, isGallery = false) => {
@@ -579,9 +625,9 @@ export default function IAConfigProdutos() {
                 <SelectItem value="todas">
                   Todas as categorias ({produtos.length})
                 </SelectItem>
-                {CATEGORIAS.map(cat => (
-                  <SelectItem key={cat} value={cat}>
-                    {cat} ({contadorPorCategoria[cat] || 0})
+                {categorias.map(cat => (
+                  <SelectItem key={cat.id} value={cat.name}>
+                    {cat.name} ({contadorPorCategoria[cat.name] || 0})
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -624,21 +670,32 @@ export default function IAConfigProdutos() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="categoria">Categoria *</Label>
-                  <Select 
-                    value={form.categoria} 
-                    onValueChange={(v) => setForm({ ...form, categoria: v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione a categoria" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CATEGORIAS.map(cat => (
-                        <SelectItem key={cat} value={cat}>
-                          {cat}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex gap-2">
+                    <Select 
+                      value={form.categoria} 
+                      onValueChange={(v) => setForm({ ...form, categoria: v })}
+                    >
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder="Selecione a categoria" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categorias.map(cat => (
+                          <SelectItem key={cat.id} value={cat.name}>
+                            {cat.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="icon"
+                      onClick={() => setShowNewCategoriaDialog(true)}
+                      title="Criar nova categoria"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="preco_base">Preço Base (R$)</Label>
@@ -760,23 +817,74 @@ export default function IAConfigProdutos() {
                   </Badge>
                 </div>
                 
-                <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
-                  {locations.map(loc => (
-                    <div key={loc.id} className="flex items-center gap-2 p-2 rounded-lg bg-background border">
-                      <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                      <span className="text-sm font-medium flex-1 truncate" title={loc.name}>
-                        {loc.name}
-                      </span>
-                      <Input
-                        type="number"
-                        min="0"
-                        className="w-20 h-8 text-center"
-                        value={form.estoquesPorLocal[loc.id] || 0}
-                        onChange={(e) => updateEstoqueLocal(loc.id, parseInt(e.target.value))}
-                      />
-                    </div>
-                  ))}
+                {/* Lista de locais com estoque */}
+                <div className="space-y-2">
+                  {locaisComEstoque.length === 0 && (
+                    <p className="text-sm text-muted-foreground text-center py-2">
+                      Nenhum local de estoque adicionado. Clique em "Adicionar Local" abaixo.
+                    </p>
+                  )}
+                  
+                  {locaisComEstoque.map(locId => {
+                    const loc = locations.find(l => l.id === locId);
+                    if (!loc) return null;
+                    return (
+                      <div key={locId} className="flex items-center gap-2 p-2 rounded-lg bg-background border">
+                        <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                        <span className="text-sm font-medium flex-1 truncate" title={loc.name}>
+                          {loc.name}
+                        </span>
+                        <Input
+                          type="number"
+                          min="0"
+                          className="w-20 h-8 text-center"
+                          value={form.estoquesPorLocal[locId] || 0}
+                          onChange={(e) => updateEstoqueLocal(locId, parseInt(e.target.value))}
+                        />
+                        <Button 
+                          type="button" 
+                          variant="ghost" 
+                          size="icon"
+                          className="h-8 w-8 text-destructive hover:text-destructive"
+                          onClick={() => removeLocalEstoque(locId)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    );
+                  })}
                 </div>
+
+                {/* Botão para adicionar novo local */}
+                {locations.filter(loc => !locaisComEstoque.includes(loc.id)).length > 0 && (
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button type="button" variant="outline" className="w-full">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Adicionar Local de Estoque
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-56 p-2">
+                      <div className="space-y-1">
+                        {locations
+                          .filter(loc => !locaisComEstoque.includes(loc.id))
+                          .map(loc => (
+                            <Button 
+                              key={loc.id}
+                              type="button"
+                              variant="ghost"
+                              className="w-full justify-start h-9"
+                              onClick={() => addLocalEstoque(loc.id)}
+                            >
+                              <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
+                              {loc.name}
+                            </Button>
+                          ))
+                        }
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                )}
 
                 {/* Opção de venda sem estoque */}
                 <div className="flex flex-col sm:flex-row gap-4 pt-2 border-t">
@@ -1202,6 +1310,48 @@ export default function IAConfigProdutos() {
           </TableBody>
         </Table>
       )}
+
+      {/* Dialog para criar nova categoria */}
+      <Dialog open={showNewCategoriaDialog} onOpenChange={setShowNewCategoriaDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Nova Categoria</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="nova-categoria">Nome da categoria</Label>
+              <Input
+                id="nova-categoria"
+                placeholder="Ex: Puff, Mesa Lateral..."
+                value={novaCategoria}
+                onChange={(e) => setNovaCategoria(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    createCategoria();
+                  }
+                }}
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => {
+                  setShowNewCategoriaDialog(false);
+                  setNovaCategoria("");
+                }}
+              >
+                Cancelar
+              </Button>
+              <Button onClick={createCategoria} disabled={savingCategoria}>
+                {savingCategoria && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                Criar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
