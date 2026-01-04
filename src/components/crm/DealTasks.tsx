@@ -492,6 +492,34 @@ export function DealTasks({ dealId }: DealTasksProps) {
     fetchTasks();
   };
 
+  const handleRetryTask = async (taskId: string) => {
+    const { error } = await supabase
+      .from("crm_tasks")
+      .update({ 
+        status: "open", 
+        retry_count: 0,
+        last_error: null,
+        updated_at: new Date().toISOString() 
+      })
+      .eq("id", taskId);
+
+    if (error) {
+      toast({
+        title: "Erro ao reprocessar tarefa",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "Tarefa reaberta",
+      description: "A tarefa será reprocessada automaticamente.",
+    });
+
+    fetchTasks();
+  };
+
   const handleDeleteTask = async () => {
     if (!taskToDelete) return;
 
@@ -728,6 +756,7 @@ export function DealTasks({ dealId }: DealTasksProps) {
           <div className="space-y-3">
             {tasks.map((task) => {
               const dueInfo = getDaysUntilDueLocal(task.due_at);
+              const isFailed = task.status === "failed";
 
               return (
                 <div
@@ -735,6 +764,8 @@ export function DealTasks({ dealId }: DealTasksProps) {
                   className={`p-4 border rounded-md ${
                     task.status === "done"
                       ? "bg-muted/20 opacity-70"
+                      : isFailed
+                      ? "bg-destructive/10 border-destructive/40"
                       : "bg-background"
                   }`}
                 >
@@ -762,6 +793,18 @@ export function DealTasks({ dealId }: DealTasksProps) {
                           {task.title}
                         </p>
                         <div className="flex gap-1">
+                          {/* Botão Retentar para tarefas com falha */}
+                          {isFailed && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 px-2 text-xs text-primary hover:bg-primary/10"
+                              onClick={() => handleRetryTask(task.id)}
+                              title="Retentar tarefa"
+                            >
+                              🔄 Retentar
+                            </Button>
+                          )}
                           {/* Todos vendedores autenticados podem editar */}
                           <Button
                             size="sm"
@@ -796,6 +839,12 @@ export function DealTasks({ dealId }: DealTasksProps) {
                             ⚡ Automatizada
                           </Badge>
                         )}
+                        {isFailed && (
+                          <Badge variant="destructive" className="gap-1">
+                            ❌ Falhou
+                            {task.retry_count > 0 && ` (${task.retry_count}x)`}
+                          </Badge>
+                        )}
                         <span className="text-xs text-muted-foreground">
                           {formatBrasil(task.due_at)}
                         </span>
@@ -806,9 +855,16 @@ export function DealTasks({ dealId }: DealTasksProps) {
                         )}
                       </div>
 
+                      {/* Mostrar erro da tarefa se existir */}
+                      {isFailed && task.last_error && (
+                        <p className="text-xs text-destructive bg-destructive/5 p-2 rounded mt-1">
+                          ⚠️ {task.last_error}
+                        </p>
+                      )}
+
                       {task.tipo_tarefa === "automatizada" && task.whatsapp_number && (
                         <p className="text-xs text-muted-foreground mt-1">
-                          📱 WhatsApp: {task.whatsapp_number}
+                          📱 WhatsApp: {formatPhoneForDisplay(task.whatsapp_number)}
                         </p>
                       )}
 

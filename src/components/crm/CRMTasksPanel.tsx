@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
-import { CheckCircle, Clock, ChevronDown, TrendingUp, TrendingDown, Trophy, Minus } from "lucide-react";
+import { CheckCircle, Clock, ChevronDown, TrendingUp, TrendingDown, Trophy, Minus, AlertTriangle, RefreshCw, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DealDetailSheet } from "./DealDetailSheet";
@@ -10,6 +10,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { useAuth } from "@/contexts/AuthContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getDaysUntilDue as getTaskDueStatus, formatBrasilShort, isISODateInPast } from "@/utils/taskTimezone";
+import { useToast } from "@/hooks/use-toast";
+import { formatPhoneForDisplay } from "@/utils/whatsappValidation";
 
 interface CRMTasksPanelProps {
   pipelineId: string;
@@ -43,7 +45,9 @@ export function CRMTasksPanel({
   customDateRange 
 }: CRMTasksPanelProps) {
   const { profile } = useAuth();
+  const { toast } = useToast();
   const [tasks, setTasks] = useState<any[]>([]);
+  const [failedTasks, setFailedTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDeal, setSelectedDeal] = useState<any | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -51,6 +55,7 @@ export function CRMTasksPanel({
     todas: false,
     diarias: false,
     futuras: false,
+    problemas: true, // Aberto por padrão para visibilidade
   });
   const [completedStats, setCompletedStats] = useState<CompletedStats>({
     thisMonth: 0,
@@ -67,6 +72,7 @@ export function CRMTasksPanel({
 
   useEffect(() => {
     fetchTasks();
+    fetchFailedTasks();
     fetchCompletedStats();
     fetchDealsStats();
 
@@ -85,6 +91,7 @@ export function CRMTasksPanel({
           clearTimeout(debounceTimeout);
           debounceTimeout = setTimeout(() => {
             fetchTasks();
+            fetchFailedTasks();
             fetchCompletedStats();
           }, 500);
         }
@@ -376,6 +383,52 @@ export function CRMTasksPanel({
     setLoading(false);
   };
 
+  const fetchFailedTasks = async () => {
+    // Buscar deal_ids filtrados
+    let dealsQuery = supabase
+      .from("crm_deals")
+      .select("id")
+      .eq("pipeline_id", pipelineId)
+      .eq("status", "aberto");
+    
+    if (categoryFilter && categoryFilter !== "all") {
+      dealsQuery = dealsQuery.eq("categoria", categoryFilter);
+    }
+
+    if (ownerFilter && ownerFilter !== "all") {
+      dealsQuery = dealsQuery.eq("owner_id", ownerFilter);
+    }
+    
+    const { data: deals } = await dealsQuery;
+
+    if (!deals || deals.length === 0) {
+      setFailedTasks([]);
+      return;
+    }
+
+    const dealIds = deals.map((d) => d.id);
+
+    // Buscar tarefas com falha
+    const { data } = await supabase
+      .from("crm_tasks")
+      .select(`
+        *,
+        deal:crm_deals(
+          title,
+          categoria,
+          stage_id,
+          lead:leads(
+            client:clients(name, phone)
+          )
+        )
+      `)
+      .in("deal_id", dealIds)
+      .eq("status", "failed")
+      .order("updated_at", { ascending: false });
+
+    setFailedTasks(data || []);
+  };
+
   // Usar utilitário centralizado para status de vencimento
   const getDaysUntilDue = (dueAt: string) => {
     const info = getTaskDueStatus(dueAt);
@@ -407,7 +460,39 @@ export function CRMTasksPanel({
       });
       
       fetchTasks();
+      fetchFailedTasks();
     }
+  };
+
+  const handleRetryTask = async (taskId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    const { error } = await supabase
+      .from("crm_tasks")
+      .update({ 
+        status: "open", 
+        retry_count: 0,
+        last_error: null,
+        updated_at: new Date().toISOString() 
+      })
+      .eq("id", taskId);
+
+    if (error) {
+      toast({
+        title: "Erro ao reprocessar",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "Tarefa reaberta",
+      description: "Será reprocessada automaticamente.",
+    });
+
+    fetchTasks();
+    fetchFailedTasks();
   };
 
   const handleOpenDeal = async (dealId: string) => {
@@ -449,37 +534,73 @@ export function CRMTasksPanel({
     return dueDate > endOfDay;
   });
 
-  const TaskCard = ({ task }: { task: any }) => {
+  const TaskCard = ({ task, showRetry = false }: { task: any; showRetry?: boolean }) => {
     const dueInfo = getDaysUntilDue(task.due_at);
-    const dueDate = new Date(task.due_at);
     const clientName = task.deal?.lead?.client?.name || "Sem cliente";
-    // Usar utilitário centralizado para verificação de atraso
     const isOverdue = isISODateInPast(task.due_at);
+    const isFailed = task.status === "failed";
 
     return (
       <div
         className={`p-3 border rounded-lg space-y-2 transition-colors cursor-pointer hover:shadow-sm ${
-          isOverdue 
+          isFailed
+            ? "border-destructive/40 bg-destructive/5 hover:bg-destructive/10"
+            : isOverdue 
             ? "border-destructive/40 bg-destructive/5 hover:bg-destructive/10" 
             : "border-border bg-card hover:bg-muted/50"
         }`}
         onClick={() => handleOpenDeal(task.deal_id)}
       >
         <div className="flex items-start gap-2">
-          <Checkbox
-            checked={false}
-            onClick={(e) => handleMarkDone(task.id, e)}
-            className="mt-0.5 flex-shrink-0"
-          />
+          {!isFailed && (
+            <Checkbox
+              checked={false}
+              onClick={(e) => handleMarkDone(task.id, e)}
+              className="mt-0.5 flex-shrink-0"
+            />
+          )}
+          {isFailed && (
+            <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 flex-shrink-0" />
+          )}
           <div className="flex-1 min-w-0 space-y-1">
-            <p className="font-semibold text-sm line-clamp-2">{task.title}</p>
+            <div className="flex items-start justify-between gap-2">
+              <p className="font-semibold text-sm line-clamp-2">{task.title}</p>
+              {showRetry && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-6 px-2 text-xs shrink-0"
+                  onClick={(e) => handleRetryTask(task.id, e)}
+                  title="Reprocessar tarefa"
+                >
+                  <RefreshCw className="h-3 w-3 mr-1" />
+                  Retentar
+                </Button>
+              )}
+            </div>
             <p className="text-xs text-muted-foreground line-clamp-1">
               {task.deal?.title} • {clientName}
             </p>
+            {isFailed && task.last_error && (
+              <p className="text-xs text-destructive line-clamp-2">
+                ⚠️ {task.last_error}
+              </p>
+            )}
+            {isFailed && task.whatsapp_number && (
+              <p className="text-xs text-muted-foreground">
+                📱 {formatPhoneForDisplay(task.whatsapp_number)}
+              </p>
+            )}
             <div className="flex items-center gap-2 flex-wrap">
-              <Badge variant={dueInfo.variant} className="text-xs flex-shrink-0 h-5 px-1.5">
-                {dueInfo.icon} {dueInfo.text}
-              </Badge>
+              {isFailed ? (
+                <Badge variant="destructive" className="text-xs flex-shrink-0 h-5 px-1.5">
+                  ❌ Falhou {task.retry_count > 0 && `(${task.retry_count}x)`}
+                </Badge>
+              ) : (
+                <Badge variant={dueInfo.variant} className="text-xs flex-shrink-0 h-5 px-1.5">
+                  {dueInfo.icon} {dueInfo.text}
+                </Badge>
+              )}
               {task.tipo_tarefa === "automatizada" && (
                 <Badge variant="outline" className="text-xs flex-shrink-0 h-5 px-1.5">
                   🤖 Auto
@@ -694,6 +815,34 @@ export function CRMTasksPanel({
           </Card>
         </div>
         
+        {/* Seção de tarefas com problema - sempre visível se houver */}
+        {failedTasks.length > 0 && (
+          <Collapsible open={openCards.problemas} onOpenChange={(open) => setOpenCards(prev => ({ ...prev, problemas: open }))}>
+            <Card className="border-destructive/40 bg-destructive/5">
+              <CollapsibleTrigger asChild>
+                <CardHeader className="pb-3 cursor-pointer hover:bg-destructive/10 transition-colors">
+                  <CardTitle className="text-base font-bold flex items-center gap-2">
+                    <AlertTriangle className="h-5 w-5 text-destructive" />
+                    <span className="text-destructive">TAREFAS COM PROBLEMA</span>
+                    <Badge variant="destructive" className="ml-auto text-sm">
+                      {failedTasks.length}
+                    </Badge>
+                    <ChevronDown className={`h-4 w-4 transition-transform ${openCards.problemas ? "" : "-rotate-90"}`} />
+                  </CardTitle>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="space-y-3 max-h-[400px] overflow-y-auto">
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Tarefas automatizadas que falharam após múltiplas tentativas. Clique em "Retentar" para reprocessar.
+                  </p>
+                  {failedTasks.map((task) => <TaskCard key={task.id} task={task} showRetry />)}
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* TODAS */}
           <Collapsible open={openCards.todas} onOpenChange={(open) => setOpenCards(prev => ({ ...prev, todas: open }))}>

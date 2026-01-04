@@ -12,8 +12,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Search } from "lucide-react";
+import { Loader2, Search, Phone } from "lucide-react";
 import { toast as sonnerToast } from "sonner";
+import { validateBrazilianPhone, formatPhoneForDisplay } from "@/utils/whatsappValidation";
 
 interface EditClientDialogProps {
   open: boolean;
@@ -174,6 +175,17 @@ export function EditClientDialog({
       return;
     }
 
+    // Validar formato do telefone brasileiro
+    const phoneValidation = validateBrazilianPhone(formData.phone);
+    if (!phoneValidation.valid) {
+      toast({
+        title: "Telefone inválido",
+        description: phoneValidation.error || "Formato de telefone inválido. Use: (DDD) 9XXXX-XXXX",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -181,7 +193,7 @@ export function EditClientDialog({
         .from("clients")
         .update({
           name: formData.name.trim(),
-          phone: formData.phone.trim(),
+          phone: phoneValidation.formatted, // Usar número formatado
           email: formData.email.trim() || null,
           cpf_cnpj: formData.cpf_cnpj.trim() || null,
           cep: formData.cep.trim() || null,
@@ -263,6 +275,20 @@ export function EditClientDialog({
                   placeholder="(DDD) 9XXXX-XXXX"
                   required
                 />
+                {formData.phone && (
+                  <div className="flex items-center gap-2 text-xs">
+                    <Phone className="h-3 w-3" />
+                    {validateBrazilianPhone(formData.phone).valid ? (
+                      <span className="text-green-600">
+                        ✓ {formatPhoneForDisplay(formData.phone)}
+                      </span>
+                    ) : (
+                      <span className="text-destructive">
+                        {validateBrazilianPhone(formData.phone).error}
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">
