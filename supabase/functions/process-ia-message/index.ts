@@ -2120,6 +2120,16 @@ ${regrasGerais}
   return parts.join("\n");
 }
 
+// Validate URL format
+function isValidMediaUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url.trim());
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
 async function processAndSendResponse(
   evolutionApiUrl: string,
   evolutionApiKey: string,
@@ -2127,20 +2137,45 @@ async function processAndSendResponse(
   phoneNumber: string,
   message: string
 ): Promise<void> {
-  // Extract media markers
-  const photoRegex = /\[FOTO_PRODUTO:([^:]+):([^\]]+)\]/g;
-  const videoRegex = /\[VIDEO_PRODUTO:([^:]+):([^\]]+)\]/g;
+  // Improved regex that handles complex URLs with colons (ports, etc.)
+  // Captures: [FOTO_PRODUTO:https://domain.com/path/image.jpg:Caption Text]
+  const photoRegex = /\[FOTO_PRODUTO:(https?:\/\/[^\]]+?):((?:(?!\[FOTO_PRODUTO|\[VIDEO_PRODUTO).)*?)\]/g;
+  const videoRegex = /\[VIDEO_PRODUTO:(https?:\/\/[^\]]+?):((?:(?!\[FOTO_PRODUTO|\[VIDEO_PRODUTO).)*?)\]/g;
 
-  const photoMatches = [...message.matchAll(photoRegex)];
-  const videoMatches = [...message.matchAll(videoRegex)];
+  // Alternative simpler regex as fallback
+  const simplePhotoRegex = /\[FOTO_PRODUTO:([^:\]]+):([^\]]+)\]/g;
+  const simpleVideoRegex = /\[VIDEO_PRODUTO:([^:\]]+):([^\]]+)\]/g;
 
-  console.log(`🖼️ Found ${photoMatches.length} photos, ${videoMatches.length} videos`);
+  let photoMatches = [...message.matchAll(photoRegex)];
+  let videoMatches = [...message.matchAll(videoRegex)];
 
-  // Clean message from markers
+  // Try simpler regex if complex one fails
+  if (photoMatches.length === 0 && message.includes('[FOTO_PRODUTO:')) {
+    photoMatches = [...message.matchAll(simplePhotoRegex)];
+    console.log(`📸 Using fallback regex, found ${photoMatches.length} photos`);
+  }
+  if (videoMatches.length === 0 && message.includes('[VIDEO_PRODUTO:')) {
+    videoMatches = [...message.matchAll(simpleVideoRegex)];
+    console.log(`🎬 Using fallback regex, found ${videoMatches.length} videos`);
+  }
+
+  console.log(`🖼️ Media detection: ${photoMatches.length} photos, ${videoMatches.length} videos`);
+  
+  // Log detailed info about found media
+  for (const match of photoMatches) {
+    console.log(`📸 Photo URL: "${match[1]}", Caption: "${match[2]}"`);
+  }
+  for (const match of videoMatches) {
+    console.log(`🎬 Video URL: "${match[1]}", Caption: "${match[2]}"`);
+  }
+
+  // Clean message from markers (using both regex patterns)
   let cleanMessage = message
     .replace(photoRegex, "")
     .replace(videoRegex, "")
-    .replace(/\n{3,}/g, "\n\n") // Remove excessive line breaks
+    .replace(simplePhotoRegex, "")
+    .replace(simpleVideoRegex, "")
+    .replace(/\n{3,}/g, "\n\n")
     .trim();
 
   // Send text message first
@@ -2156,25 +2191,60 @@ async function processAndSendResponse(
     await new Promise(resolve => setTimeout(resolve, 800));
   }
 
-  // Send photos
+  // Send photos with validation
   for (const match of photoMatches) {
     const [, url, caption] = match;
-    await sendWhatsAppMessage(evolutionApiUrl, evolutionApiKey, instanceName, phoneNumber, {
+    const trimmedUrl = url.trim();
+    
+    if (!isValidMediaUrl(trimmedUrl)) {
+      console.warn(`⚠️ Invalid photo URL skipped: "${trimmedUrl}"`);
+      continue;
+    }
+    
+    console.log(`📸 Sending photo - URL: ${trimmedUrl}`);
+    
+    const success = await sendWhatsAppMessage(evolutionApiUrl, evolutionApiKey, instanceName, phoneNumber, {
       type: "image",
-      url: url.trim(),
+      url: trimmedUrl,
       caption: `📸 ${caption.trim()}`,
     });
+    
+    if (!success) {
+      // Fallback: inform user about the product without image
+      await sendWhatsAppMessage(evolutionApiUrl, evolutionApiKey, instanceName, phoneNumber, {
+        type: "text",
+        text: `📷 Não consegui enviar a foto de "${caption.trim()}", mas você pode ver no nosso catálogo online!`,
+      });
+    }
+    
     await new Promise(resolve => setTimeout(resolve, 500));
   }
 
-  // Send videos
+  // Send videos with validation
   for (const match of videoMatches) {
     const [, url, caption] = match;
-    await sendWhatsAppMessage(evolutionApiUrl, evolutionApiKey, instanceName, phoneNumber, {
+    const trimmedUrl = url.trim();
+    
+    if (!isValidMediaUrl(trimmedUrl)) {
+      console.warn(`⚠️ Invalid video URL skipped: "${trimmedUrl}"`);
+      continue;
+    }
+    
+    console.log(`🎬 Sending video - URL: ${trimmedUrl}`);
+    
+    const success = await sendWhatsAppMessage(evolutionApiUrl, evolutionApiKey, instanceName, phoneNumber, {
       type: "video",
-      url: url.trim(),
+      url: trimmedUrl,
       caption: `🎬 ${caption.trim()}`,
     });
+    
+    if (!success) {
+      await sendWhatsAppMessage(evolutionApiUrl, evolutionApiKey, instanceName, phoneNumber, {
+        type: "text",
+        text: `🎬 Não consegui enviar o vídeo de "${caption.trim()}", mas você pode assistir no nosso site!`,
+      });
+    }
+    
     await new Promise(resolve => setTimeout(resolve, 500));
   }
 }
@@ -2185,7 +2255,7 @@ async function sendWhatsAppMessage(
   instanceName: string,
   phoneNumber: string,
   content: { type: string; text?: string; url?: string; caption?: string }
-): Promise<void> {
+): Promise<boolean> {
   const formattedNumber = phoneNumber.replace(/\D/g, "");
   let endpoint = "";
   let body: Record<string, unknown> = {};
@@ -2215,6 +2285,12 @@ async function sendWhatsAppMessage(
   }
 
   try {
+    console.log(`📤 Sending ${content.type} to ${formattedNumber}`);
+    console.log(`📤 Endpoint: ${endpoint}`);
+    if (content.url) {
+      console.log(`📤 Media URL: ${content.url}`);
+    }
+
     const response = await fetch(endpoint, {
       method: "POST",
       headers: {
@@ -2226,11 +2302,25 @@ async function sendWhatsAppMessage(
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`Failed to send ${content.type}:`, errorText);
+      console.error(`❌ Failed to send ${content.type}:`, {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorText,
+        endpoint,
+        mediaUrl: content.url || 'N/A',
+      });
+      return false;
     } else {
-      console.log(`✅ Sent ${content.type} to ${formattedNumber}`);
+      const responseData = await response.json();
+      console.log(`✅ Sent ${content.type} to ${formattedNumber}`, responseData);
+      return true;
     }
   } catch (error) {
-    console.error(`Error sending ${content.type}:`, error);
+    console.error(`❌ Error sending ${content.type}:`, {
+      error: error instanceof Error ? error.message : error,
+      endpoint,
+      mediaUrl: content.url || 'N/A',
+    });
+    return false;
   }
 }
