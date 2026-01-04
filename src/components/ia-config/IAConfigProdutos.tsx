@@ -11,7 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Plus, Pencil, Trash2, Package, X, Image, Video, Link, Upload, Play, Filter, Warehouse, MapPin, Ruler } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, Package, X, Image, Video, Link, Upload, Play, Filter, Warehouse, MapPin, Ruler, Search, LinkIcon } from "lucide-react";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import type { Json } from "@/integrations/supabase/types";
 
 interface Categoria {
@@ -50,6 +51,15 @@ interface EstoquePorLocal {
   quantidade: number;
 }
 
+interface InventoryProduct {
+  id: string;
+  name: string;
+  code: string | null;
+  current_stock: number;
+  location_id: string | null;
+  location_name?: string;
+}
+
 interface Produto {
   id: string;
   nome: string;
@@ -73,6 +83,8 @@ interface Produto {
   comprimento: number | null;
   altura: number | null;
   unidade_medida: string | null;
+  inventory_product_id: string | null;
+  inventory_location_id: string | null;
 }
 
 // Helper to safely parse videos from JSON
@@ -98,10 +110,14 @@ export default function IAConfigProdutos() {
   const [videoUrlInput, setVideoUrlInput] = useState("");
   const [showVideoUrlInput, setShowVideoUrlInput] = useState(false);
   const [categoriaFiltro, setCategoriaFiltro] = useState<string>("todas");
-  const [locaisComEstoque, setLocaisComEstoque] = useState<string[]>([]);
   const [showNewCategoriaDialog, setShowNewCategoriaDialog] = useState(false);
   const [novaCategoria, setNovaCategoria] = useState("");
   const [savingCategoria, setSavingCategoria] = useState(false);
+  
+  // Inventário
+  const [inventoryProducts, setInventoryProducts] = useState<InventoryProduct[]>([]);
+  const [selectedInventoryProduct, setSelectedInventoryProduct] = useState<InventoryProduct | null>(null);
+  const [inventorySearchOpen, setInventorySearchOpen] = useState(false);
   
   const [form, setForm] = useState({
     nome: "",
@@ -118,7 +134,9 @@ export default function IAConfigProdutos() {
     videos: [] as VideoItem[],
     permite_venda_sem_estoque: false,
     prazo_entrega_dias: null as number | null,
-    estoquesPorLocal: {} as Record<string, number>,
+    estoque: 0,
+    inventory_product_id: null as string | null,
+    inventory_location_id: null as string | null,
     largura: null as number | null,
     comprimento: null as number | null,
     altura: null as number | null,
@@ -141,22 +159,18 @@ export default function IAConfigProdutos() {
     return contador;
   }, [produtos]);
 
-  // Calcular estoque total do form
-  const estoqueTotal = useMemo(() => {
-    return Object.values(form.estoquesPorLocal).reduce((sum, qty) => sum + (qty || 0), 0);
-  }, [form.estoquesPorLocal]);
-
   useEffect(() => {
     loadData();
   }, []);
 
   const loadData = async () => {
     try {
-      // Carregar locais, produtos e categorias em paralelo
-      const [locationsRes, produtosRes, categoriasRes] = await Promise.all([
+      // Carregar locais, produtos, categorias e produtos do inventário em paralelo
+      const [locationsRes, produtosRes, categoriasRes, inventoryRes] = await Promise.all([
         supabase.from("stock_locations").select("*").eq("active", true).order("name"),
         supabase.from("tendenci_ia_produtos").select("*").order("nome"),
-        supabase.from("product_categories").select("id, name").eq("active", true).order("name")
+        supabase.from("product_categories").select("id, name").eq("active", true).order("name"),
+        supabase.from("products").select("id, name, code, current_stock, location_id").eq("active", true).order("name")
       ]);
 
       if (locationsRes.error) throw locationsRes.error;
@@ -164,6 +178,13 @@ export default function IAConfigProdutos() {
 
       setLocations(locationsRes.data || []);
       setCategorias(categoriasRes.data || []);
+      
+      // Mapear produtos do inventário com nome do local
+      const invProducts: InventoryProduct[] = (inventoryRes.data || []).map(p => ({
+        ...p,
+        location_name: locationsRes.data?.find(l => l.id === p.location_id)?.name
+      }));
+      setInventoryProducts(invProducts);
 
       // Carregar estoques por produto
       const produtosComEstoque: Produto[] = [];
@@ -199,6 +220,8 @@ export default function IAConfigProdutos() {
           comprimento: p.comprimento ?? null,
           altura: p.altura ?? null,
           unidade_medida: p.unidade_medida ?? 'cm',
+          inventory_product_id: p.inventory_product_id ?? null,
+          inventory_location_id: p.inventory_location_id ?? null,
         });
       }
       
@@ -213,9 +236,7 @@ export default function IAConfigProdutos() {
 
   const openNewDialog = () => {
     setEditingProduto(null);
-    
-    // Não inicializar nenhum local - usuário adiciona manualmente
-    setLocaisComEstoque([]);
+    setSelectedInventoryProduct(null);
     
     setForm({
       nome: "",
@@ -232,7 +253,9 @@ export default function IAConfigProdutos() {
       videos: [],
       permite_venda_sem_estoque: false,
       prazo_entrega_dias: null,
-      estoquesPorLocal: {},
+      estoque: 0,
+      inventory_product_id: null,
+      inventory_location_id: null,
       largura: null,
       comprimento: null,
       altura: null,
@@ -256,18 +279,9 @@ export default function IAConfigProdutos() {
       });
     }
 
-    // Carregar apenas locais que tem estoque
-    const estoquesPorLocal: Record<string, number> = {};
-    const locaisAtivos: string[] = [];
-    
-    produto.estoques.forEach(e => {
-      if (e.quantidade > 0) {
-        estoquesPorLocal[e.location_id] = e.quantidade;
-        locaisAtivos.push(e.location_id);
-      }
-    });
-    
-    setLocaisComEstoque(locaisAtivos);
+    // Selecionar produto do inventário vinculado
+    const invProduct = inventoryProducts.find(p => p.id === produto.inventory_product_id);
+    setSelectedInventoryProduct(invProduct || null);
     
     setForm({
       nome: produto.nome,
@@ -284,7 +298,9 @@ export default function IAConfigProdutos() {
       videos: videosArray,
       permite_venda_sem_estoque: produto.permite_venda_sem_estoque ?? false,
       prazo_entrega_dias: produto.prazo_entrega_dias ?? null,
-      estoquesPorLocal,
+      estoque: produto.estoque || 0,
+      inventory_product_id: produto.inventory_product_id,
+      inventory_location_id: produto.inventory_location_id,
       largura: produto.largura ?? null,
       comprimento: produto.comprimento ?? null,
       altura: produto.altura ?? null,
@@ -295,32 +311,25 @@ export default function IAConfigProdutos() {
     setDialogOpen(true);
   };
 
-  const updateEstoqueLocal = (locationId: string, quantidade: number) => {
+  const selectInventoryProduct = (invProduct: InventoryProduct) => {
+    setSelectedInventoryProduct(invProduct);
     setForm(prev => ({
       ...prev,
-      estoquesPorLocal: {
-        ...prev.estoquesPorLocal,
-        [locationId]: Math.max(0, quantidade || 0)
-      }
+      inventory_product_id: invProduct.id,
+      inventory_location_id: invProduct.location_id,
+      estoque: Math.min(prev.estoque || invProduct.current_stock, invProduct.current_stock)
     }));
+    setInventorySearchOpen(false);
   };
 
-  const addLocalEstoque = (locationId: string) => {
-    if (locaisComEstoque.includes(locationId)) return;
-    setLocaisComEstoque(prev => [...prev, locationId]);
+  const clearInventoryProduct = () => {
+    setSelectedInventoryProduct(null);
     setForm(prev => ({
       ...prev,
-      estoquesPorLocal: { ...prev.estoquesPorLocal, [locationId]: 0 }
+      inventory_product_id: null,
+      inventory_location_id: null,
+      estoque: 0
     }));
-  };
-
-  const removeLocalEstoque = (locationId: string) => {
-    setLocaisComEstoque(prev => prev.filter(id => id !== locationId));
-    setForm(prev => {
-      const newEstoques = { ...prev.estoquesPorLocal };
-      delete newEstoques[locationId];
-      return { ...prev, estoquesPorLocal: newEstoques };
-    });
   };
 
   const createCategoria = async () => {
@@ -502,16 +511,16 @@ export default function IAConfigProdutos() {
         galeria: form.galeria,
         video_url: form.video_url || null,
         videos: JSON.parse(JSON.stringify(form.videos)) as Json,
-        estoque: estoqueTotal,
+        estoque: form.estoque,
         permite_venda_sem_estoque: form.permite_venda_sem_estoque,
         prazo_entrega_dias: form.permite_venda_sem_estoque ? form.prazo_entrega_dias : null,
         largura: form.largura || null,
         comprimento: form.comprimento || null,
         altura: form.altura || null,
         unidade_medida: form.unidade_medida || 'cm',
+        inventory_product_id: form.inventory_product_id || null,
+        inventory_location_id: form.inventory_location_id || null,
       };
-
-      let produtoId: string;
 
       if (editingProduto) {
         const { error } = await supabase
@@ -520,42 +529,12 @@ export default function IAConfigProdutos() {
           .eq("id", editingProduto.id);
 
         if (error) throw error;
-        produtoId = editingProduto.id;
       } else {
-        const { data, error } = await supabase
+        const { error } = await supabase
           .from("tendenci_ia_produtos")
-          .insert([produtoData])
-          .select("id")
-          .single();
+          .insert([produtoData]);
 
         if (error) throw error;
-        produtoId = data.id;
-      }
-
-      // Salvar estoques por local
-      for (const [locationId, quantidade] of Object.entries(form.estoquesPorLocal)) {
-        if (quantidade > 0) {
-          const { error: estoqueError } = await supabase
-            .from("tendenci_ia_produtos_estoque")
-            .upsert({
-              produto_id: produtoId,
-              location_id: locationId,
-              quantidade: quantidade
-            }, {
-              onConflict: 'produto_id,location_id'
-            });
-
-          if (estoqueError) {
-            console.error("Erro ao salvar estoque:", estoqueError);
-          }
-        } else {
-          // Remover estoque zerado
-          await supabase
-            .from("tendenci_ia_produtos_estoque")
-            .delete()
-            .eq("produto_id", produtoId)
-            .eq("location_id", locationId);
-        }
       }
 
       toast.success(editingProduto ? "Produto atualizado!" : "Produto criado!");
@@ -805,85 +784,128 @@ export default function IAConfigProdutos() {
                 />
               </div>
 
-              {/* Controle de Estoque por Local */}
+              {/* Vinculação ao Inventário */}
               <div className="border rounded-lg p-4 space-y-4 bg-muted/30">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-medium flex items-center gap-2">
-                    <Warehouse className="h-4 w-4" />
-                    Estoque por Local
-                  </h4>
-                  <Badge variant="outline" className="font-semibold">
-                    Total: {estoqueTotal} un
-                  </Badge>
-                </div>
+                <h4 className="font-medium flex items-center gap-2">
+                  <LinkIcon className="h-4 w-4" />
+                  Vinculação ao Inventário
+                </h4>
                 
-                {/* Lista de locais com estoque */}
-                <div className="space-y-2">
-                  {locaisComEstoque.length === 0 && (
-                    <p className="text-sm text-muted-foreground text-center py-2">
-                      Nenhum local de estoque adicionado. Clique em "Adicionar Local" abaixo.
-                    </p>
-                  )}
-                  
-                  {locaisComEstoque.map(locId => {
-                    const loc = locations.find(l => l.id === locId);
-                    if (!loc) return null;
-                    return (
-                      <div key={locId} className="flex items-center gap-2 p-2 rounded-lg bg-background border">
-                        <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                        <span className="text-sm font-medium flex-1 truncate" title={loc.name}>
-                          {loc.name}
-                        </span>
+                {selectedInventoryProduct ? (
+                  <div className="space-y-4">
+                    {/* Card do produto selecionado */}
+                    <div className="p-3 rounded-lg border bg-background">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <p className="font-medium">{selectedInventoryProduct.name}</p>
+                          {selectedInventoryProduct.code && (
+                            <p className="text-sm text-muted-foreground">
+                              Código: {selectedInventoryProduct.code}
+                            </p>
+                          )}
+                          <div className="flex items-center gap-4 mt-2 text-sm">
+                            <span className="flex items-center gap-1">
+                              <Package className="h-4 w-4 text-muted-foreground" />
+                              Estoque: <strong>{selectedInventoryProduct.current_stock}</strong> un
+                            </span>
+                            {selectedInventoryProduct.location_name && (
+                              <span className="flex items-center gap-1">
+                                <MapPin className="h-4 w-4 text-muted-foreground" />
+                                {selectedInventoryProduct.location_name}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={clearInventoryProduct}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Quantidade e Local */}
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label>Quantidade para este produto IA</Label>
                         <Input
                           type="number"
                           min="0"
-                          className="w-20 h-8 text-center"
-                          value={form.estoquesPorLocal[locId] || 0}
-                          onChange={(e) => updateEstoqueLocal(locId, parseInt(e.target.value))}
+                          max={selectedInventoryProduct.current_stock}
+                          value={form.estoque}
+                          onChange={(e) => setForm({ 
+                            ...form, 
+                            estoque: Math.min(parseInt(e.target.value) || 0, selectedInventoryProduct.current_stock) 
+                          })}
                         />
-                        <Button 
-                          type="button" 
-                          variant="ghost" 
-                          size="icon"
-                          className="h-8 w-8 text-destructive hover:text-destructive"
-                          onClick={() => removeLocalEstoque(locId)}
+                        <p className="text-xs text-muted-foreground">
+                          Máximo: {selectedInventoryProduct.current_stock} unidades
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Local do Estoque</Label>
+                        <Select
+                          value={form.inventory_location_id || "_none"}
+                          onValueChange={(v) => setForm({ ...form, inventory_location_id: v === "_none" ? null : v })}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione o local" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="_none">Nenhum</SelectItem>
+                            {locations.map(loc => (
+                              <SelectItem key={loc.id} value={loc.id}>
+                                {loc.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Popover open={inventorySearchOpen} onOpenChange={setInventorySearchOpen}>
+                      <PopoverTrigger asChild>
+                        <Button type="button" variant="outline" className="w-full justify-start">
+                          <Search className="h-4 w-4 mr-2" />
+                          Vincular produto do inventário...
                         </Button>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Botão para adicionar novo local */}
-                {locations.filter(loc => !locaisComEstoque.includes(loc.id)).length > 0 && (
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button type="button" variant="outline" className="w-full">
-                        <Plus className="h-4 w-4 mr-2" />
-                        Adicionar Local de Estoque
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-56 p-2">
-                      <div className="space-y-1">
-                        {locations
-                          .filter(loc => !locaisComEstoque.includes(loc.id))
-                          .map(loc => (
-                            <Button 
-                              key={loc.id}
-                              type="button"
-                              variant="ghost"
-                              className="w-full justify-start h-9"
-                              onClick={() => addLocalEstoque(loc.id)}
-                            >
-                              <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
-                              {loc.name}
-                            </Button>
-                          ))
-                        }
-                      </div>
-                    </PopoverContent>
-                  </Popover>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-80 p-0" align="start">
+                        <Command>
+                          <CommandInput placeholder="Buscar produto..." />
+                          <CommandList>
+                            <CommandEmpty>Nenhum produto encontrado.</CommandEmpty>
+                            <CommandGroup heading="Produtos do Inventário">
+                              {inventoryProducts.map(p => (
+                                <CommandItem
+                                  key={p.id}
+                                  value={p.name}
+                                  onSelect={() => selectInventoryProduct(p)}
+                                >
+                                  <div className="flex-1">
+                                    <p className="font-medium">{p.name}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {p.code && `${p.code} • `}
+                                      Estoque: {p.current_stock}
+                                      {p.location_name && ` • ${p.location_name}`}
+                                    </p>
+                                  </div>
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                    <p className="text-xs text-muted-foreground">
+                      Vincule a um produto do módulo de inventário para controle de estoque integrado
+                    </p>
+                  </div>
                 )}
 
                 {/* Opção de venda sem estoque */}
@@ -1228,50 +1250,31 @@ export default function IAConfigProdutos() {
                   }
                 </TableCell>
                 <TableCell>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <button className="text-left">
-                        {produto.estoqueTotal > 0 ? (
-                          <Badge className="bg-green-500 hover:bg-green-600 cursor-pointer">
-                            {produto.estoqueTotal} un
-                          </Badge>
-                        ) : produto.permite_venda_sem_estoque ? (
-                          <Badge variant="outline" className="text-amber-600 border-amber-400 cursor-pointer">
-                            Sob encomenda {produto.prazo_entrega_dias ? `(${produto.prazo_entrega_dias}d)` : ""}
-                          </Badge>
-                        ) : (
-                          <Badge variant="destructive" className="cursor-pointer">
-                            Sem estoque
-                          </Badge>
-                        )}
-                      </button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-64" align="start">
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between border-b pb-2">
-                          <span className="font-medium text-sm">Estoque por Local</span>
-                          <Badge variant="secondary">{produto.estoqueTotal} total</Badge>
-                        </div>
-                        {produto.estoques.length > 0 ? (
-                          <div className="space-y-1">
-                            {produto.estoques.map((e, i) => (
-                              <div key={i} className="flex items-center justify-between text-sm">
-                                <span className="flex items-center gap-1.5 text-muted-foreground">
-                                  <MapPin className="h-3 w-3" />
-                                  {e.location_name}
-                                </span>
-                                <span className="font-medium">{e.quantidade}</span>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="text-sm text-muted-foreground text-center py-2">
-                            Nenhum estoque registrado
-                          </p>
-                        )}
-                      </div>
-                    </PopoverContent>
-                  </Popover>
+                  <div className="space-y-1">
+                    {produto.inventory_product_id ? (
+                      <>
+                        <Badge className="bg-green-500 hover:bg-green-600">
+                          {produto.estoque} un
+                        </Badge>
+                        <p className="text-xs text-muted-foreground flex items-center gap-1">
+                          <LinkIcon className="h-3 w-3" />
+                          {inventoryProducts.find(p => p.id === produto.inventory_product_id)?.name || "Vinculado"}
+                        </p>
+                      </>
+                    ) : produto.estoque > 0 ? (
+                      <Badge className="bg-green-500 hover:bg-green-600">
+                        {produto.estoque} un
+                      </Badge>
+                    ) : produto.permite_venda_sem_estoque ? (
+                      <Badge variant="outline" className="text-amber-600 border-amber-400">
+                        Sob encomenda {produto.prazo_entrega_dias ? `(${produto.prazo_entrega_dias}d)` : ""}
+                      </Badge>
+                    ) : (
+                      <Badge variant="destructive">
+                        Sem estoque
+                      </Badge>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-1">
