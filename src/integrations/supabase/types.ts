@@ -5299,6 +5299,48 @@ export type Database = {
         }
         Relationships: []
       }
+      tendenci_ia_produtos_estoque: {
+        Row: {
+          created_at: string | null
+          id: string
+          location_id: string
+          produto_id: string
+          quantidade: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          location_id: string
+          produto_id: string
+          quantidade?: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          location_id?: string
+          produto_id?: string
+          quantidade?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tendenci_ia_produtos_estoque_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "stock_locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tendenci_ia_produtos_estoque_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "tendenci_ia_produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tendenci_prospec_arq_agendamentos: {
         Row: {
           architect_id: string
