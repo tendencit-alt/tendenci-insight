@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Plus, Pencil, Trash2, Package, X, Image, Video, Link, Upload, Play, Filter, Warehouse, MapPin } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, Package, X, Image, Video, Link, Upload, Play, Filter, Warehouse, MapPin, Ruler } from "lucide-react";
 import type { Json } from "@/integrations/supabase/types";
 
 // Categorias predefinidas
@@ -34,6 +34,12 @@ const CENTROS_CUSTO = [
   { value: 'moveis_planejados', label: 'Móveis Planejados' },
   { value: 'producao_tendenci', label: 'Produção Tendenci' },
   { value: 'revenda', label: 'Revenda' },
+];
+
+const UNIDADES_MEDIDA = [
+  { value: 'cm', label: 'cm' },
+  { value: 'm', label: 'm' },
+  { value: 'mm', label: 'mm' },
 ];
 
 interface VideoItem {
@@ -74,6 +80,10 @@ interface Produto {
   prazo_entrega_dias: number | null;
   estoques: EstoquePorLocal[];
   estoqueTotal: number;
+  largura: number | null;
+  comprimento: number | null;
+  altura: number | null;
+  unidade_medida: string | null;
 }
 
 // Helper to safely parse videos from JSON
@@ -115,6 +125,10 @@ export default function IAConfigProdutos() {
     permite_venda_sem_estoque: false,
     prazo_entrega_dias: null as number | null,
     estoquesPorLocal: {} as Record<string, number>,
+    largura: null as number | null,
+    comprimento: null as number | null,
+    altura: null as number | null,
+    unidade_medida: "cm",
   });
 
   // Filtrar produtos por categoria
@@ -184,7 +198,11 @@ export default function IAConfigProdutos() {
           prazo_entrega_dias: p.prazo_entrega_dias ?? null,
           centro_custo: p.centro_custo ?? null,
           estoques: estoquesFormatados,
-          estoqueTotal
+          estoqueTotal,
+          largura: p.largura ?? null,
+          comprimento: p.comprimento ?? null,
+          altura: p.altura ?? null,
+          unidade_medida: p.unidade_medida ?? 'cm',
         });
       }
       
@@ -222,6 +240,10 @@ export default function IAConfigProdutos() {
       permite_venda_sem_estoque: false,
       prazo_entrega_dias: null,
       estoquesPorLocal,
+      largura: null,
+      comprimento: null,
+      altura: null,
+      unidade_medida: "cm",
     });
     setVideoUrlInput("");
     setShowVideoUrlInput(false);
@@ -264,6 +286,10 @@ export default function IAConfigProdutos() {
       permite_venda_sem_estoque: produto.permite_venda_sem_estoque ?? false,
       prazo_entrega_dias: produto.prazo_entrega_dias ?? null,
       estoquesPorLocal,
+      largura: produto.largura ?? null,
+      comprimento: produto.comprimento ?? null,
+      altura: produto.altura ?? null,
+      unidade_medida: produto.unidade_medida || "cm",
     });
     setVideoUrlInput("");
     setShowVideoUrlInput(false);
@@ -430,9 +456,13 @@ export default function IAConfigProdutos() {
         galeria: form.galeria,
         video_url: form.video_url || null,
         videos: JSON.parse(JSON.stringify(form.videos)) as Json,
-        estoque: estoqueTotal, // Atualizar estoque total para compatibilidade
+        estoque: estoqueTotal,
         permite_venda_sem_estoque: form.permite_venda_sem_estoque,
         prazo_entrega_dias: form.permite_venda_sem_estoque ? form.prazo_entrega_dias : null,
+        largura: form.largura || null,
+        comprimento: form.comprimento || null,
+        altura: form.altura || null,
+        unidade_medida: form.unidade_medida || 'cm',
       };
 
       let produtoId: string;
@@ -637,7 +667,65 @@ export default function IAConfigProdutos() {
                         </SelectItem>
                       ))}
                     </SelectContent>
-                  </Select>
+                </Select>
+                </div>
+              </div>
+
+              {/* Dimensões do Produto */}
+              <div className="border rounded-lg p-4 space-y-4 bg-muted/30">
+                <h4 className="font-medium flex items-center gap-2">
+                  <Ruler className="h-4 w-4" />
+                  Dimensões
+                </h4>
+                <div className="grid gap-4 sm:grid-cols-4">
+                  <div className="space-y-2">
+                    <Label>Largura</Label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      placeholder="Ex: 120"
+                      value={form.largura ?? ""}
+                      onChange={(e) => setForm({ ...form, largura: e.target.value ? parseFloat(e.target.value) : null })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Comprimento</Label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      placeholder="Ex: 80"
+                      value={form.comprimento ?? ""}
+                      onChange={(e) => setForm({ ...form, comprimento: e.target.value ? parseFloat(e.target.value) : null })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Altura</Label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      placeholder="Ex: 45"
+                      value={form.altura ?? ""}
+                      onChange={(e) => setForm({ ...form, altura: e.target.value ? parseFloat(e.target.value) : null })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Unidade</Label>
+                    <Select
+                      value={form.unidade_medida || "cm"}
+                      onValueChange={(v) => setForm({ ...form, unidade_medida: v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {UNIDADES_MEDIDA.map(u => (
+                          <SelectItem key={u.value} value={u.value}>
+                            {u.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </div>
 
@@ -966,6 +1054,7 @@ export default function IAConfigProdutos() {
               <TableHead>Produto</TableHead>
               <TableHead>Categoria</TableHead>
               <TableHead>Centro de Custo</TableHead>
+              <TableHead>Dimensões</TableHead>
               <TableHead>Preço Base</TableHead>
               <TableHead>Estoque</TableHead>
               <TableHead>Mídia</TableHead>
@@ -1010,6 +1099,19 @@ export default function IAConfigProdutos() {
                       {CENTROS_CUSTO.find(cc => cc.value === produto.centro_custo)?.label || produto.centro_custo}
                     </Badge>
                   ) : "-"}
+                </TableCell>
+                <TableCell>
+                  {produto.largura || produto.comprimento || produto.altura ? (
+                    <div className="text-sm text-muted-foreground">
+                      {[
+                        produto.largura && `L: ${produto.largura}`,
+                        produto.comprimento && `C: ${produto.comprimento}`,
+                        produto.altura && `A: ${produto.altura}`
+                      ].filter(Boolean).join(' × ')} {produto.unidade_medida || 'cm'}
+                    </div>
+                  ) : (
+                    <span className="text-muted-foreground text-sm">-</span>
+                  )}
                 </TableCell>
                 <TableCell>
                   {produto.preco_base > 0 

@@ -46,6 +46,10 @@ interface ProdutoIA {
   imagem_url: string | null;
   estoque: number;
   ativo: boolean;
+  largura: number | null;
+  comprimento: number | null;
+  altura: number | null;
+  unidade_medida: string | null;
 }
 
 const CENTROS_CUSTO = [
@@ -89,7 +93,7 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
     try {
       const { data, error } = await supabase
         .from('tendenci_ia_produtos')
-        .select('id, nome, descricao, preco_base, categoria, centro_custo, imagem_url, estoque, ativo')
+        .select('id, nome, descricao, preco_base, categoria, centro_custo, imagem_url, estoque, ativo, largura, comprimento, altura, unidade_medida')
         .eq('ativo', true)
         .order('nome');
       
@@ -279,6 +283,15 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                           <p className="text-sm text-muted-foreground truncate">
                             {produto.categoria || "Sem categoria"}
                           </p>
+                          {(produto.largura || produto.comprimento || produto.altura) && (
+                            <p className="text-xs text-muted-foreground">
+                              {[
+                                produto.largura && `L: ${produto.largura}`,
+                                produto.comprimento && `C: ${produto.comprimento}`,
+                                produto.altura && `A: ${produto.altura}`
+                              ].filter(Boolean).join(' × ')} {produto.unidade_medida || 'cm'}
+                            </p>
+                          )}
                           <div className="flex gap-2 mt-1 flex-wrap">
                             {produto.centro_custo && (
                               <Badge variant="secondary" className="text-xs">

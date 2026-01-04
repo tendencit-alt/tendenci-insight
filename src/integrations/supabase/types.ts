@@ -5241,9 +5241,11 @@ export type Database = {
       }
       tendenci_ia_produtos: {
         Row: {
+          altura: number | null
           ativo: boolean | null
           categoria: string | null
           centro_custo: string | null
+          comprimento: number | null
           created_at: string | null
           descricao: string | null
           diferenciais: string[] | null
@@ -5251,19 +5253,23 @@ export type Database = {
           galeria: string[] | null
           id: string
           imagem_url: string | null
+          largura: number | null
           nome: string
           permite_venda_sem_estoque: boolean | null
           prazo_entrega_dias: number | null
           preco_base: number | null
           quando_oferecer: string | null
+          unidade_medida: string | null
           updated_at: string | null
           video_url: string | null
           videos: Json | null
         }
         Insert: {
+          altura?: number | null
           ativo?: boolean | null
           categoria?: string | null
           centro_custo?: string | null
+          comprimento?: number | null
           created_at?: string | null
           descricao?: string | null
           diferenciais?: string[] | null
@@ -5271,19 +5277,23 @@ export type Database = {
           galeria?: string[] | null
           id?: string
           imagem_url?: string | null
+          largura?: number | null
           nome: string
           permite_venda_sem_estoque?: boolean | null
           prazo_entrega_dias?: number | null
           preco_base?: number | null
           quando_oferecer?: string | null
+          unidade_medida?: string | null
           updated_at?: string | null
           video_url?: string | null
           videos?: Json | null
         }
         Update: {
+          altura?: number | null
           ativo?: boolean | null
           categoria?: string | null
           centro_custo?: string | null
+          comprimento?: number | null
           created_at?: string | null
           descricao?: string | null
           diferenciais?: string[] | null
@@ -5291,11 +5301,13 @@ export type Database = {
           galeria?: string[] | null
           id?: string
           imagem_url?: string | null
+          largura?: number | null
           nome?: string
           permite_venda_sem_estoque?: boolean | null
           prazo_entrega_dias?: number | null
           preco_base?: number | null
           quando_oferecer?: string | null
+          unidade_medida?: string | null
           updated_at?: string | null
           video_url?: string | null
           videos?: Json | null
