@@ -4,8 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, ChevronRight, Clock, AlertTriangle, Calendar, Bot, User, CheckCircle, TrendingUp, TrendingDown, Minus, Trophy } from "lucide-react";
+import { ChevronDown, ChevronRight, Clock, AlertTriangle, Calendar, Bot, User, CheckCircle, TrendingUp, TrendingDown, Minus, Trophy, RefreshCw, Archive, XCircle } from "lucide-react";
 import { format, isToday, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
@@ -44,10 +45,12 @@ interface CompletedStats {
 
 export function ArchitectTasksPanel({ filters }: ArchitectTasksPanelProps) {
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [failedTasks, setFailedTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedArchitectId, setSelectedArchitectId] = useState<string | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [openCards, setOpenCards] = useState({
+    problemas: false,
     todas: false,
     diarias: false,
     futuras: false,
@@ -108,6 +111,52 @@ export function ArchitectTasksPanel({ filters }: ArchitectTasksPanelProps) {
       console.error("Error fetching architect tasks:", error);
     } finally {
       setLoading(false);
+    }
+  }, [filters?.vendedor, filters?.search, isMaster]);
+
+  const fetchFailedTasks = useCallback(async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      let query = supabase
+        .from("tendenci_prospec_arq_agendamentos")
+        .select(`
+          id,
+          tipo_tarefa,
+          data_agendamento,
+          observacoes,
+          status,
+          architect_id,
+          architect:architects(id, name, company, phone),
+          vendedor:profiles!tendenci_prospec_arq_agendamentos_vendedor_id_fkey(full_name)
+        `)
+        .eq("status", "falha")
+        .is("archived_at", null)
+        .order("data_agendamento", { ascending: true });
+
+      if (!isMaster && user?.id) {
+        query = query.eq("vendedor_id", user.id);
+      } else if (filters?.vendedor && filters.vendedor !== "todos") {
+        query = query.eq("vendedor_id", filters.vendedor);
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+      
+      let filteredData = (data as Task[]) || [];
+      if (filters?.search) {
+        const searchLower = filters.search.toLowerCase();
+        filteredData = filteredData.filter(task => 
+          task.architect?.name?.toLowerCase().includes(searchLower) ||
+          task.architect?.company?.toLowerCase().includes(searchLower) ||
+          task.observacoes?.toLowerCase().includes(searchLower)
+        );
+      }
+      
+      setFailedTasks(filteredData);
+    } catch (error) {
+      console.error("Error fetching failed architect tasks:", error);
     }
   }, [filters?.vendedor, filters?.search, isMaster]);
 
@@ -208,6 +257,7 @@ export function ArchitectTasksPanel({ filters }: ArchitectTasksPanelProps) {
 
   useEffect(() => {
     fetchTasks();
+    fetchFailedTasks();
     fetchCompletedStats();
 
     // Realtime subscription
@@ -223,6 +273,7 @@ export function ArchitectTasksPanel({ filters }: ArchitectTasksPanelProps) {
         () => {
           setTimeout(() => {
             fetchTasks();
+            fetchFailedTasks();
             fetchCompletedStats();
           }, 500);
         }
@@ -232,7 +283,7 @@ export function ArchitectTasksPanel({ filters }: ArchitectTasksPanelProps) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [fetchTasks, fetchCompletedStats]);
+  }, [fetchTasks, fetchFailedTasks, fetchCompletedStats]);
 
   // Usar utilitário centralizado para status de vencimento
   const getDaysUntilDue = (dueDate: string) => {
@@ -264,6 +315,47 @@ export function ArchitectTasksPanel({ filters }: ArchitectTasksPanelProps) {
     } catch (error) {
       console.error("Error completing task:", error);
       toast.error("Erro ao concluir tarefa");
+    }
+  };
+
+  const handleRetryTask = async (taskId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      const { error } = await supabase
+        .from("tendenci_prospec_arq_agendamentos")
+        .update({ 
+          status: "pendente", 
+          retry_count: 0,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", taskId);
+
+      if (error) throw error;
+      toast.success("Tarefa agendada para reprocessamento");
+      fetchFailedTasks();
+    } catch (error) {
+      console.error("Error retrying task:", error);
+      toast.error("Erro ao reagendar tarefa");
+    }
+  };
+
+  const handleArchiveTask = async (taskId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      const { error } = await supabase
+        .from("tendenci_prospec_arq_agendamentos")
+        .update({ 
+          archived_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", taskId);
+
+      if (error) throw error;
+      toast.success("Tarefa arquivada");
+      fetchFailedTasks();
+    } catch (error) {
+      console.error("Error archiving task:", error);
+      toast.error("Erro ao arquivar tarefa");
     }
   };
 
@@ -354,6 +446,77 @@ export function ArchitectTasksPanel({ filters }: ArchitectTasksPanelProps) {
               <span className="text-xs text-muted-foreground">
                 {formatBrasilShort(task.data_agendamento)}
               </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const FailedTaskCard = ({ task }: { task: Task }) => {
+    const { titulo, nota } = parseObservacoes(task.observacoes);
+
+    return (
+      <div
+        onClick={() => task.architect && handleOpenArchitect(task.architect.id)}
+        className="p-3 rounded-lg border border-destructive/50 bg-destructive/5 cursor-pointer transition-colors hover:bg-destructive/10"
+      >
+        <div className="flex items-start gap-3">
+          <XCircle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              {task.tipo_tarefa === "automatizada" ? (
+                <Bot className="h-3.5 w-3.5 text-primary" />
+              ) : (
+                <User className="h-3.5 w-3.5 text-muted-foreground" />
+              )}
+              <span className="text-sm font-medium truncate">
+                {task.architect?.name || "Arquiteto não encontrado"}
+              </span>
+            </div>
+            {task.architect?.company && (
+              <p className="text-xs text-muted-foreground truncate mb-1">
+                {task.architect.company}
+              </p>
+            )}
+            {titulo && (
+              <p className="text-xs font-medium text-foreground mb-0.5">
+                {titulo}
+              </p>
+            )}
+            {nota && (
+              <p className="text-xs text-muted-foreground line-clamp-2">
+                {nota}
+              </p>
+            )}
+            <div className="flex items-center gap-2 mt-2">
+              <Badge variant="destructive" className="text-xs gap-1">
+                <AlertTriangle className="h-3 w-3" />
+                Falha
+              </Badge>
+              <span className="text-xs text-muted-foreground">
+                {formatBrasilShort(task.data_agendamento)}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 mt-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-xs gap-1"
+                onClick={(e) => handleRetryTask(task.id, e)}
+              >
+                <RefreshCw className="h-3 w-3" />
+                Retentar
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 text-xs gap-1 text-muted-foreground"
+                onClick={(e) => handleArchiveTask(task.id, e)}
+              >
+                <Archive className="h-3 w-3" />
+                Arquivar
+              </Button>
             </div>
           </div>
         </div>
@@ -469,7 +632,44 @@ export function ArchitectTasksPanel({ filters }: ArchitectTasksPanelProps) {
       </div>
 
       {/* Cards de Tarefas */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* PROBLEMAS */}
+        <Collapsible
+          open={openCards.problemas}
+          onOpenChange={(open) => setOpenCards((prev) => ({ ...prev, problemas: open }))}
+        >
+          <Card className={failedTasks.length > 0 ? "border-destructive/50" : ""}>
+            <CollapsibleTrigger asChild>
+              <CardHeader className="cursor-pointer hover:bg-accent/50 transition-colors py-3">
+                <CardTitle className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-2">
+                    {openCards.problemas ? (
+                      <ChevronDown className="h-4 w-4" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4" />
+                    )}
+                    ⚠️ PROBLEMAS
+                  </div>
+                  <Badge variant={failedTasks.length > 0 ? "destructive" : "secondary"}>
+                    {failedTasks.length}
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="pt-0 space-y-2 max-h-80 overflow-y-auto">
+                {failedTasks.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    Nenhuma tarefa com problema
+                  </p>
+                ) : (
+                  failedTasks.map((task) => <FailedTaskCard key={task.id} task={task} />)
+                )}
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
+
         {/* TODAS */}
         <Collapsible
           open={openCards.todas}
