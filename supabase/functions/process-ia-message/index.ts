@@ -683,11 +683,13 @@ Responda em português brasileiro de forma clara e organizada.`;
       throw new Error("LOVABLE_API_KEY not configured");
     }
 
-    // Calculate maxTokens based on character limit (1 token ≈ 3-4 chars in Portuguese)
+    // Calculate maxTokens based on character limit - MAIS RESTRITIVO
+    // 1 token ≈ 4-5 chars em português, então limite/4 é mais apropriado
     const comunicacaoConfig = configs.comunicacao || {};
     const limiteCaracteresConfig = Number(comunicacaoConfig.limite_caracteres) || 0;
     const temLimite = limiteCaracteresConfig > 0;
-    const maxTokens = temLimite ? Math.ceil(limiteCaracteresConfig / 3) + 100 : 1500; // +100 buffer for safety
+    // Para limite de 200 chars, isso resulta em ~80 tokens (200/2.5=80)
+    const maxTokens = temLimite ? Math.max(80, Math.ceil(limiteCaracteresConfig / 2.5)) : 1500;
     
     console.log(`🧠 Calling Lovable AI with fallback support... (maxTokens: ${maxTokens}, limite: ${limiteCaracteresConfig})`);
 
@@ -1894,48 +1896,62 @@ ${estrategiaLeadFrio ? `\n**Estratégia:** ${estrategiaLeadFrio}` : `
 
   // ========== COMMUNICATION STYLE ==========
   const maxFrases = tamanhoMensagem === "curta" ? "1-2" : tamanhoMensagem === "media" ? "2-3" : tamanhoMensagem === "longa" ? "4-5" : "2-3";
-  const emojiInstrucao = usarEmojis === "nao" ? "Não use emojis" : usarEmojis === "minimo" ? "Use emojis muito raramente (1-2 por conversa)" : usarEmojis === "moderado" ? "Use emojis sutis e pontuais (😊 😉 👌) apenas quando fizer sentido" : "Use emojis com frequência para dar leveza";
+  
+  // EMOJI INSTRUCTION - MUITO MAIS RÍGIDA
+  let emojiInstrucao = "";
+  if (usarEmojis === "nao") {
+    emojiInstrucao = "⚠️ REGRA ABSOLUTA: NUNCA use emojis. Nenhum. Zero. Nada de 😊 👍 🪵 💰 ou qualquer outro. PROIBIDO!";
+  } else if (usarEmojis === "minimo") {
+    emojiInstrucao = "Use emojis MUITO raramente - máximo 1 por conversa inteira";
+  } else if (usarEmojis === "moderado") {
+    emojiInstrucao = "Use emojis sutis e pontuais apenas quando fizer sentido";
+  } else {
+    emojiInstrucao = "Use emojis com frequência para dar leveza";
+  }
+
+  // LIMITE DE CARACTERES - INSTRUÇÃO CRÍTICA
+  const limiteChars = Number(comunicacao.limite_caracteres) || 300;
+  const limiteInstrucao = limiteChars <= 200 
+    ? `⚠️ LIMITE ABSOLUTO: MÁXIMO ${limiteChars} CARACTERES POR MENSAGEM!
+- CADA mensagem deve ter NO MÁXIMO ${limiteChars} caracteres
+- NO MÁXIMO 2 frases curtas por mensagem
+- ZERO parágrafos longos
+- Se precisar falar mais, PARE e espere o cliente responder`
+    : `Mensagens com no máximo ${limiteChars} caracteres`;
 
   parts.push(`# 💬 ESTILO DE COMUNICAÇÃO
 
-Sua forma de falar deve soar como um humano real, não como um chatbot.
-Converse de forma natural, direta e empática, como se estivesse trocando mensagens com um cliente no WhatsApp.
+${limiteInstrucao}
+
+${emojiInstrucao}
+
+## ⚠️ REGRAS OBRIGATÓRIAS DE FORMATO
+
+1. **BREVIDADE ABSOLUTA:** Cada mensagem tem NO MÁXIMO ${maxFrases} frases curtas
+2. **SEM TEXTOS LONGOS:** Proibido enviar parágrafos extensos ou explicações longas
+3. **DIRETO AO PONTO:** Vá direto ao assunto, sem enrolação
+4. **UMA COISA POR VEZ:** Apresente 1 produto por mensagem, espere resposta
+
+## Exemplos de Formato CORRETO (${limiteChars} chars):
+"Tenho uma mesa perfeita pra 10 pessoas! Posso te mostrar?"
+
+## Exemplos de Formato ERRADO (muito longo):
+"Perfeito, Matheus! Para 10 lugares, o ideal são mesas entre 3,00m e 3,50m para garantir conforto total aos convidados. Tenho duas propostas incríveis com estilos bem diferentes para sua área gourmet: a Mesa Madeira Maciça com Pés em Aço por R$ 5.900 e a Mesa Cascata Pequiá Design Premium por R$ 14.900..."
 
 ## Princípios de Comunicação
 
-**Naturalidade em primeiro lugar:**
-Escreva como uma pessoa que digita mensagens reais — sem formalidade excessiva, sem frases ensaiadas e sem palavras artificiais.
+**Naturalidade:** Escreva como pessoa real no WhatsApp, não como robô.
 
-**Frases curtas e vivas:**
-Cada mensagem deve ter até ${maxFrases} frases curtas, objetivas e com propósito.
-Use uma linguagem fluida, sem rodeios e sem exageros.
-
-**Pontuação limpa e correta:**
-Use apenas um sinal por frase (ponto, vírgula, interrogação ou exclamação).
-NUNCA misture sinais como ".,", ",?" ou ",!".
-A pontuação deve parecer natural, como uma conversa de WhatsApp entre pessoas reais.
+**Pontuação:** Use apenas um sinal por frase. NUNCA misture ".,", ",?" ou ",!".
 
 **Uma pergunta por vez:**
-${perguntasPorVez === "1" ? "Faça apenas UMA pergunta em cada mensagem, espere a resposta e avance com base nela." : perguntasPorVez === "2" ? "Pode combinar até 2 perguntas relacionadas, mas nunca mais que isso." : "Faça quantas perguntas forem necessárias, mas evite parecer interrogatório."}
+${perguntasPorVez === "1" ? "Faça apenas UMA pergunta por mensagem." : perguntasPorVez === "2" ? "Máximo 2 perguntas relacionadas." : "Evite parecer interrogatório."}
 
-**Sem repetições desnecessárias:**
-Nunca repita perguntas, expressões ou confirmações ("legal", "ótimo", "perfeito") de forma automática.
-Só use essas expressões quando fizerem sentido no contexto.
+**Memória:** ${conversationHistory.length > 0 ? `Você tem ${conversationHistory.length} mensagens de histórico. LEMBRE-SE de tudo.` : ""} Nunca repita perguntas.
 
-**Evite confirmar tudo:**
-Mostre que entendeu pelo que pergunta em seguida, não com frases de aprovação.
-Exemplo: se o cliente disser "é pra área externa", não diga "legal!", apenas prossiga com: "Certo, e seria pra quantas pessoas?"
+**Tom:** Transmita ${tomEmocional === "confiante" ? "segurança" : tomEmocional === "acolhedor" ? "calor" : tomEmocional === "entusiasmado" ? "energia positiva" : "profissionalismo"}.
 
-**Memória contextual:**
-${conversationHistory.length > 0 ? `Você tem ${conversationHistory.length} mensagens de histórico. LEMBRE-SE de TUDO que foi discutido.` : ""}
-Nunca pergunte algo que o cliente já respondeu.
-Se precisar retomar, faça de forma natural: "Pelo que comentou antes, é pra área gourmet, certo?"
-
-**Tom emocional:**
-${emojiInstrucao}
-Transmita ${tomEmocional === "confiante" ? "segurança e autoridade" : tomEmocional === "acolhedor" ? "calor e acolhimento" : tomEmocional === "entusiasmado" ? "energia positiva" : "profissionalismo"}.
-
-${msgBoasVindas ? `**Saudação inicial (use APENAS no primeiro contato):** ${msgBoasVindas}` : ""}
+${msgBoasVindas ? `**Saudação (APENAS no primeiro contato):** ${msgBoasVindas}` : ""}
 ${msgDespedida ? `**Despedida:** ${msgDespedida}` : ""}
 `);
 
@@ -2063,42 +2079,32 @@ Após isso:
 - RESPONDA A TODAS as mensagens de uma vez só
 - Não ignore nenhuma parte do que ele disse
 
-## Apresentação de Produtos (MUITO IMPORTANTE!)
-- ENVIE NO MÁXIMO 2 PRODUTOS por mensagem
-- Se o cliente pedir para ver mais opções, mostre outros 2 na próxima mensagem
-- SEMPRE destaque o PREÇO de forma clara e visível
-- Separe cada produto com uma linha em branco
-- Use emoji relevante (🪵🛋️🏠) antes do nome do produto
-- Termine perguntando a preferência do cliente
-- Se tiver mais opções, diga "Tenho outras opções também, quer ver?"
+## Apresentação de Produtos (FORMATO CURTO OBRIGATÓRIO!)
+⚠️ REGRA: MÁXIMO 1 PRODUTO POR MENSAGEM!
+- Apresente UM produto de cada vez
+- Formato CURTO: "Nome - R$ Preço" + foto + pergunta simples
+- NUNCA liste múltiplos produtos com descrições longas
+- NUNCA escreva parágrafos explicando o produto
+- Espere o cliente responder antes de mostrar outro
 
-## FORMATO DE PREÇO COM DESCONTO (DE/POR):
-- Quando o produto tiver preco_original cadastrado, SEMPRE mostre o desconto assim:
-  ~~DE: R$ X.XXX,XX~~
-  💰 POR: R$ X.XXX,XX
-- Se não tiver preco_original, mostre apenas: 💰 R$ X.XXX,XX
-
-## Envio de Mídia (OBRIGATÓRIO!)
-- VOCÊ PODE E DEVE enviar fotos e vídeos dos produtos!
-- Use: [FOTO_PRODUTO:url_completa:nome] para enviar foto
-- Use: [VIDEO_PRODUTO:url_completa:nome] para enviar vídeo
+## Envio de Mídia (CRÍTICO!)
+- VOCÊ PODE enviar fotos! Use: [FOTO_PRODUTO:url_completa:nome]
+- Use: [VIDEO_PRODUTO:url_completa:nome] para vídeo
 - NUNCA diga "não consigo enviar fotos" - você TEM essa capacidade!
-- Quando recomendar produto com mídia, SEMPRE inclua o marcador
 
-## Formato de Apresentação de Produtos:
-EXEMPLO COM DESCONTO:
-"Olha essa promoção incrível!
+## FORMATO CORRETO (exemplo com ~80 chars de texto):
+"Mesa Rústica 8 Lugares - R$ 4.500
 
-🪵 **Mesa Rústica 8 Lugares**
-~~DE: R$ 5.000,00~~
-💰 POR: R$ 4.500,00 (10% OFF!)
-[FOTO_PRODUTO:url:Mesa Rústica 8 Lugares]
+[FOTO_PRODUTO:https://exemplo.com/mesa.jpg:Mesa Rústica]
 
-🪵 **Mesa Contemporânea 6 Lugares**
-💰 R$ 3.800,00
-[FOTO_PRODUTO:url:Mesa Contemporânea 6 Lugares]
+Gostou do estilo?"
 
-Qual combina mais com seu espaço?"
+## FORMATO ERRADO (muito longo - PROIBIDO):
+"Perfeito! Para 10 lugares, o ideal são mesas entre 3,00m e 3,50m. Tenho duas propostas incríveis: a Mesa Madeira Maciça com Pés em Aço, um clássico robusto com madeira nobre tratada por R$ 5.900 e a Mesa Cascata Pequiá Design Premium por R$ 14.900..."
+
+## Regra de Preço com Desconto:
+Se tiver desconto: "~~R$ 5.000~~ R$ 4.500"
+Se não tiver: "R$ 4.500"
 
 ## Regras Críticas
 - JAMAIS repita uma resposta que você já deu nesta conversa
@@ -2130,6 +2136,51 @@ function isValidMediaUrl(url: string): boolean {
   }
 }
 
+// Parser robusto para marcadores de mídia
+function parseMediaMarker(marker: string, type: 'FOTO' | 'VIDEO'): { url: string; caption: string } | null {
+  // Remove brackets and prefix
+  const prefix = `[${type}_PRODUTO:`;
+  if (!marker.startsWith(prefix) || !marker.endsWith(']')) {
+    return null;
+  }
+  
+  const inner = marker.slice(prefix.length, -1); // Remove [PREFIX: e ]
+  
+  // Encontra o último : que separa URL do caption
+  // URLs podem ter : (ex: https://), então precisamos encontrar o : do caption
+  // O caption geralmente é texto simples sem :, então pegamos após o último :
+  const lastColonIndex = inner.lastIndexOf(':');
+  
+  if (lastColonIndex === -1 || lastColonIndex < 10) {
+    // Se não tem : ou está muito no início (provavelmente parte do https:)
+    // Tenta usar a URL inteira sem caption
+    return { url: inner.trim(), caption: '' };
+  }
+  
+  // Verifica se o : faz parte de https:// ou http://
+  const beforeColon = inner.substring(0, lastColonIndex);
+  const afterColon = inner.substring(lastColonIndex + 1);
+  
+  // Se beforeColon termina com http ou https, significa que ainda estamos na URL
+  if (beforeColon.endsWith('http') || beforeColon.endsWith('https')) {
+    // O : faz parte do protocolo, tenta encontrar outro :
+    const secondLastColon = beforeColon.lastIndexOf(':');
+    if (secondLastColon > 10) {
+      return {
+        url: inner.substring(0, secondLastColon).trim(),
+        caption: inner.substring(secondLastColon + 1).trim()
+      };
+    }
+    // Não conseguiu separar, usa URL inteira
+    return { url: inner.trim(), caption: '' };
+  }
+  
+  return {
+    url: beforeColon.trim(),
+    caption: afterColon.trim()
+  };
+}
+
 async function processAndSendResponse(
   evolutionApiUrl: string,
   evolutionApiKey: string,
@@ -2137,44 +2188,46 @@ async function processAndSendResponse(
   phoneNumber: string,
   message: string
 ): Promise<void> {
-  // Improved regex that handles complex URLs with colons (ports, etc.)
-  // Captures: [FOTO_PRODUTO:https://domain.com/path/image.jpg:Caption Text]
-  const photoRegex = /\[FOTO_PRODUTO:(https?:\/\/[^\]]+?):((?:(?!\[FOTO_PRODUTO|\[VIDEO_PRODUTO).)*?)\]/g;
-  const videoRegex = /\[VIDEO_PRODUTO:(https?:\/\/[^\]]+?):((?:(?!\[FOTO_PRODUTO|\[VIDEO_PRODUTO).)*?)\]/g;
-
-  // Alternative simpler regex as fallback
-  const simplePhotoRegex = /\[FOTO_PRODUTO:([^:\]]+):([^\]]+)\]/g;
-  const simpleVideoRegex = /\[VIDEO_PRODUTO:([^:\]]+):([^\]]+)\]/g;
-
-  let photoMatches = [...message.matchAll(photoRegex)];
-  let videoMatches = [...message.matchAll(videoRegex)];
-
-  // Try simpler regex if complex one fails
-  if (photoMatches.length === 0 && message.includes('[FOTO_PRODUTO:')) {
-    photoMatches = [...message.matchAll(simplePhotoRegex)];
-    console.log(`📸 Using fallback regex, found ${photoMatches.length} photos`);
-  }
-  if (videoMatches.length === 0 && message.includes('[VIDEO_PRODUTO:')) {
-    videoMatches = [...message.matchAll(simpleVideoRegex)];
-    console.log(`🎬 Using fallback regex, found ${videoMatches.length} videos`);
-  }
-
-  console.log(`🖼️ Media detection: ${photoMatches.length} photos, ${videoMatches.length} videos`);
+  console.log(`📝 Processing message for media markers: "${message.substring(0, 200)}..."`);
   
-  // Log detailed info about found media
-  for (const match of photoMatches) {
-    console.log(`📸 Photo URL: "${match[1]}", Caption: "${match[2]}"`);
+  // Encontra TODOS os marcadores de mídia usando regex simples
+  const allPhotoMarkers = message.match(/\[FOTO_PRODUTO:[^\]]+\]/g) || [];
+  const allVideoMarkers = message.match(/\[VIDEO_PRODUTO:[^\]]+\]/g) || [];
+  
+  console.log(`🖼️ Found raw markers: ${allPhotoMarkers.length} photos, ${allVideoMarkers.length} videos`);
+  
+  // Parse cada marcador
+  const photoData: { url: string; caption: string }[] = [];
+  const videoData: { url: string; caption: string }[] = [];
+  
+  for (const marker of allPhotoMarkers) {
+    console.log(`📸 Parsing photo marker: "${marker}"`);
+    const parsed = parseMediaMarker(marker, 'FOTO');
+    if (parsed && parsed.url) {
+      console.log(`📸 Parsed - URL: "${parsed.url}", Caption: "${parsed.caption}"`);
+      photoData.push(parsed);
+    } else {
+      console.warn(`⚠️ Failed to parse photo marker: "${marker}"`);
+    }
   }
-  for (const match of videoMatches) {
-    console.log(`🎬 Video URL: "${match[1]}", Caption: "${match[2]}"`);
+  
+  for (const marker of allVideoMarkers) {
+    console.log(`🎬 Parsing video marker: "${marker}"`);
+    const parsed = parseMediaMarker(marker, 'VIDEO');
+    if (parsed && parsed.url) {
+      console.log(`🎬 Parsed - URL: "${parsed.url}", Caption: "${parsed.caption}"`);
+      videoData.push(parsed);
+    } else {
+      console.warn(`⚠️ Failed to parse video marker: "${marker}"`);
+    }
   }
 
-  // Clean message from markers (using both regex patterns)
+  console.log(`🖼️ Successfully parsed: ${photoData.length} photos, ${videoData.length} videos`);
+
+  // Clean message - remove ALL markers
   let cleanMessage = message
-    .replace(photoRegex, "")
-    .replace(videoRegex, "")
-    .replace(simplePhotoRegex, "")
-    .replace(simpleVideoRegex, "")
+    .replace(/\[FOTO_PRODUTO:[^\]]+\]/g, "")
+    .replace(/\[VIDEO_PRODUTO:[^\]]+\]/g, "")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 
@@ -2187,33 +2240,31 @@ async function processAndSendResponse(
   }
 
   // Small delay between messages
-  if (photoMatches.length > 0 || videoMatches.length > 0) {
+  if (photoData.length > 0 || videoData.length > 0) {
     await new Promise(resolve => setTimeout(resolve, 800));
   }
 
   // Send photos with validation
-  for (const match of photoMatches) {
-    const [, url, caption] = match;
-    const trimmedUrl = url.trim();
-    
-    if (!isValidMediaUrl(trimmedUrl)) {
-      console.warn(`⚠️ Invalid photo URL skipped: "${trimmedUrl}"`);
+  for (const photo of photoData) {
+    if (!isValidMediaUrl(photo.url)) {
+      console.warn(`⚠️ Invalid photo URL skipped: "${photo.url}"`);
       continue;
     }
     
-    console.log(`📸 Sending photo - URL: ${trimmedUrl}`);
+    console.log(`📸 Sending photo - URL: ${photo.url}, Caption: ${photo.caption}`);
     
     const success = await sendWhatsAppMessage(evolutionApiUrl, evolutionApiKey, instanceName, phoneNumber, {
       type: "image",
-      url: trimmedUrl,
-      caption: `📸 ${caption.trim()}`,
+      url: photo.url,
+      caption: photo.caption ? `📸 ${photo.caption}` : "",
     });
     
     if (!success) {
       // Fallback: inform user about the product without image
+      const fallbackCaption = photo.caption || "o produto";
       await sendWhatsAppMessage(evolutionApiUrl, evolutionApiKey, instanceName, phoneNumber, {
         type: "text",
-        text: `📷 Não consegui enviar a foto de "${caption.trim()}", mas você pode ver no nosso catálogo online!`,
+        text: `Não consegui enviar a foto de "${fallbackCaption}", mas você pode ver no nosso catálogo!`,
       });
     }
     
@@ -2221,27 +2272,25 @@ async function processAndSendResponse(
   }
 
   // Send videos with validation
-  for (const match of videoMatches) {
-    const [, url, caption] = match;
-    const trimmedUrl = url.trim();
-    
-    if (!isValidMediaUrl(trimmedUrl)) {
-      console.warn(`⚠️ Invalid video URL skipped: "${trimmedUrl}"`);
+  for (const video of videoData) {
+    if (!isValidMediaUrl(video.url)) {
+      console.warn(`⚠️ Invalid video URL skipped: "${video.url}"`);
       continue;
     }
     
-    console.log(`🎬 Sending video - URL: ${trimmedUrl}`);
+    console.log(`🎬 Sending video - URL: ${video.url}, Caption: ${video.caption}`);
     
     const success = await sendWhatsAppMessage(evolutionApiUrl, evolutionApiKey, instanceName, phoneNumber, {
       type: "video",
-      url: trimmedUrl,
-      caption: `🎬 ${caption.trim()}`,
+      url: video.url,
+      caption: video.caption ? `🎬 ${video.caption}` : "",
     });
     
     if (!success) {
+      const fallbackCaption = video.caption || "o produto";
       await sendWhatsAppMessage(evolutionApiUrl, evolutionApiKey, instanceName, phoneNumber, {
         type: "text",
-        text: `🎬 Não consegui enviar o vídeo de "${caption.trim()}", mas você pode assistir no nosso site!`,
+        text: `Não consegui enviar o vídeo de "${fallbackCaption}", mas você pode ver no nosso site!`,
       });
     }
     
