@@ -117,6 +117,7 @@ export function formatBrasilShort(isoString: string): string {
 /**
  * Calcula dias até a data de vencimento
  * Retorna info para exibição em badges
+ * IMPORTANTE: Compara datas no timezone de Brasília
  */
 export function getDaysUntilDue(isoString: string): {
   text: string;
@@ -130,15 +131,29 @@ export function getDaysUntilDue(isoString: string): {
   const dueDate = new Date(isoString);
   const now = new Date();
   
-  // Calcular diferença em horas para precisão
-  const diffHours = (dueDate.getTime() - now.getTime()) / (1000 * 60 * 60);
-  const diffDays = Math.ceil(diffHours / 24);
+  // Converter ambas as datas para "dia" em Brasília para comparação
+  const brasilFormatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Sao_Paulo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  });
   
-  if (diffHours < 0) {
+  const dueDateBrasil = brasilFormatter.format(dueDate); // "2025-01-05"
+  const nowBrasil = brasilFormatter.format(now); // "2025-01-04"
+  
+  // Converter para Date objects para comparação de dias
+  const dueDay = new Date(dueDateBrasil + "T00:00:00");
+  const nowDay = new Date(nowBrasil + "T00:00:00");
+  
+  const diffDays = Math.floor((dueDay.getTime() - nowDay.getTime()) / (1000 * 60 * 60 * 24));
+  
+  // Verificar se já passou (considerando hora também)
+  if (dueDate < now) {
     return { text: "Atrasada", variant: "destructive", isOverdue: true };
-  } else if (diffHours < 24) {
+  } else if (diffDays === 0) {
     return { text: "Hoje", variant: "default", isOverdue: false };
-  } else if (diffHours < 48) {
+  } else if (diffDays === 1) {
     return { text: "Amanhã", variant: "secondary", isOverdue: false };
   } else {
     return { text: `${diffDays}d`, variant: "secondary", isOverdue: false };
