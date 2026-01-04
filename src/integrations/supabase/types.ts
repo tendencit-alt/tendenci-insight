@@ -5243,6 +5243,7 @@ export type Database = {
         Row: {
           ativo: boolean | null
           categoria: string | null
+          centro_custo: string | null
           created_at: string | null
           descricao: string | null
           diferenciais: string[] | null
@@ -5262,6 +5263,7 @@ export type Database = {
         Insert: {
           ativo?: boolean | null
           categoria?: string | null
+          centro_custo?: string | null
           created_at?: string | null
           descricao?: string | null
           diferenciais?: string[] | null
@@ -5281,6 +5283,7 @@ export type Database = {
         Update: {
           ativo?: boolean | null
           categoria?: string | null
+          centro_custo?: string | null
           created_at?: string | null
           descricao?: string | null
           diferenciais?: string[] | null

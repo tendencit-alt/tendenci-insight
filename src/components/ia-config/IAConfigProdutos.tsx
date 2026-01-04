@@ -30,6 +30,12 @@ const CATEGORIAS = [
   "Poltrona",
 ] as const;
 
+const CENTROS_CUSTO = [
+  { value: 'moveis_planejados', label: 'Móveis Planejados' },
+  { value: 'producao_tendenci', label: 'Produção Tendenci' },
+  { value: 'revenda', label: 'Revenda' },
+];
+
 interface VideoItem {
   type: "upload" | "url";
   url: string;
@@ -55,6 +61,7 @@ interface Produto {
   descricao: string | null;
   preco_base: number;
   categoria: string | null;
+  centro_custo: string | null;
   diferenciais: string[];
   quando_oferecer: string | null;
   ativo: boolean;
@@ -97,6 +104,7 @@ export default function IAConfigProdutos() {
     descricao: "",
     preco_base: 0,
     categoria: "",
+    centro_custo: "",
     diferenciais: "",
     quando_oferecer: "",
     ativo: true,
@@ -174,6 +182,7 @@ export default function IAConfigProdutos() {
           estoque: p.estoque ?? 0,
           permite_venda_sem_estoque: p.permite_venda_sem_estoque ?? false,
           prazo_entrega_dias: p.prazo_entrega_dias ?? null,
+          centro_custo: p.centro_custo ?? null,
           estoques: estoquesFormatados,
           estoqueTotal
         });
@@ -202,6 +211,7 @@ export default function IAConfigProdutos() {
       descricao: "",
       preco_base: 0,
       categoria: categoriaFiltro !== "todas" ? categoriaFiltro : "",
+      centro_custo: "",
       diferenciais: "",
       quando_oferecer: "",
       ativo: true,
@@ -243,6 +253,7 @@ export default function IAConfigProdutos() {
       descricao: produto.descricao || "",
       preco_base: produto.preco_base,
       categoria: produto.categoria || "",
+      centro_custo: produto.centro_custo || "",
       diferenciais: produto.diferenciais?.join("\n") || "",
       quando_oferecer: produto.quando_oferecer || "",
       ativo: produto.ativo,
@@ -411,6 +422,7 @@ export default function IAConfigProdutos() {
         descricao: form.descricao || null,
         preco_base: form.preco_base,
         categoria: form.categoria || null,
+        centro_custo: form.centro_custo || null,
         diferenciais: form.diferenciais.split("\n").filter(d => d.trim()),
         quando_oferecer: form.quando_oferecer || null,
         ativo: form.ativo,
@@ -608,13 +620,33 @@ export default function IAConfigProdutos() {
                     onChange={(e) => setForm({ ...form, preco_base: parseFloat(e.target.value) || 0 })}
                   />
                 </div>
-                <div className="space-y-2 flex items-center gap-2 pt-6">
-                  <Switch
-                    checked={form.ativo}
-                    onCheckedChange={(v) => setForm({ ...form, ativo: v })}
-                  />
-                  <Label>Produto ativo</Label>
+                <div className="space-y-2">
+                  <Label>Centro de Custo</Label>
+                  <Select
+                    value={form.centro_custo || "_none"}
+                    onValueChange={(v) => setForm({ ...form, centro_custo: v === "_none" ? "" : v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o centro de custo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="_none">Nenhum</SelectItem>
+                      {CENTROS_CUSTO.map(cc => (
+                        <SelectItem key={cc.value} value={cc.value}>
+                          {cc.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Switch
+                  checked={form.ativo}
+                  onCheckedChange={(v) => setForm({ ...form, ativo: v })}
+                />
+                <Label>Produto ativo</Label>
               </div>
 
               <div className="space-y-2">
@@ -933,6 +965,7 @@ export default function IAConfigProdutos() {
               <TableHead>Imagem</TableHead>
               <TableHead>Produto</TableHead>
               <TableHead>Categoria</TableHead>
+              <TableHead>Centro de Custo</TableHead>
               <TableHead>Preço Base</TableHead>
               <TableHead>Estoque</TableHead>
               <TableHead>Mídia</TableHead>
@@ -969,6 +1002,13 @@ export default function IAConfigProdutos() {
                 <TableCell>
                   {produto.categoria ? (
                     <Badge variant="outline">{produto.categoria}</Badge>
+                  ) : "-"}
+                </TableCell>
+                <TableCell>
+                  {produto.centro_custo ? (
+                    <Badge variant="secondary">
+                      {CENTROS_CUSTO.find(cc => cc.value === produto.centro_custo)?.label || produto.centro_custo}
+                    </Badge>
                   ) : "-"}
                 </TableCell>
                 <TableCell>
