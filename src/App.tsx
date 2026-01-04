@@ -42,6 +42,7 @@ import ActivityCenter from "./pages/ActivityCenter";
 import AutomacoesDocumentacao from "./pages/AutomacoesDocumentacao";
 import IAConfiguracao from "./pages/IAConfiguracao";
 import IAConversations from "./pages/IAConversations";
+import Catalogo from "./pages/Catalogo";
 
 const queryClient = new QueryClient();
 
@@ -56,6 +57,7 @@ const App = () => (
             <PermissionsProvider>
               <Routes>
               <Route path="/auth" element={<Auth />} />
+              <Route path="/catalogo" element={<Catalogo />} />
               <Route path="/" element={<ProtectedRoute><PermissionGuard module="dashboard"><Index /></PermissionGuard></ProtectedRoute>} />
               <Route path="/leads" element={<ProtectedRoute><PermissionGuard module="leads"><Leads /></PermissionGuard></ProtectedRoute>} />
               <Route path="/kanban" element={<ProtectedRoute><PermissionGuard module="crm"><CRM /></PermissionGuard></ProtectedRoute>} />
