@@ -1409,12 +1409,14 @@ export type Database = {
       }
       crm_tasks: {
         Row: {
+          archived_at: string | null
           audio_url: string | null
           created_at: string | null
           created_by: string | null
           deal_id: string
           due_at: string
           id: string
+          last_error: string | null
           note: string | null
           origem_modulo: string | null
           processed_at: string | null
@@ -1426,12 +1428,14 @@ export type Database = {
           whatsapp_number: string | null
         }
         Insert: {
+          archived_at?: string | null
           audio_url?: string | null
           created_at?: string | null
           created_by?: string | null
           deal_id: string
           due_at: string
           id?: string
+          last_error?: string | null
           note?: string | null
           origem_modulo?: string | null
           processed_at?: string | null
@@ -1443,12 +1447,14 @@ export type Database = {
           whatsapp_number?: string | null
         }
         Update: {
+          archived_at?: string | null
           audio_url?: string | null
           created_at?: string | null
           created_by?: string | null
           deal_id?: string
           due_at?: string
           id?: string
+          last_error?: string | null
           note?: string | null
           origem_modulo?: string | null
           processed_at?: string | null

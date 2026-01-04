@@ -386,7 +386,7 @@ async function processCRMTask(supabase: any, evolutionUrl: string, evolutionApiK
 
   if (dealError || !deal) {
     console.error('❌ Deal não encontrado:', dealError)
-    await handleCRMTaskFailure(supabase, taskId, currentRetryCount)
+    await handleCRMTaskFailure(supabase, taskId, currentRetryCount, 'Deal não encontrado no sistema')
     throw new Error('Deal não encontrado')
   }
 
@@ -396,7 +396,7 @@ async function processCRMTask(supabase: any, evolutionUrl: string, evolutionApiK
 
   if (!clientPhone) {
     console.error('❌ Telefone do cliente não encontrado')
-    await handleCRMTaskFailure(supabase, taskId, currentRetryCount)
+    await handleCRMTaskFailure(supabase, taskId, currentRetryCount, 'Cliente sem telefone cadastrado')
     
     await createFailureNotification(
       supabase,
@@ -426,7 +426,7 @@ async function processCRMTask(supabase: any, evolutionUrl: string, evolutionApiK
 
   if (connectionError || !connection) {
     console.error('❌ Instância WhatsApp não encontrada para o vendedor:', connectionError)
-    await handleCRMTaskFailure(supabase, taskId, currentRetryCount)
+    await handleCRMTaskFailure(supabase, taskId, currentRetryCount, 'Instância WhatsApp não conectada')
     
     await createFailureNotification(
       supabase,
@@ -463,9 +463,10 @@ async function processCRMTask(supabase: any, evolutionUrl: string, evolutionApiK
     
     // Se é erro de número inexistente, marcar como falha permanente (não adianta retry)
     if (sendResult.isNumberNotExists) {
+      const errorMsg = 'Número não encontrado no WhatsApp. Verifique se o número está correto.'
       await supabase
         .from('crm_tasks')
-        .update({ status: 'failed', retry_count: MAX_RETRIES })
+        .update({ status: 'failed', retry_count: MAX_RETRIES, last_error: errorMsg })
         .eq('id', taskId)
       
       await createFailureNotification(
@@ -482,7 +483,8 @@ async function processCRMTask(supabase: any, evolutionUrl: string, evolutionApiK
       )
     } else {
       // Erro temporário - tentar novamente
-      await handleCRMTaskFailure(supabase, taskId, currentRetryCount)
+      const errorMsg = sendResult.error?.substring(0, 200) || 'Erro desconhecido ao enviar mensagem'
+      await handleCRMTaskFailure(supabase, taskId, currentRetryCount, errorMsg)
       
       await createFailureNotification(
         supabase,
@@ -537,7 +539,7 @@ async function processCRMTask(supabase: any, evolutionUrl: string, evolutionApiK
 }
 
 // Helper para tratar falha de tarefa CRM com retry
-async function handleCRMTaskFailure(supabase: any, taskId: string, currentRetryCount: number) {
+async function handleCRMTaskFailure(supabase: any, taskId: string, currentRetryCount: number, errorMessage?: string) {
   const newRetryCount = currentRetryCount + 1
   const newStatus = newRetryCount >= MAX_RETRIES ? 'failed' : 'open'
   
@@ -547,7 +549,8 @@ async function handleCRMTaskFailure(supabase: any, taskId: string, currentRetryC
     .from('crm_tasks')
     .update({ 
       status: newStatus,
-      retry_count: newRetryCount
+      retry_count: newRetryCount,
+      last_error: errorMessage || null
     })
     .eq('id', taskId)
 }
