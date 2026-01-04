@@ -5256,6 +5256,7 @@ export type Database = {
           inventory_location_id: string | null
           inventory_product_id: string | null
           largura: number | null
+          local_estoque_id: string | null
           nome: string
           permite_venda_sem_estoque: boolean | null
           prazo_entrega_dias: number | null
@@ -5282,6 +5283,7 @@ export type Database = {
           inventory_location_id?: string | null
           inventory_product_id?: string | null
           largura?: number | null
+          local_estoque_id?: string | null
           nome: string
           permite_venda_sem_estoque?: boolean | null
           prazo_entrega_dias?: number | null
@@ -5308,6 +5310,7 @@ export type Database = {
           inventory_location_id?: string | null
           inventory_product_id?: string | null
           largura?: number | null
+          local_estoque_id?: string | null
           nome?: string
           permite_venda_sem_estoque?: boolean | null
           prazo_entrega_dias?: number | null
@@ -5331,6 +5334,13 @@ export type Database = {
             columns: ["inventory_product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tendenci_ia_produtos_local_estoque_id_fkey"
+            columns: ["local_estoque_id"]
+            isOneToOne: false
+            referencedRelation: "stock_locations"
             referencedColumns: ["id"]
           },
         ]

@@ -85,6 +85,7 @@ interface Produto {
   unidade_medida: string | null;
   inventory_product_id: string | null;
   inventory_location_id: string | null;
+  local_estoque_id: string | null;
 }
 
 // Helper to safely parse videos from JSON
@@ -95,6 +96,24 @@ const parseVideos = (videos: unknown): VideoItem[] => {
     typeof (v as VideoItem).url === 'string' &&
     ((v as VideoItem).type === 'upload' || (v as VideoItem).type === 'url')
   );
+};
+
+// Helper para validar formato de medida (apenas números e ponto)
+const isValidMeasure = (value: string): boolean => {
+  if (!value) return true;
+  return /^\d*\.?\d*$/.test(value);
+};
+
+// Helper para formatar medida (remove caracteres inválidos)
+const formatMeasure = (value: string): string => {
+  // Remove tudo exceto números e ponto
+  let formatted = value.replace(/[^\d.]/g, '');
+  // Permite apenas um ponto
+  const parts = formatted.split('.');
+  if (parts.length > 2) {
+    formatted = parts[0] + '.' + parts.slice(1).join('');
+  }
+  return formatted;
 };
 
 export default function IAConfigProdutos() {
@@ -137,9 +156,11 @@ export default function IAConfigProdutos() {
     estoque: 0,
     inventory_product_id: null as string | null,
     inventory_location_id: null as string | null,
-    largura: null as number | null,
-    comprimento: null as number | null,
-    altura: null as number | null,
+    local_estoque_id: null as string | null,
+    // Medidas como string para validação de formato
+    comprimento: "",
+    largura: "",
+    altura: "",
     unidade_medida: "cm",
   });
 
@@ -222,6 +243,7 @@ export default function IAConfigProdutos() {
           unidade_medida: p.unidade_medida ?? 'cm',
           inventory_product_id: p.inventory_product_id ?? null,
           inventory_location_id: p.inventory_location_id ?? null,
+          local_estoque_id: p.local_estoque_id ?? null,
         });
       }
       
@@ -256,9 +278,10 @@ export default function IAConfigProdutos() {
       estoque: 0,
       inventory_product_id: null,
       inventory_location_id: null,
-      largura: null,
-      comprimento: null,
-      altura: null,
+      local_estoque_id: null,
+      comprimento: "",
+      largura: "",
+      altura: "",
       unidade_medida: "cm",
     });
     setVideoUrlInput("");
@@ -301,9 +324,11 @@ export default function IAConfigProdutos() {
       estoque: produto.estoque || 0,
       inventory_product_id: produto.inventory_product_id,
       inventory_location_id: produto.inventory_location_id,
-      largura: produto.largura ?? null,
-      comprimento: produto.comprimento ?? null,
-      altura: produto.altura ?? null,
+      local_estoque_id: produto.local_estoque_id,
+      // Converter números para string para o input
+      comprimento: produto.comprimento?.toString() || "",
+      largura: produto.largura?.toString() || "",
+      altura: produto.altura?.toString() || "",
       unidade_medida: produto.unidade_medida || "cm",
     });
     setVideoUrlInput("");
@@ -317,7 +342,6 @@ export default function IAConfigProdutos() {
       ...prev,
       inventory_product_id: invProduct.id,
       inventory_location_id: invProduct.location_id,
-      estoque: Math.min(prev.estoque || invProduct.current_stock, invProduct.current_stock)
     }));
     setInventorySearchOpen(false);
   };
@@ -328,7 +352,6 @@ export default function IAConfigProdutos() {
       ...prev,
       inventory_product_id: null,
       inventory_location_id: null,
-      estoque: 0
     }));
   };
 
@@ -493,11 +516,34 @@ export default function IAConfigProdutos() {
     }));
   };
 
+  // Handler para inputs de medida (bloqueia vírgula e caracteres inválidos)
+  const handleMeasureChange = (field: 'comprimento' | 'largura' | 'altura', value: string) => {
+    const formatted = formatMeasure(value);
+    setForm(prev => ({ ...prev, [field]: formatted }));
+  };
+
+  const handleMeasureKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Bloquear vírgula
+    if (e.key === ',') {
+      e.preventDefault();
+      toast.error("Use ponto (.) para decimais, não vírgula");
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
 
+    console.log("=== Salvando produto ===");
+    console.log("Editando:", editingProduto?.id);
+    console.log("Form data:", form);
+
     try {
+      // Converter medidas de string para número
+      const comprimentoNum = form.comprimento ? parseFloat(form.comprimento) : null;
+      const larguraNum = form.largura ? parseFloat(form.largura) : null;
+      const alturaNum = form.altura ? parseFloat(form.altura) : null;
+
       const produtoData = {
         nome: form.nome,
         descricao: form.descricao || null,
@@ -514,32 +560,44 @@ export default function IAConfigProdutos() {
         estoque: form.estoque,
         permite_venda_sem_estoque: form.permite_venda_sem_estoque,
         prazo_entrega_dias: form.permite_venda_sem_estoque ? form.prazo_entrega_dias : null,
-        largura: form.largura || null,
-        comprimento: form.comprimento || null,
-        altura: form.altura || null,
+        comprimento: comprimentoNum,
+        largura: larguraNum,
+        altura: alturaNum,
         unidade_medida: form.unidade_medida || 'cm',
         inventory_product_id: form.inventory_product_id || null,
         inventory_location_id: form.inventory_location_id || null,
+        local_estoque_id: form.local_estoque_id || null,
       };
 
+      console.log("Dados para salvar:", produtoData);
+
       if (editingProduto) {
-        const { error } = await supabase
+        console.log("Atualizando produto ID:", editingProduto.id);
+        const { data, error } = await supabase
           .from("tendenci_ia_produtos")
           .update(produtoData)
-          .eq("id", editingProduto.id);
+          .eq("id", editingProduto.id)
+          .select();
+
+        console.log("Resposta update:", { data, error });
 
         if (error) throw error;
+        toast.success("Produto atualizado!");
       } else {
-        const { error } = await supabase
+        console.log("Criando novo produto");
+        const { data, error } = await supabase
           .from("tendenci_ia_produtos")
-          .insert([produtoData]);
+          .insert([produtoData])
+          .select();
+
+        console.log("Resposta insert:", { data, error });
 
         if (error) throw error;
+        toast.success("Produto criado!");
       }
 
-      toast.success(editingProduto ? "Produto atualizado!" : "Produto criado!");
       setDialogOpen(false);
-      loadData();
+      await loadData();
     } catch (error) {
       console.error("Erro ao salvar:", error);
       toast.error("Erro ao salvar produto");
@@ -579,6 +637,12 @@ export default function IAConfigProdutos() {
       console.error("Erro ao atualizar:", error);
       toast.error("Erro ao atualizar status");
     }
+  };
+
+  // Helper para obter nome do local
+  const getLocationName = (localId: string | null) => {
+    if (!localId) return null;
+    return locations.find(l => l.id === localId)?.name || null;
   };
 
   if (loading) {
@@ -717,41 +781,113 @@ export default function IAConfigProdutos() {
                 </div>
               </div>
 
-              {/* Dimensões do Produto */}
+              {/* Estoque Independente */}
+              <div className="border rounded-lg p-4 space-y-4 bg-muted/30">
+                <h4 className="font-medium flex items-center gap-2">
+                  <Package className="h-4 w-4" />
+                  Estoque
+                </h4>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Quantidade em Estoque</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      value={form.estoque}
+                      onChange={(e) => setForm({ ...form, estoque: parseInt(e.target.value) || 0 })}
+                      placeholder="0"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Quantidade disponível para venda
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Local do Estoque</Label>
+                    <Select
+                      value={form.local_estoque_id || "_none"}
+                      onValueChange={(v) => setForm({ ...form, local_estoque_id: v === "_none" ? null : v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o local" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="_none">Nenhum</SelectItem>
+                        {locations.map(loc => (
+                          <SelectItem key={loc.id} value={loc.id}>
+                            {loc.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      Onde o produto está armazenado
+                    </p>
+                  </div>
+                </div>
+
+                {/* Opção de venda sem estoque */}
+                <div className="border-t pt-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={form.permite_venda_sem_estoque}
+                      onCheckedChange={(v) => setForm({ ...form, permite_venda_sem_estoque: v })}
+                    />
+                    <Label>Permitir venda sob encomenda</Label>
+                  </div>
+                  
+                  {form.permite_venda_sem_estoque && (
+                    <div className="space-y-2">
+                      <Label>Prazo de entrega (dias)</Label>
+                      <Input
+                        type="number"
+                        min="1"
+                        value={form.prazo_entrega_dias ?? ""}
+                        onChange={(e) => setForm({ ...form, prazo_entrega_dias: e.target.value ? parseInt(e.target.value) : null })}
+                        placeholder="Ex: 15"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Dimensões do Produto - Ordem: C x L x A */}
               <div className="border rounded-lg p-4 space-y-4 bg-muted/30">
                 <h4 className="font-medium flex items-center gap-2">
                   <Ruler className="h-4 w-4" />
-                  Dimensões
+                  Dimensões (C × L × A)
                 </h4>
                 <div className="grid gap-4 sm:grid-cols-4">
                   <div className="space-y-2">
-                    <Label>Largura</Label>
+                    <Label>Comprimento (C)</Label>
                     <Input
-                      type="number"
-                      step="0.1"
-                      placeholder="Ex: 120"
-                      value={form.largura ?? ""}
-                      onChange={(e) => setForm({ ...form, largura: e.target.value ? parseFloat(e.target.value) : null })}
+                      type="text"
+                      inputMode="decimal"
+                      placeholder="Ex: 3.00"
+                      value={form.comprimento}
+                      onChange={(e) => handleMeasureChange('comprimento', e.target.value)}
+                      onKeyDown={handleMeasureKeyDown}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Comprimento</Label>
+                    <Label>Largura (L)</Label>
                     <Input
-                      type="number"
-                      step="0.1"
-                      placeholder="Ex: 80"
-                      value={form.comprimento ?? ""}
-                      onChange={(e) => setForm({ ...form, comprimento: e.target.value ? parseFloat(e.target.value) : null })}
+                      type="text"
+                      inputMode="decimal"
+                      placeholder="Ex: 2.00"
+                      value={form.largura}
+                      onChange={(e) => handleMeasureChange('largura', e.target.value)}
+                      onKeyDown={handleMeasureKeyDown}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Altura</Label>
+                    <Label>Altura (A)</Label>
                     <Input
-                      type="number"
-                      step="0.1"
-                      placeholder="Ex: 45"
-                      value={form.altura ?? ""}
-                      onChange={(e) => setForm({ ...form, altura: e.target.value ? parseFloat(e.target.value) : null })}
+                      type="text"
+                      inputMode="decimal"
+                      placeholder="Ex: 0.75"
+                      value={form.altura}
+                      onChange={(e) => handleMeasureChange('altura', e.target.value)}
+                      onKeyDown={handleMeasureKeyDown}
                     />
                   </div>
                   <div className="space-y-2">
@@ -773,6 +909,9 @@ export default function IAConfigProdutos() {
                     </Select>
                   </div>
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  💡 Use ponto (.) para decimais. Ex: 3.00 × 2.00 × 0.75
+                </p>
               </div>
 
               <div className="flex items-center gap-2">
@@ -794,156 +933,85 @@ export default function IAConfigProdutos() {
                 />
               </div>
 
-              {/* Vinculação ao Inventário */}
+              {/* Vinculação ao Inventário (Opcional) */}
               <div className="border rounded-lg p-4 space-y-4 bg-muted/30">
                 <h4 className="font-medium flex items-center gap-2">
                   <LinkIcon className="h-4 w-4" />
-                  Vinculação ao Inventário
+                  Vinculação ao Inventário (Opcional)
                 </h4>
+                <p className="text-xs text-muted-foreground">
+                  Vincule a um produto do módulo de inventário para controle integrado
+                </p>
                 
                 {selectedInventoryProduct ? (
-                  <div className="space-y-4">
-                    {/* Card do produto selecionado */}
-                    <div className="p-3 rounded-lg border bg-background">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <p className="font-medium">{selectedInventoryProduct.name}</p>
-                          {selectedInventoryProduct.code && (
-                            <p className="text-sm text-muted-foreground">
-                              Código: {selectedInventoryProduct.code}
-                            </p>
-                          )}
-                          <div className="flex items-center gap-4 mt-2 text-sm">
+                  <div className="p-3 rounded-lg border bg-background">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <p className="font-medium">{selectedInventoryProduct.name}</p>
+                        {selectedInventoryProduct.code && (
+                          <p className="text-sm text-muted-foreground">
+                            Código: {selectedInventoryProduct.code}
+                          </p>
+                        )}
+                        <div className="flex items-center gap-4 mt-2 text-sm">
+                          <span className="flex items-center gap-1">
+                            <Package className="h-4 w-4 text-muted-foreground" />
+                            Estoque inv.: <strong>{selectedInventoryProduct.current_stock}</strong> un
+                          </span>
+                          {selectedInventoryProduct.location_name && (
                             <span className="flex items-center gap-1">
-                              <Package className="h-4 w-4 text-muted-foreground" />
-                              Estoque: <strong>{selectedInventoryProduct.current_stock}</strong> un
+                              <MapPin className="h-4 w-4 text-muted-foreground" />
+                              {selectedInventoryProduct.location_name}
                             </span>
-                            {selectedInventoryProduct.location_name && (
-                              <span className="flex items-center gap-1">
-                                <MapPin className="h-4 w-4 text-muted-foreground" />
-                                {selectedInventoryProduct.location_name}
-                              </span>
-                            )}
-                          </div>
+                          )}
                         </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={clearInventoryProduct}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
                       </div>
-                    </div>
-
-                    {/* Quantidade e Local */}
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <div className="space-y-2">
-                        <Label>Quantidade para este produto IA</Label>
-                        <Input
-                          type="number"
-                          min="0"
-                          max={selectedInventoryProduct.current_stock}
-                          value={form.estoque}
-                          onChange={(e) => setForm({ 
-                            ...form, 
-                            estoque: Math.min(parseInt(e.target.value) || 0, selectedInventoryProduct.current_stock) 
-                          })}
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          Máximo: {selectedInventoryProduct.current_stock} unidades
-                        </p>
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Local do Estoque</Label>
-                        <Select
-                          value={form.inventory_location_id || "_none"}
-                          onValueChange={(v) => setForm({ ...form, inventory_location_id: v === "_none" ? null : v })}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione o local" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="_none">Nenhum</SelectItem>
-                            {locations.map(loc => (
-                              <SelectItem key={loc.id} value={loc.id}>
-                                {loc.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={clearInventoryProduct}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-2">
-                    <Popover open={inventorySearchOpen} onOpenChange={setInventorySearchOpen}>
-                      <PopoverTrigger asChild>
-                        <Button type="button" variant="outline" className="w-full justify-start">
-                          <Search className="h-4 w-4 mr-2" />
-                          Vincular produto do inventário...
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-80 p-0" align="start">
-                        <Command>
-                          <CommandInput placeholder="Buscar produto..." />
-                          <CommandList>
-                            <CommandEmpty>Nenhum produto encontrado.</CommandEmpty>
-                            <CommandGroup heading="Produtos do Inventário">
-                              {inventoryProducts.map(p => (
-                                <CommandItem
-                                  key={p.id}
-                                  value={p.name}
-                                  onSelect={() => selectInventoryProduct(p)}
-                                >
-                                  <div className="flex-1">
-                                    <p className="font-medium">{p.name}</p>
-                                    <p className="text-xs text-muted-foreground">
-                                      {p.code && `${p.code} • `}
-                                      Estoque: {p.current_stock}
-                                      {p.location_name && ` • ${p.location_name}`}
-                                    </p>
-                                  </div>
-                                </CommandItem>
-                              ))}
-                            </CommandGroup>
-                          </CommandList>
-                        </Command>
-                      </PopoverContent>
-                    </Popover>
-                    <p className="text-xs text-muted-foreground">
-                      Vincule a um produto do módulo de inventário para controle de estoque integrado
-                    </p>
-                  </div>
+                  <Popover open={inventorySearchOpen} onOpenChange={setInventorySearchOpen}>
+                    <PopoverTrigger asChild>
+                      <Button type="button" variant="outline" className="w-full justify-start">
+                        <Search className="h-4 w-4 mr-2" />
+                        Vincular produto do inventário...
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-80 p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder="Buscar produto..." />
+                        <CommandList>
+                          <CommandEmpty>Nenhum produto encontrado.</CommandEmpty>
+                          <CommandGroup heading="Produtos do Inventário">
+                            {inventoryProducts.map(p => (
+                              <CommandItem
+                                key={p.id}
+                                value={p.name}
+                                onSelect={() => selectInventoryProduct(p)}
+                              >
+                                <div className="flex-1">
+                                  <p className="font-medium">{p.name}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {p.code && `${p.code} • `}
+                                    Estoque: {p.current_stock}
+                                    {p.location_name && ` • ${p.location_name}`}
+                                  </p>
+                                </div>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 )}
-
-                {/* Opção de venda sem estoque */}
-                <div className="flex flex-col sm:flex-row gap-4 pt-2 border-t">
-                  <div className="flex items-center gap-2">
-                    <Switch
-                      checked={form.permite_venda_sem_estoque}
-                      onCheckedChange={(v) => setForm({ ...form, permite_venda_sem_estoque: v })}
-                    />
-                    <span className="text-sm">Permitir venda sem estoque (sob encomenda)</span>
-                  </div>
-                  
-                  {form.permite_venda_sem_estoque && (
-                    <div className="flex items-center gap-2">
-                      <Label htmlFor="prazo_entrega" className="text-sm whitespace-nowrap">Prazo:</Label>
-                      <Input
-                        id="prazo_entrega"
-                        type="number"
-                        min="1"
-                        className="w-20 h-8"
-                        value={form.prazo_entrega_dias ?? ""}
-                        onChange={(e) => setForm({ ...form, prazo_entrega_dias: parseInt(e.target.value) || null })}
-                        placeholder="dias"
-                      />
-                      <span className="text-sm text-muted-foreground">dias</span>
-                    </div>
-                  )}
-                </div>
               </div>
 
               {/* Imagem Principal */}
@@ -952,38 +1020,46 @@ export default function IAConfigProdutos() {
                   <Image className="h-4 w-4" />
                   Imagem Principal
                 </Label>
-                {form.imagem_url ? (
-                  <div className="relative inline-block">
-                    <img
-                      src={form.imagem_url}
-                      alt="Imagem do produto"
-                      className="h-32 w-32 object-cover rounded-lg border"
-                    />
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="icon"
-                      className="absolute -top-2 -right-2 h-6 w-6"
-                      onClick={() => setForm({ ...form, imagem_url: "" })}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <Input
+                <div className="flex gap-4 items-start">
+                  {form.imagem_url && (
+                    <div className="relative">
+                      <img
+                        src={form.imagem_url}
+                        alt="Preview"
+                        className="h-24 w-24 object-cover rounded-lg border"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="absolute -top-2 -right-2 h-6 w-6"
+                        onClick={() => setForm({ ...form, imagem_url: "" })}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  )}
+                  <label className="flex flex-col items-center justify-center h-24 px-6 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+                    <input
                       type="file"
                       accept="image/*"
+                      className="hidden"
                       disabled={uploading}
                       onChange={(e) => {
                         const file = e.target.files?.[0];
-                        if (file) uploadImage(file, false);
+                        if (file) uploadImage(file);
                       }}
-                      className="max-w-xs"
                     />
-                    {uploading && <Loader2 className="h-4 w-4 animate-spin" />}
-                  </div>
-                )}
+                    {uploading ? (
+                      <Loader2 className="h-6 w-6 animate-spin" />
+                    ) : (
+                      <>
+                        <Upload className="h-6 w-6 text-muted-foreground" />
+                        <span className="text-sm text-muted-foreground mt-1">Enviar</span>
+                      </>
+                    )}
+                  </label>
+                </div>
               </div>
 
               {/* Galeria */}
@@ -994,7 +1070,7 @@ export default function IAConfigProdutos() {
                 </Label>
                 <div className="flex flex-wrap gap-2">
                   {form.galeria.map((url, index) => (
-                    <div key={index} className="relative inline-block">
+                    <div key={index} className="relative">
                       <img
                         src={url}
                         alt={`Galeria ${index + 1}`}
@@ -1194,10 +1270,10 @@ export default function IAConfigProdutos() {
               <TableHead>Imagem</TableHead>
               <TableHead>Produto</TableHead>
               <TableHead>Categoria</TableHead>
-              <TableHead>Centro de Custo</TableHead>
               <TableHead>Dimensões</TableHead>
               <TableHead>Preço Base</TableHead>
               <TableHead>Estoque</TableHead>
+              <TableHead>Local</TableHead>
               <TableHead>Mídia</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="w-[100px]">Ações</TableHead>
@@ -1234,21 +1310,15 @@ export default function IAConfigProdutos() {
                     <Badge variant="outline">{produto.categoria}</Badge>
                   ) : "-"}
                 </TableCell>
+                {/* Dimensões na ordem C × L × A */}
                 <TableCell>
-                  {produto.centro_custo ? (
-                    <Badge variant="secondary">
-                      {CENTROS_CUSTO.find(cc => cc.value === produto.centro_custo)?.label || produto.centro_custo}
-                    </Badge>
-                  ) : "-"}
-                </TableCell>
-                <TableCell>
-                  {produto.largura || produto.comprimento || produto.altura ? (
+                  {produto.comprimento || produto.largura || produto.altura ? (
                     <div className="text-sm text-muted-foreground">
                       {[
-                        produto.largura && `L: ${produto.largura}`,
-                        produto.comprimento && `C: ${produto.comprimento}`,
-                        produto.altura && `A: ${produto.altura}`
-                      ].filter(Boolean).join(' × ')} {produto.unidade_medida || 'cm'}
+                        produto.comprimento,
+                        produto.largura,
+                        produto.altura
+                      ].filter(v => v !== null && v !== undefined).join(' × ')} {produto.unidade_medida || 'cm'}
                     </div>
                   ) : (
                     <span className="text-muted-foreground text-sm">-</span>
@@ -1262,17 +1332,7 @@ export default function IAConfigProdutos() {
                 </TableCell>
                 <TableCell>
                   <div className="space-y-1">
-                    {produto.inventory_product_id ? (
-                      <>
-                        <Badge className="bg-green-500 hover:bg-green-600">
-                          {produto.estoque} un
-                        </Badge>
-                        <p className="text-xs text-muted-foreground flex items-center gap-1">
-                          <LinkIcon className="h-3 w-3" />
-                          {inventoryProducts.find(p => p.id === produto.inventory_product_id)?.name || "Vinculado"}
-                        </p>
-                      </>
-                    ) : produto.estoque > 0 ? (
+                    {produto.estoque > 0 ? (
                       <Badge className="bg-green-500 hover:bg-green-600">
                         {produto.estoque} un
                       </Badge>
@@ -1285,7 +1345,24 @@ export default function IAConfigProdutos() {
                         Sem estoque
                       </Badge>
                     )}
+                    {produto.inventory_product_id && (
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                        <LinkIcon className="h-3 w-3" />
+                        Vinculado
+                      </p>
+                    )}
                   </div>
+                </TableCell>
+                {/* Coluna Local */}
+                <TableCell>
+                  {getLocationName(produto.local_estoque_id) ? (
+                    <Badge variant="secondary" className="flex items-center gap-1 w-fit">
+                      <MapPin className="h-3 w-3" />
+                      {getLocationName(produto.local_estoque_id)}
+                    </Badge>
+                  ) : (
+                    <span className="text-muted-foreground text-sm">-</span>
+                  )}
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-1">
