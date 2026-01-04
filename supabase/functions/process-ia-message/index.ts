@@ -688,8 +688,8 @@ Responda em português brasileiro de forma clara e organizada.`;
     const comunicacaoConfig = configs.comunicacao || {};
     const limiteCaracteresConfig = Number(comunicacaoConfig.limite_caracteres) || 0;
     const temLimite = limiteCaracteresConfig > 0;
-    // Para limite de 200 chars, isso resulta em ~80 tokens (200/2.5=80)
-    const maxTokens = temLimite ? Math.max(80, Math.ceil(limiteCaracteresConfig / 2.5)) : 1500;
+    // Para limite de 200 chars, isso resulta em ~50 tokens (200/4=50) - MAIS RESTRITIVO
+    const maxTokens = temLimite ? Math.max(50, Math.ceil(limiteCaracteresConfig / 4)) : 1500;
     
     console.log(`🧠 Calling Lovable AI with fallback support... (maxTokens: ${maxTokens}, limite: ${limiteCaracteresConfig})`);
 
@@ -764,22 +764,29 @@ Responda em português brasileiro de forma clara e organizada.`;
     if (limiteCaracteres > 0 && textWithoutMarkers.length > limiteCaracteres) {
       console.log(`⚠️ Texto excede limite (${textWithoutMarkers.length}/${limiteCaracteres}). Truncando...`);
       
-      // Remove markers temporarily
-      let cleanText = textWithoutMarkers;
+      let cleanText = textWithoutMarkers.substring(0, limiteCaracteres);
       
-      // Truncate only the text part
-      const textoTruncado = cleanText.substring(0, limiteCaracteres - 3);
-      const ultimoEspaco = textoTruncado.lastIndexOf(' ');
+      // Procurar por fim de frase (. ! ?) para corte mais natural
+      const lastSentenceEnd = Math.max(
+        cleanText.lastIndexOf('.'),
+        cleanText.lastIndexOf('!'),
+        cleanText.lastIndexOf('?')
+      );
       
-      if (ultimoEspaco > limiteCaracteres * 0.7) {
-        cleanText = textoTruncado.substring(0, ultimoEspaco) + "...";
+      if (lastSentenceEnd > limiteCaracteres * 0.5) {
+        // Corta no fim da frase
+        cleanText = cleanText.substring(0, lastSentenceEnd + 1);
       } else {
-        cleanText = textoTruncado + "...";
+        // Corta na última palavra
+        const lastSpace = cleanText.lastIndexOf(' ');
+        if (lastSpace > limiteCaracteres * 0.7) {
+          cleanText = cleanText.substring(0, lastSpace);
+        }
       }
       
       // Re-append all media markers (they are NOT counted in char limit)
       const allMarkers = [...photoMarkers, ...videoMarkers].join(' ');
-      assistantMessage = cleanText + (allMarkers ? ' ' + allMarkers : '');
+      assistantMessage = cleanText.trim() + (allMarkers ? ' ' + allMarkers : '');
       
       console.log(`✅ Texto truncado para ${cleanText.length} chars, marcadores preservados: ${allMarkers.length} chars`);
     }
@@ -1848,6 +1855,28 @@ ${clientMemory.client_name ? `\n⚠️ USE o nome "${clientMemory.client_name}" 
 `);
   }
 
+  // ========== CRITICAL RULES - TOP PRIORITY ==========
+  const limiteCharsTop = Number(comunicacao.limite_caracteres) || 300;
+  const usarEmojisTop = comunicacao.usar_emojis || "moderado";
+  
+  parts.push(`# ⚠️ REGRAS CRÍTICAS - PRIORIDADE MÁXIMA
+
+VOCÊ DEVE SEGUIR ESTAS REGRAS ABSOLUTAS EM TODA MENSAGEM:
+
+1. LIMITE: Máximo ${limiteCharsTop} caracteres por mensagem (NUNCA exceder!)
+2. EMOJIS: ${usarEmojisTop === 'nao' ? 'PROIBIDO usar qualquer emoji - ZERO emojis' : 'Permitido com moderação'}
+3. FORMATO: Máximo 2 frases curtas por mensagem
+4. PRODUTOS: 1 produto por mensagem apenas
+
+EXEMPLO CORRETO (${limiteCharsTop} chars):
+"Pra área gourmet, essa mesa é perfeita! [FOTO_PRODUTO:url:Mesa 10 lugares]"
+
+EXEMPLO INCORRETO (NUNCA FAÇA ISSO):
+"Perfeito! Para 10 lugares, o ideal são mesas entre 3,00m e 3,50m para garantir conforto total aos convidados. Tenho duas propostas incríveis..."
+
+VIOLAÇÃO DESSAS REGRAS = RESPOSTA INVÁLIDA
+`);
+
   // ========== MAIN FUNCTION ==========
   parts.push(`# 🎯 FUNÇÃO PRINCIPAL
 
@@ -2136,49 +2165,68 @@ function isValidMediaUrl(url: string): boolean {
   }
 }
 
-// Parser robusto para marcadores de mídia
+// Parser robusto para marcadores de mídia usando extensão de arquivo
 function parseMediaMarker(marker: string, type: 'FOTO' | 'VIDEO'): { url: string; caption: string } | null {
-  // Remove brackets and prefix
   const prefix = `[${type}_PRODUTO:`;
   if (!marker.startsWith(prefix) || !marker.endsWith(']')) {
+    console.log(`⚠️ parseMediaMarker: Marcador inválido - não começa com ${prefix} ou não termina com ]`);
     return null;
   }
   
   const inner = marker.slice(prefix.length, -1); // Remove [PREFIX: e ]
+  console.log(`🔍 parseMediaMarker: inner = "${inner}"`);
   
-  // Encontra o último : que separa URL do caption
-  // URLs podem ter : (ex: https://), então precisamos encontrar o : do caption
-  // O caption geralmente é texto simples sem :, então pegamos após o último :
-  const lastColonIndex = inner.lastIndexOf(':');
+  // Estratégia 1: Encontrar extensão de arquivo de mídia
+  // URLs de imagem/vídeo terminam com extensões conhecidas (opcionalmente com query string)
+  const extensionMatch = inner.match(/\.(png|jpg|jpeg|gif|webp|svg|mp4|mov|avi|mkv|webm)(\?[^:]*)?/i);
   
-  if (lastColonIndex === -1 || lastColonIndex < 10) {
-    // Se não tem : ou está muito no início (provavelmente parte do https:)
-    // Tenta usar a URL inteira sem caption
-    return { url: inner.trim(), caption: '' };
+  if (extensionMatch && extensionMatch.index !== undefined) {
+    const extensionEndIndex = extensionMatch.index + extensionMatch[0].length;
+    const url = inner.substring(0, extensionEndIndex).trim();
+    // O caption começa após o : que vem depois da extensão
+    const afterExtension = inner.substring(extensionEndIndex);
+    const colonIndex = afterExtension.indexOf(':');
+    const caption = colonIndex !== -1 ? afterExtension.substring(colonIndex + 1).trim() : '';
+    
+    console.log(`✅ parseMediaMarker (extensão): url="${url}", caption="${caption}"`);
+    return { url, caption };
   }
   
-  // Verifica se o : faz parte de https:// ou http://
-  const beforeColon = inner.substring(0, lastColonIndex);
-  const afterColon = inner.substring(lastColonIndex + 1);
+  // Estratégia 2: URLs do Supabase Storage sem extensão clara - buscar padrão de UUID/path
+  // Formato: https://xxx.supabase.co/storage/v1/object/public/bucket/path
+  const supabaseMatch = inner.match(/(https:\/\/[a-z0-9]+\.supabase\.co\/storage\/v1\/object\/[^:]+)/i);
+  if (supabaseMatch) {
+    const url = supabaseMatch[1].trim();
+    const afterUrl = inner.substring(supabaseMatch.index! + supabaseMatch[0].length);
+    const colonIndex = afterUrl.indexOf(':');
+    const caption = colonIndex !== -1 ? afterUrl.substring(colonIndex + 1).trim() : afterUrl.trim();
+    
+    console.log(`✅ parseMediaMarker (supabase): url="${url}", caption="${caption}"`);
+    return { url, caption };
+  }
   
-  // Se beforeColon termina com http ou https, significa que ainda estamos na URL
-  if (beforeColon.endsWith('http') || beforeColon.endsWith('https')) {
-    // O : faz parte do protocolo, tenta encontrar outro :
-    const secondLastColon = beforeColon.lastIndexOf(':');
-    if (secondLastColon > 10) {
-      return {
-        url: inner.substring(0, secondLastColon).trim(),
-        caption: inner.substring(secondLastColon + 1).trim()
-      };
+  // Estratégia 3: Fallback - encontrar último : que não faz parte de http:// ou https://
+  // Procurar por : após posição 20 (URLs mínimas têm pelo menos isso)
+  const colonPositions: number[] = [];
+  for (let i = 20; i < inner.length; i++) {
+    if (inner[i] === ':') {
+      colonPositions.push(i);
     }
-    // Não conseguiu separar, usa URL inteira
-    return { url: inner.trim(), caption: '' };
   }
   
-  return {
-    url: beforeColon.trim(),
-    caption: afterColon.trim()
-  };
+  // Usar o último : encontrado
+  if (colonPositions.length > 0) {
+    const lastColonIndex = colonPositions[colonPositions.length - 1];
+    const url = inner.substring(0, lastColonIndex).trim();
+    const caption = inner.substring(lastColonIndex + 1).trim();
+    
+    console.log(`✅ parseMediaMarker (fallback): url="${url}", caption="${caption}"`);
+    return { url, caption };
+  }
+  
+  // Último recurso: usar tudo como URL sem caption
+  console.log(`⚠️ parseMediaMarker: Não encontrou separador, usando inner como URL`);
+  return { url: inner.trim(), caption: '' };
 }
 
 async function processAndSendResponse(
