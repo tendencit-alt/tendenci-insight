@@ -495,6 +495,35 @@ export function CRMTasksPanel({
     fetchFailedTasks();
   };
 
+  const handleArchiveTask = async (taskId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    const { error } = await supabase
+      .from("crm_tasks")
+      .update({ 
+        archived_at: new Date().toISOString(),
+        status: "archived",
+        updated_at: new Date().toISOString() 
+      })
+      .eq("id", taskId);
+
+    if (error) {
+      toast({
+        title: "Erro ao arquivar",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "Tarefa arquivada",
+      description: "A tarefa foi removida da lista de problemas.",
+    });
+
+    fetchFailedTasks();
+  };
+
   const handleOpenDeal = async (dealId: string) => {
     const { data, error } = await supabase
       .from("crm_deals")
@@ -534,7 +563,7 @@ export function CRMTasksPanel({
     return dueDate > endOfDay;
   });
 
-  const TaskCard = ({ task, showRetry = false }: { task: any; showRetry?: boolean }) => {
+  const TaskCard = ({ task, showRetry = false, showArchive = false }: { task: any; showRetry?: boolean; showArchive?: boolean }) => {
     const dueInfo = getDaysUntilDue(task.due_at);
     const clientName = task.deal?.lead?.client?.name || "Sem cliente";
     const isOverdue = isISODateInPast(task.due_at);
@@ -565,18 +594,31 @@ export function CRMTasksPanel({
           <div className="flex-1 min-w-0 space-y-1">
             <div className="flex items-start justify-between gap-2">
               <p className="font-semibold text-sm line-clamp-2">{task.title}</p>
-              {showRetry && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-6 px-2 text-xs shrink-0"
-                  onClick={(e) => handleRetryTask(task.id, e)}
-                  title="Reprocessar tarefa"
-                >
-                  <RefreshCw className="h-3 w-3 mr-1" />
-                  Retentar
-                </Button>
-              )}
+              <div className="flex items-center gap-1 shrink-0">
+                {showRetry && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 px-2 text-xs"
+                    onClick={(e) => handleRetryTask(task.id, e)}
+                    title="Reprocessar tarefa"
+                  >
+                    <RefreshCw className="h-3 w-3 mr-1" />
+                    Retentar
+                  </Button>
+                )}
+                {showArchive && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 px-2 text-xs text-muted-foreground hover:text-destructive"
+                    onClick={(e) => handleArchiveTask(task.id, e)}
+                    title="Arquivar tarefa (remover da lista)"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                )}
+              </div>
             </div>
             <p className="text-xs text-muted-foreground line-clamp-1">
               {task.deal?.title} • {clientName}
@@ -836,7 +878,7 @@ export function CRMTasksPanel({
                   <p className="text-xs text-muted-foreground mb-2">
                     Tarefas automatizadas que falharam após múltiplas tentativas. Clique em "Retentar" para reprocessar.
                   </p>
-                  {failedTasks.map((task) => <TaskCard key={task.id} task={task} showRetry />)}
+                  {failedTasks.map((task) => <TaskCard key={task.id} task={task} showRetry showArchive />)}
                 </CardContent>
               </CollapsibleContent>
             </Card>
