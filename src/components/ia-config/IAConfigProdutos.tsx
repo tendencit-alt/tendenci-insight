@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,10 +7,27 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Plus, Pencil, Trash2, Package, X, Image, Video, Link, Upload, Play } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, Package, X, Image, Video, Link, Upload, Play, Filter, BoxesIcon } from "lucide-react";
 import type { Json } from "@/integrations/supabase/types";
+
+// Categorias predefinidas
+const CATEGORIAS = [
+  "Sofá",
+  "Cadeira",
+  "Banqueta",
+  "Tapete",
+  "Quadros",
+  "Aparador",
+  "Bistrô",
+  "Mesa de Centro",
+  "Mesa de Canto",
+  "Rack",
+  "Estante",
+  "Poltrona",
+] as const;
 
 interface VideoItem {
   type: "upload" | "url";
@@ -31,6 +48,9 @@ interface Produto {
   galeria: string[];
   video_url: string | null;
   videos: VideoItem[];
+  estoque: number;
+  permite_venda_sem_estoque: boolean;
+  prazo_entrega_dias: number | null;
 }
 
 // Helper to safely parse videos from JSON
@@ -53,6 +73,8 @@ export default function IAConfigProdutos() {
   const [editingProduto, setEditingProduto] = useState<Produto | null>(null);
   const [videoUrlInput, setVideoUrlInput] = useState("");
   const [showVideoUrlInput, setShowVideoUrlInput] = useState(false);
+  const [categoriaFiltro, setCategoriaFiltro] = useState<string>("todas");
+  
   const [form, setForm] = useState({
     nome: "",
     descricao: "",
@@ -65,7 +87,26 @@ export default function IAConfigProdutos() {
     galeria: [] as string[],
     video_url: "",
     videos: [] as VideoItem[],
+    estoque: 0,
+    permite_venda_sem_estoque: false,
+    prazo_entrega_dias: null as number | null,
   });
+
+  // Filtrar produtos por categoria
+  const produtosFiltrados = useMemo(() => {
+    if (categoriaFiltro === "todas") return produtos;
+    return produtos.filter(p => p.categoria === categoriaFiltro);
+  }, [produtos, categoriaFiltro]);
+
+  // Contadores por categoria
+  const contadorPorCategoria = useMemo(() => {
+    const contador: Record<string, number> = {};
+    produtos.forEach(p => {
+      const cat = p.categoria || "Sem categoria";
+      contador[cat] = (contador[cat] || 0) + 1;
+    });
+    return contador;
+  }, [produtos]);
 
   useEffect(() => {
     loadProdutos();
@@ -83,7 +124,10 @@ export default function IAConfigProdutos() {
       // Parse videos from JSON and handle legacy video_url
       const parsedData: Produto[] = (data || []).map(p => ({
         ...p,
-        videos: parseVideos(p.videos)
+        videos: parseVideos(p.videos),
+        estoque: p.estoque ?? 0,
+        permite_venda_sem_estoque: p.permite_venda_sem_estoque ?? false,
+        prazo_entrega_dias: p.prazo_entrega_dias ?? null,
       }));
       
       setProdutos(parsedData);
@@ -101,7 +145,7 @@ export default function IAConfigProdutos() {
       nome: "",
       descricao: "",
       preco_base: 0,
-      categoria: "",
+      categoria: categoriaFiltro !== "todas" ? categoriaFiltro : "",
       diferenciais: "",
       quando_oferecer: "",
       ativo: true,
@@ -109,6 +153,9 @@ export default function IAConfigProdutos() {
       galeria: [],
       video_url: "",
       videos: [],
+      estoque: 0,
+      permite_venda_sem_estoque: false,
+      prazo_entrega_dias: null,
     });
     setVideoUrlInput("");
     setShowVideoUrlInput(false);
@@ -140,6 +187,9 @@ export default function IAConfigProdutos() {
       galeria: produto.galeria || [],
       video_url: produto.video_url || "",
       videos: videosArray,
+      estoque: produto.estoque ?? 0,
+      permite_venda_sem_estoque: produto.permite_venda_sem_estoque ?? false,
+      prazo_entrega_dias: produto.prazo_entrega_dias ?? null,
     });
     setVideoUrlInput("");
     setShowVideoUrlInput(false);
@@ -295,6 +345,9 @@ export default function IAConfigProdutos() {
         galeria: form.galeria,
         video_url: form.video_url || null,
         videos: JSON.parse(JSON.stringify(form.videos)) as Json,
+        estoque: form.estoque,
+        permite_venda_sem_estoque: form.permite_venda_sem_estoque,
+        prazo_entrega_dias: form.permite_venda_sem_estoque ? form.prazo_entrega_dias : null,
       };
 
       if (editingProduto) {
@@ -367,10 +420,38 @@ export default function IAConfigProdutos() {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <p className="text-sm text-muted-foreground">
-          Cadastre os produtos/serviços que a IA pode oferecer aos clientes
-        </p>
+      {/* Header com filtro */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <Select value={categoriaFiltro} onValueChange={setCategoriaFiltro}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Filtrar por categoria" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todas">
+                  Todas as categorias ({produtos.length})
+                </SelectItem>
+                {CATEGORIAS.map(cat => (
+                  <SelectItem key={cat} value={cat}>
+                    {cat} ({contadorPorCategoria[cat] || 0})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {categoriaFiltro !== "todas" && (
+            <Badge variant="secondary" className="gap-1">
+              {categoriaFiltro}
+              <X 
+                className="h-3 w-3 cursor-pointer hover:text-destructive" 
+                onClick={() => setCategoriaFiltro("todas")}
+              />
+            </Badge>
+          )}
+        </div>
+        
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={openNewDialog}>
@@ -396,13 +477,22 @@ export default function IAConfigProdutos() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="categoria">Categoria</Label>
-                  <Input
-                    id="categoria"
-                    value={form.categoria}
-                    onChange={(e) => setForm({ ...form, categoria: e.target.value })}
-                    placeholder="Ex: Móveis Planejados"
-                  />
+                  <Label htmlFor="categoria">Categoria *</Label>
+                  <Select 
+                    value={form.categoria} 
+                    onValueChange={(v) => setForm({ ...form, categoria: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione a categoria" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CATEGORIAS.map(cat => (
+                        <SelectItem key={cat} value={cat}>
+                          {cat}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="preco_base">Preço Base (R$)</Label>
@@ -432,6 +522,54 @@ export default function IAConfigProdutos() {
                   placeholder="Descrição completa do produto..."
                   rows={3}
                 />
+              </div>
+
+              {/* Controle de Estoque */}
+              <div className="border rounded-lg p-4 space-y-4 bg-muted/30">
+                <h4 className="font-medium flex items-center gap-2">
+                  <BoxesIcon className="h-4 w-4" />
+                  Controle de Estoque
+                </h4>
+                
+                <div className="grid gap-4 md:grid-cols-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="estoque">Estoque Atual</Label>
+                    <Input
+                      id="estoque"
+                      type="number"
+                      min="0"
+                      value={form.estoque}
+                      onChange={(e) => setForm({ ...form, estoque: parseInt(e.target.value) || 0 })}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label>Vender sem estoque?</Label>
+                    <div className="flex items-center gap-2 pt-2">
+                      <Switch
+                        checked={form.permite_venda_sem_estoque}
+                        onCheckedChange={(v) => setForm({ ...form, permite_venda_sem_estoque: v })}
+                      />
+                      <span className="text-sm text-muted-foreground">
+                        {form.permite_venda_sem_estoque ? "Sim" : "Não"}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {form.permite_venda_sem_estoque && (
+                    <div className="space-y-2">
+                      <Label htmlFor="prazo_entrega">Prazo de Entrega (dias)</Label>
+                      <Input
+                        id="prazo_entrega"
+                        type="number"
+                        min="1"
+                        value={form.prazo_entrega_dias ?? ""}
+                        onChange={(e) => setForm({ ...form, prazo_entrega_dias: parseInt(e.target.value) || null })}
+                        placeholder="Ex: 15"
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Imagem Principal */}
@@ -665,6 +803,15 @@ export default function IAConfigProdutos() {
             Adicionar Primeiro Produto
           </Button>
         </div>
+      ) : produtosFiltrados.length === 0 ? (
+        <div className="text-center py-12 border rounded-lg bg-muted/20">
+          <Filter className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+          <p className="text-muted-foreground">Nenhum produto na categoria "{categoriaFiltro}"</p>
+          <Button onClick={openNewDialog} variant="outline" className="mt-4">
+            <Plus className="h-4 w-4 mr-2" />
+            Adicionar Produto em {categoriaFiltro}
+          </Button>
+        </div>
       ) : (
         <Table>
           <TableHeader>
@@ -673,13 +820,14 @@ export default function IAConfigProdutos() {
               <TableHead>Produto</TableHead>
               <TableHead>Categoria</TableHead>
               <TableHead>Preço Base</TableHead>
+              <TableHead>Estoque</TableHead>
               <TableHead>Mídia</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="w-[100px]">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {produtos.map((produto) => (
+            {produtosFiltrados.map((produto) => (
               <TableRow key={produto.id}>
                 <TableCell>
                   {produto.imagem_url ? (
@@ -704,12 +852,31 @@ export default function IAConfigProdutos() {
                     )}
                   </div>
                 </TableCell>
-                <TableCell>{produto.categoria || "-"}</TableCell>
+                <TableCell>
+                  {produto.categoria ? (
+                    <Badge variant="outline">{produto.categoria}</Badge>
+                  ) : "-"}
+                </TableCell>
                 <TableCell>
                   {produto.preco_base > 0 
                     ? new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(produto.preco_base)
                     : "-"
                   }
+                </TableCell>
+                <TableCell>
+                  {produto.estoque > 0 ? (
+                    <Badge className="bg-green-500 hover:bg-green-600">
+                      {produto.estoque} un
+                    </Badge>
+                  ) : produto.permite_venda_sem_estoque ? (
+                    <Badge variant="outline" className="text-amber-600 border-amber-400">
+                      Sob encomenda {produto.prazo_entrega_dias ? `(${produto.prazo_entrega_dias}d)` : ""}
+                    </Badge>
+                  ) : (
+                    <Badge variant="destructive">
+                      Sem estoque
+                    </Badge>
+                  )}
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-1">
