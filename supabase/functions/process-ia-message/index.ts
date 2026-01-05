@@ -2952,6 +2952,13 @@ async function processAndSendResponse(
 
   console.log(`🖼️ Successfully parsed: ${photoData.length} photos, ${videoData.length} videos`);
 
+  // Limit number of photos per message to avoid rate limiting
+  const MAX_PHOTOS_PER_MESSAGE = 5;
+  if (photoData.length > MAX_PHOTOS_PER_MESSAGE) {
+    console.warn(`⚠️ Limiting photos from ${photoData.length} to ${MAX_PHOTOS_PER_MESSAGE}`);
+    photoData.splice(MAX_PHOTOS_PER_MESSAGE);
+  }
+
   // Clean message - remove ALL markers
   let cleanMessage = message
     .replace(/\[FOTO_PRODUTO:[^\]]+\]/g, "")
@@ -2967,62 +2974,103 @@ async function processAndSendResponse(
     });
   }
 
-  // Small delay between messages
+  // Increased delay before sending media (1.5 seconds)
   if (photoData.length > 0 || videoData.length > 0) {
-    await new Promise(resolve => setTimeout(resolve, 800));
+    console.log(`⏳ Waiting 1.5s before sending ${photoData.length} photos, ${videoData.length} videos...`);
+    await new Promise(resolve => setTimeout(resolve, 1500));
   }
 
-  // Send photos with validation
-  for (const photo of photoData) {
+  // Send photos with validation and RETRY mechanism
+  for (let i = 0; i < photoData.length; i++) {
+    const photo = photoData[i];
+    
     if (!isValidMediaUrl(photo.url)) {
       console.warn(`⚠️ Invalid photo URL skipped: "${photo.url}"`);
       continue;
     }
     
-    console.log(`📸 Sending photo - URL: ${photo.url}, Caption: ${photo.caption}`);
+    console.log(`📸 Sending photo ${i + 1}/${photoData.length} - URL: ${photo.url}, Caption: ${photo.caption}`);
     
-    const success = await sendWhatsAppMessage(evolutionApiUrl, evolutionApiKey, instanceName, phoneNumber, {
-      type: "image",
-      url: photo.url,
-      caption: photo.caption ? `📸 ${photo.caption}` : "",
-    });
+    let success = false;
+    let retryCount = 0;
+    const maxRetries = 2;
+    
+    while (!success && retryCount <= maxRetries) {
+      if (retryCount > 0) {
+        console.log(`🔄 Retry ${retryCount}/${maxRetries} for photo ${i + 1}/${photoData.length}`);
+        await new Promise(resolve => setTimeout(resolve, 3000)); // 3s between retries
+      }
+      
+      success = await sendWhatsAppMessage(evolutionApiUrl, evolutionApiKey, instanceName, phoneNumber, {
+        type: "image",
+        url: photo.url,
+        caption: photo.caption ? `📸 ${photo.caption}` : "",
+      });
+      
+      retryCount++;
+    }
     
     if (!success) {
-      // Fallback: inform user about the product without image
+      console.error(`❌ Failed to send photo after ${maxRetries} retries: ${photo.url}`);
+      // Fallback: send image link as text
       const fallbackCaption = photo.caption || "o produto";
       await sendWhatsAppMessage(evolutionApiUrl, evolutionApiKey, instanceName, phoneNumber, {
         type: "text",
-        text: `Não consegui enviar a foto de "${fallbackCaption}", mas você pode ver no nosso catálogo!`,
+        text: `📷 Foto de "${fallbackCaption}": ${photo.url}`,
       });
     }
     
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // Increased delay between photos (2 seconds) to avoid rate limiting
+    if (i < photoData.length - 1) {
+      console.log(`⏳ Waiting 2s before next photo...`);
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    }
   }
 
-  // Send videos with validation
-  for (const video of videoData) {
+  // Send videos with validation and RETRY mechanism
+  for (let i = 0; i < videoData.length; i++) {
+    const video = videoData[i];
+    
     if (!isValidMediaUrl(video.url)) {
       console.warn(`⚠️ Invalid video URL skipped: "${video.url}"`);
       continue;
     }
     
-    console.log(`🎬 Sending video - URL: ${video.url}, Caption: ${video.caption}`);
+    console.log(`🎬 Sending video ${i + 1}/${videoData.length} - URL: ${video.url}, Caption: ${video.caption}`);
     
-    const success = await sendWhatsAppMessage(evolutionApiUrl, evolutionApiKey, instanceName, phoneNumber, {
-      type: "video",
-      url: video.url,
-      caption: video.caption ? `🎬 ${video.caption}` : "",
-    });
+    let success = false;
+    let retryCount = 0;
+    const maxRetries = 2;
+    
+    while (!success && retryCount <= maxRetries) {
+      if (retryCount > 0) {
+        console.log(`🔄 Retry ${retryCount}/${maxRetries} for video ${i + 1}/${videoData.length}`);
+        await new Promise(resolve => setTimeout(resolve, 3000));
+      }
+      
+      success = await sendWhatsAppMessage(evolutionApiUrl, evolutionApiKey, instanceName, phoneNumber, {
+        type: "video",
+        url: video.url,
+        caption: video.caption ? `🎬 ${video.caption}` : "",
+      });
+      
+      retryCount++;
+    }
     
     if (!success) {
+      console.error(`❌ Failed to send video after ${maxRetries} retries: ${video.url}`);
       const fallbackCaption = video.caption || "o produto";
       await sendWhatsAppMessage(evolutionApiUrl, evolutionApiKey, instanceName, phoneNumber, {
         type: "text",
-        text: `Não consegui enviar o vídeo de "${fallbackCaption}", mas você pode ver no nosso site!`,
+        text: `🎬 Vídeo de "${fallbackCaption}": ${video.url}`,
       });
     }
     
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // Increased delay between videos (2 seconds)
+    if (i < videoData.length - 1) {
+      console.log(`⏳ Waiting 2s before next video...`);
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    }
   }
 }
 
@@ -3085,6 +3133,7 @@ async function sendWhatsAppMessage(
         error: errorText,
         endpoint,
         mediaUrl: content.url || 'N/A',
+        timestamp: new Date().toISOString(),
       });
       return false;
     } else {
