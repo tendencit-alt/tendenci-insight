@@ -9,7 +9,7 @@ import { memo, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { EditPrazoDialog } from './EditPrazoDialog';
+import { EditPhasesSLADialog } from './EditPhasesSLADialog';
 
 interface ProductionCardSimpleProps {
   order: {
@@ -430,15 +430,14 @@ function ProductionCardSimpleComponent({ order, onClick, isDragging, automationA
       </CardContent>
     </Card>
     
-    {/* Dialog de editar prazo - Móveis Planejados */}
+    {/* Dialog de editar SLA das etapas - Móveis Planejados */}
     {isMoveisplanejados && (
-      <EditPrazoDialog
+      <EditPhasesSLADialog
         open={prazoDialogOpen}
         onOpenChange={setPrazoDialogOpen}
         orderId={order.id}
-        currentDiasUteis={order.prazo_customizado_dias || null}
-        createdAt={order.created_at || null}
         orderNumber={order.order_number}
+        createdAt={order.created_at || null}
       />
     )}
     </TooltipProvider>
