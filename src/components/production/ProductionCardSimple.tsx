@@ -1,14 +1,15 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, User, Package, GripVertical, Clock, Timer, Link2, AlertTriangle, Hourglass, TrendingUp, Siren, Zap } from 'lucide-react';
+import { Calendar, User, Package, GripVertical, Clock, Timer, Link2, AlertTriangle, Hourglass, TrendingUp, Siren, Zap, Pencil } from 'lucide-react';
 import { format, differenceInDays, differenceInHours, isPast } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { getTailwindColor } from '@/utils/tailwindColors';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { EditPrazoDialog } from './EditPrazoDialog';
 
 interface ProductionCardSimpleProps {
   order: {
@@ -20,6 +21,7 @@ interface ProductionCardSimpleProps {
     planned_end_date?: string | null;
     planned_start_date?: string | null;
     created_at?: string | null;
+    prazo_customizado_dias?: number | null;
     production_type?: { name: string; color: string; icon?: string } | null;
     responsible?: { full_name: string } | null;
     client?: { name: string } | null;
@@ -70,10 +72,15 @@ const priorityLabels: Record<string, string> = {
 
 function ProductionCardSimpleComponent({ order, onClick, isDragging, automationAlert, prediction }: ProductionCardSimpleProps) {
   const queryClient = useQueryClient();
+  const [prazoDialogOpen, setPrazoDialogOpen] = useState(false);
+  
   const isOverdue = order.planned_end_date && isPast(new Date(order.planned_end_date));
   const daysRemaining = order.planned_end_date 
     ? differenceInDays(new Date(order.planned_end_date), new Date())
     : null;
+
+  // Verificar se é Móveis Planejados
+  const isMoveisplanejados = order.production_type?.name === 'Móveis Planejados';
 
   // Mutation para toggle de urgência com registro no histórico
   const toggleUrgent = useMutation({
@@ -323,39 +330,66 @@ function ProductionCardSimpleComponent({ order, onClick, isDragging, automationA
 
         {/* Contador de Dias para Entrega Final */}
         <div className={cn(
-          "rounded p-1.5 text-center",
+          "rounded p-1.5",
           order.status === 'finalizado' && "bg-emerald-500/15 border border-emerald-500/30",
           order.status !== 'finalizado' && !order.planned_end_date && "bg-destructive/15 border border-destructive/30",
           order.status !== 'finalizado' && order.planned_end_date && isOverdue && "bg-destructive/15 border border-destructive/30",
           order.status !== 'finalizado' && order.planned_end_date && !isOverdue && daysRemaining !== null && daysRemaining <= 3 && "bg-warning/15 border border-warning/30",
           order.status !== 'finalizado' && order.planned_end_date && !isOverdue && daysRemaining !== null && daysRemaining > 3 && "bg-emerald-500/10 border border-emerald-500/20"
         )}>
-          <div className="flex items-center justify-center gap-1.5 text-[11px] font-medium">
-            <Calendar className="h-3 w-3" />
-            {order.status === 'finalizado' ? (
-              <span className="text-emerald-600">Finalizado e Entregue</span>
-            ) : !order.planned_end_date ? (
-              <span className="text-destructive font-semibold">Sem prazo definido</span>
-            ) : isOverdue ? (
-              <span className="text-destructive">
-                Atrasado {Math.abs(daysRemaining || 0)}d
-              </span>
-            ) : daysRemaining === 0 ? (
-              <span className="text-warning">
-                Entrega HOJE
-              </span>
-            ) : (
-              <span className={cn(
-                daysRemaining !== null && daysRemaining <= 3 ? "text-warning" : "text-emerald-600"
-              )}>
-                {daysRemaining}d para entrega
-              </span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5 text-[11px] font-medium">
+              <Calendar className="h-3 w-3" />
+              {order.status === 'finalizado' ? (
+                <span className="text-emerald-600">Finalizado e Entregue</span>
+              ) : !order.planned_end_date ? (
+                <span className="text-destructive font-semibold">Sem prazo definido</span>
+              ) : isOverdue ? (
+                <span className="text-destructive">
+                  Atrasado {Math.abs(daysRemaining || 0)}d
+                </span>
+              ) : daysRemaining === 0 ? (
+                <span className="text-warning">
+                  Entrega HOJE
+                </span>
+              ) : (
+                <span className={cn(
+                  daysRemaining !== null && daysRemaining <= 3 ? "text-warning" : "text-emerald-600"
+                )}>
+                  {daysRemaining}d para entrega
+                </span>
+              )}
+            </div>
+            
+            {/* Botão editar prazo - apenas Móveis Planejados */}
+            {isMoveisplanejados && order.status !== 'finalizado' && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setPrazoDialogOpen(true);
+                }}
+                className="p-1 rounded hover:bg-background/50 transition-colors"
+                title="Editar prazo"
+              >
+                <Pencil className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+              </button>
             )}
           </div>
-          {order.planned_end_date && order.status !== 'finalizado' && (
-            <p className="text-[9px] text-muted-foreground mt-0.5">
-              Prazo: {format(new Date(order.planned_end_date), 'dd/MM/yyyy')}
-            </p>
+          
+          {/* Info adicional do prazo */}
+          {order.status !== 'finalizado' && (
+            <div className="flex items-center justify-between mt-0.5">
+              {order.planned_end_date && (
+                <p className="text-[9px] text-muted-foreground">
+                  Prazo: {format(new Date(order.planned_end_date), 'dd/MM/yyyy')}
+                </p>
+              )}
+              {isMoveisplanejados && order.prazo_customizado_dias && (
+                <p className="text-[9px] text-primary font-medium">
+                  {order.prazo_customizado_dias}d úteis
+                </p>
+              )}
+            </div>
           )}
         </div>
 
@@ -395,6 +429,18 @@ function ProductionCardSimpleComponent({ order, onClick, isDragging, automationA
         </div>
       </CardContent>
     </Card>
+    
+    {/* Dialog de editar prazo - Móveis Planejados */}
+    {isMoveisplanejados && (
+      <EditPrazoDialog
+        open={prazoDialogOpen}
+        onOpenChange={setPrazoDialogOpen}
+        orderId={order.id}
+        currentDiasUteis={order.prazo_customizado_dias || null}
+        createdAt={order.created_at || null}
+        orderNumber={order.order_number}
+      />
+    )}
     </TooltipProvider>
   );
 }
