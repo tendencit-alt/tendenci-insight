@@ -74,6 +74,12 @@ interface Knowledge {
   titulo: string;
   conteudo: string;
   categoria: string;
+  tipo?: string;
+  nivel_autoridade?: string;
+  grau_certeza?: string;
+  aplicacao?: string[];
+  contexto_uso?: string;
+  palavras_chave?: string[];
   ativo: boolean;
 }
 
@@ -2049,11 +2055,17 @@ ${msgBoasVindas ? `**Saudação (APENAS no primeiro contato):** ${msgBoasVindas}
 ${msgDespedida ? `**Despedida:** ${msgDespedida}` : ""}
 `);
 
-  // ========== CONDUCT RULES ==========
-  const nuncaFazer = (comportamento.restricoes as string) || "";
-  const sempreFazer = (comportamento.instrucoes_gerais as string) || "";
+  // ========== CONDUCT RULES (CORRIGIDO) ==========
+  // Usar os campos CORRETOS do cadastro
+  const nuncaFazerArray = (comportamento.nunca_fazer as string[]) || [];
+  const sempreFazerArray = (comportamento.sempre_fazer as string[]) || [];
+  const limites = (comportamento.limites as string) || "";
+  const clientesDificeis = (comportamento.clientes_dificeis as string) || "";
+  const nivelInsistencia = (comportamento.nivel_insistencia as string) || "moderado";
 
   parts.push(`# 🔒 REGRAS DE CONDUTA
+
+## Nível de Insistência: ${nivelInsistencia === 'alto' ? 'ALTO - Seja persistente (5+ tentativas de converter)' : nivelInsistencia === 'baixo' ? 'BAIXO - Aceite objeções rapidamente (1-2 tentativas)' : 'MODERADO - Equilibrado (3-4 tentativas)'}
 
 ## 🚫 NUNCA FAÇA:
 - Enviar fotos, catálogos, links ou valores sem que o sistema inclua os marcadores
@@ -2064,7 +2076,7 @@ ${msgDespedida ? `**Despedida:** ${msgDespedida}` : ""}
 - Repetir perguntas já respondidas
 - Começar duas respostas da mesma forma
 - Usar expressões genéricas como "Entendi!", "Certo!", "Perfeito!" no início de toda resposta
-${nuncaFazer ? `\n${nuncaFazer.split('\n').map(l => `- ${l.trim()}`).join('\n')}` : ""}
+${nuncaFazerArray.length > 0 ? nuncaFazerArray.map(item => `- ${item}`).join('\n') : ""}
 
 ## ✅ SEMPRE FAÇA:
 - Perguntas de qualificação para entender o cliente de forma consultiva
@@ -2072,7 +2084,11 @@ ${nuncaFazer ? `\n${nuncaFazer.split('\n').map(l => `- ${l.trim()}`).join('\n')}
 - Use o que o cliente disse para avançar o diálogo, mostrando atenção genuína
 - Varie SEMPRE suas palavras — use sinônimos e estruturas diferentes
 - Cada resposta deve ser ÚNICA e diferente das anteriores
-${sempreFazer ? `\n${sempreFazer.split('\n').map(l => `- ${l.trim()}`).join('\n')}` : ""}
+${sempreFazerArray.length > 0 ? sempreFazerArray.map(item => `- ${item}`).join('\n') : ""}
+
+${limites ? `## 💰 Limites de Negociação:\n${limites}` : ""}
+
+${clientesDificeis ? `## 😤 Como Lidar com Clientes Difíceis:\n${clientesDificeis}` : ""}
 `);
 
   // ========== QUALIFICATION CRITERIA ==========
@@ -2097,6 +2113,39 @@ ${perguntasObrigatorias.length > 0 ? `## Perguntas Obrigatórias:\n${perguntasOb
 
 ${objecoes.map(o => `**Se o cliente disser:** "${o.objecao}"\n**Responda:** "${o.resposta}"`).join('\n\n')}
 `);
+  }
+
+  // ========== TÉCNICAS DE VENDAS E NEGOCIAÇÃO ==========
+  const tecnicasVendas = (vendas.tecnicas as string) || "";
+  const promocoes = (vendas.promocoes as string) || "";
+  const objecoesTexto = (vendas.objecoes_texto as string) || "";
+  const gatilhosUrgencia = (vendas.gatilhos_urgencia as string[]) || [];
+  const linksDirecionamento = (vendas.links_direcionamento as { nome: string; url: string }[]) || [];
+
+  if (tecnicasVendas || promocoes || objecoesTexto || gatilhosUrgencia.length > 0 || linksDirecionamento.length > 0) {
+    let vendasSection = `# 💼 TÉCNICAS DE VENDAS E NEGOCIAÇÃO\n`;
+    
+    if (tecnicasVendas) {
+      vendasSection += `\n## Técnicas de Fechamento:\n${tecnicasVendas}\n`;
+    }
+    
+    if (promocoes) {
+      vendasSection += `\n## 🏷️ Promoções Ativas:\n${promocoes}\n`;
+    }
+    
+    if (objecoesTexto) {
+      vendasSection += `\n## Tratamento Geral de Objeções:\n${objecoesTexto}\n`;
+    }
+    
+    if (gatilhosUrgencia.length > 0) {
+      vendasSection += `\n## ⚡ Gatilhos de Urgência (use para acelerar decisão):\n${gatilhosUrgencia.map(g => `- ${g}`).join('\n')}\n`;
+    }
+    
+    if (linksDirecionamento.length > 0) {
+      vendasSection += `\n## 🔗 Links para Direcionamento:\n${linksDirecionamento.map(l => `- **${l.nome}:** ${l.url}`).join('\n')}\n`;
+    }
+    
+    parts.push(vendasSection);
   }
 
   // ========== PRODUCTS SECTION ==========
@@ -2150,14 +2199,56 @@ ${products.map((p) => {
 `);
   }
 
-  // ========== KNOWLEDGE BASE ==========
+  // ========== KNOWLEDGE BASE (APRIMORADO) ==========
   if (knowledge.length > 0) {
-    parts.push(`# 📚 BASE DE CONHECIMENTO
+    // Agrupar por tipo
+    const tiposUnicos = [...new Set(knowledge.map(k => k.tipo || 'geral'))];
+    
+    let conhecSection = `# 📚 BASE DE CONHECIMENTO\n`;
+    
+    // Legenda de níveis de autoridade
+    conhecSection += `\n**Legenda de Autoridade:**
+- ⚡ DEFINITIVO = Use EXATAMENTE como está escrito
+- 📋 ORIENTAÇÃO = Siga normalmente, pode adaptar o tom
+- 💡 SUGESTÃO = Flexível, adapte ao contexto da conversa\n`;
 
-Use estas informações para responder dúvidas:
-
-${knowledge.map((k) => `## ${k.titulo}\n${k.conteudo}`).join("\n\n")}
-`);
+    tiposUnicos.forEach(tipo => {
+      const itensTipo = knowledge.filter(k => (k.tipo || 'geral') === tipo);
+      const tipoLabel: Record<string, string> = {
+        faq: '❓ FAQ - Perguntas Frequentes',
+        politica: '📜 Políticas da Empresa',
+        guia: '📖 Guias',
+        script: '🎭 Scripts de Atendimento',
+        processo: '⚙️ Processos',
+        tecnico: '🔧 Documentação Técnica',
+        geral: '📁 Geral'
+      };
+      
+      conhecSection += `\n## ${tipoLabel[tipo] || tipo}\n`;
+      
+      itensTipo.forEach(k => {
+        const nivelIcon: Record<string, string> = {
+          definitivo: '⚡',
+          orientacao: '📋',
+          sugestao: '💡'
+        };
+        const icon = nivelIcon[k.nivel_autoridade || 'orientacao'] || '📋';
+        
+        conhecSection += `\n### ${icon} ${k.titulo}`;
+        
+        if (k.aplicacao && k.aplicacao.length > 0) {
+          conhecSection += `\n**Usar quando:** ${k.aplicacao.join(', ')}`;
+        }
+        
+        if (k.contexto_uso) {
+          conhecSection += `\n**Contexto:** ${k.contexto_uso}`;
+        }
+        
+        conhecSection += `\n${k.conteudo}\n`;
+      });
+    });
+    
+    parts.push(conhecSection);
   }
 
   // ========== TRANSFER AND CLOSING ==========
@@ -2230,6 +2321,42 @@ Se não tiver: "R$ 4.500"
 
 ${regrasGerais}
 `);
+  }
+
+  // ========== REGRAS PERSONALIZADAS DO NEGÓCIO ==========
+  const regrasPersonalizadas = (regras.regras_personalizadas as { regra: string; prioridade?: string }[]) || [];
+  const excecoes = (regras.excecoes as string[]) || [];
+  const prioridades = (regras.prioridades as string[]) || [];
+  const condicoesEspeciais = (regras.condicoes_especiais as string[]) || [];
+
+  if (regrasPersonalizadas.length > 0 || excecoes.length > 0 || prioridades.length > 0 || condicoesEspeciais.length > 0) {
+    let regrasSection = `# 📜 REGRAS ESPECIAIS DO NEGÓCIO\n`;
+    
+    if (prioridades.length > 0) {
+      regrasSection += `\n## ⚡ Prioridades (ordem de importância):\n${prioridades.map((p, i) => `${i + 1}. ${p}`).join('\n')}\n`;
+    }
+    
+    if (regrasPersonalizadas.length > 0) {
+      regrasSection += `\n## Regras Personalizadas:\n`;
+      regrasPersonalizadas.forEach((r, i) => {
+        const prioridadeLabel: Record<string, string> = {
+          alta: '🔴 ALTA',
+          media: '🟡 MÉDIA',
+          baixa: '🟢 BAIXA'
+        };
+        regrasSection += `${i + 1}. ${r.regra}${r.prioridade ? ` - ${prioridadeLabel[r.prioridade] || r.prioridade}` : ''}\n`;
+      });
+    }
+    
+    if (condicoesEspeciais.length > 0) {
+      regrasSection += `\n## 🎯 Condições Especiais:\n${condicoesEspeciais.map(c => `- ${c}`).join('\n')}\n`;
+    }
+    
+    if (excecoes.length > 0) {
+      regrasSection += `\n## ⚠️ Exceções Permitidas:\n${excecoes.map(e => `- ${e}`).join('\n')}\n`;
+    }
+    
+    parts.push(regrasSection);
   }
 
   return parts.join("\n");
