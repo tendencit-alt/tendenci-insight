@@ -3606,6 +3606,7 @@ export type Database = {
       }
       production_product_bom: {
         Row: {
+          cor: string | null
           created_at: string | null
           custo_unitario: number
           id: string
@@ -3618,6 +3619,7 @@ export type Database = {
           unidade: string | null
         }
         Insert: {
+          cor?: string | null
           created_at?: string | null
           custo_unitario?: number
           id?: string
@@ -3630,6 +3632,7 @@ export type Database = {
           unidade?: string | null
         }
         Update: {
+          cor?: string | null
           created_at?: string | null
           custo_unitario?: number
           id?: string
