@@ -1851,9 +1851,27 @@ Cliente: "Me mostra uma foto"
 Você: "Claro! [FOTO_PRODUTO:https://storage.url/produto.jpg:Nome do Produto]"
 
 ## QUANDO CLIENTE PEDIR MAIS FOTOS:
-- Verifique se o produto tem GALERIA de fotos adicionais
-- Envie as fotos adicionais usando os marcadores da galeria
-- Se não tiver mais fotos, diga "Dessa mesa tenho essa imagem principal"
+⚠️ **CUIDADO COM PRODUTOS DE NOME SIMILAR!**
+
+### ANTES de enviar mais fotos, VERIFIQUE:
+1. Qual foi o ÚLTIMO produto que VOCÊ mostrou? (olhe a foto/URL que você enviou na conversa)
+2. Use o NOME COMPLETO do produto (ex: "Mesa cascata para 10 lugares", NÃO só "cascata")
+3. Busque a galeria EXATAMENTE desse produto no catálogo
+
+### PRODUTOS COM NOMES SIMILARES:
+- A empresa pode ter vários produtos com nomes parecidos (ex: "Mesa cascata 10 lugares" vs "Mesa cascata 12 lugares")
+- NUNCA assuma qual produto o cliente quer - verifique a sua ÚLTIMA mensagem
+- Se tiver dúvida, PERGUNTE: "Você quer mais fotos da [nome completo do produto]?"
+
+### COMO IDENTIFICAR O PRODUTO CERTO:
+1. Olhe a URL/marcador [FOTO_PRODUTO:...] que você enviou ANTERIORMENTE
+2. Procure no catálogo o produto com ESSE MESMO NOME E ID
+3. Envie as fotos da galeria DESSE produto específico (mesmo ID)
+
+### REGRA DE OURO:
+- Verifique o ID entre colchetes [ID:...] do produto que você mostrou
+- Envie as fotos adicionais do produto COM O MESMO ID
+- Se não tiver mais fotos, diga "Dessa mesa tenho apenas essa imagem principal"
 - NUNCA diga "não consigo enviar" - diga que essa é a foto disponível
 
 ## QUANDO CLIENTE PEDIR OUTRAS OPÇÕES:
@@ -2254,7 +2272,9 @@ Total: ${products.length} produtos com foto | ${productsWithMediaLocal.length} c
 REGRA: Quando recomendar um produto com foto, COPIE E COLE o marcador exato abaixo!
 
 ${products.map((p) => {
-      const lines = [`## ${p.nome}`];
+      const shortId = p.id.slice(0, 8);
+      const lines = [`## ${p.nome} [ID:${shortId}]`];
+      lines.push(`- 🆔 **ID único:** ${shortId}`);
       lines.push(`- Categoria: ${p.categoria || "Geral"}`);
       if (p.preco_base) lines.push(`- Preço: R$ ${p.preco_base.toFixed(2)}`);
       if (p.descricao) lines.push(`- Descrição: ${p.descricao}`);
@@ -2287,17 +2307,17 @@ ${products.map((p) => {
         lines.push(`- 📏 Medidas: ${medidas.join(' x ')}`);
       }
       
-      // Foto principal
+      // Foto principal COM ID para identificação única
       if (p.imagem_url && p.imagem_url.startsWith('http')) {
-        lines.push(`- 📸 **FOTO PRINCIPAL:** [FOTO_PRODUTO:${p.imagem_url}:${p.nome}]`);
+        lines.push(`- 📸 **FOTO PRINCIPAL [ID:${shortId}]:** [FOTO_PRODUTO:${p.imagem_url}:${p.nome} (ID:${shortId})]`);
       }
       
-      // Galeria de fotos adicionais
+      // Galeria de fotos adicionais COM ID
       if (p.galeria && p.galeria.length > 0) {
-        lines.push(`- 📸 **GALERIA (${p.galeria.length} fotos adicionais):**`);
+        lines.push(`- 📸 **GALERIA DO PRODUTO "${p.nome}" [ID:${shortId}] (${p.galeria.length} fotos):**`);
         p.galeria.forEach((url, index) => {
           if (url && url.startsWith('http')) {
-            lines.push(`  - Foto ${index + 1}: [FOTO_PRODUTO:${url}:${p.nome} - Foto ${index + 1}]`);
+            lines.push(`  - Foto ${index + 1}: [FOTO_PRODUTO:${url}:${p.nome} (ID:${shortId}) - Foto ${index + 1}]`);
           }
         });
       }
