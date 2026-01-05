@@ -12,21 +12,20 @@ import { EditOrderDialog } from '@/components/orders/EditOrderDialog';
 import { DeleteOrderDialog } from '@/components/orders/DeleteOrderDialog';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
-import { subDays } from 'date-fns';
+import { startOfMonth } from 'date-fns';
 
 export default function Orders() {
   const [createOpen, setCreateOpen] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [editingOrderId, setEditingOrderId] = useState<string | null>(null);
   const [deletingOrder, setDeletingOrder] = useState<{ id: string; orderNumber: number } | null>(null);
+  const now = new Date();
   const [filters, setFilters] = useState({
     status: '',
     vendedorId: '',
-    clientId: '',
-    architectId: '',
-    period: 'last30days',
-    dateFrom: subDays(new Date(), 30),
-    dateTo: new Date(),
+    period: 'thisMonth',
+    dateFrom: startOfMonth(now),
+    dateTo: now,
     dateField: 'data_emissao' as 'data_emissao' | 'created_at',
   });
 
@@ -49,12 +48,6 @@ export default function Orders() {
       }
       if (filters.vendedorId) {
         query = query.eq('vendedor_id', filters.vendedorId);
-      }
-      if (filters.clientId) {
-        query = query.eq('client_id', filters.clientId);
-      }
-      if (filters.architectId) {
-        query = query.eq('architect_id', filters.architectId);
       }
       // Aplicar filtro de data baseado no campo selecionado
       const dateColumn = filters.dateField === 'created_at' ? 'created_at' : 'data_emissao';

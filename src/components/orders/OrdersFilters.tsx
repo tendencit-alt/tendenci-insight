@@ -10,8 +10,6 @@ interface OrdersFiltersProps {
   filters: {
     status: string;
     vendedorId: string;
-    clientId: string;
-    architectId: string;
     period: string;
     dateFrom: Date;
     dateTo: Date;
@@ -53,30 +51,6 @@ export function OrdersFilters({ filters, onFiltersChange }: OrdersFiltersProps) 
     },
   });
 
-  const { data: clients } = useQuery({
-    queryKey: ['clients-list'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('clients')
-        .select('id, name')
-        .order('name')
-        .limit(100);
-      return data || [];
-    },
-  });
-
-  const { data: architects } = useQuery({
-    queryKey: ['architects-list'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('architects')
-        .select('id, name, company')
-        .eq('active', true)
-        .order('name');
-      return data || [];
-    },
-  });
-
   const handlePeriodChange = (period: string) => {
     const now = new Date();
     let dateFrom: Date;
@@ -106,19 +80,18 @@ export function OrdersFilters({ filters, onFiltersChange }: OrdersFiltersProps) 
   };
 
   const clearFilters = () => {
+    const now = new Date();
     onFiltersChange({
       status: '',
       vendedorId: '',
-      clientId: '',
-      architectId: '',
-      period: 'last30days',
-      dateFrom: subDays(new Date(), 30),
-      dateTo: new Date(),
+      period: 'thisMonth',
+      dateFrom: startOfMonth(now),
+      dateTo: now,
       dateField: 'data_emissao',
     });
   };
 
-  const hasFilters = filters.status || filters.vendedorId || filters.clientId || filters.architectId || filters.period !== 'last30days' || filters.dateField !== 'data_emissao';
+  const hasFilters = filters.status || filters.vendedorId || filters.period !== 'thisMonth' || filters.dateField !== 'data_emissao';
 
   return (
     <Card>
@@ -129,7 +102,7 @@ export function OrdersFilters({ filters, onFiltersChange }: OrdersFiltersProps) 
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="all">Todos os Status</SelectItem>
               {ORDER_STATUSES.map((s) => (
                 <SelectItem key={s.value} value={s.value}>
                   {s.label}
@@ -140,41 +113,13 @@ export function OrdersFilters({ filters, onFiltersChange }: OrdersFiltersProps) 
 
           <Select value={filters.vendedorId || "all"} onValueChange={(v) => onFiltersChange({ ...filters, vendedorId: v === "all" ? "" : v })}>
             <SelectTrigger className="w-[160px]">
-              <SelectValue placeholder="Vendedor" />
+              <SelectValue placeholder="Responsável" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="all">Todos Responsáveis</SelectItem>
               {vendedores?.map((v) => (
                 <SelectItem key={v.id} value={v.id}>
                   {v.full_name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={filters.clientId || "all"} onValueChange={(v) => onFiltersChange({ ...filters, clientId: v === "all" ? "" : v })}>
-            <SelectTrigger className="w-[160px]">
-              <SelectValue placeholder="Cliente" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
-              {clients?.map((c) => (
-                <SelectItem key={c.id} value={c.id}>
-                  {c.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={filters.architectId || "all"} onValueChange={(v) => onFiltersChange({ ...filters, architectId: v === "all" ? "" : v })}>
-            <SelectTrigger className="w-[160px]">
-              <SelectValue placeholder="Arquiteto" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
-              {architects?.map((a) => (
-                <SelectItem key={a.id} value={a.id}>
-                  {a.name} {a.company && `- ${a.company}`}
                 </SelectItem>
               ))}
             </SelectContent>
