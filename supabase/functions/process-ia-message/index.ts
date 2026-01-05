@@ -314,6 +314,23 @@ serve(async (req) => {
     let userMessage = "";
     let mediaType = "text";
     let mediaUrl: string | null = null;
+    
+    // ========== EXTRACT QUOTED MESSAGE CONTEXT ==========
+    // When user replies to a specific message, extract that context
+    let quotedContext = "";
+    const contextInfo = message?.extendedTextMessage?.contextInfo;
+    const quotedMessage = contextInfo?.quotedMessage;
+    
+    if (quotedMessage) {
+      const quotedText = quotedMessage?.conversation || 
+                         quotedMessage?.extendedTextMessage?.text ||
+                         quotedMessage?.imageMessage?.caption || "";
+      
+      if (quotedText && quotedText.trim().length > 0) {
+        quotedContext = `[📎 MENSAGEM CITADA: O cliente está RESPONDENDO a esta mensagem específica: "${quotedText.substring(0, 500)}"]`;
+        console.log(`📎 Quoted message detected: "${quotedText.substring(0, 100)}..."`);
+      }
+    }
 
     if (message?.conversation) {
       userMessage = message.conversation;
@@ -543,9 +560,16 @@ Responda em português brasileiro de forma clara e organizada.`;
 
     // PASSO 6: Consolidar mensagens
     const consolidatedMessages = allPendingMessages?.map(m => m.content) || [userMessage];
-    const combinedMessage = consolidatedMessages.length > 1 
+    let combinedMessage = consolidatedMessages.length > 1 
       ? `[O cliente enviou ${consolidatedMessages.length} mensagens seguidas]\n\n${consolidatedMessages.join("\n\n")}`
       : consolidatedMessages[0];
+    
+    // ========== ADD QUOTED CONTEXT IF EXISTS ==========
+    // If user replied to a specific message, prepend that context
+    if (quotedContext) {
+      combinedMessage = `${quotedContext}\n\n${combinedMessage}`;
+      console.log(`📎 Added quoted context to combined message`);
+    }
 
     console.log(`📨 Processando ${consolidatedMessages.length} mensagem(ns) consolidada(s)`);
 
@@ -2327,11 +2351,25 @@ VOCÊ DEVE SEGUIR ESTAS REGRAS ABSOLUTAS EM TODA MENSAGEM:
 3. FORMATO: Máximo 2 frases curtas por mensagem
 4. PRODUTOS: 1 produto por mensagem apenas
 
-EXEMPLO CORRETO (${limiteCharsTop} chars):
-"Pra área gourmet, essa mesa é perfeita! [FOTO_PRODUTO:url:Mesa 10 lugares]"
+## ⚠️ PROIBIDO - FORMATAÇÃO
+- NUNCA use asteriscos para formatação (*texto* ou **texto**)
+- NUNCA use listas numeradas (1. 2. 3.)
+- NUNCA liste múltiplos produtos ANTES de mostrar fotos
+- Escreva texto NORMAL, sem marcadores especiais
 
-EXEMPLO INCORRETO (NUNCA FAÇA ISSO):
-"Perfeito! Para 10 lugares, o ideal são mesas entre 3,00m e 3,50m para garantir conforto total aos convidados. Tenho duas propostas incríveis..."
+## ✅ FORMATO OBRIGATÓRIO (Foto + Info JUNTOS):
+CADA produto = 1 mensagem com foto + informações JUNTAS
+
+CORRETO (foto + info juntos):
+"[FOTO_PRODUTO:url:Mesa Cascata (ID:abc123)]
+Mesa Cascata (3,25m x 0,90m) - R$ 14.900
+Acabamento em óleo mineral"
+
+ERRADO (texto listando tudo, fotos depois - PROIBIDO!):
+"1. *Mesa Cascata* (3,25m) - R$ 14.900
+2. *Mesa Madeira* (3,50m) - R$ 5.900
+[FOTO_PRODUTO:url1:Mesa Cascata]
+[FOTO_PRODUTO:url2:Mesa Madeira]"
 
 VIOLAÇÃO DESSAS REGRAS = RESPOSTA INVÁLIDA
 `);
@@ -2405,11 +2443,25 @@ Qual te interessa mais?"
 - "tem outro ângulo?", "quero ver mais", "deixa eu ver mais"
 - Qualquer variação pedindo mais imagens do produto
 
+## ⚠️ REGRA CRÍTICA: MENSAGENS CITADAS (Reply/Quote)
+
+Quando o cliente MARCAR/RESPONDER a uma mensagem específica pedindo "mais foto":
+
+1. O sistema vai informar: "[📎 MENSAGEM CITADA: O cliente está RESPONDENDO a esta mensagem específica: ...]"
+2. Você DEVE identificar o produto mencionado NESSA MENSAGEM CITADA
+3. Envie fotos da galeria DESSE PRODUTO ESPECÍFICO, NÃO do último enviado!
+
+**Exemplo:**
+[📎 MENSAGEM CITADA: O cliente está RESPONDENDO a esta mensagem específica: "Mesa Madeira Maciça (2.2m x 1.1m) - R$ 3.900"]
+Cliente: "mais foto"
+
+→ Você DEVE enviar fotos da "Mesa Madeira Maciça", NÃO do último produto mostrado!
+
 ## O QUE VOCÊ DEVE FAZER:
 
 ### PASSO 1: Identificar o Produto
-- Consulte a seção "ÚLTIMO(S) PRODUTO(S) ENVIADO(S)" no início deste prompt
-- Ali está o produto que você ACABOU de mostrar, com seu ID
+- SE houver mensagem citada: use o produto DA MENSAGEM CITADA
+- SE NÃO houver: consulte a seção "ÚLTIMO(S) PRODUTO(S) ENVIADO(S)"
 
 ### PASSO 2: Buscar Fotos na Galeria
 - Use as fotos da GALERIA do mesmo produto (mesmo ID!)
@@ -2426,15 +2478,23 @@ Se o produto só tem foto principal:
 
 ## ❌ PROIBIDO:
 - Enviar foto de OUTRO produto sem perguntar
+- Ignorar a mensagem citada e enviar foto do último produto
 - Dizer "não consigo enviar mais fotos" ou "não tenho acesso"
 - Ignorar o pedido do cliente
 - Enviar a MESMA foto principal novamente
 
-## ✅ EXEMPLO CORRETO:
-**Cliente:** "mais foto"
-**IA:** "Claro! Tenho mais ângulos dessa mesa, olha só!
+## ✅ EXEMPLO CORRETO (sem mensagem citada):
+Cliente: "mais foto"
+IA: "Olha mais um ângulo dessa mesa!
 [FOTO_PRODUTO:url_galeria1:Mesa Cascata (ID:df53cf12)]
-Essa é de outro ângulo, mostrando o detalhe da madeira."
+Mostrando o detalhe da madeira"
+
+## ✅ EXEMPLO CORRETO (COM mensagem citada):
+[📎 MENSAGEM CITADA: Mesa Pequiá (2.5m x 1m) - R$ 4.900]
+Cliente: "mais foto dessa"
+IA: "Claro! Mais fotos da Mesa Pequiá:
+[FOTO_PRODUTO:url_galeria:Mesa Pequiá (ID:abc123)]
+Detalhe do acabamento"
 `);
 
   // ========== MAIN FUNCTION ==========
@@ -2520,18 +2580,25 @@ ${emojiInstrucao}
 2. **SEM TEXTOS LONGOS:** Proibido enviar parágrafos extensos ou explicações longas
 3. **DIRETO AO PONTO:** Vá direto ao assunto, sem enrolação
 4. **UMA COISA POR VEZ:** Apresente 1 produto por mensagem, espere resposta
+5. **NUNCA USE ASTERISCOS:** Proibido *texto* ou **texto** - fica parecendo bot!
+6. **NUNCA USE LISTAS NUMERADAS:** Proibido 1. 2. 3. - escreva texto corrido
 
 ## Exemplos de Formato CORRETO (${limiteChars} chars):
-"Tenho uma mesa perfeita pra 10 pessoas! Posso te mostrar?"
+"[FOTO_PRODUTO:url:Mesa Cascata (ID:xxx)]
+Mesa Cascata (3,25m x 0,90m) - R$ 14.900
+Acabamento premium. Gostou?"
 
-## Exemplos de Formato ERRADO (muito longo):
-"Perfeito, Matheus! Para 10 lugares, o ideal são mesas entre 3,00m e 3,50m para garantir conforto total aos convidados. Tenho duas propostas incríveis com estilos bem diferentes para sua área gourmet: a Mesa Madeira Maciça com Pés em Aço por R$ 5.900 e a Mesa Cascata Pequiá Design Premium por R$ 14.900..."
+## Exemplos de Formato ERRADO (PROIBIDO):
+"1. *Mesa Cascata* (3,25m) - R$ 14.900
+   * Acabamento premium
+2. *Mesa Madeira* (3,50m) - R$ 5.900
+[FOTO_PRODUTO:url1:Mesa Cascata]"
 
 ## Linguagem Técnica:
 ${linguagemTecnica === 'evitar' ? 'EVITE termos técnicos, use analogias simples e palavras do dia-a-dia' : linguagemTecnica === 'especialista' ? 'Use terminologia profissional e técnica, mostre expertise' : 'Use termos técnicos quando necessário, sempre explicando de forma simples'}
 
 ## Formatação de Texto:
-${usarFormatacao === 'nao' ? 'Texto corrido apenas, sem formatação especial' : usarFormatacao === 'rico' ? 'Use listas, **negrito**, organização visual para facilitar leitura' : 'Formatação leve com **negrito** pontual para destaques'}
+${usarFormatacao === 'nao' ? 'Texto corrido apenas, sem formatação especial' : usarFormatacao === 'rico' ? 'Use organização visual para facilitar leitura (SEM asteriscos!)' : 'Formatação leve (SEM asteriscos!) para destaques'}
 
 ${usarAudios ? '## 🎙️ Áudios:\n- Você pode sugerir envio de áudio quando apropriado para explicações complexas' : ''}
 
