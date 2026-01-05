@@ -74,6 +74,9 @@ interface GroupedBOM {
   subtotal: number;
 }
 
+// Ordem das categorias conforme planilha
+const CATEGORY_ORDER = ['Móveis Rústico', 'Corda Náutica', 'Quadro', 'Industrial', 'Mão de Obra', 'Outros'];
+
 export function ProductionFichaTecnica({ productionOrderId }: ProductionFichaTecnicaProps) {
   const queryClient = useQueryClient();
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -141,10 +144,12 @@ export function ProductionFichaTecnica({ productionOrderId }: ProductionFichaTec
       groups[categoryName].subtotal += item.subtotal || 0;
     });
 
-    // Ordenar categorias
-    const sortedGroups = Object.values(groups).sort((a, b) => 
-      a.category.localeCompare(b.category)
-    );
+    // Ordenar categorias conforme planilha
+    const sortedGroups = Object.values(groups).sort((a, b) => {
+      const orderA = CATEGORY_ORDER.indexOf(a.category);
+      const orderB = CATEGORY_ORDER.indexOf(b.category);
+      return (orderA === -1 ? 999 : orderA) - (orderB === -1 ? 999 : orderB);
+    });
 
     return sortedGroups;
   }, [bomItems]);

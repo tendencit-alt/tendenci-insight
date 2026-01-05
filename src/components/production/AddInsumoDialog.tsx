@@ -29,8 +29,17 @@ interface AddInsumoDialogProps {
   onSuccess: () => void;
 }
 
-// Produtos que permitem cor/variação
-const PRODUCTS_WITH_COLOR = ['Vidro', 'MDF', 'Corda', 'Canvas'];
+// Produtos que permitem variação (cor ou modelo)
+const PRODUCTS_WITH_VARIATION = {
+  cor: ['Vidro', 'MDF', 'Corda', 'Canvas'],
+  modelo: ['Puxador']
+};
+
+// Categorias permitidas para ficha técnica (conforme planilha)
+const ALLOWED_CATEGORIES = ['Móveis Rústico', 'Corda Náutica', 'Industrial', 'Quadro', 'Mão de Obra'];
+
+// Ordem das categorias conforme planilha
+const CATEGORY_ORDER = ['Móveis Rústico', 'Corda Náutica', 'Quadro', 'Industrial', 'Mão de Obra'];
 
 export function AddInsumoDialog({ 
   open, 
@@ -50,17 +59,24 @@ export function AddInsumoDialog({
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Buscar categorias
+  // Buscar categorias (filtradas conforme planilha)
   const { data: categories = [] } = useQuery({
-    queryKey: ['product-categories'],
+    queryKey: ['product-categories-ficha'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('product_categories')
         .select('id, name')
+        .in('name', ALLOWED_CATEGORIES)
         .order('name');
       
       if (error) throw error;
-      return data;
+      
+      // Ordenar conforme planilha
+      return data.sort((a, b) => {
+        const orderA = CATEGORY_ORDER.indexOf(a.name);
+        const orderB = CATEGORY_ORDER.indexOf(b.name);
+        return (orderA === -1 ? 999 : orderA) - (orderB === -1 ? 999 : orderB);
+      });
     },
     enabled: open
   });
@@ -90,11 +106,21 @@ export function AddInsumoDialog({
     return matchesCategory && matchesSearch;
   });
 
-  // Verificar se o produto selecionado permite cor
+  // Verificar se o produto selecionado permite variação (cor ou modelo)
   const selectedProduct = products.find(p => p.id === selectedProductId);
-  const allowsColor = selectedProduct && PRODUCTS_WITH_COLOR.some(name => 
-    selectedProduct.name.toLowerCase().includes(name.toLowerCase())
+  
+  const allowsVariation = selectedProduct && (
+    PRODUCTS_WITH_VARIATION.cor.some(name => 
+      selectedProduct.name.toLowerCase().includes(name.toLowerCase())
+    ) ||
+    PRODUCTS_WITH_VARIATION.modelo.some(name => 
+      selectedProduct.name.toLowerCase().includes(name.toLowerCase())
+    )
   );
+  
+  const variationType = selectedProduct && PRODUCTS_WITH_VARIATION.modelo.some(name => 
+    selectedProduct.name.toLowerCase().includes(name.toLowerCase())
+  ) ? 'modelo' : 'cor';
 
   // Quando seleciona produto do estoque, preencher campos
   useEffect(() => {
@@ -298,20 +324,24 @@ export function AddInsumoDialog({
           </div>
 
           {/* Campo de Cor/Variação - aparece quando aplicável */}
-          {(allowsColor || mode === 'manual') && (
+          {(allowsVariation || mode === 'manual') && (
             <div className="space-y-2">
               <Label htmlFor="cor" className="flex items-center gap-2">
                 <Palette className="h-4 w-4" />
-                Cor / Variação
+                {variationType === 'modelo' ? 'Modelo / Variação' : 'Cor / Variação'}
               </Label>
               <Input
                 id="cor"
                 value={cor}
                 onChange={(e) => setCor(e.target.value)}
-                placeholder="Ex: Branco, Fumê, Natural..."
+                placeholder={variationType === 'modelo' 
+                  ? "Ex: Alça, Quadrado, Redondo..." 
+                  : "Ex: Branco, Fumê, Natural..."}
               />
               <p className="text-xs text-muted-foreground">
-                Especifique a cor ou variação do material (opcional)
+                {variationType === 'modelo' 
+                  ? 'Especifique o modelo ou tipo (opcional)'
+                  : 'Especifique a cor ou variação do material (opcional)'}
               </p>
             </div>
           )}
