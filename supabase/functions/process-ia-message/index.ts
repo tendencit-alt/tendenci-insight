@@ -67,6 +67,14 @@ interface Product {
   quando_oferecer: string | null;
   diferenciais: string[] | null;
   ativo: boolean;
+  // NOVOS CAMPOS
+  estoque?: number;
+  permite_venda_sem_estoque?: boolean;
+  prazo_entrega_dias?: number;
+  comprimento?: number;
+  largura?: number;
+  altura?: number;
+  unidade_medida?: string;
 }
 
 interface Knowledge {
@@ -80,6 +88,11 @@ interface Knowledge {
   aplicacao?: string[];
   contexto_uso?: string;
   palavras_chave?: string[];
+  prioridade?: number;
+  fonte?: string;
+  validade?: string;
+  arquivos?: string[];
+  videos?: Array<{nome: string; url: string}>;
   ativo: boolean;
 }
 
@@ -617,7 +630,7 @@ Responda em português brasileiro de forma clara e organizada.`;
     if (products.length === 0) {
       const { data: productsData } = await supabase
         .from("tendenci_ia_produtos")
-        .select("id, nome, descricao, preco_base, categoria, imagem_url, galeria, video_url, videos, quando_oferecer, diferenciais, ativo")
+        .select("id, nome, descricao, preco_base, categoria, imagem_url, galeria, video_url, videos, quando_oferecer, diferenciais, ativo, estoque, permite_venda_sem_estoque, prazo_entrega_dias, comprimento, largura, altura, unidade_medida")
         .eq("ativo", true);
 
       products = (productsData as Product[]) || [];
@@ -1747,7 +1760,7 @@ function buildMasterPrompt(
   const genero = (identidade.genero as string) || "neutro";
   const descricaoPersonalidade = (identidade.descricao_personalidade as string) || "";
 
-  // Communication values
+  // Communication values - COMPLETO
   const tamanhoMensagem = (comunicacao.tamanho_mensagem as string) || "media";
   const maxMensagensSequencia = (comunicacao.max_mensagens_sequencia as string) || "2-3";
   const usarEmojis = (comunicacao.usar_emojis as string) || "moderado";
@@ -1755,19 +1768,40 @@ function buildMasterPrompt(
   const modoResposta = (comunicacao.modo_resposta as string) || "consultivo";
   const msgBoasVindas = (comunicacao.msg_boas_vindas as string) || "";
   const msgDespedida = (comunicacao.msg_despedida as string) || "";
+  // NOVOS CAMPOS DE COMUNICAÇÃO
+  const linguagemTecnica = (comunicacao.linguagem_tecnica as string) || "moderado";
+  const usarFormatacao = (comunicacao.usar_formatacao as string) || "leve";
+  const usarAudios = (comunicacao.usar_audios as boolean) || false;
+  const msgAusencia = (comunicacao.msg_ausencia as string) || "";
+  const exemplosRespostas = (comunicacao.exemplos_respostas as { pergunta: string; resposta: string }[]) || [];
 
-  // Qualification values
+  // Qualification values - COMPLETO
   const criteriosLead = (qualificacao.criterios_lead as Record<string, string>) || {};
   const perguntasObrigatorias = (qualificacao.perguntas_obrigatorias as string[]) || (qualificacao.perguntas as string[]) || [];
   const perguntasPermitidas = (qualificacao.perguntas_permitidas as string[]) || [];
   const perguntasPorVez = (qualificacao.perguntas_por_vez as string) || "1";
+  // NOVOS CAMPOS DE QUALIFICAÇÃO
+  const podeFazerPerguntas = (qualificacao.pode_fazer_perguntas as string) || "sim";
+  const clienteComPressa = (qualificacao.cliente_com_pressa as string) || "resumir";
 
-  // Sales values
+  // Sales values - COMPLETO
   const estrategiaLeadQuente = (vendas.estrategia_lead_quente as string) || "";
   const estrategiaLeadMorno = (vendas.estrategia_lead_morno as string) || "";
   const estrategiaLeadFrio = (vendas.estrategia_lead_frio as string) || "";
   const quandoTransferir = (vendas.quando_transferir as string) || "";
   const objecoes = (vendas.objecoes as { objecao: string; resposta: string }[]) || [];
+  // NOVOS CAMPOS DE VENDAS
+  const objetivosPrincipais = (vendas.objetivos_principais as string[]) || [];
+  const conducaoConversa = (vendas.conducao_conversa as string) || "moderado";
+  const apresentacaoPrecos = (vendas.apresentacao_precos as string) || "valor_direto";
+  const tabelaPrecos = (vendas.tabela_precos as string) || "apenas_resumo";
+  const sugestaoPacotes = (vendas.sugestao_pacotes as string) || "sim";
+  const clienteOrcamentoBaixo = (vendas.cliente_orcamento_baixo as string) || "explicar_valor";
+  const oferecerDesconto = (vendas.oferecer_desconto as string) || "se_configurado";
+  const pedidoForaRegra = (vendas.pedido_fora_regra as string) || "chamar_humano";
+  const ctasDisponiveis = (vendas.ctas_disponiveis as string[]) || [];
+  const perguntasVendas = (vendas.perguntas_vendas as string[]) || [];
+  const scriptFollowup = (vendas.script_followup as string) || "";
 
   // Business values
   const nomeEmpresa = (negocio.nome_empresa as string) || "nossa empresa";
@@ -1853,10 +1887,14 @@ Jamais soa como robô, script ou chatbot.
 
 Seu comportamento deve transmitir:
 - **Profissionalismo** – fala segura e experiente, sem exageros de entusiasmo
-- **Empatia** – compreende o contexto do cliente e ajusta o tom conforme a conversa
+- **Empatia** – ${nivelEmpatia === 'alto' ? 'Demonstre alta empatia, conecte-se emocionalmente com o cliente' : nivelEmpatia === 'baixo' ? 'Seja objetivo e direto, menos emocional' : 'Equilibre objetividade com compreensão'}
 - **Clareza** – responde de forma curta, direta e sem redundâncias
 - **Naturalidade** – escreve como um humano digitando no WhatsApp, com pausas leves e pontuação correta
 - **Coerência contextual** – nunca repete perguntas já respondidas; mantém memória de toda a conversa
+
+${nivelFormalidade === 'formal' ? '**Comunicação:** Mantenha comunicação formal e profissional em todas as interações.' : nivelFormalidade === 'casual' ? '**Comunicação:** Seja descontraído e informal, como se conversasse com um amigo.' : '**Comunicação:** Equilibre profissionalismo com cordialidade.'}
+
+${abordagemVendas === 'educativo' ? '**Abordagem de Vendas:** Sua abordagem é educativa - ensine enquanto vende, explique benefícios.' : abordagemVendas === 'agressivo' ? '**Abordagem de Vendas:** Seja proativo e direto nas tentativas de venda, crie urgência.' : '**Abordagem de Vendas:** Conduza a venda de forma consultiva, entenda necessidades primeiro.'}
 
 Você ${personalidadeDescricao[personalidadePrincipal] || personalidadeDescricao.consultivo}.
 Tom emocional: ${tomEmocional}.
@@ -2038,6 +2076,24 @@ ${emojiInstrucao}
 ## Exemplos de Formato ERRADO (muito longo):
 "Perfeito, Matheus! Para 10 lugares, o ideal são mesas entre 3,00m e 3,50m para garantir conforto total aos convidados. Tenho duas propostas incríveis com estilos bem diferentes para sua área gourmet: a Mesa Madeira Maciça com Pés em Aço por R$ 5.900 e a Mesa Cascata Pequiá Design Premium por R$ 14.900..."
 
+## Linguagem Técnica:
+${linguagemTecnica === 'evitar' ? 'EVITE termos técnicos, use analogias simples e palavras do dia-a-dia' : linguagemTecnica === 'especialista' ? 'Use terminologia profissional e técnica, mostre expertise' : 'Use termos técnicos quando necessário, sempre explicando de forma simples'}
+
+## Formatação de Texto:
+${usarFormatacao === 'nao' ? 'Texto corrido apenas, sem formatação especial' : usarFormatacao === 'rico' ? 'Use listas, **negrito**, organização visual para facilitar leitura' : 'Formatação leve com **negrito** pontual para destaques'}
+
+${usarAudios ? '## 🎙️ Áudios:\n- Você pode sugerir envio de áudio quando apropriado para explicações complexas' : ''}
+
+${msgAusencia ? `## 💤 Mensagem de Ausência:\nSe precisar informar ausência fora do horário: "${msgAusencia}"` : ''}
+
+## Fazer Perguntas:
+${podeFazerPerguntas === 'nao' ? '⚠️ NÃO faça perguntas ao cliente, apenas responda o que for perguntado' : podeFazerPerguntas === 'minimo' ? 'Faça perguntas apenas quando ABSOLUTAMENTE essencial para prosseguir' : 'Faça perguntas de qualificação para entender melhor o cliente'}
+
+## Cliente com Pressa:
+${clienteComPressa === 'resumir' ? 'Se o cliente demonstrar pressa (mensagens curtas, "rápido"), seja mais direto e objetivo' : clienteComPressa === 'normal' ? 'Mantenha o fluxo normal mesmo se cliente parecer apressado' : 'Acelere e vá direto ao ponto com clientes apressados'}
+
+${exemplosRespostas.length > 0 ? `## 📝 Exemplos de Respostas (aprenda o estilo):\n${exemplosRespostas.map(e => `**Cliente:** "${e.pergunta}"\n**Responder assim:** "${e.resposta}"`).join('\n\n')}` : ''}
+
 ## Princípios de Comunicação
 
 **Naturalidade:** Escreva como pessoa real no WhatsApp, não como robô.
@@ -2115,6 +2171,43 @@ ${objecoes.map(o => `**Se o cliente disser:** "${o.objecao}"\n**Responda:** "${o
 `);
   }
 
+  // ========== ESTRATÉGIA DE VENDAS COMPLETA ==========
+  if (objetivosPrincipais.length > 0 || conducaoConversa || apresentacaoPrecos || ctasDisponiveis.length > 0 || perguntasVendas.length > 0) {
+    let estrategiaSection = `# 🎯 ESTRATÉGIA DE VENDAS\n`;
+    
+    if (objetivosPrincipais.length > 0) {
+      estrategiaSection += `\n## Objetivos do Atendimento:\n${objetivosPrincipais.map(o => `- ${o}`).join('\n')}\n`;
+    }
+    
+    estrategiaSection += `\n## Condução da Conversa: ${conducaoConversa === 'sutil' ? 'SUTIL - Avance de forma natural sem pressionar' : conducaoConversa === 'sempre_fechar' ? 'AGRESSIVO - Sempre tente fechar a venda' : 'MODERADO - Equilibre informação e venda'}\n`;
+    
+    estrategiaSection += `\n## Como Apresentar Preços:\n${apresentacaoPrecos === 'valor_direto' ? '- Informe o preço objetivamente quando perguntado' : apresentacaoPrecos === 'valor_beneficios' ? '- Apresente o preço junto com os benefícios do produto' : '- Contextualize a qualidade e valor antes de informar o preço'}\n`;
+    
+    estrategiaSection += `\n## Tabela de Preços:\n${tabelaPrecos === 'nunca_enviar' ? '- NUNCA envie tabela de preços completa' : tabelaPrecos === 'tabela_completa' ? '- Pode enviar tabela completa se solicitado' : '- Envie apenas resumo simplificado dos preços'}\n`;
+    
+    estrategiaSection += `\n## Sugestão de Pacotes:\n${sugestaoPacotes === 'sim' ? '- Sugira pacotes e combos proativamente para aumentar ticket' : sugestaoPacotes === 'nao' ? '- NÃO sugira pacotes a menos que cliente peça' : '- Sugira pacotes apenas se o cliente demonstrar interesse'}\n`;
+    
+    estrategiaSection += `\n## Cliente com Orçamento Baixo:\n${clienteOrcamentoBaixo === 'explicar_valor' ? '- Explique o valor e justifique o preço com qualidade e benefícios' : clienteOrcamentoBaixo === 'alternativa_barata' ? '- Sugira alternativas mais acessíveis' : '- Encaminhe para atendente humano para negociação'}\n`;
+    
+    estrategiaSection += `\n## Descontos:\n${oferecerDesconto === 'nunca' ? '- NUNCA ofereça descontos por conta própria' : oferecerDesconto === 'com_aprovacao' ? '- Só ofereça descontos com aprovação prévia' : '- Use apenas ofertas e descontos pré-configurados'}\n`;
+    
+    estrategiaSection += `\n## Pedido Fora da Regra:\n${pedidoForaRegra === 'negar_educadamente' ? '- Recuse gentilmente pedidos fora do padrão' : pedidoForaRegra === 'explicar_politica' ? '- Explique a política de preços da empresa' : '- Encaminhe para análise humana'}\n`;
+    
+    if (ctasDisponiveis.length > 0) {
+      estrategiaSection += `\n## CTAs Disponíveis (use para direcionar):\n${ctasDisponiveis.map(c => `- "${c}"`).join('\n')}\n`;
+    }
+    
+    if (perguntasVendas.length > 0) {
+      estrategiaSection += `\n## Perguntas de Vendas (faça quando apropriado):\n${perguntasVendas.map((p, i) => `${i + 1}. ${p}`).join('\n')}\n`;
+    }
+    
+    if (scriptFollowup) {
+      estrategiaSection += `\n## Script de Follow-up:\n${scriptFollowup}\n`;
+    }
+    
+    parts.push(estrategiaSection);
+  }
+
   // ========== TÉCNICAS DE VENDAS E NEGOCIAÇÃO ==========
   const tecnicasVendas = (vendas.tecnicas as string) || "";
   const promocoes = (vendas.promocoes as string) || "";
@@ -2168,6 +2261,32 @@ ${products.map((p) => {
       if (p.quando_oferecer) lines.push(`- Quando oferecer: ${p.quando_oferecer}`);
       if (p.diferenciais?.length) lines.push(`- Diferenciais: ${p.diferenciais.join(", ")}`);
       
+      // NOVOS CAMPOS: Estoque
+      if (p.estoque !== undefined && p.estoque !== null) {
+        if (p.estoque > 0) {
+          lines.push(`- ✅ Em estoque: ${p.estoque} unidades`);
+        } else if (p.permite_venda_sem_estoque) {
+          lines.push(`- 📦 Sob encomenda (produção sob demanda)`);
+        } else {
+          lines.push(`- ❌ Fora de estoque temporariamente`);
+        }
+      }
+      
+      // NOVO CAMPO: Prazo de entrega
+      if (p.prazo_entrega_dias) {
+        lines.push(`- 🚚 Prazo de entrega: ${p.prazo_entrega_dias} dias úteis`);
+      }
+      
+      // NOVOS CAMPOS: Medidas
+      if (p.comprimento || p.largura || p.altura) {
+        const medidas = [];
+        const unidade = p.unidade_medida || 'cm';
+        if (p.comprimento) medidas.push(`C: ${p.comprimento}${unidade}`);
+        if (p.largura) medidas.push(`L: ${p.largura}${unidade}`);
+        if (p.altura) medidas.push(`A: ${p.altura}${unidade}`);
+        lines.push(`- 📏 Medidas: ${medidas.join(' x ')}`);
+      }
+      
       // Foto principal
       if (p.imagem_url && p.imagem_url.startsWith('http')) {
         lines.push(`- 📸 **FOTO PRINCIPAL:** [FOTO_PRODUTO:${p.imagem_url}:${p.nome}]`);
@@ -2199,21 +2318,30 @@ ${products.map((p) => {
 `);
   }
 
-  // ========== KNOWLEDGE BASE (APRIMORADO) ==========
+  // ========== KNOWLEDGE BASE (APRIMORADO COM TODOS OS CAMPOS) ==========
   if (knowledge.length > 0) {
+    // Ordenar por prioridade (maior primeiro)
+    const sortedKnowledge = [...knowledge].sort((a, b) => (b.prioridade || 0) - (a.prioridade || 0));
+    
     // Agrupar por tipo
-    const tiposUnicos = [...new Set(knowledge.map(k => k.tipo || 'geral'))];
+    const tiposUnicos = [...new Set(sortedKnowledge.map(k => k.tipo || 'geral'))];
     
     let conhecSection = `# 📚 BASE DE CONHECIMENTO\n`;
     
-    // Legenda de níveis de autoridade
+    // Legenda de níveis de autoridade e certeza
     conhecSection += `\n**Legenda de Autoridade:**
 - ⚡ DEFINITIVO = Use EXATAMENTE como está escrito
 - 📋 ORIENTAÇÃO = Siga normalmente, pode adaptar o tom
-- 💡 SUGESTÃO = Flexível, adapte ao contexto da conversa\n`;
+- 💡 SUGESTÃO = Flexível, adapte ao contexto da conversa
+
+**Legenda de Certeza:**
+- 🎯 ABSOLUTO = Informação 100% verificada
+- ✅ ALTO = Muito confiável
+- ⚠️ MÉDIO = Pode ter variações
+- ❓ BAIXO = Confirmar se necessário\n`;
 
     tiposUnicos.forEach(tipo => {
-      const itensTipo = knowledge.filter(k => (k.tipo || 'geral') === tipo);
+      const itensTipo = sortedKnowledge.filter(k => (k.tipo || 'geral') === tipo);
       const tipoLabel: Record<string, string> = {
         faq: '❓ FAQ - Perguntas Frequentes',
         politica: '📜 Políticas da Empresa',
@@ -2232,9 +2360,26 @@ ${products.map((p) => {
           orientacao: '📋',
           sugestao: '💡'
         };
+        const grauIcon: Record<string, string> = {
+          absoluto: '🎯',
+          alto: '✅',
+          medio: '⚠️',
+          baixo: '❓'
+        };
         const icon = nivelIcon[k.nivel_autoridade || 'orientacao'] || '📋';
+        const certezaIcon = grauIcon[k.grau_certeza || 'alto'] || '✅';
         
         conhecSection += `\n### ${icon} ${k.titulo}`;
+        
+        // Adicionar grau de certeza
+        if (k.grau_certeza) {
+          conhecSection += ` ${certezaIcon}`;
+        }
+        
+        // Palavras-chave para facilitar busca
+        if (k.palavras_chave && k.palavras_chave.length > 0) {
+          conhecSection += `\n**Palavras-chave:** ${k.palavras_chave.join(', ')}`;
+        }
         
         if (k.aplicacao && k.aplicacao.length > 0) {
           conhecSection += `\n**Usar quando:** ${k.aplicacao.join(', ')}`;
@@ -2242,6 +2387,28 @@ ${products.map((p) => {
         
         if (k.contexto_uso) {
           conhecSection += `\n**Contexto:** ${k.contexto_uso}`;
+        }
+        
+        // Fonte da informação
+        if (k.fonte) {
+          conhecSection += `\n**Fonte:** ${k.fonte}`;
+        }
+        
+        // Verificar validade
+        if (k.validade) {
+          const hoje = new Date();
+          const validadeDate = new Date(k.validade);
+          if (validadeDate < hoje) {
+            conhecSection += `\n⚠️ **ATENÇÃO: Esta informação pode estar DESATUALIZADA (validade: ${new Date(k.validade).toLocaleDateString('pt-BR')})**`;
+          }
+        }
+        
+        // Indicar se tem arquivos/vídeos anexos
+        if (k.arquivos && k.arquivos.length > 0) {
+          conhecSection += `\n📎 **Arquivos disponíveis:** ${k.arquivos.length}`;
+        }
+        if (k.videos && k.videos.length > 0) {
+          conhecSection += `\n🎬 **Vídeos disponíveis:** ${k.videos.length}`;
         }
         
         conhecSection += `\n${k.conteudo}\n`;
