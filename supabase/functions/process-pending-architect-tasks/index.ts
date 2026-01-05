@@ -71,9 +71,57 @@ Deno.serve(async (req) => {
       const architectData = Array.isArray(task.architects) ? task.architects[0] : task.architects
       const taskTitle = (task.metadata as any)?.titulo || task.observacoes || 'Tarefa automatizada'
       console.log(`\n🔄 Processando tarefa ${task.id} - ${taskTitle}`)
-      console.log(`   Arquiteto: ${architectData?.name || 'N/A}'}`)
+      console.log(`   Arquiteto: ${architectData?.name || 'N/A'}`)
 
       try {
+        // VERIFICAR SE ARQUITETO AINDA EXISTE E ESTÁ ATIVO
+        const { data: architectCheck, error: archError } = await supabase
+          .from('architects')
+          .select('id, name, active, phone, whatsapp_valido')
+          .eq('id', task.architect_id)
+          .maybeSingle()
+
+        if (archError) {
+          console.error(`❌ Erro ao verificar arquiteto: ${archError.message}`)
+        }
+
+        // Se arquiteto não existe ou está inativo, cancelar tarefa
+        if (!architectCheck) {
+          console.log(`⚠️ Arquiteto ${task.architect_id} não encontrado - cancelando tarefa`)
+          await supabase
+            .from('tendenci_prospec_arq_agendamentos')
+            .update({ 
+              status: 'cancelada',
+              observacoes: 'Arquiteto excluído do sistema - tarefa cancelada automaticamente'
+            })
+            .eq('id', task.id)
+
+          results.push({
+            taskId: task.id,
+            success: false,
+            error: 'Arquiteto não encontrado - tarefa cancelada'
+          })
+          continue
+        }
+
+        if (!architectCheck.active) {
+          console.log(`⚠️ Arquiteto ${architectCheck.name} está inativo - cancelando tarefa`)
+          await supabase
+            .from('tendenci_prospec_arq_agendamentos')
+            .update({ 
+              status: 'cancelada',
+              observacoes: 'Arquiteto marcado como inativo - tarefa cancelada automaticamente'
+            })
+            .eq('id', task.id)
+
+          results.push({
+            taskId: task.id,
+            success: false,
+            error: 'Arquiteto inativo - tarefa cancelada'
+          })
+          continue
+        }
+
         // Mark as processing
         await supabase
           .from('tendenci_prospec_arq_agendamentos')
