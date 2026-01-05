@@ -287,6 +287,14 @@ serve(async (req) => {
       });
     }
 
+    // DEBUG: Log message structure to understand where contextInfo is
+    const message = messageData.message;
+    console.log(`📦 Message structure keys: ${Object.keys(message || {}).join(', ')}`);
+    console.log(`📦 MessageData has contextInfo: ${!!messageData?.contextInfo}`);
+    if (messageData?.contextInfo?.quotedMessage) {
+      console.log(`📎 Found quotedMessage in messageData.contextInfo!`);
+    }
+
     // Only process incoming messages (not sent by us)
     const key = messageData.key;
     if (key?.fromMe) {
@@ -310,26 +318,47 @@ serve(async (req) => {
     console.log(`📱 From: ${phoneNumber} (${pushName})`);
 
     // Extract message content
-    const message = messageData.message;
     let userMessage = "";
     let mediaType = "text";
     let mediaUrl: string | null = null;
     
     // ========== EXTRACT QUOTED MESSAGE CONTEXT ==========
-    // When user replies to a specific message, extract that context
+    // Evolution API can have contextInfo in different places depending on message type
     let quotedContext = "";
-    const contextInfo = message?.extendedTextMessage?.contextInfo;
+    
+    // Try multiple locations where contextInfo can be
+    const contextInfo = messageData?.contextInfo ||                    // Direct on messageData
+                        message?.extendedTextMessage?.contextInfo ||   // In extendedTextMessage
+                        message?.imageMessage?.contextInfo ||          // In image replies
+                        message?.videoMessage?.contextInfo ||          // In video replies
+                        message?.documentMessage?.contextInfo;         // In document replies
+    
     const quotedMessage = contextInfo?.quotedMessage;
     
     if (quotedMessage) {
+      // Extract text from different quoted message types
       const quotedText = quotedMessage?.conversation || 
                          quotedMessage?.extendedTextMessage?.text ||
-                         quotedMessage?.imageMessage?.caption || "";
+                         quotedMessage?.imageMessage?.caption ||
+                         quotedMessage?.videoMessage?.caption ||
+                         quotedMessage?.documentMessage?.caption || "";
       
       if (quotedText && quotedText.trim().length > 0) {
         quotedContext = `[📎 MENSAGEM CITADA: O cliente está RESPONDENDO a esta mensagem específica: "${quotedText.substring(0, 500)}"]`;
-        console.log(`📎 Quoted message detected: "${quotedText.substring(0, 100)}..."`);
+        console.log(`📎 Quoted message detected from contextInfo: "${quotedText.substring(0, 100)}..."`);
+      } else {
+        // Fallback: even without text, mark that there's a quoted message
+        const stanzaId = contextInfo?.stanzaId;
+        if (stanzaId) {
+          console.log(`📎 Quoted message has stanzaId: ${stanzaId} but no text extracted`);
+          quotedContext = `[📎 AVISO: O cliente RESPONDEU/MARCOU uma mensagem anterior. Identifique o produto mencionado recentemente.]`;
+        }
       }
+    }
+    
+    // Also log raw contextInfo for debugging
+    if (contextInfo) {
+      console.log(`📎 Raw contextInfo:`, JSON.stringify(contextInfo).substring(0, 500));
     }
 
     if (message?.conversation) {
@@ -1064,13 +1093,38 @@ ${productInfo}
       await new Promise(resolve => setTimeout(resolve, delayRestante));
     }
 
+    // ========== CLEAN MESSAGE FORMAT (Remove markdown formatting) ==========
+    function cleanMessageFormat(msg: string): string {
+      let cleaned = msg;
+      
+      // Remove markdown bold (**text** or __text__)
+      cleaned = cleaned.replace(/\*\*([^*]+)\*\*/g, '$1');
+      cleaned = cleaned.replace(/__([^_]+)__/g, '$1');
+      
+      // Remove markdown italic (*text* or _text_) - careful not to break markers
+      // Only remove single asterisks that are NOT part of [FOTO_PRODUTO:...] markers
+      cleaned = cleaned.replace(/(?<!\[FOTO_PRODUTO:[^\]]*)\*([^*\[\]]+)\*(?![^\[]*\])/g, '$1');
+      
+      // Remove numbered lists at start of lines (1. 2. 3.)
+      cleaned = cleaned.replace(/^\d+\.\s+/gm, '');
+      
+      // Remove bullet points with asterisks at start of lines
+      cleaned = cleaned.replace(/^\*\s+/gm, '');
+      
+      return cleaned.trim();
+    }
+    
+    // Apply cleaning to assistant message
+    const cleanedMessage = cleanMessageFormat(assistantMessage);
+    console.log(`🧹 Message cleaned of markdown formatting`);
+
     // Process media markers and send response
     await processAndSendResponse(
       evolutionApiUrl!,
       evolutionApiKey!,
       instanceName,
       phoneNumber,
-      assistantMessage
+      cleanedMessage
     );
 
     // Extract product IDs from FOTO_PRODUTO markers using robust extraction
