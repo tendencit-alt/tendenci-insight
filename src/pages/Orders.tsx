@@ -60,7 +60,7 @@ export default function Orders() {
       const dateColumn = filters.dateField === 'created_at' ? 'created_at' : 'data_emissao';
       
       if (filters.dateFrom) {
-        // Início do dia em Brasília (00:00 Brasília = 03:00 UTC)
+        // Início do dia em Brasília (00:00 Brasília = 03:00 UTC do mesmo dia)
         const fromDate = new Date(filters.dateFrom);
         const year = fromDate.getFullYear();
         const month = String(fromDate.getMonth() + 1).padStart(2, '0');
@@ -69,13 +69,12 @@ export default function Orders() {
       }
       
       if (filters.dateTo) {
-        // Fim do dia em Brasília (23:59:59 Brasília = 02:59:59 UTC do dia seguinte)
+        // Fim do dia em Brasília (23:59:59.999 Brasília = 02:59:59.999 UTC do dia SEGUINTE)
         const toDate = new Date(filters.dateTo);
-        const nextDay = new Date(toDate);
-        nextDay.setDate(nextDay.getDate() + 1);
-        const year = nextDay.getFullYear();
-        const month = String(nextDay.getMonth() + 1).padStart(2, '0');
-        const day = String(nextDay.getDate()).padStart(2, '0');
+        toDate.setDate(toDate.getDate() + 1); // Vai para o dia seguinte
+        const year = toDate.getFullYear();
+        const month = String(toDate.getMonth() + 1).padStart(2, '0');
+        const day = String(toDate.getDate()).padStart(2, '0');
         query = query.lte(dateColumn, `${year}-${month}-${day}T02:59:59.999Z`);
       }
 
