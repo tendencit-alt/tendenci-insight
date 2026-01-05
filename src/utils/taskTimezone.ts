@@ -118,6 +118,9 @@ export function formatBrasilShort(isoString: string): string {
  * Calcula dias até a data de vencimento
  * Retorna info para exibição em badges
  * IMPORTANTE: Compara datas no timezone de Brasília
+ * 
+ * CORREÇÃO: Compara primeiro os DIAS, depois verifica se a hora passou
+ * para evitar que tarefas de "hoje" apareçam como "amanhã"
  */
 export function getDaysUntilDue(isoString: string): {
   text: string;
@@ -146,20 +149,26 @@ export function getDaysUntilDue(isoString: string): {
   });
   
   try {
-    const dueDateBrasil = brasilFormatter.format(dueDate); // "2025-01-05"
-    const nowBrasil = brasilFormatter.format(now); // "2025-01-04"
+    const dueDateBrasil = brasilFormatter.format(dueDate); // "2026-01-05"
+    const nowBrasil = brasilFormatter.format(now); // "2026-01-05"
     
-    // Converter para Date objects para comparação de dias
+    // CORREÇÃO: Comparar DIAS primeiro (strings no formato YYYY-MM-DD são comparáveis)
+    if (dueDateBrasil === nowBrasil) {
+      // Mesmo dia - verificar se a hora já passou
+      if (dueDate < now) {
+        return { text: "Atrasada", variant: "destructive", isOverdue: true };
+      }
+      return { text: "Hoje", variant: "default", isOverdue: false };
+    }
+    
+    // Dias diferentes - calcular diferença
     const dueDay = new Date(dueDateBrasil + "T00:00:00");
     const nowDay = new Date(nowBrasil + "T00:00:00");
-    
     const diffDays = Math.floor((dueDay.getTime() - nowDay.getTime()) / (1000 * 60 * 60 * 24));
     
-    // Verificar se já passou (considerando hora também)
-    if (dueDate < now) {
+    if (diffDays < 0) {
+      // Dia passado
       return { text: "Atrasada", variant: "destructive", isOverdue: true };
-    } else if (diffDays === 0) {
-      return { text: "Hoje", variant: "default", isOverdue: false };
     } else if (diffDays === 1) {
       return { text: "Amanhã", variant: "secondary", isOverdue: false };
     } else {
@@ -167,6 +176,77 @@ export function getDaysUntilDue(isoString: string): {
     }
   } catch {
     return { text: "Data inválida", variant: "outline", isOverdue: false };
+  }
+}
+
+/**
+ * Verifica se uma data ISO é "hoje" em Brasília
+ */
+export function isTodayBrasil(isoString: string): boolean {
+  if (!isoString) return false;
+  
+  try {
+    const brasilFormatter = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Sao_Paulo',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+    
+    const dateBrasil = brasilFormatter.format(new Date(isoString));
+    const nowBrasil = brasilFormatter.format(new Date());
+    
+    return dateBrasil === nowBrasil;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Verifica se uma data ISO é "ontem" em Brasília
+ */
+export function isYesterdayBrasil(isoString: string): boolean {
+  if (!isoString) return false;
+  
+  try {
+    const brasilFormatter = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Sao_Paulo',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+    
+    const dateBrasil = brasilFormatter.format(new Date(isoString));
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayBrasil = brasilFormatter.format(yesterday);
+    
+    return dateBrasil === yesterdayBrasil;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Verifica se uma data ISO é futura (após hoje) em Brasília
+ */
+export function isFutureDayBrasil(isoString: string): boolean {
+  if (!isoString) return false;
+  
+  try {
+    const brasilFormatter = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Sao_Paulo',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+    
+    const dateBrasil = brasilFormatter.format(new Date(isoString));
+    const nowBrasil = brasilFormatter.format(new Date());
+    
+    return dateBrasil > nowBrasil;
+  } catch {
+    return false;
   }
 }
 

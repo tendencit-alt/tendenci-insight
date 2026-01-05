@@ -7,12 +7,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown, ChevronRight, Clock, AlertTriangle, Calendar, Bot, User, CheckCircle, TrendingUp, TrendingDown, Minus, Trophy, RefreshCw, Archive, XCircle } from "lucide-react";
-import { format, isToday, startOfDay } from "date-fns";
+import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { ArchitectProspeccaoSheet } from "./ArchitectProspeccaoSheet";
 import { usePermissions } from "@/hooks/usePermissions";
-import { getDaysUntilDue as getTaskDueStatus, formatBrasilShort } from "@/utils/taskTimezone";
+import { getDaysUntilDue as getTaskDueStatus, formatBrasilShort, isTodayBrasil, isFutureDayBrasil } from "@/utils/taskTimezone";
 
 interface ArchitectTasksPanelProps {
   filters?: any;
@@ -366,14 +366,10 @@ export function ArchitectTasksPanel({ filters }: ArchitectTasksPanelProps) {
     setIsSheetOpen(true);
   };
 
-  // Filter tasks
-  const today = startOfDay(new Date());
+  // Filter tasks - usando funções com timezone de Brasília
   const allTasks = tasks;
-  const todayTasks = tasks.filter((t) => isToday(new Date(t.data_agendamento)));
-  const futureTasks = tasks.filter((t) => {
-    const taskDate = startOfDay(new Date(t.data_agendamento));
-    return taskDate > today;
-  });
+  const todayTasks = tasks.filter((t) => isTodayBrasil(t.data_agendamento));
+  const futureTasks = tasks.filter((t) => isFutureDayBrasil(t.data_agendamento));
 
   // Parse observações JSON ou texto simples
   const parseObservacoes = (observacoes: string | null) => {
