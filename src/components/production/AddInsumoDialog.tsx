@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Package, Plus, Search } from 'lucide-react';
+import { Package, Plus, Search, Palette } from 'lucide-react';
 
 interface AddInsumoDialogProps {
   open: boolean;
@@ -28,6 +28,9 @@ interface AddInsumoDialogProps {
   productionProductId: string;
   onSuccess: () => void;
 }
+
+// Produtos que permitem cor/variação
+const PRODUCTS_WITH_COLOR = ['Vidro', 'MDF', 'Corda', 'Canvas'];
 
 export function AddInsumoDialog({ 
   open, 
@@ -37,21 +40,38 @@ export function AddInsumoDialog({
 }: AddInsumoDialogProps) {
   const [mode, setMode] = useState<'stock' | 'manual'>('stock');
   const [selectedProductId, setSelectedProductId] = useState<string>('');
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [insumoNome, setInsumoNome] = useState('');
   const [quantidade, setQuantidade] = useState('1');
   const [unidade, setUnidade] = useState('UN');
   const [custoUnitario, setCustoUnitario] = useState('');
+  const [cor, setCor] = useState('');
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Buscar produtos do estoque
+  // Buscar categorias
+  const { data: categories = [] } = useQuery({
+    queryKey: ['product-categories'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('product_categories')
+        .select('id, name')
+        .order('name');
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: open
+  });
+
+  // Buscar produtos do estoque com categoria
   const { data: products = [] } = useQuery({
     queryKey: ['products-for-bom'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('products')
-        .select('id, name, code, cost_price, unit, current_stock')
+        .select('id, name, code, cost_price, unit, current_stock, category_id, category:product_categories(name)')
         .eq('active', true)
         .order('name');
       
@@ -61,10 +81,19 @@ export function AddInsumoDialog({
     enabled: open
   });
 
-  // Filtrar produtos
-  const filteredProducts = products.filter(p => 
-    p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (p.code && p.code.toLowerCase().includes(searchTerm.toLowerCase()))
+  // Filtrar produtos por categoria e termo de busca
+  const filteredProducts = products.filter(p => {
+    const matchesCategory = selectedCategoryId === 'all' || p.category_id === selectedCategoryId;
+    const matchesSearch = 
+      p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (p.code && p.code.toLowerCase().includes(searchTerm.toLowerCase()));
+    return matchesCategory && matchesSearch;
+  });
+
+  // Verificar se o produto selecionado permite cor
+  const selectedProduct = products.find(p => p.id === selectedProductId);
+  const allowsColor = selectedProduct && PRODUCTS_WITH_COLOR.some(name => 
+    selectedProduct.name.toLowerCase().includes(name.toLowerCase())
   );
 
   // Quando seleciona produto do estoque, preencher campos
@@ -75,6 +104,7 @@ export function AddInsumoDialog({
         setInsumoNome(product.name);
         setCustoUnitario(String(product.cost_price || 0));
         setUnidade(product.unit || 'UN');
+        setCor(''); // Reset cor ao trocar produto
       }
     }
   }, [selectedProductId, products, mode]);
@@ -83,11 +113,13 @@ export function AddInsumoDialog({
   const resetForm = () => {
     setMode('stock');
     setSelectedProductId('');
+    setSelectedCategoryId('all');
     setSearchTerm('');
     setInsumoNome('');
     setQuantidade('1');
     setUnidade('UN');
     setCustoUnitario('');
+    setCor('');
     setNotes('');
   };
 
@@ -105,6 +137,11 @@ export function AddInsumoDialog({
       return;
     }
 
+    // Montar nome com cor se aplicável
+    const nomeCompleto = cor.trim() 
+      ? `${insumoNome.trim()} (${cor.trim()})`
+      : insumoNome.trim();
+
     setLoading(true);
     try {
       const { error } = await supabase
@@ -112,10 +149,11 @@ export function AddInsumoDialog({
         .insert({
           production_product_id: productionProductId,
           insumo_id: mode === 'stock' && selectedProductId ? selectedProductId : null,
-          insumo_nome: insumoNome.trim(),
+          insumo_nome: nomeCompleto,
           quantidade: parseFloat(quantidade),
           unidade: unidade.trim() || 'UN',
           custo_unitario: parseFloat(custoUnitario),
+          cor: cor.trim() || null,
           notes: notes.trim() || null
         });
 
@@ -140,7 +178,7 @@ export function AddInsumoDialog({
       if (!isOpen) resetForm();
       onOpenChange(isOpen);
     }}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Plus className="h-5 w-5" />
@@ -166,6 +204,9 @@ export function AddInsumoDialog({
               onClick={() => {
                 setMode('manual');
                 setSelectedProductId('');
+                setInsumoNome('');
+                setCustoUnitario('');
+                setCor('');
               }}
               className="flex-1"
             >
@@ -176,37 +217,72 @@ export function AddInsumoDialog({
 
           {/* Seleção de produto do estoque */}
           {mode === 'stock' && (
-            <div className="space-y-2">
-              <Label>Buscar no Estoque</Label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar por nome ou SKU..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
+            <>
+              {/* Filtro por Categoria */}
+              <div className="space-y-2">
+                <Label>Categoria</Label>
+                <Select value={selectedCategoryId} onValueChange={setSelectedCategoryId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Todas as categorias" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas as categorias</SelectItem>
+                    {categories.map((cat) => (
+                      <SelectItem key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              <Select value={selectedProductId} onValueChange={setSelectedProductId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione um produto" />
-                </SelectTrigger>
-                <SelectContent>
-                  {filteredProducts.slice(0, 50).map((product) => (
-                    <SelectItem key={product.id} value={product.id}>
-                      <div className="flex items-center justify-between w-full">
-                        <span>{product.name}</span>
-                        {product.code && (
-                          <span className="text-xs text-muted-foreground ml-2">
-                            ({product.code})
-                          </span>
-                        )}
+
+              <div className="space-y-2">
+                <Label>Buscar no Estoque</Label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar por nome ou código..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                <Select value={selectedProductId} onValueChange={setSelectedProductId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um produto" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filteredProducts.length === 0 ? (
+                      <div className="p-2 text-sm text-muted-foreground text-center">
+                        Nenhum produto encontrado
                       </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                    ) : (
+                      filteredProducts.slice(0, 50).map((product) => (
+                        <SelectItem key={product.id} value={product.id}>
+                          <div className="flex items-center gap-2">
+                            <span>{product.name}</span>
+                            {product.code && (
+                              <span className="text-xs text-muted-foreground">
+                                ({product.code})
+                              </span>
+                            )}
+                            <span className="text-xs text-muted-foreground ml-auto">
+                              {product.unit}
+                            </span>
+                          </div>
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+                {selectedProduct && (
+                  <p className="text-xs text-muted-foreground">
+                    Estoque atual: {selectedProduct.current_stock || 0} {selectedProduct.unit}
+                    {selectedProduct.category && ` • ${(selectedProduct.category as any).name}`}
+                  </p>
+                )}
+              </div>
+            </>
           )}
 
           {/* Nome do Insumo */}
@@ -216,10 +292,29 @@ export function AddInsumoDialog({
               id="insumo-nome"
               value={insumoNome}
               onChange={(e) => setInsumoNome(e.target.value)}
-              placeholder="Ex: MDF 15mm Branco"
+              placeholder="Ex: MDF 15mm"
               disabled={mode === 'stock' && !!selectedProductId}
             />
           </div>
+
+          {/* Campo de Cor/Variação - aparece quando aplicável */}
+          {(allowsColor || mode === 'manual') && (
+            <div className="space-y-2">
+              <Label htmlFor="cor" className="flex items-center gap-2">
+                <Palette className="h-4 w-4" />
+                Cor / Variação
+              </Label>
+              <Input
+                id="cor"
+                value={cor}
+                onChange={(e) => setCor(e.target.value)}
+                placeholder="Ex: Branco, Fumê, Natural..."
+              />
+              <p className="text-xs text-muted-foreground">
+                Especifique a cor ou variação do material (opcional)
+              </p>
+            </div>
+          )}
 
           {/* Quantidade e Unidade */}
           <div className="grid grid-cols-2 gap-4">
@@ -243,13 +338,14 @@ export function AddInsumoDialog({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="UN">UN - Unidade</SelectItem>
-                  <SelectItem value="M">M - Metro</SelectItem>
-                  <SelectItem value="M2">M² - Metro Quad.</SelectItem>
-                  <SelectItem value="M3">M³ - Metro Cúb.</SelectItem>
-                  <SelectItem value="KG">KG - Quilograma</SelectItem>
+                  <SelectItem value="ML">ML - Metro Linear</SelectItem>
+                  <SelectItem value="m2">M² - Metro Quad.</SelectItem>
+                  <SelectItem value="m3">M³ - Metro Cúb.</SelectItem>
+                  <SelectItem value="kg">KG - Quilograma</SelectItem>
+                  <SelectItem value="ml">ml - Mililitro</SelectItem>
                   <SelectItem value="L">L - Litro</SelectItem>
-                  <SelectItem value="CX">CX - Caixa</SelectItem>
-                  <SelectItem value="PC">PC - Peça</SelectItem>
+                  <SelectItem value="peça">Peça</SelectItem>
+                  <SelectItem value="un">un - Unidade</SelectItem>
                 </SelectContent>
               </Select>
             </div>

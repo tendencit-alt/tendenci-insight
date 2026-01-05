@@ -42,6 +42,20 @@ export default function FichasTecnicas() {
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
 
   // Buscar todas as fichas técnicas com dados relacionados
+  // Buscar categorias para filtro
+  const { data: categories = [] } = useQuery({
+    queryKey: ['product-categories-filter'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('product_categories')
+        .select('id, name')
+        .order('name');
+      
+      if (error) throw error;
+      return data;
+    }
+  });
+
   const { data: fichas = [], isLoading } = useQuery({
     queryKey: ['fichas-tecnicas', searchTerm, statusFilter],
     queryFn: async () => {
