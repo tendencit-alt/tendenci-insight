@@ -61,6 +61,7 @@ interface Product {
   preco_base: number;
   categoria: string;
   imagem_url: string | null;
+  galeria: string[] | null;
   video_url: string | null;
   videos: Array<{nome: string; url: string}> | null;
   quando_oferecer: string | null;
@@ -610,7 +611,7 @@ Responda em português brasileiro de forma clara e organizada.`;
     if (products.length === 0) {
       const { data: productsData } = await supabase
         .from("tendenci_ia_produtos")
-        .select("id, nome, descricao, preco_base, categoria, imagem_url, video_url, videos, quando_oferecer, diferenciais, ativo")
+        .select("id, nome, descricao, preco_base, categoria, imagem_url, galeria, video_url, videos, quando_oferecer, diferenciais, ativo")
         .eq("ativo", true);
 
       products = (productsData as Product[]) || [];
@@ -1784,7 +1785,7 @@ function buildMasterPrompt(
   };
 
   // ========== CRITICAL: MEDIA CAPABILITY (FIRST!) ==========
-  const productsWithMedia = products.filter(p => p.imagem_url || p.video_url || p.videos?.length);
+  const productsWithMedia = products.filter(p => p.imagem_url || p.galeria?.length || p.video_url || p.videos?.length);
   console.log(`🖼️ Building prompt with ${products.length} products, ${productsWithMedia.length} with media`);
   
   if (productsWithMedia.length > 0) {
@@ -1808,6 +1809,17 @@ Você: "Temos sim! Essa aqui é muito procurada: [FOTO_PRODUTO:https://storage.u
 
 Cliente: "Me mostra uma foto"
 Você: "Claro! [FOTO_PRODUTO:https://storage.url/produto.jpg:Nome do Produto]"
+
+## QUANDO CLIENTE PEDIR MAIS FOTOS:
+- Verifique se o produto tem GALERIA de fotos adicionais
+- Envie as fotos adicionais usando os marcadores da galeria
+- Se não tiver mais fotos, diga "Dessa mesa tenho essa imagem principal"
+- NUNCA diga "não consigo enviar" - diga que essa é a foto disponível
+
+## QUANDO CLIENTE PEDIR OUTRAS OPÇÕES:
+- Procure outros produtos da mesma categoria
+- Você tem acesso a TODOS os ${products.length} produtos cadastrados
+- Mostre alternativas similares se existirem
 
 ## REGRA OBRIGATÓRIA:
 - SEMPRE que recomendar um produto que tem foto/vídeo, INCLUA o marcador!
@@ -2050,10 +2062,21 @@ ${products.map((p) => {
       if (p.quando_oferecer) lines.push(`- Quando oferecer: ${p.quando_oferecer}`);
       if (p.diferenciais?.length) lines.push(`- Diferenciais: ${p.diferenciais.join(", ")}`);
       
-      // Only include products with valid URLs
+      // Foto principal
       if (p.imagem_url && p.imagem_url.startsWith('http')) {
-        lines.push(`- 📸 **PARA ENVIAR FOTO, COPIE:** [FOTO_PRODUTO:${p.imagem_url}:${p.nome}]`);
+        lines.push(`- 📸 **FOTO PRINCIPAL:** [FOTO_PRODUTO:${p.imagem_url}:${p.nome}]`);
       }
+      
+      // Galeria de fotos adicionais
+      if (p.galeria && p.galeria.length > 0) {
+        lines.push(`- 📸 **GALERIA (${p.galeria.length} fotos adicionais):**`);
+        p.galeria.forEach((url, index) => {
+          if (url && url.startsWith('http')) {
+            lines.push(`  - Foto ${index + 1}: [FOTO_PRODUTO:${url}:${p.nome} - Foto ${index + 1}]`);
+          }
+        });
+      }
+      
       if (p.video_url && p.video_url.startsWith('http')) {
         lines.push(`- 🎬 **PARA ENVIAR VÍDEO, COPIE:** [VIDEO_PRODUTO:${p.video_url}:${p.nome}]`);
       }
