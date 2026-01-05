@@ -59,10 +59,16 @@ export default function Orders() {
       // Aplicar filtro de data baseado no campo selecionado
       const dateColumn = filters.dateField === 'created_at' ? 'created_at' : 'data_emissao';
       if (filters.dateFrom) {
-        query = query.gte(dateColumn, filters.dateFrom.toISOString());
+        // Início do dia (00:00:00)
+        const fromDate = new Date(filters.dateFrom);
+        fromDate.setHours(0, 0, 0, 0);
+        query = query.gte(dateColumn, fromDate.toISOString());
       }
       if (filters.dateTo) {
-        query = query.lte(dateColumn, filters.dateTo.toISOString());
+        // Fim do dia (23:59:59.999) para incluir pedidos criados durante todo o dia
+        const toDate = new Date(filters.dateTo);
+        toDate.setHours(23, 59, 59, 999);
+        query = query.lte(dateColumn, toDate.toISOString());
       }
 
       const { data, error } = await query;
