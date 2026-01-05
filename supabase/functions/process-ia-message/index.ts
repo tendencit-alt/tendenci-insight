@@ -3198,6 +3198,16 @@ function isValidMediaUrl(url: string): boolean {
   }
 }
 
+// Remove IDs internos e sufixos técnicos do caption visível ao cliente
+function cleanProductCaption(caption: string): string {
+  return caption
+    .replace(/\s*\(ID:[a-z0-9-]+\)/gi, '')     // (ID:abc123)
+    .replace(/\s*\[ID:[a-z0-9-]+\]/gi, '')     // [ID:abc123]
+    .replace(/\s*-\s*Foto\s*\d+$/gi, '')       // - Foto 1
+    .replace(/\s*\(Foto\s*\d+\)$/gi, '')       // (Foto 1)
+    .trim();
+}
+
 // Parser robusto para marcadores de mídia usando extensão de arquivo
 function parseMediaMarker(marker: string, type: 'FOTO' | 'VIDEO'): { url: string; caption: string } | null {
   const prefix = `[${type}_PRODUTO:`;
@@ -3219,7 +3229,8 @@ function parseMediaMarker(marker: string, type: 'FOTO' | 'VIDEO'): { url: string
     // O caption começa após o : que vem depois da extensão
     const afterExtension = inner.substring(extensionEndIndex);
     const colonIndex = afterExtension.indexOf(':');
-    const caption = colonIndex !== -1 ? afterExtension.substring(colonIndex + 1).trim() : '';
+    const rawCaption = colonIndex !== -1 ? afterExtension.substring(colonIndex + 1).trim() : '';
+    const caption = cleanProductCaption(rawCaption);
     
     console.log(`✅ parseMediaMarker (extensão): url="${url}", caption="${caption}"`);
     return { url, caption };
@@ -3232,7 +3243,8 @@ function parseMediaMarker(marker: string, type: 'FOTO' | 'VIDEO'): { url: string
     const url = supabaseMatch[1].trim();
     const afterUrl = inner.substring(supabaseMatch.index! + supabaseMatch[0].length);
     const colonIndex = afterUrl.indexOf(':');
-    const caption = colonIndex !== -1 ? afterUrl.substring(colonIndex + 1).trim() : afterUrl.trim();
+    const rawCaption = colonIndex !== -1 ? afterUrl.substring(colonIndex + 1).trim() : afterUrl.trim();
+    const caption = cleanProductCaption(rawCaption);
     
     console.log(`✅ parseMediaMarker (supabase): url="${url}", caption="${caption}"`);
     return { url, caption };
@@ -3251,7 +3263,8 @@ function parseMediaMarker(marker: string, type: 'FOTO' | 'VIDEO'): { url: string
   if (colonPositions.length > 0) {
     const lastColonIndex = colonPositions[colonPositions.length - 1];
     const url = inner.substring(0, lastColonIndex).trim();
-    const caption = inner.substring(lastColonIndex + 1).trim();
+    const rawCaption = inner.substring(lastColonIndex + 1).trim();
+    const caption = cleanProductCaption(rawCaption);
     
     console.log(`✅ parseMediaMarker (fallback): url="${url}", caption="${caption}"`);
     return { url, caption };
