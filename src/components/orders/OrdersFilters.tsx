@@ -30,12 +30,12 @@ const ORDER_STATUSES = [
 ];
 
 const PERIODS = [
+  { value: 'all', label: 'Todos' },
   { value: 'today', label: 'Hoje' },
   { value: 'last7days', label: 'Últimos 7 dias' },
   { value: 'last30days', label: 'Últimos 30 dias' },
   { value: 'thisMonth', label: 'Este mês' },
   { value: 'last90days', label: 'Últimos 90 dias' },
-  { value: 'all', label: 'Todos' },
 ];
 
 export function OrdersFilters({ filters, onFiltersChange }: OrdersFiltersProps) {
@@ -99,10 +99,15 @@ export function OrdersFilters({ filters, onFiltersChange }: OrdersFiltersProps) 
         <div className="flex flex-wrap items-center gap-3">
           <Select value={filters.status || "all"} onValueChange={(v) => onFiltersChange({ ...filters, status: v === "all" ? "" : v })}>
             <SelectTrigger className="w-[160px]">
-              <SelectValue placeholder="Status" />
+              <SelectValue>
+                {filters.status 
+                  ? ORDER_STATUSES.find(s => s.value === filters.status)?.label || 'Status'
+                  : 'Status'
+                }
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todos os Status</SelectItem>
+              <SelectItem value="all">Todos</SelectItem>
               {ORDER_STATUSES.map((s) => (
                 <SelectItem key={s.value} value={s.value}>
                   {s.label}
@@ -113,10 +118,15 @@ export function OrdersFilters({ filters, onFiltersChange }: OrdersFiltersProps) 
 
           <Select value={filters.vendedorId || "all"} onValueChange={(v) => onFiltersChange({ ...filters, vendedorId: v === "all" ? "" : v })}>
             <SelectTrigger className="w-[160px]">
-              <SelectValue placeholder="Responsável" />
+              <SelectValue>
+                {filters.vendedorId 
+                  ? vendedores?.find(v => v.id === filters.vendedorId)?.full_name || 'Responsável'
+                  : 'Responsável'
+                }
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todos Responsáveis</SelectItem>
+              <SelectItem value="all">Todos</SelectItem>
               {vendedores?.map((v) => (
                 <SelectItem key={v.id} value={v.id}>
                   {v.full_name}
