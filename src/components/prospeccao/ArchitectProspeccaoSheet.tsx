@@ -55,7 +55,7 @@ export function ArchitectProspeccaoSheet({
   onOpenChange 
 }: ArchitectProspeccaoSheetProps) {
   const { toast } = useToast();
-  const { hasModulePermission } = usePermissions();
+  const { hasModuleAccess } = usePermissions();
   const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
   const [isCreateClientOpen, setIsCreateClientOpen] = useState(false);
   const [isEditArchitectOpen, setIsEditArchitectOpen] = useState(false);
@@ -63,7 +63,7 @@ export function ArchitectProspeccaoSheet({
   const queryClient = useQueryClient();
 
   // Verificar permissão de exclusão
-  const canDeleteArchitects = hasModulePermission("arquitetos", "can_delete");
+  const canDeleteArchitects = hasModuleAccess("arquitetos", "delete");
 
   // Função para excluir arquiteto permanentemente
   const handleDeleteArchitect = async () => {
