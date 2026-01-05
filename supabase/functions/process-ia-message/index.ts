@@ -660,7 +660,7 @@ Responda em português brasileiro de forma clara e organizada.`;
     // ========== CONVERSATION HISTORY (100 messages with smart summarization) ==========
     const { data: historyData } = await supabase
       .from("ia_conversations")
-      .select("role, content, created_at")
+      .select("role, content, created_at, sent_product_ids")
       .eq("phone_number", phoneNumber)
       .eq("instance_name", instanceName)
       .order("created_at", { ascending: false })
@@ -685,8 +685,53 @@ Responda em português brasileiro de forma clara e organizada.`;
 
     console.log(`📚 Using ${conversationHistory.length} messages of context${historySummary ? ' + summary' : ''}`);
 
-    // Build master prompt
-    const masterPrompt = buildMasterPrompt(configs, products, knowledge, clientMemory, conversationHistory);
+    // ========== LAST SENT PRODUCT CONTEXT ==========
+    // Find the last assistant message that sent a product photo
+    let lastSentProductContext = "";
+    const assistantWithProducts = (historyData || [])
+      .filter((h: any) => h.role === "assistant" && h.sent_product_ids && h.sent_product_ids.length > 0)
+      .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    
+    if (assistantWithProducts.length > 0) {
+      const lastSentIds = assistantWithProducts[0].sent_product_ids as string[];
+      console.log(`📸 Found ${lastSentIds.length} products sent in last message with photos`);
+      
+      // Find the actual products
+      const sentProducts = products.filter(p => 
+        lastSentIds.some(id => p.id.startsWith(id) || p.id === id)
+      );
+      
+      if (sentProducts.length > 0) {
+        const productInfo = sentProducts.map(p => {
+          const shortId = p.id.substring(0, 8);
+          const hasGallery = p.galeria && p.galeria.length > 0;
+          const galleryCount = hasGallery ? p.galeria!.length : 0;
+          return `- **${p.nome}** [ID:${shortId}]
+  - Preço: R$ ${p.preco_base?.toLocaleString('pt-BR') || 'N/I'}
+  - Categoria: ${p.categoria || 'N/I'}
+  - Fotos na galeria: ${galleryCount > 0 ? `${galleryCount} fotos adicionais` : 'Apenas foto principal'}
+  - Imagem principal: ${p.imagem_url || 'N/D'}
+  ${hasGallery ? `- Galeria: ${p.galeria!.slice(0, 3).join(', ')}${galleryCount > 3 ? ` (e mais ${galleryCount - 3})` : ''}` : ''}`;
+        }).join('\n');
+        
+        lastSentProductContext = `\n\n## 📸 ÚLTIMO(S) PRODUTO(S) ENVIADO(S) (MEMORIZE!)
+⚠️ **SE O CLIENTE PEDIR "MAIS FOTO", USE ESTES PRODUTOS ABAIXO!**
+
+${productInfo}
+
+### 🎯 INSTRUÇÃO OBRIGATÓRIA PARA "MAIS FOTO":
+1. O cliente quer mais fotos do produto acima
+2. Use a GALERIA do produto com o mesmo ID
+3. Formato: [FOTO_PRODUTO:url_da_galeria:${sentProducts[0].nome} (ID:${sentProducts[0].id.substring(0, 8)})]
+4. Se não tiver mais fotos, diga: "Dessa peça específica tenho apenas essa imagem. Quer ver outras opções?"
+5. **NUNCA** envie foto de outro produto sem perguntar primeiro!
+`;
+        console.log(`📸 Added last sent product context for: ${sentProducts.map(p => p.nome).join(', ')}`);
+      }
+    }
+
+    // Build master prompt with last sent product context
+    const masterPrompt = buildMasterPrompt(configs, products, knowledge, clientMemory, conversationHistory) + lastSentProductContext;
 
     // Build messages array for AI
     const messages: Message[] = [
@@ -706,13 +751,15 @@ Responda em português brasileiro de forma clara e organizada.`;
       throw new Error("LOVABLE_API_KEY not configured");
     }
 
-    // Calculate maxTokens based on character limit - MAIS RESTRITIVO
+    // Calculate maxTokens based on character limit
     // 1 token ≈ 4-5 chars em português, então limite/4 é mais apropriado
+    // PLUS: Add buffer for media markers (each marker ~50-80 chars = ~20 tokens, reserve 200 tokens for up to 3 markers)
     const comunicacaoConfig = configs.comunicacao || {};
     const limiteCaracteresConfig = Number(comunicacaoConfig.limite_caracteres) || 0;
     const temLimite = limiteCaracteresConfig > 0;
-    // Para limite de 200 chars, isso resulta em ~50 tokens (200/4=50) - MAIS RESTRITIVO
-    const maxTokens = temLimite ? Math.max(50, Math.ceil(limiteCaracteresConfig / 4)) : 1500;
+    const textTokens = Math.max(50, Math.ceil(limiteCaracteresConfig / 4));
+    const mediaTokensBuffer = 200; // Buffer for FOTO_PRODUTO markers
+    const maxTokens = temLimite ? textTokens + mediaTokensBuffer : 1500;
     
     console.log(`🧠 Calling Lovable AI with fallback support... (maxTokens: ${maxTokens}, limite: ${limiteCaracteresConfig})`);
 
@@ -923,6 +970,34 @@ Responda em português brasileiro de forma clara e organizada.`;
       assistantMessage
     );
 
+    // Extract product IDs from FOTO_PRODUTO markers to track which products were sent
+    const sentProductIds: string[] = [];
+    const photoMarkersForTracking = assistantMessage.match(/\[FOTO_PRODUTO:[^\]]+\]/g) || [];
+    photoMarkersForTracking.forEach((marker: string) => {
+      // Extract ID from marker - format: [FOTO_PRODUTO:url:Nome (ID:abc123)] or just match product names
+      const idMatch = marker.match(/\(ID:([a-z0-9-]+)\)/i);
+      if (idMatch && idMatch[1]) {
+        sentProductIds.push(idMatch[1].substring(0, 8)); // Store short ID
+      } else {
+        // Try to find product by name in the marker
+        const captionMatch = marker.match(/:([^:\]]+)\]$/);
+        if (captionMatch) {
+          const productName = captionMatch[1].trim();
+          const matchedProduct = products.find(p => 
+            productName.toLowerCase().includes(p.nome.toLowerCase()) ||
+            p.nome.toLowerCase().includes(productName.toLowerCase())
+          );
+          if (matchedProduct) {
+            sentProductIds.push(matchedProduct.id.substring(0, 8));
+          }
+        }
+      }
+    });
+    
+    if (sentProductIds.length > 0) {
+      console.log(`📸 Tracking ${sentProductIds.length} sent products: ${sentProductIds.join(', ')}`);
+    }
+
     // Save conversation to history
     await supabase.from("ia_conversations").insert([
       {
@@ -940,6 +1015,7 @@ Responda em português brasileiro de forma clara e organizada.`;
         role: "assistant",
         content: assistantMessage,
         media_type: "text",
+        sent_product_ids: sentProductIds.length > 0 ? sentProductIds : null,
       },
     ]);
 

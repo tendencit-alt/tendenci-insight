@@ -1877,6 +1877,7 @@ export type Database = {
           metadata: Json | null
           phone_number: string
           role: string
+          sent_product_ids: string[] | null
         }
         Insert: {
           content: string
@@ -1888,6 +1889,7 @@ export type Database = {
           metadata?: Json | null
           phone_number: string
           role: string
+          sent_product_ids?: string[] | null
         }
         Update: {
           content?: string
@@ -1899,6 +1901,7 @@ export type Database = {
           metadata?: Json | null
           phone_number?: string
           role?: string
+          sent_product_ids?: string[] | null
         }
         Relationships: []
       }
