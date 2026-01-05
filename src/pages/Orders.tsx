@@ -58,17 +58,25 @@ export default function Orders() {
       }
       // Aplicar filtro de data baseado no campo selecionado
       const dateColumn = filters.dateField === 'created_at' ? 'created_at' : 'data_emissao';
+      
       if (filters.dateFrom) {
-        // Início do dia (00:00:00)
+        // Início do dia em Brasília (00:00 Brasília = 03:00 UTC)
         const fromDate = new Date(filters.dateFrom);
-        fromDate.setHours(0, 0, 0, 0);
-        query = query.gte(dateColumn, fromDate.toISOString());
+        const year = fromDate.getFullYear();
+        const month = String(fromDate.getMonth() + 1).padStart(2, '0');
+        const day = String(fromDate.getDate()).padStart(2, '0');
+        query = query.gte(dateColumn, `${year}-${month}-${day}T03:00:00.000Z`);
       }
+      
       if (filters.dateTo) {
-        // Fim do dia (23:59:59.999) para incluir pedidos criados durante todo o dia
+        // Fim do dia em Brasília (23:59:59 Brasília = 02:59:59 UTC do dia seguinte)
         const toDate = new Date(filters.dateTo);
-        toDate.setHours(23, 59, 59, 999);
-        query = query.lte(dateColumn, toDate.toISOString());
+        const nextDay = new Date(toDate);
+        nextDay.setDate(nextDay.getDate() + 1);
+        const year = nextDay.getFullYear();
+        const month = String(nextDay.getMonth() + 1).padStart(2, '0');
+        const day = String(nextDay.getDate()).padStart(2, '0');
+        query = query.lte(dateColumn, `${year}-${month}-${day}T02:59:59.999Z`);
       }
 
       const { data, error } = await query;
