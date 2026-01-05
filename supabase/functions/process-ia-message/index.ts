@@ -1857,6 +1857,59 @@ Tom emocional: ${tomEmocional}.
 ${descricaoPersonalidade ? `\nInstruções adicionais: ${descricaoPersonalidade}` : ""}
 `);
 
+  // ========== PORTFÓLIO COMPLETO DA EMPRESA ==========
+  const categoriasComFoto = [...new Set(products.map(p => p.categoria).filter(Boolean))];
+  
+  parts.push(`# 🏭 PORTFÓLIO COMPLETO DA EMPRESA
+
+A ${nomeEmpresa} trabalha com TODAS as seguintes categorias:
+
+## PRODUTOS COM CATÁLOGO (fotos disponíveis):
+${categoriasComFoto.length > 0 ? categoriasComFoto.map(cat => `- ${cat}`).join('\n') : '- Nenhum produto cadastrado'}
+Produtos cadastrados: ${products.map(p => p.nome).join(', ')}
+
+## SERVIÇOS E PRODUTOS SOB MEDIDA (móveis planejados):
+- **Guarda-roupas**: Sob medida, closets, armários
+- **Cozinhas Planejadas**: Completas, com ou sem eletros
+- **Home Office**: Mesas, estantes, nichos
+- **Estantes e Racks**: TV, livros, decoração
+- **Quadros Decorativos**: Canvas 100% algodão, até 1,40m x 6m
+- **Estantes Industriais**: Aço e madeira sob medida
+- **Painéis**: Ripados, decorativos, divisórias
+
+⚠️ REGRA CRÍTICA:
+- Se o cliente perguntar sobre QUALQUER item acima, você DEVE atender normalmente
+- Mesmo sem foto cadastrada, conduza a conversa de forma consultiva
+- NUNCA diga "não trabalhamos com isso" se está no portfólio
+`);
+
+  // ========== ATENDIMENTO PARA MÓVEIS PLANEJADOS ==========
+  parts.push(`# 📐 ATENDIMENTO PARA MÓVEIS PLANEJADOS
+
+Quando o cliente perguntar sobre:
+- Guarda-roupa, closet, armário
+- Cozinha planejada
+- Home office
+- Estante, rack, painel
+- Qualquer móvel sob medida
+
+SIGA ESTE FLUXO:
+1. Confirme que a ${nomeEmpresa} faz móveis planejados de alto padrão
+2. Pergunte sobre o ambiente (quarto, cozinha, sala)
+3. Pergunte se tem medidas ou projeto
+4. Pergunte o estilo desejado (moderno, clássico, rústico)
+5. Informe que um consultor especializado vai apresentar as opções
+
+EXEMPLO DE RESPOSTA:
+"Sim, fazemos guarda-roupa sob medida! Você já tem as medidas do espaço?"
+
+NUNCA DIGA:
+- "Não temos guarda-roupa cadastrado"
+- "Só trabalhamos com mesas"
+- "Não encontrei esse produto"
+- "Não tenho fotos disso"
+`);
+
   // ========== CLIENT MEMORY SECTION ==========
   if (clientMemory) {
     parts.push(`# 📋 INFORMAÇÕES DO CLIENTE
@@ -2048,11 +2101,15 @@ ${objecoes.map(o => `**Se o cliente disser:** "${o.objecao}"\n**Responda:** "${o
 
   // ========== PRODUCTS SECTION ==========
   if (products.length > 0) {
-    const productsWithMediaLocal = products.filter(p => p.imagem_url || p.video_url || p.videos?.length);
+    const productsWithMediaLocal = products.filter(p => p.imagem_url || p.galeria?.length || p.video_url || p.videos?.length);
     
-    parts.push(`# 🪵 CATÁLOGO DE PRODUTOS (${products.length} produtos, ${productsWithMediaLocal.length} com mídia)
+    parts.push(`# 🪵 CATÁLOGO DE PRODUTOS COM FOTOS
+⚠️ Esta é a lista de produtos COM FOTOS disponíveis. A empresa trabalha com MUITO MAIS!
+Consulte a seção "PORTFÓLIO COMPLETO" para ver todos os serviços (móveis planejados, etc).
 
-⚠️ REGRA: Quando recomendar um produto com foto, COPIE E COLE o marcador exato abaixo na sua resposta!
+Total: ${products.length} produtos com foto | ${productsWithMediaLocal.length} com mídia
+
+REGRA: Quando recomendar um produto com foto, COPIE E COLE o marcador exato abaixo!
 
 ${products.map((p) => {
       const lines = [`## ${p.nome}`];
