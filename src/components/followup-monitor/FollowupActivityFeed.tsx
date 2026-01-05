@@ -11,22 +11,33 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { ExternalLink, Send, MessageCircle, ArrowRight, AlertTriangle, Users } from "lucide-react";
-import { format, isToday, isYesterday } from "date-fns";
+import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { isTodayBrasil, isYesterdayBrasil } from "@/utils/taskTimezone";
 import { useToast } from "@/hooks/use-toast";
 
-// Formatar data/hora de forma inteligente
+// Formatar data/hora de forma inteligente - com timezone de Brasília
 const formatEventTime = (timestamp: string) => {
   const date = new Date(timestamp);
-  const timeStr = format(date, "HH:mm");
+  // Formatar hora em Brasília
+  const timeStr = date.toLocaleTimeString('pt-BR', { 
+    timeZone: 'America/Sao_Paulo', 
+    hour: '2-digit', 
+    minute: '2-digit' 
+  });
   
-  if (isToday(date)) {
+  if (isTodayBrasil(timestamp)) {
     return `Hoje ${timeStr}`;
   }
-  if (isYesterday(date)) {
+  if (isYesterdayBrasil(timestamp)) {
     return `Ontem ${timeStr}`;
   }
-  return format(date, "dd/MM HH:mm");
+  // Formatar data completa em Brasília
+  return date.toLocaleDateString('pt-BR', { 
+    timeZone: 'America/Sao_Paulo', 
+    day: '2-digit', 
+    month: '2-digit' 
+  }) + ' ' + timeStr;
 };
 
 interface FollowupEvent {
