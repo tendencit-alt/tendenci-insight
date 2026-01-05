@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -23,6 +23,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import { toast } from 'sonner';
 import { 
   Plus, 
@@ -31,7 +36,10 @@ import {
   Package, 
   FileSpreadsheet,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  ChevronDown,
+  ChevronRight,
+  Palette
 } from 'lucide-react';
 import { AddInsumoDialog } from './AddInsumoDialog';
 
@@ -39,10 +47,38 @@ interface ProductionFichaTecnicaProps {
   productionOrderId: string;
 }
 
+interface BOMItem {
+  id: string;
+  insumo_nome: string;
+  quantidade: number;
+  unidade: string;
+  custo_unitario: number;
+  subtotal: number;
+  cor: string | null;
+  notes: string | null;
+  insumo_id: string | null;
+  insumo?: {
+    name: string;
+    code: string;
+    current_stock: number;
+    category_id: string;
+    category?: {
+      name: string;
+    };
+  } | null;
+}
+
+interface GroupedBOM {
+  category: string;
+  items: BOMItem[];
+  subtotal: number;
+}
+
 export function ProductionFichaTecnica({ productionOrderId }: ProductionFichaTecnicaProps) {
   const queryClient = useQueryClient();
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
 
   // Buscar production_product vinculado à OP
   const { data: productionProduct, isLoading: isLoadingProduct } = useQuery({
@@ -59,7 +95,7 @@ export function ProductionFichaTecnica({ productionOrderId }: ProductionFichaTec
     }
   });
 
-  // Buscar itens da BOM
+  // Buscar itens da BOM com categoria
   const { data: bomItems = [], isLoading: isLoadingBom } = useQuery({
     queryKey: ['production-product-bom', productionProduct?.id],
     queryFn: async () => {
@@ -69,16 +105,69 @@ export function ProductionFichaTecnica({ productionOrderId }: ProductionFichaTec
         .from('production_product_bom')
         .select(`
           *,
-          insumo:products(name, code, current_stock)
+          insumo:products(
+            name, 
+            code, 
+            current_stock, 
+            category_id,
+            category:product_categories(name)
+          )
         `)
         .eq('production_product_id', productionProduct.id)
         .order('created_at', { ascending: true });
       
       if (error) throw error;
-      return data;
+      return data as BOMItem[];
     },
     enabled: !!productionProduct?.id
   });
+
+  // Agrupar itens por categoria
+  const groupedItems = useMemo(() => {
+    const groups: Record<string, GroupedBOM> = {};
+    
+    bomItems.forEach(item => {
+      const categoryName = item.insumo?.category?.name || 'Outros';
+      
+      if (!groups[categoryName]) {
+        groups[categoryName] = {
+          category: categoryName,
+          items: [],
+          subtotal: 0
+        };
+      }
+      
+      groups[categoryName].items.push(item);
+      groups[categoryName].subtotal += item.subtotal || 0;
+    });
+
+    // Ordenar categorias
+    const sortedGroups = Object.values(groups).sort((a, b) => 
+      a.category.localeCompare(b.category)
+    );
+
+    return sortedGroups;
+  }, [bomItems]);
+
+  // Inicializar todas as categorias como expandidas
+  useMemo(() => {
+    const initial: Record<string, boolean> = {};
+    groupedItems.forEach(g => {
+      if (expandedCategories[g.category] === undefined) {
+        initial[g.category] = true;
+      }
+    });
+    if (Object.keys(initial).length > 0) {
+      setExpandedCategories(prev => ({ ...prev, ...initial }));
+    }
+  }, [groupedItems]);
+
+  const toggleCategory = (category: string) => {
+    setExpandedCategories(prev => ({
+      ...prev,
+      [category]: !prev[category]
+    }));
+  };
 
   // Mutation para deletar insumo
   const deleteMutation = useMutation({
@@ -240,54 +329,95 @@ export function ProductionFichaTecnica({ productionOrderId }: ProductionFichaTec
               </Button>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Insumo</TableHead>
-                    <TableHead className="text-center">Qtd</TableHead>
-                    <TableHead className="text-right">Custo Unit.</TableHead>
-                    <TableHead className="text-right">Subtotal</TableHead>
-                    <TableHead className="w-10"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {bomItems.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell>
-                        <div>
-                          <p className="font-medium">{item.insumo_nome}</p>
-                          {item.insumo?.code && (
-                            <p className="text-xs text-muted-foreground">Código: {item.insumo.code}</p>
-                          )}
-                          {item.notes && (
-                            <p className="text-xs text-muted-foreground mt-1">{item.notes}</p>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {item.quantidade} {item.unidade}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.custo_unitario)}
-                      </TableCell>
-                      <TableCell className="text-right font-medium">
-                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.subtotal || 0)}
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-destructive hover:text-destructive"
-                          onClick={() => setDeleteId(item.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+            <div className="space-y-3">
+              {/* Itens agrupados por categoria */}
+              {groupedItems.map((group) => (
+                <Collapsible
+                  key={group.category}
+                  open={expandedCategories[group.category] !== false}
+                  onOpenChange={() => toggleCategory(group.category)}
+                >
+                  <CollapsibleTrigger asChild>
+                    <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg cursor-pointer hover:bg-muted transition-colors">
+                      <div className="flex items-center gap-2">
+                        {expandedCategories[group.category] !== false ? (
+                          <ChevronDown className="h-4 w-4" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4" />
+                        )}
+                        <span className="font-medium">{group.category}</span>
+                        <Badge variant="outline" className="text-xs">
+                          {group.items.length} {group.items.length === 1 ? 'item' : 'itens'}
+                        </Badge>
+                      </div>
+                      <span className="font-semibold text-sm">
+                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(group.subtotal)}
+                      </span>
+                    </div>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <div className="mt-2 overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Insumo</TableHead>
+                            <TableHead className="text-center">Qtd</TableHead>
+                            <TableHead className="text-right">Custo Unit.</TableHead>
+                            <TableHead className="text-right">Subtotal</TableHead>
+                            <TableHead className="w-10"></TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {group.items.map((item) => (
+                            <TableRow key={item.id}>
+                              <TableCell>
+                                <div>
+                                  <p className="font-medium">{item.insumo_nome}</p>
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    {item.insumo?.code && (
+                                      <span className="text-xs text-muted-foreground">
+                                        Código: {item.insumo.code}
+                                      </span>
+                                    )}
+                                    {item.cor && (
+                                      <Badge variant="outline" className="text-xs gap-1">
+                                        <Palette className="h-3 w-3" />
+                                        {item.cor}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  {item.notes && (
+                                    <p className="text-xs text-muted-foreground mt-1">{item.notes}</p>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-center">
+                                {item.quantidade} {item.unidade}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.custo_unitario)}
+                              </TableCell>
+                              <TableCell className="text-right font-medium">
+                                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.subtotal || 0)}
+                              </TableCell>
+                              <TableCell>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-destructive hover:text-destructive"
+                                  onClick={() => setDeleteId(item.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              ))}
 
               {/* Total */}
               <div className="mt-4 p-4 bg-muted rounded-lg flex items-center justify-between">
