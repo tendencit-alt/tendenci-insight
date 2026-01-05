@@ -32,7 +32,8 @@ import {
   Trash2,
   Zap,
   FileSpreadsheet,
-  Info
+  Info,
+  Timer
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -40,6 +41,7 @@ import { EditProductionOrderDialog } from './EditProductionOrderDialog';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ProductionUpdates } from './ProductionUpdates';
 import { ProductionFichaTecnica } from './ProductionFichaTecnica';
+import { EditPrazoDialog } from './EditPrazoDialog';
 
 interface ProductionOrderDetailSheetProps {
   orderId: string | null;
@@ -67,6 +69,7 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
   const queryClient = useQueryClient();
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [prazoDialogOpen, setPrazoDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('info');
   const { isMaster } = usePermissions();
 
@@ -362,6 +365,9 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
     ? sortedPhases[currentPhaseIndex + 1] 
     : sortedPhases.find(p => p.status === 'pendente');
 
+  // Verificar se é Móveis Planejados
+  const isMoveisplanejados = order?.production_type?.name === 'Móveis Planejados';
+
   return (
     <>
       <Sheet open={open} onOpenChange={onOpenChange}>
@@ -542,7 +548,41 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
                         </Button>
                       </div>
 
-                      {order.planned_end_date && (
+                      {/* Prazo - com destaque para Móveis Planejados */}
+                      {isMoveisplanejados ? (
+                        <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <Timer className="h-5 w-5 text-primary" />
+                              <div>
+                                <p className="text-sm text-muted-foreground">Prazo de Produção</p>
+                                <p className="font-bold text-lg text-primary">
+                                  {order.prazo_customizado_dias 
+                                    ? `${order.prazo_customizado_dias} dias úteis`
+                                    : 'Não definido'
+                                  }
+                                </p>
+                              </div>
+                            </div>
+                            {order.status !== 'concluido' && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setPrazoDialogOpen(true)}
+                              >
+                                <Pencil className="h-4 w-4 mr-1" />
+                                Editar
+                              </Button>
+                            )}
+                          </div>
+                          {order.planned_end_date && (
+                            <p className="text-sm mt-2 text-muted-foreground flex items-center gap-2">
+                              <Calendar className="h-4 w-4" />
+                              Entrega: {format(new Date(order.planned_end_date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                            </p>
+                          )}
+                        </div>
+                      ) : order.planned_end_date && (
                         <div className="flex items-center gap-3">
                           <Calendar className="h-4 w-4 text-muted-foreground" />
                           <div>
@@ -702,6 +742,18 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Dialog de editar prazo - Móveis Planejados */}
+      {order && isMoveisplanejados && (
+        <EditPrazoDialog
+          open={prazoDialogOpen}
+          onOpenChange={setPrazoDialogOpen}
+          orderId={orderId!}
+          currentDiasUteis={order.prazo_customizado_dias || null}
+          createdAt={order.created_at || null}
+          orderNumber={order.order_number}
+        />
+      )}
     </>
   );
 }
