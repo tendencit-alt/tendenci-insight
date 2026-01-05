@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,11 +15,12 @@ import {
   Calendar,
   Package,
   Tag as TagIcon,
-  User,
   TrendingUp,
   ExternalLink,
   Plus,
-  Pencil
+  Pencil,
+  Trash2,
+  AlertTriangle
 } from "lucide-react";
 import { format } from "date-fns";
 import { CreateProjectDialog } from "@/components/projects/CreateProjectDialog";
@@ -29,6 +30,18 @@ import { ArchitectTasks } from "./ArchitectTasks";
 import { ArchitectHistory } from "./ArchitectHistory";
 import { ArchitectTimeline } from "./ArchitectTimeline";
 import { useToast } from "@/hooks/use-toast";
+import { usePermissions } from "@/hooks/usePermissions";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface ArchitectProspeccaoSheetProps {
   architectId: string;
@@ -42,10 +55,69 @@ export function ArchitectProspeccaoSheet({
   onOpenChange 
 }: ArchitectProspeccaoSheetProps) {
   const { toast } = useToast();
+  const { hasModulePermission } = usePermissions();
   const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
   const [isCreateClientOpen, setIsCreateClientOpen] = useState(false);
   const [isEditArchitectOpen, setIsEditArchitectOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const queryClient = useQueryClient();
+
+  // Verificar permissão de exclusão
+  const canDeleteArchitects = hasModulePermission("arquitetos", "can_delete");
+
+  // Função para excluir arquiteto permanentemente
+  const handleDeleteArchitect = async () => {
+    if (!architectId) return;
+    
+    setIsDeleting(true);
+    try {
+      // Chamar função RPC que exclui de forma segura
+      const { data, error } = await supabase.rpc('delete_architect_safely', {
+        p_architect_id: architectId
+      });
+
+      if (error) {
+        console.error('Erro ao excluir arquiteto:', error);
+        
+        // Verificar se é erro de registros vinculados
+        if (error.message.includes('leads') || error.message.includes('deals') || 
+            error.message.includes('orders') || error.message.includes('projects')) {
+          toast({
+            title: "Não foi possível excluir",
+            description: "Este arquiteto possui registros vinculados (leads, negociações, pedidos ou projetos). Remova-os primeiro.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Erro ao excluir",
+            description: error.message,
+            variant: "destructive",
+          });
+        }
+        return;
+      }
+
+      toast({
+        title: "Arquiteto excluído",
+        description: "O arquiteto foi removido permanentemente do sistema.",
+      });
+
+      // Fechar sheet e atualizar queries
+      onOpenChange(false);
+      queryClient.invalidateQueries({ queryKey: ["prospeccao-architects"] });
+      queryClient.invalidateQueries({ queryKey: ["architects"] });
+      
+    } catch (err) {
+      console.error('Exceção ao excluir:', err);
+      toast({
+        title: "Erro inesperado",
+        description: "Ocorreu um erro ao tentar excluir o arquiteto.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   // Buscar dados do arquiteto usando React Query
   const { data: architect } = useQuery({
@@ -140,14 +212,63 @@ export function ArchitectProspeccaoSheet({
                 @{architect.vendedor?.full_name || architect.vendedor?.email || "Sem vendedor"}
               </Badge>
             </SheetTitle>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsEditArchitectOpen(true)}
-            >
-              <Pencil className="h-4 w-4 mr-2" />
-              Editar
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsEditArchitectOpen(true)}
+              >
+                <Pencil className="h-4 w-4 mr-2" />
+                Editar
+              </Button>
+              
+              {canDeleteArchitects && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      disabled={isDeleting}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Excluir
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle className="flex items-center gap-2">
+                        <AlertTriangle className="h-5 w-5 text-destructive" />
+                        Excluir Arquiteto Permanentemente
+                      </AlertDialogTitle>
+                      <AlertDialogDescription className="space-y-2">
+                        <p>
+                          Você está prestes a excluir <strong>{architect?.name}</strong> permanentemente.
+                        </p>
+                        <p className="text-destructive font-medium">
+                          Esta ação não pode ser desfeita!
+                        </p>
+                        <p>
+                          Serão excluídos também: histórico, timeline, tarefas agendadas, arquivos e logs de prospecção.
+                        </p>
+                        <p>
+                          Se houver leads, negociações, pedidos ou projetos vinculados, a exclusão será bloqueada.
+                        </p>
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleDeleteArchitect}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        disabled={isDeleting}
+                      >
+                        {isDeleting ? "Excluindo..." : "Excluir Permanentemente"}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+            </div>
           </div>
         </SheetHeader>
 
