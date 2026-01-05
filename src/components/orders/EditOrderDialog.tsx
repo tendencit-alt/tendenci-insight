@@ -172,6 +172,21 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
     transportadora_nome: '',
     transportadora_cnpj: '',
     data_emissao: '',
+    vendedor_id: '',
+  });
+
+  // Query para buscar vendedores (apenas para masters)
+  const { data: vendedores } = useQuery({
+    queryKey: ['vendedores-for-order'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('role', ['admin', 'vendedor'])
+        .order('full_name');
+      return data || [];
+    },
+    enabled: isMaster && open,
   });
 
   const [parcelas, setParcelas] = useState<PagamentoParcela[]>([
@@ -352,6 +367,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
         transportadora_nome: order.transportadora_nome || '',
         transportadora_cnpj: order.transportadora_cnpj || '',
         data_emissao: order.data_emissao ? order.data_emissao.slice(0, 16) : '',
+        vendedor_id: order.vendedor_id || '',
       });
 
       // Carregar dados de taxa de cartão do pedido
@@ -686,6 +702,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
           rt_percentual: rtConfig.habilitado ? rtConfig.percentual : 0,
           rt_valor: rtConfig.habilitado ? (total * (rtConfig.percentual / 100)) : 0,
           ...(isMaster && formData.data_emissao ? { data_emissao: new Date(formData.data_emissao).toISOString() } : {}),
+          ...(isMaster && formData.vendedor_id ? { vendedor_id: formData.vendedor_id } : {}),
         })
         .eq('id', orderId);
 
@@ -872,6 +889,36 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                 />
                 <p className="text-xs text-amber-600 dark:text-amber-500 mt-2">
                   Campo disponível apenas para administradores. Alterar com cuidado.
+                </p>
+              </div>
+            )}
+
+            {/* Campo de Vendedor - Apenas para Master */}
+            {isMaster && (
+              <div className="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
+                <div className="flex items-center gap-2 mb-3">
+                  <User className="h-4 w-4 text-amber-600 dark:text-amber-500" />
+                  <Label className="text-amber-700 dark:text-amber-400 font-medium">Vendedor Responsável (Master)</Label>
+                </div>
+                <Select 
+                  value={formData.vendedor_id || "_placeholder"} 
+                  onValueChange={(v) => setFormData({ ...formData, vendedor_id: v === "_placeholder" ? "" : v })}
+                  disabled={!isEditable}
+                >
+                  <SelectTrigger className="max-w-xs border-amber-300 dark:border-amber-700">
+                    <SelectValue placeholder="Selecionar vendedor" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_placeholder" disabled>Selecionar vendedor</SelectItem>
+                    {vendedores?.map((v) => (
+                      <SelectItem key={v.id} value={v.id}>
+                        {v.full_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-amber-600 dark:text-amber-500 mt-2">
+                  Campo disponível apenas para administradores.
                 </p>
               </div>
             )}
