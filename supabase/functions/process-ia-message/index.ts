@@ -93,6 +93,9 @@ interface Knowledge {
   validade?: string;
   arquivos?: string[];
   videos?: Array<{nome: string; url: string}>;
+  arquivo_url?: string;
+  tipo_arquivo?: string;
+  autor?: string;
   ativo: boolean;
 }
 
@@ -1972,6 +1975,35 @@ NUNCA DIGA:
 - "Não tenho fotos disso"
 `);
 
+  // ========== PRODUTOS PERSONALIZÁVEIS VS CATÁLOGO ==========
+  parts.push(`# 🎨 PRODUTOS PERSONALIZÁVEIS VS. CATÁLOGO
+
+## Diferenças Importantes:
+
+### Produtos do Catálogo (com foto):
+- Já têm medidas padrão definidas
+- Preço fixo conforme tabela
+- Podem ser adaptados (cor, acabamento)
+- Estoque ou produção rápida
+
+### Produtos Personalizados (sob medida):
+- Cliente define medidas exatas
+- Preço calculado por m² ou projeto
+- Desenvolvimento exclusivo
+- Prazo maior de produção
+
+## Quando Oferecer Personalização:
+1. Cliente menciona medidas específicas diferentes do catálogo
+2. Cliente tem projeto de arquiteto
+3. Espaço com dimensões não-convencionais
+4. Cliente quer algo "único" ou "exclusivo"
+
+## Como Abordar:
+- "Esse modelo que mostrei é de [medida]. Se precisar diferente, também fazemos sob medida!"
+- "Você tem as medidas do espaço? Assim posso dizer se esse modelo cabe ou se precisamos fazer um exclusivo."
+- "Trabalhamos com medidas personalizadas. Qual seria o tamanho ideal pro seu ambiente?"
+`);
+
   // ========== CLIENT MEMORY SECTION ==========
   if (clientMemory) {
     parts.push(`# 📋 INFORMAÇÕES DO CLIENTE
@@ -2002,6 +2034,39 @@ EXEMPLO INCORRETO (NUNCA FAÇA ISSO):
 "Perfeito! Para 10 lugares, o ideal são mesas entre 3,00m e 3,50m para garantir conforto total aos convidados. Tenho duas propostas incríveis..."
 
 VIOLAÇÃO DESSAS REGRAS = RESPOSTA INVÁLIDA
+`);
+
+  // ========== REGRA DE DESAMBIGUAÇÃO OBRIGATÓRIA ==========
+  parts.push(`# 🎯 REGRA DE DESAMBIGUAÇÃO OBRIGATÓRIA
+
+Quando o cliente pedir um produto e existirem MÚLTIPLAS opções similares:
+
+1. **NUNCA escolha arbitrariamente** - SEMPRE pergunte qual prefere
+2. **Mostre as diferenças** - tamanho, medidas, preço, material
+3. **Use os IDs** para rastrear depois qual foi mostrado
+
+### ✅ Exemplo CORRETO:
+Cliente: "Quero ver mesa cascata"
+Você: "Temos a mesa cascata em diferentes tamanhos:
+- Para 10 lugares (3,00m) - R$ 14.900
+- Para 12 lugares (3,50m) - R$ 15.900
+Qual te interessa mais?"
+
+### ❌ Exemplo INCORRETO (NUNCA FAÇA ISSO):
+Cliente: "Quero ver mesa cascata"
+Você: "[FOTO_PRODUTO:url:Mesa cascata 10 lugares]" 
+→ ERRADO! Não perguntou qual tamanho/versão!
+
+### Quando Desambiguar:
+- Produtos com nomes parecidos (cascata 10 vs cascata 12)
+- Produtos com mesmo nome mas medidas diferentes
+- Quando cliente usa termo genérico ("quero mesa grande")
+
+### Como Desambiguar:
+1. Liste as opções disponíveis (máximo 3)
+2. Destaque a diferença principal (tamanho, preço)
+3. Pergunte qual o cliente prefere
+4. SÓ DEPOIS de responder, envie a foto
 `);
 
   // ========== MAIN FUNCTION ==========
@@ -2281,12 +2346,36 @@ ${products.map((p) => {
       if (p.quando_oferecer) lines.push(`- Quando oferecer: ${p.quando_oferecer}`);
       if (p.diferenciais?.length) lines.push(`- Diferenciais: ${p.diferenciais.join(", ")}`);
       
-      // NOVOS CAMPOS: Estoque
+      // NOVOS CAMPOS: Medidas como DIFERENCIADOR PRINCIPAL (logo após nome)
+      if (p.comprimento || p.largura || p.altura) {
+        const medidas = [];
+        const unidade = p.unidade_medida || 'cm';
+        if (p.comprimento) medidas.push(`C: ${p.comprimento}${unidade}`);
+        if (p.largura) medidas.push(`L: ${p.largura}${unidade}`);
+        if (p.altura) medidas.push(`A: ${p.altura}${unidade}`);
+        lines.push(`- 📐 **MEDIDAS DISTINTIVAS:** ${medidas.join(' x ')}`);
+      }
+      
+      // Extrair tipo de madeira da descrição (se houver)
+      if (p.descricao) {
+        const madeiras = ['pequiá', 'jatobá', 'ipê', 'cedro', 'peroba', 'freijó', 'muiracatiara', 'carvalho', 'nogueira', 'teca', 'mogno'];
+        const madeiraEncontrada = madeiras.find(m => p.descricao.toLowerCase().includes(m));
+        if (madeiraEncontrada) {
+          lines.push(`- 🌳 **MADEIRA:** ${madeiraEncontrada.charAt(0).toUpperCase() + madeiraEncontrada.slice(1)}`);
+        }
+      }
+      
+      // NOVOS CAMPOS: Estoque e Personalização
+      if (p.permite_venda_sem_estoque) {
+        lines.push(`- 🎨 **PERSONALIZÁVEL:** Sim - pode ser produzido sob medida`);
+        lines.push(`- 💡 Dica: Mencione que "esse modelo pode ser feito em outras medidas"`);
+      }
+      
       if (p.estoque !== undefined && p.estoque !== null) {
         if (p.estoque > 0) {
           lines.push(`- ✅ Em estoque: ${p.estoque} unidades`);
         } else if (p.permite_venda_sem_estoque) {
-          lines.push(`- 📦 Sob encomenda (produção sob demanda)`);
+          lines.push(`- 🛠️ **PRODUÇÃO:** Sob encomenda (produção exclusiva para o cliente)`);
         } else {
           lines.push(`- ❌ Fora de estoque temporariamente`);
         }
@@ -2295,16 +2384,6 @@ ${products.map((p) => {
       // NOVO CAMPO: Prazo de entrega
       if (p.prazo_entrega_dias) {
         lines.push(`- 🚚 Prazo de entrega: ${p.prazo_entrega_dias} dias úteis`);
-      }
-      
-      // NOVOS CAMPOS: Medidas
-      if (p.comprimento || p.largura || p.altura) {
-        const medidas = [];
-        const unidade = p.unidade_medida || 'cm';
-        if (p.comprimento) medidas.push(`C: ${p.comprimento}${unidade}`);
-        if (p.largura) medidas.push(`L: ${p.largura}${unidade}`);
-        if (p.altura) medidas.push(`A: ${p.altura}${unidade}`);
-        lines.push(`- 📏 Medidas: ${medidas.join(' x ')}`);
       }
       
       // Foto principal COM ID para identificação única
@@ -2336,6 +2415,42 @@ ${products.map((p) => {
       return lines.join("\n");
     }).join("\n\n")}
 `);
+
+    // ========== ALERTA DE PRODUTOS SIMILARES ==========
+    // Detectar produtos com nomes similares para evitar confusão
+    const produtosPorNome: Record<string, Product[]> = {};
+    products.forEach(p => {
+      // Extrair nome base removendo números de lugares e variações
+      const nomeBase = p.nome.toLowerCase()
+        .replace(/\d+\s*lugares?/gi, '')
+        .replace(/para\s+/gi, '')
+        .replace(/até\s+/gi, '')
+        .replace(/pequi[aá]/gi, 'pequi')
+        .trim();
+      if (!produtosPorNome[nomeBase]) produtosPorNome[nomeBase] = [];
+      produtosPorNome[nomeBase].push(p);
+    });
+
+    const produtosSimilares = Object.entries(produtosPorNome)
+      .filter(([_, prods]) => prods.length > 1);
+
+    if (produtosSimilares.length > 0) {
+      let alertaSection = `\n# ⚠️ ALERTA: PRODUTOS COM NOMES SIMILARES\n\n`;
+      alertaSection += `**CUIDADO!** Existem produtos que podem ser confundidos. SEMPRE pergunte qual versão o cliente quer:\n\n`;
+      
+      produtosSimilares.forEach(([nomeBase, prods]) => {
+        alertaSection += `## Grupo: "${nomeBase.trim()}"\n`;
+        prods.forEach(p => {
+          const shortId = p.id.slice(0, 8);
+          const medida = p.comprimento ? `${p.comprimento}${p.unidade_medida || 'cm'}` : 'sem medida';
+          const preco = p.preco_base ? `R$ ${p.preco_base.toFixed(2)}` : 'consultar';
+          alertaSection += `- **${p.nome}** [ID:${shortId}] - Medida: ${medida} - ${preco}\n`;
+        });
+        alertaSection += `\n**REGRA:** Quando o cliente mencionar "${nomeBase.trim()}", liste as opções e pergunte qual tamanho/versão prefere ANTES de mostrar fotos!\n\n`;
+      });
+      
+      parts.push(alertaSection);
+    }
   }
 
   // ========== KNOWLEDGE BASE (APRIMORADO COM TODOS OS CAMPOS) ==========
