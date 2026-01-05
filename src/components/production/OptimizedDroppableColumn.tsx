@@ -1,11 +1,10 @@
 import { useDroppable } from '@dnd-kit/core';
 import { useDraggable } from '@dnd-kit/core';
+import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@/lib/utils';
 import { getTailwindColor } from '@/utils/tailwindColors';
 import { ProductionCardSimple } from './ProductionCardSimple';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { memo, useCallback, useMemo } from 'react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
 
 interface OptimizedDroppableColumnProps {
   id: string;
@@ -31,10 +30,11 @@ const DraggableCard = memo(function DraggableCard({
     id: order.id,
   });
 
-  const style = transform ? {
-    transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+  const style = {
+    transform: CSS.Translate.toString(transform),
     zIndex: isDragging ? 999 : undefined,
-  } : undefined;
+    cursor: isDragging ? 'grabbing' : 'grab',
+  };
 
   return (
     <div
@@ -43,8 +43,8 @@ const DraggableCard = memo(function DraggableCard({
       {...listeners}
       {...attributes}
       className={cn(
-        "touch-none",
-        isDragging && "opacity-50"
+        "touch-none select-none",
+        isDragging && "opacity-50 shadow-2xl"
       )}
     >
       <ProductionCardSimple 
@@ -121,37 +121,33 @@ function OptimizedDroppableColumnComponent({
         </div>
       )}
       
-      {/* Área de drop com scroll interno */}
+      {/* Área de drop com scroll nativo */}
       <div
         ref={setNodeRef}
         className={cn(
-          "flex-1 rounded-lg transition-all duration-200 border-2 border-dashed",
+          "flex-1 rounded-lg transition-all duration-200 border-2 border-dashed overflow-y-auto",
           isOver 
             ? "bg-primary/10 border-primary shadow-lg" 
             : "border-transparent hover:border-muted-foreground/20"
         )}
+        style={{ maxHeight }}
       >
-        <ScrollArea 
-          className="h-full pr-2"
-          style={{ maxHeight }}
-        >
-          <div className="space-y-2 p-1">
-            {sortedOrders.length === 0 ? (
-              <div className="flex items-center justify-center h-24 text-muted-foreground text-sm">
-                Arraste itens aqui
-              </div>
-            ) : (
-              sortedOrders.map((order) => (
-                <DraggableCard
-                  key={order.id}
-                  order={order}
-                  onClick={() => handleCardClick(order.id)}
-                  automationAlert={automationAlerts?.get(order.id)}
-                />
-              ))
-            )}
-          </div>
-        </ScrollArea>
+        <div className="space-y-2 p-2">
+          {sortedOrders.length === 0 ? (
+            <div className="flex items-center justify-center h-24 text-muted-foreground text-sm">
+              Arraste itens aqui
+            </div>
+          ) : (
+            sortedOrders.map((order) => (
+              <DraggableCard
+                key={order.id}
+                order={order}
+                onClick={() => handleCardClick(order.id)}
+                automationAlert={automationAlerts?.get(order.id)}
+              />
+            ))
+          )}
+        </div>
       </div>
       
       {/* Indicador de quantidade se tem muitos itens */}
