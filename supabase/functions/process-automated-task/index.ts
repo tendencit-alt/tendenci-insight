@@ -390,9 +390,33 @@ async function processCRMTask(supabase: any, evolutionUrl: string, evolutionApiK
     throw new Error('Deal não encontrado')
   }
 
-  const clientPhone = task.whatsapp_number || deal.lead?.client?.phone
   const clientName = deal.lead?.client?.name || 'Cliente'
   const dealTitle = deal.title || 'Negócio'
+  
+  // SINCRONIZAÇÃO: Prioridade para número ATUALIZADO do cliente
+  // Se o número da tarefa for diferente do cadastro atual, usar o do cadastro
+  const clientPhoneFromDb = deal.lead?.client?.phone
+  let clientPhone = task.whatsapp_number
+  
+  if (clientPhoneFromDb) {
+    // Limpar ambos para comparação (remover não-numéricos)
+    const cleanTaskPhone = (task.whatsapp_number || '').replace(/\D/g, '')
+    const cleanDbPhone = clientPhoneFromDb.replace(/\D/g, '')
+    
+    // Se não tinha número na tarefa OU se o número do cliente foi atualizado
+    if (!cleanTaskPhone || (cleanTaskPhone !== cleanDbPhone && cleanDbPhone.length >= 10)) {
+      console.log(`🔄 Sincronizando número: tarefa="${cleanTaskPhone}" → cliente="${cleanDbPhone}"`)
+      clientPhone = clientPhoneFromDb
+      
+      // Atualizar a tarefa com o número correto do cliente
+      await supabase
+        .from('crm_tasks')
+        .update({ whatsapp_number: clientPhoneFromDb })
+        .eq('id', taskId)
+      
+      console.log(`✅ Número da tarefa atualizado para: ${clientPhoneFromDb}`)
+    }
+  }
 
   if (!clientPhone) {
     console.error('❌ Telefone do cliente não encontrado')
