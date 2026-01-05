@@ -738,6 +738,47 @@ Responda em português brasileiro de forma clara e organizada.`;
 
     console.log(`📚 Using ${conversationHistory.length} messages of context${historySummary ? ' + summary' : ''}`);
 
+    // ========== EXTRACT ALREADY PROVIDED INFO (Anti-Repetition) ==========
+    function extractAlreadyProvidedInfo(history: Message[]): string[] {
+      const provided: string[] = [];
+      
+      for (const msg of history) {
+        if (msg.role === "assistant") {
+          // Check for price mentions
+          if (/R\$\s*[\d.,]+/.test(msg.content)) {
+            const priceMatch = msg.content.match(/R\$\s*[\d.,]+/g);
+            if (priceMatch) {
+              provided.push(`Preço já informado: ${priceMatch[0]}`);
+            }
+          }
+          
+          // Check for material mentions (pés, base, estrutura)
+          if (/pés?|base|estrutura/i.test(msg.content) && /aço|metal|ferro|carbono|madeira/i.test(msg.content)) {
+            provided.push("Material dos pés/base já explicado");
+          }
+          
+          // Check for size mentions
+          if (/\d+[\s,]*m(?:etros?)?|\d+\s*cm|\d+,\d+\s*m/i.test(msg.content) && /mesa|banco|cadeira/i.test(msg.content)) {
+            provided.push("Tamanho/medidas já informados");
+          }
+          
+          // Check for prazo/entrega
+          if (/prazo|dias úteis|semanas|entrega/i.test(msg.content) && /\d+\s*(dias?|semanas?)/i.test(msg.content)) {
+            provided.push("Prazo de entrega já mencionado");
+          }
+          
+          // Check for acabamento
+          if (/acabamento|óleo|verniz|laca|pintura/i.test(msg.content)) {
+            provided.push("Acabamento já explicado");
+          }
+        }
+      }
+      
+      return [...new Set(provided)]; // Remove duplicates
+    }
+
+    const alreadyProvidedInfo = extractAlreadyProvidedInfo(conversationHistory);
+
     // ========== LAST SENT PRODUCT CONTEXT ==========
     // Find the last assistant message that sent a product photo
     let lastSentProductContext = "";
@@ -863,7 +904,7 @@ ${productInfo}
     }
 
     // Build master prompt with last sent product context
-    const masterPrompt = buildMasterPrompt(configs, products, knowledge, clientMemory, conversationHistory) + lastSentProductContext;
+    const masterPrompt = buildMasterPrompt(configs, products, knowledge, clientMemory, conversationHistory, alreadyProvidedInfo) + lastSentProductContext;
 
     // Build messages array for AI
     const messages: Message[] = [
@@ -2003,7 +2044,8 @@ function buildMasterPrompt(
   products: Product[],
   knowledge: Knowledge[],
   clientMemory: ClientMemory | null,
-  conversationHistory: Message[]
+  conversationHistory: Message[],
+  alreadyProvidedInfo: string[] = []
 ): string {
   const parts: string[] = [];
 
@@ -2428,6 +2470,65 @@ ERRADO (texto listando tudo, fotos depois - PROIBIDO!):
 VIOLAÇÃO DESSAS REGRAS = RESPOSTA INVÁLIDA
 `);
 
+  // ========== REGRA CRÍTICA: NUNCA REPITA INFORMAÇÕES ==========
+  parts.push(`# 🔄 REGRA CRÍTICA: NUNCA REPITA INFORMAÇÕES
+
+## ⚠️ LEIA COM ATENÇÃO - VIOLAÇÕES FREQUENTES
+
+Você está conectado ao histórico COMPLETO da conversa. Use-o para:
+1. NUNCA repetir algo que você já disse
+2. NUNCA recapitular antes de mudar de assunto
+3. Responder APENAS a nova pergunta
+
+## ❌ ERROS GRAVES (PROIBIDO):
+
+### ERRO 1: Repetir Preço Já Dito
+❌ Cliente: "E o pé de que é feito?"
+❌ IA: "O valor dela é R$ 3.900. Os pés são de aço carbono..."
+→ O preço JÁ FOI DITO antes! Não repita!
+
+✅ CORRETO:
+✅ IA: "Os pés são de aço carbono com pintura eletrostática, super durável!"
+
+### ERRO 2: Recapitular Assunto Anterior Quando Muda de Tema
+❌ Cliente: "Mudando de assunto, vocês fazem planejados?"
+❌ IA: "Os pés são de aço carbono... E sim, fazemos planejados!"
+→ Cliente MUDOU de assunto! Não volte ao pé!
+
+✅ CORRETO:
+✅ IA: "Sim, fazemos planejados sob medida! Qual ambiente você está pensando?"
+
+### ERRO 3: Listar Tudo de Novo Sem Necessidade
+❌ Cliente: "Qual o prazo?"
+❌ IA: "A mesa tem 2m, preço R$ 3.900, pés em aço... E o prazo é 30 dias."
+→ Não repita tamanho e preço! Responda só o prazo!
+
+✅ CORRETO:
+✅ IA: "Prazo de produção é de 30 dias úteis."
+
+## 📋 ANTES DE RESPONDER, VERIFIQUE:
+
+1. "Essa informação já foi dada nesta conversa?" → Se SIM, não repita
+2. "O cliente MUDOU de assunto?" → Se SIM, NÃO recapitule o anterior
+3. "Estou respondendo APENAS o que foi perguntado?" → Deve ser SIM
+
+## 🎯 REGRA DE OURO:
+
+**CADA MENSAGEM = RESPOSTA NOVA E ÚNICA**
+
+Se você já disse algo antes, NÃO precisa dizer de novo. O cliente lembra.
+`);
+
+  // ========== INFORMAÇÕES JÁ FORNECIDAS (Anti-Repetição Dinâmica) ==========
+  if (alreadyProvidedInfo.length > 0) {
+    parts.push(`# ⚠️ INFORMAÇÕES JÁ FORNECIDAS NESTA CONVERSA:
+${alreadyProvidedInfo.map(info => `- ${info}`).join('\n')}
+
+**NÃO REPITA** nenhuma dessas informações! O cliente já as recebeu.
+Responda apenas o que for NOVO na pergunta atual.
+`);
+  }
+
   // ========== REGRA DE OURO: NUNCA ASSUMA O PRODUTO ==========
   parts.push(`# 🎯 REGRA DE OURO: NUNCA ASSUMA O PRODUTO
 
@@ -2701,6 +2802,9 @@ ${msgDespedida ? `**Despedida:** ${msgDespedida}` : ""}
 - Prometer prazos, descontos ou orçamentos automáticos
 - Falar sobre produtos ou medidas que o cliente não mencionou
 - Mencionar LARGURA da mesa — fale sempre em COMPRIMENTO
+- ⚠️ REPETIR qualquer informação que você já disse nesta conversa (preço, material, tamanho, prazo)
+- ⚠️ RECAPITULAR o assunto anterior quando cliente muda de tema
+- ⚠️ Começar resposta com informação que já foi dada antes
 - Repetir perguntas já respondidas
 - Começar duas respostas da mesma forma
 - Usar expressões genéricas como "Entendi!", "Certo!", "Perfeito!" no início de toda resposta
