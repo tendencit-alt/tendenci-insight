@@ -688,13 +688,81 @@ Responda em português brasileiro de forma clara e organizada.`;
     // ========== LAST SENT PRODUCT CONTEXT ==========
     // Find the last assistant message that sent a product photo
     let lastSentProductContext = "";
-    const assistantWithProducts = (historyData || [])
+    
+    // Helper function to extract product IDs from FOTO_PRODUTO markers
+    function extractProductIdsFromContent(content: string, productsRef: Product[]): string[] {
+      const ids: string[] = [];
+      const markers = content.match(/\[FOTO_PRODUTO:[^\]]+\]/g) || [];
+      
+      for (const marker of markers) {
+        // Try multiple patterns for ID extraction
+        const patterns = [
+          /\(ID:([a-z0-9-]+)\)/i,           // (ID:abc123)
+          /\[ID:([a-z0-9-]+)\]/i,           // [ID:abc123]
+          /ID:\s*([a-z0-9-]+)/i,            // ID: abc123
+        ];
+        
+        let foundId = false;
+        for (const pattern of patterns) {
+          const match = marker.match(pattern);
+          if (match && match[1]) {
+            ids.push(match[1].substring(0, 8));
+            foundId = true;
+            break;
+          }
+        }
+        
+        // If no ID found, try to find product by name in the marker caption
+        if (!foundId) {
+          const captionMatch = marker.match(/:([^:\]]+)\]$/);
+          if (captionMatch) {
+            const caption = captionMatch[1].toLowerCase().trim();
+            // Remove common suffixes like "(ID:xxx)" or "- Foto X"
+            const cleanCaption = caption.replace(/\(id:[^)]+\)/gi, '').replace(/-\s*foto\s*\d+/gi, '').trim();
+            
+            const product = productsRef.find(p => {
+              const pName = p.nome.toLowerCase();
+              // Check if caption contains product name or vice versa
+              return cleanCaption.includes(pName) || pName.includes(cleanCaption) ||
+                     // Also check first 3 words
+                     cleanCaption.split(' ').slice(0, 3).join(' ').includes(pName.split(' ').slice(0, 3).join(' '));
+            });
+            if (product) {
+              ids.push(product.id.substring(0, 8));
+            }
+          }
+        }
+      }
+      
+      return [...new Set(ids)]; // Remove duplicates
+    }
+    
+    // First: try by sent_product_ids field
+    let assistantWithProducts = (historyData || [])
       .filter((h: any) => h.role === "assistant" && h.sent_product_ids && h.sent_product_ids.length > 0)
       .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     
+    // Second: if no sent_product_ids found, scan content for FOTO_PRODUTO markers
+    if (assistantWithProducts.length === 0) {
+      console.log("📸 No sent_product_ids found, scanning content for FOTO_PRODUTO markers...");
+      const recentAssistantMessages = (historyData || [])
+        .filter((h: any) => h.role === "assistant" && h.content)
+        .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(0, 5); // Last 5 assistant messages
+      
+      for (const msg of recentAssistantMessages) {
+        const idsFromContent = extractProductIdsFromContent(msg.content || '', products);
+        if (idsFromContent.length > 0) {
+          console.log(`📸 Found ${idsFromContent.length} product IDs from content analysis: ${idsFromContent.join(', ')}`);
+          assistantWithProducts = [{ ...msg, sent_product_ids: idsFromContent }];
+          break;
+        }
+      }
+    }
+    
     if (assistantWithProducts.length > 0) {
       const lastSentIds = assistantWithProducts[0].sent_product_ids as string[];
-      console.log(`📸 Found ${lastSentIds.length} products sent in last message with photos`);
+      console.log(`📸 Found ${lastSentIds.length} products sent in last message with photos: ${lastSentIds.join(', ')}`);
       
       // Find the actual products
       const sentProducts = products.filter(p => 
@@ -706,25 +774,36 @@ Responda em português brasileiro de forma clara e organizada.`;
           const shortId = p.id.substring(0, 8);
           const hasGallery = p.galeria && p.galeria.length > 0;
           const galleryCount = hasGallery ? p.galeria!.length : 0;
-          return `- **${p.nome}** [ID:${shortId}]
-  - Preço: R$ ${p.preco_base?.toLocaleString('pt-BR') || 'N/I'}
-  - Categoria: ${p.categoria || 'N/I'}
-  - Fotos na galeria: ${galleryCount > 0 ? `${galleryCount} fotos adicionais` : 'Apenas foto principal'}
-  - Imagem principal: ${p.imagem_url || 'N/D'}
-  ${hasGallery ? `- Galeria: ${p.galeria!.slice(0, 3).join(', ')}${galleryCount > 3 ? ` (e mais ${galleryCount - 3})` : ''}` : ''}`;
-        }).join('\n');
+          
+          // Build gallery URLs for easy reference
+          let galleryMarkers = "";
+          if (hasGallery) {
+            galleryMarkers = p.galeria!.slice(0, 4).map((url, idx) => 
+              `    - [FOTO_PRODUTO:${url}:${p.nome} (ID:${shortId}) - Foto ${idx + 1}]`
+            ).join('\n');
+          }
+          
+          return `### ${p.nome} [ID:${shortId}]
+- Preço: R$ ${p.preco_base?.toLocaleString('pt-BR') || 'N/I'}
+- Categoria: ${p.categoria || 'N/I'}
+- Fotos disponíveis: ${galleryCount > 0 ? `${galleryCount} fotos na galeria` : 'Apenas foto principal'}
+- Imagem principal: [FOTO_PRODUTO:${p.imagem_url}:${p.nome} (ID:${shortId})]
+${hasGallery ? `- **GALERIA (use estas para "mais foto"):**\n${galleryMarkers}` : '- ⚠️ Sem galeria - apenas foto principal disponível'}`;
+        }).join('\n\n');
         
-        lastSentProductContext = `\n\n## 📸 ÚLTIMO(S) PRODUTO(S) ENVIADO(S) (MEMORIZE!)
-⚠️ **SE O CLIENTE PEDIR "MAIS FOTO", USE ESTES PRODUTOS ABAIXO!**
+        lastSentProductContext = `\n\n# 📸 ÚLTIMO(S) PRODUTO(S) ENVIADO(S) - MEMORIZE!
+
+⚠️ **ATENÇÃO:** Este é o produto que você ACABOU de mostrar ao cliente!
+Se o cliente pedir "mais foto", "outra imagem", "tem mais?", você DEVE usar este produto!
 
 ${productInfo}
 
-### 🎯 INSTRUÇÃO OBRIGATÓRIA PARA "MAIS FOTO":
-1. O cliente quer mais fotos do produto acima
-2. Use a GALERIA do produto com o mesmo ID
-3. Formato: [FOTO_PRODUTO:url_da_galeria:${sentProducts[0].nome} (ID:${sentProducts[0].id.substring(0, 8)})]
-4. Se não tiver mais fotos, diga: "Dessa peça específica tenho apenas essa imagem. Quer ver outras opções?"
-5. **NUNCA** envie foto de outro produto sem perguntar primeiro!
+## 🎯 INSTRUÇÕES PARA "MAIS FOTO" / "OUTRA IMAGEM":
+
+1. **O QUE FAZER:** Enviar fotos da GALERIA do produto acima (mesmo ID!)
+2. **COMO FAZER:** Copie os marcadores da galeria listados acima
+3. **SE NÃO TIVER GALERIA:** Diga "Dessa peça específica tenho apenas essa imagem. Quer ver outras opções parecidas?"
+4. **NUNCA:** Envie foto de outro produto sem perguntar primeiro!
 `;
         console.log(`📸 Added last sent product context for: ${sentProducts.map(p => p.nome).join(', ')}`);
       }
@@ -970,29 +1049,60 @@ ${productInfo}
       assistantMessage
     );
 
-    // Extract product IDs from FOTO_PRODUTO markers to track which products were sent
+    // Extract product IDs from FOTO_PRODUTO markers using robust extraction
     const sentProductIds: string[] = [];
     const photoMarkersForTracking = assistantMessage.match(/\[FOTO_PRODUTO:[^\]]+\]/g) || [];
-    photoMarkersForTracking.forEach((marker: string) => {
-      // Extract ID from marker - format: [FOTO_PRODUTO:url:Nome (ID:abc123)] or just match product names
-      const idMatch = marker.match(/\(ID:([a-z0-9-]+)\)/i);
-      if (idMatch && idMatch[1]) {
-        sentProductIds.push(idMatch[1].substring(0, 8)); // Store short ID
-      } else {
-        // Try to find product by name in the marker
+    
+    console.log(`📸 Found ${photoMarkersForTracking.length} FOTO_PRODUTO markers to track`);
+    
+    for (const marker of photoMarkersForTracking) {
+      // Try multiple patterns for ID extraction
+      const patterns = [
+        /\(ID:([a-z0-9-]+)\)/i,           // (ID:abc123)
+        /\[ID:([a-z0-9-]+)\]/i,           // [ID:abc123]
+        /ID:\s*([a-z0-9-]+)/i,            // ID: abc123
+      ];
+      
+      let foundId = false;
+      for (const pattern of patterns) {
+        const match = marker.match(pattern);
+        if (match && match[1]) {
+          const shortId = match[1].substring(0, 8);
+          if (!sentProductIds.includes(shortId)) {
+            sentProductIds.push(shortId);
+          }
+          foundId = true;
+          console.log(`📸 Extracted ID from marker: ${shortId}`);
+          break;
+        }
+      }
+      
+      // Fallback: find product by name in the caption
+      if (!foundId) {
         const captionMatch = marker.match(/:([^:\]]+)\]$/);
         if (captionMatch) {
-          const productName = captionMatch[1].trim();
-          const matchedProduct = products.find(p => 
-            productName.toLowerCase().includes(p.nome.toLowerCase()) ||
-            p.nome.toLowerCase().includes(productName.toLowerCase())
-          );
+          const caption = captionMatch[1].toLowerCase().trim();
+          // Remove common suffixes
+          const cleanCaption = caption.replace(/\(id:[^)]+\)/gi, '').replace(/-\s*foto\s*\d+/gi, '').trim();
+          
+          const matchedProduct = products.find(p => {
+            const pName = p.nome.toLowerCase();
+            return cleanCaption.includes(pName) || pName.includes(cleanCaption) ||
+                   cleanCaption.split(' ').slice(0, 3).join(' ').includes(pName.split(' ').slice(0, 3).join(' '));
+          });
+          
           if (matchedProduct) {
-            sentProductIds.push(matchedProduct.id.substring(0, 8));
+            const shortId = matchedProduct.id.substring(0, 8);
+            if (!sentProductIds.includes(shortId)) {
+              sentProductIds.push(shortId);
+            }
+            console.log(`📸 Matched product by name: ${matchedProduct.nome} (${shortId})`);
+          } else {
+            console.log(`⚠️ Could not match product for caption: ${cleanCaption}`);
           }
         }
       }
-    });
+    }
     
     if (sentProductIds.length > 0) {
       console.log(`📸 Tracking ${sentProductIds.length} sent products: ${sentProductIds.join(', ')}`);
@@ -2287,6 +2397,46 @@ Qual te interessa mais?"
 5. SÓ DEPOIS de responder, envie a foto do produto escolhido
 `);
 
+  // ========== REGRA OBRIGATÓRIA: "MAIS FOTO" ==========
+  parts.push(`# 📸 REGRA OBRIGATÓRIA: PEDIDO DE "MAIS FOTO"
+
+## QUANDO O CLIENTE DISSER:
+- "mais foto", "outra imagem", "tem mais foto?", "mostra mais", "outras fotos"
+- "tem outro ângulo?", "quero ver mais", "deixa eu ver mais"
+- Qualquer variação pedindo mais imagens do produto
+
+## O QUE VOCÊ DEVE FAZER:
+
+### PASSO 1: Identificar o Produto
+- Consulte a seção "ÚLTIMO(S) PRODUTO(S) ENVIADO(S)" no início deste prompt
+- Ali está o produto que você ACABOU de mostrar, com seu ID
+
+### PASSO 2: Buscar Fotos na Galeria
+- Use as fotos da GALERIA do mesmo produto (mesmo ID!)
+- O catálogo mostra a galeria de cada produto
+- Envie 1-2 fotos da galeria por vez
+
+### PASSO 3: Enviar as Fotos
+- Use o marcador EXATO: [FOTO_PRODUTO:url_da_galeria:Nome do Produto (ID:xxx)]
+- SEMPRE mantenha o mesmo ID do produto original!
+
+### PASSO 4: Se Não Tiver Galeria
+Se o produto só tem foto principal:
+"Dessa peça específica tenho apenas essa imagem. Quer que eu mostre outras opções parecidas?"
+
+## ❌ PROIBIDO:
+- Enviar foto de OUTRO produto sem perguntar
+- Dizer "não consigo enviar mais fotos" ou "não tenho acesso"
+- Ignorar o pedido do cliente
+- Enviar a MESMA foto principal novamente
+
+## ✅ EXEMPLO CORRETO:
+**Cliente:** "mais foto"
+**IA:** "Claro! Tenho mais ângulos dessa mesa, olha só!
+[FOTO_PRODUTO:url_galeria1:Mesa Cascata (ID:df53cf12)]
+Essa é de outro ângulo, mostrando o detalhe da madeira."
+`);
+
   // ========== MAIN FUNCTION ==========
   parts.push(`# 🎯 FUNÇÃO PRINCIPAL
 
@@ -2552,7 +2702,13 @@ Consulte a seção "PORTFÓLIO COMPLETO" para ver todos os serviços (móveis pl
 
 Total: ${products.length} produtos com foto | ${productsWithMediaLocal.length} com mídia
 
-REGRA: Quando recomendar um produto com foto, COPIE E COLE o marcador exato abaixo!
+## ⚠️ REGRA CRÍTICA - FORMATO OBRIGATÓRIO:
+Quando recomendar um produto, COPIE E COLE o marcador EXATO incluindo o (ID:xxx) no final!
+
+**FORMATO CORRETO:** [FOTO_PRODUTO:url:Nome do Produto (ID:abc12345)]
+**FORMATO ERRADO:** [FOTO_PRODUTO:url:Nome do Produto] ← FALTA O ID!
+
+O ID é OBRIGATÓRIO para rastrear qual produto foi mostrado!
 
 ${products.map((p) => {
       const shortId = p.id.slice(0, 8);
