@@ -41,7 +41,7 @@ import { EditProductionOrderDialog } from './EditProductionOrderDialog';
 import { usePermissions } from '@/hooks/usePermissions';
 import { ProductionUpdates } from './ProductionUpdates';
 import { ProductionFichaTecnica } from './ProductionFichaTecnica';
-import { EditPrazoDialog } from './EditPrazoDialog';
+import { EditPhasesSLADialog } from './EditPhasesSLADialog';
 
 interface ProductionOrderDetailSheetProps {
   orderId: string | null;
@@ -121,7 +121,8 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
             completed_at,
             notes,
             phase_template_id,
-            position
+            position,
+            sla_dias_uteis_custom
           `)
           .eq('production_order_id', orderId)
       ]);
@@ -134,7 +135,7 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
       const { data: templates } = phaseTemplateIds.length > 0
         ? await supabase
             .from('production_phase_templates')
-            .select('id, name, color, position')
+            .select('id, name, color, position, sla_dias_uteis')
             .in('id', phaseTemplateIds)
         : { data: [] };
 
@@ -619,45 +620,69 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
 
                     {/* Timeline de fases */}
                     <div>
-                      <h3 className="font-medium mb-3">Fases da Produção</h3>
-                      <div className="space-y-3">
-                        {sortedPhases.map((phase, index) => (
-                          <div 
-                            key={phase.id}
-                            className={`flex items-center gap-3 p-3 rounded-lg border ${
-                              phase.status === 'em_andamento' 
-                                ? 'border-primary bg-primary/5' 
-                                : phase.status === 'concluido'
-                                ? 'border-green-500 bg-green-50 dark:bg-green-950/20'
-                                : 'border-border'
-                            }`}
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="font-medium">Fases da Produção</h3>
+                        {isMoveisplanejados && order.status !== 'concluido' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setPrazoDialogOpen(true)}
                           >
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                              phase.status === 'concluido' 
-                                ? 'bg-green-500 text-white'
-                                : phase.status === 'em_andamento'
-                                ? 'bg-primary text-primary-foreground'
-                                : 'bg-muted text-muted-foreground'
-                            }`}>
-                              {phase.status === 'concluido' ? (
-                                <CheckCircle2 className="h-4 w-4" />
-                              ) : (
-                                index + 1
-                              )}
+                            <Pencil className="h-3 w-3 mr-1" />
+                            Editar Prazos
+                          </Button>
+                        )}
+                      </div>
+                      <div className="space-y-3">
+                        {sortedPhases.map((phase, index) => {
+                          // Calcular SLA efetivo (customizado ou do template)
+                          const effectiveSLA = (phase as any).sla_dias_uteis_custom ?? (phase.phase_template as any)?.sla_dias_uteis;
+                          
+                          return (
+                            <div 
+                              key={phase.id}
+                              className={`flex items-center gap-3 p-3 rounded-lg border ${
+                                phase.status === 'em_andamento' 
+                                  ? 'border-primary bg-primary/5' 
+                                  : phase.status === 'concluido'
+                                  ? 'border-green-500 bg-green-50 dark:bg-green-950/20'
+                                  : 'border-border'
+                              }`}
+                            >
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                                phase.status === 'concluido' 
+                                  ? 'bg-green-500 text-white'
+                                  : phase.status === 'em_andamento'
+                                  ? 'bg-primary text-primary-foreground'
+                                  : 'bg-muted text-muted-foreground'
+                              }`}>
+                                {phase.status === 'concluido' ? (
+                                  <CheckCircle2 className="h-4 w-4" />
+                                ) : (
+                                  index + 1
+                                )}
+                              </div>
+                              <div className="flex-1">
+                                <div className="flex items-center justify-between">
+                                  <p className="font-medium text-sm">{phase.phase_template?.name}</p>
+                                  {isMoveisplanejados && effectiveSLA && (
+                                    <Badge variant="outline" className="text-xs">
+                                      {effectiveSLA}d úteis
+                                    </Badge>
+                                  )}
+                                </div>
+                                {phase.started_at && (
+                                  <p className="text-xs text-muted-foreground">
+                                    {phase.status === 'concluido' && phase.completed_at
+                                      ? `Concluído em ${format(new Date(phase.completed_at), 'dd/MM HH:mm')}`
+                                      : `Iniciado em ${format(new Date(phase.started_at), 'dd/MM HH:mm')}`
+                                    }
+                                  </p>
+                                )}
+                              </div>
                             </div>
-                            <div className="flex-1">
-                              <p className="font-medium text-sm">{phase.phase_template?.name}</p>
-                              {phase.started_at && (
-                                <p className="text-xs text-muted-foreground">
-                                  {phase.status === 'concluido' && phase.completed_at
-                                    ? `Concluído em ${format(new Date(phase.completed_at), 'dd/MM HH:mm')}`
-                                    : `Iniciado em ${format(new Date(phase.started_at), 'dd/MM HH:mm')}`
-                                  }
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
 
@@ -743,15 +768,14 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Dialog de editar prazo - Móveis Planejados */}
+      {/* Dialog de editar SLA das etapas - Móveis Planejados */}
       {order && isMoveisplanejados && (
-        <EditPrazoDialog
+        <EditPhasesSLADialog
           open={prazoDialogOpen}
           onOpenChange={setPrazoDialogOpen}
           orderId={orderId!}
-          currentDiasUteis={order.prazo_customizado_dias || null}
-          createdAt={order.created_at || null}
           orderNumber={order.order_number}
+          createdAt={order.created_at || null}
         />
       )}
     </>

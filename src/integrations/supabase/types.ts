@@ -3543,6 +3543,7 @@ export type Database = {
           position: number
           production_order_id: string
           responsible_id: string | null
+          sla_dias_uteis_custom: number | null
           started_at: string | null
           status: string
           team_ids: string[] | null
@@ -3559,6 +3560,7 @@ export type Database = {
           position?: number
           production_order_id: string
           responsible_id?: string | null
+          sla_dias_uteis_custom?: number | null
           started_at?: string | null
           status?: string
           team_ids?: string[] | null
@@ -3575,6 +3577,7 @@ export type Database = {
           position?: number
           production_order_id?: string
           responsible_id?: string | null
+          sla_dias_uteis_custom?: number | null
           started_at?: string | null
           status?: string
           team_ids?: string[] | null
@@ -6566,6 +6569,10 @@ export type Database = {
           stage_name: string
           title: string
         }[]
+      }
+      get_effective_sla_dias_uteis: {
+        Args: { p_phase_id: string }
+        Returns: number
       }
       get_ia_config: { Args: never; Returns: Json }
       get_monthly_goal_records: {
