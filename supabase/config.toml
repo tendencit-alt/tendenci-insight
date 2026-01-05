@@ -98,3 +98,9 @@ verify_jwt = false
 
 [functions.cleanup-orphan-tasks]
 verify_jwt = false
+
+[functions.sync-whatsapp-status]
+verify_jwt = false
+
+[functions.cleanup-duplicate-instances]
+verify_jwt = false

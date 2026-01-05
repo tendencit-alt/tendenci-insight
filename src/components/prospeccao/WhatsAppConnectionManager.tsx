@@ -4,11 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2, QrCode, Trash2, RefreshCw, Plus, Phone, Calendar, PowerOff, Wrench, AlertTriangle } from "lucide-react";
-import { format } from "date-fns";
+import { Loader2, QrCode, Trash2, RefreshCw, Plus, Phone, Calendar, PowerOff, Wrench, AlertTriangle, Wifi, WifiOff, Clock } from "lucide-react";
+import { format, formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface WhatsAppConnection {
@@ -21,6 +23,7 @@ interface WhatsAppConnection {
   connected_at: string | null;
   created_at: string;
   webhook_configured: boolean;
+  last_sync: string | null;
 }
 
 interface QRCodeDialog {
@@ -178,6 +181,11 @@ export default function WhatsAppConnectionManager() {
       console.log('✅ Instance created successfully:', data);
 
       if (!data.success) {
+        // Verificar se é erro de duplicação
+        if (data.error === 'duplicate' || data.error === 'duplicate_evolution') {
+          toast.error(data.message || 'Instância já existe');
+          return;
+        }
         toast.error('Erro ao criar instância');
         return;
       }
@@ -389,6 +397,71 @@ export default function WhatsAppConnectionManager() {
     },
   });
 
+  // 🔄 Mutation para sincronização forçada com Evolution
+  const syncMutation = useMutation({
+    mutationFn: async () => {
+      console.log('🔄 Syncing with Evolution API...');
+      
+      const { data, error } = await supabase.functions.invoke("sync-whatsapp-status");
+      
+      if (error) {
+        console.error('❌ Sync error:', error);
+        throw error;
+      }
+      
+      console.log('✅ Sync result:', data);
+      return data;
+    },
+    onSuccess: (data) => {
+      const { results, duplicates } = data;
+      
+      let message = `Sincronização concluída! `;
+      if (results.updated > 0) message += `${results.updated} atualizado(s). `;
+      if (results.disconnected > 0) message += `${results.disconnected} desconectado(s). `;
+      if (duplicates?.length > 0) {
+        message += `⚠️ ${duplicates.length} duplicata(s) encontrada(s)!`;
+        toast.warning(message, { duration: 5000 });
+      } else {
+        toast.success(message);
+      }
+      
+      queryClient.invalidateQueries({ queryKey: ["whatsapp-connections"] });
+    },
+    onError: (error: any) => {
+      console.error('💥 Sync error:', error);
+      toast.error(error.message || "Erro ao sincronizar");
+    },
+  });
+
+  // 🧹 Mutation para limpar duplicatas automaticamente
+  const cleanupDuplicatesMutation = useMutation({
+    mutationFn: async () => {
+      console.log('🧹 Cleaning up duplicates...');
+      
+      const { data, error } = await supabase.functions.invoke("cleanup-duplicate-instances");
+      
+      if (error) {
+        console.error('❌ Cleanup error:', error);
+        throw error;
+      }
+      
+      console.log('✅ Cleanup result:', data);
+      return data;
+    },
+    onSuccess: (data) => {
+      if (data.duplicatesDeleted?.length > 0) {
+        toast.success(`✅ ${data.duplicatesDeleted.length} duplicata(s) removida(s)!`);
+      } else {
+        toast.info("Nenhuma duplicata encontrada.");
+      }
+      queryClient.invalidateQueries({ queryKey: ["whatsapp-connections"] });
+    },
+    onError: (error: any) => {
+      console.error('💥 Cleanup error:', error);
+      toast.error(error.message || "Erro ao limpar duplicatas");
+    },
+  });
+
   // Toggle seleção de instância
   const toggleInstanceSelection = (instanceName: string) => {
     setOrphanDialog(prev => ({
@@ -401,18 +474,52 @@ export default function WhatsAppConnectionManager() {
     }));
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string, lastSync?: string | null) => {
+    // Verificar se sincronização está antiga (> 5 minutos)
+    const isStale = lastSync && (Date.now() - new Date(lastSync).getTime()) > 5 * 60 * 1000;
+    
     switch (status) {
       case 'connected':
-        return <Badge variant="default" className="bg-green-500">Conectado</Badge>;
+        return (
+          <div className="flex items-center gap-2">
+            <Badge variant="default" className="bg-green-500 flex items-center gap-1">
+              <Wifi className="h-3 w-3" />
+              Conectado
+            </Badge>
+            {isStale && (
+              <Badge variant="outline" className="text-xs text-yellow-600 border-yellow-400">
+                <Clock className="h-3 w-3 mr-1" />
+                Verificar
+              </Badge>
+            )}
+          </div>
+        );
       case 'connecting':
-        return <Badge variant="secondary">Conectando...</Badge>;
+        return (
+          <div className="flex items-center gap-2">
+            <span className="relative flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-yellow-500"></span>
+            </span>
+            <Badge variant="secondary">Conectando...</Badge>
+          </div>
+        );
       case 'disconnected':
-        return <Badge variant="destructive">Desconectado</Badge>;
+        return (
+          <Badge variant="destructive" className="flex items-center gap-1">
+            <WifiOff className="h-3 w-3" />
+            Desconectado
+          </Badge>
+        );
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
   };
+
+  // Verificar se há conexões com problema (conectado mas sem telefone)
+  const connectionsWithIssues = connections?.filter(
+    c => c.status === 'connected' && !c.phone_number
+  ) || [];
 
   return (
     <div className="space-y-6">
@@ -469,14 +576,60 @@ export default function WhatsAppConnectionManager() {
                 </>
               )}
             </Button>
+            <Button
+              variant="outline"
+              onClick={() => syncMutation.mutate()}
+              disabled={syncMutation.isPending}
+              title="Sincronizar status com Evolution API"
+            >
+              {syncMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Sincronizando...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  🔄 Sincronizar
+                </>
+              )}
+            </Button>
           </div>
         </CardContent>
       </Card>
 
+      {/* Alerta de problemas detectados */}
+      {connectionsWithIssues.length > 0 && (
+        <Alert variant="destructive" className="border-yellow-500 bg-yellow-500/10">
+          <AlertTriangle className="h-4 w-4 text-yellow-600" />
+          <AlertDescription className="text-yellow-700 dark:text-yellow-400">
+            <strong>{connectionsWithIssues.length} conexão(ões)</strong> marcada(s) como conectada(s) mas sem número de telefone. 
+            Clique em <strong>"🔄 Sincronizar"</strong> para atualizar os status.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Lista de conexões */}
       <Card>
         <CardHeader>
-          <CardTitle>Conexões Ativas</CardTitle>
+          <CardTitle className="flex items-center justify-between">
+            <span>Conexões Ativas</span>
+            {connections && connections.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => cleanupDuplicatesMutation.mutate()}
+                disabled={cleanupDuplicatesMutation.isPending}
+                title="Limpar duplicatas automaticamente"
+              >
+                {cleanupDuplicatesMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <>🧹 Limpar Duplicatas</>
+                )}
+              </Button>
+            )}
+          </CardTitle>
           <CardDescription>
             Gerencie suas conexões WhatsApp
           </CardDescription>
@@ -498,7 +651,7 @@ export default function WhatsAppConnectionManager() {
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <h3 className="font-semibold">{conn.instance_name}</h3>
-                        {getStatusBadge(conn.status)}
+                        {getStatusBadge(conn.status, conn.last_sync)}
                       </div>
                       {conn.phone_number && (
                         <div className="flex items-center gap-1 text-sm text-muted-foreground">
@@ -510,6 +663,12 @@ export default function WhatsAppConnectionManager() {
                         <div className="flex items-center gap-1 text-sm text-muted-foreground">
                           <Calendar className="h-3 w-3" />
                           {format(new Date(conn.connected_at), "dd/MM/yyyy HH:mm")}
+                        </div>
+                      )}
+                      {conn.last_sync && (
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground/70">
+                          <Clock className="h-3 w-3" />
+                          Sync: {formatDistanceToNow(new Date(conn.last_sync), { addSuffix: true, locale: ptBR })}
                         </div>
                       )}
                     </div>

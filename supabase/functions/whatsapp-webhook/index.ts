@@ -473,13 +473,40 @@ Deno.serve(async (req) => {
         console.log('❌ Connection is CLOSED')
       }
 
-      const phoneNumber = 
+      // Tentar extrair telefone do payload
+      let phoneNumber = 
         data?.remoteJid?.replace('@s.whatsapp.net', '') ||
         data?.key?.remoteJid?.replace('@s.whatsapp.net', '') ||
         data?.phoneNumber ||
         null
 
-      console.log('📱 Phone number:', phoneNumber)
+      // 🔧 MELHORIA: Se conectado mas sem telefone, buscar da Evolution API
+      if (status === 'connected' && !phoneNumber) {
+        console.log('📱 Phone not in payload, fetching from Evolution API...')
+        
+        try {
+          const evolutionUrl = Deno.env.get('EVOLUTION_API_URL')?.replace(/\/$/, '')
+          const evolutionApiKey = Deno.env.get('EVOLUTION_API_KEY')
+          
+          if (evolutionUrl && evolutionApiKey) {
+            const statusResp = await fetch(
+              `${evolutionUrl}/instance/fetchInstances?instanceName=${encodeURIComponent(instance)}`,
+              { headers: { 'apikey': evolutionApiKey } }
+            )
+            
+            if (statusResp.ok) {
+              const statusData = await statusResp.json()
+              const instData = Array.isArray(statusData) ? statusData[0] : statusData
+              phoneNumber = instData?.ownerJid?.split('@')[0] || null
+              console.log('📱 Phone from Evolution API:', phoneNumber)
+            }
+          }
+        } catch (fetchErr) {
+          console.warn('⚠️ Could not fetch phone from Evolution:', fetchErr)
+        }
+      }
+
+      console.log('📱 Final phone number:', phoneNumber)
 
       const updateData: any = {
         status,
@@ -497,6 +524,12 @@ Deno.serve(async (req) => {
         updateData.qr_code = null
         updateData.qr_code_base64 = null
         console.log('✅ Setting connected state with phone:', phoneNumber)
+      } else if (status === 'connected' && !phoneNumber) {
+        // Conectado mas sem telefone - apenas atualizar status e limpar QR
+        updateData.connected_at = new Date().toISOString()
+        updateData.qr_code = null
+        updateData.qr_code_base64 = null
+        console.log('✅ Setting connected state (phone pending)')
       }
 
       if (status === 'disconnected') {

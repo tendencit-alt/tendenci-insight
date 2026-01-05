@@ -185,22 +185,59 @@ Deno.serve(async (req) => {
       )
     }
 
-    // ========== CREATE INSTANCE (REFATORADO) ==========
+    // ========== CREATE INSTANCE (REFATORADO COM ANTI-DUPLICAÇÃO) ==========
     if (action === 'create') {
       console.log('🆕 Creating instance:', instanceName)
       
-      // 1️⃣ Deletar instância existente na Evolution API (se existir)
+      // 🔒 ANTI-DUPLICAÇÃO: Verificar se já existe no banco
+      const { data: existingDb } = await supabase
+        .from('tendenci_whatsapp_connections')
+        .select('id, status, phone_number')
+        .eq('instance_name', instanceName)
+        .single()
+
+      if (existingDb) {
+        console.log('⚠️ Instance already exists in database:', existingDb)
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: 'duplicate',
+            message: `Já existe uma conexão com nome "${instanceName}" (status: ${existingDb.status}). Delete a existente primeiro ou use outro nome.`,
+            existing: existingDb
+          }),
+          { 
+            status: 409,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        )
+      }
+
+      // 🔒 ANTI-DUPLICAÇÃO: Verificar se já existe na Evolution API
       try {
-        const deleteResp = await fetch(`${evolutionUrl}/instance/delete/${instanceName}`, {
-          method: 'DELETE',
-          headers: { 'apikey': evolutionApiKey }
-        })
-        if (deleteResp.ok) {
-          console.log('🗑️ Deleted existing instance from Evolution API')
-          await new Promise(resolve => setTimeout(resolve, 2000))
+        const checkResp = await fetch(
+          `${evolutionUrl}/instance/fetchInstances?instanceName=${encodeURIComponent(instanceName || '')}`,
+          { headers: { 'apikey': evolutionApiKey } }
+        )
+        
+        if (checkResp.ok) {
+          const checkData = await checkResp.json()
+          if (Array.isArray(checkData) && checkData.length > 0) {
+            console.log('⚠️ Instance already exists in Evolution API:', checkData[0])
+            return new Response(
+              JSON.stringify({
+                success: false,
+                error: 'duplicate_evolution',
+                message: `Instância "${instanceName}" já existe na Evolution API. Use "Limpar Órfãs" para remover ou escolha outro nome.`
+              }),
+              { 
+                status: 409,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+              }
+            )
+          }
         }
-      } catch (err) {
-        console.log('ℹ️ No existing instance to delete')
+      } catch (checkErr) {
+        console.log('ℹ️ Could not check Evolution for existing instance, proceeding...')
       }
       
       // 2️⃣ Deletar registro do banco (se existir)
