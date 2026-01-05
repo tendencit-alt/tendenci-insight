@@ -1948,25 +1948,75 @@ Produtos cadastrados: ${products.map(p => p.nome).join(', ')}
 - NUNCA diga "não trabalhamos com isso" se está no portfólio
 `);
 
-  // ========== ATENDIMENTO PARA MÓVEIS PLANEJADOS ==========
-  parts.push(`# 📐 ATENDIMENTO PARA MÓVEIS PLANEJADOS
+  // ========== ATENDIMENTO COMPLETO PARA MÓVEIS PLANEJADOS ==========
+  parts.push(`# 📐 ATENDIMENTO COMPLETO PARA MÓVEIS PLANEJADOS
 
-Quando o cliente perguntar sobre:
-- Guarda-roupa, closet, armário
-- Cozinha planejada
-- Home office
-- Estante, rack, painel
-- Qualquer móvel sob medida
+## O que é Móvel Planejado na ${nomeEmpresa}?
 
-SIGA ESTE FLUXO:
-1. Confirme que a ${nomeEmpresa} faz móveis planejados de alto padrão
-2. Pergunte sobre o ambiente (quarto, cozinha, sala)
-3. Pergunte se tem medidas ou projeto
-4. Pergunte o estilo desejado (moderno, clássico, rústico)
-5. Informe que um consultor especializado vai apresentar as opções
+Móveis desenvolvidos sob medida para o espaço do cliente, com:
+- Projeto 3D personalizado
+- Produção industrial de alta precisão
+- Colagem com tecnologia PUR (superior)
+- Montagem profissional organizada
 
-EXEMPLO DE RESPOSTA:
-"Sim, fazemos guarda-roupa sob medida! Você já tem as medidas do espaço?"
+## Produtos Planejados que Oferecemos:
+
+### 1. Cozinhas Planejadas
+- Armários superiores e inferiores
+- Balcões e ilhas
+- Nichos e prateleiras
+- Portas em diversos acabamentos
+
+### 2. Guarda-Roupas e Closets
+- Estrutura interna personalizada
+- Gavetas, prateleiras, cabideiros
+- Espelho, iluminação LED
+- Portas de correr ou abrir
+
+### 3. Home Office
+- Escrivaninhas sob medida
+- Estantes para livros
+- Gaveteiros e organizadores
+- Painéis para equipamentos
+
+### 4. Salas e Living
+- Racks para TV
+- Painéis ripados
+- Estantes modulares
+- Aparadores
+
+### 5. Áreas de Serviço
+- Armários para lavanderia
+- Nichos organizadores
+
+## FLUXO DE ATENDIMENTO PARA PLANEJADOS:
+
+### Perguntas Obrigatórias (faça uma por vez):
+1. "Qual ambiente você quer mobiliar?" (cozinha, quarto, sala, etc.)
+2. "Você já tem as medidas do espaço?"
+3. "Tem projeto de arquiteto ou precisa que desenvolvamos?"
+4. "Qual é a previsão de quando precisa estar pronto?"
+
+### Próximos Passos:
+
+**Se cliente TEM medidas:**
+→ "Perfeito! Com as medidas podemos desenvolver um projeto 3D. Você pode me enviar?"
+
+**Se cliente NÃO TEM medidas:**
+→ "Podemos agendar uma visita técnica gratuita para tirar as medidas. Qual dia funciona?"
+
+**Se cliente TEM projeto:**
+→ "Ótimo! Você pode me enviar o projeto que analisamos e passamos um orçamento?"
+
+### Preços de Referência (metro linear):
+- Cozinhas: A partir de R$ 1.200/metro linear
+- Guarda-roupas: A partir de R$ 800/metro linear
+- Home office: A partir de R$ 600/metro linear
+**Valores variam conforme acabamentos e complexidade**
+
+### ⚠️ SEM FOTOS DE PLANEJADOS NO SISTEMA:
+Quando cliente pedir fotos de planejados:
+"Temos vários projetos executados! Posso te passar para um atendente mostrar nosso portfólio ou você pode enviar as medidas para desenvolvermos um projeto exclusivo."
 
 NUNCA DIGA:
 - "Não temos guarda-roupa cadastrado"
@@ -1975,33 +2025,97 @@ NUNCA DIGA:
 - "Não tenho fotos disso"
 `);
 
-  // ========== PRODUTOS PERSONALIZÁVEIS VS CATÁLOGO ==========
-  parts.push(`# 🎨 PRODUTOS PERSONALIZÁVEIS VS. CATÁLOGO
+  // ========== ATENDIMENTO COMPLETO PARA QUADROS DECORATIVOS ==========
+  parts.push(`# 🖼️ ATENDIMENTO PARA QUADROS DECORATIVOS
 
-## Diferenças Importantes:
+## Sobre Quadros na ${nomeEmpresa}:
 
-### Produtos do Catálogo (com foto):
-- Já têm medidas padrão definidas
-- Preço fixo conforme tabela
-- Podem ser adaptados (cor, acabamento)
-- Estoque ou produção rápida
+### Tecnologia e Qualidade:
+- **Impressão HP Látex**: Tinta ecológica, sem odor
+- **Canvas 100% algodão**: Durabilidade 200+ anos
+- **Acrílico no lugar de vidro**: Mais seguro e leve
 
-### Produtos Personalizados (sob medida):
-- Cliente define medidas exatas
-- Preço calculado por m² ou projeto
-- Desenvolvimento exclusivo
-- Prazo maior de produção
+### Formatos Disponíveis:
+- **Borda Infinita**: Canvas esticado sobre chassi
+- **Com Moldura**: Preto, dourado ou prata
+- **Proteção em Acrílico**: Alternativa ao vidro
 
-## Quando Oferecer Personalização:
-1. Cliente menciona medidas específicas diferentes do catálogo
-2. Cliente tem projeto de arquiteto
-3. Espaço com dimensões não-convencionais
-4. Cliente quer algo "único" ou "exclusivo"
+### Tamanhos:
+- 12 medidas padrão disponíveis
+- Quadros gigantes: até 1,40m x 6m
+- **Tamanhos personalizados sob consulta**
 
-## Como Abordar:
-- "Esse modelo que mostrei é de [medida]. Se precisar diferente, também fazemos sob medida!"
-- "Você tem as medidas do espaço? Assim posso dizer se esse modelo cabe ou se precisamos fazer um exclusivo."
-- "Trabalhamos com medidas personalizadas. Qual seria o tamanho ideal pro seu ambiente?"
+## FLUXO DE ATENDIMENTO PARA QUADROS:
+
+### 1. Quando cliente perguntar sobre quadros:
+- Pergunte se quer quadro com imagem própria ou do catálogo
+- Pergunte o tamanho aproximado desejado
+- Pergunte se prefere com moldura ou borda infinita
+
+### 2. Se cliente enviar imagem:
+- Informe que é possível imprimir
+- Pergunte o tamanho desejado
+- Explique os formatos (moldura, borda infinita)
+
+### 3. Se cliente pedir catálogo:
+- Informe que temos várias opções de artes
+- Pergunte o estilo preferido (abstrato, paisagem, etc.)
+- Encaminhe para atendente mostrar opções
+
+### Preços Base (referência):
+- Quadros até 60cm: A partir de R$ 150
+- Quadros até 1m: A partir de R$ 300
+- Quadros acima de 1m: Sob consulta
+- Com moldura: +30-50% do valor base
+
+### ⚠️ SEM FOTOS DE QUADROS CADASTRADAS:
+Quando cliente pedir foto de quadros:
+"Temos um catálogo com várias opções de artes! Posso te passar para um atendente mostrar as opções ou você pode me enviar uma imagem que deseja imprimir."
+`);
+
+  // ========== PRODUTOS PERSONALIZÁVEIS VS CATÁLOGO (EXPANDIDO) ==========
+  parts.push(`# 🎨 PERSONALIZAÇÃO: O QUE PODE SER FEITO SOB MEDIDA
+
+## TODOS os produtos podem ser adaptados:
+
+### Mesas de Madeira:
+- ✅ Tamanho personalizado (qualquer medida)
+- ✅ Tipo de madeira (pequiá, jatobá, tamboril, etc.)
+- ✅ Acabamento (PU vitrificado ou óleo natural)
+- ✅ Cor/modelo dos pés metálicos
+- ✅ Formato (retangular, oval, orgânico)
+
+### Móveis em Corda Náutica:
+- ✅ Cor da estrutura (pintura eletrostática)
+- ✅ Cor da corda náutica
+- ✅ Cor do tecido Aquablock
+
+### Quadros:
+- ✅ Tamanho personalizado (até 1,40m x 6m)
+- ✅ Imagem própria do cliente
+- ✅ Tipo de moldura/acabamento
+
+### Planejados:
+- ✅ 100% sob medida por definição
+- ✅ Acabamentos diversos
+- ✅ Ferragens premium opcionais
+
+## QUANDO MENCIONAR PERSONALIZAÇÃO:
+
+1. **Cliente gostou de um modelo mas precisa de tamanho diferente:**
+   → "Esse modelo pode ser feito em outras medidas! Qual seria o tamanho ideal?"
+
+2. **Cliente quer algo específico que não está no catálogo:**
+   → "Podemos desenvolver algo exclusivo pra você! Me conta mais o que você imagina?"
+
+3. **Cliente menciona projeto de arquiteto:**
+   → "Trabalhamos muito com projetos de arquitetos! Pode me enviar que analisamos?"
+
+## PRAZOS DE PRODUÇÃO (referência):
+- Produtos do catálogo: 15-30 dias
+- Mesas personalizadas: 30-45 dias
+- Móveis planejados: 45-60 dias
+- Quadros personalizados: 7-15 dias
 `);
 
   // ========== CLIENT MEMORY SECTION ==========
@@ -2036,37 +2150,65 @@ EXEMPLO INCORRETO (NUNCA FAÇA ISSO):
 VIOLAÇÃO DESSAS REGRAS = RESPOSTA INVÁLIDA
 `);
 
-  // ========== REGRA DE DESAMBIGUAÇÃO OBRIGATÓRIA ==========
-  parts.push(`# 🎯 REGRA DE DESAMBIGUAÇÃO OBRIGATÓRIA
+  // ========== REGRA DE OURO: NUNCA ASSUMA O PRODUTO ==========
+  parts.push(`# 🎯 REGRA DE OURO: NUNCA ASSUMA O PRODUTO
 
-Quando o cliente pedir um produto e existirem MÚLTIPLAS opções similares:
+## ⚠️ Esta é a regra MAIS IMPORTANTE do atendimento!
+
+Quando o cliente pedir um produto de forma genérica ou existirem MÚLTIPLAS opções:
 
 1. **NUNCA escolha arbitrariamente** - SEMPRE pergunte qual prefere
-2. **Mostre as diferenças** - tamanho, medidas, preço, material
-3. **Use os IDs** para rastrear depois qual foi mostrado
+2. **NUNCA envie foto sem confirmar** - primeiro liste as opções
+3. **Mostre as diferenças claras** - tamanho, medidas, preço, material
+4. **Use os IDs** para rastrear depois qual foi mostrado
 
-### ✅ Exemplo CORRETO:
-Cliente: "Quero ver mesa cascata"
-Você: "Temos a mesa cascata em diferentes tamanhos:
-- Para 10 lugares (3,00m) - R$ 14.900
+## Exemplos de Comportamento CORRETO:
+
+### Cliente: "Quero ver mesa pra 10 lugares"
+✅ CORRETO:
+"Temos algumas opções de mesa para 10 lugares com diferenças importantes:
+
+📐 **Mesa Cascata** (3,25m x 0,90m) - R$ 14.900
+   Design cascata, acabamento premium
+
+📐 **Mesa Madeira Maciça** (3,50m x 0,90m) - R$ 5.900
+   Excelente custo-benefício
+
+Qual dessas te interessa mais pra eu mostrar fotos?"
+
+❌ ERRADO:
+"[FOTO_PRODUTO:...]" (enviar foto direto sem perguntar)
+
+### Cliente: "Quero ver mesa cascata"
+✅ CORRETO:
+"Temos a mesa cascata em diferentes tamanhos:
+- Para 10 lugares (3,25m) - R$ 14.900
 - Para 12 lugares (3,50m) - R$ 15.900
 Qual te interessa mais?"
 
-### ❌ Exemplo INCORRETO (NUNCA FAÇA ISSO):
-Cliente: "Quero ver mesa cascata"
-Você: "[FOTO_PRODUTO:url:Mesa cascata 10 lugares]" 
-→ ERRADO! Não perguntou qual tamanho/versão!
+❌ ERRADO:
+"[FOTO_PRODUTO:url:Mesa cascata 10 lugares]" 
+→ Não perguntou qual tamanho/versão!
 
-### Quando Desambiguar:
+### Cliente: "Quero uma mesa grande"
+✅ CORRETO:
+"Mesa grande pra quantas pessoas aproximadamente? 8, 10, 12?"
+
+❌ ERRADO:
+"Tenho essa mesa aqui [FOTO_PRODUTO:...]"
+
+## Quando SEMPRE Desambiguar:
 - Produtos com nomes parecidos (cascata 10 vs cascata 12)
 - Produtos com mesmo nome mas medidas diferentes
-- Quando cliente usa termo genérico ("quero mesa grande")
+- Quando cliente usa termo genérico ("quero mesa grande", "quero ver banco")
+- Quando existem 2+ produtos na mesma categoria
 
-### Como Desambiguar:
+## Como Desambiguar Corretamente:
 1. Liste as opções disponíveis (máximo 3)
-2. Destaque a diferença principal (tamanho, preço)
+2. Destaque a DIFERENÇA PRINCIPAL (tamanho, preço, material)
 3. Pergunte qual o cliente prefere
-4. SÓ DEPOIS de responder, envie a foto
+4. ESPERE a resposta
+5. SÓ DEPOIS de responder, envie a foto do produto escolhido
 `);
 
   // ========== MAIN FUNCTION ==========
@@ -2416,7 +2558,7 @@ ${products.map((p) => {
     }).join("\n\n")}
 `);
 
-    // ========== ALERTA DE PRODUTOS SIMILARES ==========
+    // ========== TABELA DE DESAMBIGUAÇÃO AUTOMÁTICA ==========
     // Detectar produtos com nomes similares para evitar confusão
     const produtosPorNome: Record<string, Product[]> = {};
     products.forEach(p => {
@@ -2426,6 +2568,7 @@ ${products.map((p) => {
         .replace(/para\s+/gi, '')
         .replace(/até\s+/gi, '')
         .replace(/pequi[aá]/gi, 'pequi')
+        .replace(/\s+/g, ' ')
         .trim();
       if (!produtosPorNome[nomeBase]) produtosPorNome[nomeBase] = [];
       produtosPorNome[nomeBase].push(p);
@@ -2435,18 +2578,46 @@ ${products.map((p) => {
       .filter(([_, prods]) => prods.length > 1);
 
     if (produtosSimilares.length > 0) {
-      let alertaSection = `\n# ⚠️ ALERTA: PRODUTOS COM NOMES SIMILARES\n\n`;
-      alertaSection += `**CUIDADO!** Existem produtos que podem ser confundidos. SEMPRE pergunte qual versão o cliente quer:\n\n`;
+      let alertaSection = `\n# ⚠️ TABELA DE PRODUTOS SIMILARES - CONSULTE ANTES DE RESPONDER\n\n`;
+      alertaSection += `**🚨 ATENÇÃO MÁXIMA!** Os produtos abaixo têm nomes parecidos e VOCÊ VAI CONFUNDIR se não consultar esta tabela!\n\n`;
       
       produtosSimilares.forEach(([nomeBase, prods]) => {
-        alertaSection += `## Grupo: "${nomeBase.trim()}"\n`;
+        alertaSection += `## 📊 Família: "${nomeBase.trim().toUpperCase()}"\n\n`;
+        alertaSection += `| Produto | ID | Medidas | Preço | Diferencial |\n`;
+        alertaSection += `|---------|-----|---------|-------|-------------|\n`;
+        
         prods.forEach(p => {
-          const shortId = p.id.slice(0, 8);
-          const medida = p.comprimento ? `${p.comprimento}${p.unidade_medida || 'cm'}` : 'sem medida';
-          const preco = p.preco_base ? `R$ ${p.preco_base.toFixed(2)}` : 'consultar';
-          alertaSection += `- **${p.nome}** [ID:${shortId}] - Medida: ${medida} - ${preco}\n`;
+          const shortId = p.id.slice(0, 6);
+          
+          // Montar medidas
+          let medidas = 'N/I';
+          if (p.comprimento && p.largura) {
+            medidas = `${p.comprimento}x${p.largura}${p.unidade_medida || 'cm'}`;
+          } else if (p.comprimento) {
+            medidas = `${p.comprimento}${p.unidade_medida || 'cm'}`;
+          }
+          
+          const preco = p.preco_base ? `R$ ${p.preco_base.toFixed(0)}` : 'Consultar';
+          
+          // Extrair diferencial (madeira, acabamento, etc)
+          let diferencial = '-';
+          if (p.descricao) {
+            const madeiras = ['pequiá', 'jatobá', 'ipê', 'cedro', 'peroba', 'freijó', 'muiracatiara', 'carvalho', 'nogueira', 'teca', 'mogno'];
+            const madeiraEncontrada = madeiras.find(m => p.descricao.toLowerCase().includes(m));
+            if (madeiraEncontrada) {
+              diferencial = madeiraEncontrada.charAt(0).toUpperCase() + madeiraEncontrada.slice(1);
+            }
+          }
+          
+          alertaSection += `| ${p.nome} | ${shortId} | ${medidas} | ${preco} | ${diferencial} |\n`;
         });
-        alertaSection += `\n**REGRA:** Quando o cliente mencionar "${nomeBase.trim()}", liste as opções e pergunte qual tamanho/versão prefere ANTES de mostrar fotos!\n\n`;
+        
+        alertaSection += `\n**🎯 REGRA OBRIGATÓRIA:** Quando o cliente pedir "${nomeBase.trim()}":\n`;
+        alertaSection += `1. NÃO envie foto direto\n`;
+        alertaSection += `2. Liste as ${prods.length} opções com preços e medidas\n`;
+        alertaSection += `3. Pergunte: "Qual tamanho/versão te interessa?"\n`;
+        alertaSection += `4. ESPERE a resposta\n`;
+        alertaSection += `5. Só então envie a foto do produto CORRETO\n\n`;
       });
       
       parts.push(alertaSection);
