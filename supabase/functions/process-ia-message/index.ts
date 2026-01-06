@@ -986,6 +986,12 @@ ${productInfo}
     console.log(`📋 Anti-repetição: ${askedQuestions.length} perguntas já feitas detectadas`);
     console.log(`📋 Contexto extraído:`, JSON.stringify(conversationContext));
 
+    // ========== DETECT CONFUSION OR LOOP ==========
+    const confusionResult = detectConfusionOrLoop(conversationHistory);
+    if (confusionResult.isConfused) {
+      console.log(`🚨 [CONFUSION] Detectado: ${confusionResult.reason}`);
+    }
+
     // Build master prompt with last sent product context + anti-repetition + semantic context
     const masterPrompt = buildMasterPrompt(configs, products, knowledge, clientMemory, conversationHistory, alreadyProvidedInfo, askedQuestions, conversationContext) + lastSentProductContext;
 
@@ -997,6 +1003,35 @@ ${productInfo}
     // Add history summary if available
     if (historySummary) {
       messages.push({ role: "system", content: `[RESUMO DA CONVERSA ANTERIOR]\n${historySummary}` });
+    }
+    
+    // ========== INJECT TRANSFER INSTRUCTION IF CONFUSED ==========
+    if (confusionResult.shouldTransfer) {
+      const clientName = clientMemory?.client_name || "cliente";
+      messages.push({ 
+        role: "system", 
+        content: `
+⚠️ ATENÇÃO CRÍTICA - TRANSFERÊNCIA OBRIGATÓRIA ⚠️
+
+Foi detectado que o cliente pode estar confuso ou frustrado.
+Razão: ${confusionResult.reason}
+
+SUA PRÓXIMA RESPOSTA DEVE OBRIGATORIAMENTE:
+1. Reconhecer a situação com empatia (sem pedir desculpas excessivas)
+2. Informar que vai transferir para um consultor humano
+3. Usar EXATAMENTE este script:
+
+"Entendi, ${clientName}! Para te atender melhor nesse caso, vou passar você para um dos nossos consultores especialistas. Ele vai entrar em contato em breve para dar continuidade ao seu atendimento de forma personalizada. 🙌"
+
+REGRAS ABSOLUTAS:
+- NÃO continue fazendo perguntas
+- NÃO tente resolver sozinho
+- NÃO peça mais informações
+- Apenas faça a transferência com empatia
+` 
+      });
+      
+      console.log(`📤 [TRANSFER] Instrução de transferência injetada no prompt`);
     }
     
     messages.push(...conversationHistory);
@@ -1471,41 +1506,204 @@ function isResponseTooSimilar(newMessage: string, previousMessages: string[]): b
   return false;
 }
 
-// ========== EXTRACT ASKED QUESTIONS (Anti-Repetition) ==========
+// ========== SEMANTIC QUESTION GROUPS - Perguntas Semanticamente Similares ==========
+const QUESTION_SEMANTIC_GROUPS: Record<string, { label: string; patterns: RegExp[] }> = {
+  documentacao_tecnica: {
+    label: "Documentação técnica (planta/projeto/medidas)",
+    patterns: [
+      /planta/i, /projeto/i, /medidas/i, /dimensões/i, /dimensoes/i,
+      /arquiteto/i, /executivo/i, /metragem/i, /tamanho.*espaço/i,
+      /quantos\s*metros/i, /m²/i, /metros\s*quadrados/i
+    ]
+  },
+  ambiente_local: {
+    label: "Local/ambiente (onde será instalado)",
+    patterns: [
+      /ambiente/i, /cômodo/i, /comodo/i, /espaço/i, /espaco/i,
+      /sala/i, /quarto/i, /cozinha/i, /varanda/i,
+      /onde.*vai/i, /pra\s*(que|qual)\s*lugar/i, /qual.*local/i
+    ]
+  },
+  quantidade_pessoas: {
+    label: "Quantidade de pessoas/lugares",
+    patterns: [
+      /quantas?\s*pessoas/i, /pra\s*quantos/i, /lugares/i,
+      /assentos/i, /capacidade/i
+    ]
+  },
+  orcamento_valor: {
+    label: "Orçamento/valor",
+    patterns: [
+      /orçamento/i, /orcamento/i, /quanto.*gastar/i, /valor/i,
+      /budget/i, /investir/i, /investimento/i, /faixa\s*de\s*preço/i
+    ]
+  },
+  estilo_preferencia: {
+    label: "Estilo/preferência",
+    patterns: [
+      /estilo/i, /preferência/i, /preferencia/i, /gosta.*de/i,
+      /tipo.*de/i, /modelo/i, /cor.*prefer/i
+    ]
+  },
+  prazo_urgencia: {
+    label: "Prazo/urgência",
+    patterns: [
+      /prazo/i, /urgência/i, /urgencia/i, /quando.*precisa/i,
+      /pra\s*quando/i, /entrega/i, /data.*limite/i
+    ]
+  },
+  uso_finalidade: {
+    label: "Uso/finalidade",
+    patterns: [
+      /pra\s*que/i, /para\s*que/i, /finalidade/i, /uso/i,
+      /vai\s*usar/i, /objetivo/i, /função/i
+    ]
+  }
+};
+
+// ========== EXTRACT ASKED QUESTIONS (Anti-Repetition) - SEMANTIC VERSION ==========
 function extractAskedQuestions(history: Message[]): string[] {
   const questions: string[] = [];
+  const askedGroups = new Set<string>();
   
   for (const msg of history) {
     if (msg.role === "assistant") {
-      // Detectar perguntas por padrões
-      const questionPatterns = [
-        /você\s+(?:está|busca|quer|precisa|tem|gostaria)/gi,
-        /qual\s+(?:é|seria|ambiente|tipo|estilo|tamanho)/gi,
-        /me\s+(?:conta|fala|diz)/gi,
-        /(?:já|você)\s+tem\s+(?:as\s+medidas|projeto|ideia)/gi,
-        /posso\s+(?:ajudar|mostrar|te apresentar)/gi,
-        /para\s+(?:quantas\s+pessoas|qual\s+ambiente)/gi,
-        /o que\s+(?:você|te)/gi,
-        /como\s+(?:posso|gostaria)/gi,
-      ];
+      const content = msg.content.toLowerCase();
       
-      const content = msg.content;
+      // Detectar grupos semânticos perguntados
+      for (const [groupKey, group] of Object.entries(QUESTION_SEMANTIC_GROUPS)) {
+        if (group.patterns.some(p => p.test(content))) {
+          askedGroups.add(groupKey);
+        }
+      }
       
-      // Extrair frases que terminam com ?
-      const sentences = content.split(/[.!?]/);
-      for (const sentence of sentences) {
-        const trimmed = sentence.trim();
-        // Se a sentença original tinha ? ou corresponde a um padrão de pergunta
-        if (content.includes(trimmed + "?") || questionPatterns.some(p => p.test(trimmed))) {
-          if (trimmed.length > 10 && trimmed.length < 200) {
-            questions.push(trimmed.toLowerCase());
-          }
+      // Extrair perguntas específicas (frases com ?)
+      const questionMatches = content.match(/[^.!?]*\?/g) || [];
+      for (const q of questionMatches) {
+        const trimmed = q.trim();
+        if (trimmed.length > 10 && trimmed.length < 200) {
+          questions.push(trimmed);
         }
       }
     }
   }
   
-  return [...new Set(questions)].slice(-10); // Últimas 10 perguntas únicas
+  // Adicionar grupos semânticos como perguntas resumidas
+  const groupLabels = Array.from(askedGroups).map(key => 
+    `[TEMA JÁ PERGUNTADO: ${QUESTION_SEMANTIC_GROUPS[key]?.label || key}]`
+  );
+  
+  return [...groupLabels, ...questions.slice(-5)];
+}
+
+// ========== DETECT CONFUSION OR LOOP ==========
+interface ConfusionResult {
+  isConfused: boolean;
+  reason: string | null;
+  shouldTransfer: boolean;
+}
+
+function detectConfusionOrLoop(history: Message[]): ConfusionResult {
+  const userMessages = history.filter(m => m.role === "user");
+  const assistantMessages = history.filter(m => m.role === "assistant");
+  
+  if (userMessages.length < 2) {
+    return { isConfused: false, reason: null, shouldTransfer: false };
+  }
+  
+  // 1. Detectar se cliente repete a mesma coisa 2+ vezes
+  const recentUserMsgs = userMessages.slice(-5).map(m => m.content.toLowerCase().trim());
+  
+  for (let i = 0; i < recentUserMsgs.length; i++) {
+    const msg = recentUserMsgs[i];
+    if (msg.length < 5) continue;
+    
+    let repeatCount = 0;
+    for (let j = 0; j < recentUserMsgs.length; j++) {
+      if (i !== j) {
+        const other = recentUserMsgs[j];
+        // Verifica se mensagens são muito similares
+        const similarity = calculateSimilarity(msg, other);
+        if (similarity > 0.6) repeatCount++;
+      }
+    }
+    
+    if (repeatCount >= 2) {
+      console.log(`⚠️ [CONFUSION DETECTOR] Cliente repetiu mesma info ${repeatCount + 1} vezes`);
+      return {
+        isConfused: true,
+        reason: "Cliente repetiu a mesma informação várias vezes sem que a IA entendesse",
+        shouldTransfer: true
+      };
+    }
+  }
+  
+  // 2. Detectar sinais de frustração
+  const frustrationPatterns = [
+    /já\s+falei/i, /já\s+disse/i, /já\s+respondi/i,
+    /não\s+entend/i, /nao\s+entend/i, /o\s+que\s*\?/i,
+    /repet/i, /de\s*novo/i, /outra\s*vez/i,
+    /robô/i, /robo/i, /humano/i, /atendente/i, /pessoa\s*real/i,
+    /falar\s+com\s+alguém/i, /falar\s+com\s+alguem/i,
+    /quero\s+(?:um\s+)?humano/i, /tem\s+alguém\s+aí/i,
+    /isso\s+é\s+(?:um\s+)?robô/i, /você\s+é\s+(?:um\s+)?robô/i,
+    /que\s+merda/i, /que\s+droga/i, /pqp/i, /vtnc/i,
+    /socorro/i, /me\s+ajuda/i,
+  ];
+  
+  const lastUserMsg = userMessages.at(-1)?.content || "";
+  const secondLastUserMsg = userMessages.at(-2)?.content || "";
+  
+  // Verificar frustração nas últimas 2 mensagens
+  const hasRecentFrustration = [lastUserMsg, secondLastUserMsg].some(msg => 
+    frustrationPatterns.some(p => p.test(msg))
+  );
+  
+  if (hasRecentFrustration) {
+    console.log(`⚠️ [CONFUSION DETECTOR] Detectada frustração do cliente`);
+    return {
+      isConfused: true,
+      reason: "Cliente demonstrou frustração ou pediu atendente humano",
+      shouldTransfer: true
+    };
+  }
+  
+  // 3. Conversa longa sem progresso (>15 mensagens sem coleta de dados essenciais)
+  if (history.length > 30) {
+    // Verificar se IA ainda está fazendo perguntas básicas
+    const lastAssistantMsgs = assistantMessages.slice(-3).map(m => m.content.toLowerCase());
+    const stillAskingBasics = lastAssistantMsgs.some(msg => 
+      /qual.*ambiente/i.test(msg) || 
+      /como.*ajudar/i.test(msg) ||
+      /o que.*busca/i.test(msg)
+    );
+    
+    if (stillAskingBasics) {
+      console.log(`⚠️ [CONFUSION DETECTOR] Conversa longa (${history.length} msgs) sem progresso`);
+      return {
+        isConfused: true,
+        reason: "Conversa muito longa sem progresso - IA ainda fazendo perguntas básicas",
+        shouldTransfer: true
+      };
+    }
+  }
+  
+  return { isConfused: false, reason: null, shouldTransfer: false };
+}
+
+// Helper: Calcula similaridade entre duas strings
+function calculateSimilarity(str1: string, str2: string): number {
+  const words1 = new Set(str1.split(/\s+/).filter(w => w.length > 2));
+  const words2 = new Set(str2.split(/\s+/).filter(w => w.length > 2));
+  
+  if (words1.size === 0 || words2.size === 0) return 0;
+  
+  let matches = 0;
+  for (const word of words1) {
+    if (words2.has(word)) matches++;
+  }
+  
+  return matches / Math.max(words1.size, words2.size);
 }
 
 // ========== EXTRACT CONVERSATION CONTEXT (Semantic Understanding) ==========
@@ -3551,19 +3749,35 @@ ${regrasGerais}
     parts.push(regrasSection);
   }
 
-  // ========== SEÇÃO ANTI-REPETIÇÃO: PERGUNTAS JÁ FEITAS ==========
+  // ========== SEÇÃO ANTI-REPETIÇÃO: PERGUNTAS JÁ FEITAS (SEMÂNTICO) ==========
   if (askedQuestions.length > 0) {
-    parts.push(`# ⚠️ PERGUNTAS JÁ FEITAS (NÃO REPITA!)
-
-Você já fez estas perguntas ao cliente nesta conversa:
-${askedQuestions.slice(-5).map((q, i) => `${i + 1}. "${q}"`).join('\n')}
-
-## REGRA CRÍTICA:
-- NÃO faça perguntas similares ou iguais às listadas acima!
-- Se o cliente já respondeu algo, use essa informação
-- Avance a conversa, não volte ao início
-- Pergunte apenas o que AINDA não foi respondido
-`);
+    // Separar grupos semânticos de perguntas específicas
+    const semanticGroups = askedQuestions.filter(q => q.startsWith('[TEMA'));
+    const specificQuestions = askedQuestions.filter(q => !q.startsWith('[TEMA'));
+    
+    let antiRepSection = `# ⚠️ TEMAS E PERGUNTAS JÁ FEITOS (NÃO REPITA!)\n\n`;
+    
+    if (semanticGroups.length > 0) {
+      antiRepSection += `## TEMAS JÁ ABORDADOS:\n`;
+      antiRepSection += semanticGroups.map(g => `- ${g.replace('[TEMA JÁ PERGUNTADO: ', '').replace(']', '')}`).join('\n');
+      antiRepSection += `\n\n`;
+    }
+    
+    if (specificQuestions.length > 0) {
+      antiRepSection += `## PERGUNTAS ESPECÍFICAS JÁ FEITAS:\n`;
+      antiRepSection += specificQuestions.map((q, i) => `${i + 1}. "${q}"`).join('\n');
+      antiRepSection += `\n`;
+    }
+    
+    antiRepSection += `
+## REGRAS CRÍTICAS DE ANTI-REPETIÇÃO:
+1. JAMAIS pergunte sobre um tema já listado acima
+2. Se precisar da informação de novo, diga "Você mencionou [X], poderia confirmar?"
+3. NÃO faça perguntas sinônimas (ex: "tem planta?" e "tem medidas?" são a MESMA PERGUNTA)
+4. Avance para o PRÓXIMO passo, nunca volte
+5. Se o cliente não respondeu algo, reformule de forma diferente OU simplesmente siga em frente
+`;
+    parts.push(antiRepSection);
   }
 
   // ========== SEÇÃO CONTEXTO SEMÂNTICO DA CONVERSA ==========
@@ -3581,6 +3795,30 @@ ${contextEntries.map(([key, value]) => `- **${key}:** ${value}`).join('\n')}
 - Conduza a conversa para FRENTE, não para trás
 `);
   }
+  
+  // ========== SEÇÃO QUANDO TRANSFERIR PARA HUMANO ==========
+  parts.push(`# 🚨 QUANDO TRANSFERIR PARA CONSULTOR HUMANO
+
+Você DEVE transferir o atendimento quando detectar:
+
+## SINAIS DE TRANSFERÊNCIA:
+1. **Cliente demonstra frustração** - "já falei", "não entendi", "robô", "quero falar com pessoa"
+2. **Cliente repete a mesma coisa** - Se você pediu algo 2x e ele repetiu a resposta, significa que você não entendeu
+3. **Você não consegue responder** - Pergunta técnica muito específica fora do seu conhecimento
+4. **Cliente pede explicitamente** - "quero falar com humano", "tem alguém aí?"
+5. **Conversa está em loop** - Mais de 15 trocas sem progresso
+
+## SCRIPT DE TRANSFERÊNCIA (use exatamente):
+"Entendi, [nome]! Para te atender melhor nessa questão, vou passar você para um dos nossos consultores especialistas. Ele vai entrar em contato em breve para dar continuidade. 🙌"
+
+## O QUE NÃO FAZER:
+- NÃO continue fazendo perguntas genéricas após detectar frustração
+- NÃO ignore sinais de que o cliente quer um humano
+- NÃO finja que entendeu quando não entendeu
+- NÃO peça desculpas excessivas (uma vez basta)
+`);
+
+
 
   return parts.join("\n");
 }
