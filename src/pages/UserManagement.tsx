@@ -49,7 +49,7 @@ const UserManagement = () => {
   const [resetPasswordDialogOpen, setResetPasswordDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [creatingProjetista, setCreatingProjetista] = useState(false);
+  
   const [activeTab, setActiveTab] = useState('users');
 
   useEffect(() => {
@@ -119,38 +119,6 @@ const UserManagement = () => {
     setDeleteDialogOpen(true);
   };
 
-  const handleCreateProjetista = async () => {
-    try {
-      setCreatingProjetista(true);
-      
-      const { data, error } = await supabase.functions.invoke('admin-create-user', {
-        body: {
-          email: 'Rsandrade1989@gmail.com',
-          password: '123456',
-          full_name: 'Projetista',
-          role: 'projetista'
-        }
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: 'Sucesso',
-        description: 'Usuário projetista criado com sucesso!',
-      });
-
-      fetchUsers();
-    } catch (error: any) {
-      console.error('Erro ao criar projetista:', error);
-      toast({
-        title: 'Erro',
-        description: error.message || 'Não foi possível criar o usuário projetista.',
-        variant: 'destructive',
-      });
-    } finally {
-      setCreatingProjetista(false);
-    }
-  };
 
   const getRoleBadge = (user: UserProfile) => {
     // Se tem profile_type, usar ele
@@ -286,28 +254,13 @@ const UserManagement = () => {
                     Total de {users.length} usuário(s) cadastrado(s)
                   </CardDescription>
                 </div>
-                <div className="flex gap-2">
-                  <Button 
-                    onClick={handleCreateProjetista} 
-                    className="gap-2"
-                    variant="secondary"
-                    disabled={creatingProjetista || users.some(u => u.email === 'Rsandrade1989@gmail.com')}
-                  >
-                    {creatingProjetista ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <UserPlus className="w-4 h-4" />
-                    )}
-                    Criar Projetista
-                  </Button>
-                  <Button onClick={() => setCreateDialogOpen(true)} className="gap-2">
-                    <UserPlus className="w-4 h-4" />
-                    Criar Usuário
-                  </Button>
-                </div>
+                <Button onClick={() => setCreateDialogOpen(true)} className="gap-2">
+                  <UserPlus className="w-4 h-4" />
+                  Criar Usuário
+                </Button>
               </CardHeader>
               <CardContent>
-            <div className="space-y-4">
+                <div className="space-y-4">
               {users.map((user) => (
                 <div
                   key={user.id}
