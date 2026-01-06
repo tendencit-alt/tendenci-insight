@@ -80,22 +80,41 @@ export function formatBrasilDateTime(timestamp: string | Date): string {
 
 /**
  * Retorna o início do dia atual em Brasília como timestamp UTC
+ * Usa toLocaleString para garantir cálculo correto independente do timezone do servidor
  */
 export function getStartOfDayBrasilAsUTC(): Date {
-  const now = new Date();
-  const brasilTime = new Date(now.getTime() + BRASIL_OFFSET_MS);
-  const year = brasilTime.getUTCFullYear();
-  const month = brasilTime.getUTCMonth();
-  const day = brasilTime.getUTCDate();
-  return new Date(Date.UTC(year, month, day, 3, 0, 0, 0));
+  // Obter data/hora atual em Brasília usando toLocaleString
+  const nowInBrasil = new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' });
+  const brasilDate = new Date(nowInBrasil);
+  
+  // Construir meia-noite de Brasília em UTC (00:00 BRT = 03:00 UTC)
+  return new Date(Date.UTC(
+    brasilDate.getFullYear(),
+    brasilDate.getMonth(),
+    brasilDate.getDate(),
+    3, 0, 0, 0
+  ));
 }
 
 /**
  * Retorna a data de N dias atrás (início do dia) em UTC
+ * Usa toLocaleString para garantir cálculo correto independente do timezone do servidor
  */
 export function getDaysAgoBrasilAsUTC(days: number): Date {
-  const startOfToday = getStartOfDayBrasilAsUTC();
-  return new Date(startOfToday.getTime() - (days * 24 * 60 * 60 * 1000));
+  // Obter data atual em Brasília
+  const nowInBrasil = new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' });
+  const brasilDate = new Date(nowInBrasil);
+  
+  // Subtrair os dias
+  brasilDate.setDate(brasilDate.getDate() - days);
+  
+  // Construir meia-noite de Brasília em UTC (00:00 BRT = 03:00 UTC)
+  return new Date(Date.UTC(
+    brasilDate.getFullYear(),
+    brasilDate.getMonth(),
+    brasilDate.getDate(),
+    3, 0, 0, 0
+  ));
 }
 
 /**

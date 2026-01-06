@@ -59,14 +59,27 @@ export default function ActivityCenter() {
   const [activeTab, setActiveTab] = useState("activities");
   const { toast } = useToast();
 
+  // Limite dinâmico baseado no período selecionado
+  const getActivityLimit = () => {
+    switch (filters.period) {
+      case "last_hour": return 100;
+      case "today": return 300;
+      case "last_7_days": return 500;
+      case "last_30_days": return 1000;
+      case "custom": return 1000;
+      default: return 300;
+    }
+  };
+
   const fetchActivities = async () => {
     setLoading(true);
     try {
+      const limit = getActivityLimit();
       let query = supabase
         .from("system_activities")
         .select("*")
         .order("created_at", { ascending: false })
-        .limit(500);
+        .limit(limit);
 
       // Filtro por módulo
       if (filters.module !== "all") {
