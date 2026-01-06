@@ -184,7 +184,18 @@ export function ActivityFeed({ activities, loading }: ActivityFeedProps) {
                   {/* Time and module */}
                   <div className="flex flex-col items-end gap-1 shrink-0">
                     <span className="text-xs text-muted-foreground" title={format(new Date(activity.created_at), "dd/MM/yyyy HH:mm:ss", { locale: ptBR })}>
-                      {formatDistanceToNow(new Date(activity.created_at), { addSuffix: true, locale: ptBR })}
+                      {(() => {
+                        const activityDate = new Date(activity.created_at);
+                        const now = new Date();
+                        const diffMs = now.getTime() - activityDate.getTime();
+                        const diffMinutes = Math.floor(diffMs / 60000);
+                        const diffHours = Math.floor(diffMs / 3600000);
+                        
+                        if (diffMinutes < 1) return "agora";
+                        if (diffMinutes < 60) return `há ${diffMinutes} min`;
+                        if (diffHours < 24) return `há ${diffHours}h`;
+                        return formatDistanceToNow(activityDate, { addSuffix: true, locale: ptBR });
+                      })()}
                     </span>
                     <Badge variant="outline" className={`text-xs ${module.color}`}>
                       <ModuleIcon className="h-3 w-3 mr-1" />
