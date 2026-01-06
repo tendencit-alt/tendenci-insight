@@ -1908,33 +1908,55 @@ async function createOrUpdateDealFromIA(
       if (updateError) {
         console.error('Error updating deal:', updateError);
       } else {
-        console.log(`📋 Updated CRM deal with complete history (${conversationHistory.length} messages) and product info`);
+        console.log(`✅ [CRM SUCCESS] Updated deal ${existingDeal.id} with ${conversationHistory.length} messages`);
       }
     } else {
-      // Get first pipeline and stage
-      const { data: pipeline } = await supabase
+      // Use explicit pipeline and stage IDs for "Follow Up (I.A)"
+      const VENDAS_PIPELINE_ID = '34747cb5-063a-4369-b619-d4afa6095d0d';
+      const FOLLOWUP_IA_STAGE_ID = '5771c6a1-8820-4db4-976f-d263a37543ab';
+      
+      // Fallback: Get first pipeline and stage if explicit IDs don't exist
+      let pipelineId = VENDAS_PIPELINE_ID;
+      let stageId = FOLLOWUP_IA_STAGE_ID;
+      
+      // Verify the pipeline exists, if not use first available
+      const { data: pipelineCheck } = await supabase
         .from('crm_pipelines')
         .select('id')
-        .order('created_at')
-        .limit(1)
-        .single();
-
-      if (!pipeline) {
-        console.log('⚠️ No pipeline found, skipping deal creation');
-        return;
-      }
-
-      const { data: stage } = await supabase
-        .from('crm_stages')
-        .select('id')
-        .eq('pipeline_id', pipeline.id)
-        .order('position')
-        .limit(1)
-        .single();
-
-      if (!stage) {
-        console.log('⚠️ No stage found, skipping deal creation');
-        return;
+        .eq('id', VENDAS_PIPELINE_ID)
+        .maybeSingle();
+      
+      if (!pipelineCheck) {
+        console.log(`⚠️ Default pipeline not found, falling back to first available`);
+        const { data: fallbackPipeline } = await supabase
+          .from('crm_pipelines')
+          .select('id')
+          .order('created_at')
+          .limit(1)
+          .single();
+        
+        if (!fallbackPipeline) {
+          console.error('❌ [CRM ERROR] No pipeline found, cannot create deal');
+          await logCRMFailure(supabase, formattedPhone, clientId, leadId, 'No pipeline available');
+          return;
+        }
+        pipelineId = fallbackPipeline.id;
+        
+        // Get first stage of this pipeline
+        const { data: fallbackStage } = await supabase
+          .from('crm_stages')
+          .select('id')
+          .eq('pipeline_id', pipelineId)
+          .order('position')
+          .limit(1)
+          .single();
+        
+        if (!fallbackStage) {
+          console.error('❌ [CRM ERROR] No stage found, cannot create deal');
+          await logCRMFailure(supabase, formattedPhone, clientId, leadId, 'No stage available');
+          return;
+        }
+        stageId = fallbackStage.id;
       }
 
       // Build deal title with product info
@@ -1949,32 +1971,57 @@ async function createOrUpdateDealFromIA(
         : '';
 
       // Create new deal with product info
-      const { error: dealError } = await supabase
+      const { data: newDeal, error: dealError } = await supabase
         .from('crm_deals')
         .insert({
           title: dealTitle,
           lead_id: leadId,
-          pipeline_id: pipeline.id,
-          stage_id: stage.id,
+          pipeline_id: pipelineId,
+          stage_id: stageId,
           from_ai: true,
           conversation_history: fullHistory,
           ai_status: temperature,
           last_interaction: new Date().toISOString(),
           status: 'aberto',
+          followup_enabled: true,
           categoria: productInfo.categoria,
           centro_custo: productInfo.centroCusto,
           tipo_produto: productInfo.tipoProduto,
           note: initialNote || null,
-        });
+        })
+        .select('id')
+        .single();
       
       if (dealError) {
-        console.error('Error creating deal:', dealError);
+        console.error('❌ [CRM ERROR] Failed to create deal:', dealError);
+        await logCRMFailure(supabase, formattedPhone, clientId, leadId, `Deal creation failed: ${dealError.message}`);
       } else {
-        console.log(`📋 Created new CRM deal: ${dealTitle} | cat=${productInfo.categoria}, tipo=${productInfo.tipoProduto}`);
+        console.log(`✅ [CRM SUCCESS] Created deal ${newDeal.id}: ${dealTitle}`);
       }
     }
   } catch (error) {
-    console.error('Error in CRM integration:', error);
+    console.error('❌ [CRM ERROR] Exception in CRM integration:', error);
+  }
+}
+
+// Log CRM integration failures for monitoring
+async function logCRMFailure(
+  supabase: any,
+  phone: string,
+  clientId: string | null,
+  leadId: string | null,
+  errorMessage: string
+): Promise<void> {
+  try {
+    await supabase.from('system_errors').insert({
+      source: 'process-ia-message',
+      error_type: 'crm_integration_failed',
+      message: `CRM integration failed for phone ${phone.slice(-4)}`,
+      details: JSON.stringify({ clientId, leadId, phone: phone.slice(-4), error: errorMessage }),
+      severity: 'warning'
+    });
+  } catch (e) {
+    console.error('Failed to log CRM error:', e);
   }
 }
 
