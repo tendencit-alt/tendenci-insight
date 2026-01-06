@@ -139,6 +139,13 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     carencia: 30 as 30 | 60
   });
 
+  // Estado para comissões
+  const [comissoes, setComissoes] = useState({
+    vendedor: { habilitado: false, percentual: 0, valor: 0, responsavel_id: '' },
+    orcamentista: { habilitado: false, percentual: 0, valor: 0, responsavel_id: '' },
+    projetista: { habilitado: false, percentual: 0, valor: 0, responsavel_id: '' },
+  });
+
   // Adicionar nova forma de pagamento
   const adicionarFormaPagamento = () => {
     const hoje = new Date();
@@ -292,6 +299,19 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     },
   });
 
+  // Query para vendedores (para selecionar responsáveis de comissões)
+  const { data: vendedores } = useQuery({
+    queryKey: ['vendedores-for-order'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('role', ['admin', 'vendedor'])
+        .order('full_name');
+      return data || [];
+    },
+  });
+
   const selectedClient = clients?.find(c => c.id === formData.client_id);
 
   // Validação de dados fiscais para PJ
@@ -379,8 +399,24 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
   // Total final: taxas sempre absorvidas pela Tendenci, não adicionam ao total do cliente
   const total = totalSemTaxa;
 
-  // Valor líquido Tendenci (deduz as taxas absorvidas)
-  const valorLiquidoTendenci = totalSemTaxa - taxaCartao.valor - taxaBoleto.valor;
+  // Calcular total de comissões
+  const totalComissoes = 
+    (comissoes.vendedor.habilitado ? comissoes.vendedor.valor : 0) +
+    (comissoes.orcamentista.habilitado ? comissoes.orcamentista.valor : 0) +
+    (comissoes.projetista.habilitado ? comissoes.projetista.valor : 0);
+
+  // Valor líquido Tendenci (deduz as taxas absorvidas e comissões)
+  const valorLiquidoTendenci = totalSemTaxa - taxaCartao.valor - taxaBoleto.valor - totalComissoes;
+
+  // Função para atualizar comissão por valor (recalcula %)
+  const atualizarComissaoValor = (tipo: 'vendedor' | 'orcamentista' | 'projetista', novoValor: number) => {
+    const valorSeguro = isNaN(novoValor) ? 0 : Math.max(0, novoValor);
+    const novoPercentual = total > 0 ? (valorSeguro / total) * 100 : 0;
+    setComissoes(prev => ({
+      ...prev,
+      [tipo]: { ...prev[tipo], valor: valorSeguro, percentual: novoPercentual }
+    }));
+  };
 
   // Validações por etapa
   const isClienteValid = !!formData.client_id;
@@ -489,6 +525,16 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
           rt_habilitado: rtConfig.habilitado,
           rt_percentual: rtConfig.habilitado ? rtConfig.percentual : 0,
           rt_valor: rtConfig.habilitado ? (total * (rtConfig.percentual / 100)) : 0,
+          // Campos de Comissões
+          comissao_vendedor_percentual: comissoes.vendedor.habilitado ? comissoes.vendedor.percentual : 0,
+          comissao_vendedor_valor: comissoes.vendedor.habilitado ? comissoes.vendedor.valor : 0,
+          comissao_vendedor_responsavel_id: comissoes.vendedor.responsavel_id || null,
+          comissao_orcamentista_percentual: comissoes.orcamentista.habilitado ? comissoes.orcamentista.percentual : 0,
+          comissao_orcamentista_valor: comissoes.orcamentista.habilitado ? comissoes.orcamentista.valor : 0,
+          comissao_orcamentista_responsavel_id: comissoes.orcamentista.responsavel_id || null,
+          comissao_projetista_percentual: comissoes.projetista.habilitado ? comissoes.projetista.percentual : 0,
+          comissao_projetista_valor: comissoes.projetista.habilitado ? comissoes.projetista.valor : 0,
+          comissao_projetista_responsavel_id: comissoes.projetista.responsavel_id || null,
         })
         .select()
         .single();
@@ -1176,6 +1222,182 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                   )})}
                 </div>
 
+                {/* Seção de Comissões */}
+                <Card className="p-4 border-orange-200 dark:border-orange-800 bg-orange-50/50 dark:bg-orange-950/20">
+                  <div className="flex items-center justify-between mb-3">
+                    <Label className="font-medium flex items-center gap-2">
+                      💰 Comissões
+                    </Label>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    {/* Comissão Vendedor */}
+                    <div className="flex items-center gap-3">
+                      <Switch
+                        checked={comissoes.vendedor.habilitado}
+                        onCheckedChange={(checked) => setComissoes(prev => ({
+                          ...prev,
+                          vendedor: { ...prev.vendedor, habilitado: checked }
+                        }))}
+                      />
+                      <span className="text-sm font-medium w-28">Vendedor</span>
+                      {comissoes.vendedor.habilitado && (
+                        <>
+                          <div className="flex items-center gap-1">
+                            <Label className="text-xs text-muted-foreground">R$</Label>
+                            <Input
+                              type="number"
+                              className="h-8 w-24"
+                              value={comissoes.vendedor.valor || ''}
+                              onChange={(e) => atualizarComissaoValor('vendedor', Number(e.target.value))}
+                              min={0}
+                              step={0.01}
+                              placeholder="0,00"
+                            />
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Label className="text-xs text-muted-foreground">%</Label>
+                            <Input
+                              type="number"
+                              className="h-8 w-16 bg-muted"
+                              value={comissoes.vendedor.percentual.toFixed(2)}
+                              readOnly
+                              disabled
+                            />
+                          </div>
+                          <Select
+                            value={comissoes.vendedor.responsavel_id || "_none"}
+                            onValueChange={(v) => setComissoes(prev => ({
+                              ...prev,
+                              vendedor: { ...prev.vendedor, responsavel_id: v === "_none" ? "" : v }
+                            }))}
+                          >
+                            <SelectTrigger className="h-8 w-40">
+                              <SelectValue placeholder="Responsável" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="_none">-</SelectItem>
+                              {vendedores?.map((v) => (
+                                <SelectItem key={v.id} value={v.id}>{v.full_name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Comissão Orçamentista */}
+                    <div className="flex items-center gap-3">
+                      <Switch
+                        checked={comissoes.orcamentista.habilitado}
+                        onCheckedChange={(checked) => setComissoes(prev => ({
+                          ...prev,
+                          orcamentista: { ...prev.orcamentista, habilitado: checked }
+                        }))}
+                      />
+                      <span className="text-sm font-medium w-28">Orçamentista</span>
+                      {comissoes.orcamentista.habilitado && (
+                        <>
+                          <div className="flex items-center gap-1">
+                            <Label className="text-xs text-muted-foreground">R$</Label>
+                            <Input
+                              type="number"
+                              className="h-8 w-24"
+                              value={comissoes.orcamentista.valor || ''}
+                              onChange={(e) => atualizarComissaoValor('orcamentista', Number(e.target.value))}
+                              min={0}
+                              step={0.01}
+                              placeholder="0,00"
+                            />
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Label className="text-xs text-muted-foreground">%</Label>
+                            <Input
+                              type="number"
+                              className="h-8 w-16 bg-muted"
+                              value={comissoes.orcamentista.percentual.toFixed(2)}
+                              readOnly
+                              disabled
+                            />
+                          </div>
+                          <Select
+                            value={comissoes.orcamentista.responsavel_id || "_none"}
+                            onValueChange={(v) => setComissoes(prev => ({
+                              ...prev,
+                              orcamentista: { ...prev.orcamentista, responsavel_id: v === "_none" ? "" : v }
+                            }))}
+                          >
+                            <SelectTrigger className="h-8 w-40">
+                              <SelectValue placeholder="Responsável" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="_none">-</SelectItem>
+                              {vendedores?.map((v) => (
+                                <SelectItem key={v.id} value={v.id}>{v.full_name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Comissão Projetista */}
+                    <div className="flex items-center gap-3">
+                      <Switch
+                        checked={comissoes.projetista.habilitado}
+                        onCheckedChange={(checked) => setComissoes(prev => ({
+                          ...prev,
+                          projetista: { ...prev.projetista, habilitado: checked }
+                        }))}
+                      />
+                      <span className="text-sm font-medium w-28">Projetista</span>
+                      {comissoes.projetista.habilitado && (
+                        <>
+                          <div className="flex items-center gap-1">
+                            <Label className="text-xs text-muted-foreground">R$</Label>
+                            <Input
+                              type="number"
+                              className="h-8 w-24"
+                              value={comissoes.projetista.valor || ''}
+                              onChange={(e) => atualizarComissaoValor('projetista', Number(e.target.value))}
+                              min={0}
+                              step={0.01}
+                              placeholder="0,00"
+                            />
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Label className="text-xs text-muted-foreground">%</Label>
+                            <Input
+                              type="number"
+                              className="h-8 w-16 bg-muted"
+                              value={comissoes.projetista.percentual.toFixed(2)}
+                              readOnly
+                              disabled
+                            />
+                          </div>
+                          <Select
+                            value={comissoes.projetista.responsavel_id || "_none"}
+                            onValueChange={(v) => setComissoes(prev => ({
+                              ...prev,
+                              projetista: { ...prev.projetista, responsavel_id: v === "_none" ? "" : v }
+                            }))}
+                          >
+                            <SelectTrigger className="h-8 w-40">
+                              <SelectValue placeholder="Responsável" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="_none">-</SelectItem>
+                              {vendedores?.map((v) => (
+                                <SelectItem key={v.id} value={v.id}>{v.full_name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </Card>
+
                 {/* Resumo de valores */}
                 <div className="space-y-2 pt-2 border-t">
                   <div className="flex items-center justify-between">
@@ -1200,11 +1422,29 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                       <span className="text-sm font-medium">- {formatCurrency(taxaBoleto.valor)}</span>
                     </div>
                   )}
+                  {comissoes.vendedor.habilitado && comissoes.vendedor.valor > 0 && (
+                    <div className="flex items-center justify-between text-orange-600">
+                      <span className="text-sm">Comissão Vendedor ({comissoes.vendedor.percentual.toFixed(2)}%):</span>
+                      <span className="text-sm font-medium">- {formatCurrency(comissoes.vendedor.valor)}</span>
+                    </div>
+                  )}
+                  {comissoes.orcamentista.habilitado && comissoes.orcamentista.valor > 0 && (
+                    <div className="flex items-center justify-between text-orange-600">
+                      <span className="text-sm">Comissão Orçamentista ({comissoes.orcamentista.percentual.toFixed(2)}%):</span>
+                      <span className="text-sm font-medium">- {formatCurrency(comissoes.orcamentista.valor)}</span>
+                    </div>
+                  )}
+                  {comissoes.projetista.habilitado && comissoes.projetista.valor > 0 && (
+                    <div className="flex items-center justify-between text-orange-600">
+                      <span className="text-sm">Comissão Projetista ({comissoes.projetista.percentual.toFixed(2)}%):</span>
+                      <span className="text-sm font-medium">- {formatCurrency(comissoes.projetista.valor)}</span>
+                    </div>
+                  )}
                   <div className="flex items-center justify-between border-t pt-2">
                     <span className="text-sm font-semibold">Total do Pedido:</span>
                     <span className="text-base font-bold text-primary">{formatCurrency(total)}</span>
                   </div>
-                  {(taxaCartao.valor > 0 || taxaBoleto.valor > 0) && (
+                  {(taxaCartao.valor > 0 || taxaBoleto.valor > 0 || totalComissoes > 0) && (
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-semibold text-red-600">Valor Líquido Tendenci:</span>
                       <span className="text-base font-bold text-red-600">{formatCurrency(valorLiquidoTendenci)}</span>
