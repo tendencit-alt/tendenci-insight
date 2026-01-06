@@ -4,11 +4,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Loader2, Clock, CalendarDays, CheckCircle2, Timer } from 'lucide-react';
-import { addBusinessDays, format, differenceInBusinessDays } from 'date-fns';
+import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { addBusinessDays } from '@/utils/businessDays';
 
 interface EditPhasesSLADialogProps {
   open: boolean;
@@ -97,10 +97,17 @@ export function EditPhasesSLADialog({
       // Calcular prazo total
       const totalDias = Object.values(phaseSLAs).reduce((acc, val) => acc + (val || 0), 0);
       
-      // Atualizar prazo_customizado_dias na OP
+      // Calcular nova data de entrega baseada nos dias úteis
+      const baseDate = createdAt ? new Date(createdAt) : new Date();
+      const newPlannedEndDate = addBusinessDays(baseDate, totalDias);
+      
+      // Atualizar prazo_customizado_dias E planned_end_date na OP
       await supabase
         .from('production_orders')
-        .update({ prazo_customizado_dias: totalDias })
+        .update({ 
+          prazo_customizado_dias: totalDias,
+          planned_end_date: newPlannedEndDate.toISOString()
+        })
         .eq('id', orderId);
       
       // Log da alteração
