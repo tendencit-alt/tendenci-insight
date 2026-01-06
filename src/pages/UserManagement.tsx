@@ -4,15 +4,26 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { UserPermissionsDialog } from '@/components/settings/UserPermissionsDialog';
 import { CreateUserDialog } from '@/components/settings/CreateUserDialog';
 import { ResetPasswordDialog } from '@/components/settings/ResetPasswordDialog';
 import { EditUserDialog } from '@/components/settings/EditUserDialog';
 import { DeleteUserDialog } from '@/components/settings/DeleteUserDialog';
+import { ProfileTypesManager } from '@/components/settings/ProfileTypesManager';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Shield, User, Loader2, ArrowLeft, CheckCircle, UserPlus, Key, Edit2, Trash2 } from 'lucide-react';
+import { Shield, User, Loader2, ArrowLeft, CheckCircle, UserPlus, Key, Edit2, Trash2, Users, Tags } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+
+interface ProfileType {
+  id: string;
+  name: string;
+  display_name: string;
+  color: string;
+  icon: string;
+  is_system: boolean;
+}
 
 interface UserProfile {
   id: string;
@@ -20,6 +31,8 @@ interface UserProfile {
   username: string;
   full_name?: string;
   role: 'admin' | 'vendedor' | 'arquiteto' | 'projetista';
+  profile_type_id?: string | null;
+  profile_type?: ProfileType | null;
   created_at: string;
   especializacao?: string | null;
 }
@@ -28,6 +41,7 @@ const UserManagement = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [users, setUsers] = useState<UserProfile[]>([]);
+  const [profileTypes, setProfileTypes] = useState<ProfileType[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -36,10 +50,27 @@ const UserManagement = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [creatingProjetista, setCreatingProjetista] = useState(false);
+  const [activeTab, setActiveTab] = useState('users');
 
   useEffect(() => {
     fetchUsers();
+    fetchProfileTypes();
   }, []);
+
+  const fetchProfileTypes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profile_types')
+        .select('*')
+        .eq('is_active', true)
+        .order('display_name');
+
+      if (error) throw error;
+      setProfileTypes(data || []);
+    } catch (error) {
+      console.error('Erro ao buscar tipos de perfil:', error);
+    }
+  };
 
   const fetchUsers = async () => {
     try {
@@ -47,7 +78,10 @@ const UserManagement = () => {
 
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('*')
+        .select(`
+          *,
+          profile_type:profile_types(id, name, display_name, color, icon, is_system)
+        `)
         .order('created_at', { ascending: false });
 
       if (profilesError) throw profilesError;
@@ -119,6 +153,25 @@ const UserManagement = () => {
   };
 
   const getRoleBadge = (user: UserProfile) => {
+    // Se tem profile_type, usar ele
+    if (user.profile_type) {
+      const pt = user.profile_type;
+      return (
+        <Badge
+          className="border"
+          style={{
+            backgroundColor: `${pt.color}20`,
+            color: pt.color,
+            borderColor: `${pt.color}50`,
+          }}
+        >
+          {pt.name === 'admin' ? <Shield className="w-3 h-3 mr-1" /> : <User className="w-3 h-3 mr-1" />}
+          {pt.display_name}
+        </Badge>
+      );
+    }
+
+    // Fallback para role antigo
     const isMaster = user.role === 'admin';
     return isMaster ? (
       <Badge className="bg-primary/20 text-primary border-primary/30">
@@ -205,40 +258,55 @@ const UserManagement = () => {
               <div>
                 <h1 className="text-3xl font-bold">Gestão de Usuários</h1>
                 <p className="text-muted-foreground">
-                  Gerencie perfis e permissões de acesso dos usuários
+                  Gerencie perfis, tipos e permissões de acesso
                 </p>
               </div>
             </div>
           </div>
-          <div className="flex gap-2">
-            <Button 
-              onClick={handleCreateProjetista} 
-              className="gap-2"
-              variant="secondary"
-              disabled={creatingProjetista || users.some(u => u.email === 'Rsandrade1989@gmail.com')}
-            >
-              {creatingProjetista ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <UserPlus className="w-4 h-4" />
-              )}
-              Criar Projetista
-            </Button>
-            <Button onClick={() => setCreateDialogOpen(true)} className="gap-2">
-              <UserPlus className="w-4 h-4" />
-              Criar Usuário
-            </Button>
-          </div>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Usuários do Sistema</CardTitle>
-            <CardDescription>
-              Total de {users.length} usuário(s) cadastrado(s)
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full max-w-md grid-cols-2">
+            <TabsTrigger value="users" className="gap-2">
+              <Users className="w-4 h-4" />
+              Usuários
+            </TabsTrigger>
+            <TabsTrigger value="types" className="gap-2">
+              <Tags className="w-4 h-4" />
+              Tipos de Perfil
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="users" className="mt-6">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Usuários do Sistema</CardTitle>
+                  <CardDescription>
+                    Total de {users.length} usuário(s) cadastrado(s)
+                  </CardDescription>
+                </div>
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={handleCreateProjetista} 
+                    className="gap-2"
+                    variant="secondary"
+                    disabled={creatingProjetista || users.some(u => u.email === 'Rsandrade1989@gmail.com')}
+                  >
+                    {creatingProjetista ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <UserPlus className="w-4 h-4" />
+                    )}
+                    Criar Projetista
+                  </Button>
+                  <Button onClick={() => setCreateDialogOpen(true)} className="gap-2">
+                    <UserPlus className="w-4 h-4" />
+                    Criar Usuário
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
             <div className="space-y-4">
               {users.map((user) => (
                 <div
@@ -307,8 +375,14 @@ const UserManagement = () => {
                 </div>
               ))}
             </div>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="types" className="mt-6">
+            <ProfileTypesManager />
+          </TabsContent>
+        </Tabs>
 
       <CreateUserDialog
         open={createDialogOpen}

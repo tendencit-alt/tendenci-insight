@@ -3849,6 +3849,86 @@ export type Database = {
           },
         ]
       }
+      profile_type_permissions: {
+        Row: {
+          can_create: boolean | null
+          can_delete: boolean | null
+          can_edit: boolean | null
+          can_view: boolean | null
+          created_at: string | null
+          id: string
+          module: string
+          profile_type_id: string
+        }
+        Insert: {
+          can_create?: boolean | null
+          can_delete?: boolean | null
+          can_edit?: boolean | null
+          can_view?: boolean | null
+          created_at?: string | null
+          id?: string
+          module: string
+          profile_type_id: string
+        }
+        Update: {
+          can_create?: boolean | null
+          can_delete?: boolean | null
+          can_edit?: boolean | null
+          can_view?: boolean | null
+          created_at?: string | null
+          id?: string
+          module?: string
+          profile_type_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_type_permissions_profile_type_id_fkey"
+            columns: ["profile_type_id"]
+            isOneToOne: false
+            referencedRelation: "profile_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profile_types: {
+        Row: {
+          color: string | null
+          created_at: string | null
+          description: string | null
+          display_name: string
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          is_system: boolean | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string | null
+          description?: string | null
+          display_name: string
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_system?: boolean | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          color?: string | null
+          created_at?: string | null
+          description?: string | null
+          display_name?: string
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_system?: boolean | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -3857,6 +3937,7 @@ export type Database = {
           especializacao: string | null
           full_name: string | null
           id: string
+          profile_type_id: string | null
           role: Database["public"]["Enums"]["user_role"]
           updated_at: string | null
           username: string
@@ -3868,6 +3949,7 @@ export type Database = {
           especializacao?: string | null
           full_name?: string | null
           id: string
+          profile_type_id?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string | null
           username: string
@@ -3879,11 +3961,20 @@ export type Database = {
           especializacao?: string | null
           full_name?: string | null
           id?: string
+          profile_type_id?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string | null
           username?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_profile_type_id_fkey"
+            columns: ["profile_type_id"]
+            isOneToOne: false
+            referencedRelation: "profile_types"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       project_budgets: {
         Row: {

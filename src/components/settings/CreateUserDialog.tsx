@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -21,6 +21,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, UserPlus } from 'lucide-react';
 
+interface ProfileType {
+  id: string;
+  name: string;
+  display_name: string;
+  color: string;
+  is_system: boolean;
+}
+
 interface CreateUserDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -34,12 +42,57 @@ export function CreateUserDialog({
 }: CreateUserDialogProps) {
   const { toast } = useToast();
   const [creating, setCreating] = useState(false);
+  const [profileTypes, setProfileTypes] = useState<ProfileType[]>([]);
+  const [loadingTypes, setLoadingTypes] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     full_name: '',
-    role: 'vendedor' as 'admin' | 'vendedor' | 'arquiteto' | 'projetista',
+    role: 'vendedor',
+    profile_type_id: '',
   });
+
+  useEffect(() => {
+    if (open) {
+      fetchProfileTypes();
+    }
+  }, [open]);
+
+  const fetchProfileTypes = async () => {
+    try {
+      setLoadingTypes(true);
+      const { data, error } = await supabase
+        .from('profile_types')
+        .select('*')
+        .eq('is_active', true)
+        .order('is_system', { ascending: false })
+        .order('display_name');
+
+      if (error) throw error;
+      setProfileTypes(data || []);
+      
+      // Se não tem tipo selecionado, selecionar vendedor por padrão
+      if (data && data.length > 0 && !formData.profile_type_id) {
+        const vendedor = data.find(pt => pt.name === 'vendedor');
+        if (vendedor) {
+          setFormData(prev => ({ ...prev, profile_type_id: vendedor.id, role: 'vendedor' }));
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao buscar tipos de perfil:', error);
+    } finally {
+      setLoadingTypes(false);
+    }
+  };
+
+  const handleProfileTypeChange = (profileTypeId: string) => {
+    const selectedType = profileTypes.find(pt => pt.id === profileTypeId);
+    setFormData({
+      ...formData,
+      profile_type_id: profileTypeId,
+      role: selectedType?.name || 'vendedor',
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,7 +132,13 @@ export function CreateUserDialog({
             'Authorization': `Bearer ${session.access_token}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(formData),
+          body: JSON.stringify({
+            email: formData.email,
+            password: formData.password,
+            full_name: formData.full_name,
+            role: formData.role,
+            profile_type_id: formData.profile_type_id,
+          }),
         }
       );
 
@@ -99,6 +158,7 @@ export function CreateUserDialog({
         password: '',
         full_name: '',
         role: 'vendedor',
+        profile_type_id: profileTypes.find(pt => pt.name === 'vendedor')?.id || '',
       });
 
       onSuccess();
@@ -174,19 +234,31 @@ export function CreateUserDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="role">Tipo de Perfil</Label>
+            <Label htmlFor="profile_type">Tipo de Perfil</Label>
             <Select 
-              value={formData.role} 
-              onValueChange={(value: any) => setFormData({ ...formData, role: value })}
+              value={formData.profile_type_id} 
+              onValueChange={handleProfileTypeChange}
+              disabled={loadingTypes}
             >
-              <SelectTrigger id="role">
-                <SelectValue />
+              <SelectTrigger id="profile_type">
+                {loadingTypes ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <SelectValue placeholder="Selecione o tipo" />
+                )}
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="admin">Master (Admin)</SelectItem>
-                <SelectItem value="vendedor">Vendedor</SelectItem>
-                <SelectItem value="arquiteto">Arquiteto</SelectItem>
-                <SelectItem value="projetista">Projetista</SelectItem>
+                {profileTypes.map((pt) => (
+                  <SelectItem key={pt.id} value={pt.id}>
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: pt.color }}
+                      />
+                      {pt.display_name}
+                    </div>
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
