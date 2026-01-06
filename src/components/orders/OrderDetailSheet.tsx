@@ -523,50 +523,34 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
                                 const valorBase = totalBase * (parcela.percentual / 100);
                                 const taxaValor = valorBase * (taxaPerc / 100);
                                 
-                                return (
+                                  return (
                                   <div 
                                     key={index}
-                                    className={`flex justify-between items-center text-xs ${
-                                      (order as any).taxa_boleto_responsavel === 'tendenci' ? 'text-muted-foreground' : 'text-blue-600'
-                                    }`}
+                                    className="flex justify-between items-center text-xs text-muted-foreground"
                                   >
                                     <span className="flex items-center gap-1">
                                       📄 Boleto {parcela.numero_parcelas}x / {parcela.carencia_dias}d ({parcela.percentual}% do pedido) - {taxaPerc}%
                                     </span>
-                                    <span className={(order as any).taxa_boleto_responsavel === 'tendenci' ? 'line-through' : ''}>
+                                    <span className="line-through">
                                       {formatCurrency(taxaValor)}
                                     </span>
                                   </div>
                                 );
                               })}
                               {parcelasBoleto.length > 1 && (
-                                <div className={`flex justify-between items-center font-medium ${
-                                  (order as any).taxa_boleto_responsavel === 'tendenci' ? 'text-muted-foreground' : 'text-blue-600'
-                                }`}>
+                                <div className="flex justify-between items-center font-medium text-muted-foreground">
                                   <span className="flex items-center gap-2">
                                     Total Taxas Boleto:
-                                    <Badge 
-                                      variant={(order as any).taxa_boleto_responsavel === 'cliente' ? 'destructive' : 'secondary'}
-                                      className="text-xs"
-                                    >
-                                      {(order as any).taxa_boleto_responsavel === 'cliente' ? 'Cliente paga' : 'Tendenci absorve'}
-                                    </Badge>
+                                    <span className="text-xs text-green-600">✓ Tendenci absorve</span>
                                   </span>
-                                  <span className={(order as any).taxa_boleto_responsavel === 'tendenci' ? 'line-through' : ''}>
+                                  <span className="line-through">
                                     {formatCurrency((order as any).taxa_boleto_valor)}
                                   </span>
                                 </div>
                               )}
                               {parcelasBoleto.length === 1 && (
-                                <div className={`flex justify-between items-center ${
-                                  (order as any).taxa_boleto_responsavel === 'tendenci' ? 'text-muted-foreground' : 'text-blue-600'
-                                }`}>
-                                  <Badge 
-                                    variant={(order as any).taxa_boleto_responsavel === 'cliente' ? 'destructive' : 'secondary'}
-                                    className="text-xs"
-                                  >
-                                    {(order as any).taxa_boleto_responsavel === 'cliente' ? 'Cliente paga' : 'Tendenci absorve'}
-                                  </Badge>
+                                <div className="flex justify-between items-center text-muted-foreground">
+                                  <span className="text-xs text-green-600">✓ Tendenci absorve</span>
                                 </div>
                               )}
                             </div>
@@ -594,17 +578,12 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
                             </div>
                           )}
                           {(order as any).taxa_boleto_valor > 0 && (
-                            <div className={`flex justify-between items-center ${(order as any).taxa_boleto_responsavel === 'tendenci' ? 'text-muted-foreground' : 'text-blue-600'}`}>
+                            <div className="flex justify-between items-center text-muted-foreground">
                               <span className="flex items-center gap-2">
                                 Taxa Boleto {(order as any).carencia_boleto}d / {(order as any).numero_parcelas_boleto}x ({(order as any).taxa_boleto_percentual}%):
-                                <Badge 
-                                  variant={(order as any).taxa_boleto_responsavel === 'cliente' ? 'destructive' : 'secondary'}
-                                  className="text-xs"
-                                >
-                                  {(order as any).taxa_boleto_responsavel === 'cliente' ? 'Cliente paga' : 'Tendenci absorve'}
-                                </Badge>
+                                <span className="text-xs text-green-600">✓ Tendenci absorve</span>
                               </span>
-                              <span className={(order as any).taxa_boleto_responsavel === 'tendenci' ? 'line-through' : ''}>
+                              <span className="line-through">
                                 {formatCurrency((order as any).taxa_boleto_valor)}
                               </span>
                             </div>
