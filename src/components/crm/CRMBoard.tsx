@@ -331,7 +331,6 @@ export function CRMBoard({ pipelineId, onRefresh, autoOpenDealId, onDealOpened, 
     }
 
     // Encontrar a etapa de origem e destino
-    const sourceStage = stages.find(s => s.id === draggedDeal.stage_id);
     const targetStage = stages.find(s => s.id === stageId);
     
     // Verificar se a etapa de destino exige valor (APENAS Negociação)
@@ -383,6 +382,77 @@ export function CRMBoard({ pipelineId, onRefresh, autoOpenDealId, onDealOpened, 
       description: draggedDeal.status !== "aberto" 
         ? "Negócio reativado e movido com sucesso!" 
         : "Negócio movido com sucesso!",
+    });
+
+    setDraggedDeal(null);
+    fetchData();
+    onRefresh();
+  };
+
+  // Handler para drop na coluna de Ganho
+  const handleDropToWon = async (e: React.DragEvent) => {
+    e.preventDefault();
+    if (!draggedDeal || draggedDeal.status === "won") {
+      setDraggedDeal(null);
+      return;
+    }
+
+    const { error } = await supabase
+      .from("crm_deals")
+      .update({
+        status: "won",
+        stage_entered_at: new Date().toISOString(),
+      })
+      .eq("id", draggedDeal.id);
+
+    if (error) {
+      toast({
+        title: "Erro ao marcar como ganho",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "🎉 Negócio ganho!",
+      description: "O negócio foi marcado como ganho com sucesso!",
+    });
+
+    setDraggedDeal(null);
+    fetchData();
+    onRefresh();
+  };
+
+  // Handler para drop na coluna de Perdido
+  const handleDropToLost = async (e: React.DragEvent) => {
+    e.preventDefault();
+    if (!draggedDeal || draggedDeal.status === "lost") {
+      setDraggedDeal(null);
+      return;
+    }
+
+    const { error } = await supabase
+      .from("crm_deals")
+      .update({
+        status: "lost",
+        lost_reason: "other",
+        stage_entered_at: new Date().toISOString(),
+      })
+      .eq("id", draggedDeal.id);
+
+    if (error) {
+      toast({
+        title: "Erro ao marcar como perdido",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "Negócio perdido",
+      description: "O negócio foi marcado como perdido. Você pode editar para adicionar mais detalhes.",
     });
 
     setDraggedDeal(null);
