@@ -139,11 +139,12 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     carencia: 30 as 30 | 60
   });
 
-  // Estado para comissões
+  // Estado unificado para comissões (incluindo RT)
   const [comissoes, setComissoes] = useState({
-    vendedor: { habilitado: false, percentual: 0, valor: 0, responsavel_id: '' },
-    orcamentista: { habilitado: false, percentual: 0, valor: 0, responsavel_id: '' },
-    projetista: { habilitado: false, percentual: 0, valor: 0, responsavel_id: '' },
+    rt: { habilitado: false, percentual: 10, valor: 0, responsavel_id: '' },
+    vendedor: { habilitado: false, percentual: 3, valor: 0, responsavel_id: '' },
+    orcamentista: { habilitado: false, percentual: 0.2, valor: 0, responsavel_id: '' },
+    projetista: { habilitado: false, percentual: 0.2, valor: 0, responsavel_id: '' },
   });
 
   // Adicionar nova forma de pagamento
@@ -267,20 +268,14 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     },
   });
 
-  // Estado para RT (Repasse Técnico)
-  const [rtConfig, setRtConfig] = useState({
-    habilitado: false,
-    percentual: 10,
-  });
-
   // Auto-preencher RT quando arquiteto é selecionado
   useEffect(() => {
     if (formData.architect_id) {
       const selectedArchitect = architects?.find(a => a.id === formData.architect_id);
       if (selectedArchitect?.commission_percent) {
-        setRtConfig(prev => ({
+        setComissoes(prev => ({
           ...prev,
-          percentual: Number(selectedArchitect.commission_percent)
+          rt: { ...prev.rt, percentual: Number(selectedArchitect.commission_percent) }
         }));
       }
     }
@@ -399,8 +394,9 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
   // Total final: taxas sempre absorvidas pela Tendenci, não adicionam ao total do cliente
   const total = totalSemTaxa;
 
-  // Calcular total de comissões
+  // Calcular total de comissões (incluindo RT)
   const totalComissoes = 
+    (comissoes.rt.habilitado ? comissoes.rt.valor : 0) +
     (comissoes.vendedor.habilitado ? comissoes.vendedor.valor : 0) +
     (comissoes.orcamentista.habilitado ? comissoes.orcamentista.valor : 0) +
     (comissoes.projetista.habilitado ? comissoes.projetista.valor : 0);
@@ -408,15 +404,25 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
   // Valor líquido Tendenci (deduz as taxas absorvidas e comissões)
   const valorLiquidoTendenci = totalSemTaxa - taxaCartao.valor - taxaBoleto.valor - totalComissoes;
 
-  // Função para atualizar comissão por valor (recalcula %)
-  const atualizarComissaoValor = (tipo: 'vendedor' | 'orcamentista' | 'projetista', novoValor: number) => {
-    const valorSeguro = isNaN(novoValor) ? 0 : Math.max(0, novoValor);
-    const novoPercentual = total > 0 ? (valorSeguro / total) * 100 : 0;
+  // Função para atualizar comissão por percentual (recalcula valor)
+  const atualizarComissaoPercentual = (tipo: 'rt' | 'vendedor' | 'orcamentista' | 'projetista', novoPercentual: number) => {
+    const percentualSeguro = isNaN(novoPercentual) ? 0 : Math.max(0, Math.min(100, novoPercentual));
+    const novoValor = total * (percentualSeguro / 100);
     setComissoes(prev => ({
       ...prev,
-      [tipo]: { ...prev[tipo], valor: valorSeguro, percentual: novoPercentual }
+      [tipo]: { ...prev[tipo], percentual: percentualSeguro, valor: novoValor }
     }));
   };
+
+  // Recalcular valores das comissões quando o total muda
+  useEffect(() => {
+    setComissoes(prev => ({
+      rt: { ...prev.rt, valor: total * (prev.rt.percentual / 100) },
+      vendedor: { ...prev.vendedor, valor: total * (prev.vendedor.percentual / 100) },
+      orcamentista: { ...prev.orcamentista, valor: total * (prev.orcamentista.percentual / 100) },
+      projetista: { ...prev.projetista, valor: total * (prev.projetista.percentual / 100) },
+    }));
+  }, [total]);
 
   // Validações por etapa
   const isClienteValid = !!formData.client_id;
@@ -521,10 +527,10 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
           taxa_boleto_responsavel: taxaBoleto.responsavel,
           numero_parcelas_boleto: taxaBoleto.numeroParcelas,
           carencia_boleto: taxaBoleto.carencia,
-          // Campos de RT (Repasse Técnico)
-          rt_habilitado: rtConfig.habilitado,
-          rt_percentual: rtConfig.habilitado ? rtConfig.percentual : 0,
-          rt_valor: rtConfig.habilitado ? (total * (rtConfig.percentual / 100)) : 0,
+          // Campos de RT (Repasse Técnico) - agora unificado com comissões
+          rt_habilitado: comissoes.rt.habilitado,
+          rt_percentual: comissoes.rt.habilitado ? comissoes.rt.percentual : 0,
+          rt_valor: comissoes.rt.habilitado ? comissoes.rt.valor : 0,
           // Campos de Comissões
           comissao_vendedor_percentual: comissoes.vendedor.habilitado ? comissoes.vendedor.percentual : 0,
           comissao_vendedor_valor: comissoes.vendedor.habilitado ? comissoes.vendedor.valor : 0,
@@ -709,58 +715,6 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                   </Select>
                 </div>
 
-                {/* RT - Repasse Técnico */}
-                {formData.architect_id && (
-                  <Card className="col-span-2 p-4 border-primary/20 bg-primary/5">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <Label className="font-medium">RT - Repasse Técnico</Label>
-                        {architects?.find(a => a.id === formData.architect_id)?.commission_percent && (
-                          <Badge variant="outline" className="text-xs">
-                            Padrão: {architects.find(a => a.id === formData.architect_id)?.commission_percent}%
-                          </Badge>
-                        )}
-                      </div>
-                      <Switch
-                        checked={rtConfig.habilitado}
-                        onCheckedChange={(checked) => setRtConfig(prev => ({ ...prev, habilitado: checked }))}
-                      />
-                    </div>
-                    
-                    {rtConfig.habilitado && (
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1">
-                          <Label className="text-xs text-muted-foreground">Percentual</Label>
-                          <div className="flex items-center gap-2">
-                            <Input
-                              type="number"
-                              min="0"
-                              max="100"
-                              step="0.5"
-                              value={rtConfig.percentual}
-                              onChange={(e) => setRtConfig(prev => ({ 
-                                ...prev, 
-                                percentual: parseFloat(e.target.value) || 0 
-                              }))}
-                              className="w-24"
-                            />
-                            <span className="text-muted-foreground">%</span>
-                          </div>
-                        </div>
-                        
-                        <div className="space-y-1">
-                          <Label className="text-xs text-muted-foreground">Valor Calculado</Label>
-                          <div className="text-lg font-semibold text-primary">
-                            {formatCurrency(total * (rtConfig.percentual / 100))}
-                          </div>
-                          <p className="text-xs text-muted-foreground">
-                            sobre {formatCurrency(total)}
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                  </Card>
-                )}
 
                 <div className="space-y-2">
                   <Label>Negócio Vinculado</Label>
@@ -1222,7 +1176,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                   )})}
                 </div>
 
-                {/* Seção de Comissões */}
+                {/* Seção de Comissões (RT + Vendedor + Orçamentista + Projetista) */}
                 <Card className="p-4 border-orange-200 dark:border-orange-800 bg-orange-50/50 dark:bg-orange-950/20">
                   <div className="flex items-center justify-between mb-3">
                     <Label className="font-medium flex items-center gap-2">
@@ -1231,6 +1185,61 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                   </div>
                   
                   <div className="space-y-3">
+                    {/* RT - Repasse Técnico */}
+                    <div className="flex items-center gap-3">
+                      <Switch
+                        checked={comissoes.rt.habilitado}
+                        onCheckedChange={(checked) => setComissoes(prev => ({
+                          ...prev,
+                          rt: { ...prev.rt, habilitado: checked }
+                        }))}
+                      />
+                      <span className="text-sm font-medium w-28">RT</span>
+                      {comissoes.rt.habilitado && (
+                        <>
+                          <div className="flex items-center gap-1">
+                            <Input
+                              type="number"
+                              className="h-8 w-20"
+                              value={comissoes.rt.percentual}
+                              onChange={(e) => atualizarComissaoPercentual('rt', Number(e.target.value))}
+                              min={0}
+                              max={100}
+                              step={0.1}
+                            />
+                            <Label className="text-xs text-muted-foreground">%</Label>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Label className="text-xs text-muted-foreground">R$</Label>
+                            <Input
+                              type="number"
+                              className="h-8 w-24 bg-muted"
+                              value={comissoes.rt.valor.toFixed(2)}
+                              readOnly
+                              disabled
+                            />
+                          </div>
+                          <Select
+                            value={comissoes.rt.responsavel_id || "_none"}
+                            onValueChange={(v) => setComissoes(prev => ({
+                              ...prev,
+                              rt: { ...prev.rt, responsavel_id: v === "_none" ? "" : v }
+                            }))}
+                          >
+                            <SelectTrigger className="h-8 w-40">
+                              <SelectValue placeholder="Responsável" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="_none">-</SelectItem>
+                              {vendedores?.map((v) => (
+                                <SelectItem key={v.id} value={v.id}>{v.full_name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </>
+                      )}
+                    </div>
+
                     {/* Comissão Vendedor */}
                     <div className="flex items-center gap-3">
                       <Switch
@@ -1244,23 +1253,23 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                       {comissoes.vendedor.habilitado && (
                         <>
                           <div className="flex items-center gap-1">
+                            <Input
+                              type="number"
+                              className="h-8 w-20"
+                              value={comissoes.vendedor.percentual}
+                              onChange={(e) => atualizarComissaoPercentual('vendedor', Number(e.target.value))}
+                              min={0}
+                              max={100}
+                              step={0.1}
+                            />
+                            <Label className="text-xs text-muted-foreground">%</Label>
+                          </div>
+                          <div className="flex items-center gap-1">
                             <Label className="text-xs text-muted-foreground">R$</Label>
                             <Input
                               type="number"
-                              className="h-8 w-24"
-                              value={comissoes.vendedor.valor || ''}
-                              onChange={(e) => atualizarComissaoValor('vendedor', Number(e.target.value))}
-                              min={0}
-                              step={0.01}
-                              placeholder="0,00"
-                            />
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Label className="text-xs text-muted-foreground">%</Label>
-                            <Input
-                              type="number"
-                              className="h-8 w-16 bg-muted"
-                              value={comissoes.vendedor.percentual.toFixed(2)}
+                              className="h-8 w-24 bg-muted"
+                              value={comissoes.vendedor.valor.toFixed(2)}
                               readOnly
                               disabled
                             />
@@ -1299,23 +1308,23 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                       {comissoes.orcamentista.habilitado && (
                         <>
                           <div className="flex items-center gap-1">
+                            <Input
+                              type="number"
+                              className="h-8 w-20"
+                              value={comissoes.orcamentista.percentual}
+                              onChange={(e) => atualizarComissaoPercentual('orcamentista', Number(e.target.value))}
+                              min={0}
+                              max={100}
+                              step={0.1}
+                            />
+                            <Label className="text-xs text-muted-foreground">%</Label>
+                          </div>
+                          <div className="flex items-center gap-1">
                             <Label className="text-xs text-muted-foreground">R$</Label>
                             <Input
                               type="number"
-                              className="h-8 w-24"
-                              value={comissoes.orcamentista.valor || ''}
-                              onChange={(e) => atualizarComissaoValor('orcamentista', Number(e.target.value))}
-                              min={0}
-                              step={0.01}
-                              placeholder="0,00"
-                            />
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Label className="text-xs text-muted-foreground">%</Label>
-                            <Input
-                              type="number"
-                              className="h-8 w-16 bg-muted"
-                              value={comissoes.orcamentista.percentual.toFixed(2)}
+                              className="h-8 w-24 bg-muted"
+                              value={comissoes.orcamentista.valor.toFixed(2)}
                               readOnly
                               disabled
                             />
@@ -1354,23 +1363,23 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                       {comissoes.projetista.habilitado && (
                         <>
                           <div className="flex items-center gap-1">
+                            <Input
+                              type="number"
+                              className="h-8 w-20"
+                              value={comissoes.projetista.percentual}
+                              onChange={(e) => atualizarComissaoPercentual('projetista', Number(e.target.value))}
+                              min={0}
+                              max={100}
+                              step={0.1}
+                            />
+                            <Label className="text-xs text-muted-foreground">%</Label>
+                          </div>
+                          <div className="flex items-center gap-1">
                             <Label className="text-xs text-muted-foreground">R$</Label>
                             <Input
                               type="number"
-                              className="h-8 w-24"
-                              value={comissoes.projetista.valor || ''}
-                              onChange={(e) => atualizarComissaoValor('projetista', Number(e.target.value))}
-                              min={0}
-                              step={0.01}
-                              placeholder="0,00"
-                            />
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Label className="text-xs text-muted-foreground">%</Label>
-                            <Input
-                              type="number"
-                              className="h-8 w-16 bg-muted"
-                              value={comissoes.projetista.percentual.toFixed(2)}
+                              className="h-8 w-24 bg-muted"
+                              value={comissoes.projetista.valor.toFixed(2)}
                               readOnly
                               disabled
                             />
@@ -1420,6 +1429,12 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                     <div className="flex items-center justify-between text-red-600">
                       <span className="text-sm">Taxas Boleto Absorvidas ({taxaBoleto.carencia}d / {taxaBoleto.numeroParcelas}x - {taxaBoleto.percentual}%):</span>
                       <span className="text-sm font-medium">- {formatCurrency(taxaBoleto.valor)}</span>
+                    </div>
+                  )}
+                  {comissoes.rt.habilitado && comissoes.rt.valor > 0 && (
+                    <div className="flex items-center justify-between text-orange-600">
+                      <span className="text-sm">RT ({comissoes.rt.percentual.toFixed(2)}%):</span>
+                      <span className="text-sm font-medium">- {formatCurrency(comissoes.rt.valor)}</span>
                     </div>
                   )}
                   {comissoes.vendedor.habilitado && comissoes.vendedor.valor > 0 && (
