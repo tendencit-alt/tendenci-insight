@@ -6378,6 +6378,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_business_days_sql: {
+        Args: { num_days: number; start_date: string }
+        Returns: string
+      }
       architect_approved_value: {
         Args: never
         Returns: {
