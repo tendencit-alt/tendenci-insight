@@ -545,22 +545,98 @@ Responda em português brasileiro de forma clara e organizada.`;
     console.log(`⏳ AGUARDANDO ${DEBOUNCE_MS}ms OBRIGATÓRIO antes de processar...`);
     await new Promise(resolve => setTimeout(resolve, DEBOUNCE_MS));
 
-    // PASSO 3: Tentar adquirir lock atômico de processamento
-    // Apenas UMA instância conseguirá obter o lock
-    const { data: lockAcquired, error: lockError } = await supabase
-      .from("ia_pending_messages")
-      .update({ is_processing: true })
-      .eq("phone_number", phoneNumber)
-      .eq("instance_name", instanceName)
-      .eq("processed", false)
-      .eq("is_processing", false)
-      .order("created_at", { ascending: true })
-      .limit(1)
-      .select()
-      .single();
+    // PASSO 2.5: LIMPEZA DE LOCKS EXPIRADOS (>30 segundos)
+    // Isso evita que mensagens fiquem presas indefinidamente
+    try {
+      const thirtySecondsAgo = new Date(Date.now() - 30000).toISOString();
+      const { data: expiredLocks } = await supabase
+        .from("ia_pending_messages")
+        .update({ is_processing: false })
+        .eq("is_processing", true)
+        .lt("created_at", thirtySecondsAgo)
+        .select("id");
+      
+      if (expiredLocks && expiredLocks.length > 0) {
+        console.log(`🧹 Liberados ${expiredLocks.length} locks expirados (>30s)`);
+      }
+    } catch (cleanupError) {
+      console.warn("⚠️ Erro na limpeza de locks:", cleanupError);
+    }
 
-    if (lockError || !lockAcquired) {
-      console.log(`🔒 Outra instância está processando ou sem mensagens pendentes. Saindo graciosamente.`);
+    // PASSO 3: Tentar adquirir lock atômico de processamento COM RETRY
+    // Implementa retry com backoff exponencial para evitar race conditions
+    let lockAcquired: any = null;
+    let lockAttempts = 0;
+    const maxLockAttempts = 3;
+
+    while (!lockAcquired && lockAttempts < maxLockAttempts) {
+      lockAttempts++;
+      console.log(`🔒 Tentativa ${lockAttempts}/${maxLockAttempts} de adquirir lock...`);
+      
+      const { data: lockData, error: lockError } = await supabase
+        .from("ia_pending_messages")
+        .update({ is_processing: true })
+        .eq("phone_number", phoneNumber)
+        .eq("instance_name", instanceName)
+        .eq("processed", false)
+        .eq("is_processing", false)
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .select()
+        .single();
+
+      if (lockData && !lockError) {
+        lockAcquired = lockData;
+        console.log(`✅ Lock adquirido na tentativa ${lockAttempts}`);
+        break;
+      }
+
+      // Delay aleatório antes de retry (200-700ms)
+      if (lockAttempts < maxLockAttempts) {
+        const retryDelay = 200 + Math.random() * 500;
+        console.log(`⏳ Aguardando ${Math.round(retryDelay)}ms antes de retry...`);
+        await new Promise(r => setTimeout(r, retryDelay));
+      }
+    }
+
+    // FALLBACK: Verificar se existem mensagens órfãs (antigas não processadas)
+    if (!lockAcquired) {
+      console.log(`🔍 Lock falhou após ${maxLockAttempts} tentativas. Verificando mensagens órfãs...`);
+      
+      const oneMinuteAgo = new Date(Date.now() - 60000).toISOString();
+      const { data: orphanMessages } = await supabase
+        .from("ia_pending_messages")
+        .select("*")
+        .eq("phone_number", phoneNumber)
+        .eq("instance_name", instanceName)
+        .eq("processed", false)
+        .eq("is_processing", false)
+        .lt("created_at", oneMinuteAgo)
+        .order("created_at", { ascending: true })
+        .limit(1);
+
+      if (orphanMessages && orphanMessages.length > 0) {
+        const orphan = orphanMessages[0];
+        console.log(`🧹 Encontrada mensagem órfã (${orphan.id}), forçando processamento...`);
+        
+        // Forçar aquisição do lock na mensagem órfã
+        const { data: forcedLock, error: forceError } = await supabase
+          .from("ia_pending_messages")
+          .update({ is_processing: true })
+          .eq("id", orphan.id)
+          .eq("is_processing", false)
+          .select()
+          .single();
+
+        if (forcedLock && !forceError) {
+          lockAcquired = forcedLock;
+          console.log(`✅ Lock forçado com sucesso na mensagem órfã`);
+        }
+      }
+    }
+
+    if (!lockAcquired) {
+      console.log(`🔒 Nenhum lock adquirido após todas tentativas. Saindo graciosamente.`);
       return new Response(JSON.stringify({ success: true, skipped: "another_instance_processing" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -903,8 +979,15 @@ ${productInfo}
       }
     }
 
-    // Build master prompt with last sent product context
-    const masterPrompt = buildMasterPrompt(configs, products, knowledge, clientMemory, conversationHistory, alreadyProvidedInfo) + lastSentProductContext;
+    // ========== EXTRACT ANTI-REPETITION AND CONTEXT DATA ==========
+    const askedQuestions = extractAskedQuestions(conversationHistory);
+    const conversationContext = extractConversationContext(conversationHistory);
+    
+    console.log(`📋 Anti-repetição: ${askedQuestions.length} perguntas já feitas detectadas`);
+    console.log(`📋 Contexto extraído:`, JSON.stringify(conversationContext));
+
+    // Build master prompt with last sent product context + anti-repetition + semantic context
+    const masterPrompt = buildMasterPrompt(configs, products, knowledge, clientMemory, conversationHistory, alreadyProvidedInfo, askedQuestions, conversationContext) + lastSentProductContext;
 
     // Build messages array for AI
     const messages: Message[] = [
@@ -1338,6 +1421,34 @@ function isResponseTooSimilar(newMessage: string, previousMessages: string[]): b
 
   const newNormalized = normalize(newMessage);
   
+  // ========== DETECÇÃO DE PERGUNTAS GENÉRICAS REPETIDAS ==========
+  const genericQuestionPatterns = [
+    /como posso (?:te )?ajudar/i,
+    /o que (?:você )?busca/i,
+    /está procurando algo/i,
+    /quer ver/i,
+    /gostaria de conhecer/i,
+    /posso mostrar/i,
+    /me conta (?:um pouco )?mais/i,
+    /qual (?:é |seria )?(?:o )?(?:seu )?ambiente/i,
+    /para qual (?:ambiente|espaço|cômodo)/i,
+    /quantas pessoas/i,
+    /qual (?:o )?tamanho/i,
+  ];
+  
+  const newHasGenericQuestion = genericQuestionPatterns.some(p => p.test(newMessage));
+  
+  if (newHasGenericQuestion) {
+    // Verificar se alguma mensagem anterior já fez pergunta genérica similar
+    for (const prev of previousMessages) {
+      if (genericQuestionPatterns.some(p => p.test(prev))) {
+        console.log(`⚠️ Blocking duplicate generic question pattern`);
+        return true;
+      }
+    }
+  }
+  
+  // ========== VERIFICAÇÃO DE SIMILARIDADE POR PALAVRAS ==========
   for (const prev of previousMessages) {
     const prevNormalized = normalize(prev);
     
@@ -1358,6 +1469,108 @@ function isResponseTooSimilar(newMessage: string, previousMessages: string[]): b
   }
   
   return false;
+}
+
+// ========== EXTRACT ASKED QUESTIONS (Anti-Repetition) ==========
+function extractAskedQuestions(history: Message[]): string[] {
+  const questions: string[] = [];
+  
+  for (const msg of history) {
+    if (msg.role === "assistant") {
+      // Detectar perguntas por padrões
+      const questionPatterns = [
+        /você\s+(?:está|busca|quer|precisa|tem|gostaria)/gi,
+        /qual\s+(?:é|seria|ambiente|tipo|estilo|tamanho)/gi,
+        /me\s+(?:conta|fala|diz)/gi,
+        /(?:já|você)\s+tem\s+(?:as\s+medidas|projeto|ideia)/gi,
+        /posso\s+(?:ajudar|mostrar|te apresentar)/gi,
+        /para\s+(?:quantas\s+pessoas|qual\s+ambiente)/gi,
+        /o que\s+(?:você|te)/gi,
+        /como\s+(?:posso|gostaria)/gi,
+      ];
+      
+      const content = msg.content;
+      
+      // Extrair frases que terminam com ?
+      const sentences = content.split(/[.!?]/);
+      for (const sentence of sentences) {
+        const trimmed = sentence.trim();
+        // Se a sentença original tinha ? ou corresponde a um padrão de pergunta
+        if (content.includes(trimmed + "?") || questionPatterns.some(p => p.test(trimmed))) {
+          if (trimmed.length > 10 && trimmed.length < 200) {
+            questions.push(trimmed.toLowerCase());
+          }
+        }
+      }
+    }
+  }
+  
+  return [...new Set(questions)].slice(-10); // Últimas 10 perguntas únicas
+}
+
+// ========== EXTRACT CONVERSATION CONTEXT (Semantic Understanding) ==========
+function extractConversationContext(history: Message[]): Record<string, string> {
+  const context: Record<string, string> = {};
+  
+  for (const msg of history) {
+    if (msg.role === "user") {
+      const content = msg.content.toLowerCase();
+      
+      // Detectar tipo de ambiente/projeto
+      if (/clínica|clinica|consultório|consultorio|escritório|escritorio|loja|comercial|corporativo|empresa/.test(content)) {
+        context.tipoAmbiente = "comercial/corporativo";
+      } else if (/casa|apartamento|quarto|sala|cozinha|varanda|residência|residencia/.test(content)) {
+        context.tipoAmbiente = "residencial";
+      }
+      
+      // Detectar o que cliente quer
+      if (/recepção|recepcao|balcão|balcao/.test(content)) {
+        context.interesse = "recepção/balcão";
+      } else if (/mesa|mesas/.test(content)) {
+        context.interesse = "mesas";
+      } else if (/sofá|sofa|estofado/.test(content)) {
+        context.interesse = "sofás";
+      } else if (/cadeira|cadeiras|banqueta/.test(content)) {
+        context.interesse = "cadeiras/banquetas";
+      } else if (/armário|armario|closet|guarda.?roupa/.test(content)) {
+        context.interesse = "armários/closets";
+      } else if (/cozinha|cozinhas/.test(content)) {
+        context.interesse = "cozinha planejada";
+      }
+      
+      // Detectar tipo de móvel
+      if (/planejado|planejada|sob medida|marcenaria|custom/.test(content)) {
+        context.tipoMovel = "móveis planejados/sob medida";
+      } else if (/pronto|industrial|catálogo|catalogo/.test(content)) {
+        context.tipoMovel = "móveis prontos";
+      }
+      
+      // Detectar se cliente é profissional
+      if (/arquiteto|arquiteta|designer|decorador|projetista|profissional/.test(content)) {
+        context.tipoCliente = "profissional/arquiteto";
+      }
+      
+      // Detectar quantidade de pessoas/lugares
+      const lugaresMatch = content.match(/(\d+)\s*(?:lugares?|pessoas?|cadeiras?)/);
+      if (lugaresMatch) {
+        context.quantidade = `${lugaresMatch[1]} lugares/pessoas`;
+      }
+      
+      // Detectar medidas mencionadas
+      const medidasMatch = content.match(/(\d+[,.]?\d*)\s*(?:metros?|m|cm)\s*(?:x|por)\s*(\d+[,.]?\d*)/i);
+      if (medidasMatch) {
+        context.medidas = `${medidasMatch[1]} x ${medidasMatch[2]}`;
+      }
+      
+      // Detectar orçamento/preço mencionado
+      const orcamentoMatch = content.match(/(?:até|até|orçamento\s*(?:de)?)\s*(?:R\$?\s*)?(\d+(?:[.,]\d{3})*(?:[.,]\d{2})?)/i);
+      if (orcamentoMatch) {
+        context.orcamento = `até R$ ${orcamentoMatch[1]}`;
+      }
+    }
+  }
+  
+  return context;
 }
 
 // Extract client info from message and update all related records
@@ -2092,7 +2305,9 @@ function buildMasterPrompt(
   knowledge: Knowledge[],
   clientMemory: ClientMemory | null,
   conversationHistory: Message[],
-  alreadyProvidedInfo: string[] = []
+  alreadyProvidedInfo: string[] = [],
+  askedQuestions: string[] = [],
+  conversationContext: Record<string, string> = {}
 ): string {
   const parts: string[] = [];
 
@@ -3334,6 +3549,37 @@ ${regrasGerais}
     }
     
     parts.push(regrasSection);
+  }
+
+  // ========== SEÇÃO ANTI-REPETIÇÃO: PERGUNTAS JÁ FEITAS ==========
+  if (askedQuestions.length > 0) {
+    parts.push(`# ⚠️ PERGUNTAS JÁ FEITAS (NÃO REPITA!)
+
+Você já fez estas perguntas ao cliente nesta conversa:
+${askedQuestions.slice(-5).map((q, i) => `${i + 1}. "${q}"`).join('\n')}
+
+## REGRA CRÍTICA:
+- NÃO faça perguntas similares ou iguais às listadas acima!
+- Se o cliente já respondeu algo, use essa informação
+- Avance a conversa, não volte ao início
+- Pergunte apenas o que AINDA não foi respondido
+`);
+  }
+
+  // ========== SEÇÃO CONTEXTO SEMÂNTICO DA CONVERSA ==========
+  const contextEntries = Object.entries(conversationContext);
+  if (contextEntries.length > 0) {
+    parts.push(`# 🎯 CONTEXTO JÁ IDENTIFICADO (USE ESTAS INFORMAÇÕES!)
+
+O cliente já informou:
+${contextEntries.map(([key, value]) => `- **${key}:** ${value}`).join('\n')}
+
+## REGRA CRÍTICA:
+- NÃO pergunte novamente o que já foi informado acima!
+- Use essas informações para personalizar suas respostas
+- Referencie o que o cliente disse para mostrar que você está prestando atenção
+- Conduza a conversa para FRENTE, não para trás
+`);
   }
 
   return parts.join("\n");
