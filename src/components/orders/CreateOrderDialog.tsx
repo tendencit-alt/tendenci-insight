@@ -122,19 +122,19 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
 
   const [items, setItems] = useState<OrderItem[]>([]);
 
-  // Estado para taxas de cartão de crédito
+  // Estado para taxas de cartão de crédito - sempre Tendenci absorve
   const [taxaCartao, setTaxaCartao] = useState({
     percentual: 0,
     valor: 0,
-    responsavel: 'cliente' as 'cliente' | 'tendenci',
+    responsavel: 'tendenci' as const,
     numeroParcelas: 1
   });
 
-  // Estado para taxas de boleto
+  // Estado para taxas de boleto - sempre Tendenci absorve
   const [taxaBoleto, setTaxaBoleto] = useState({
     percentual: 0,
     valor: 0,
-    responsavel: 'cliente' as 'cliente' | 'tendenci',
+    responsavel: 'tendenci' as const,
     numeroParcelas: 1,
     carencia: 30 as 30 | 60
   });
@@ -335,7 +335,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
         numeroParcelas: numParcelasCartao
       }));
     } else {
-      setTaxaCartao({ percentual: 0, valor: 0, responsavel: 'cliente', numeroParcelas: 1 });
+      setTaxaCartao({ percentual: 0, valor: 0, responsavel: 'tendenci', numeroParcelas: 1 });
     }
   }, [parcelas, totalSemTaxa, taxaPercentual, taxaTotalCartao, numParcelasCartao, parcelasCartao.length]);
 
@@ -372,19 +372,15 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
         carencia: carenciaBoleto
       }));
     } else {
-      setTaxaBoleto({ percentual: 0, valor: 0, responsavel: 'cliente', numeroParcelas: 1, carencia: 30 });
+      setTaxaBoleto({ percentual: 0, valor: 0, responsavel: 'tendenci', numeroParcelas: 1, carencia: 30 });
     }
   }, [parcelas, totalSemTaxa, taxaBoletoPercentual, taxaTotalBoleto, numParcelasBoleto, carenciaBoleto, parcelasBoleto.length]);
   
-  // Total final: inclui taxas se responsável for cliente
-  const taxaCartaoAplicada = taxaCartao.responsavel === 'cliente' ? taxaCartao.valor : 0;
-  const taxaBoletoAplicada = taxaBoleto.responsavel === 'cliente' ? taxaBoleto.valor : 0;
-  const total = totalSemTaxa + taxaCartaoAplicada + taxaBoletoAplicada;
+  // Total final: taxas sempre absorvidas pela Tendenci, não adicionam ao total do cliente
+  const total = totalSemTaxa;
 
-  // Valor líquido Tendenci (quando absorve as taxas)
-  const valorLiquidoTendenci = totalSemTaxa 
-    - (taxaCartao.responsavel === 'tendenci' ? taxaCartao.valor : 0)
-    - (taxaBoleto.responsavel === 'tendenci' ? taxaBoleto.valor : 0);
+  // Valor líquido Tendenci (deduz as taxas absorvidas)
+  const valorLiquidoTendenci = totalSemTaxa - taxaCartao.valor - taxaBoleto.valor;
 
   // Validações por etapa
   const isClienteValid = !!formData.client_id;
@@ -1031,11 +1027,10 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                               <Label className="text-xs">% do Total</Label>
                               <Input
                                 type="number"
-                                className="h-10"
-                                value={parcela.percentual}
-                                onChange={(e) => atualizarPercentual(parcela.id, Number(e.target.value))}
-                                min={0}
-                                max={100}
+                                className="h-10 bg-muted cursor-not-allowed"
+                                value={parcela.percentual.toFixed(2)}
+                                readOnly
+                                disabled
                               />
                             </div>
 
@@ -1051,36 +1046,17 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                               />
                             </div>
 
-                            {/* Taxa inline */}
+                            {/* Taxa inline - sempre Tendenci */}
                             <div className="col-span-8">
-                              <div className="flex items-center gap-3 h-10 px-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
+                              <div className="flex items-center gap-3 h-10 px-3 bg-green-50 dark:bg-green-950/30 rounded-lg border border-green-200 dark:border-green-800">
                                 <div className="flex-1">
-                                  <span className="text-xs text-blue-700 dark:text-blue-300">
+                                  <span className="text-xs text-green-700 dark:text-green-300">
                                     Taxa {(parcela.carencia_boleto || 30)}d / {parcela.numero_parcelas || 1}x: 
                                     <strong className="ml-1">{taxaBoletoParcelaPercentual.toFixed(2)}%</strong>
                                     <span className="mx-1">→</span>
                                     <strong>{formatCurrency(taxaBoletoParcelaValor)}</strong>
+                                    <span className="ml-2">✓ Absorvida pela Tendenci</span>
                                   </span>
-                                </div>
-                                <div className="flex gap-1">
-                                  <Button
-                                    type="button"
-                                    variant={taxaBoleto.responsavel === 'cliente' ? 'default' : 'outline'}
-                                    size="sm"
-                                    className={`h-7 text-xs ${taxaBoleto.responsavel === 'cliente' ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
-                                    onClick={() => setTaxaBoleto({...taxaBoleto, responsavel: 'cliente'})}
-                                  >
-                                    Cliente
-                                  </Button>
-                                  <Button
-                                    type="button"
-                                    variant={taxaBoleto.responsavel === 'tendenci' ? 'default' : 'outline'}
-                                    size="sm"
-                                    className={`h-7 text-xs ${taxaBoleto.responsavel === 'tendenci' ? 'bg-green-600 hover:bg-green-700' : ''}`}
-                                    onClick={() => setTaxaBoleto({...taxaBoleto, responsavel: 'tendenci'})}
-                                  >
-                                    Tendenci
-                                  </Button>
                                 </div>
                               </div>
                             </div>
@@ -1148,11 +1124,10 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                             <Label className="text-xs">% do Total</Label>
                             <Input
                               type="number"
-                              className="h-10"
-                              value={parcela.percentual}
-                              onChange={(e) => atualizarPercentual(parcela.id, Number(e.target.value))}
-                              min={0}
-                              max={100}
+                              className="h-10 bg-muted cursor-not-allowed"
+                              value={parcela.percentual.toFixed(2)}
+                              readOnly
+                              disabled
                             />
                           </div>
 
@@ -1213,25 +1188,13 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                     <span className="text-sm text-muted-foreground">Valor do Pedido (itens):</span>
                     <span className="text-sm font-medium">{formatCurrency(totalSemTaxa)}</span>
                   </div>
-                  {taxaCartao.valor > 0 && taxaCartao.responsavel === 'cliente' && (
-                    <div className="flex items-center justify-between text-amber-600">
-                      <span className="text-sm">Taxas de Cartão ({taxaCartao.numeroParcelas}x - {taxaCartao.percentual}%):</span>
-                      <span className="text-sm font-medium">+ {formatCurrency(taxaCartao.valor)}</span>
-                    </div>
-                  )}
-                  {taxaCartao.valor > 0 && taxaCartao.responsavel === 'tendenci' && (
+                  {taxaCartao.valor > 0 && (
                     <div className="flex items-center justify-between text-red-600">
                       <span className="text-sm">Taxas Cartão Absorvidas ({taxaCartao.numeroParcelas}x - {taxaCartao.percentual}%):</span>
                       <span className="text-sm font-medium">- {formatCurrency(taxaCartao.valor)}</span>
                     </div>
                   )}
-                  {taxaBoleto.valor > 0 && taxaBoleto.responsavel === 'cliente' && (
-                    <div className="flex items-center justify-between text-blue-600">
-                      <span className="text-sm">Taxas de Boleto ({taxaBoleto.carencia}d / {taxaBoleto.numeroParcelas}x - {taxaBoleto.percentual}%):</span>
-                      <span className="text-sm font-medium">+ {formatCurrency(taxaBoleto.valor)}</span>
-                    </div>
-                  )}
-                  {taxaBoleto.valor > 0 && taxaBoleto.responsavel === 'tendenci' && (
+                  {taxaBoleto.valor > 0 && (
                     <div className="flex items-center justify-between text-red-600">
                       <span className="text-sm">Taxas Boleto Absorvidas ({taxaBoleto.carencia}d / {taxaBoleto.numeroParcelas}x - {taxaBoleto.percentual}%):</span>
                       <span className="text-sm font-medium">- {formatCurrency(taxaBoleto.valor)}</span>
@@ -1241,12 +1204,12 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                     <span className="text-sm font-semibold">Total do Pedido:</span>
                     <span className="text-base font-bold text-primary">{formatCurrency(total)}</span>
                   </div>
-                  {(taxaCartao.valor > 0 && taxaCartao.responsavel === 'tendenci') || (taxaBoleto.valor > 0 && taxaBoleto.responsavel === 'tendenci') ? (
+                  {(taxaCartao.valor > 0 || taxaBoleto.valor > 0) && (
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-semibold text-red-600">Valor Líquido Tendenci:</span>
                       <span className="text-base font-bold text-red-600">{formatCurrency(valorLiquidoTendenci)}</span>
                     </div>
-                  ) : null}
+                  )}
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Total Formas de Pagamento:</span>
                     <span className={`text-sm font-medium ${isPagamentoValorCorreto ? 'text-green-600' : 'text-destructive'}`}>
@@ -1274,46 +1237,23 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                 )}
               </div>
 
-              {/* Card de Taxa de Cartão de Crédito */}
+              {/* Card de Taxa de Cartão de Crédito - sempre Tendenci absorve */}
               {parcelasCartao.length > 0 && taxaCartao.percentual > 0 && (
-                <Card className="p-4 bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800">
-                  <div className="space-y-3">
+                <Card className="p-4 bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800">
+                  <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="font-medium text-amber-800 dark:text-amber-200">
+                        <p className="font-medium text-green-800 dark:text-green-200">
                           Taxa Cartão {taxaCartao.numeroParcelas}x ({taxaCartao.percentual}%)
                         </p>
-                        <p className="text-lg font-bold text-amber-900 dark:text-amber-100">
+                        <p className="text-lg font-bold text-green-900 dark:text-green-100">
                           {formatCurrency(taxaCartao.valor)}
                         </p>
                       </div>
                     </div>
                     
-                    <div className="flex gap-2">
-                      <Button
-                        type="button"
-                        variant={taxaCartao.responsavel === 'cliente' ? 'default' : 'outline'}
-                        size="sm"
-                        className={taxaCartao.responsavel === 'cliente' ? 'bg-amber-600 hover:bg-amber-700' : ''}
-                        onClick={() => setTaxaCartao({...taxaCartao, responsavel: 'cliente'})}
-                      >
-                        Taxa Cliente
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={taxaCartao.responsavel === 'tendenci' ? 'default' : 'outline'}
-                        size="sm"
-                        className={taxaCartao.responsavel === 'tendenci' ? 'bg-green-600 hover:bg-green-700' : ''}
-                        onClick={() => setTaxaCartao({...taxaCartao, responsavel: 'tendenci'})}
-                      >
-                        Taxa Tendenci
-                      </Button>
-                    </div>
-                    
-                    <p className="text-xs text-amber-700 dark:text-amber-300">
-                      {taxaCartao.responsavel === 'cliente' 
-                        ? '✓ Taxa será adicionada ao valor total do pedido' 
-                        : '✓ Taxa será absorvida pela Tendenci (não será cobrada do cliente)'}
+                    <p className="text-xs text-green-700 dark:text-green-300">
+                      ✓ Taxa absorvida pela Tendenci (não será cobrada do cliente)
                     </p>
                   </div>
                 </Card>
