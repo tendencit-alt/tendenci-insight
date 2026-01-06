@@ -48,7 +48,7 @@ serve(async (req) => {
     }
 
     // Criar novo usuário
-    const { email, password, full_name, role } = await req.json();
+    const { email, password, full_name, role, profile_type_id } = await req.json();
 
     if (!email || !password) {
       throw new Error('Email e senha são obrigatórios');
@@ -65,15 +65,23 @@ serve(async (req) => {
       throw createError;
     }
 
-    // Atualizar role no perfil se fornecido
-    if (role && newUser.user) {
-      const { error: updateError } = await supabaseAdmin
-        .from('profiles')
-        .update({ role, full_name })
-        .eq('id', newUser.user.id);
+    // Atualizar role e profile_type_id no perfil se fornecido
+    if (newUser.user) {
+      const updateData: Record<string, any> = {};
+      
+      if (role) updateData.role = role;
+      if (full_name) updateData.full_name = full_name;
+      if (profile_type_id) updateData.profile_type_id = profile_type_id;
 
-      if (updateError) {
-        console.error('Erro ao atualizar perfil:', updateError);
+      if (Object.keys(updateData).length > 0) {
+        const { error: updateError } = await supabaseAdmin
+          .from('profiles')
+          .update(updateData)
+          .eq('id', newUser.user.id);
+
+        if (updateError) {
+          console.error('Erro ao atualizar perfil:', updateError);
+        }
       }
     }
 
