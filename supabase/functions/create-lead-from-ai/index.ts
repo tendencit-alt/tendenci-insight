@@ -614,72 +614,75 @@ Deno.serve(async (req) => {
         : data.conversation_history
       
       if (isNewLead) {
-        // Lead novo: criar deal em TODOS os pipelines que têm etapa "Lead"
-        const { data: allPipelines } = await supabase
+        // Lead novo: criar deal no pipeline único "Funil de Vendas Padrão"
+        // Buscar o pipeline principal (único pipeline existente após unificação)
+        const { data: mainPipeline } = await supabase
           .from('crm_pipelines')
           .select('id, name')
           .order('created_at', { ascending: true })
+          .limit(1)
+          .single()
         
-        if (allPipelines && allPipelines.length > 0) {
-          console.log(`📋 Encontrados ${allPipelines.length} pipeline(s) no sistema`)
+        if (mainPipeline) {
+          console.log(`📋 Usando pipeline principal: "${mainPipeline.name}"`)
           
-          for (const pipeline of allPipelines) {
-            // Buscar a etapa "Lead" neste pipeline
-            const { data: leadStage } = await supabase
+          // Buscar a etapa "Lead" ou "Follow Up (I.A)" neste pipeline
+          const { data: leadStage } = await supabase
+            .from('crm_stages')
+            .select('id, name')
+            .eq('pipeline_id', mainPipeline.id)
+            .or('name.ilike.%lead%,name.ilike.%follow%up%')
+            .order('position', { ascending: true })
+            .limit(1)
+            .maybeSingle()
+          
+          // Se não tiver etapa "Lead" ou "Follow Up", pegar a primeira etapa
+          let stageToUse = leadStage
+          if (!stageToUse) {
+            const { data: firstStage } = await supabase
               .from('crm_stages')
               .select('id, name')
-              .eq('pipeline_id', pipeline.id)
-              .ilike('name', '%lead%')
+              .eq('pipeline_id', mainPipeline.id)
               .order('position', { ascending: true })
               .limit(1)
               .maybeSingle()
-            
-            // Se não tiver etapa "Lead", pegar a primeira etapa
-            let stageToUse = leadStage
-            if (!stageToUse) {
-              const { data: firstStage } = await supabase
-                .from('crm_stages')
-                .select('id, name')
-                .eq('pipeline_id', pipeline.id)
-                .order('position', { ascending: true })
-                .limit(1)
-                .maybeSingle()
-              stageToUse = firstStage
-            }
-            
-            if (stageToUse) {
-              console.log(`✅ Criando deal no funil "${pipeline.name}" na etapa "${stageToUse.name}"`)
-              
-              const { data: newDeal, error: dealError } = await supabase
-                .from('crm_deals')
-                .insert({
-                  pipeline_id: pipeline.id,
-                  stage_id: stageToUse.id,
-                  lead_id: leadId,
-                  title: data.deal_title || `Lead ${data.name}`,
-                  value: data.deal_value || 0,
-                  categoria: 'Móveis Soltos',
-                  centro_custo: 'Industrial',
-                  tipo_produto: data.product_type || detectedProductType,
-                  product_type: data.product_type || detectedProductType,
-                  conversation_history: newMessages,
-                  ai_status: data.ai_status,
-                  status: 'aberto',
-                  from_ai: true
-                })
-                .select()
-                .single()
-
-              if (dealError) {
-                console.error(`❌ Erro ao criar deal no funil "${pipeline.name}":`, dealError)
-              } else {
-                console.log(`✅ Deal criado no funil "${pipeline.name}":`, newDeal.id)
-                dealIds.push(newDeal.id)
-              }
-            } else {
-              console.log(`⚠️ Pipeline "${pipeline.name}" não possui etapas, pulando...`)
-            }
+            stageToUse = firstStage
           }
+          
+          if (stageToUse) {
+            console.log(`✅ Criando deal no funil "${mainPipeline.name}" na etapa "${stageToUse.name}"`)
+            
+            const { data: newDeal, error: dealError } = await supabase
+              .from('crm_deals')
+              .insert({
+                pipeline_id: mainPipeline.id,
+                stage_id: stageToUse.id,
+                lead_id: leadId,
+                title: data.deal_title || `Lead ${data.name}`,
+                value: data.deal_value || 0,
+                categoria: 'Móveis Soltos',
+                centro_custo: 'Industrial',
+                tipo_produto: data.product_type || detectedProductType,
+                product_type: data.product_type || detectedProductType,
+                conversation_history: newMessages,
+                ai_status: data.ai_status,
+                status: 'aberto',
+                from_ai: true
+              })
+              .select()
+              .single()
+
+            if (dealError) {
+              console.error(`❌ Erro ao criar deal:`, dealError)
+            } else {
+              console.log(`✅ Deal criado:`, newDeal.id)
+              dealIds.push(newDeal.id)
+            }
+          } else {
+            console.log(`⚠️ Pipeline "${mainPipeline.name}" não possui etapas`)
+          }
+        } else {
+          console.error('❌ Nenhum pipeline encontrado no sistema')
         }
       } else {
         // Lead existente: atualizar deals existentes E criar em pipelines faltantes
@@ -746,70 +749,9 @@ Deno.serve(async (req) => {
           }
         }
         
-        // Buscar todos os pipelines e criar deals nos que estão faltando
-        const { data: allPipelines } = await supabase
-          .from('crm_pipelines')
-          .select('id, name')
-        
-        if (allPipelines && allPipelines.length > 0) {
-          const missingPipelines = allPipelines.filter(p => !pipelinesWithDeal.has(p.id))
-          console.log(`📊 Pipelines faltando deal: ${missingPipelines.length}`)
-          
-          for (const pipeline of missingPipelines) {
-            // Buscar etapas do pipeline
-            const { data: stages } = await supabase
-              .from('crm_stages')
-              .select('id, name, position')
-              .eq('pipeline_id', pipeline.id)
-              .order('position', { ascending: true })
-            
-            if (stages && stages.length > 0) {
-              // Tentar encontrar etapa com mesmo nome da etapa atual do deal existente
-              let matchingStage = stages.find(s => 
-                s.name.toLowerCase() === currentStageName.toLowerCase()
-              )
-              
-              // Se não encontrar, usar "Lead" ou primeira etapa como fallback
-              if (!matchingStage) {
-                matchingStage = stages.find(s => s.name.toLowerCase() === 'lead')
-              }
-              
-              const stageToUse = matchingStage || stages[0]
-              console.log(`📊 Usando etapa "${stageToUse.name}" no funil "${pipeline.name}" (baseado em "${currentStageName}")`)
-              
-              console.log(`✅ Criando deal no funil "${pipeline.name}" para lead existente`)
-              
-              const { data: newDeal, error: dealError } = await supabase
-                .from('crm_deals')
-                .insert({
-                  pipeline_id: pipeline.id,
-                  stage_id: stageToUse.id,
-                  lead_id: leadId,
-                  title: `Lead ${cleanedName}`,
-                  value: 0,
-                  categoria: 'Móveis Soltos',
-                  centro_custo: 'Industrial',
-                  tipo_produto: detectedProductType,
-                  product_type: detectedProductType,
-                  conversation_history: newMessages,
-                  status: 'aberto',
-                  from_ai: true
-                })
-                .select()
-                .single()
-              
-              if (dealError) {
-                console.error(`❌ Erro ao criar deal no funil "${pipeline.name}":`, dealError)
-              } else {
-                console.log(`✅ Deal criado no funil "${pipeline.name}":`, newDeal.id)
-                dealIds.push(newDeal.id)
-              }
-            }
-          }
-        }
+        // Com pipeline único, não é mais necessário criar deals em outros pipelines
       }
     }
-
     return new Response(
       JSON.stringify({ 
         success: true,
