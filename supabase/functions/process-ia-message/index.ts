@@ -1032,6 +1032,69 @@ REGRAS ABSOLUTAS:
       });
       
       console.log(`📤 [TRANSFER] Instrução de transferência injetada no prompt`);
+      
+      // Atualizar CRM para atenção humana
+      try {
+        const formattedPhone = phoneNumber.replace(/\D/g, '');
+        const phoneSuffix = formattedPhone.slice(-8);
+        
+        // Buscar deal existente pelo telefone
+        const { data: existingDeals } = await supabase
+          .from('crm_deals')
+          .select('id, note, lead_id')
+          .eq('from_ai', true)
+          .order('created_at', { ascending: false })
+          .limit(50);
+        
+        if (existingDeals && existingDeals.length > 0) {
+          // Encontrar deal que corresponde ao telefone
+          for (const deal of existingDeals) {
+            if (deal.lead_id) {
+              const { data: lead } = await supabase
+                .from('leads')
+                .select('id, client_id')
+                .eq('id', deal.lead_id)
+                .maybeSingle();
+              
+              if (lead?.client_id) {
+                const { data: client } = await supabase
+                  .from('clients')
+                  .select('phone')
+                  .eq('id', lead.client_id)
+                  .maybeSingle();
+                
+                if (client?.phone?.includes(phoneSuffix)) {
+                  // Encontrou o deal correto - marcar para atenção humana
+                  const transferNote = `\n\n⚠️ ATENÇÃO HUMANA NECESSÁRIA\nMotivo: ${confusionResult.reason}\nData: ${new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}`;
+                  
+                  await supabase
+                    .from('crm_deals')
+                    .update({ 
+                      ai_status: 'quente',
+                      note: (deal.note || '') + transferNote
+                    })
+                    .eq('id', deal.id);
+                  
+                  // Adicionar na timeline
+                  await supabase
+                    .from('crm_timeline')
+                    .insert({
+                      deal_id: deal.id,
+                      message: `🚨 Transferência para humano solicitada\nMotivo: ${confusionResult.reason}`,
+                      update_type: 'transfer_requested'
+                    });
+                  
+                  console.log(`📋 [TRANSFER] Deal ${deal.id} marcado para atenção humana`);
+                  break;
+                }
+              }
+            }
+          }
+        }
+      } catch (transferCrmError) {
+        console.error(`⚠️ [TRANSFER] Erro ao atualizar CRM para transferência:`, transferCrmError);
+        // Não bloqueia o fluxo
+      }
     }
     
     messages.push(...conversationHistory);
@@ -1098,6 +1161,19 @@ REGRAS ABSOLUTAS:
     let assistantMessage = aiData.choices?.[0]?.message?.content || "Desculpe, não consegui processar sua mensagem.";
     
     console.log(`🤖 AI Response (${assistantMessage.length} chars): ${assistantMessage.substring(0, 100)}...`);
+    
+    // Log de qualidade para monitoramento
+    const qualityMetrics = {
+      responseLength: assistantMessage.length,
+      hasQuestion: /\?/.test(assistantMessage),
+      hasEmoji: /[\u{1F300}-\u{1F9FF}]/u.test(assistantMessage),
+      hasProductMention: /FOTO_PRODUTO|produto|mesa|sofá|cadeira|banco|poltrona/i.test(assistantMessage),
+      askedQuestionsCount: askedQuestions.length,
+      conversationLength: conversationHistory.length,
+      confusionDetected: confusionResult?.isConfused || false,
+      transferRequested: confusionResult?.shouldTransfer || false,
+    };
+    console.log(`📊 [QUALITY] Metrics:`, JSON.stringify(qualityMetrics));
 
     // ========== FORCE CHARACTER LIMIT (PRESERVING MEDIA MARKERS) ==========
     const limiteCaracteres = limiteCaracteresConfig;
@@ -1622,9 +1698,9 @@ function detectConfusionOrLoop(history: Message[]): ConfusionResult {
     for (let j = 0; j < recentUserMsgs.length; j++) {
       if (i !== j) {
         const other = recentUserMsgs[j];
-        // Verifica se mensagens são muito similares
+        // Verifica se mensagens são muito similares (threshold reduzido para 0.5)
         const similarity = calculateSimilarity(msg, other);
-        if (similarity > 0.6) repeatCount++;
+        if (similarity > 0.5) repeatCount++;
       }
     }
     
@@ -1638,17 +1714,28 @@ function detectConfusionOrLoop(history: Message[]): ConfusionResult {
     }
   }
   
-  // 2. Detectar sinais de frustração
+  // 2. Detectar sinais de frustração (lista expandida)
   const frustrationPatterns = [
-    /já\s+falei/i, /já\s+disse/i, /já\s+respondi/i,
-    /não\s+entend/i, /nao\s+entend/i, /o\s+que\s*\?/i,
-    /repet/i, /de\s*novo/i, /outra\s*vez/i,
+    // Repetição explícita
+    /já\s+falei/i, /já\s+disse/i, /já\s+respondi/i, /já\s+expliquei/i,
+    /eu\s+já\s+/i, /te\s+disse/i, /te\s+falei/i,
+    // Confusão
+    /não\s+entend/i, /nao\s+entend/i, /o\s+que\s*\?/i, /como\s+assim/i,
+    /entendeu\s+errado/i, /você\s+não\s+entendeu/i, /não\s+é\s+isso/i,
+    // Repetição da IA
+    /repet/i, /de\s*novo/i, /outra\s*vez/i, /perguntou\s+isso/i,
+    // Pedido de humano
     /robô/i, /robo/i, /humano/i, /atendente/i, /pessoa\s*real/i,
     /falar\s+com\s+alguém/i, /falar\s+com\s+alguem/i,
-    /quero\s+(?:um\s+)?humano/i, /tem\s+alguém\s+aí/i,
+    /quero\s+(?:um\s+)?humano/i, /tem\s+alguém\s+aí/i, /tem\s+alguem\s+ai/i,
     /isso\s+é\s+(?:um\s+)?robô/i, /você\s+é\s+(?:um\s+)?robô/i,
-    /que\s+merda/i, /que\s+droga/i, /pqp/i, /vtnc/i,
-    /socorro/i, /me\s+ajuda/i,
+    /conversar\s+com\s+vendedor/i, /falar\s+com\s+vendedor/i,
+    // Frustração explícita
+    /que\s+merda/i, /que\s+droga/i, /pqp/i, /vtnc/i, /caramba/i,
+    /socorro/i, /me\s+ajuda/i, /não\s+aguento/i, /cansado/i,
+    /leia\s+direito/i, /presta\s+atenção/i, /lê\s+o\s+que/i,
+    // Desistência
+    /desisto/i, /deixa\s+pra\s+lá/i, /esquece/i, /tchau/i, /obrigado\s+tchau/i,
   ];
   
   const lastUserMsg = userMessages.at(-1)?.content || "";
@@ -2064,20 +2151,43 @@ function shouldCreateLead(
   conversationHistory: Message[],
   userMessage: string
 ): { shouldCreate: boolean; temperature: string } {
-  const combined = userMessage.toLowerCase();
+  // Verificar TODAS as mensagens do usuário, não apenas a última
+  const allUserMessages = conversationHistory
+    .filter(m => m.role === 'user')
+    .map(m => m.content.toLowerCase())
+    .join(' ');
+  const combined = (userMessage.toLowerCase() + ' ' + allUserMessages);
   
   const keywords = {
-    quente: ['orçamento', 'orcamento', 'comprar', 'preço', 'preco', 'agendar', 'visita', 'medidas', 'fechar', 'pagar', 'pagamento'],
-    morno: ['interesse', 'interessado', 'informações', 'informacoes', 'catálogo', 'catalogo', 'ver mais', 'opções', 'opcoes', 'saber mais'],
+    quente: [
+      // Intenção de compra clara
+      'orçamento', 'orcamento', 'comprar', 'preço', 'preco', 'quanto custa', 'valor total',
+      // Agendar visita (MUITO QUENTE!)
+      'agendar', 'agende', 'visita', 'visitar', 'ir aí', 'ir ai', 'quero ir', 'posso ir',
+      // Documentação técnica = interesse sério
+      'medidas', 'fechar', 'finalizar', 'projeto', 'planta',
+      // Pagamento = prontíssimo para comprar
+      'pagar', 'pagamento', 'boleto', 'cartão', 'cartao', 'pix', 'parcelar', 'parcelas',
+      // Prazo = decidido
+      'prazo de entrega', 'quando entrega', 'quanto tempo', 'preciso urgente', 'urgência'
+    ],
+    morno: [
+      'interesse', 'interessado', 'informações', 'informacoes', 
+      'catálogo', 'catalogo', 'ver mais', 'opções', 'opcoes', 'saber mais',
+      'gostei', 'achei bonito', 'achei lindo', 'adorei', 'perfeito',
+      'ambiente', 'sala', 'quarto', 'cozinha', 'varanda'
+    ],
   };
   
   // Check for hot keywords
   if (keywords.quente.some(k => combined.includes(k))) {
+    console.log(`🔥 [LEAD TEMPERATURE] Detectado keyword QUENTE em: "${userMessage.substring(0, 50)}..."`);
     return { shouldCreate: true, temperature: 'quente' };
   }
   
   // Check for warm keywords
   if (keywords.morno.some(k => combined.includes(k))) {
+    console.log(`🌡️ [LEAD TEMPERATURE] Detectado keyword MORNO em: "${userMessage.substring(0, 50)}..."`);
     return { shouldCreate: true, temperature: 'morno' };
   }
   
@@ -3755,27 +3865,37 @@ ${regrasGerais}
     const semanticGroups = askedQuestions.filter(q => q.startsWith('[TEMA'));
     const specificQuestions = askedQuestions.filter(q => !q.startsWith('[TEMA'));
     
-    let antiRepSection = `# ⚠️ TEMAS E PERGUNTAS JÁ FEITOS (NÃO REPITA!)\n\n`;
+    let antiRepSection = `# 🚫 PROIBIDO REPETIR - TEMAS E PERGUNTAS JÁ FEITOS\n\n`;
     
     if (semanticGroups.length > 0) {
-      antiRepSection += `## TEMAS JÁ ABORDADOS:\n`;
+      antiRepSection += `## ❌ TEMAS PROIBIDOS (JÁ PERGUNTOU SOBRE ISSO!):\n`;
       antiRepSection += semanticGroups.map(g => `- ${g.replace('[TEMA JÁ PERGUNTADO: ', '').replace(']', '')}`).join('\n');
       antiRepSection += `\n\n`;
     }
     
     if (specificQuestions.length > 0) {
-      antiRepSection += `## PERGUNTAS ESPECÍFICAS JÁ FEITAS:\n`;
+      antiRepSection += `## ❌ PERGUNTAS PROIBIDAS (JÁ FEZ ESSAS PERGUNTAS!):\n`;
       antiRepSection += specificQuestions.map((q, i) => `${i + 1}. "${q}"`).join('\n');
       antiRepSection += `\n`;
     }
     
     antiRepSection += `
-## REGRAS CRÍTICAS DE ANTI-REPETIÇÃO:
-1. JAMAIS pergunte sobre um tema já listado acima
-2. Se precisar da informação de novo, diga "Você mencionou [X], poderia confirmar?"
-3. NÃO faça perguntas sinônimas (ex: "tem planta?" e "tem medidas?" são a MESMA PERGUNTA)
-4. Avance para o PRÓXIMO passo, nunca volte
-5. Se o cliente não respondeu algo, reformule de forma diferente OU simplesmente siga em frente
+
+## ⛔ REGRA ABSOLUTA: SE VOCÊ REPETIR QUALQUER PERGUNTA ACIMA, VOCÊ FALHOU!
+
+### O que fazer quando precisar de informação já perguntada:
+1. ✅ CONFIRME o que o cliente já disse: "Para confirmar: você mencionou [X], certo?"
+2. ✅ USE a informação que ele já deu e AVANCE
+3. ✅ Se ele não respondeu, SIGA EM FRENTE sem a informação
+4. ❌ NUNCA reformule a mesma pergunta com palavras diferentes
+
+### Exemplos de ERRO (PROIBIDO):
+- Já perguntou "tem planta?" → NÃO pergunte "tem projeto?", "tem medidas?", "pode enviar desenho?"
+- Já perguntou "qual ambiente?" → NÃO pergunte "pra onde é?", "qual cômodo?", "onde vai ficar?"
+- Já perguntou "quantas pessoas?" → NÃO pergunte "pra quantos lugares?", "quantos assentos?"
+
+### Exemplo de CERTO:
+Cliente não enviou medidas → "Enquanto você organiza as medidas, posso te mostrar algumas opções. Qual estilo você prefere?"
 `;
     parts.push(antiRepSection);
   }
