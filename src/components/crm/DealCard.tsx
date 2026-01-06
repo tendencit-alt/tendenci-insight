@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Clock, Flame, Snowflake, User, Bot, X, Mic, Paperclip, Target } from "lucide-react";
+import { Clock, Flame, Snowflake, User, Bot, X, Mic, Paperclip, Target, AlertTriangle, CheckCircle } from "lucide-react";
 import { useEffect, useState, useCallback, memo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -11,13 +11,15 @@ interface DealCardProps {
   onClick: () => void;
   onDragStart?: (e: React.DragEvent) => void;
   onDelete?: (dealId: string) => void;
+  // Props opcionais para receber dados de tasks do pai (evita N+1 queries)
+  taskData?: { total: number; overdue: number };
 }
 
-function DealCardComponent({ deal, timeInStage, onClick, onDragStart, onDelete }: DealCardProps) {
+function DealCardComponent({ deal, timeInStage, onClick, onDragStart, onDelete, taskData }: DealCardProps) {
   const [audioCount, setAudioCount] = useState(0);
   const [fileCount, setFileCount] = useState(0);
-  const [taskCount, setTaskCount] = useState(0);
-  const [overdueTaskCount, setOverdueTaskCount] = useState(0);
+  const [taskCount, setTaskCount] = useState(taskData?.total || 0);
+  const [overdueTaskCount, setOverdueTaskCount] = useState(taskData?.overdue || 0);
   const [hasIndication, setHasIndication] = useState(false);
 
   const fetchFiles = useCallback(async () => {
@@ -35,6 +37,9 @@ function DealCardComponent({ deal, timeInStage, onClick, onDragStart, onDelete }
   }, [deal.id]);
 
   const fetchTasks = useCallback(async () => {
+    // Se taskData foi passado pelo pai, não buscar individualmente
+    if (taskData !== undefined) return;
+    
     const { data } = await supabase
       .from("crm_tasks")
       .select("id, status, due_at")
@@ -47,7 +52,7 @@ function DealCardComponent({ deal, timeInStage, onClick, onDragStart, onDelete }
       const overdue = data.filter(t => new Date(t.due_at) < now).length;
       setOverdueTaskCount(overdue);
     }
-  }, [deal.id]);
+  }, [deal.id, taskData]);
 
   const fetchIndications = useCallback(async () => {
     const { data } = await supabase
@@ -59,6 +64,14 @@ function DealCardComponent({ deal, timeInStage, onClick, onDragStart, onDelete }
     setHasIndication((data?.length || 0) > 0);
   }, [deal.id]);
 
+  // Atualizar estado quando taskData mudar (vindo do pai)
+  useEffect(() => {
+    if (taskData !== undefined) {
+      setTaskCount(taskData.total);
+      setOverdueTaskCount(taskData.overdue);
+    }
+  }, [taskData]);
+
   useEffect(() => {
     if (deal.id) {
       fetchFiles();
@@ -67,27 +80,8 @@ function DealCardComponent({ deal, timeInStage, onClick, onDragStart, onDelete }
     }
   }, [deal.id, fetchFiles, fetchTasks, fetchIndications]);
 
-  useEffect(() => {
-    const channel = supabase
-      .channel(`tasks-${deal.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'crm_tasks',
-          filter: `deal_id=eq.${deal.id}`
-        },
-        () => {
-          fetchTasks();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [deal.id, fetchTasks]);
+  // REMOVIDO: Subscription individual por deal
+  // Os dados agora são atualizados pelo CRMBoard quando há mudanças
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -184,13 +178,24 @@ function DealCardComponent({ deal, timeInStage, onClick, onDragStart, onDelete }
                   {fileCount}
                 </Badge>
               )}
-              {taskCount > 0 && (
+              {taskCount > 0 && overdueTaskCount > 0 && (
                 <Badge 
-                  variant={overdueTaskCount > 0 ? "destructive" : "outline"} 
+                  key="task-overdue"
+                  variant="destructive" 
                   className="text-[10px] flex items-center gap-0.5 h-4 px-1.5 font-semibold"
                 >
-                  {overdueTaskCount > 0 ? "⚠️" : "✅"}
-                  {overdueTaskCount > 0 ? `${overdueTaskCount} atrasada${overdueTaskCount > 1 ? 's' : ''}` : `${taskCount} tarefa${taskCount > 1 ? 's' : ''}`}
+                  <AlertTriangle className="h-2.5 w-2.5" />
+                  <span>{overdueTaskCount} atrasada{overdueTaskCount > 1 ? 's' : ''}</span>
+                </Badge>
+              )}
+              {taskCount > 0 && overdueTaskCount === 0 && (
+                <Badge 
+                  key="task-ok"
+                  variant="outline" 
+                  className="text-[10px] flex items-center gap-0.5 h-4 px-1.5 font-semibold"
+                >
+                  <CheckCircle className="h-2.5 w-2.5" />
+                  <span>{taskCount} tarefa{taskCount > 1 ? 's' : ''}</span>
                 </Badge>
               )}
             </div>

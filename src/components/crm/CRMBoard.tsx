@@ -68,15 +68,22 @@ export function CRMBoard({ pipelineId, onRefresh, autoOpenDealId, onDealOpened, 
     
     fetchData();
 
-    // Debounced fetchData com 1500ms para evitar múltiplos refetches
+    // Flag para evitar múltiplas atualizações simultâneas
+    let isUpdating = false;
+    
+    // Debounced fetchData com 2000ms para evitar múltiplos refetches
     const debouncedFetchData = debounce(() => {
+      if (isUpdating) return;
+      isUpdating = true;
       setIsRefreshing(true);
-      fetchData();
-    }, 1500);
+      fetchData().finally(() => {
+        isUpdating = false;
+      });
+    }, 2000);
 
-    // Setup realtime subscription for deals updates
-    const dealsChannel = supabase
-      .channel('crm-deals-changes')
+    // Canal único consolidado para deals e tasks
+    const unifiedChannel = supabase
+      .channel(`crm-board-unified-${pipelineId}`)
       .on(
         'postgres_changes',
         {
@@ -85,15 +92,8 @@ export function CRMBoard({ pipelineId, onRefresh, autoOpenDealId, onDealOpened, 
           table: 'crm_deals',
           filter: `pipeline_id=eq.${pipelineId}`
         },
-        () => {
-          debouncedFetchData();
-        }
+        debouncedFetchData
       )
-      .subscribe();
-
-    // Setup realtime subscription for tasks updates
-    const tasksChannel = supabase
-      .channel('crm-tasks-changes')
       .on(
         'postgres_changes',
         {
@@ -101,15 +101,12 @@ export function CRMBoard({ pipelineId, onRefresh, autoOpenDealId, onDealOpened, 
           schema: 'public',
           table: 'crm_tasks'
         },
-        () => {
-          debouncedFetchData();
-        }
+        debouncedFetchData
       )
       .subscribe();
 
     return () => {
-      supabase.removeChannel(dealsChannel);
-      supabase.removeChannel(tasksChannel);
+      supabase.removeChannel(unifiedChannel);
     };
   }, [pipelineId, memoizedFilters]);
 
