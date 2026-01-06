@@ -1461,25 +1461,22 @@ REGRAS ABSOLUTAS:
       
       console.log(`📋 CRM Check: shouldCreate=${shouldCreate}, temperature=${temperature}`);
       
-      if (shouldCreate) {
-        console.log(`📋 Creating/updating CRM lead with temperature: ${temperature}`);
-        
-        // Extract product information from conversation
-        const productInfo = extractProductInfo(updatedHistory, products);
-        
-        await createOrUpdateDealFromIA(
-          supabase,
-          phoneNumber,
-          clientMemory?.client_name || pushName || null,
-          updatedHistory,
-          temperature,
-          productInfo
-        );
-      } else {
-        // Even if we don't create a new lead, update existing deal's history
-        console.log(`📋 Updating existing deal history only`);
-        await updateExistingDealHistory(supabase, phoneNumber, updatedHistory);
-      }
+      // CORREÇÃO: SEMPRE chamar createOrUpdateDealFromIA - a função é idempotente
+      // e verificará internamente se precisa criar ou atualizar
+      // A temperatura define prioridade, não se deve criar
+      console.log(`📋 Creating/updating CRM lead (always) with temperature: ${temperature}`);
+      
+      // Extract product information from conversation
+      const productInfo = extractProductInfo(updatedHistory, products);
+      
+      await createOrUpdateDealFromIA(
+        supabase,
+        phoneNumber,
+        clientMemory?.client_name || pushName || null,
+        updatedHistory,
+        temperature,
+        productInfo
+      );
       
       console.log(`📋 CRM: Integration completed successfully`);
     } catch (crmError) {
