@@ -6378,6 +6378,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      acquire_message_lock: {
+        Args: { p_instance: string; p_phone: string }
+        Returns: {
+          content: string
+          created_at: string
+          id: string
+          instance_name: string
+          is_processing: boolean
+          phone_number: string
+          processed: boolean
+        }[]
+      }
       add_business_days_sql: {
         Args: { num_days: number; start_date: string }
         Returns: string
