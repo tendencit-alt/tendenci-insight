@@ -1964,8 +1964,8 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                 </div>
                 {(taxaCartao.valor > 0 || taxaBoleto.valor > 0 || totalComissoes > 0) && (
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold text-red-600">Valor Líquido Tendenci:</span>
-                    <span className="text-base font-bold text-red-600">{formatCurrency(valorLiquidoTendenci)}</span>
+                    <span className="text-sm font-semibold text-green-600">Valor Líquido Tendenci:</span>
+                    <span className="text-base font-bold text-green-600">{formatCurrency(valorLiquidoTendenci)}</span>
                   </div>
                 )}
                 <div className="flex items-center justify-between">
@@ -1995,27 +1995,6 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
               )}
             </div>
 
-            {/* Card de Taxa de Cartão de Crédito - sempre Tendenci absorve */}
-            {parcelasCartao.length > 0 && taxaCartao.percentual > 0 && (
-              <Card className="p-4 bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-green-800 dark:text-green-200">
-                        Taxa Cartão {taxaCartao.numeroParcelas}x ({taxaCartao.percentual}%)
-                      </p>
-                      <p className="text-lg font-bold text-green-900 dark:text-green-100">
-                        {formatCurrency(taxaCartao.valor)}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <p className="text-xs text-green-700 dark:text-green-300">
-                    ✓ Taxa absorvida pela Tendenci (não será cobrada do cliente)
-                  </p>
-                </div>
-              </Card>
-            )}
 
 
             <div className="space-y-2">
