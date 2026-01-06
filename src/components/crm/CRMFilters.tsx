@@ -87,8 +87,8 @@ export function CRMFilters({
         <SelectContent>
           <SelectItem value="all">Todos</SelectItem>
           <SelectItem value="aberto">Aberto</SelectItem>
-          <SelectItem value="ganho">Ganho</SelectItem>
-          <SelectItem value="perdido">Perdido</SelectItem>
+          <SelectItem value="won">Ganho</SelectItem>
+          <SelectItem value="lost">Perdido</SelectItem>
         </SelectContent>
       </Select>
 
