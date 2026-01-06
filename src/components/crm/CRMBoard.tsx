@@ -519,6 +519,8 @@ export function CRMBoard({ pipelineId, onRefresh, autoOpenDealId, onDealOpened, 
           {/* Fixed Won column */}
           <Card 
             className="flex-shrink-0 bg-gradient-to-br from-success/5 to-success/10 border-success/30 hover:shadow-lg hover:border-success/50 transition-all duration-300 animate-fade-in w-[220px]"
+            onDragOver={handleDragOver}
+            onDrop={handleDropToWon}
           >
             <CardHeader className="pb-1.5 px-2 pt-2 space-y-0">
               <CardTitle className="flex flex-col gap-1">
@@ -558,6 +560,8 @@ export function CRMBoard({ pipelineId, onRefresh, autoOpenDealId, onDealOpened, 
           {/* Fixed Lost column */}
           <Card 
             className="flex-shrink-0 bg-gradient-to-br from-destructive/5 to-destructive/10 border-destructive/30 hover:shadow-lg hover:border-destructive/50 transition-all duration-300 animate-fade-in w-[220px]"
+            onDragOver={handleDragOver}
+            onDrop={handleDropToLost}
           >
             <CardHeader className="pb-1.5 px-2 pt-2 space-y-0">
               <CardTitle className="flex flex-col gap-1">
