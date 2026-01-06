@@ -184,6 +184,29 @@ Deno.serve(async (req) => {
       )
     }
 
+    // ✅ VERIFICAÇÃO CRÍTICA: Checar se arquiteto já foi enviado em QUALQUER campanha
+    // Isso previne disparos duplicados mesmo se duas campanhas tentarem enviar ao mesmo tempo
+    const { data: jaEnviado } = await supabase
+      .from('tendenci_prospec_arq_campaign_architects')
+      .select('id, campanha_id, status')
+      .eq('architect_id', arquiteto_id)
+      .eq('status', 'enviado')
+      .limit(1)
+      .single()
+
+    if (jaEnviado) {
+      console.log(`⚠️ Arquiteto ${nome} (${arquiteto_id}) já foi disparado na campanha ${jaEnviado.campanha_id}`)
+      
+      return new Response(
+        JSON.stringify({ 
+          status: 'skipped',
+          reason: 'Arquiteto já recebeu disparo em outra campanha',
+          previous_campaign: jaEnviado.campanha_id
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+      )
+    }
+
     // Formatar e validar número
     const phoneResult = formatBrazilianPhone(telefone)
     
