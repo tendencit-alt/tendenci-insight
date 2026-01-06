@@ -441,40 +441,178 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
                       <span>{formatCurrency(order.valor_frete)}</span>
                     </div>
                   )}
-                  {/* Taxa de Cartão de Crédito */}
-                  {order.taxa_cartao_valor > 0 && (
-                    <div className={`flex justify-between items-center ${order.taxa_cartao_responsavel === 'tendenci' ? 'text-muted-foreground' : 'text-amber-600'}`}>
-                      <span className="flex items-center gap-2">
-                        Taxa Cartão {order.numero_parcelas_cartao}x ({order.taxa_cartao_percentual}%):
-                        <Badge 
-                          variant={order.taxa_cartao_responsavel === 'cliente' ? 'destructive' : 'secondary'}
-                          className="text-xs"
-                        >
-                          {order.taxa_cartao_responsavel === 'cliente' ? 'Cliente paga' : 'Tendenci absorve'}
-                        </Badge>
-                      </span>
-                      <span className={order.taxa_cartao_responsavel === 'tendenci' ? 'line-through' : ''}>
-                        {formatCurrency(order.taxa_cartao_valor)}
-                      </span>
-                    </div>
-                  )}
-                  {/* Taxa de Boleto */}
-                  {(order as any).taxa_boleto_valor > 0 && (
-                    <div className={`flex justify-between items-center ${(order as any).taxa_boleto_responsavel === 'tendenci' ? 'text-muted-foreground' : 'text-blue-600'}`}>
-                      <span className="flex items-center gap-2">
-                        Taxa Boleto {(order as any).carencia_boleto}d / {(order as any).numero_parcelas_boleto}x ({(order as any).taxa_boleto_percentual}%):
-                        <Badge 
-                          variant={(order as any).taxa_boleto_responsavel === 'cliente' ? 'destructive' : 'secondary'}
-                          className="text-xs"
-                        >
-                          {(order as any).taxa_boleto_responsavel === 'cliente' ? 'Cliente paga' : 'Tendenci absorve'}
-                        </Badge>
-                      </span>
-                      <span className={(order as any).taxa_boleto_responsavel === 'tendenci' ? 'line-through' : ''}>
-                        {formatCurrency((order as any).taxa_boleto_valor)}
-                      </span>
-                    </div>
-                  )}
+                  {/* Breakdown de Taxas por Forma de Pagamento */}
+                  {order.observacao_pagamento && (() => {
+                    try {
+                      const pagamentoInfo = JSON.parse(order.observacao_pagamento);
+                      const parcelas = pagamentoInfo?.parcelas || [];
+                      
+                      const TAXAS_CARTAO: Record<number, number> = {
+                        1: 2.8, 2: 3.95, 3: 4.69, 4: 5.41, 5: 6.13, 6: 6.84,
+                        7: 7.3, 8: 8.0, 9: 8.9, 10: 9.38, 11: 10.05, 12: 10.72
+                      };
+                      
+                      const parcelasCartao = parcelas.filter((p: any) => p.forma_pagamento === 'cartao_credito');
+                      const parcelasBoleto = parcelas.filter((p: any) => p.forma_pagamento === 'boleto');
+                      const totalBase = (order.subtotal || 0) - (order.desconto_valor || 0) + (order.valor_frete || 0);
+                      
+                      return (
+                        <>
+                          {/* Breakdown de Cartões */}
+                          {parcelasCartao.length > 0 && (
+                            <div className="space-y-1">
+                              {parcelasCartao.map((parcela: any, index: number) => {
+                                const taxaPerc = TAXAS_CARTAO[parcela.numero_parcelas] || 0;
+                                const valorBase = totalBase * (parcela.percentual / 100);
+                                const taxaValor = valorBase * (taxaPerc / 100);
+                                
+                                return (
+                                  <div 
+                                    key={index}
+                                    className={`flex justify-between items-center text-xs ${
+                                      order.taxa_cartao_responsavel === 'tendenci' ? 'text-muted-foreground' : 'text-amber-600'
+                                    }`}
+                                  >
+                                    <span className="flex items-center gap-1">
+                                      💳 Cartão {parcela.numero_parcelas}x ({parcela.percentual}% do pedido) - {taxaPerc}%
+                                    </span>
+                                    <span className={order.taxa_cartao_responsavel === 'tendenci' ? 'line-through' : ''}>
+                                      {formatCurrency(taxaValor)}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                              {parcelasCartao.length > 1 && (
+                                <div className={`flex justify-between items-center font-medium ${
+                                  order.taxa_cartao_responsavel === 'tendenci' ? 'text-muted-foreground' : 'text-amber-600'
+                                }`}>
+                                  <span className="flex items-center gap-2">
+                                    Total Taxas Cartão:
+                                    <Badge 
+                                      variant={order.taxa_cartao_responsavel === 'cliente' ? 'destructive' : 'secondary'}
+                                      className="text-xs"
+                                    >
+                                      {order.taxa_cartao_responsavel === 'cliente' ? 'Cliente paga' : 'Tendenci absorve'}
+                                    </Badge>
+                                  </span>
+                                  <span className={order.taxa_cartao_responsavel === 'tendenci' ? 'line-through' : ''}>
+                                    {formatCurrency(order.taxa_cartao_valor)}
+                                  </span>
+                                </div>
+                              )}
+                              {parcelasCartao.length === 1 && (
+                                <div className={`flex justify-between items-center ${
+                                  order.taxa_cartao_responsavel === 'tendenci' ? 'text-muted-foreground' : 'text-amber-600'
+                                }`}>
+                                  <Badge 
+                                    variant={order.taxa_cartao_responsavel === 'cliente' ? 'destructive' : 'secondary'}
+                                    className="text-xs"
+                                  >
+                                    {order.taxa_cartao_responsavel === 'cliente' ? 'Cliente paga' : 'Tendenci absorve'}
+                                  </Badge>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          
+                          {/* Breakdown de Boletos */}
+                          {parcelasBoleto.length > 0 && (
+                            <div className="space-y-1">
+                              {parcelasBoleto.map((parcela: any, index: number) => {
+                                const taxaPerc = (order as any).taxa_boleto_percentual || 0;
+                                const valorBase = totalBase * (parcela.percentual / 100);
+                                const taxaValor = valorBase * (taxaPerc / 100);
+                                
+                                return (
+                                  <div 
+                                    key={index}
+                                    className={`flex justify-between items-center text-xs ${
+                                      (order as any).taxa_boleto_responsavel === 'tendenci' ? 'text-muted-foreground' : 'text-blue-600'
+                                    }`}
+                                  >
+                                    <span className="flex items-center gap-1">
+                                      📄 Boleto {parcela.numero_parcelas}x / {parcela.carencia_dias}d ({parcela.percentual}% do pedido) - {taxaPerc}%
+                                    </span>
+                                    <span className={(order as any).taxa_boleto_responsavel === 'tendenci' ? 'line-through' : ''}>
+                                      {formatCurrency(taxaValor)}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                              {parcelasBoleto.length > 1 && (
+                                <div className={`flex justify-between items-center font-medium ${
+                                  (order as any).taxa_boleto_responsavel === 'tendenci' ? 'text-muted-foreground' : 'text-blue-600'
+                                }`}>
+                                  <span className="flex items-center gap-2">
+                                    Total Taxas Boleto:
+                                    <Badge 
+                                      variant={(order as any).taxa_boleto_responsavel === 'cliente' ? 'destructive' : 'secondary'}
+                                      className="text-xs"
+                                    >
+                                      {(order as any).taxa_boleto_responsavel === 'cliente' ? 'Cliente paga' : 'Tendenci absorve'}
+                                    </Badge>
+                                  </span>
+                                  <span className={(order as any).taxa_boleto_responsavel === 'tendenci' ? 'line-through' : ''}>
+                                    {formatCurrency((order as any).taxa_boleto_valor)}
+                                  </span>
+                                </div>
+                              )}
+                              {parcelasBoleto.length === 1 && (
+                                <div className={`flex justify-between items-center ${
+                                  (order as any).taxa_boleto_responsavel === 'tendenci' ? 'text-muted-foreground' : 'text-blue-600'
+                                }`}>
+                                  <Badge 
+                                    variant={(order as any).taxa_boleto_responsavel === 'cliente' ? 'destructive' : 'secondary'}
+                                    className="text-xs"
+                                  >
+                                    {(order as any).taxa_boleto_responsavel === 'cliente' ? 'Cliente paga' : 'Tendenci absorve'}
+                                  </Badge>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </>
+                      );
+                    } catch {
+                      // Fallback para exibição antiga se JSON inválido
+                      return (
+                        <>
+                          {order.taxa_cartao_valor > 0 && (
+                            <div className={`flex justify-between items-center ${order.taxa_cartao_responsavel === 'tendenci' ? 'text-muted-foreground' : 'text-amber-600'}`}>
+                              <span className="flex items-center gap-2">
+                                Taxa Cartão {order.numero_parcelas_cartao}x ({order.taxa_cartao_percentual}%):
+                                <Badge 
+                                  variant={order.taxa_cartao_responsavel === 'cliente' ? 'destructive' : 'secondary'}
+                                  className="text-xs"
+                                >
+                                  {order.taxa_cartao_responsavel === 'cliente' ? 'Cliente paga' : 'Tendenci absorve'}
+                                </Badge>
+                              </span>
+                              <span className={order.taxa_cartao_responsavel === 'tendenci' ? 'line-through' : ''}>
+                                {formatCurrency(order.taxa_cartao_valor)}
+                              </span>
+                            </div>
+                          )}
+                          {(order as any).taxa_boleto_valor > 0 && (
+                            <div className={`flex justify-between items-center ${(order as any).taxa_boleto_responsavel === 'tendenci' ? 'text-muted-foreground' : 'text-blue-600'}`}>
+                              <span className="flex items-center gap-2">
+                                Taxa Boleto {(order as any).carencia_boleto}d / {(order as any).numero_parcelas_boleto}x ({(order as any).taxa_boleto_percentual}%):
+                                <Badge 
+                                  variant={(order as any).taxa_boleto_responsavel === 'cliente' ? 'destructive' : 'secondary'}
+                                  className="text-xs"
+                                >
+                                  {(order as any).taxa_boleto_responsavel === 'cliente' ? 'Cliente paga' : 'Tendenci absorve'}
+                                </Badge>
+                              </span>
+                              <span className={(order as any).taxa_boleto_responsavel === 'tendenci' ? 'line-through' : ''}>
+                                {formatCurrency((order as any).taxa_boleto_valor)}
+                              </span>
+                            </div>
+                          )}
+                        </>
+                      );
+                    }
+                  })()}
                   <Separator />
                   <div className="flex justify-between font-bold text-lg">
                     <span>Total:</span>
