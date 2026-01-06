@@ -1751,24 +1751,22 @@ async function createOrUpdateDealFromIA(
     } else {
       console.log(`📋 No client found, creating new one: ${displayName}`);
       
-      // Create new client with upsert (handles race conditions)
+      // Create new client with simple INSERT (no unique constraint on phone)
       const { data: newClient, error: clientError } = await supabase
         .from('clients')
-        .upsert({ 
+        .insert({ 
           name: displayName,
           phone: formattedPhone,
           notes: 'Cliente criado automaticamente via IA WhatsApp'
-        }, { 
-          onConflict: 'phone',
-          ignoreDuplicates: false 
         })
         .select('id')
         .single();
       
       if (clientError) {
-        console.error('❌ Error creating/upserting client:', clientError);
+        console.error('❌ Error creating client:', clientError);
+        console.error('❌ Client error details:', JSON.stringify(clientError));
         
-        // Try to find if it was created by another process
+        // Try to find if it was created by another process (race condition)
         const { data: retryClient } = await supabase
           .from('clients')
           .select('id')
@@ -1785,9 +1783,11 @@ async function createOrUpdateDealFromIA(
         }
       } else {
         clientId = newClient.id;
-        console.log(`📋 Created new client: ${displayName} (id: ${clientId})`);
+        console.log(`✅ Created new client: ${displayName} (id: ${clientId})`);
       }
     }
+    
+    console.log(`📋 CRM Integration Debug: clientId=${clientId}, phone=${formattedPhone.slice(-4)}, name=${displayName}`);
 
     // Search for existing lead with this phone
     let leadId: string | null = null;
