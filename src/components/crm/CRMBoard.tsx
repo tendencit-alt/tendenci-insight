@@ -176,9 +176,9 @@ export function CRMBoard({ pipelineId, onRefresh, autoOpenDealId, onDealOpened, 
       dealsQuery = dealsQuery.eq("owner_id", filters.owner);
     }
 
-    if (filters?.status && filters.status !== "all") {
-      dealsQuery = dealsQuery.eq("status", filters.status);
-    }
+    // NOTA: Filtro de status NÃO é aplicado na query principal do Kanban
+    // Isso garante que as colunas fixas "Ganho" e "Perdido" sempre apareçam
+    // O filtro de status afeta apenas a visibilidade das colunas intermediárias
 
     // Filtro de categoria - aplicado mesmo se showPlanned estiver ativo
     if (filters?.category && filters.category !== "all") {
