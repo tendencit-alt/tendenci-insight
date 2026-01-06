@@ -224,10 +224,12 @@ export function CampanhasManager() {
   const [arquitetosComErroTelefone, setArquitetosComErroTelefone] = useState(0);
 
   const fetchArquitetosDisponiveis = async (editingCampaignId?: string, statusFunil?: string) => {
-    // 1. Buscar TODOS os IDs de arquitetos que JÁ foram para QUALQUER campanha (independente do status)
+    // 1. Buscar TODOS os IDs de arquitetos que estão RESERVADOS ou JÁ ENVIADOS (pendente, enviando, enviado)
+    // Isso impede que um arquiteto seja selecionado para múltiplas campanhas
     const { data: jaEmCampanhas } = await supabase
       .from('tendenci_prospec_arq_campaign_architects')
-      .select('architect_id');
+      .select('architect_id, status')
+      .in('status', ['pendente', 'enviando', 'enviado']); // ✅ CRÍTICO: Incluir 'pendente' e 'enviando'
 
     // 2. Se estiver editando, não excluir arquitetos da PRÓPRIA campanha
     let idsJaEmCampanhas = [...new Set(jaEmCampanhas?.map(d => d.architect_id) || [])];
@@ -256,7 +258,7 @@ export function CampanhasManager() {
     // 4. Combinar listas de exclusão
     const todosIdsParaExcluir = [...new Set([...idsJaEmCampanhas, ...idsComErroTelefone])];
 
-    console.log(`🚫 Arquitetos já em campanhas (qualquer status): ${idsJaEmCampanhas.length}`);
+    console.log(`🚫 Arquitetos reservados/enviados em campanhas: ${idsJaEmCampanhas.length}`);
     console.log(`📵 Arquitetos com erro de telefone: ${idsComErroTelefone.length}`);
     setArquitetosEmOutrasCampanhas(idsJaEmCampanhas.length);
 
@@ -601,6 +603,44 @@ export function CampanhasManager() {
         return;
       }
 
+      // ✅ NOVO: Atualizar arquitetos reservados (remover os que foram desmarcados, adicionar novos)
+      // Primeiro, buscar arquitetos já existentes na campanha
+      const { data: arquitetosExistentes } = await supabase
+        .from('tendenci_prospec_arq_campaign_architects')
+        .select('architect_id')
+        .eq('campanha_id', editingCampanha.id);
+
+      const idsExistentes = arquitetosExistentes?.map(a => a.architect_id) || [];
+      const idsNovos = formData.arquitetosSelecionados;
+
+      // Arquitetos a remover (estavam na campanha mas foram desmarcados)
+      const idsParaRemover = idsExistentes.filter(id => !idsNovos.includes(id));
+      
+      // Arquitetos a adicionar (novos selecionados que não estavam na campanha)
+      const idsParaAdicionar = idsNovos.filter(id => !idsExistentes.includes(id));
+
+      if (idsParaRemover.length > 0) {
+        await supabase
+          .from('tendenci_prospec_arq_campaign_architects')
+          .delete()
+          .eq('campanha_id', editingCampanha.id)
+          .in('architect_id', idsParaRemover)
+          .neq('status', 'enviado'); // Não remover quem já foi enviado
+      }
+
+      if (idsParaAdicionar.length > 0) {
+        const registros = idsParaAdicionar.map(archId => ({
+          campanha_id: editingCampanha.id,
+          architect_id: archId,
+          status: 'pendente',
+          created_at: new Date().toISOString()
+        }));
+        
+        await supabase
+          .from('tendenci_prospec_arq_campaign_architects')
+          .upsert(registros, { onConflict: 'campanha_id,architect_id', ignoreDuplicates: true });
+      }
+
       toast({
         title: scheduleConfig.enabled ? "Campanha agendada!" : "Campanha atualizada!",
         description: scheduleConfig.enabled 
@@ -610,18 +650,48 @@ export function CampanhasManager() {
           : undefined,
       });
     } else {
-      const { error } = await supabase
+      // Criar nova campanha
+      const { data: novaCampanha, error } = await supabase
         .from('tendenci_prospec_arq_campaigns')
-        .insert({ ...campanhaData, created_at: new Date().toISOString() });
+        .insert({ ...campanhaData, created_at: new Date().toISOString() })
+        .select('id')
+        .single();
 
-      if (error) {
+      if (error || !novaCampanha) {
         toast({
           title: "Erro ao criar campanha",
-          description: error.message,
+          description: error?.message || 'Erro desconhecido',
           variant: "destructive",
         });
         setLoading(false);
         return;
+      }
+
+      // ✅ NOVO: Registrar TODOS os arquitetos como "pendente" IMEDIATAMENTE
+      // Isso "reserva" os arquitetos e impede que outra campanha os selecione
+      if (formData.arquitetosSelecionados.length > 0) {
+        const registros = formData.arquitetosSelecionados.map(archId => ({
+          campanha_id: novaCampanha.id,
+          architect_id: archId,
+          status: 'pendente',
+          created_at: new Date().toISOString()
+        }));
+        
+        const { error: reserveError } = await supabase
+          .from('tendenci_prospec_arq_campaign_architects')
+          .insert(registros);
+
+        if (reserveError) {
+          console.error('Erro ao reservar arquitetos:', reserveError);
+          // Não bloquear por isso, mas logar o erro
+          toast({
+            title: "Aviso",
+            description: "Campanha criada, mas alguns arquitetos podem não ter sido reservados. Verifique antes de disparar.",
+            variant: "destructive",
+          });
+        } else {
+          console.log(`✅ ${registros.length} arquitetos reservados para campanha ${novaCampanha.id}`);
+        }
       }
 
       toast({
@@ -630,11 +700,12 @@ export function CampanhasManager() {
           ? `Disparo programado para ${scheduleConfig.type === 'unico' && scheduleConfig.dataHoraUnica 
               ? format(scheduleConfig.dataHoraUnica, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }) 
               : 'período configurado'}`
-          : "Rascunho salvo com sucesso",
+          : `${formData.arquitetosSelecionados.length} arquitetos reservados`,
       });
     }
 
     await fetchCampanhas();
+    await fetchArquitetosDisponiveis(undefined, filtroEtapa); // Recarregar lista de arquitetos disponíveis
     handleCloseDialog();
     setLoading(false);
   };
