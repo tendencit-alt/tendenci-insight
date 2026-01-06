@@ -563,11 +563,11 @@ Responda em português brasileiro de forma clara e organizada.`;
       console.warn("⚠️ Erro na limpeza de locks:", cleanupError);
     }
 
-    // PASSO 3: Tentar adquirir lock atômico de processamento COM RETRY
+    // PASSO 3: Tentar adquirir lock atômico de processamento COM RETRY ROBUSTO
     // Implementa retry com backoff exponencial para evitar race conditions
     let lockAcquired: any = null;
     let lockAttempts = 0;
-    const maxLockAttempts = 3;
+    const maxLockAttempts = 5; // Aumentado de 3 para 5
 
     while (!lockAcquired && lockAttempts < maxLockAttempts) {
       lockAttempts++;
@@ -591,19 +591,39 @@ Responda em português brasileiro de forma clara e organizada.`;
         break;
       }
 
-      // Delay aleatório antes de retry (200-700ms)
+      // Delay aleatório antes de retry (500-1500ms) - Aumentado para reduzir contention
       if (lockAttempts < maxLockAttempts) {
-        const retryDelay = 200 + Math.random() * 500;
+        const retryDelay = 500 + Math.random() * 1000;
         console.log(`⏳ Aguardando ${Math.round(retryDelay)}ms antes de retry...`);
         await new Promise(r => setTimeout(r, retryDelay));
       }
     }
 
-    // FALLBACK: Verificar se existem mensagens órfãs (antigas não processadas)
+    // FALLBACK 1: Tentar lock robusto com SELECT FOR UPDATE SKIP LOCKED
     if (!lockAcquired) {
-      console.log(`🔍 Lock falhou após ${maxLockAttempts} tentativas. Verificando mensagens órfãs...`);
+      console.log(`🔐 Tentando lock robusto via RPC...`);
+      try {
+        const { data: rpcLock, error: rpcError } = await supabase.rpc('acquire_message_lock', {
+          p_phone: phoneNumber,
+          p_instance: instanceName
+        });
+        
+        if (rpcLock && rpcLock.length > 0 && !rpcError) {
+          lockAcquired = rpcLock[0];
+          console.log(`✅ Lock adquirido via RPC: ${lockAcquired.id}`);
+        } else if (rpcError) {
+          console.warn(`⚠️ Erro no RPC lock:`, rpcError);
+        }
+      } catch (rpcCatchError) {
+        console.warn(`⚠️ Exception no RPC lock:`, rpcCatchError);
+      }
+    }
+
+    // FALLBACK 2: Verificar se existem mensagens órfãs (antigas não processadas) - Threshold reduzido
+    if (!lockAcquired) {
+      console.log(`🔍 Lock falhou. Verificando mensagens órfãs (>15s)...`);
       
-      const oneMinuteAgo = new Date(Date.now() - 60000).toISOString();
+      const fifteenSecondsAgo = new Date(Date.now() - 15000).toISOString(); // Reduzido de 60s para 15s
       const { data: orphanMessages } = await supabase
         .from("ia_pending_messages")
         .select("*")
@@ -611,7 +631,7 @@ Responda em português brasileiro de forma clara e organizada.`;
         .eq("instance_name", instanceName)
         .eq("processed", false)
         .eq("is_processing", false)
-        .lt("created_at", oneMinuteAgo)
+        .lt("created_at", fifteenSecondsAgo)
         .order("created_at", { ascending: true })
         .limit(1);
 
