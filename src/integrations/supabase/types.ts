@@ -2584,6 +2584,15 @@ export type Database = {
           carencia_boleto: number | null
           centro_custo: string | null
           client_id: string | null
+          comissao_orcamentista_percentual: number | null
+          comissao_orcamentista_responsavel_id: string | null
+          comissao_orcamentista_valor: number | null
+          comissao_projetista_percentual: number | null
+          comissao_projetista_responsavel_id: string | null
+          comissao_projetista_valor: number | null
+          comissao_vendedor_percentual: number | null
+          comissao_vendedor_responsavel_id: string | null
+          comissao_vendedor_valor: number | null
           condicao_pagamento: string | null
           created_at: string | null
           created_by: string | null
@@ -2642,6 +2651,15 @@ export type Database = {
           carencia_boleto?: number | null
           centro_custo?: string | null
           client_id?: string | null
+          comissao_orcamentista_percentual?: number | null
+          comissao_orcamentista_responsavel_id?: string | null
+          comissao_orcamentista_valor?: number | null
+          comissao_projetista_percentual?: number | null
+          comissao_projetista_responsavel_id?: string | null
+          comissao_projetista_valor?: number | null
+          comissao_vendedor_percentual?: number | null
+          comissao_vendedor_responsavel_id?: string | null
+          comissao_vendedor_valor?: number | null
           condicao_pagamento?: string | null
           created_at?: string | null
           created_by?: string | null
@@ -2700,6 +2718,15 @@ export type Database = {
           carencia_boleto?: number | null
           centro_custo?: string | null
           client_id?: string | null
+          comissao_orcamentista_percentual?: number | null
+          comissao_orcamentista_responsavel_id?: string | null
+          comissao_orcamentista_valor?: number | null
+          comissao_projetista_percentual?: number | null
+          comissao_projetista_responsavel_id?: string | null
+          comissao_projetista_valor?: number | null
+          comissao_vendedor_percentual?: number | null
+          comissao_vendedor_responsavel_id?: string | null
+          comissao_vendedor_valor?: number | null
           condicao_pagamento?: string | null
           created_at?: string | null
           created_by?: string | null
@@ -2772,6 +2799,27 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_comissao_orcamentista_responsavel_id_fkey"
+            columns: ["comissao_orcamentista_responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_comissao_projetista_responsavel_id_fkey"
+            columns: ["comissao_projetista_responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_comissao_vendedor_responsavel_id_fkey"
+            columns: ["comissao_vendedor_responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
