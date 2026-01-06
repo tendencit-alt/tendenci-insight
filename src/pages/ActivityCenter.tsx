@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { ActivityFeed } from "@/components/activities/ActivityFeed";
 import { ActivityFilters } from "@/components/activities/ActivityFilters";
@@ -15,6 +15,7 @@ import { Activity, RefreshCw, Bot, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { getStartOfDayBrasilAsUTC, getDaysAgoBrasilAsUTC } from "@/utils/timezone";
 
 export interface SystemActivity {
   id: string;
@@ -82,26 +83,27 @@ export default function ActivityCenter() {
         query = query.eq("user_id", filters.userId);
       }
 
-      // Filtro por período
-      const now = new Date();
+      // Filtro por período - usando timezone de Brasília para consistência
       if (filters.period === "custom" && filters.startDate && filters.endDate) {
-        const startOfDay = new Date(filters.startDate);
-        startOfDay.setHours(0, 0, 0, 0);
-        const endOfDay = new Date(filters.endDate);
-        endOfDay.setHours(23, 59, 59, 999);
-        query = query.gte("created_at", startOfDay.toISOString()).lte("created_at", endOfDay.toISOString());
+        // Para período customizado, ajustar para timezone Brasil (UTC-3)
+        const startDate = new Date(filters.startDate);
+        startDate.setUTCHours(3, 0, 0, 0); // 00:00 Brasil = 03:00 UTC
+        const endDate = new Date(filters.endDate);
+        endDate.setUTCHours(26, 59, 59, 999); // 23:59 Brasil = 02:59 do dia seguinte UTC
+        query = query.gte("created_at", startDate.toISOString()).lte("created_at", endDate.toISOString());
       } else if (filters.period === "today") {
-        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-        query = query.gte("created_at", startOfDay);
+        // Usar início do dia em horário de Brasília
+        const startOfDayBrasil = getStartOfDayBrasilAsUTC();
+        query = query.gte("created_at", startOfDayBrasil.toISOString());
       } else if (filters.period === "last_hour") {
-        const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000).toISOString();
+        const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
         query = query.gte("created_at", oneHourAgo);
       } else if (filters.period === "last_7_days") {
-        const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
-        query = query.gte("created_at", sevenDaysAgo);
+        const sevenDaysAgo = getDaysAgoBrasilAsUTC(7);
+        query = query.gte("created_at", sevenDaysAgo.toISOString());
       } else if (filters.period === "last_30_days") {
-        const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
-        query = query.gte("created_at", thirtyDaysAgo);
+        const thirtyDaysAgo = getDaysAgoBrasilAsUTC(30);
+        query = query.gte("created_at", thirtyDaysAgo.toISOString());
       }
 
       // Filtro por busca
@@ -129,6 +131,17 @@ export default function ActivityCenter() {
   useEffect(() => {
     fetchActivities();
   }, [filters.module, filters.actionType, filters.userId, filters.period, filters.search, filters.startDate?.getTime(), filters.endDate?.getTime()]);
+
+  // Refresh automático como fallback quando realtime está ativo
+  useEffect(() => {
+    if (!isRealtime) return;
+    
+    const interval = setInterval(() => {
+      fetchActivities();
+    }, 30000); // Refresh a cada 30 segundos como fallback
+    
+    return () => clearInterval(interval);
+  }, [isRealtime, filters.module, filters.actionType, filters.userId, filters.period, filters.search]);
 
   // Configurar realtime
   useEffect(() => {
