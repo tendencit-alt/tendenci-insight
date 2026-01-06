@@ -305,49 +305,76 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
   const descontoTotal = descontoPercentual + Number(formData.desconto_valor || 0);
   const totalSemTaxa = subtotal - descontoTotal + Number(formData.valor_frete || 0);
   
-  // Calcular taxa de cartão automaticamente
-  const parcelaCartao = parcelas.find(p => p.forma_pagamento === 'cartao_credito');
-  const numParcelasCartao = parcelaCartao?.numero_parcelas || 1;
-  const taxaPercentual = parcelaCartao ? (TAXAS_CARTAO_CREDITO[numParcelasCartao] || 0) : 0;
-  const valorBaseCartao = parcelaCartao ? totalSemTaxa * (parcelaCartao.percentual / 100) : 0;
-  const valorTaxaCalculada = valorBaseCartao * (taxaPercentual / 100);
+  // Calcular taxa de cartão automaticamente - SOMA de todos os cartões
+  const parcelasCartao = parcelas.filter(p => p.forma_pagamento === 'cartao_credito');
+  
+  // Calcular taxa total somando todas as parcelas de cartão
+  const taxaTotalCartao = parcelasCartao.reduce((acc, parcela) => {
+    const numParcelas = parcela.numero_parcelas || 1;
+    const taxaPerc = TAXAS_CARTAO_CREDITO[numParcelas] || 0;
+    const valorBase = totalSemTaxa * (parcela.percentual / 100);
+    const taxaValor = valorBase * (taxaPerc / 100);
+    return acc + taxaValor;
+  }, 0);
+
+  // Para exibição, pegar a maior taxa entre os cartões
+  const parcelaCartaoMaiorTaxa = parcelasCartao.reduce((maior, atual) => 
+    (atual.numero_parcelas || 1) > (maior?.numero_parcelas || 0) ? atual : maior
+  , null as typeof parcelasCartao[0] | null);
+  
+  const numParcelasCartao = parcelaCartaoMaiorTaxa?.numero_parcelas || 1;
+  const taxaPercentual = parcelaCartaoMaiorTaxa ? (TAXAS_CARTAO_CREDITO[numParcelasCartao] || 0) : 0;
   
   // Atualizar estado de taxa de cartão quando mudar parcelas
   useEffect(() => {
-    if (parcelaCartao) {
+    if (parcelasCartao.length > 0) {
       setTaxaCartao(prev => ({
         ...prev,
         percentual: taxaPercentual,
-        valor: valorTaxaCalculada,
+        valor: taxaTotalCartao,
         numeroParcelas: numParcelasCartao
       }));
     } else {
       setTaxaCartao({ percentual: 0, valor: 0, responsavel: 'cliente', numeroParcelas: 1 });
     }
-  }, [parcelas, totalSemTaxa, taxaPercentual, valorTaxaCalculada, numParcelasCartao, parcelaCartao]);
+  }, [parcelas, totalSemTaxa, taxaPercentual, taxaTotalCartao, numParcelasCartao, parcelasCartao.length]);
 
-  // Calcular taxa de boleto automaticamente
-  const parcelaBoleto = parcelas.find(p => p.forma_pagamento === 'boleto');
-  const carenciaBoleto = parcelaBoleto?.carencia_boleto || 30;
-  const numParcelasBoleto = parcelaBoleto?.numero_parcelas || 1;
-  const taxaBoletoPercentual = parcelaBoleto ? (TAXAS_BOLETO[carenciaBoleto]?.[numParcelasBoleto] || 0) : 0;
-  const valorBaseBoleto = parcelaBoleto ? totalSemTaxa * (parcelaBoleto.percentual / 100) : 0;
-  const valorTaxaBoletoCalculada = valorBaseBoleto * (taxaBoletoPercentual / 100);
+  // Calcular taxa de boleto automaticamente - SOMA de todos os boletos
+  const parcelasBoleto = parcelas.filter(p => p.forma_pagamento === 'boleto');
+  
+  // Calcular taxa total somando todas as parcelas de boleto
+  const taxaTotalBoleto = parcelasBoleto.reduce((acc, parcela) => {
+    const carencia = parcela.carencia_boleto || 30;
+    const numParcelas = parcela.numero_parcelas || 1;
+    const taxaPerc = TAXAS_BOLETO[carencia]?.[numParcelas] || 0;
+    const valorBase = totalSemTaxa * (parcela.percentual / 100);
+    const taxaValor = valorBase * (taxaPerc / 100);
+    return acc + taxaValor;
+  }, 0);
+
+  // Para exibição, pegar a maior taxa entre os boletos
+  const parcelaBoletoMaiorTaxa = parcelasBoleto.reduce((maior, atual) => 
+    (atual.numero_parcelas || 1) > (maior?.numero_parcelas || 0) ? atual : maior
+  , null as typeof parcelasBoleto[0] | null);
+  
+  const carenciaBoleto = parcelaBoletoMaiorTaxa?.carencia_boleto || 30;
+  const numParcelasBoleto = parcelaBoletoMaiorTaxa?.numero_parcelas || 1;
+  const taxaBoletoPercentual = parcelaBoletoMaiorTaxa ? (TAXAS_BOLETO[carenciaBoleto]?.[numParcelasBoleto] || 0) : 0;
 
   // Atualizar estado de taxa de boleto quando mudar parcelas
   useEffect(() => {
-    if (parcelaBoleto) {
+    if (parcelasBoleto.length > 0) {
       setTaxaBoleto(prev => ({
         ...prev,
         percentual: taxaBoletoPercentual,
-        valor: valorTaxaBoletoCalculada,
+        valor: taxaTotalBoleto,
         numeroParcelas: numParcelasBoleto,
         carencia: carenciaBoleto
       }));
     } else {
       setTaxaBoleto({ percentual: 0, valor: 0, responsavel: 'cliente', numeroParcelas: 1, carencia: 30 });
     }
-  }, [parcelas, totalSemTaxa, taxaBoletoPercentual, valorTaxaBoletoCalculada, numParcelasBoleto, carenciaBoleto, parcelaBoleto]);
+  }, [parcelas, totalSemTaxa, taxaBoletoPercentual, taxaTotalBoleto, numParcelasBoleto, carenciaBoleto, parcelasBoleto.length]);
   
   // Total final: inclui taxas se responsável for cliente
   const taxaCartaoAplicada = taxaCartao.responsavel === 'cliente' ? taxaCartao.valor : 0;
@@ -1248,7 +1275,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
               </div>
 
               {/* Card de Taxa de Cartão de Crédito */}
-              {parcelaCartao && taxaCartao.percentual > 0 && (
+              {parcelasCartao.length > 0 && taxaCartao.percentual > 0 && (
                 <Card className="p-4 bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800">
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
