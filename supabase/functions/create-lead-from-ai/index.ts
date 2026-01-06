@@ -749,7 +749,75 @@ Deno.serve(async (req) => {
           }
         }
         
-        // Com pipeline único, não é mais necessário criar deals em outros pipelines
+        // CORREÇÃO: Se lead existente não tem nenhum deal, criar um novo
+        if (!existingDeals || existingDeals.length === 0) {
+          console.log('⚠️ Lead existente sem deals - criando deal agora...')
+          
+          // Buscar pipeline principal
+          const { data: mainPipeline } = await supabase
+            .from('crm_pipelines')
+            .select('id, name')
+            .order('created_at', { ascending: true })
+            .limit(1)
+            .single()
+          
+          if (mainPipeline) {
+            // Buscar etapa inicial (Lead ou Follow-up)
+            const { data: leadStage } = await supabase
+              .from('crm_stages')
+              .select('id, name')
+              .eq('pipeline_id', mainPipeline.id)
+              .or('name.ilike.%lead%,name.ilike.%follow%up%')
+              .order('position', { ascending: true })
+              .limit(1)
+              .maybeSingle()
+            
+            // Fallback para primeira etapa se não encontrar Lead/Follow-up
+            let stageToUse = leadStage
+            if (!stageToUse) {
+              const { data: firstStage } = await supabase
+                .from('crm_stages')
+                .select('id, name')
+                .eq('pipeline_id', mainPipeline.id)
+                .order('position', { ascending: true })
+                .limit(1)
+                .single()
+              stageToUse = firstStage
+            }
+            
+            if (stageToUse) {
+              const dealTitle = data.deal_title || `Lead - ${data.name}`
+              
+              const { data: newDeal, error: dealError } = await supabase
+                .from('crm_deals')
+                .insert({
+                  pipeline_id: mainPipeline.id,
+                  stage_id: stageToUse.id,
+                  lead_id: leadId,
+                  title: dealTitle,
+                  value: data.deal_value || 0,
+                  tipo_produto: data.product_type || detectedProductType,
+                  conversation_history: newMessages,
+                  ai_status: data.ai_status || 'morno',
+                  status: 'aberto',
+                  from_ai: true
+                })
+                .select()
+                .single()
+              
+              if (dealError) {
+                console.error('❌ Erro ao criar deal para lead existente:', dealError)
+              } else {
+                console.log(`✅ Deal criado para lead existente: ${newDeal.id} na etapa "${stageToUse.name}"`)
+                dealIds.push(newDeal.id)
+              }
+            } else {
+              console.error('❌ Nenhuma etapa encontrada para criar deal')
+            }
+          } else {
+            console.error('❌ Nenhum pipeline encontrado para criar deal')
+          }
+        }
       }
     }
     return new Response(
