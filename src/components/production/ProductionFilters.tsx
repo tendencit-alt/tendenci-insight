@@ -23,6 +23,7 @@ interface ProductionFiltersProps {
     period: string;
   }) => void;
   onExport?: () => void;
+  onUnifyOps?: () => void;
   viewMode?: 'individual' | 'grouped';
   onViewModeChange?: (mode: 'individual' | 'grouped') => void;
 }
@@ -31,6 +32,7 @@ export function ProductionFilters({
   filters, 
   onFiltersChange, 
   onExport,
+  onUnifyOps,
   viewMode = 'individual',
   onViewModeChange
 }: ProductionFiltersProps) {
@@ -173,6 +175,14 @@ export function ProductionFilters({
         <Button variant="outline" size="sm" onClick={onExport} className="gap-1">
           <Download className="h-4 w-4" />
           Exportar
+        </Button>
+      )}
+
+      {/* Unificar OPs */}
+      {onUnifyOps && (
+        <Button variant="outline" size="sm" onClick={onUnifyOps} className="gap-1">
+          <Layers className="h-4 w-4" />
+          Unificar OPs
         </Button>
       )}
     </div>
