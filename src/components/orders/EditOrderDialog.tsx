@@ -189,6 +189,34 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
     enabled: isMaster && open,
   });
 
+  // Query para orçamentistas (profile_type = 'Orçamentista')
+  const { data: orcamentistas } = useQuery({
+    queryKey: ['orcamentistas-for-order'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, full_name, profile_type:profile_types!inner(name)')
+        .eq('profile_types.name', 'Orçamentista')
+        .order('full_name');
+      return data || [];
+    },
+    enabled: open,
+  });
+
+  // Query para projetistas (role = 'projetista' OU profile_type = 'projetista')
+  const { data: projetistas } = useQuery({
+    queryKey: ['projetistas-for-order'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, full_name, role, profile_type:profile_types(name)')
+        .or('role.eq.projetista,profile_types.name.eq.projetista')
+        .order('full_name');
+      return data || [];
+    },
+    enabled: open,
+  });
+
   const [parcelas, setParcelas] = useState<PagamentoParcela[]>([
     { id: '1', forma_pagamento: '', percentual: 100, data_vencimento: '', numero_parcelas: 1 }
   ]);
@@ -1725,8 +1753,8 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="_none">-</SelectItem>
-                            {vendedores?.map((v) => (
-                              <SelectItem key={v.id} value={v.id}>{v.full_name}</SelectItem>
+                            {architects?.map((a) => (
+                              <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -1841,8 +1869,8 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="_none">-</SelectItem>
-                            {vendedores?.map((v) => (
-                              <SelectItem key={v.id} value={v.id}>{v.full_name}</SelectItem>
+                            {orcamentistas?.map((o) => (
+                              <SelectItem key={o.id} value={o.id}>{o.full_name}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -1899,8 +1927,8 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="_none">-</SelectItem>
-                            {vendedores?.map((v) => (
-                              <SelectItem key={v.id} value={v.id}>{v.full_name}</SelectItem>
+                            {projetistas?.map((p) => (
+                              <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
