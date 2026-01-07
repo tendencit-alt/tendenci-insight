@@ -48,11 +48,14 @@ serve(async (req) => {
     }
 
     // Criar novo usuário
-    const { email, password, full_name, role, profile_type_id } = await req.json();
+    const { email, password, full_name, username, role, profile_type_id } = await req.json();
 
     if (!email || !password) {
       throw new Error('Email e senha são obrigatórios');
     }
+
+    // Gerar username se não fornecido
+    const finalUsername = username || email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '');
 
     const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
       email,
@@ -65,9 +68,11 @@ serve(async (req) => {
       throw createError;
     }
 
-    // Atualizar role e profile_type_id no perfil se fornecido
+    // Atualizar role, profile_type_id e username no perfil se fornecido
     if (newUser.user) {
-      const updateData: Record<string, any> = {};
+      const updateData: Record<string, any> = {
+        username: finalUsername,
+      };
       
       if (role) updateData.role = role;
       if (full_name) updateData.full_name = full_name;

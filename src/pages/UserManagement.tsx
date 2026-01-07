@@ -282,9 +282,12 @@ const UserManagement = () => {
                         {user.role === 'vendedor' && getEspecializacaoBadge(user.especializacao)}
                         {getStatusBadge()}
                       </div>
-                      <p className="text-sm text-muted-foreground truncate">
-                        {user.email}
-                      </p>
+                      <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                        <span className="truncate">{user.email}</span>
+                        {user.username && (
+                          <span className="text-primary font-medium">@{user.username}</span>
+                        )}
+                      </div>
                     </div>
                   </div>
 
