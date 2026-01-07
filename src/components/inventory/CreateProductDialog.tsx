@@ -7,8 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, FileSpreadsheet } from "lucide-react";
 
 interface CreateProductDialogProps {
   open: boolean;
@@ -40,7 +41,9 @@ export default function CreateProductDialog({ open, onOpenChange, onSuccess }: C
     // Novos campos abertos
     cor: "",
     medida: "",
-    fornecedor_texto: ""
+    fornecedor_texto: "",
+    // Gerar ficha técnica
+    gerarFichaTecnica: false
   });
 
   const { data: categories = [] } = useQuery({
@@ -79,17 +82,44 @@ export default function CreateProductDialog({ open, onOpenChange, onSuccess }: C
 
     setLoading(true);
     try {
-      const { error } = await supabase.from("products").insert({
-        ...form,
-        category_id: form.category_id || null,
-        location_id: form.location_id || null,
-        cor: form.cor || null,
-        medida: form.medida || null,
-        fornecedor_texto: form.fornecedor_texto || null
-      });
+      const { gerarFichaTecnica, ...productData } = form;
+      
+      const { data: newProduct, error } = await supabase.from("products").insert({
+        ...productData,
+        category_id: productData.category_id || null,
+        location_id: productData.location_id || null,
+        cor: productData.cor || null,
+        medida: productData.medida || null,
+        fornecedor_texto: productData.fornecedor_texto || null
+      }).select().single();
+      
       if (error) throw error;
 
-      toast({ title: "Produto criado com sucesso!" });
+      // Se marcou gerar ficha técnica, criar em production_products
+      if (gerarFichaTecnica && newProduct) {
+        const { error: fichaError } = await supabase.from("production_products").insert({
+          name: newProduct.name,
+          description: newProduct.description,
+          product_id: newProduct.id,
+          production_order_id: null,
+          status: 'rascunho',
+          cmv_total: newProduct.cost_price || 0
+        });
+        
+        if (fichaError) {
+          console.error("Erro ao criar ficha técnica:", fichaError);
+          toast({ 
+            title: "Item criado, mas houve erro ao gerar ficha técnica", 
+            description: fichaError.message, 
+            variant: "destructive" 
+          });
+        } else {
+          toast({ title: "Item e ficha técnica criados com sucesso!" });
+        }
+      } else {
+        toast({ title: "Item criado com sucesso!" });
+      }
+      
       onSuccess();
       onOpenChange(false);
       setForm({
@@ -97,10 +127,10 @@ export default function CreateProductDialog({ open, onOpenChange, onSuccess }: C
         unit: "UN", current_stock: 0, min_stock: 0, max_stock: null,
         cost_price: 0, sale_price: 0, ncm: "", cfop_entrada: "", cfop_saida: "",
         barcode: "", reorder_point: null, reorder_quantity: null,
-        cor: "", medida: "", fornecedor_texto: ""
+        cor: "", medida: "", fornecedor_texto: "", gerarFichaTecnica: false
       });
     } catch (error: any) {
-      toast({ title: "Erro ao criar produto", description: error.message, variant: "destructive" });
+      toast({ title: "Erro ao criar item", description: error.message, variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -348,6 +378,24 @@ export default function CreateProductDialog({ open, onOpenChange, onSuccess }: C
                 maxLength={4}
               />
             </div>
+          </div>
+
+          {/* Opção de Gerar Ficha Técnica */}
+          <div className="flex items-center gap-3 p-4 rounded-lg border border-dashed bg-muted/30">
+            <FileSpreadsheet className="h-5 w-5 text-primary" />
+            <div className="flex-1">
+              <Label htmlFor="gerarFicha" className="font-medium cursor-pointer">
+                Gerar Ficha Técnica
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Cria automaticamente uma ficha técnica no módulo de produção
+              </p>
+            </div>
+            <Switch
+              id="gerarFicha"
+              checked={form.gerarFichaTecnica}
+              onCheckedChange={(checked) => setForm({ ...form, gerarFichaTecnica: checked })}
+            />
           </div>
 
           <div className="flex justify-end gap-2 pt-4">
