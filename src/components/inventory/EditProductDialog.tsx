@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, FileSpreadsheet, Check } from "lucide-react";
 
@@ -181,33 +182,26 @@ export default function EditProductDialog({ product, open, onOpenChange, onSucce
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-            <Label htmlFor="active">Item Ativo</Label>
-            <Switch
-              id="active"
-              checked={form.active}
-              onCheckedChange={(checked) => setForm({ ...form, active: checked })}
-            />
-          </div>
-
-          {/* Opção de Ficha Técnica */}
-          <div className="flex items-center justify-between p-3 border rounded-lg bg-primary/5">
-            <div className="flex items-center gap-2">
-              <FileSpreadsheet className="h-5 w-5 text-primary" />
+          {/* FICHA TÉCNICA - PRIMEIRO ELEMENTO DO FORMULÁRIO */}
+          <div className="flex items-center justify-between p-4 border-2 border-primary/30 rounded-lg bg-primary/5">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <FileSpreadsheet className="h-6 w-6 text-primary" />
+              </div>
               <div>
-                <Label htmlFor="gerarFicha" className="font-medium">Ficha Técnica</Label>
-                <p className="text-xs text-muted-foreground">
+                <Label className="font-semibold text-base">Ficha Técnica</Label>
+                <p className="text-sm text-muted-foreground">
                   {existingFicha 
-                    ? "Este item já possui ficha técnica" 
-                    : "Gerar ficha técnica para este item"}
+                    ? "Este item já possui ficha técnica vinculada" 
+                    : "Criar ficha técnica para gestão de produção"}
                 </p>
               </div>
             </div>
             {existingFicha ? (
-              <div className="flex items-center gap-1 text-green-600">
-                <Check className="h-4 w-4" />
-                <span className="text-sm font-medium">Criada</span>
-              </div>
+              <Badge variant="outline" className="bg-green-50 text-green-600 border-green-200">
+                <Check className="h-4 w-4 mr-1" />
+                Criada
+              </Badge>
             ) : (
               <Switch
                 id="gerarFicha"
@@ -215,6 +209,15 @@ export default function EditProductDialog({ product, open, onOpenChange, onSucce
                 onCheckedChange={setGerarFichaTecnica}
               />
             )}
+          </div>
+
+          <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+            <Label htmlFor="active">Item Ativo</Label>
+            <Switch
+              id="active"
+              checked={form.active}
+              onCheckedChange={(checked) => setForm({ ...form, active: checked })}
+            />
           </div>
 
           <div className="grid grid-cols-3 gap-4">
