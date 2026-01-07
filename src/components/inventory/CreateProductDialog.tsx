@@ -10,6 +10,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { CostCenterTagsSelector } from "./CostCenterTagsSelector";
+import ProductMediaUploader, { VideoItem } from "./ProductMediaUploader";
+
+// ID da categoria "Produto" para mostrar seção de mídia
+const CATEGORIA_PRODUTO_ID = "2ca37a60-74b7-446c-9a67-fa5ff7f67731";
 
 interface CreateProductDialogProps {
   open: boolean;
@@ -21,6 +25,8 @@ export default function CreateProductDialog({ open, onOpenChange, onSuccess }: C
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [selectedCostCenters, setSelectedCostCenters] = useState<string[]>([]);
+  const [galeria, setGaleria] = useState<string[]>([]);
+  const [videos, setVideos] = useState<VideoItem[]>([]);
   const [form, setForm] = useState({
     code: "",
     name: "",
@@ -42,6 +48,7 @@ export default function CreateProductDialog({ open, onOpenChange, onSuccess }: C
     cor: "",
     medida: "",
     fornecedor_texto: "",
+    image_url: "",
   });
 
   const { data: categories = [] } = useQuery({
@@ -80,15 +87,39 @@ export default function CreateProductDialog({ open, onOpenChange, onSuccess }: C
 
     setLoading(true);
     try {
-      // Criar o produto
-      const { data: newProduct, error } = await supabase.from("products").insert({
-        ...form,
+      // Criar o produto com galeria e vídeos se for categoria Produto
+      const isProdutoCategory = form.category_id === CATEGORIA_PRODUTO_ID;
+      const productData = {
+        code: form.code || null,
+        name: form.name,
+        description: form.description || null,
         category_id: form.category_id || null,
         location_id: form.location_id || null,
+        unit: form.unit,
+        current_stock: form.current_stock,
+        min_stock: form.min_stock,
+        max_stock: form.max_stock,
+        cost_price: form.cost_price,
+        sale_price: form.sale_price,
+        ncm: form.ncm || null,
+        cfop_entrada: form.cfop_entrada || null,
+        cfop_saida: form.cfop_saida || null,
+        barcode: form.barcode || null,
+        reorder_point: form.reorder_point,
+        reorder_quantity: form.reorder_quantity,
         cor: form.cor || null,
         medida: form.medida || null,
         fornecedor_texto: form.fornecedor_texto || null,
-      }).select().single();
+        image_url: form.image_url || null,
+        galeria: isProdutoCategory ? galeria : [],
+        videos: isProdutoCategory ? videos : [],
+      };
+      
+      const { data: newProduct, error } = await supabase
+        .from("products")
+        .insert(productData as any)
+        .select()
+        .single();
       
       if (error) throw error;
 
@@ -111,9 +142,11 @@ export default function CreateProductDialog({ open, onOpenChange, onSuccess }: C
         unit: "UN", current_stock: 0, min_stock: 0, max_stock: null,
         cost_price: 0, sale_price: 0, ncm: "", cfop_entrada: "", cfop_saida: "",
         barcode: "", reorder_point: null, reorder_quantity: null,
-        cor: "", medida: "", fornecedor_texto: "",
+        cor: "", medida: "", fornecedor_texto: "", image_url: "",
       });
       setSelectedCostCenters([]);
+      setGaleria([]);
+      setVideos([]);
     } catch (error: any) {
       toast({ title: "Erro ao criar item", description: error.message, variant: "destructive" });
     } finally {
@@ -238,6 +271,19 @@ export default function CreateProductDialog({ open, onOpenChange, onSuccess }: C
               />
             </div>
           </div>
+
+          {/* Seção de Mídia - apenas para categoria "Produto" */}
+          {form.category_id === CATEGORIA_PRODUTO_ID && (
+            <ProductMediaUploader
+              imageUrl={form.image_url}
+              galeria={galeria}
+              videos={videos}
+              onImageUrlChange={(url) => setForm({ ...form, image_url: url })}
+              onGaleriaChange={setGaleria}
+              onVideosChange={setVideos}
+              disabled={loading}
+            />
+          )}
 
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -15,6 +15,19 @@ import ProductMovements from "./ProductMovements";
 import ProductSuppliers from "./ProductSuppliers";
 import ProductPriceChart from "./ProductPriceChart";
 import ProductFichaTecnica from "./ProductFichaTecnica";
+import { ProductGallery } from "@/components/catalogo/ProductGallery";
+
+// ID da categoria "Produto"
+const CATEGORIA_PRODUTO_ID = "2ca37a60-74b7-446c-9a67-fa5ff7f67731";
+
+// Helper para parsear vídeos de JSON
+const parseVideos = (data: unknown): string[] => {
+  if (!data) return [];
+  if (Array.isArray(data)) {
+    return data.filter((v: any) => v && typeof v === "object" && v.url).map((v: any) => v.url);
+  }
+  return [];
+};
 
 interface ProductDetailSheetProps {
   product: any;
@@ -61,6 +74,11 @@ export default function ProductDetailSheet({ product, open, onOpenChange, onUpda
 
   const isLowStock = product.min_stock > 0 && product.current_stock <= product.min_stock;
   const isOutOfStock = product.current_stock <= 0;
+  const isProdutoCategory = product.category_id === CATEGORIA_PRODUTO_ID;
+  
+  // Combinar imagens e vídeos para galeria
+  const allImages = [product.image_url, ...(Array.isArray(product.galeria) ? product.galeria : [])].filter(Boolean) as string[];
+  const allVideos = parseVideos(product.videos);
 
   return (
     <>
@@ -108,6 +126,15 @@ export default function ProductDetailSheet({ product, open, onOpenChange, onUpda
           </SheetHeader>
 
           <div className="mt-6 space-y-6">
+            {/* Galeria de Mídia - apenas para categoria Produto */}
+            {isProdutoCategory && (allImages.length > 0 || allVideos.length > 0) && (
+              <ProductGallery 
+                images={allImages}
+                videos={allVideos}
+                productName={product.name}
+              />
+            )}
+            
             <div className="grid grid-cols-2 gap-4">
               <Card>
                 <CardContent className="p-4">
