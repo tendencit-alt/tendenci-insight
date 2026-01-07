@@ -378,14 +378,27 @@ export function ProductionKanban({ productionTypeId, filters, onOrderClick }: Pr
 
       // Atualizar a OP - se for fase final, marcar como concluído
       if (isEndPhase) {
-        await supabase
+        const { data: updatedOrder } = await supabase
           .from('production_orders')
           .update({ 
             current_phase_id: newPhase.id,
             status: 'concluido',
             actual_end_date: now
           })
-          .eq('id', orderId);
+          .eq('id', orderId)
+          .select('order_id')
+          .single();
+
+        // Se a OP está vinculada a um pedido, atualizar o pedido também
+        if (updatedOrder?.order_id) {
+          await supabase
+            .from('orders')
+            .update({ 
+              status: 'entregue',
+              data_entrega_realizada: now.split('T')[0]
+            })
+            .eq('id', updatedOrder.order_id);
+        }
       } else {
         await supabase
           .from('production_orders')
@@ -395,6 +408,7 @@ export function ProductionKanban({ productionTypeId, filters, onOrderClick }: Pr
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['production-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
       toast.success('OP movida com sucesso');
     },
     onError: (error: any) => {
