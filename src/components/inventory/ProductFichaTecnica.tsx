@@ -3,7 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { FileSpreadsheet, Plus, Loader2 } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { FileSpreadsheet, Plus, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { EmbeddedFichaTecnica } from '@/components/ia-config/EmbeddedFichaTecnica';
 
@@ -16,9 +17,15 @@ export default function ProductFichaTecnica({ productId, productName }: ProductF
   const queryClient = useQueryClient();
 
   // Buscar ficha técnica existente (is_template = true)
-  const { data: fichaTecnica, isLoading } = useQuery({
+  const { data: fichaTecnica, isLoading, error: queryError, refetch } = useQuery({
     queryKey: ['product-ficha-tecnica', productId],
     queryFn: async () => {
+      if (!productId) {
+        throw new Error('Product ID é obrigatório');
+      }
+      
+      console.log('[ProductFichaTecnica] Buscando ficha técnica para product_id:', productId);
+      
       const { data, error } = await supabase
         .from('production_products')
         .select('*')
@@ -26,7 +33,12 @@ export default function ProductFichaTecnica({ productId, productName }: ProductF
         .eq('is_template', true)
         .maybeSingle();
       
-      if (error) throw error;
+      if (error) {
+        console.error('[ProductFichaTecnica] Erro na busca:', error);
+        throw error;
+      }
+      
+      console.log('[ProductFichaTecnica] Ficha encontrada:', data);
       return data;
     },
     enabled: !!productId
@@ -35,27 +47,43 @@ export default function ProductFichaTecnica({ productId, productName }: ProductF
   // Mutation para criar ficha técnica
   const createMutation = useMutation({
     mutationFn: async () => {
+      if (!productId) {
+        throw new Error('Product ID é obrigatório para criar ficha técnica');
+      }
+      
+      console.log('[ProductFichaTecnica] Criando ficha técnica para:', { productId, productName });
+      
+      const insertData = {
+        name: productName,
+        product_id: productId,
+        is_template: true,
+        status: 'rascunho',
+        cmv_total: 0
+      };
+      
+      console.log('[ProductFichaTecnica] Dados do insert:', insertData);
+      
       const { data, error } = await supabase
         .from('production_products')
-        .insert({
-          name: productName,
-          product_id: productId,
-          is_template: true,
-          status: 'rascunho',
-          cmv_total: 0
-        })
+        .insert(insertData)
         .select()
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error('[ProductFichaTecnica] Erro ao criar:', error);
+        throw error;
+      }
+      
+      console.log('[ProductFichaTecnica] Ficha criada com sucesso:', data);
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['product-ficha-tecnica', productId] });
       toast.success('Ficha técnica criada com sucesso!');
     },
     onError: (error: any) => {
-      toast.error('Erro ao criar ficha técnica: ' + error.message);
+      console.error('[ProductFichaTecnica] Erro completo:', error);
+      toast.error(`Erro ao criar ficha técnica: ${error.message}`);
     }
   });
 
@@ -68,6 +96,27 @@ export default function ProductFichaTecnica({ productId, productName }: ProductF
     );
   }
 
+  if (queryError) {
+    return (
+      <Card>
+        <CardContent className="py-6">
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Erro ao carregar ficha técnica: {(queryError as Error).message}
+            </AlertDescription>
+          </Alert>
+          <div className="flex justify-center mt-4">
+            <Button variant="outline" onClick={() => refetch()}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Tentar novamente
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   if (!fichaTecnica) {
     return (
       <Card>
@@ -77,6 +126,16 @@ export default function ProductFichaTecnica({ productId, productName }: ProductF
           <p className="text-sm text-muted-foreground mb-6 max-w-sm mx-auto">
             Crie uma ficha técnica para definir a composição e custo de produção deste produto
           </p>
+          
+          {createMutation.error && (
+            <Alert variant="destructive" className="mb-4 max-w-md mx-auto">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                {(createMutation.error as Error).message}
+              </AlertDescription>
+            </Alert>
+          )}
+          
           <Button 
             onClick={() => createMutation.mutate()}
             disabled={createMutation.isPending}

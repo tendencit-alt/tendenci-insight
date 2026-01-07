@@ -15,7 +15,6 @@ import { Loader2, Plus, Pencil, Trash2, Package, X, Image, Video, Link, Upload, 
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import type { Json } from "@/integrations/supabase/types";
 import { FichaTecnicaSheet } from "./FichaTecnicaSheet";
-import { TemplateFichaSelector } from "@/components/shared/TemplateFichaSelector";
 
 interface Categoria {
   id: string;
@@ -1191,11 +1190,6 @@ export default function IAConfigProdutos() {
                 )}
               </div>
 
-              {/* Ficha Técnica Padrão */}
-              <TemplateFichaSelector
-                value={form.template_ficha_id}
-                onChange={(value) => setForm({ ...form, template_ficha_id: value })}
-              />
 
               {/* Imagem Principal */}
               <div className="space-y-2">

@@ -7,10 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
-import { TemplateFichaSelector } from "@/components/shared/TemplateFichaSelector";
 
 interface CreateProductDialogProps {
   open: boolean;
@@ -43,7 +41,6 @@ export default function CreateProductDialog({ open, onOpenChange, onSuccess }: C
     cor: "",
     medida: "",
     fornecedor_texto: "",
-    template_ficha_id: null as string | null,
   });
 
   const { data: categories = [] } = useQuery({
@@ -89,7 +86,6 @@ export default function CreateProductDialog({ open, onOpenChange, onSuccess }: C
         cor: form.cor || null,
         medida: form.medida || null,
         fornecedor_texto: form.fornecedor_texto || null,
-        template_ficha_id: form.template_ficha_id || null,
       });
       
       if (error) throw error;
@@ -103,7 +99,7 @@ export default function CreateProductDialog({ open, onOpenChange, onSuccess }: C
         unit: "UN", current_stock: 0, min_stock: 0, max_stock: null,
         cost_price: 0, sale_price: 0, ncm: "", cfop_entrada: "", cfop_saida: "",
         barcode: "", reorder_point: null, reorder_quantity: null,
-        cor: "", medida: "", fornecedor_texto: "", template_ficha_id: null,
+        cor: "", medida: "", fornecedor_texto: "",
       });
     } catch (error: any) {
       toast({ title: "Erro ao criar item", description: error.message, variant: "destructive" });
@@ -355,13 +351,6 @@ export default function CreateProductDialog({ open, onOpenChange, onSuccess }: C
               />
             </div>
           </div>
-
-          {/* Ficha Técnica Padrão */}
-          <TemplateFichaSelector
-            value={form.template_ficha_id}
-            onChange={(value) => setForm({ ...form, template_ficha_id: value })}
-          />
-
 
           <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
