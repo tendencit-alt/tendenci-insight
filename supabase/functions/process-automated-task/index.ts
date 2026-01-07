@@ -332,6 +332,12 @@ async function processCRMTask(supabase: any, evolutionUrl: string, evolutionApiK
     return { success: false, message: 'Tarefa marcada como falha permanente após máximo de tentativas' }
   }
 
+  // NOVO: Verificar se já está sendo processada por outra instância
+  if (task.status === 'processing') {
+    console.log(`⏭️ Tarefa CRM já está sendo processada por outra instância`)
+    return { success: false, message: 'Tarefa já está sendo processada' }
+  }
+
   const currentRetryCount = task.retry_count || 0
   console.log(`✅ Tarefa encontrada - tipo: ${task.tipo_tarefa}, status: ${task.status}, retry: ${currentRetryCount}/${MAX_RETRIES}`)
 
@@ -359,13 +365,29 @@ async function processCRMTask(supabase: any, evolutionUrl: string, evolutionApiK
     return { success: false, message: `Tarefa falhou após ${MAX_RETRIES} tentativas` }
   }
 
-  // Marcar como 'processing'
-  await supabase
+  // LOCK ATÔMICO: Tentar marcar como 'processing' apenas se ainda não estiver
+  const { data: lockedTask, error: lockError } = await supabase
     .from('crm_tasks')
-    .update({ status: 'processing' })
+    .update({ 
+      status: 'processing',
+      updated_at: new Date().toISOString()
+    })
     .eq('id', taskId)
+    .in('status', ['open', 'pendente'])
+    .select('id')
+    .maybeSingle()
 
-  console.log('🔄 Tarefa marcada como "processing"')
+  if (lockError) {
+    console.error(`❌ Erro ao adquirir lock CRM: ${lockError.message}`)
+    return { success: false, message: `Erro ao adquirir lock: ${lockError.message}` }
+  }
+
+  if (!lockedTask) {
+    console.log(`⚠️ Tarefa CRM ${taskId} não pode ser processada - status já mudou`)
+    return { success: false, message: 'Não foi possível adquirir lock para a tarefa' }
+  }
+
+  console.log('🔒 Lock atômico adquirido para tarefa CRM')
 
   // Buscar dados do deal
   const { data: deal, error: dealError } = await supabase
@@ -469,6 +491,18 @@ async function processCRMTask(supabase: any, evolutionUrl: string, evolutionApiK
   }
 
   console.log(`📱 Instância WhatsApp: ${connection.instance_name}`)
+
+  // VERIFICAÇÃO EXTRA ANTES DO ENVIO (double-check)
+  const { data: taskCheck } = await supabase
+    .from('crm_tasks')
+    .select('status')
+    .eq('id', taskId)
+    .single()
+
+  if (taskCheck?.status !== 'processing') {
+    console.log(`⚠️ Status CRM mudou durante processamento: ${taskCheck?.status} - abortando envio`)
+    return { success: false, message: 'Status da tarefa mudou durante processamento' }
+  }
 
   // Enviar mensagem via Evolution API COM FALLBACK de formato
   const message = task.note || task.title

@@ -76,6 +76,34 @@ Deno.serve(async (req) => {
       console.log(`\n🔄 Processando tarefa: ${task.id} - "${task.title}"`)
       
       try {
+        // ============ LOCK ATÔMICO ============
+        // Tentar marcar como 'processing' APENAS se ainda estiver pendente
+        const { data: lockedTask, error: lockError } = await supabase
+          .from('crm_tasks')
+          .update({ 
+            status: 'processing',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', task.id)
+          .in('status', ['open', 'pendente'])
+          .select('id')
+          .maybeSingle()
+
+        if (lockError) {
+          console.error(`❌ Erro ao adquirir lock para tarefa ${task.id}:`, lockError.message)
+          results.failed++
+          results.errors.push(`${task.id}: Erro ao adquirir lock - ${lockError.message}`)
+          continue
+        }
+
+        if (!lockedTask) {
+          console.log(`⚠️ Tarefa ${task.id} já está sendo processada por outra instância - pulando`)
+          results.skipped++
+          continue
+        }
+
+        console.log(`🔒 Lock adquirido para tarefa ${task.id}`)
+
         // Chamar a função process-automated-task existente
         const processResponse = await fetch(
           `${supabaseUrl}/functions/v1/process-automated-task`,
