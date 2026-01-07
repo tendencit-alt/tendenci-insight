@@ -195,10 +195,6 @@ export default function Production() {
           </div>
           
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setUnifyDialogOpen(true)} className="gap-2">
-              <Layers className="h-4 w-4" />
-              Unificar OPs
-            </Button>
             {isMaster && (
               <Button variant="outline" onClick={() => setAutomationsDialogOpen(true)} className="gap-2">
                 <Zap className="h-4 w-4" />
@@ -235,6 +231,7 @@ export default function Production() {
           filters={filters} 
           onFiltersChange={setFilters} 
           onExport={handleExport}
+          onUnifyOps={() => setUnifyDialogOpen(true)}
           viewMode={viewMode}
           onViewModeChange={setViewMode}
         />
