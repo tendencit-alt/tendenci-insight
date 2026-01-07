@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
@@ -19,6 +19,20 @@ import InventoryAdvancedKPIs from "@/components/inventory/InventoryAdvancedKPIs"
 import ABCAnalysis from "@/components/inventory/ABCAnalysis";
 import MaterialRequestsTable from "@/components/inventory/MaterialRequestsTable";
 
+// Hook para debounce
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+  
+  useMemo(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+    return () => clearTimeout(handler);
+  }, [value, delay]);
+  
+  return debouncedValue;
+}
+
 export default function Inventory() {
   const [activeTab, setActiveTab] = useState("products");
   const [createProductOpen, setCreateProductOpen] = useState(false);
@@ -29,10 +43,19 @@ export default function Inventory() {
     locationId: "",
     status: "all"
   });
+  
+  // Debounce da busca para evitar muitas requisições
+  const debouncedSearch = useDebounce(filters.search, 300);
+  const searchFilters = useMemo(() => ({
+    ...filters,
+    search: debouncedSearch
+  }), [filters.categoryId, filters.locationId, filters.status, debouncedSearch]);
 
   const { data: products = [], isLoading: loadingProducts, refetch: refetchProducts } = useQuery({
-    queryKey: ["products", filters],
+    queryKey: ["products", searchFilters],
     queryFn: async () => {
+      console.log('[Inventory] Buscando produtos com filtros:', searchFilters);
+      
       let query = supabase
         .from("products")
         .select(`
@@ -42,24 +65,32 @@ export default function Inventory() {
         `)
         .order("name");
 
-      if (filters.search) {
-        query = query.or(`name.ilike.%${filters.search}%,code.ilike.%${filters.search}%`);
+      if (searchFilters.search && searchFilters.search.trim()) {
+        const searchTerm = searchFilters.search.trim();
+        // Usar textSearch ou ilike para busca mais eficaz
+        query = query.or(`name.ilike.%${searchTerm}%,code.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
       }
 
-      if (filters.categoryId) {
-        query = query.eq("category_id", filters.categoryId);
+      if (searchFilters.categoryId) {
+        query = query.eq("category_id", searchFilters.categoryId);
       }
 
-      if (filters.locationId) {
-        query = query.eq("location_id", filters.locationId);
+      if (searchFilters.locationId) {
+        query = query.eq("location_id", searchFilters.locationId);
       }
 
-      if (filters.status !== "all") {
-        query = query.eq("active", filters.status === "active");
+      if (searchFilters.status !== "all") {
+        query = query.eq("active", searchFilters.status === "active");
       }
 
       const { data, error } = await query;
-      if (error) throw error;
+      
+      if (error) {
+        console.error('[Inventory] Erro na busca:', error);
+        throw error;
+      }
+      
+      console.log('[Inventory] Produtos encontrados:', data?.length);
       return data;
     }
   });
