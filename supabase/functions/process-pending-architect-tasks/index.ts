@@ -74,6 +74,43 @@ Deno.serve(async (req) => {
       console.log(`   Arquiteto: ${architectData?.name || 'N/A'}`)
 
       try {
+        // ============ LOCK ATÔMICO ============
+        // Tentar marcar como 'processando' APENAS se ainda estiver 'pendente'
+        // Isso evita race condition quando múltiplas instâncias rodam simultaneamente
+        const { data: lockedTask, error: lockError } = await supabase
+          .from('tendenci_prospec_arq_agendamentos')
+          .update({ 
+            status: 'processando',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', task.id)
+          .eq('status', 'pendente')
+          .select('id')
+          .maybeSingle()
+
+        if (lockError) {
+          console.error(`❌ Erro ao adquirir lock: ${lockError.message}`)
+          results.push({
+            taskId: task.id,
+            success: false,
+            error: `Erro ao adquirir lock: ${lockError.message}`
+          })
+          continue
+        }
+
+        // Se não conseguiu o lock, outra instância já está processando
+        if (!lockedTask) {
+          console.log(`⚠️ Tarefa ${task.id} já está sendo processada por outra instância - pulando`)
+          results.push({
+            taskId: task.id,
+            success: false,
+            error: 'Tarefa já sendo processada por outra instância'
+          })
+          continue
+        }
+
+        console.log(`🔒 Lock adquirido para tarefa ${task.id}`)
+
         // VERIFICAR SE ARQUITETO AINDA EXISTE E ESTÁ ATIVO
         const { data: architectCheck, error: archError } = await supabase
           .from('architects')
@@ -122,11 +159,7 @@ Deno.serve(async (req) => {
           continue
         }
 
-        // Mark as processing
-        await supabase
-          .from('tendenci_prospec_arq_agendamentos')
-          .update({ status: 'processando' })
-          .eq('id', task.id)
+        // Tarefa já está marcada como 'processando' pelo lock atômico acima
 
         // Call the process-automated-task function
         const { data: processResult, error: processError } = await supabase.functions.invoke(

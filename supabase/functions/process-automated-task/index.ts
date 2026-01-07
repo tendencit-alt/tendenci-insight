@@ -618,6 +618,12 @@ async function processProspeccaoTask(supabase: any, evolutionUrl: string, evolut
     return { success: false, message: 'Tarefa marcada como falha permanente após máximo de tentativas' }
   }
 
+  // NOVO: Verificar se já está sendo processada por outra instância
+  if (task.status === 'processing' || task.status === 'processando') {
+    console.log(`⏭️ Tarefa já está sendo processada por outra instância (status: ${task.status})`)
+    return { success: false, message: 'Tarefa já está sendo processada por outra instância' }
+  }
+
   const currentRetryCount = task.retry_count || 0
   console.log(`✅ Tarefa encontrada - tipo: ${task.tipo_tarefa}, status: ${task.status}, retry: ${currentRetryCount}/${MAX_RETRIES}`)
 
@@ -645,13 +651,30 @@ async function processProspeccaoTask(supabase: any, evolutionUrl: string, evolut
     return { success: false, message: `Tarefa falhou após ${MAX_RETRIES} tentativas` }
   }
 
-  // Marcar como 'processing'
-  await supabase
+  // ============ LOCK ATÔMICO ============
+  // Tentar marcar como 'processing' APENAS se ainda não estiver
+  const { data: lockedTask, error: lockError } = await supabase
     .from('tendenci_prospec_arq_agendamentos')
-    .update({ status: 'processing' })
+    .update({ 
+      status: 'processing',
+      updated_at: new Date().toISOString()
+    })
     .eq('id', taskId)
+    .in('status', ['pendente', 'processando'])
+    .select('id')
+    .maybeSingle()
 
-  console.log('🔄 Tarefa marcada como "processing"')
+  if (lockError) {
+    console.error(`❌ Erro ao adquirir lock: ${lockError.message}`)
+    return { success: false, message: `Erro ao adquirir lock: ${lockError.message}` }
+  }
+
+  if (!lockedTask) {
+    console.log(`⚠️ Tarefa ${taskId} não pode ser processada - status mudou ou já em processing`)
+    return { success: false, message: 'Não foi possível adquirir lock para a tarefa' }
+  }
+
+  console.log('🔒 Lock atômico adquirido - tarefa marcada como "processing"')
 
   // Buscar dados do arquiteto
   const { data: architect, error: architectError } = await supabase
@@ -740,6 +763,19 @@ async function processProspeccaoTask(supabase: any, evolutionUrl: string, evolut
   }
   
   console.log(`📤 Enviando mensagem para telefone: ${architectPhone}`)
+
+  // ============ VERIFICAÇÃO EXTRA ANTES DO ENVIO ============
+  // Re-verificar status para garantir que outra instância não processou enquanto isso
+  const { data: taskCheck } = await supabase
+    .from('tendenci_prospec_arq_agendamentos')
+    .select('status')
+    .eq('id', taskId)
+    .single()
+
+  if (taskCheck?.status !== 'processing') {
+    console.log(`⚠️ Status mudou durante processamento: ${taskCheck?.status} - abortando envio`)
+    return { success: false, message: 'Status da tarefa mudou durante processamento - abortando' }
+  }
 
   // Enviar mensagem via Evolution API COM FALLBACK de formato
   const sendResult = await sendWhatsAppWithFallback(
