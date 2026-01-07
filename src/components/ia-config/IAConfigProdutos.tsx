@@ -1456,7 +1456,7 @@ export default function IAConfigProdutos() {
                       + Mão de Obra
                     </Button>
                   </div>
-                ) : editingProduto && !gerarFichaTecnica ? (
+                ) : editingProduto && gerarFichaTecnica ? (
                   <Button
                     type="button"
                     variant="outline"
