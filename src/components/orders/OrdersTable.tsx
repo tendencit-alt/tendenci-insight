@@ -92,7 +92,7 @@ export function OrdersTable({ orders, isLoading, onSelectOrder, onEditOrder, onD
     if (daysRemaining === 0) {
       return { label: 'Hoje', color: 'bg-orange-500 text-white', isLate: false };
     }
-    if (daysRemaining <= 3) {
+    if (daysRemaining <= 30) {
       return { label: `${daysRemaining}d`, color: 'bg-yellow-500 text-white', isLate: false };
     }
     return { label: `${daysRemaining}d`, color: 'bg-green-500/80 text-white', isLate: false };
