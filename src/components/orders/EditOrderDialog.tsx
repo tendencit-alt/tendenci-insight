@@ -203,14 +203,14 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
     enabled: open,
   });
 
-  // Query para projetistas (role = 'projetista' OU profile_type = 'projetista')
+  // Query para projetistas (role = 'projetista')
   const { data: projetistas } = useQuery({
     queryKey: ['projetistas-for-order'],
     queryFn: async () => {
       const { data } = await supabase
         .from('profiles')
-        .select('id, full_name, role, profile_type:profile_types(name)')
-        .or('role.eq.projetista,profile_types.name.eq.projetista')
+        .select('id, full_name')
+        .eq('role', 'projetista')
         .order('full_name');
       return data || [];
     },
