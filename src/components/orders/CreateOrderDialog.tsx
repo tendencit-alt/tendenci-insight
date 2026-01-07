@@ -307,6 +307,32 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     },
   });
 
+  // Query para orçamentistas (profile_type = 'Orçamentista')
+  const { data: orcamentistas } = useQuery({
+    queryKey: ['orcamentistas-for-order'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, full_name, profile_type:profile_types!inner(name)')
+        .eq('profile_types.name', 'Orçamentista')
+        .order('full_name');
+      return data || [];
+    },
+  });
+
+  // Query para projetistas (role = 'projetista' OU profile_type = 'projetista')
+  const { data: projetistas } = useQuery({
+    queryKey: ['projetistas-for-order'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, full_name, role, profile_type:profile_types(name)')
+        .or('role.eq.projetista,profile_types.name.eq.projetista')
+        .order('full_name');
+      return data || [];
+    },
+  });
+
   const selectedClient = clients?.find(c => c.id === formData.client_id);
 
   // Validação de dados fiscais para PJ
@@ -1231,8 +1257,8 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="_none">-</SelectItem>
-                              {vendedores?.map((v) => (
-                                <SelectItem key={v.id} value={v.id}>{v.full_name}</SelectItem>
+                              {architects?.map((a) => (
+                                <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
@@ -1341,8 +1367,8 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="_none">-</SelectItem>
-                              {vendedores?.map((v) => (
-                                <SelectItem key={v.id} value={v.id}>{v.full_name}</SelectItem>
+                              {orcamentistas?.map((o) => (
+                                <SelectItem key={o.id} value={o.id}>{o.full_name}</SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
@@ -1396,8 +1422,8 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="_none">-</SelectItem>
-                              {vendedores?.map((v) => (
-                                <SelectItem key={v.id} value={v.id}>{v.full_name}</SelectItem>
+                              {projetistas?.map((p) => (
+                                <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
