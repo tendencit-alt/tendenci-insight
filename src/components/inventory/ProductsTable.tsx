@@ -17,7 +17,7 @@ export default function ProductsTable({ products, isLoading, onSelect }: Product
           <TableHeader>
             <TableRow>
               <TableHead>Código</TableHead>
-              <TableHead>Produto</TableHead>
+              <TableHead>Item</TableHead>
               <TableHead>Categoria</TableHead>
               <TableHead>Local</TableHead>
               <TableHead className="text-right">Estoque</TableHead>
@@ -46,7 +46,7 @@ export default function ProductsTable({ products, isLoading, onSelect }: Product
   if (products.length === 0) {
     return (
       <div className="border rounded-lg p-8 text-center text-muted-foreground">
-        Nenhum produto encontrado
+        Nenhum item encontrado
       </div>
     );
   }
@@ -57,7 +57,7 @@ export default function ProductsTable({ products, isLoading, onSelect }: Product
         <TableHeader>
           <TableRow>
             <TableHead>Código</TableHead>
-            <TableHead>Produto</TableHead>
+            <TableHead>Item</TableHead>
             <TableHead>Categoria</TableHead>
             <TableHead>Local</TableHead>
             <TableHead className="text-right">Estoque</TableHead>

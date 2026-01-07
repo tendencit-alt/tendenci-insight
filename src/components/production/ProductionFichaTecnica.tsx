@@ -39,9 +39,11 @@ import {
   AlertCircle,
   ChevronDown,
   ChevronRight,
-  Palette
+  Palette,
+  Users
 } from 'lucide-react';
 import { AddInsumoDialog } from './AddInsumoDialog';
+import { AddMaoObraDialog } from './AddMaoObraDialog';
 
 interface ProductionFichaTecnicaProps {
   productionOrderId: string;
@@ -74,12 +76,13 @@ interface GroupedBOM {
   subtotal: number;
 }
 
-// Ordem das categorias conforme planilha
-const CATEGORY_ORDER = ['Móveis Rústico', 'Corda Náutica', 'Quadro', 'Industrial', 'Mão de Obra', 'Outros'];
+// Ordem das categorias conforme planilha (Mão de Obra agora é separada)
+const CATEGORY_ORDER = ['Móveis Rústico', 'Corda Náutica', 'Quadro', 'Industrial', 'Outros'];
 
 export function ProductionFichaTecnica({ productionOrderId }: ProductionFichaTecnicaProps) {
   const queryClient = useQueryClient();
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [addMaoObraOpen, setAddMaoObraOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
 
@@ -309,10 +312,18 @@ export function ProductionFichaTecnica({ productionOrderId }: ProductionFichaTec
               )}
               <Button
                 size="sm"
+                variant="outline"
+                onClick={() => setAddMaoObraOpen(true)}
+              >
+                <Users className="h-4 w-4 mr-1" />
+                + Mão de Obra
+              </Button>
+              <Button
+                size="sm"
                 onClick={() => setAddDialogOpen(true)}
               >
-                <Plus className="h-4 w-4 mr-1" />
-                Adicionar Insumo
+                <Package className="h-4 w-4 mr-1" />
+                + Matéria Prima
               </Button>
             </div>
           </div>
@@ -323,15 +334,24 @@ export function ProductionFichaTecnica({ productionOrderId }: ProductionFichaTec
               <Package className="h-10 w-10 mb-3 opacity-40" />
               <p className="font-medium">Nenhum insumo cadastrado</p>
               <p className="text-sm">Adicione insumos para calcular o CMV</p>
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-4"
-                onClick={() => setAddDialogOpen(true)}
-              >
-                <Plus className="h-4 w-4 mr-1" />
-                Adicionar Primeiro Insumo
-              </Button>
+              <div className="flex gap-2 mt-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setAddMaoObraOpen(true)}
+                >
+                  <Users className="h-4 w-4 mr-1" />
+                  + Mão de Obra
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setAddDialogOpen(true)}
+                >
+                  <Package className="h-4 w-4 mr-1" />
+                  + Matéria Prima
+                </Button>
+              </div>
             </div>
           ) : (
             <div className="space-y-3">
@@ -436,10 +456,21 @@ export function ProductionFichaTecnica({ productionOrderId }: ProductionFichaTec
         </CardContent>
       </Card>
 
-      {/* Dialog de Adicionar Insumo */}
+      {/* Dialog de Adicionar Matéria Prima */}
       <AddInsumoDialog
         open={addDialogOpen}
         onOpenChange={setAddDialogOpen}
+        productionProductId={productionProduct.id}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ['production-product-bom'] });
+          queryClient.invalidateQueries({ queryKey: ['production-product'] });
+        }}
+      />
+
+      {/* Dialog de Adicionar Mão de Obra */}
+      <AddMaoObraDialog
+        open={addMaoObraOpen}
+        onOpenChange={setAddMaoObraOpen}
         productionProductId={productionProduct.id}
         onSuccess={() => {
           queryClient.invalidateQueries({ queryKey: ['production-product-bom'] });

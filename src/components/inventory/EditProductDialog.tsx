@@ -135,12 +135,12 @@ export default function EditProductDialog({ product, open, onOpenChange, onSucce
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Editar Produto</DialogTitle>
+          <DialogTitle>Editar Item</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-            <Label htmlFor="active">Produto Ativo</Label>
+            <Label htmlFor="active">Item Ativo</Label>
             <Switch
               id="active"
               checked={form.active}

@@ -91,7 +91,7 @@ export default function Inventory() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Estoque</h1>
-            <p className="text-sm text-muted-foreground">Controle de produtos e movimentações</p>
+            <p className="text-sm text-muted-foreground">Controle de itens e movimentações</p>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => setCreateMovementOpen(true)}>
@@ -100,7 +100,7 @@ export default function Inventory() {
             </Button>
             <Button onClick={() => setCreateProductOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
-              Novo Produto
+              Novo Item
             </Button>
           </div>
         </div>
@@ -111,7 +111,7 @@ export default function Inventory() {
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
-            <TabsTrigger value="products">Produtos</TabsTrigger>
+            <TabsTrigger value="products">Itens</TabsTrigger>
             <TabsTrigger value="movements">Movimentações</TabsTrigger>
             <TabsTrigger value="suggestions">Sugestão Compras</TabsTrigger>
             <TabsTrigger value="abc">Curva ABC</TabsTrigger>
