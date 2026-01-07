@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { usePermissions } from '@/hooks/usePermissions';
-import { format, differenceInDays, isPast } from 'date-fns';
+import { format, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { parseDateOnly } from '@/utils/timezone';
 import { Search, ChevronLeft, ChevronRight, AlertTriangle, ExternalLink, Eye, Pencil, Trash2 } from 'lucide-react';
@@ -77,15 +77,25 @@ export function OrdersTable({ orders, isLoading, onSelectOrder, onEditOrder, onD
     const deadlineDate = parseDateOnly(deadline);
     if (!deadlineDate) return null;
     
-    const daysRemaining = differenceInDays(deadlineDate, new Date());
+    // Zera as horas para comparar apenas datas
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const deadlineDateNormalized = new Date(deadlineDate);
+    deadlineDateNormalized.setHours(0, 0, 0, 0);
     
-    if (isPast(deadlineDate)) {
-      return { label: 'Atrasado', color: 'bg-red-500 text-white' };
+    const daysRemaining = differenceInDays(deadlineDateNormalized, today);
+    
+    if (daysRemaining < 0) {
+      const daysLate = Math.abs(daysRemaining);
+      return { label: `${daysLate}d atrasado`, color: 'bg-red-500 text-white', isLate: true };
+    }
+    if (daysRemaining === 0) {
+      return { label: 'Hoje', color: 'bg-orange-500 text-white', isLate: false };
     }
     if (daysRemaining <= 3) {
-      return { label: `${daysRemaining}d`, color: 'bg-yellow-500 text-white' };
+      return { label: `${daysRemaining}d`, color: 'bg-yellow-500 text-white', isLate: false };
     }
-    return null;
+    return { label: `${daysRemaining}d`, color: 'bg-green-500/80 text-white', isLate: false };
   };
 
   if (isLoading) {
@@ -198,8 +208,8 @@ export function OrdersTable({ orders, isLoading, onSelectOrder, onEditOrder, onD
                                 {format(parseDateOnly(order.data_entrega_prevista)!, 'dd/MM/yy', { locale: ptBR })}
                               </span>
                               {deadlineStatus && (
-                                <Badge className={`${deadlineStatus.color} text-xs px-1`}>
-                                  {deadlineStatus.label === 'Atrasado' && <AlertTriangle className="h-3 w-3 mr-1" />}
+                                <Badge className={`${deadlineStatus.color} text-xs px-1.5`}>
+                                  {deadlineStatus.isLate && <AlertTriangle className="h-3 w-3 mr-1" />}
                                   {deadlineStatus.label}
                                 </Badge>
                               )}
