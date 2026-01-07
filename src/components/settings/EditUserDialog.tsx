@@ -6,7 +6,14 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2 } from 'lucide-react';
+import { Loader2, User } from 'lucide-react';
+
+interface ProfileType {
+  id: string;
+  name: string;
+  display_name: string;
+  color: string;
+}
 
 interface EditUserDialogProps {
   open: boolean;
@@ -18,6 +25,7 @@ interface EditUserDialogProps {
     full_name?: string;
     role?: string;
     especializacao?: string | null;
+    profile_type_id?: string | null;
   } | null;
   onSuccess: () => void;
 }
@@ -25,22 +33,54 @@ interface EditUserDialogProps {
 export function EditUserDialog({ open, onOpenChange, user, onSuccess }: EditUserDialogProps) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [profileTypes, setProfileTypes] = useState<ProfileType[]>([]);
+  const [loadingTypes, setLoadingTypes] = useState(false);
   const [formData, setFormData] = useState({
-    email: user?.email || '',
-    username: user?.username || '',
-    especializacao: user?.especializacao || 'todos',
+    email: '',
+    username: '',
+    full_name: '',
+    profile_type_id: '',
+    especializacao: 'todos',
   });
+
+  // Buscar tipos de perfil quando o dialog abrir
+  useEffect(() => {
+    if (open) {
+      fetchProfileTypes();
+    }
+  }, [open]);
 
   // Atualizar formData quando user mudar
   useEffect(() => {
     if (user) {
       setFormData({
-        email: user.email,
-        username: user.username,
+        email: user.email || '',
+        username: user.username || '',
+        full_name: user.full_name || '',
+        profile_type_id: user.profile_type_id || '',
         especializacao: user.especializacao || 'todos',
       });
     }
   }, [user]);
+
+  const fetchProfileTypes = async () => {
+    try {
+      setLoadingTypes(true);
+      const { data, error } = await supabase
+        .from('profile_types')
+        .select('id, name, display_name, color')
+        .eq('is_active', true)
+        .order('is_system', { ascending: false })
+        .order('display_name');
+
+      if (error) throw error;
+      setProfileTypes(data || []);
+    } catch (error) {
+      console.error('Erro ao buscar tipos de perfil:', error);
+    } finally {
+      setLoadingTypes(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,40 +121,43 @@ export function EditUserDialog({ open, onOpenChange, user, onSuccess }: EditUser
     setLoading(true);
 
     try {
-      // Atualizar profile (email e username)
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({
-          email: formData.email,
-          username: formData.username,
-          especializacao: formData.especializacao,
-        })
-        .eq('id', user.id);
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error('Sessão não encontrada');
+      }
 
-      if (profileError) throw profileError;
-
-      // Atualizar email no auth.users (via Edge Function)
-      if (formData.email !== user.email) {
-        const { error: emailError } = await supabase.functions.invoke('admin-update-user-email', {
-          body: {
-            user_id: user.id,
-            new_email: formData.email,
+      // Chamar a edge function para atualizar o usuário
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-update-user`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
           },
-        });
-
-        if (emailError) {
-          console.warn('Aviso ao atualizar email no auth:', emailError);
-          toast({
-            title: 'Aviso',
-            description: 'Profile atualizado, mas pode ser necessário atualizar o email manualmente no auth.',
-            variant: 'default',
-          });
+          body: JSON.stringify({
+            user_id: user.id,
+            email: formData.email,
+            full_name: formData.full_name,
+            username: formData.username,
+            profile_type_id: formData.profile_type_id || null,
+            especializacao: formData.especializacao,
+          }),
         }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Erro ao atualizar usuário');
       }
 
       toast({
-        title: 'Usuário atualizado',
-        description: 'As informações do usuário foram atualizadas com sucesso.',
+        title: '✅ Usuário atualizado',
+        description: result.new_role 
+          ? `Dados atualizados e perfil alterado para ${result.new_role}.`
+          : 'As informações do usuário foram atualizadas com sucesso.',
       });
 
       onSuccess();
@@ -131,19 +174,45 @@ export function EditUserDialog({ open, onOpenChange, user, onSuccess }: EditUser
     }
   };
 
+  // Determinar se deve mostrar campo de especialização baseado no tipo de perfil selecionado
+  const selectedProfileType = profileTypes.find(pt => pt.id === formData.profile_type_id);
+  const showEspecializacao = selectedProfileType?.name === 'vendedor';
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent 
+        className="max-w-md"
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onInteractOutside={(e) => {
+          if (e.target instanceof Element && e.target.closest('[role="listbox"]')) {
+            e.preventDefault();
+          }
+        }}
+      >
         <DialogHeader>
-          <DialogTitle>Editar Usuário</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <User className="w-5 h-5 text-primary" />
+            Editar Usuário
+          </DialogTitle>
           <DialogDescription>
-            Atualize o email e username do usuário
+            Atualize todas as informações do usuário
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="full_name">Nome Completo</Label>
+            <Input
+              id="full_name"
+              type="text"
+              value={formData.full_name}
+              onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+              placeholder="Nome completo do usuário"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="email">Email *</Label>
             <Input
               id="email"
               type="email"
@@ -155,7 +224,7 @@ export function EditUserDialog({ open, onOpenChange, user, onSuccess }: EditUser
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="username">Username (@)</Label>
+            <Label htmlFor="username">Username (@) *</Label>
             <div className="flex items-center gap-2">
               <span className="text-muted-foreground">@</span>
               <Input
@@ -172,7 +241,40 @@ export function EditUserDialog({ open, onOpenChange, user, onSuccess }: EditUser
             </p>
           </div>
 
-          {user?.role === 'vendedor' && (
+          <div className="space-y-2">
+            <Label htmlFor="profile_type">Tipo de Perfil</Label>
+            <Select 
+              value={formData.profile_type_id} 
+              onValueChange={(value) => setFormData({ ...formData, profile_type_id: value })}
+              disabled={loadingTypes}
+            >
+              <SelectTrigger id="profile_type">
+                {loadingTypes ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <SelectValue placeholder="Selecione o tipo de perfil" />
+                )}
+              </SelectTrigger>
+              <SelectContent>
+                {profileTypes.map((pt) => (
+                  <SelectItem key={pt.id} value={pt.id}>
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: pt.color }}
+                      />
+                      {pt.display_name}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Ao alterar o tipo, as permissões serão atualizadas automaticamente
+            </p>
+          </div>
+
+          {showEspecializacao && (
             <div className="space-y-2">
               <Label htmlFor="especializacao">Especialização</Label>
               <Select 
@@ -189,7 +291,7 @@ export function EditUserDialog({ open, onOpenChange, user, onSuccess }: EditUser
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                Define quais categorias de negócios o vendedor pode visualizar no CRM Clientes
+                Define quais categorias de negócios o vendedor pode visualizar
               </p>
             </div>
           )}

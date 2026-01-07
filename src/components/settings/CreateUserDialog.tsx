@@ -48,6 +48,7 @@ export function CreateUserDialog({
     email: '',
     password: '',
     full_name: '',
+    username: '',
     role: 'vendedor',
     profile_type_id: '',
   });
@@ -136,6 +137,7 @@ export function CreateUserDialog({
             email: formData.email,
             password: formData.password,
             full_name: formData.full_name,
+            username: formData.username || formData.email.split('@')[0],
             role: formData.role,
             profile_type_id: formData.profile_type_id,
           }),
@@ -157,6 +159,7 @@ export function CreateUserDialog({
         email: '',
         password: '',
         full_name: '',
+        username: '',
         role: 'vendedor',
         profile_type_id: profileTypes.find(pt => pt.name === 'vendedor')?.id || '',
       });
@@ -231,6 +234,23 @@ export function CreateUserDialog({
               value={formData.full_name}
               onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="username">Username (@)</Label>
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground">@</span>
+              <Input
+                id="username"
+                type="text"
+                placeholder="nomedousuario"
+                value={formData.username}
+                onChange={(e) => setFormData({ ...formData, username: e.target.value.replace(/[^a-zA-Z0-9_]/g, '') })}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Opcional. Se não informado, será gerado a partir do email.
+            </p>
           </div>
 
           <div className="space-y-2">
