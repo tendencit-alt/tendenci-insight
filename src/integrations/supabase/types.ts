@@ -1974,6 +1974,33 @@ export type Database = {
         }
         Relationships: []
       }
+      labor_types: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          default_cost: number | null
+          id: string
+          name: string
+          unit: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          default_cost?: number | null
+          id?: string
+          name: string
+          unit?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          default_cost?: number | null
+          id?: string
+          name?: string
+          unit?: string | null
+        }
+        Relationships: []
+      }
       lead_attachments: {
         Row: {
           file_name: string
@@ -3667,6 +3694,7 @@ export type Database = {
           production_product_id: string
           quantidade: number
           subtotal: number | null
+          tipo: string | null
           unidade: string | null
         }
         Insert: {
@@ -3680,6 +3708,7 @@ export type Database = {
           production_product_id: string
           quantidade?: number
           subtotal?: number | null
+          tipo?: string | null
           unidade?: string | null
         }
         Update: {
@@ -3693,6 +3722,7 @@ export type Database = {
           production_product_id?: string
           quantidade?: number
           subtotal?: number | null
+          tipo?: string | null
           unidade?: string | null
         }
         Relationships: [

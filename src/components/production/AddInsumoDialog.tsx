@@ -35,11 +35,11 @@ const PRODUCTS_WITH_VARIATION = {
   modelo: ['Puxador']
 };
 
-// Categorias permitidas para ficha técnica (conforme planilha)
-const ALLOWED_CATEGORIES = ['Móveis Rústico', 'Corda Náutica', 'Industrial', 'Quadro', 'Mão de Obra'];
+// Categorias permitidas para ficha técnica (Mão de Obra foi removida - agora é separado)
+const ALLOWED_CATEGORIES = ['Móveis Rústico', 'Corda Náutica', 'Industrial', 'Quadro'];
 
 // Ordem das categorias conforme planilha
-const CATEGORY_ORDER = ['Móveis Rústico', 'Corda Náutica', 'Quadro', 'Industrial', 'Mão de Obra'];
+const CATEGORY_ORDER = ['Móveis Rústico', 'Corda Náutica', 'Quadro', 'Industrial'];
 
 export function AddInsumoDialog({ 
   open, 
@@ -180,7 +180,8 @@ export function AddInsumoDialog({
           unidade: unidade.trim() || 'UN',
           custo_unitario: parseFloat(custoUnitario),
           cor: cor.trim() || null,
-          notes: notes.trim() || null
+          notes: notes.trim() || null,
+          tipo: 'material'
         });
 
       if (error) throw error;
@@ -207,8 +208,8 @@ export function AddInsumoDialog({
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Plus className="h-5 w-5" />
-            Adicionar Insumo
+            <Package className="h-5 w-5" />
+            Adicionar Matéria Prima
           </DialogTitle>
         </DialogHeader>
 
@@ -423,7 +424,7 @@ export function AddInsumoDialog({
             Cancelar
           </Button>
           <Button onClick={handleSubmit} disabled={loading}>
-            {loading ? 'Adicionando...' : 'Adicionar Insumo'}
+            {loading ? 'Adicionando...' : 'Adicionar Matéria Prima'}
           </Button>
         </DialogFooter>
       </DialogContent>

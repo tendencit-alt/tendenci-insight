@@ -110,7 +110,7 @@ export default function CreateProductDialog({ open, onOpenChange, onSuccess }: C
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Novo Produto</DialogTitle>
+          <DialogTitle>Novo Item</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
