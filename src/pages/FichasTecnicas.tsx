@@ -32,7 +32,8 @@ import {
   Clock,
   AlertCircle,
   Factory,
-  Boxes
+  Boxes,
+  ShoppingBag
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -76,6 +77,11 @@ export default function FichasTecnicas() {
             id,
             code,
             name
+          ),
+          ia_produto:tendenci_ia_produtos(
+            id,
+            nome,
+            categoria
           )
         `)
         .order('created_at', { ascending: false });
@@ -276,9 +282,10 @@ export default function FichasTecnicas() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {fichas.map((ficha) => {
+                    {fichas.map((ficha: any) => {
                       const isFromProduction = !!ficha.production_order_id;
                       const isFromInventory = !!ficha.product_id;
+                      const isFromCatalogo = !!ficha.ia_produto_id;
                       
                       return (
                         <TableRow key={ficha.id}>
@@ -297,6 +304,13 @@ export default function FichasTecnicas() {
                                   {ficha.product?.code || 'EST'}
                                 </span>
                               </div>
+                            ) : isFromCatalogo ? (
+                              <div className="flex items-center gap-2">
+                                <ShoppingBag className="h-4 w-4 text-purple-500" />
+                                <span className="font-mono text-sm">
+                                  Catálogo IA
+                                </span>
+                              </div>
                             ) : (
                               <span className="text-muted-foreground">-</span>
                             )}
@@ -305,7 +319,7 @@ export default function FichasTecnicas() {
                             <div>
                               <p className="font-medium">{ficha.name}</p>
                               <p className="text-xs text-muted-foreground">
-                                {ficha.production_order?.title || ficha.product?.name || ''}
+                                {ficha.production_order?.title || ficha.product?.name || ficha.ia_produto?.categoria || ''}
                               </p>
                             </div>
                           </TableCell>

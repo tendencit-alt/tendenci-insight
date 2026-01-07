@@ -3747,6 +3747,7 @@ export type Database = {
           cmv_total: number | null
           created_at: string | null
           description: string | null
+          ia_produto_id: string | null
           id: string
           name: string
           product_id: string | null
@@ -3758,6 +3759,7 @@ export type Database = {
           cmv_total?: number | null
           created_at?: string | null
           description?: string | null
+          ia_produto_id?: string | null
           id?: string
           name: string
           product_id?: string | null
@@ -3769,6 +3771,7 @@ export type Database = {
           cmv_total?: number | null
           created_at?: string | null
           description?: string | null
+          ia_produto_id?: string | null
           id?: string
           name?: string
           product_id?: string | null
@@ -3777,6 +3780,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "production_products_ia_produto_id_fkey"
+            columns: ["ia_produto_id"]
+            isOneToOne: false
+            referencedRelation: "tendenci_ia_produtos"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "production_products_product_id_fkey"
             columns: ["product_id"]

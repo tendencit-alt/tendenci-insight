@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Plus, Pencil, Trash2, Package, X, Image, Video, Link, Upload, Play, Filter, Warehouse, MapPin, Ruler, Search, LinkIcon, ExternalLink } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, Package, X, Image, Video, Link, Upload, Play, Filter, Warehouse, MapPin, Ruler, Search, LinkIcon, ExternalLink, FileSpreadsheet, Check } from "lucide-react";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import type { Json } from "@/integrations/supabase/types";
 
@@ -128,6 +128,8 @@ export default function IAConfigProdutos() {
   const [editingProduto, setEditingProduto] = useState<Produto | null>(null);
   const [videoUrlInput, setVideoUrlInput] = useState("");
   const [showVideoUrlInput, setShowVideoUrlInput] = useState(false);
+  const [existingFicha, setExistingFicha] = useState<{ id: string } | null>(null);
+  const [gerarFichaTecnica, setGerarFichaTecnica] = useState(false);
   const [categoriaFiltro, setCategoriaFiltro] = useState<string>("todas");
   const [showNewCategoriaDialog, setShowNewCategoriaDialog] = useState(false);
   const [novaCategoria, setNovaCategoria] = useState("");
@@ -260,6 +262,8 @@ export default function IAConfigProdutos() {
   const openNewDialog = () => {
     setEditingProduto(null);
     setSelectedInventoryProduct(null);
+    setExistingFicha(null);
+    setGerarFichaTecnica(false);
     
     setForm({
       nome: "",
@@ -291,8 +295,18 @@ export default function IAConfigProdutos() {
     setDialogOpen(true);
   };
 
-  const openEditDialog = (produto: Produto) => {
+  const openEditDialog = async (produto: Produto) => {
     setEditingProduto(produto);
+    setGerarFichaTecnica(false);
+    
+    // Verificar se já existe ficha técnica para este produto
+    const { data: ficha } = await supabase
+      .from("production_products")
+      .select("id")
+      .eq("ia_produto_id", produto.id)
+      .maybeSingle();
+    
+    setExistingFicha(ficha);
     
     // Migrate legacy video_url to videos array if needed
     let videosArray: VideoItem[] = Array.isArray(produto.videos) ? [...produto.videos] : [];
@@ -597,7 +611,52 @@ export default function IAConfigProdutos() {
         console.log("Resposta insert:", { data, error });
 
         if (error) throw error;
-        toast.success("Produto criado!");
+        
+        // Criar ficha técnica se solicitado (apenas para novo produto)
+        if (gerarFichaTecnica && data && data[0]) {
+          const { error: fichaError } = await supabase
+            .from("production_products")
+            .insert({
+              name: form.nome,
+              description: form.descricao || null,
+              ia_produto_id: data[0].id,
+              production_order_id: null,
+              product_id: null,
+              status: 'rascunho',
+              cmv_total: form.preco_base
+            });
+          
+          if (fichaError) {
+            console.error("Erro ao criar ficha técnica:", fichaError);
+            toast.error("Produto criado, mas erro ao criar ficha técnica");
+          } else {
+            toast.success("Produto e ficha técnica criados!");
+          }
+        } else {
+          toast.success("Produto criado!");
+        }
+      }
+
+      // Criar ficha técnica se solicitado (para produto existente)
+      if (editingProduto && gerarFichaTecnica && !existingFicha) {
+        const { error: fichaError } = await supabase
+          .from("production_products")
+          .insert({
+            name: form.nome,
+            description: form.descricao || null,
+            ia_produto_id: editingProduto.id,
+            production_order_id: null,
+            product_id: null,
+            status: 'rascunho',
+            cmv_total: form.preco_base
+          });
+        
+        if (fichaError) {
+          console.error("Erro ao criar ficha técnica:", fichaError);
+          toast.error("Erro ao criar ficha técnica");
+        } else {
+          toast.success("Ficha técnica criada!");
+        }
       }
 
       setDialogOpen(false);
@@ -1267,6 +1326,34 @@ export default function IAConfigProdutos() {
                   placeholder="Em que situações a IA deve sugerir este produto?"
                   rows={2}
                 />
+              </div>
+
+              {/* Ficha Técnica */}
+              <div className="flex items-center justify-between p-4 border-2 border-primary/30 rounded-lg bg-primary/5">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <FileSpreadsheet className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <Label className="font-semibold text-base">Ficha Técnica</Label>
+                    <p className="text-sm text-muted-foreground">
+                      {existingFicha 
+                        ? "Este produto já possui ficha técnica" 
+                        : "Criar ficha técnica para gestão de produção"}
+                    </p>
+                  </div>
+                </div>
+                {existingFicha ? (
+                  <Badge variant="outline" className="bg-green-50 text-green-600 border-green-200">
+                    <Check className="h-4 w-4 mr-1" />
+                    Criada
+                  </Badge>
+                ) : (
+                  <Switch
+                    checked={gerarFichaTecnica}
+                    onCheckedChange={setGerarFichaTecnica}
+                  />
+                )}
               </div>
 
               <div className="flex justify-end gap-2">
