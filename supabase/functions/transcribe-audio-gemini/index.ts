@@ -52,9 +52,15 @@ serve(async (req) => {
         }
         
         const contentType = audioResponse.headers.get('content-type');
-        if (contentType) {
+        // Só usar content-type do servidor se for um tipo de áudio válido
+        // e não application/octet-stream (genérico usado por muitos CDNs)
+        if (contentType && 
+            contentType.includes('audio/') && 
+            !contentType.includes('octet-stream')) {
           audioMimeType = contentType;
         }
+        // Caso contrário, manter o mimeType original passado como parâmetro
+        console.log(`🎙️ Final mimeType: ${audioMimeType} (server Content-Type: ${contentType})`);
         
         const contentLength = audioResponse.headers.get('content-length');
         if (contentLength && parseInt(contentLength) > MAX_AUDIO_SIZE_BYTES) {
