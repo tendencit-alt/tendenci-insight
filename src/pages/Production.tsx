@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Plus, Factory, Settings, Zap } from 'lucide-react';
+import { Plus, Factory, Settings, Zap, Layers } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { ProductionKanban } from '@/components/production/ProductionKanban';
@@ -14,6 +14,8 @@ import { ProductionSLAChart } from '@/components/production/ProductionSLAChart';
 import { ProductionOrderDetailSheet } from '@/components/production/ProductionOrderDetailSheet';
 import { ManageProductionStagesDialog } from '@/components/production/ManageProductionStagesDialog';
 import { ManageProductionAutomationsDialog } from '@/components/production/ManageProductionAutomationsDialog';
+import { UnifyOpsDialog } from '@/components/production/UnifyOpsDialog';
+import { UnifiedOpsDetailSheet } from '@/components/production/UnifiedOpsDetailSheet';
 import { getTailwindColor } from '@/utils/tailwindColors';
 import { toast } from 'sonner';
 import { format, subDays, startOfMonth } from 'date-fns';
@@ -24,7 +26,10 @@ export default function Production() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
   const [automationsDialogOpen, setAutomationsDialogOpen] = useState(false);
+  const [unifyDialogOpen, setUnifyDialogOpen] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'individual' | 'grouped'>('individual');
   const [filters, setFilters] = useState({
     status: 'all',
     priority: 'all',
@@ -190,6 +195,10 @@ export default function Production() {
           </div>
           
           <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setUnifyDialogOpen(true)} className="gap-2">
+              <Layers className="h-4 w-4" />
+              Unificar OPs
+            </Button>
             {isMaster && (
               <Button variant="outline" onClick={() => setAutomationsDialogOpen(true)} className="gap-2">
                 <Zap className="h-4 w-4" />
@@ -226,6 +235,8 @@ export default function Production() {
           filters={filters} 
           onFiltersChange={setFilters} 
           onExport={handleExport}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
         />
 
         {/* Tabs por tipo de produção */}
@@ -248,6 +259,8 @@ export default function Production() {
                 productionTypeId={type.id} 
                 filters={filters}
                 onOrderClick={(orderId) => setSelectedOrderId(orderId)}
+                viewMode={viewMode}
+                onGroupClick={(groupId) => setSelectedGroupId(groupId)}
               />
             </TabsContent>
           ))}
@@ -268,6 +281,20 @@ export default function Production() {
           orderId={selectedOrderId}
           open={!!selectedOrderId}
           onOpenChange={(open) => !open && setSelectedOrderId(null)}
+        />
+
+        {/* Sheet de grupo unificado */}
+        <UnifiedOpsDetailSheet
+          groupId={selectedGroupId}
+          open={!!selectedGroupId}
+          onOpenChange={(open) => !open && setSelectedGroupId(null)}
+          onOrderClick={(orderId) => setSelectedOrderId(orderId)}
+        />
+
+        {/* Dialog de unificar OPs */}
+        <UnifyOpsDialog
+          open={unifyDialogOpen}
+          onOpenChange={setUnifyDialogOpen}
         />
 
         {/* Dialog de configuração de etapas */}
