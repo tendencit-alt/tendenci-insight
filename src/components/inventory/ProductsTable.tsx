@@ -155,7 +155,7 @@ export default function ProductsTable({ products, isLoading, onSelect, onRefresh
                   <TableCell className="text-right">
                     {formatCurrency(product.cost_price || 0)}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right bg-yellow-100">
                     {fichaTecnica?.cmv_total ? (
                       <div className="flex items-center justify-end gap-1">
                         <FileSpreadsheet className="h-3 w-3 text-green-600" />
