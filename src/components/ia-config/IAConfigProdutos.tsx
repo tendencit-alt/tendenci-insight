@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Plus, Pencil, Trash2, Package, X, Image, Video, Link, Upload, Play, Filter, Warehouse, MapPin, Ruler, Search, LinkIcon, ExternalLink, FileSpreadsheet, Check, Eye } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, Package, X, Image, Video, Link, Upload, Play, Filter, Warehouse, MapPin, Ruler, Search, LinkIcon, ExternalLink, FileSpreadsheet, Check, Eye, Users } from "lucide-react";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import type { Json } from "@/integrations/supabase/types";
 import { FichaTecnicaSheet } from "./FichaTecnicaSheet";
@@ -1394,31 +1394,111 @@ export default function IAConfigProdutos() {
               </div>
 
               {/* Ficha Técnica */}
-              <div className="flex items-center justify-between p-4 border-2 border-primary/30 rounded-lg bg-primary/5">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-primary/10">
-                    <FileSpreadsheet className="h-6 w-6 text-primary" />
+              <div className="p-4 border-2 border-primary/30 rounded-lg bg-primary/5 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-primary/10">
+                      <FileSpreadsheet className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                      <Label className="font-semibold text-base">Ficha Técnica</Label>
+                      <p className="text-sm text-muted-foreground">
+                        {existingFicha 
+                          ? "Gerencie insumos e mão de obra" 
+                          : "Criar ficha técnica para gestão de produção"}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <Label className="font-semibold text-base">Ficha Técnica</Label>
-                    <p className="text-sm text-muted-foreground">
-                      {existingFicha 
-                        ? "Este produto já possui ficha técnica" 
-                        : "Criar ficha técnica para gestão de produção"}
-                    </p>
-                  </div>
+                  {existingFicha ? (
+                    <Badge variant="outline" className="bg-green-50 text-green-600 border-green-200">
+                      <Check className="h-4 w-4 mr-1" />
+                      Criada
+                    </Badge>
+                  ) : (
+                    <Switch
+                      checked={gerarFichaTecnica}
+                      onCheckedChange={setGerarFichaTecnica}
+                    />
+                  )}
                 </div>
+
+                {/* Botões de ação para ficha técnica */}
                 {existingFicha ? (
-                  <Badge variant="outline" className="bg-green-50 text-green-600 border-green-200">
-                    <Check className="h-4 w-4 mr-1" />
-                    Criada
-                  </Badge>
-                ) : (
-                  <Switch
-                    checked={gerarFichaTecnica}
-                    onCheckedChange={setGerarFichaTecnica}
-                  />
-                )}
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setDialogOpen(false);
+                        setSelectedFichaTecnicaId(existingFicha.id);
+                        setSelectedFichaTecnicaProductName(form.nome);
+                        setSelectedFichaTecnicaStatus(editingProduto?.fichaTecnica?.status || 'rascunho');
+                        setFichaTecnicaSheetOpen(true);
+                      }}
+                    >
+                      <Package className="h-4 w-4 mr-2" />
+                      Gerenciar Insumos
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setDialogOpen(false);
+                        setSelectedFichaTecnicaId(existingFicha.id);
+                        setSelectedFichaTecnicaProductName(form.nome);
+                        setSelectedFichaTecnicaStatus(editingProduto?.fichaTecnica?.status || 'rascunho');
+                        setFichaTecnicaSheetOpen(true);
+                      }}
+                    >
+                      <Users className="h-4 w-4 mr-2" />
+                      + Mão de Obra
+                    </Button>
+                  </div>
+                ) : editingProduto && !gerarFichaTecnica ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      try {
+                        const { data, error } = await supabase
+                          .from("production_products")
+                          .insert({
+                            name: form.nome,
+                            description: form.descricao || null,
+                            ia_produto_id: editingProduto.id,
+                            production_order_id: null,
+                            product_id: null,
+                            status: 'rascunho',
+                            cmv_total: form.preco_base
+                          })
+                          .select()
+                          .single();
+                        
+                        if (error) throw error;
+                        
+                        toast.success("Ficha técnica criada!");
+                        setExistingFicha({ id: data.id });
+                        
+                        setDialogOpen(false);
+                        setSelectedFichaTecnicaId(data.id);
+                        setSelectedFichaTecnicaProductName(form.nome);
+                        setSelectedFichaTecnicaStatus('rascunho');
+                        setFichaTecnicaSheetOpen(true);
+                        
+                        loadData();
+                      } catch (error) {
+                        console.error("Erro ao criar ficha técnica:", error);
+                        toast.error("Erro ao criar ficha técnica");
+                      }
+                    }}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Criar Ficha Técnica Agora
+                  </Button>
+                ) : null}
               </div>
 
               <div className="flex justify-end gap-2">
