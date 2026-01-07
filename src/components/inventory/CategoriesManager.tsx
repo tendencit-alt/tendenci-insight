@@ -74,7 +74,7 @@ export default function CategoriesManager() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">Categorias de Produtos</CardTitle>
+        <CardTitle className="text-lg">Categorias de Itens</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex gap-2">
