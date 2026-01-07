@@ -48,6 +48,9 @@ Deno.serve(async (req) => {
 
     let newRole = null;
 
+    // Valores válidos do enum user_role
+    const validRoles = ['admin', 'vendedor', 'arquiteto', 'projetista'];
+
     // Se profile_type_id mudou, buscar novo role
     if (profile_type_id !== undefined && profile_type_id !== currentProfile.profile_type_id) {
       profileUpdate.profile_type_id = profile_type_id;
@@ -59,8 +62,15 @@ Deno.serve(async (req) => {
         .single();
 
       if (pt) {
-        newRole = pt.name;
-        profileUpdate.role = newRole;
+        // Só atualiza role se o nome do tipo for um valor válido do enum
+        if (validRoles.includes(pt.name.toLowerCase())) {
+          newRole = pt.name.toLowerCase();
+          profileUpdate.role = newRole;
+        } else {
+          // Para tipos customizados, manter role como vendedor por padrão
+          newRole = pt.name;
+          profileUpdate.role = 'vendedor';
+        }
       }
     }
 
