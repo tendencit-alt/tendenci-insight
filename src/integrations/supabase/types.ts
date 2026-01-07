@@ -6971,6 +6971,7 @@ export type Database = {
         Returns: Json
       }
       get_sellers_without_goals: { Args: never; Returns: number }
+      get_user_especializacao: { Args: { user_uuid: string }; Returns: string }
       get_user_role: {
         Args: { user_id: string }
         Returns: Database["public"]["Enums"]["user_role"]
@@ -6999,6 +7000,7 @@ export type Database = {
         Returns: Json
       }
       is_admin: { Args: never; Returns: boolean }
+      is_admin_safe: { Args: never; Returns: boolean }
       is_user_admin: { Args: { _user_id: string }; Returns: boolean }
       is_user_master: { Args: { _user_id: string }; Returns: boolean }
       leads_aggregates: { Args: never; Returns: Json }
