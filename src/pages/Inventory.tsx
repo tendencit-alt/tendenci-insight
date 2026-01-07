@@ -12,18 +12,17 @@ import StockMovementsTable from "@/components/inventory/StockMovementsTable";
 import CategoriesManager from "@/components/inventory/CategoriesManager";
 import LocationsManager from "@/components/inventory/LocationsManager";
 import CreateProductDialog from "@/components/inventory/CreateProductDialog";
-import ProductDetailSheet from "@/components/inventory/ProductDetailSheet";
 import CreateMovementDialog from "@/components/inventory/CreateMovementDialog";
 import LowStockAlerts from "@/components/inventory/LowStockAlerts";
 import PurchaseSuggestions from "@/components/inventory/PurchaseSuggestions";
 import InventoryAdvancedKPIs from "@/components/inventory/InventoryAdvancedKPIs";
 import ABCAnalysis from "@/components/inventory/ABCAnalysis";
+import MaterialRequestsTable from "@/components/inventory/MaterialRequestsTable";
 
 export default function Inventory() {
   const [activeTab, setActiveTab] = useState("products");
   const [createProductOpen, setCreateProductOpen] = useState(false);
   const [createMovementOpen, setCreateMovementOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [filters, setFilters] = useState({
     search: "",
     categoryId: "",
@@ -113,6 +112,7 @@ export default function Inventory() {
           <TabsList>
             <TabsTrigger value="products">Itens</TabsTrigger>
             <TabsTrigger value="movements">Movimentações</TabsTrigger>
+            <TabsTrigger value="requests">Requisições</TabsTrigger>
             <TabsTrigger value="suggestions">Sugestão Compras</TabsTrigger>
             <TabsTrigger value="abc">Curva ABC</TabsTrigger>
             <TabsTrigger value="advanced">KPIs Avançados</TabsTrigger>
@@ -125,7 +125,8 @@ export default function Inventory() {
             <ProductsTable 
               products={products} 
               isLoading={loadingProducts}
-              onSelect={setSelectedProduct}
+              onSelect={() => {}}
+              onRefresh={refetchProducts}
             />
           </TabsContent>
 
@@ -134,6 +135,10 @@ export default function Inventory() {
               movements={movements} 
               isLoading={loadingMovements}
             />
+          </TabsContent>
+
+          <TabsContent value="requests">
+            <MaterialRequestsTable />
           </TabsContent>
 
           <TabsContent value="suggestions">
@@ -170,13 +175,6 @@ export default function Inventory() {
             refetchProducts();
             refetchMovements();
           }}
-        />
-
-        <ProductDetailSheet
-          product={selectedProduct}
-          open={!!selectedProduct}
-          onOpenChange={(open) => !open && setSelectedProduct(null)}
-          onUpdate={refetchProducts}
         />
       </div>
     </DashboardLayout>
