@@ -128,7 +128,8 @@ const Auth = () => {
           <div className="text-center space-y-2">
             
             <CardDescription className="text-neutral-50">
-              Sistema de Gestão Comercial e Marketing
+              Sistema de Gestão 
+ 
             </CardDescription>
           </div>
         </CardHeader>
