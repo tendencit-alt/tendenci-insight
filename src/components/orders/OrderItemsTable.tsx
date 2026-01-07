@@ -36,31 +36,23 @@ interface OrderItemsTableProps {
   requireCentroCusto?: boolean;
 }
 
-interface ProdutoIA {
+interface ProdutoEstoque {
   id: string;
-  nome: string;
-  descricao: string | null;
-  preco_base: number;
-  categoria: string | null;
-  centro_custo: string | null;
-  imagem_url: string | null;
-  estoque: number;
-  ativo: boolean;
-  largura: number | null;
-  comprimento: number | null;
-  altura: number | null;
-  unidade_medida: string | null;
+  name: string;
+  code: string | null;
+  cost_price: number | null;
+  current_stock: number | null;
+  unit: string | null;
+  active: boolean | null;
+  category: {
+    name: string;
+  } | null;
 }
 
 const CENTROS_CUSTO = [
   { value: 'moveis_planejados', label: 'Móveis Planejados' },
   { value: 'producao_tendenci', label: 'Produção Tendenci' },
   { value: 'revenda', label: 'Revenda' },
-];
-
-const CATEGORIAS_PRODUTOS = [
-  "Sofá", "Cadeira", "Banqueta", "Tapete", "Quadros", "Aparador",
-  "Bistrô", "Mesa de Centro", "Mesa de Canto", "Rack", "Estante", "Poltrona"
 ];
 
 const emptyItem = {
@@ -83,57 +75,62 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
   
   // Estados para seletor de produtos
   const [showProductSelector, setShowProductSelector] = useState(false);
-  const [produtosIA, setProdutosIA] = useState<ProdutoIA[]>([]);
+  const [produtosEstoque, setProdutosEstoque] = useState<ProdutoEstoque[]>([]);
   const [loadingProdutos, setLoadingProdutos] = useState(false);
-  const [filtroCategoria, setFiltroCategoria] = useState<string>("todas");
   const [buscaProduto, setBuscaProduto] = useState("");
 
-  const loadProdutosIA = async () => {
+  const loadProdutosEstoque = async () => {
     setLoadingProdutos(true);
     try {
       const { data, error } = await supabase
-        .from('tendenci_ia_produtos')
-        .select('id, nome, descricao, preco_base, categoria, centro_custo, imagem_url, estoque, ativo, largura, comprimento, altura, unidade_medida')
-        .eq('ativo', true)
-        .order('nome');
+        .from('products')
+        .select(`
+          id, 
+          name, 
+          code, 
+          cost_price, 
+          current_stock, 
+          unit, 
+          active,
+          category:product_categories!inner(name)
+        `)
+        .eq('active', true)
+        .eq('category.name', 'Produto')
+        .order('name');
       
       if (error) throw error;
-      setProdutosIA(data || []);
+      setProdutosEstoque(data || []);
     } catch (error) {
-      console.error('Erro ao carregar produtos:', error);
-      toast.error('Erro ao carregar produtos');
+      console.error('Erro ao carregar produtos do estoque:', error);
+      toast.error('Erro ao carregar produtos do estoque');
     } finally {
       setLoadingProdutos(false);
     }
   };
 
   useEffect(() => {
-    if (showProductSelector && produtosIA.length === 0) {
-      loadProdutosIA();
+    if (showProductSelector && produtosEstoque.length === 0) {
+      loadProdutosEstoque();
     }
   }, [showProductSelector]);
 
-  const produtosFiltrados = produtosIA.filter(p => {
-    const matchCategoria = filtroCategoria === "todas" || p.categoria === filtroCategoria;
-    const matchBusca = !buscaProduto || p.nome.toLowerCase().includes(buscaProduto.toLowerCase());
-    return matchCategoria && matchBusca;
+  const produtosFiltrados = produtosEstoque.filter(p => {
+    return !buscaProduto || p.name.toLowerCase().includes(buscaProduto.toLowerCase());
   });
 
-  const addProdutoToOrder = (produto: ProdutoIA) => {
+  const addProdutoToOrder = (produto: ProdutoEstoque) => {
     const newOrderItem: OrderItem = {
       id: crypto.randomUUID(),
-      descricao: produto.nome,
+      descricao: produto.name,
       quantidade: 1,
-      valor_unitario: produto.preco_base,
-      valor_total: produto.preco_base,
-      especificacoes: produto.descricao || '',
-      codigo_produto: produto.id.substring(0, 8).toUpperCase(),
-      centro_custo: produto.centro_custo || '',
-      unidade: 'UN',
+      valor_unitario: produto.cost_price || 0,
+      valor_total: produto.cost_price || 0,
+      codigo_produto: produto.code || '',
+      unidade: produto.unit || 'UN',
     };
     
     onItemsChange([...items, newOrderItem]);
-    toast.success(`${produto.nome} adicionado ao pedido`);
+    toast.success(`${produto.name} adicionado ao pedido`);
   };
 
   const handleAddItem = () => {
@@ -226,27 +223,6 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
               />
             </div>
             
-            {/* Filtros por categoria */}
-            <div className="flex gap-2 flex-wrap">
-              <Badge
-                variant={filtroCategoria === "todas" ? "default" : "outline"}
-                className="cursor-pointer"
-                onClick={() => setFiltroCategoria("todas")}
-              >
-                Todas
-              </Badge>
-              {CATEGORIAS_PRODUTOS.map(cat => (
-                <Badge
-                  key={cat}
-                  variant={filtroCategoria === cat ? "default" : "outline"}
-                  className="cursor-pointer"
-                  onClick={() => setFiltroCategoria(cat)}
-                >
-                  {cat}
-                </Badge>
-              ))}
-            </div>
-            
             {/* Lista de produtos */}
             <ScrollArea className="h-[400px] pr-4">
               {loadingProdutos ? (
@@ -267,45 +243,19 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                       onClick={() => addProdutoToOrder(produto)}
                     >
                       <div className="flex items-center gap-3 p-3">
-                        {produto.imagem_url ? (
-                          <img
-                            src={produto.imagem_url}
-                            alt={produto.nome}
-                            className="w-14 h-14 object-cover rounded"
-                          />
-                        ) : (
-                          <div className="w-14 h-14 bg-muted rounded flex items-center justify-center">
-                            <Package className="h-6 w-6 text-muted-foreground" />
-                          </div>
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium truncate">{produto.nome}</p>
-                          <p className="text-sm text-muted-foreground truncate">
-                            {produto.categoria || "Sem categoria"}
-                          </p>
-                          {(produto.largura || produto.comprimento || produto.altura) && (
-                            <p className="text-xs text-muted-foreground">
-                              {[
-                                produto.largura && `L: ${produto.largura}`,
-                                produto.comprimento && `C: ${produto.comprimento}`,
-                                produto.altura && `A: ${produto.altura}`
-                              ].filter(Boolean).join(' × ')} {produto.unidade_medida || 'cm'}
-                            </p>
-                          )}
-                          <div className="flex gap-2 mt-1 flex-wrap">
-                            {produto.centro_custo && (
-                              <Badge variant="secondary" className="text-xs">
-                                {CENTROS_CUSTO.find(cc => cc.value === produto.centro_custo)?.label || produto.centro_custo}
-                              </Badge>
-                            )}
-                            <Badge variant="outline" className="text-xs">
-                              {formatCurrency(produto.preco_base)}
-                            </Badge>
-                          </div>
+                        <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">
+                          <Package className="h-6 w-6 text-muted-foreground" />
                         </div>
-                        <div className="text-right">
-                          <Badge variant={produto.estoque > 0 ? "default" : "secondary"}>
-                            {produto.estoque > 0 ? `${produto.estoque} un` : "Sob encomenda"}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">{produto.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {produto.code || 'Sem código'}
+                          </p>
+                        </div>
+                        <div className="text-right space-y-1">
+                          <p className="font-medium">{formatCurrency(produto.cost_price || 0)}</p>
+                          <Badge variant={(produto.current_stock ?? 0) > 0 ? "default" : "secondary"}>
+                            {(produto.current_stock ?? 0) > 0 ? `${produto.current_stock} ${produto.unit || 'UN'}` : "Sem estoque"}
                           </Badge>
                         </div>
                       </div>
