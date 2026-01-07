@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, FileSpreadsheet, Check } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 interface EditProductDialogProps {
   product: any;
@@ -22,7 +22,6 @@ interface EditProductDialogProps {
 export default function EditProductDialog({ product, open, onOpenChange, onSuccess }: EditProductDialogProps) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [gerarFichaTecnica, setGerarFichaTecnica] = useState(false);
   const [form, setForm] = useState({
     code: "",
     name: "",
@@ -45,22 +44,6 @@ export default function EditProductDialog({ product, open, onOpenChange, onSucce
     cor: "",
     medida: "",
     fornecedor_texto: ""
-  });
-
-  // Verificar se já existe ficha técnica para este produto
-  const { data: existingFicha, refetch: refetchFicha } = useQuery({
-    queryKey: ["product-ficha-tecnica", product?.id],
-    queryFn: async () => {
-      if (!product?.id) return null;
-      const { data, error } = await supabase
-        .from("production_products")
-        .select("id")
-        .eq("product_id", product.id)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!product?.id && open
   });
 
   const { data: categories = [] } = useQuery({
@@ -140,31 +123,6 @@ export default function EditProductDialog({ product, open, onOpenChange, onSucce
 
       if (error) throw error;
 
-      // Se marcou para gerar ficha técnica e ainda não existe
-      if (gerarFichaTecnica && !existingFicha) {
-        const { error: fichaError } = await supabase
-          .from("production_products")
-          .insert({
-            name: form.name,
-            description: form.description || null,
-            product_id: product.id,
-            production_order_id: null,
-            status: 'rascunho',
-            cmv_total: form.cost_price || 0
-          });
-
-        if (fichaError) {
-          console.error("Erro ao criar ficha técnica:", fichaError);
-          toast({ title: "Produto salvo, mas erro ao criar ficha técnica", description: fichaError.message, variant: "destructive" });
-        } else {
-          toast({ title: "Produto atualizado e ficha técnica criada!" });
-          refetchFicha();
-          setGerarFichaTecnica(false);
-          onSuccess();
-          return;
-        }
-      }
-
       toast({ title: "Produto atualizado!" });
       onSuccess();
     } catch (error: any) {
@@ -182,35 +140,6 @@ export default function EditProductDialog({ product, open, onOpenChange, onSucce
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* FICHA TÉCNICA - PRIMEIRO ELEMENTO DO FORMULÁRIO */}
-          <div className="flex items-center justify-between p-4 border-2 border-primary/30 rounded-lg bg-primary/5">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <FileSpreadsheet className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <Label className="font-semibold text-base">Ficha Técnica</Label>
-                <p className="text-sm text-muted-foreground">
-                  {existingFicha 
-                    ? "Este item já possui ficha técnica vinculada" 
-                    : "Criar ficha técnica para gestão de produção"}
-                </p>
-              </div>
-            </div>
-            {existingFicha ? (
-              <Badge variant="outline" className="bg-green-50 text-green-600 border-green-200">
-                <Check className="h-4 w-4 mr-1" />
-                Criada
-              </Badge>
-            ) : (
-              <Switch
-                id="gerarFicha"
-                checked={gerarFichaTecnica}
-                onCheckedChange={setGerarFichaTecnica}
-              />
-            )}
-          </div>
-
           <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
             <Label htmlFor="active">Item Ativo</Label>
             <Switch
