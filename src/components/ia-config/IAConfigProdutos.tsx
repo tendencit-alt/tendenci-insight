@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Plus, Pencil, Trash2, Package, X, Image, Video, Link, Upload, Play, Filter, Warehouse, MapPin, Ruler, Search, LinkIcon, ExternalLink, FileSpreadsheet, Check } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, Package, X, Image, Video, Link, Upload, Play, Filter, Warehouse, MapPin, Ruler, Search, LinkIcon, ExternalLink, FileSpreadsheet, Check, Eye } from "lucide-react";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import type { Json } from "@/integrations/supabase/types";
 
@@ -60,6 +60,11 @@ interface InventoryProduct {
   location_name?: string;
 }
 
+interface FichaTecnica {
+  id: string;
+  status: string;
+}
+
 interface Produto {
   id: string;
   nome: string;
@@ -86,6 +91,7 @@ interface Produto {
   inventory_product_id: string | null;
   inventory_location_id: string | null;
   local_estoque_id: string | null;
+  fichaTecnica: FichaTecnica | null;
 }
 
 // Helper to safely parse videos from JSON
@@ -189,12 +195,13 @@ export default function IAConfigProdutos() {
 
   const loadData = async () => {
     try {
-      // Carregar locais, produtos, categorias e produtos do inventário em paralelo
-      const [locationsRes, produtosRes, categoriasRes, inventoryRes] = await Promise.all([
+      // Carregar locais, produtos, categorias, produtos do inventário e fichas técnicas em paralelo
+      const [locationsRes, produtosRes, categoriasRes, inventoryRes, fichasRes] = await Promise.all([
         supabase.from("stock_locations").select("*").eq("active", true).order("name"),
         supabase.from("tendenci_ia_produtos").select("*").order("nome"),
         supabase.from("product_categories").select("id, name").eq("active", true).order("name"),
-        supabase.from("products").select("id, name, code, current_stock, location_id").eq("active", true).order("name")
+        supabase.from("products").select("id, name, code, current_stock, location_id").eq("active", true).order("name"),
+        supabase.from("production_products").select("id, ia_produto_id, status").not("ia_produto_id", "is", null)
       ]);
 
       if (locationsRes.error) throw locationsRes.error;
@@ -202,6 +209,12 @@ export default function IAConfigProdutos() {
 
       setLocations(locationsRes.data || []);
       setCategorias(categoriasRes.data || []);
+      
+      // Mapear fichas técnicas por produto
+      const fichasMap = new Map<string, FichaTecnica>();
+      (fichasRes.data || []).forEach((f: any) => {
+        fichasMap.set(f.ia_produto_id, { id: f.id, status: f.status });
+      });
       
       // Mapear produtos do inventário com nome do local
       const invProducts: InventoryProduct[] = (inventoryRes.data || []).map(p => ({
@@ -247,6 +260,7 @@ export default function IAConfigProdutos() {
           inventory_product_id: p.inventory_product_id ?? null,
           inventory_location_id: p.inventory_location_id ?? null,
           local_estoque_id: p.local_estoque_id ?? null,
+          fichaTecnica: fichasMap.get(p.id) || null,
         });
       }
       
@@ -706,6 +720,30 @@ export default function IAConfigProdutos() {
   const getLocationName = (localId: string | null) => {
     if (!localId) return null;
     return locations.find(l => l.id === localId)?.name || null;
+  };
+
+  // Criar ficha técnica diretamente da tabela
+  const criarFichaTecnicaDireto = async (produto: Produto) => {
+    try {
+      const { error } = await supabase
+        .from("production_products")
+        .insert({
+          name: produto.nome,
+          description: produto.descricao || null,
+          ia_produto_id: produto.id,
+          production_order_id: null,
+          product_id: null,
+          status: 'rascunho',
+          cmv_total: produto.preco_base
+        });
+      
+      if (error) throw error;
+      toast.success("Ficha técnica criada!");
+      loadData();
+    } catch (error) {
+      console.error("Erro ao criar ficha técnica:", error);
+      toast.error("Erro ao criar ficha técnica");
+    }
   };
 
   if (loading) {
@@ -1399,8 +1437,7 @@ export default function IAConfigProdutos() {
               <TableHead>Dimensões</TableHead>
               <TableHead>Preço Base</TableHead>
               <TableHead>Estoque</TableHead>
-              <TableHead>Local</TableHead>
-              <TableHead>Mídia</TableHead>
+              <TableHead>Ficha Técnica</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="w-[100px]">Ações</TableHead>
             </TableRow>
@@ -1479,32 +1516,42 @@ export default function IAConfigProdutos() {
                     )}
                   </div>
                 </TableCell>
-                {/* Coluna Local */}
+                {/* Coluna Ficha Técnica */}
                 <TableCell>
-                  {getLocationName(produto.local_estoque_id) ? (
-                    <Badge variant="secondary" className="flex items-center gap-1 w-fit">
-                      <MapPin className="h-3 w-3" />
-                      {getLocationName(produto.local_estoque_id)}
-                    </Badge>
+                  {produto.fichaTecnica ? (
+                    <div className="flex items-center gap-1">
+                      <Badge 
+                        variant="outline" 
+                        className={
+                          produto.fichaTecnica.status === 'aprovado' 
+                            ? "bg-green-50 text-green-600 border-green-200" 
+                            : "bg-amber-50 text-amber-600 border-amber-200"
+                        }
+                      >
+                        <FileSpreadsheet className="h-3 w-3 mr-1" />
+                        {produto.fichaTecnica.status === 'aprovado' ? 'Aprovada' : 'Rascunho'}
+                      </Badge>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => window.open(`/fichas-tecnicas?id=${produto.fichaTecnica!.id}`, '_blank')}
+                        title="Ver ficha técnica"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </div>
                   ) : (
-                    <span className="text-muted-foreground text-sm">-</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-muted-foreground hover:text-primary gap-1 h-7 px-2"
+                      onClick={() => criarFichaTecnicaDireto(produto)}
+                    >
+                      <Plus className="h-3 w-3" />
+                      Criar
+                    </Button>
                   )}
-                </TableCell>
-                <TableCell>
-                  <div className="flex gap-1">
-                    {(produto.galeria?.length || 0) > 0 && (
-                      <Badge variant="secondary" className="text-xs">
-                        <Image className="h-3 w-3 mr-1" />
-                        {produto.galeria.length}
-                      </Badge>
-                    )}
-                    {((produto.videos?.length || 0) > 0 || produto.video_url) && (
-                      <Badge variant="secondary" className="text-xs">
-                        <Video className="h-3 w-3 mr-1" />
-                        {(produto.videos?.length || 0) + (produto.video_url && !(produto.videos || []).find(v => v.url === produto.video_url) ? 1 : 0)}
-                      </Badge>
-                    )}
-                  </div>
                 </TableCell>
                 <TableCell>
                   <Switch
