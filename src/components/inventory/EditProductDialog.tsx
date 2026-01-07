@@ -170,6 +170,7 @@ export default function EditProductDialog({ product, open, onOpenChange, onSucce
       
       toast({ title: "Produto atualizado!" });
       onSuccess();
+      onOpenChange(false);
     } catch (error: any) {
       toast({ title: "Erro ao atualizar", description: error.message, variant: "destructive" });
     } finally {
