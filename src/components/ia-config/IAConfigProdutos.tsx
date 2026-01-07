@@ -15,6 +15,7 @@ import { Loader2, Plus, Pencil, Trash2, Package, X, Image, Video, Link, Upload, 
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import type { Json } from "@/integrations/supabase/types";
 import { FichaTecnicaSheet } from "./FichaTecnicaSheet";
+import { TemplateFichaSelector } from "@/components/shared/TemplateFichaSelector";
 
 interface Categoria {
   id: string;
@@ -66,6 +67,11 @@ interface FichaTecnica {
   status: string;
 }
 
+interface TemplateFichaInfo {
+  id: string;
+  name: string;
+}
+
 interface Produto {
   id: string;
   nome: string;
@@ -93,6 +99,8 @@ interface Produto {
   inventory_location_id: string | null;
   local_estoque_id: string | null;
   fichaTecnica: FichaTecnica | null;
+  template_ficha_id: string | null;
+  templateFicha: TemplateFichaInfo | null;
 }
 
 // Helper to safely parse videos from JSON
@@ -178,6 +186,7 @@ export default function IAConfigProdutos() {
     largura: "",
     altura: "",
     unidade_medida: "cm",
+    template_ficha_id: null as string | null,
   });
 
   // Filtrar produtos por categoria
@@ -268,6 +277,8 @@ export default function IAConfigProdutos() {
           inventory_location_id: p.inventory_location_id ?? null,
           local_estoque_id: p.local_estoque_id ?? null,
           fichaTecnica: fichasMap.get(p.id) || null,
+          template_ficha_id: p.template_ficha_id ?? null,
+          templateFicha: null, // Será carregado se necessário
         });
       }
       
@@ -310,6 +321,7 @@ export default function IAConfigProdutos() {
       largura: "",
       altura: "",
       unidade_medida: "cm",
+      template_ficha_id: null,
     });
     setVideoUrlInput("");
     setShowVideoUrlInput(false);
@@ -368,6 +380,7 @@ export default function IAConfigProdutos() {
       largura: produto.largura?.toString() || "",
       altura: produto.altura?.toString() || "",
       unidade_medida: produto.unidade_medida || "cm",
+      template_ficha_id: produto.template_ficha_id,
     });
     setVideoUrlInput("");
     setShowVideoUrlInput(false);
@@ -606,6 +619,7 @@ export default function IAConfigProdutos() {
         inventory_product_id: form.inventory_product_id || null,
         inventory_location_id: form.inventory_location_id || null,
         local_estoque_id: form.local_estoque_id || null,
+        template_ficha_id: form.template_ficha_id || null,
       };
 
       console.log("Dados para salvar:", produtoData);
@@ -1176,6 +1190,12 @@ export default function IAConfigProdutos() {
                   </Popover>
                 )}
               </div>
+
+              {/* Ficha Técnica Padrão */}
+              <TemplateFichaSelector
+                value={form.template_ficha_id}
+                onChange={(value) => setForm({ ...form, template_ficha_id: value })}
+              />
 
               {/* Imagem Principal */}
               <div className="space-y-2">
