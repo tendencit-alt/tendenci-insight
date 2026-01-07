@@ -47,7 +47,7 @@ export function AddInsumoDialog({
   productionProductId,
   onSuccess 
 }: AddInsumoDialogProps) {
-  const [mode, setMode] = useState<'stock' | 'manual'>('stock');
+  const [mode] = useState<'stock'>('stock');
   const [selectedProductId, setSelectedProductId] = useState<string>('');
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
@@ -137,7 +137,7 @@ export function AddInsumoDialog({
 
   // Reset form
   const resetForm = () => {
-    setMode('stock');
+    // mode is always 'stock' now
     setSelectedProductId('');
     setSelectedCategoryId('all');
     setSearchTerm('');
@@ -214,36 +214,9 @@ export function AddInsumoDialog({
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Tabs para modo */}
-          <div className="flex gap-2">
-            <Button
-              variant={mode === 'stock' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setMode('stock')}
-              className="flex-1"
-            >
-              <Package className="h-4 w-4 mr-2" />
-              Do Estoque
-            </Button>
-            <Button
-              variant={mode === 'manual' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => {
-                setMode('manual');
-                setSelectedProductId('');
-                setInsumoNome('');
-                setCustoUnitario('');
-                setCor('');
-              }}
-              className="flex-1"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Manual
-            </Button>
-          </div>
 
           {/* Seleção de produto do estoque */}
-          {mode === 'stock' && (
+          {/* Seleção de produto do estoque - sempre visível */}
             <>
               {/* Filtro por Categoria */}
               <div className="space-y-2">
@@ -310,7 +283,7 @@ export function AddInsumoDialog({
                 )}
               </div>
             </>
-          )}
+          
 
           {/* Nome do Insumo */}
           <div className="space-y-2">
@@ -320,12 +293,12 @@ export function AddInsumoDialog({
               value={insumoNome}
               onChange={(e) => setInsumoNome(e.target.value)}
               placeholder="Ex: MDF 15mm"
-              disabled={mode === 'stock' && !!selectedProductId}
+              disabled={!!selectedProductId}
             />
           </div>
 
           {/* Campo de Cor/Variação - aparece quando aplicável */}
-          {(allowsVariation || mode === 'manual') && (
+          {allowsVariation && (
             <div className="space-y-2">
               <Label htmlFor="cor" className="flex items-center gap-2">
                 <Palette className="h-4 w-4" />
