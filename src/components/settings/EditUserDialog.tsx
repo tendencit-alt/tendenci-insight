@@ -129,7 +129,7 @@ export function EditUserDialog({ open, onOpenChange, user, onSuccess }: EditUser
 
       // Chamar a edge function para atualizar o usuário
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-update-user`,
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-update-user-email`,
         {
           method: 'POST',
           headers: {
