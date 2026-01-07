@@ -70,6 +70,7 @@ export function EditUserDialog({ open, onOpenChange, user, onSuccess }: EditUser
         .from('profile_types')
         .select('id, name, display_name, color')
         .eq('is_active', true)
+        .neq('name', 'admin') // Excluir master (name='admin') da lista de seleção
         .order('is_system', { ascending: false })
         .order('display_name');
 
@@ -81,6 +82,9 @@ export function EditUserDialog({ open, onOpenChange, user, onSuccess }: EditUser
       setLoadingTypes(false);
     }
   };
+
+  // Verificar se o usuário sendo editado é master (role='admin')
+  const isUserMaster = user?.role === 'admin';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -241,38 +245,51 @@ export function EditUserDialog({ open, onOpenChange, user, onSuccess }: EditUser
             </p>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="profile_type">Tipo de Perfil</Label>
-            <Select 
-              value={formData.profile_type_id} 
-              onValueChange={(value) => setFormData({ ...formData, profile_type_id: value })}
-              disabled={loadingTypes}
-            >
-              <SelectTrigger id="profile_type">
-                {loadingTypes ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <SelectValue placeholder="Selecione o tipo de perfil" />
-                )}
-              </SelectTrigger>
-              <SelectContent>
-                {profileTypes.map((pt) => (
-                  <SelectItem key={pt.id} value={pt.id}>
-                    <div className="flex items-center gap-2">
-                      <div
-                        className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: pt.color }}
-                      />
-                      {pt.display_name}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-muted-foreground">
-              Ao alterar o tipo, as permissões serão atualizadas automaticamente
-            </p>
-          </div>
+          {isUserMaster ? (
+            <div className="space-y-2">
+              <Label>Tipo de Perfil</Label>
+              <div className="flex items-center gap-2 p-2 bg-muted rounded-md border">
+                <div className="w-3 h-3 rounded-full bg-primary" />
+                <span className="text-sm font-medium">Master</span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Usuários master não podem ter seu tipo de perfil alterado
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <Label htmlFor="profile_type">Tipo de Perfil</Label>
+              <Select 
+                value={formData.profile_type_id} 
+                onValueChange={(value) => setFormData({ ...formData, profile_type_id: value })}
+                disabled={loadingTypes}
+              >
+                <SelectTrigger id="profile_type">
+                  {loadingTypes ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <SelectValue placeholder="Selecione o tipo de perfil" />
+                  )}
+                </SelectTrigger>
+                <SelectContent>
+                  {profileTypes.map((pt) => (
+                    <SelectItem key={pt.id} value={pt.id}>
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: pt.color }}
+                        />
+                        {pt.display_name}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Ao alterar o tipo, as permissões serão atualizadas automaticamente
+              </p>
+            </div>
+          )}
 
           {showEspecializacao && (
             <div className="space-y-2">
