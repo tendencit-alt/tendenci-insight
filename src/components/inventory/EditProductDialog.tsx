@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import { CostCenterTagsSelector } from "./CostCenterTagsSelector";
 
 interface EditProductDialogProps {
   product: any;
@@ -20,7 +21,9 @@ interface EditProductDialogProps {
 
 export default function EditProductDialog({ product, open, onOpenChange, onSuccess }: EditProductDialogProps) {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
+  const [selectedCostCenters, setSelectedCostCenters] = useState<string[]>([]);
   const [form, setForm] = useState({
     code: "",
     name: "",
@@ -39,7 +42,6 @@ export default function EditProductDialog({ product, open, onOpenChange, onSucce
     barcode: "",
     reorder_point: null as number | null,
     reorder_quantity: null as number | null,
-    // Novos campos abertos
     cor: "",
     medida: "",
     fornecedor_texto: "",
@@ -71,6 +73,21 @@ export default function EditProductDialog({ product, open, onOpenChange, onSucce
     }
   });
 
+  // Carregar centros de custo do produto
+  const { data: productCostCenters = [] } = useQuery({
+    queryKey: ["product-cost-centers", product?.id],
+    queryFn: async () => {
+      if (!product?.id) return [];
+      const { data, error } = await supabase
+        .from("product_cost_centers")
+        .select("cost_center_id")
+        .eq("product_id", product.id);
+      if (error) throw error;
+      return data.map(item => item.cost_center_id);
+    },
+    enabled: !!product?.id
+  });
+
   useEffect(() => {
     if (product) {
       setForm({
@@ -98,6 +115,10 @@ export default function EditProductDialog({ product, open, onOpenChange, onSucce
     }
   }, [product]);
 
+  useEffect(() => {
+    setSelectedCostCenters(productCostCenters);
+  }, [productCostCenters]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -108,6 +129,7 @@ export default function EditProductDialog({ product, open, onOpenChange, onSucce
 
     setLoading(true);
     try {
+      // Atualizar o produto
       const { error } = await supabase
         .from("products")
         .update({
@@ -122,6 +144,30 @@ export default function EditProductDialog({ product, open, onOpenChange, onSucce
 
       if (error) throw error;
 
+      // Atualizar centros de custo
+      // 1. Remover todos os existentes
+      await supabase
+        .from("product_cost_centers")
+        .delete()
+        .eq("product_id", product.id);
+
+      // 2. Inserir os novos
+      if (selectedCostCenters.length > 0) {
+        const inserts = selectedCostCenters.map(ccId => ({
+          product_id: product.id,
+          cost_center_id: ccId
+        }));
+        
+        const { error: insertError } = await supabase
+          .from("product_cost_centers")
+          .insert(inserts);
+        
+        if (insertError) throw insertError;
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["product-cost-centers", product.id] });
+      
       toast({ title: "Produto atualizado!" });
       onSuccess();
     } catch (error: any) {
@@ -178,8 +224,8 @@ export default function EditProductDialog({ product, open, onOpenChange, onSucce
             />
           </div>
 
-          {/* Campos Base: Categoria, CFOP, NCM */}
-          <div className="grid grid-cols-3 gap-4">
+          {/* Categoria e Centro de Custo */}
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="category">Categoria *</Label>
               <Select value={form.category_id || "_placeholder"} onValueChange={(v) => setForm({ ...form, category_id: v === "_placeholder" ? "" : v })}>
@@ -194,6 +240,17 @@ export default function EditProductDialog({ product, open, onOpenChange, onSucce
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-2">
+              <Label>Centro de Custo</Label>
+              <CostCenterTagsSelector
+                selectedIds={selectedCostCenters}
+                onChange={setSelectedCostCenters}
+              />
+            </div>
+          </div>
+
+          {/* NCM e CFOP */}
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="ncm">NCM</Label>
               <Input

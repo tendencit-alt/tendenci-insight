@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import { CostCenterTagsSelector } from "./CostCenterTagsSelector";
 
 interface CreateProductDialogProps {
   open: boolean;
@@ -19,6 +20,7 @@ interface CreateProductDialogProps {
 export default function CreateProductDialog({ open, onOpenChange, onSuccess }: CreateProductDialogProps) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [selectedCostCenters, setSelectedCostCenters] = useState<string[]>([]);
   const [form, setForm] = useState({
     code: "",
     name: "",
@@ -37,7 +39,6 @@ export default function CreateProductDialog({ open, onOpenChange, onSuccess }: C
     barcode: "",
     reorder_point: null as number | null,
     reorder_quantity: null as number | null,
-    // Novos campos abertos
     cor: "",
     medida: "",
     fornecedor_texto: "",
@@ -79,16 +80,27 @@ export default function CreateProductDialog({ open, onOpenChange, onSuccess }: C
 
     setLoading(true);
     try {
-      const { error } = await supabase.from("products").insert({
+      // Criar o produto
+      const { data: newProduct, error } = await supabase.from("products").insert({
         ...form,
         category_id: form.category_id || null,
         location_id: form.location_id || null,
         cor: form.cor || null,
         medida: form.medida || null,
         fornecedor_texto: form.fornecedor_texto || null,
-      });
+      }).select().single();
       
       if (error) throw error;
+
+      // Inserir centros de custo
+      if (selectedCostCenters.length > 0 && newProduct) {
+        const inserts = selectedCostCenters.map(ccId => ({
+          product_id: newProduct.id,
+          cost_center_id: ccId
+        }));
+        
+        await supabase.from("product_cost_centers").insert(inserts);
+      }
 
       toast({ title: "Item criado com sucesso!" });
       
@@ -101,6 +113,7 @@ export default function CreateProductDialog({ open, onOpenChange, onSuccess }: C
         barcode: "", reorder_point: null, reorder_quantity: null,
         cor: "", medida: "", fornecedor_texto: "",
       });
+      setSelectedCostCenters([]);
     } catch (error: any) {
       toast({ title: "Erro ao criar item", description: error.message, variant: "destructive" });
     } finally {
@@ -146,8 +159,8 @@ export default function CreateProductDialog({ open, onOpenChange, onSuccess }: C
             />
           </div>
 
-          {/* Campos Base: Categoria, CFOP, NCM */}
-          <div className="grid grid-cols-3 gap-4">
+          {/* Categoria e Centro de Custo */}
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="category">Categoria *</Label>
               <Select value={form.category_id || "_placeholder"} onValueChange={(v) => setForm({ ...form, category_id: v === "_placeholder" ? "" : v })}>
@@ -162,6 +175,17 @@ export default function CreateProductDialog({ open, onOpenChange, onSuccess }: C
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-2">
+              <Label>Centro de Custo</Label>
+              <CostCenterTagsSelector
+                selectedIds={selectedCostCenters}
+                onChange={setSelectedCostCenters}
+              />
+            </div>
+          </div>
+
+          {/* NCM e CFOP */}
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="ncm">NCM</Label>
               <Input
