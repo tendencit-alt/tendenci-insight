@@ -11,6 +11,7 @@ import ProductsTable from "@/components/inventory/ProductsTable";
 import StockMovementsTable from "@/components/inventory/StockMovementsTable";
 import CategoriesManager from "@/components/inventory/CategoriesManager";
 import LocationsManager from "@/components/inventory/LocationsManager";
+import CostCenterManager from "@/components/inventory/CostCenterManager";
 import CreateProductDialog from "@/components/inventory/CreateProductDialog";
 import CreateMovementDialog from "@/components/inventory/CreateMovementDialog";
 import LowStockAlerts from "@/components/inventory/LowStockAlerts";
@@ -61,13 +62,19 @@ export default function Inventory() {
         .select(`
           *,
           category:product_categories(id, name, color),
-          location:stock_locations(id, name)
+          location:stock_locations(id, name),
+          cost_centers:product_cost_centers(
+            id,
+            cost_center:cost_center_tags(id, name, color)
+          ),
+          ficha_tecnica:production_products!production_products_product_id_fkey(
+            id, cmv_total, status
+          )
         `)
         .order("name");
 
       if (searchFilters.search && searchFilters.search.trim()) {
         const searchTerm = searchFilters.search.trim();
-        // Usar textSearch ou ilike para busca mais eficaz
         query = query.or(`name.ilike.%${searchTerm}%,code.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
       }
 
@@ -140,7 +147,7 @@ export default function Inventory() {
         <LowStockAlerts />
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList>
+          <TabsList className="flex-wrap">
             <TabsTrigger value="products">Itens</TabsTrigger>
             <TabsTrigger value="movements">Movimentações</TabsTrigger>
             <TabsTrigger value="requests">Requisições</TabsTrigger>
@@ -148,6 +155,7 @@ export default function Inventory() {
             <TabsTrigger value="abc">Curva ABC</TabsTrigger>
             <TabsTrigger value="advanced">KPIs Avançados</TabsTrigger>
             <TabsTrigger value="categories">Categorias</TabsTrigger>
+            <TabsTrigger value="cost-centers">Centros de Custo</TabsTrigger>
             <TabsTrigger value="locations">Locais</TabsTrigger>
           </TabsList>
 
@@ -186,6 +194,10 @@ export default function Inventory() {
 
           <TabsContent value="categories">
             <CategoriesManager />
+          </TabsContent>
+
+          <TabsContent value="cost-centers">
+            <CostCenterManager />
           </TabsContent>
 
           <TabsContent value="locations">

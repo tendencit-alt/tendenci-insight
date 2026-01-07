@@ -958,6 +958,30 @@ export type Database = {
         }
         Relationships: []
       }
+      cost_center_tags: {
+        Row: {
+          active: boolean | null
+          color: string | null
+          created_at: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          active?: boolean | null
+          color?: string | null
+          created_at?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          active?: boolean | null
+          color?: string | null
+          created_at?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       credit_card_rates: {
         Row: {
           active: boolean | null
@@ -3093,6 +3117,42 @@ export type Database = {
           position?: number | null
         }
         Relationships: []
+      }
+      product_cost_centers: {
+        Row: {
+          cost_center_id: string
+          created_at: string | null
+          id: string
+          product_id: string
+        }
+        Insert: {
+          cost_center_id: string
+          created_at?: string | null
+          id?: string
+          product_id: string
+        }
+        Update: {
+          cost_center_id?: string
+          created_at?: string | null
+          id?: string
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_cost_centers_cost_center_id_fkey"
+            columns: ["cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "cost_center_tags"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_cost_centers_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       product_price_history: {
         Row: {
