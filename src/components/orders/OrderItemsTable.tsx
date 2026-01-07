@@ -44,6 +44,7 @@ interface ProdutoEstoque {
   current_stock: number | null;
   unit: string | null;
   active: boolean | null;
+  image_url: string | null;
   category: {
     name: string;
   } | null;
@@ -92,6 +93,8 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
           current_stock, 
           unit, 
           active,
+          image_url,
+          ia_produto_id,
           category:product_categories!inner(name)
         `)
         .eq('active', true)
@@ -99,7 +102,35 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
         .order('name');
       
       if (error) throw error;
-      setProdutosEstoque(data || []);
+      
+      // Se produto tem ia_produto_id e cost_price = 0, buscar preco_base da IA
+      const produtosComIA = (data || []).filter(p => p.ia_produto_id && (p.cost_price === 0 || p.cost_price === null));
+      
+      if (produtosComIA.length > 0) {
+        const iaIds = produtosComIA.map(p => p.ia_produto_id);
+        const { data: iaData } = await supabase
+          .from('tendenci_ia_produtos')
+          .select('id, preco_base')
+          .in('id', iaIds);
+        
+        // Mapear preços da IA
+        const iaPrecos = new Map((iaData || []).map(ia => [ia.id, ia.preco_base]));
+        
+        // Atualizar produtos com preço da IA
+        const produtosAtualizados = (data || []).map(p => {
+          if (p.ia_produto_id && (p.cost_price === 0 || p.cost_price === null)) {
+            const precoIA = iaPrecos.get(p.ia_produto_id);
+            if (precoIA) {
+              return { ...p, cost_price: precoIA };
+            }
+          }
+          return p;
+        });
+        
+        setProdutosEstoque(produtosAtualizados);
+      } else {
+        setProdutosEstoque(data || []);
+      }
     } catch (error) {
       console.error('Erro ao carregar produtos do estoque:', error);
       toast.error('Erro ao carregar produtos do estoque');
@@ -243,9 +274,17 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                       onClick={() => addProdutoToOrder(produto)}
                     >
                       <div className="flex items-center gap-3 p-3">
-                        <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">
-                          <Package className="h-6 w-6 text-muted-foreground" />
-                        </div>
+                        {produto.image_url ? (
+                          <img 
+                            src={produto.image_url} 
+                            alt={produto.name}
+                            className="w-12 h-12 object-cover rounded"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">
+                            <Package className="h-6 w-6 text-muted-foreground" />
+                          </div>
+                        )}
                         <div className="flex-1 min-w-0">
                           <p className="font-medium truncate">{produto.name}</p>
                           <p className="text-xs text-muted-foreground">
