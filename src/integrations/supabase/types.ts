@@ -3950,6 +3950,7 @@ export type Database = {
           reorder_quantity: number | null
           reserved_stock: number | null
           sale_price: number | null
+          template_ficha_id: string | null
           unit: string | null
           updated_at: string | null
         }
@@ -3980,6 +3981,7 @@ export type Database = {
           reorder_quantity?: number | null
           reserved_stock?: number | null
           sale_price?: number | null
+          template_ficha_id?: string | null
           unit?: string | null
           updated_at?: string | null
         }
@@ -4010,6 +4012,7 @@ export type Database = {
           reorder_quantity?: number | null
           reserved_stock?: number | null
           sale_price?: number | null
+          template_ficha_id?: string | null
           unit?: string | null
           updated_at?: string | null
         }
@@ -4033,6 +4036,13 @@ export type Database = {
             columns: ["location_id"]
             isOneToOne: false
             referencedRelation: "stock_locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_template_ficha_id_fkey"
+            columns: ["template_ficha_id"]
+            isOneToOne: false
+            referencedRelation: "production_products"
             referencedColumns: ["id"]
           },
         ]
@@ -5557,6 +5567,7 @@ export type Database = {
           preco_base: number | null
           preco_original: number | null
           quando_oferecer: string | null
+          template_ficha_id: string | null
           unidade_medida: string | null
           updated_at: string | null
           video_url: string | null
@@ -5585,6 +5596,7 @@ export type Database = {
           preco_base?: number | null
           preco_original?: number | null
           quando_oferecer?: string | null
+          template_ficha_id?: string | null
           unidade_medida?: string | null
           updated_at?: string | null
           video_url?: string | null
@@ -5613,6 +5625,7 @@ export type Database = {
           preco_base?: number | null
           preco_original?: number | null
           quando_oferecer?: string | null
+          template_ficha_id?: string | null
           unidade_medida?: string | null
           updated_at?: string | null
           video_url?: string | null
@@ -5638,6 +5651,13 @@ export type Database = {
             columns: ["local_estoque_id"]
             isOneToOne: false
             referencedRelation: "stock_locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tendenci_ia_produtos_template_ficha_id_fkey"
+            columns: ["template_ficha_id"]
+            isOneToOne: false
+            referencedRelation: "production_products"
             referencedColumns: ["id"]
           },
         ]
