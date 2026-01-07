@@ -83,6 +83,41 @@ serve(async (req) => {
           console.error('Erro ao atualizar perfil:', updateError);
         }
       }
+
+      // Criar permissões do usuário baseadas no tipo de perfil
+      if (profile_type_id) {
+        // Buscar permissões padrão do tipo de perfil
+        const { data: defaultPermissions, error: permError } = await supabaseAdmin
+          .from('profile_type_permissions')
+          .select('module, can_view, can_create, can_edit, can_delete')
+          .eq('profile_type_id', profile_type_id);
+
+        if (permError) {
+          console.error('Erro ao buscar permissões padrão:', permError);
+        } else if (defaultPermissions && defaultPermissions.length > 0) {
+          // Criar permissões para o novo usuário
+          const userPermissions = defaultPermissions.map((p: any) => ({
+            user_id: newUser.user!.id,
+            module: p.module,
+            can_view: p.can_view ?? true,
+            can_create: p.can_create ?? false,
+            can_edit: p.can_edit ?? false,
+            can_delete: p.can_delete ?? false
+          }));
+
+          const { error: insertPermError } = await supabaseAdmin
+            .from('user_permissions')
+            .insert(userPermissions);
+
+          if (insertPermError) {
+            console.error('Erro ao criar permissões do usuário:', insertPermError);
+          } else {
+            console.log(`Criadas ${userPermissions.length} permissões para o usuário ${newUser.user!.id}`);
+          }
+        } else {
+          console.log('Nenhuma permissão padrão encontrada para o tipo de perfil:', profile_type_id);
+        }
+      }
     }
 
     return new Response(
