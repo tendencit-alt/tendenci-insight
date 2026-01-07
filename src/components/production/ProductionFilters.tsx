@@ -1,7 +1,9 @@
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Search, X, Download } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Search, X, Download, Layers } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -21,9 +23,17 @@ interface ProductionFiltersProps {
     period: string;
   }) => void;
   onExport?: () => void;
+  viewMode?: 'individual' | 'grouped';
+  onViewModeChange?: (mode: 'individual' | 'grouped') => void;
 }
 
-export function ProductionFilters({ filters, onFiltersChange, onExport }: ProductionFiltersProps) {
+export function ProductionFilters({ 
+  filters, 
+  onFiltersChange, 
+  onExport,
+  viewMode = 'individual',
+  onViewModeChange
+}: ProductionFiltersProps) {
   const { data: users = [] } = useQuery({
     queryKey: ['users-for-filters'],
     queryFn: async () => {
@@ -134,6 +144,21 @@ export function ProductionFilters({ filters, onFiltersChange, onExport }: Produc
           ))}
         </SelectContent>
       </Select>
+
+      {/* Toggle Visualização Agrupada */}
+      {onViewModeChange && (
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50">
+          <Layers className="h-4 w-4 text-muted-foreground" />
+          <Label htmlFor="grouped-view" className="text-sm cursor-pointer">
+            Agrupar por Cliente
+          </Label>
+          <Switch
+            id="grouped-view"
+            checked={viewMode === 'grouped'}
+            onCheckedChange={(checked) => onViewModeChange(checked ? 'grouped' : 'individual')}
+          />
+        </div>
+      )}
 
       {/* Limpar Filtros */}
       {hasActiveFilters && (

@@ -19,9 +19,11 @@ interface ProductionKanbanProps {
     period?: string;
   };
   onOrderClick?: (orderId: string) => void;
+  viewMode?: 'individual' | 'grouped';
+  onGroupClick?: (groupId: string) => void;
 }
 
-export function ProductionKanban({ productionTypeId, filters, onOrderClick }: ProductionKanbanProps) {
+export function ProductionKanban({ productionTypeId, filters, onOrderClick, viewMode = 'individual', onGroupClick }: ProductionKanbanProps) {
   const queryClient = useQueryClient();
   const [activeOrder, setActiveOrder] = useState<any>(null);
 

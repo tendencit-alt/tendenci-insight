@@ -3517,6 +3517,54 @@ export type Database = {
           },
         ]
       }
+      production_order_groups: {
+        Row: {
+          client_id: string | null
+          created_at: string | null
+          created_by: string | null
+          group_name: string
+          id: string
+          order_id: string | null
+          total_value: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          group_name: string
+          id?: string
+          order_id?: string | null
+          total_value?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          group_name?: string
+          id?: string
+          order_id?: string | null
+          total_value?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_order_groups_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_order_groups_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       production_orders: {
         Row: {
           actual_end_date: string | null
@@ -3529,6 +3577,7 @@ export type Database = {
           deal_id: string | null
           description: string | null
           etapa_prevista_atraso: string | null
+          group_id: string | null
           id: string
           notes: string | null
           order_id: string | null
@@ -3559,6 +3608,7 @@ export type Database = {
           deal_id?: string | null
           description?: string | null
           etapa_prevista_atraso?: string | null
+          group_id?: string | null
           id?: string
           notes?: string | null
           order_id?: string | null
@@ -3589,6 +3639,7 @@ export type Database = {
           deal_id?: string | null
           description?: string | null
           etapa_prevista_atraso?: string | null
+          group_id?: string | null
           id?: string
           notes?: string | null
           order_id?: string | null
@@ -3635,6 +3686,13 @@ export type Database = {
             columns: ["deal_id"]
             isOneToOne: false
             referencedRelation: "crm_deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_orders_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "production_order_groups"
             referencedColumns: ["id"]
           },
           {
