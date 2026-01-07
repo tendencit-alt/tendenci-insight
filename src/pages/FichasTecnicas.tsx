@@ -67,7 +67,7 @@ export default function FichasTecnicas() {
             status,
             client:clients(name)
           ),
-          product:products(
+          product:products!production_products_product_id_fkey(
             id,
             code,
             name
@@ -115,7 +115,7 @@ export default function FichasTecnicas() {
         .from('production_products')
         .select(`
           *,
-          product:products(
+          product:products!production_products_product_id_fkey(
             id,
             code,
             name,
