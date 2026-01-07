@@ -74,8 +74,9 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Atualizar profile
+    // Atualizar profile - CRÍTICO: se falhar, retornar erro
     if (Object.keys(profileUpdate).length > 0) {
+      console.log('Atualizando profile com:', JSON.stringify(profileUpdate));
       const { error: updateError } = await supabaseAdmin
         .from('profiles')
         .update(profileUpdate)
@@ -83,7 +84,12 @@ Deno.serve(async (req) => {
 
       if (updateError) {
         console.error('Erro ao atualizar profile:', updateError);
+        return new Response(
+          JSON.stringify({ error: `Erro ao atualizar perfil: ${updateError.message}` }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
+      console.log('Profile atualizado com sucesso');
     }
 
     // Atualizar email no auth.users se mudou
@@ -99,26 +105,58 @@ Deno.serve(async (req) => {
 
     // Recriar permissões se tipo de perfil mudou
     if (profile_type_id && profile_type_id !== currentProfile.profile_type_id) {
+      console.log(`Recriando permissões para novo profile_type_id: ${profile_type_id}`);
+      
       // Deletar permissões antigas
-      await supabaseAdmin.from('user_permissions').delete().eq('user_id', user_id);
+      const { error: deleteError } = await supabaseAdmin
+        .from('user_permissions')
+        .delete()
+        .eq('user_id', user_id);
+      
+      if (deleteError) {
+        console.error('Erro ao deletar permissões antigas:', deleteError);
+      }
       
       // Buscar permissões do novo tipo
-      const { data: perms } = await supabaseAdmin
+      const { data: perms, error: permsError } = await supabaseAdmin
         .from('profile_type_permissions')
-        .select('*')
+        .select('module, can_view, can_create, can_edit, can_delete')
         .eq('profile_type_id', profile_type_id);
 
+      if (permsError) {
+        console.error('Erro ao buscar permissões do tipo:', permsError);
+      }
+
       if (perms && perms.length > 0) {
-        const newPerms = perms.map(p => ({
-          user_id,
-          module: p.module,
-          can_view: p.can_view,
-          can_create: p.can_create,
-          can_edit: p.can_edit,
-          can_delete: p.can_delete,
-        }));
-        await supabaseAdmin.from('user_permissions').insert(newPerms);
-        console.log(`Criadas ${newPerms.length} permissões para usuário ${user_id}`);
+        console.log(`Encontradas ${perms.length} permissões para copiar`);
+        
+        // Inserir cada permissão individualmente para tratar erros de cast
+        let successCount = 0;
+        for (const p of perms) {
+          try {
+            const { error: insertError } = await supabaseAdmin
+              .from('user_permissions')
+              .insert({
+                user_id,
+                module: p.module as any, // Cast para o enum
+                can_view: p.can_view ?? false,
+                can_create: p.can_create ?? false,
+                can_edit: p.can_edit ?? false,
+                can_delete: p.can_delete ?? false,
+              });
+            
+            if (insertError) {
+              console.error(`Erro ao inserir permissão ${p.module}:`, insertError.message);
+            } else {
+              successCount++;
+            }
+          } catch (e) {
+            console.error(`Exceção ao inserir permissão ${p.module}:`, e);
+          }
+        }
+        console.log(`Criadas ${successCount}/${perms.length} permissões para usuário ${user_id}`);
+      } else {
+        console.log('Nenhuma permissão encontrada para o tipo de perfil');
       }
     }
 
