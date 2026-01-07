@@ -266,6 +266,16 @@ export function ProductionKanban({ productionTypeId, filters, onOrderClick }: Pr
           .eq('phase_template_id', correctPhaseTemplateId)
           .single();
 
+        // Verificar se a fase de destino é fase final (is_end_phase)
+        const { data: targetTemplateInfo } = await supabase
+          .from('production_phase_templates')
+          .select('is_end_phase')
+          .eq('id', correctPhaseTemplateId)
+          .single();
+
+        const isEndPhaseFromWaiting = targetTemplateInfo?.is_end_phase === true;
+        const now = new Date().toISOString();
+
         if (!targetPhase) {
           // Fase não existe - criar automaticamente
           const { data: newPhase, error: createError } = await supabase
@@ -273,8 +283,9 @@ export function ProductionKanban({ productionTypeId, filters, onOrderClick }: Pr
             .insert({
               production_order_id: orderId,
               phase_template_id: correctPhaseTemplateId,
-              status: 'em_andamento',
-              started_at: new Date().toISOString()
+              status: isEndPhaseFromWaiting ? 'concluido' : 'em_andamento',
+              started_at: now,
+              completed_at: isEndPhaseFromWaiting ? now : null
             })
             .select('id')
             .single();
@@ -282,16 +293,39 @@ export function ProductionKanban({ productionTypeId, filters, onOrderClick }: Pr
           if (createError) throw new Error('Erro ao criar fase: ' + createError.message);
 
           // Atualizar a OP
-          const { error: updateError } = await supabase
-            .from('production_orders')
-            .update({ 
-              current_phase_id: newPhase.id,
-              status: 'em_producao',
-              actual_start_date: new Date().toISOString()
-            })
-            .eq('id', orderId);
-          
-          if (updateError) throw new Error('Erro ao atualizar OP: ' + updateError.message);
+          if (isEndPhaseFromWaiting) {
+            const { data: updatedOP } = await supabase
+              .from('production_orders')
+              .update({ 
+                current_phase_id: newPhase.id,
+                status: 'concluido',
+                actual_start_date: now,
+                actual_end_date: now
+              })
+              .eq('id', orderId)
+              .select('order_id')
+              .single();
+
+            // Atualizar pedido vinculado
+            if (updatedOP?.order_id) {
+              await supabase
+                .from('orders')
+                .update({ 
+                  status: 'entregue',
+                  data_entrega_realizada: now.split('T')[0]
+                })
+                .eq('id', updatedOP.order_id);
+            }
+          } else {
+            await supabase
+              .from('production_orders')
+              .update({ 
+                current_phase_id: newPhase.id,
+                status: 'em_producao',
+                actual_start_date: now
+              })
+              .eq('id', orderId);
+          }
 
           return;
         }
@@ -300,22 +334,47 @@ export function ProductionKanban({ productionTypeId, filters, onOrderClick }: Pr
         await supabase
           .from('production_phases')
           .update({ 
-            status: 'em_andamento',
-            started_at: new Date().toISOString()
+            status: isEndPhaseFromWaiting ? 'concluido' : 'em_andamento',
+            started_at: now,
+            completed_at: isEndPhaseFromWaiting ? now : null
           })
           .eq('id', targetPhase.id);
 
         // Atualizar a OP
-        const { error: updateError } = await supabase
-          .from('production_orders')
-          .update({ 
-            current_phase_id: targetPhase.id,
-            status: 'em_producao',
-            actual_start_date: new Date().toISOString()
-          })
-          .eq('id', orderId);
-        
-        if (updateError) throw new Error('Erro ao atualizar OP: ' + updateError.message);
+        if (isEndPhaseFromWaiting) {
+          const { data: updatedOP } = await supabase
+            .from('production_orders')
+            .update({ 
+              current_phase_id: targetPhase.id,
+              status: 'concluido',
+              actual_start_date: now,
+              actual_end_date: now
+            })
+            .eq('id', orderId)
+            .select('order_id')
+            .single();
+
+          // Atualizar pedido vinculado
+          if (updatedOP?.order_id) {
+            await supabase
+              .from('orders')
+              .update({ 
+                status: 'entregue',
+                data_entrega_realizada: now.split('T')[0]
+              })
+              .eq('id', updatedOP.order_id);
+          }
+        } else {
+          await supabase
+            .from('production_orders')
+            .update({ 
+              current_phase_id: targetPhase.id,
+              status: 'em_producao',
+              actual_start_date: now
+            })
+            .eq('id', orderId);
+        }
+
         return;
       }
 
