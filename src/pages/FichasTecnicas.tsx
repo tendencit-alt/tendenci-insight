@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Table,
   TableBody,
@@ -33,34 +34,27 @@ import {
   AlertCircle,
   Factory,
   Boxes,
-  ShoppingBag
+  ShoppingBag,
+  Plus,
+  FileText
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { ProductionOrderDetailSheet } from '@/components/production/ProductionOrderDetailSheet';
+import { CreateTemplateFichaDialog } from '@/components/production/CreateTemplateFichaDialog';
+import { TemplateFichaSheet } from '@/components/production/TemplateFichaSheet';
 
 export default function FichasTecnicas() {
+  const [activeTab, setActiveTab] = useState('ops');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [createTemplateOpen, setCreateTemplateOpen] = useState(false);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
 
-  // Buscar todas as fichas técnicas com dados relacionados
-  // Buscar categorias para filtro
-  const { data: categories = [] } = useQuery({
-    queryKey: ['product-categories-filter'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('product_categories')
-        .select('id, name')
-        .order('name');
-      
-      if (error) throw error;
-      return data;
-    }
-  });
-
-  const { data: fichas = [], isLoading } = useQuery({
-    queryKey: ['fichas-tecnicas', searchTerm, statusFilter],
+  // Buscar fichas técnicas de OPs
+  const { data: fichasOps = [], isLoading: loadingOps } = useQuery({
+    queryKey: ['fichas-tecnicas-ops', searchTerm, statusFilter],
     queryFn: async () => {
       let query = supabase
         .from('production_products')
@@ -84,6 +78,8 @@ export default function FichasTecnicas() {
             categoria
           )
         `)
+        .eq('is_template', false)
+        .not('production_order_id', 'is', null)
         .order('created_at', { ascending: false });
 
       if (statusFilter !== 'all') {
@@ -107,37 +103,105 @@ export default function FichasTecnicas() {
       }
 
       return data;
-    }
+    },
+    enabled: activeTab === 'ops'
   });
 
-  // Buscar contagens de insumos para cada ficha
-  const { data: bomCounts = {} } = useQuery({
-    queryKey: ['bom-counts', fichas.map(f => f.id)],
+  // Buscar fichas técnicas padrão (templates)
+  const { data: fichasTemplates = [], isLoading: loadingTemplates } = useQuery({
+    queryKey: ['template-fichas', searchTerm, statusFilter],
     queryFn: async () => {
-      if (fichas.length === 0) return {};
+      let query = supabase
+        .from('production_products')
+        .select(`
+          *,
+          product:products(
+            id,
+            code,
+            name,
+            category:product_categories(name)
+          )
+        `)
+        .eq('is_template', true)
+        .order('created_at', { ascending: false });
+
+      if (statusFilter !== 'all') {
+        query = query.eq('status', statusFilter);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      // Filtrar por termo de busca
+      if (searchTerm) {
+        const term = searchTerm.toLowerCase();
+        return data.filter(f => 
+          f.name?.toLowerCase().includes(term) ||
+          f.product?.name?.toLowerCase().includes(term) ||
+          f.product?.code?.toLowerCase().includes(term)
+        );
+      }
+
+      return data;
+    },
+    enabled: activeTab === 'templates'
+  });
+
+  // Buscar contagens de insumos para fichas de OPs
+  const fichasOpIds = fichasOps.map(f => f.id);
+  const { data: bomCountsOps = {} } = useQuery({
+    queryKey: ['bom-counts-ops', fichasOpIds],
+    queryFn: async () => {
+      if (fichasOpIds.length === 0) return {};
 
       const { data, error } = await supabase
         .from('production_product_bom')
         .select('production_product_id')
-        .in('production_product_id', fichas.map(f => f.id));
+        .in('production_product_id', fichasOpIds);
 
       if (error) throw error;
 
-      // Contar insumos por ficha
       const counts: Record<string, number> = {};
       data.forEach(item => {
         counts[item.production_product_id] = (counts[item.production_product_id] || 0) + 1;
       });
       return counts;
     },
-    enabled: fichas.length > 0
+    enabled: fichasOpIds.length > 0 && activeTab === 'ops'
   });
 
-  // KPIs
-  const totalFichas = fichas.length;
-  const fichasAprovadas = fichas.filter(f => f.status === 'aprovado').length;
-  const fichasRascunho = fichas.filter(f => f.status === 'rascunho').length;
-  const cmvTotal = fichas.reduce((acc, f) => acc + (f.cmv_total || 0), 0);
+  // Buscar contagens de insumos para templates
+  const templateIds = fichasTemplates.map(f => f.id);
+  const { data: bomCountsTemplates = {} } = useQuery({
+    queryKey: ['bom-counts-templates', templateIds],
+    queryFn: async () => {
+      if (templateIds.length === 0) return {};
+
+      const { data, error } = await supabase
+        .from('production_product_bom')
+        .select('production_product_id')
+        .in('production_product_id', templateIds);
+
+      if (error) throw error;
+
+      const counts: Record<string, number> = {};
+      data.forEach(item => {
+        counts[item.production_product_id] = (counts[item.production_product_id] || 0) + 1;
+      });
+      return counts;
+    },
+    enabled: templateIds.length > 0 && activeTab === 'templates'
+  });
+
+  // KPIs para aba ativa
+  const currentFichas = activeTab === 'ops' ? fichasOps : fichasTemplates;
+  const currentBomCounts = activeTab === 'ops' ? bomCountsOps : bomCountsTemplates;
+  const isLoading = activeTab === 'ops' ? loadingOps : loadingTemplates;
+
+  const totalFichas = currentFichas.length;
+  const fichasAprovadas = currentFichas.filter(f => f.status === 'aprovado').length;
+  const fichasRascunho = currentFichas.filter(f => f.status === 'rascunho').length;
+  const cmvTotal = currentFichas.reduce((acc, f) => acc + (f.cmv_total || 0), 0);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -154,9 +218,17 @@ export default function FichasTecnicas() {
     <DashboardLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Fichas Técnicas</h1>
-          <p className="text-muted-foreground">Gerencie as fichas técnicas de produção e itens do estoque</p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Fichas Técnicas</h1>
+            <p className="text-muted-foreground">Gerencie as fichas técnicas de produção e produtos padrão</p>
+          </div>
+          {activeTab === 'templates' && (
+            <Button onClick={() => setCreateTemplateOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Nova Ficha Padrão
+            </Button>
+          )}
         </div>
 
         {/* KPIs */}
@@ -220,147 +292,262 @@ export default function FichasTecnicas() {
           </Card>
         </div>
 
-        {/* Filtros */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Filtros</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar por OP, produto, cliente..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-48">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="rascunho">Rascunho</SelectItem>
-                  <SelectItem value="aprovado">Aprovado</SelectItem>
-                  <SelectItem value="finalizado">Finalizado</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList>
+            <TabsTrigger value="ops" className="gap-2">
+              <Factory className="h-4 w-4" />
+              Ordens de Produção
+            </TabsTrigger>
+            <TabsTrigger value="templates" className="gap-2">
+              <FileText className="h-4 w-4" />
+              Fichas Padrão
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Tabela */}
-        <Card>
-          <CardContent className="p-0">
-            {isLoading ? (
-              <div className="p-6 space-y-4">
-                {[...Array(5)].map((_, i) => (
-                  <Skeleton key={i} className="h-12 w-full" />
-                ))}
+          {/* Filtros */}
+          <Card className="mt-4">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Filtros</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder={activeTab === 'ops' ? "Buscar por OP, produto, cliente..." : "Buscar por produto..."}
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-full sm:w-48">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="rascunho">Rascunho</SelectItem>
+                    <SelectItem value="aprovado">Aprovado</SelectItem>
+                    <SelectItem value="finalizado">Finalizado</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-            ) : fichas.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-                <AlertCircle className="h-12 w-12 mb-4 opacity-40" />
-                <p className="font-medium">Nenhuma ficha técnica encontrada</p>
-                <p className="text-sm">Fichas são criadas automaticamente quando uma OP é criada</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Origem</TableHead>
-                      <TableHead>Produto</TableHead>
-                      <TableHead>Cliente</TableHead>
-                      <TableHead className="text-center">Insumos</TableHead>
-                      <TableHead className="text-right">CMV</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Criado em</TableHead>
-                      <TableHead className="w-10"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {fichas.map((ficha: any) => {
-                      const isFromProduction = !!ficha.production_order_id;
-                      const isFromInventory = !!ficha.product_id;
-                      const isFromCatalogo = !!ficha.ia_produto_id;
-                      
-                      return (
-                        <TableRow key={ficha.id}>
-                          <TableCell>
-                            {isFromProduction ? (
+            </CardContent>
+          </Card>
+
+          {/* Tab: Ordens de Produção */}
+          <TabsContent value="ops" className="mt-4">
+            <Card>
+              <CardContent className="p-0">
+                {loadingOps ? (
+                  <div className="p-6 space-y-4">
+                    {[...Array(5)].map((_, i) => (
+                      <Skeleton key={i} className="h-12 w-full" />
+                    ))}
+                  </div>
+                ) : fichasOps.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+                    <AlertCircle className="h-12 w-12 mb-4 opacity-40" />
+                    <p className="font-medium">Nenhuma ficha técnica encontrada</p>
+                    <p className="text-sm">Fichas são criadas automaticamente quando uma OP é criada</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Origem</TableHead>
+                          <TableHead>Produto</TableHead>
+                          <TableHead>Cliente</TableHead>
+                          <TableHead className="text-center">Insumos</TableHead>
+                          <TableHead className="text-right">CMV</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Criado em</TableHead>
+                          <TableHead className="w-10"></TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {fichasOps.map((ficha: any) => {
+                          const isFromProduction = !!ficha.production_order_id;
+                          const isFromInventory = !!ficha.product_id;
+                          const isFromCatalogo = !!ficha.ia_produto_id;
+                          
+                          return (
+                            <TableRow key={ficha.id}>
+                              <TableCell>
+                                {isFromProduction ? (
+                                  <div className="flex items-center gap-2">
+                                    <Factory className="h-4 w-4 text-primary" />
+                                    <span className="font-mono text-sm">
+                                      OP-{String(ficha.production_order?.order_number || 0).padStart(4, '0')}
+                                    </span>
+                                  </div>
+                                ) : isFromInventory ? (
+                                  <div className="flex items-center gap-2">
+                                    <Boxes className="h-4 w-4 text-blue-500" />
+                                    <span className="font-mono text-sm">
+                                      {ficha.product?.code || 'EST'}
+                                    </span>
+                                  </div>
+                                ) : isFromCatalogo ? (
+                                  <div className="flex items-center gap-2">
+                                    <ShoppingBag className="h-4 w-4 text-purple-500" />
+                                    <span className="font-mono text-sm">
+                                      Catálogo IA
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <span className="text-muted-foreground">-</span>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <div>
+                                  <p className="font-medium">{ficha.name}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {ficha.production_order?.title || ficha.product?.name || ficha.ia_produto?.categoria || ''}
+                                  </p>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                {ficha.production_order?.client?.name || '-'}
+                              </TableCell>
+                              <TableCell className="text-center">
+                                <Badge variant="outline" className="gap-1">
+                                  <Package className="h-3 w-3" />
+                                  {bomCountsOps[ficha.id] || 0}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-right font-medium">
+                                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(ficha.cmv_total || 0)}
+                              </TableCell>
+                              <TableCell>
+                                {getStatusBadge(ficha.status)}
+                              </TableCell>
+                              <TableCell className="text-sm text-muted-foreground">
+                                {format(new Date(ficha.created_at), 'dd/MM/yyyy', { locale: ptBR })}
+                              </TableCell>
+                              <TableCell>
+                                {isFromProduction && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => setSelectedOrderId(ficha.production_order?.id || null)}
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Tab: Fichas Padrão */}
+          <TabsContent value="templates" className="mt-4">
+            <Card>
+              <CardContent className="p-0">
+                {loadingTemplates ? (
+                  <div className="p-6 space-y-4">
+                    {[...Array(5)].map((_, i) => (
+                      <Skeleton key={i} className="h-12 w-full" />
+                    ))}
+                  </div>
+                ) : fichasTemplates.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+                    <FileText className="h-12 w-12 mb-4 opacity-40" />
+                    <p className="font-medium">Nenhuma ficha padrão encontrada</p>
+                    <p className="text-sm">Crie fichas técnicas padrão para reutilizar em novas OPs</p>
+                    <Button 
+                      variant="outline" 
+                      className="mt-4"
+                      onClick={() => setCreateTemplateOpen(true)}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Criar Primeira Ficha
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Código</TableHead>
+                          <TableHead>Produto</TableHead>
+                          <TableHead>Categoria</TableHead>
+                          <TableHead className="text-center">Insumos</TableHead>
+                          <TableHead className="text-right">CMV</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Criado em</TableHead>
+                          <TableHead className="w-10"></TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {fichasTemplates.map((ficha: any) => (
+                          <TableRow key={ficha.id}>
+                            <TableCell>
                               <div className="flex items-center gap-2">
-                                <Factory className="h-4 w-4 text-primary" />
+                                <FileText className="h-4 w-4 text-primary" />
                                 <span className="font-mono text-sm">
-                                  OP-{String(ficha.production_order?.order_number || 0).padStart(4, '0')}
+                                  {ficha.product?.code || '-'}
                                 </span>
                               </div>
-                            ) : isFromInventory ? (
-                              <div className="flex items-center gap-2">
-                                <Boxes className="h-4 w-4 text-blue-500" />
-                                <span className="font-mono text-sm">
-                                  {ficha.product?.code || 'EST'}
-                                </span>
+                            </TableCell>
+                            <TableCell>
+                              <div>
+                                <p className="font-medium">{ficha.name}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {ficha.product?.name || ''}
+                                </p>
                               </div>
-                            ) : isFromCatalogo ? (
-                              <div className="flex items-center gap-2">
-                                <ShoppingBag className="h-4 w-4 text-purple-500" />
-                                <span className="font-mono text-sm">
-                                  Catálogo IA
-                                </span>
-                              </div>
-                            ) : (
-                              <span className="text-muted-foreground">-</span>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <div>
-                              <p className="font-medium">{ficha.name}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {ficha.production_order?.title || ficha.product?.name || ficha.ia_produto?.categoria || ''}
-                              </p>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            {ficha.production_order?.client?.name || '-'}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <Badge variant="outline" className="gap-1">
-                              <Package className="h-3 w-3" />
-                              {bomCounts[ficha.id] || 0}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right font-medium">
-                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(ficha.cmv_total || 0)}
-                          </TableCell>
-                          <TableCell>
-                            {getStatusBadge(ficha.status)}
-                          </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {format(new Date(ficha.created_at), 'dd/MM/yyyy', { locale: ptBR })}
-                          </TableCell>
-                          <TableCell>
-                            {isFromProduction && (
+                            </TableCell>
+                            <TableCell>
+                              {ficha.product?.category?.name ? (
+                                <Badge variant="outline">{ficha.product.category.name}</Badge>
+                              ) : (
+                                '-'
+                              )}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Badge variant="outline" className="gap-1">
+                                <Package className="h-3 w-3" />
+                                {bomCountsTemplates[ficha.id] || 0}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right font-medium">
+                              {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(ficha.cmv_total || 0)}
+                            </TableCell>
+                            <TableCell>
+                              {getStatusBadge(ficha.status)}
+                            </TableCell>
+                            <TableCell className="text-sm text-muted-foreground">
+                              {format(new Date(ficha.created_at), 'dd/MM/yyyy', { locale: ptBR })}
+                            </TableCell>
+                            <TableCell>
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={() => setSelectedOrderId(ficha.production_order?.id || null)}
+                                onClick={() => setSelectedTemplateId(ficha.id)}
                               >
                                 <Eye className="h-4 w-4" />
                               </Button>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Sheet de Detalhes da OP */}
@@ -368,6 +555,18 @@ export default function FichasTecnicas() {
         orderId={selectedOrderId}
         open={!!selectedOrderId}
         onOpenChange={(open) => !open && setSelectedOrderId(null)}
+      />
+
+      {/* Dialog de criar ficha padrão */}
+      <CreateTemplateFichaDialog
+        open={createTemplateOpen}
+        onOpenChange={setCreateTemplateOpen}
+      />
+
+      {/* Sheet de edição de ficha padrão */}
+      <TemplateFichaSheet
+        templateId={selectedTemplateId}
+        onOpenChange={(open) => !open && setSelectedTemplateId(null)}
       />
     </DashboardLayout>
   );

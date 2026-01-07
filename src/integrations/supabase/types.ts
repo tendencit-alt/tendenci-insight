@@ -3816,10 +3816,12 @@ export type Database = {
           description: string | null
           ia_produto_id: string | null
           id: string
+          is_template: boolean | null
           name: string
           product_id: string | null
           production_order_id: string | null
           status: string | null
+          template_id: string | null
           updated_at: string | null
         }
         Insert: {
@@ -3828,10 +3830,12 @@ export type Database = {
           description?: string | null
           ia_produto_id?: string | null
           id?: string
+          is_template?: boolean | null
           name: string
           product_id?: string | null
           production_order_id?: string | null
           status?: string | null
+          template_id?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -3840,10 +3844,12 @@ export type Database = {
           description?: string | null
           ia_produto_id?: string | null
           id?: string
+          is_template?: boolean | null
           name?: string
           product_id?: string | null
           production_order_id?: string | null
           status?: string | null
+          template_id?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -3866,6 +3872,13 @@ export type Database = {
             columns: ["production_order_id"]
             isOneToOne: true
             referencedRelation: "production_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_products_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "production_products"
             referencedColumns: ["id"]
           },
         ]
