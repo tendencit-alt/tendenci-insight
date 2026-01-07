@@ -3,8 +3,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { AlertTriangle, Eye, Pencil, ShoppingCart, MoreHorizontal, Package } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { AlertTriangle, Eye, Pencil, ShoppingCart, MoreHorizontal, Package, FileSpreadsheet } from "lucide-react";
 import ProductDetailSheet from "./ProductDetailSheet";
 import EditProductDialog from "./EditProductDialog";
 import QuickMinStockDialog from "./QuickMinStockDialog";
@@ -19,9 +19,15 @@ interface ProductsTableProps {
 
 export default function ProductsTable({ products, isLoading, onSelect, onRefresh }: ProductsTableProps) {
   const [viewProduct, setViewProduct] = useState<any>(null);
+  const [viewProductTab, setViewProductTab] = useState<string>("movements");
   const [editProduct, setEditProduct] = useState<any>(null);
   const [minStockProduct, setMinStockProduct] = useState<any>(null);
   const [requestProduct, setRequestProduct] = useState<any>(null);
+
+  const openProductWithTab = (product: any, tab: string) => {
+    setViewProductTab(tab);
+    setViewProduct(product);
+  };
 
   if (isLoading) {
     return (
@@ -136,7 +142,7 @@ export default function ProductsTable({ products, isLoading, onSelect, onRefresh
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => setViewProduct(product)}>
+                        <DropdownMenuItem onClick={() => openProductWithTab(product, "movements")}>
                           <Eye className="h-4 w-4 mr-2" />
                           Visualizar
                         </DropdownMenuItem>
@@ -144,6 +150,12 @@ export default function ProductsTable({ products, isLoading, onSelect, onRefresh
                           <Pencil className="h-4 w-4 mr-2" />
                           Editar
                         </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => openProductWithTab(product, "ficha-tecnica")}>
+                          <FileSpreadsheet className="h-4 w-4 mr-2" />
+                          Ficha Técnica
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => setMinStockProduct(product)}>
                           <AlertTriangle className="h-4 w-4 mr-2" />
                           Estoque Mínimo
@@ -167,6 +179,7 @@ export default function ProductsTable({ products, isLoading, onSelect, onRefresh
         open={!!viewProduct}
         onOpenChange={(open) => !open && setViewProduct(null)}
         onUpdate={handleRefresh}
+        defaultTab={viewProductTab}
       />
 
       <EditProductDialog
