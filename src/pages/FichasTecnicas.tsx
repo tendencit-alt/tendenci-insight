@@ -30,7 +30,9 @@ import {
   Eye,
   CheckCircle2,
   Clock,
-  AlertCircle
+  AlertCircle,
+  Factory,
+  Boxes
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -69,6 +71,11 @@ export default function FichasTecnicas() {
             title,
             status,
             client:clients(name)
+          ),
+          product:products(
+            id,
+            code,
+            name
           )
         `)
         .order('created_at', { ascending: false });
@@ -87,6 +94,8 @@ export default function FichasTecnicas() {
           f.name?.toLowerCase().includes(term) ||
           f.production_order?.title?.toLowerCase().includes(term) ||
           f.production_order?.client?.name?.toLowerCase().includes(term) ||
+          f.product?.name?.toLowerCase().includes(term) ||
+          f.product?.code?.toLowerCase().includes(term) ||
           String(f.production_order?.order_number).includes(term)
         );
       }
@@ -141,7 +150,7 @@ export default function FichasTecnicas() {
         {/* Header */}
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Fichas Técnicas</h1>
-          <p className="text-muted-foreground">Gerencie as fichas técnicas das ordens de produção</p>
+          <p className="text-muted-foreground">Gerencie as fichas técnicas de produção e itens do estoque</p>
         </div>
 
         {/* KPIs */}
@@ -256,7 +265,7 @@ export default function FichasTecnicas() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>OP</TableHead>
+                      <TableHead>Origem</TableHead>
                       <TableHead>Produto</TableHead>
                       <TableHead>Cliente</TableHead>
                       <TableHead className="text-center">Insumos</TableHead>
@@ -267,48 +276,71 @@ export default function FichasTecnicas() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {fichas.map((ficha) => (
-                      <TableRow key={ficha.id}>
-                        <TableCell>
-                          <span className="font-mono text-sm">
-                            OP-{String(ficha.production_order?.order_number || 0).padStart(4, '0')}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <div>
-                            <p className="font-medium">{ficha.name}</p>
-                            <p className="text-xs text-muted-foreground">{ficha.production_order?.title}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {ficha.production_order?.client?.name || '-'}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Badge variant="outline" className="gap-1">
-                            <Package className="h-3 w-3" />
-                            {bomCounts[ficha.id] || 0}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right font-medium">
-                          {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(ficha.cmv_total || 0)}
-                        </TableCell>
-                        <TableCell>
-                          {getStatusBadge(ficha.status)}
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {format(new Date(ficha.created_at), 'dd/MM/yyyy', { locale: ptBR })}
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setSelectedOrderId(ficha.production_order?.id || null)}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {fichas.map((ficha) => {
+                      const isFromProduction = !!ficha.production_order_id;
+                      const isFromInventory = !!ficha.product_id;
+                      
+                      return (
+                        <TableRow key={ficha.id}>
+                          <TableCell>
+                            {isFromProduction ? (
+                              <div className="flex items-center gap-2">
+                                <Factory className="h-4 w-4 text-primary" />
+                                <span className="font-mono text-sm">
+                                  OP-{String(ficha.production_order?.order_number || 0).padStart(4, '0')}
+                                </span>
+                              </div>
+                            ) : isFromInventory ? (
+                              <div className="flex items-center gap-2">
+                                <Boxes className="h-4 w-4 text-blue-500" />
+                                <span className="font-mono text-sm">
+                                  {ficha.product?.code || 'EST'}
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium">{ficha.name}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {ficha.production_order?.title || ficha.product?.name || ''}
+                              </p>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {ficha.production_order?.client?.name || '-'}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Badge variant="outline" className="gap-1">
+                              <Package className="h-3 w-3" />
+                              {bomCounts[ficha.id] || 0}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right font-medium">
+                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(ficha.cmv_total || 0)}
+                          </TableCell>
+                          <TableCell>
+                            {getStatusBadge(ficha.status)}
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {format(new Date(ficha.created_at), 'dd/MM/yyyy', { locale: ptBR })}
+                          </TableCell>
+                          <TableCell>
+                            {isFromProduction && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setSelectedOrderId(ficha.production_order?.id || null)}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>

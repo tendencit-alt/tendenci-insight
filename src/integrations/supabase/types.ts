@@ -3749,7 +3749,8 @@ export type Database = {
           description: string | null
           id: string
           name: string
-          production_order_id: string
+          product_id: string | null
+          production_order_id: string | null
           status: string | null
           updated_at: string | null
         }
@@ -3759,7 +3760,8 @@ export type Database = {
           description?: string | null
           id?: string
           name: string
-          production_order_id: string
+          product_id?: string | null
+          production_order_id?: string | null
           status?: string | null
           updated_at?: string | null
         }
@@ -3769,11 +3771,19 @@ export type Database = {
           description?: string | null
           id?: string
           name?: string
-          production_order_id?: string
+          product_id?: string | null
+          production_order_id?: string | null
           status?: string | null
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "production_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "production_products_production_order_id_fkey"
             columns: ["production_order_id"]
