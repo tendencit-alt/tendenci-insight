@@ -11,6 +11,23 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { CostCenterTagsSelector } from "./CostCenterTagsSelector";
+import ProductMediaUploader, { VideoItem } from "./ProductMediaUploader";
+
+// ID da categoria "Produto" para mostrar seção de mídia
+const CATEGORIA_PRODUTO_ID = "2ca37a60-74b7-446c-9a67-fa5ff7f67731";
+
+// Helper para parsear vídeos de JSON
+const parseVideos = (data: unknown): VideoItem[] => {
+  if (!data) return [];
+  if (Array.isArray(data)) {
+    return data.filter((v: any) => v && typeof v === "object" && v.url).map((v: any) => ({
+      type: v.type || "url",
+      url: v.url,
+      nome: v.nome || ""
+    }));
+  }
+  return [];
+};
 
 interface EditProductDialogProps {
   product: any;
@@ -24,6 +41,8 @@ export default function EditProductDialog({ product, open, onOpenChange, onSucce
   const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
   const [selectedCostCenters, setSelectedCostCenters] = useState<string[]>([]);
+  const [galeria, setGaleria] = useState<string[]>([]);
+  const [videos, setVideos] = useState<VideoItem[]>([]);
   const [form, setForm] = useState({
     code: "",
     name: "",
@@ -45,6 +64,7 @@ export default function EditProductDialog({ product, open, onOpenChange, onSucce
     cor: "",
     medida: "",
     fornecedor_texto: "",
+    image_url: "",
   });
 
   const { data: categories = [] } = useQuery({
@@ -88,6 +108,22 @@ export default function EditProductDialog({ product, open, onOpenChange, onSucce
     enabled: !!product?.id
   });
 
+  // Buscar mídias da IA se produto estiver vinculado
+  const { data: iaProduct } = useQuery({
+    queryKey: ["ia-product-media", product?.ia_produto_id],
+    queryFn: async () => {
+      if (!product?.ia_produto_id) return null;
+      const { data, error } = await supabase
+        .from("tendenci_ia_produtos")
+        .select("imagem_url, galeria, video_url, videos")
+        .eq("id", product.ia_produto_id)
+        .single();
+      if (error) return null;
+      return data;
+    },
+    enabled: !!product?.ia_produto_id && open
+  });
+
   useEffect(() => {
     if (product) {
       setForm({
@@ -111,9 +147,38 @@ export default function EditProductDialog({ product, open, onOpenChange, onSucce
         cor: product.cor || "",
         medida: product.medida || "",
         fornecedor_texto: product.fornecedor_texto || "",
+        image_url: product.image_url || "",
       });
+      
+      // Combinar galeria própria + da IA (sem duplicatas)
+      const productGaleria = Array.isArray(product.galeria) ? product.galeria : [];
+      const iaGaleria = Array.isArray(iaProduct?.galeria) ? iaProduct.galeria : [];
+      const iaMainImage = iaProduct?.imagem_url;
+      
+      const combinedGaleria = [...productGaleria];
+      iaGaleria.forEach((url: string) => {
+        if (!combinedGaleria.includes(url)) combinedGaleria.push(url);
+      });
+      if (iaMainImage && !combinedGaleria.includes(iaMainImage) && iaMainImage !== product.image_url) {
+        combinedGaleria.unshift(iaMainImage);
+      }
+      setGaleria(combinedGaleria);
+      
+      // Combinar vídeos próprios + da IA
+      const productVideos = parseVideos(product.videos);
+      const iaVideos = parseVideos(iaProduct?.videos);
+      const iaVideoUrl = iaProduct?.video_url;
+      
+      const combinedVideos = [...productVideos];
+      iaVideos.forEach((v) => {
+        if (!combinedVideos.some(cv => cv.url === v.url)) combinedVideos.push(v);
+      });
+      if (iaVideoUrl && !combinedVideos.some(v => v.url === iaVideoUrl)) {
+        combinedVideos.push({ type: "url", url: iaVideoUrl, nome: "Vídeo IA" });
+      }
+      setVideos(combinedVideos);
     }
-  }, [product]);
+  }, [product, iaProduct]);
 
   useEffect(() => {
     setSelectedCostCenters(productCostCenters);
@@ -129,17 +194,38 @@ export default function EditProductDialog({ product, open, onOpenChange, onSucce
 
     setLoading(true);
     try {
+      const isProdutoCategory = form.category_id === CATEGORIA_PRODUTO_ID;
+      
       // Atualizar o produto
+      const updateData = {
+        code: form.code || null,
+        name: form.name,
+        description: form.description || null,
+        category_id: form.category_id || null,
+        location_id: form.location_id || null,
+        unit: form.unit,
+        min_stock: form.min_stock,
+        max_stock: form.max_stock,
+        cost_price: form.cost_price,
+        sale_price: form.sale_price,
+        ncm: form.ncm || null,
+        cfop_entrada: form.cfop_entrada || null,
+        cfop_saida: form.cfop_saida || null,
+        active: form.active,
+        barcode: form.barcode || null,
+        reorder_point: form.reorder_point,
+        reorder_quantity: form.reorder_quantity,
+        cor: form.cor || null,
+        medida: form.medida || null,
+        fornecedor_texto: form.fornecedor_texto || null,
+        image_url: form.image_url || null,
+        galeria: isProdutoCategory ? galeria : [],
+        videos: isProdutoCategory ? videos : [],
+      };
+      
       const { error } = await supabase
         .from("products")
-        .update({
-          ...form,
-          category_id: form.category_id || null,
-          location_id: form.location_id || null,
-          cor: form.cor || null,
-          medida: form.medida || null,
-          fornecedor_texto: form.fornecedor_texto || null,
-        })
+        .update(updateData as any)
         .eq("id", product.id);
 
       if (error) throw error;
@@ -304,6 +390,19 @@ export default function EditProductDialog({ product, open, onOpenChange, onSucce
               />
             </div>
           </div>
+
+          {/* Seção de Mídia - apenas para categoria "Produto" */}
+          {form.category_id === CATEGORIA_PRODUTO_ID && (
+            <ProductMediaUploader
+              imageUrl={form.image_url}
+              galeria={galeria}
+              videos={videos}
+              onImageUrlChange={(url) => setForm({ ...form, image_url: url })}
+              onGaleriaChange={setGaleria}
+              onVideosChange={setVideos}
+              disabled={loading}
+            />
+          )}
 
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">

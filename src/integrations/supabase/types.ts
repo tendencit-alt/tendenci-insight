@@ -3997,6 +3997,7 @@ export type Database = {
           current_stock: number | null
           description: string | null
           fornecedor_texto: string | null
+          galeria: string[] | null
           ia_produto_id: string | null
           id: string
           image_url: string | null
@@ -4013,6 +4014,7 @@ export type Database = {
           template_ficha_id: string | null
           unit: string | null
           updated_at: string | null
+          videos: Json | null
         }
         Insert: {
           active?: boolean | null
@@ -4028,6 +4030,7 @@ export type Database = {
           current_stock?: number | null
           description?: string | null
           fornecedor_texto?: string | null
+          galeria?: string[] | null
           ia_produto_id?: string | null
           id?: string
           image_url?: string | null
@@ -4044,6 +4047,7 @@ export type Database = {
           template_ficha_id?: string | null
           unit?: string | null
           updated_at?: string | null
+          videos?: Json | null
         }
         Update: {
           active?: boolean | null
@@ -4059,6 +4063,7 @@ export type Database = {
           current_stock?: number | null
           description?: string | null
           fornecedor_texto?: string | null
+          galeria?: string[] | null
           ia_produto_id?: string | null
           id?: string
           image_url?: string | null
@@ -4075,6 +4080,7 @@ export type Database = {
           template_ficha_id?: string | null
           unit?: string | null
           updated_at?: string | null
+          videos?: Json | null
         }
         Relationships: [
           {
