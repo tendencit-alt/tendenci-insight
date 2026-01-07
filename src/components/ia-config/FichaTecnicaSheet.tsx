@@ -50,7 +50,7 @@ export function FichaTecnicaSheet({
 
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
-      <SheetContent className="sm:max-w-xl overflow-y-auto">
+      <SheetContent className="sm:max-w-2xl w-full overflow-y-auto">
         <SheetHeader className="pb-4 border-b">
           <SheetTitle className="flex items-center gap-2 flex-wrap">
             <FileSpreadsheet className="h-5 w-5 text-primary" />
