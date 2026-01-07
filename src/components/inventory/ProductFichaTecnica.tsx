@@ -26,20 +26,24 @@ export default function ProductFichaTecnica({ productId, productName }: ProductF
       
       console.log('[ProductFichaTecnica] Buscando ficha técnica para product_id:', productId);
       
+      // Usar limit(1) para evitar erro de múltiplas linhas
       const { data, error } = await supabase
         .from('production_products')
         .select('*')
         .eq('product_id', productId)
         .eq('is_template', true)
-        .maybeSingle();
+        .order('created_at', { ascending: true })
+        .limit(1);
       
       if (error) {
         console.error('[ProductFichaTecnica] Erro na busca:', error);
         throw error;
       }
       
-      console.log('[ProductFichaTecnica] Ficha encontrada:', data);
-      return data;
+      // Retornar o primeiro resultado ou null
+      const result = data?.[0] || null;
+      console.log('[ProductFichaTecnica] Ficha encontrada:', result);
+      return result;
     },
     enabled: !!productId
   });
