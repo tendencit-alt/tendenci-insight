@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { Loader2, Plus, Pencil, Trash2, Package, X, Image, Video, Link, Upload, Play, Filter, Warehouse, MapPin, Ruler, Search, LinkIcon, ExternalLink, FileSpreadsheet, Check, Eye } from "lucide-react";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import type { Json } from "@/integrations/supabase/types";
+import { FichaTecnicaSheet } from "./FichaTecnicaSheet";
 
 interface Categoria {
   id: string;
@@ -140,6 +141,12 @@ export default function IAConfigProdutos() {
   const [showNewCategoriaDialog, setShowNewCategoriaDialog] = useState(false);
   const [novaCategoria, setNovaCategoria] = useState("");
   const [savingCategoria, setSavingCategoria] = useState(false);
+  
+  // Ficha Técnica Sheet
+  const [fichaTecnicaSheetOpen, setFichaTecnicaSheetOpen] = useState(false);
+  const [selectedFichaTecnicaId, setSelectedFichaTecnicaId] = useState<string | null>(null);
+  const [selectedFichaTecnicaProductName, setSelectedFichaTecnicaProductName] = useState('');
+  const [selectedFichaTecnicaStatus, setSelectedFichaTecnicaStatus] = useState('rascunho');
   
   // Inventário
   const [inventoryProducts, setInventoryProducts] = useState<InventoryProduct[]>([]);
@@ -722,10 +729,10 @@ export default function IAConfigProdutos() {
     return locations.find(l => l.id === localId)?.name || null;
   };
 
-  // Criar ficha técnica diretamente da tabela
+  // Criar ficha técnica diretamente da tabela e abrir o Sheet
   const criarFichaTecnicaDireto = async (produto: Produto) => {
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("production_products")
         .insert({
           name: produto.nome,
@@ -735,14 +742,34 @@ export default function IAConfigProdutos() {
           product_id: null,
           status: 'rascunho',
           cmv_total: produto.preco_base
-        });
+        })
+        .select()
+        .single();
       
       if (error) throw error;
+      
       toast.success("Ficha técnica criada!");
+      
+      // Abrir o Sheet automaticamente após criar
+      setSelectedFichaTecnicaId(data.id);
+      setSelectedFichaTecnicaProductName(produto.nome);
+      setSelectedFichaTecnicaStatus('rascunho');
+      setFichaTecnicaSheetOpen(true);
+      
       loadData();
     } catch (error) {
       console.error("Erro ao criar ficha técnica:", error);
       toast.error("Erro ao criar ficha técnica");
+    }
+  };
+
+  // Abrir ficha técnica existente no Sheet
+  const abrirFichaTecnica = (produto: Produto) => {
+    if (produto.fichaTecnica) {
+      setSelectedFichaTecnicaId(produto.fichaTecnica.id);
+      setSelectedFichaTecnicaProductName(produto.nome);
+      setSelectedFichaTecnicaStatus(produto.fichaTecnica.status);
+      setFichaTecnicaSheetOpen(true);
     }
   };
 
@@ -1535,7 +1562,7 @@ export default function IAConfigProdutos() {
                         variant="ghost"
                         size="icon"
                         className="h-7 w-7"
-                        onClick={() => window.open(`/fichas-tecnicas?id=${produto.fichaTecnica!.id}`, '_blank')}
+                        onClick={() => abrirFichaTecnica(produto)}
                         title="Ver ficha técnica"
                       >
                         <Eye className="h-4 w-4" />
@@ -1616,6 +1643,16 @@ export default function IAConfigProdutos() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Sheet da Ficha Técnica */}
+      <FichaTecnicaSheet
+        open={fichaTecnicaSheetOpen}
+        onOpenChange={setFichaTecnicaSheetOpen}
+        productionProductId={selectedFichaTecnicaId}
+        productName={selectedFichaTecnicaProductName}
+        initialStatus={selectedFichaTecnicaStatus}
+        onClose={() => loadData()}
+      />
     </div>
   );
 }
