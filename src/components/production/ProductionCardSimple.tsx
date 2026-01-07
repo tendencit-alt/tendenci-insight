@@ -74,6 +74,10 @@ function ProductionCardSimpleComponent({ order, onClick, isDragging, automationA
   const queryClient = useQueryClient();
   const [prazoDialogOpen, setPrazoDialogOpen] = useState(false);
   
+  // Verificar se está na fase "Entregue" - não mostrar alertas de SLA
+  const currentPhaseName = order.current_phase?.phase_template?.name;
+  const isDeliveredPhase = currentPhaseName?.toLowerCase() === 'entregue';
+  
   const isOverdue = order.planned_end_date && isPast(new Date(order.planned_end_date));
   const daysRemaining = order.planned_end_date 
     ? differenceInDays(new Date(order.planned_end_date), new Date())
@@ -178,8 +182,8 @@ function ProductionCardSimpleComponent({ order, onClick, isDragging, automationA
       }}
     >
       <CardContent className="p-2.5 space-y-1.5">
-        {/* Automation Alert Badge - SLA em Dias Úteis */}
-        {hasAutomationAlert && (
+        {/* Automation Alert Badge - SLA em Dias Úteis - Não mostrar para entregues */}
+        {hasAutomationAlert && !isDeliveredPhase && (
           <div className="p-1.5 rounded bg-destructive/10 border border-destructive/30">
             <div className="flex items-center gap-1 text-destructive text-[10px] font-semibold">
               <Siren className="h-3 w-3" />
@@ -242,8 +246,8 @@ function ProductionCardSimpleComponent({ order, onClick, isDragging, automationA
           )}
         </div>
 
-        {/* Phase Time & SLA Section */}
-        {order.current_phase && (
+        {/* Phase Time & SLA Section - Não mostrar para pedidos entregues */}
+        {order.current_phase && !isDeliveredPhase && (
           <div className={cn(
             "rounded p-1.5 text-[10px] space-y-1",
             !order.current_phase.started_at && "bg-muted/50 border border-dashed border-muted-foreground/30",
@@ -331,16 +335,16 @@ function ProductionCardSimpleComponent({ order, onClick, isDragging, automationA
         {/* Contador de Dias para Entrega Final */}
         <div className={cn(
           "rounded p-1.5",
-          (order.status === 'finalizado' || order.status === 'concluido') && "bg-emerald-500/15 border border-emerald-500/30",
-          (order.status !== 'finalizado' && order.status !== 'concluido') && !order.planned_end_date && "bg-destructive/15 border border-destructive/30",
-          (order.status !== 'finalizado' && order.status !== 'concluido') && order.planned_end_date && isOverdue && "bg-destructive/15 border border-destructive/30",
-          (order.status !== 'finalizado' && order.status !== 'concluido') && order.planned_end_date && !isOverdue && daysRemaining !== null && daysRemaining <= 3 && "bg-warning/15 border border-warning/30",
-          (order.status !== 'finalizado' && order.status !== 'concluido') && order.planned_end_date && !isOverdue && daysRemaining !== null && daysRemaining > 3 && "bg-emerald-500/10 border border-emerald-500/20"
+          isDeliveredPhase && "bg-emerald-500/15 border border-emerald-500/30",
+          !isDeliveredPhase && !order.planned_end_date && "bg-destructive/15 border border-destructive/30",
+          !isDeliveredPhase && order.planned_end_date && isOverdue && "bg-destructive/15 border border-destructive/30",
+          !isDeliveredPhase && order.planned_end_date && !isOverdue && daysRemaining !== null && daysRemaining <= 3 && "bg-warning/15 border border-warning/30",
+          !isDeliveredPhase && order.planned_end_date && !isOverdue && daysRemaining !== null && daysRemaining > 3 && "bg-emerald-500/10 border border-emerald-500/20"
         )}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5 text-[11px] font-medium">
               <Calendar className="h-3 w-3" />
-              {(order.status === 'finalizado' || order.status === 'concluido') ? (
+              {isDeliveredPhase ? (
                 <span className="text-emerald-600">✓ Entregue</span>
               ) : !order.planned_end_date ? (
                 <span className="text-destructive font-semibold">Sem prazo definido</span>
@@ -361,8 +365,8 @@ function ProductionCardSimpleComponent({ order, onClick, isDragging, automationA
               )}
             </div>
             
-            {/* Botão editar prazo - apenas Móveis Planejados */}
-            {isMoveisplanejados && order.status !== 'finalizado' && order.status !== 'concluido' && (
+            {/* Botão editar prazo - apenas Móveis Planejados e não entregue */}
+            {isMoveisplanejados && !isDeliveredPhase && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -376,8 +380,8 @@ function ProductionCardSimpleComponent({ order, onClick, isDragging, automationA
             )}
           </div>
           
-          {/* Info adicional do prazo */}
-          {order.status !== 'finalizado' && (
+          {/* Info adicional do prazo - não mostrar para entregues */}
+          {!isDeliveredPhase && (
             <div className="flex items-center justify-between mt-0.5">
               {order.planned_end_date && (
                 <p className="text-[9px] text-muted-foreground">

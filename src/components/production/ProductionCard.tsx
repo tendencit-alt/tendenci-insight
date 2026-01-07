@@ -101,6 +101,10 @@ export function ProductionCard({ order, onClick, isDragging }: ProductionCardPro
     fetchAutomationAlert();
   }, [order.id]);
 
+  // Verificar se está na fase "Entregue" - não mostrar alertas de SLA
+  const currentPhaseName = order.current_phase?.phase_template?.name;
+  const isDeliveredPhase = currentPhaseName?.toLowerCase() === 'entregue';
+
   const isOverdue = order.planned_end_date && isPast(new Date(order.planned_end_date));
   const daysRemaining = order.planned_end_date 
     ? differenceInDays(new Date(order.planned_end_date), new Date())
@@ -161,8 +165,8 @@ export function ProductionCard({ order, onClick, isDragging }: ProductionCardPro
       }}
     >
       <CardContent className="p-3 space-y-2">
-        {/* Automation Alert Badge - SLA em Dias Úteis */}
-        {hasAutomationAlert && (
+        {/* Automation Alert Badge - SLA em Dias Úteis - Não mostrar para entregues */}
+        {hasAutomationAlert && !isDeliveredPhase && (
           <div className="p-2 rounded-md bg-destructive/10 border border-destructive/30">
             <div className="flex items-center gap-1.5 text-destructive text-xs font-semibold">
               <Siren className="h-4 w-4 animate-bounce" />
@@ -225,8 +229,8 @@ export function ProductionCard({ order, onClick, isDragging }: ProductionCardPro
           )}
         </div>
 
-        {/* Phase Time & SLA Section */}
-        {order.current_phase && (
+        {/* Phase Time & SLA Section - Não mostrar para pedidos entregues */}
+        {order.current_phase && !isDeliveredPhase && (
           <div className={cn(
             "rounded-md p-2 text-xs space-y-1",
             !order.current_phase.started_at && "bg-muted/50 border border-dashed border-muted-foreground/30",
@@ -280,34 +284,34 @@ export function ProductionCard({ order, onClick, isDragging }: ProductionCardPro
                   <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-muted-foreground/50 text-muted-foreground">
                     SLA: {slaDays}d
                   </Badge>
-            )}
-          </div>
-        )}
-
-        {/* Alerta Preditivo */}
-        {hasPredictiveDelay && prediction?.etapa_prevista_atraso && (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="flex items-center gap-1.5 p-2 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-xs">
-                  <TrendingUp className="h-3 w-3" />
-                  <span className="truncate">⚠️ Risco: {prediction.etapa_prevista_atraso}</span>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Análise preditiva indica risco de atraso nesta etapa</p>
-                {prediction.horas_estimadas_extra > 0 && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Tempo extra estimado: {prediction.horas_estimadas_extra < 24 
-                      ? `${prediction.horas_estimadas_extra.toFixed(0)}h`
-                      : `${(prediction.horas_estimadas_extra / 24).toFixed(1)}d`
-                    }
-                  </p>
                 )}
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        )}
+              </div>
+            )}
+
+            {/* Alerta Preditivo */}
+            {hasPredictiveDelay && prediction?.etapa_prevista_atraso && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center gap-1.5 p-2 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-xs">
+                      <TrendingUp className="h-3 w-3" />
+                      <span className="truncate">⚠️ Risco: {prediction.etapa_prevista_atraso}</span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Análise preditiva indica risco de atraso nesta etapa</p>
+                    {prediction.horas_estimadas_extra > 0 && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Tempo extra estimado: {prediction.horas_estimadas_extra < 24 
+                          ? `${prediction.horas_estimadas_extra.toFixed(0)}h`
+                          : `${(prediction.horas_estimadas_extra / 24).toFixed(1)}d`
+                        }
+                      </p>
+                    )}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
           </div>
         )}
 
