@@ -7,22 +7,24 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Edit, Package, AlertTriangle, TrendingUp, DollarSign, BarChart3, Trash2, Loader2 } from "lucide-react";
+import { Edit, Package, AlertTriangle, TrendingUp, DollarSign, BarChart3, Trash2, Loader2, FileSpreadsheet } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/usePermissions";
 import EditProductDialog from "./EditProductDialog";
 import ProductMovements from "./ProductMovements";
 import ProductSuppliers from "./ProductSuppliers";
 import ProductPriceChart from "./ProductPriceChart";
+import ProductFichaTecnica from "./ProductFichaTecnica";
 
 interface ProductDetailSheetProps {
   product: any;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onUpdate: () => void;
+  defaultTab?: string;
 }
 
-export default function ProductDetailSheet({ product, open, onOpenChange, onUpdate }: ProductDetailSheetProps) {
+export default function ProductDetailSheet({ product, open, onOpenChange, onUpdate, defaultTab = "movements" }: ProductDetailSheetProps) {
   const { toast } = useToast();
   const { isMaster } = usePermissions();
   const queryClient = useQueryClient();
@@ -218,15 +220,23 @@ export default function ProductDetailSheet({ product, open, onOpenChange, onUpda
               </CardContent>
             </Card>
 
-            <Tabs defaultValue="movements">
-              <TabsList className="w-full">
-                <TabsTrigger value="movements" className="flex-1">Movimentações</TabsTrigger>
-                <TabsTrigger value="prices" className="flex-1">Histórico Preços</TabsTrigger>
-                <TabsTrigger value="suppliers" className="flex-1">Fornecedores</TabsTrigger>
+            <Tabs defaultValue={defaultTab} key={defaultTab}>
+              <TabsList className="w-full grid grid-cols-4">
+                <TabsTrigger value="movements">Movimentações</TabsTrigger>
+                <TabsTrigger value="ficha-tecnica" className="flex items-center gap-1">
+                  <FileSpreadsheet className="h-3 w-3" />
+                  Ficha Técnica
+                </TabsTrigger>
+                <TabsTrigger value="prices">Histórico Preços</TabsTrigger>
+                <TabsTrigger value="suppliers">Fornecedores</TabsTrigger>
               </TabsList>
 
               <TabsContent value="movements">
                 <ProductMovements productId={product.id} />
+              </TabsContent>
+
+              <TabsContent value="ficha-tecnica">
+                <ProductFichaTecnica productId={product.id} productName={product.name} />
               </TabsContent>
 
               <TabsContent value="prices">
