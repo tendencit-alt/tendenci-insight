@@ -8,10 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
-import { TemplateFichaSelector } from "@/components/shared/TemplateFichaSelector";
 
 interface EditProductDialogProps {
   product: any;
@@ -45,7 +43,6 @@ export default function EditProductDialog({ product, open, onOpenChange, onSucce
     cor: "",
     medida: "",
     fornecedor_texto: "",
-    template_ficha_id: null as string | null,
   });
 
   const { data: categories = [] } = useQuery({
@@ -97,7 +94,6 @@ export default function EditProductDialog({ product, open, onOpenChange, onSucce
         cor: product.cor || "",
         medida: product.medida || "",
         fornecedor_texto: product.fornecedor_texto || "",
-        template_ficha_id: product.template_ficha_id || null,
       });
     }
   }, [product]);
@@ -121,7 +117,6 @@ export default function EditProductDialog({ product, open, onOpenChange, onSucce
           cor: form.cor || null,
           medida: form.medida || null,
           fornecedor_texto: form.fornecedor_texto || null,
-          template_ficha_id: form.template_ficha_id || null,
         })
         .eq("id", product.id);
 
@@ -378,12 +373,6 @@ export default function EditProductDialog({ product, open, onOpenChange, onSucce
               />
             </div>
           </div>
-
-          {/* Ficha Técnica Padrão */}
-          <TemplateFichaSelector
-            value={form.template_ficha_id}
-            onChange={(value) => setForm({ ...form, template_ficha_id: value })}
-          />
 
           <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
