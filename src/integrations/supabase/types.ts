@@ -3924,6 +3924,7 @@ export type Database = {
           current_stock: number | null
           description: string | null
           fornecedor_texto: string | null
+          ia_produto_id: string | null
           id: string
           image_url: string | null
           location_id: string | null
@@ -3953,6 +3954,7 @@ export type Database = {
           current_stock?: number | null
           description?: string | null
           fornecedor_texto?: string | null
+          ia_produto_id?: string | null
           id?: string
           image_url?: string | null
           location_id?: string | null
@@ -3982,6 +3984,7 @@ export type Database = {
           current_stock?: number | null
           description?: string | null
           fornecedor_texto?: string | null
+          ia_produto_id?: string | null
           id?: string
           image_url?: string | null
           location_id?: string | null
@@ -4003,6 +4006,13 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "product_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_ia_produto_id_fkey"
+            columns: ["ia_produto_id"]
+            isOneToOne: false
+            referencedRelation: "tendenci_ia_produtos"
             referencedColumns: ["id"]
           },
           {
@@ -7167,6 +7177,10 @@ export type Database = {
         }[]
       }
       suppliers_metrics: { Args: never; Returns: Json }
+      sync_ia_product_to_inventory: {
+        Args: { p_ia_produto_id: string }
+        Returns: string
+      }
       user_can_access_module: {
         Args: {
           _module: Database["public"]["Enums"]["app_module"]
