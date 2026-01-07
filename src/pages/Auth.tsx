@@ -10,7 +10,6 @@ import { toast } from 'sonner';
 import { Loader2, Lock } from 'lucide-react';
 import tendenciLogo from '@/assets/tendenci-logo-new.png';
 import { supabase } from '@/integrations/supabase/client';
-
 const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [loginData, setLoginData] = useState({
@@ -41,7 +40,6 @@ const Auth = () => {
       }
     }
   }, [user, profile, navigate]);
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!loginData.email || !loginData.password) {
@@ -61,16 +59,18 @@ const Auth = () => {
       }
     } else {
       toast.success('Login realizado com sucesso!');
-      
+
       // Buscar profile do usuário para determinar redirecionamento
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: {
+          user
+        }
+      } = await supabase.auth.getUser();
       if (user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .single();
-        
+        const {
+          data: profile
+        } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+
         // Vendedores (não-admin) vão para /kanban
         if (profile?.role !== 'admin') {
           navigate('/kanban');
@@ -121,7 +121,7 @@ const Auth = () => {
   };
   return <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/20 to-muted/30 p-4">
       <Card className="w-full max-w-md shadow-2xl animate-fade-in animate-scale-in">
-        <CardHeader className="space-y-4 bg-red-800">
+        <CardHeader className="space-y-4 border-0 bg-popover">
           <div className="flex justify-center">
             <img src={tendenciLogo} alt="Tendenci" className="h-32 w-auto" />
           </div>
