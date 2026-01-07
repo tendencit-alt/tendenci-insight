@@ -331,17 +331,17 @@ function ProductionCardSimpleComponent({ order, onClick, isDragging, automationA
         {/* Contador de Dias para Entrega Final */}
         <div className={cn(
           "rounded p-1.5",
-          order.status === 'finalizado' && "bg-emerald-500/15 border border-emerald-500/30",
-          order.status !== 'finalizado' && !order.planned_end_date && "bg-destructive/15 border border-destructive/30",
-          order.status !== 'finalizado' && order.planned_end_date && isOverdue && "bg-destructive/15 border border-destructive/30",
-          order.status !== 'finalizado' && order.planned_end_date && !isOverdue && daysRemaining !== null && daysRemaining <= 3 && "bg-warning/15 border border-warning/30",
-          order.status !== 'finalizado' && order.planned_end_date && !isOverdue && daysRemaining !== null && daysRemaining > 3 && "bg-emerald-500/10 border border-emerald-500/20"
+          (order.status === 'finalizado' || order.status === 'concluido') && "bg-emerald-500/15 border border-emerald-500/30",
+          (order.status !== 'finalizado' && order.status !== 'concluido') && !order.planned_end_date && "bg-destructive/15 border border-destructive/30",
+          (order.status !== 'finalizado' && order.status !== 'concluido') && order.planned_end_date && isOverdue && "bg-destructive/15 border border-destructive/30",
+          (order.status !== 'finalizado' && order.status !== 'concluido') && order.planned_end_date && !isOverdue && daysRemaining !== null && daysRemaining <= 3 && "bg-warning/15 border border-warning/30",
+          (order.status !== 'finalizado' && order.status !== 'concluido') && order.planned_end_date && !isOverdue && daysRemaining !== null && daysRemaining > 3 && "bg-emerald-500/10 border border-emerald-500/20"
         )}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5 text-[11px] font-medium">
               <Calendar className="h-3 w-3" />
-              {order.status === 'finalizado' ? (
-                <span className="text-emerald-600">Finalizado e Entregue</span>
+              {(order.status === 'finalizado' || order.status === 'concluido') ? (
+                <span className="text-emerald-600">✓ Entregue</span>
               ) : !order.planned_end_date ? (
                 <span className="text-destructive font-semibold">Sem prazo definido</span>
               ) : isOverdue ? (
@@ -362,7 +362,7 @@ function ProductionCardSimpleComponent({ order, onClick, isDragging, automationA
             </div>
             
             {/* Botão editar prazo - apenas Móveis Planejados */}
-            {isMoveisplanejados && order.status !== 'finalizado' && (
+            {isMoveisplanejados && order.status !== 'finalizado' && order.status !== 'concluido' && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
