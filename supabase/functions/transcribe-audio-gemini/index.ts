@@ -174,9 +174,10 @@ serve(async (req) => {
                   text: 'Transcreva o áudio a seguir para texto em português brasileiro. Retorne APENAS a transcrição exata do que foi dito, sem comentários adicionais, sem pontuação extra, sem formatação. Se não conseguir entender algo, escreva [inaudível]. Se o áudio estiver vazio ou só tiver ruído, responda: [áudio vazio ou inaudível]'
                 },
                 {
-                  type: 'image_url',
-                  image_url: {
-                    url: `data:${audioMimeType};base64,${audioBase64}`
+                  type: 'input_audio',
+                  input_audio: {
+                    data: audioBase64,
+                    format: geminiFormat
                   }
                 }
               ]
