@@ -1180,7 +1180,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                 <Card className="p-4 border-orange-200 dark:border-orange-800 bg-orange-50/50 dark:bg-orange-950/20">
                   <div className="flex items-center justify-between mb-3">
                     <Label className="font-medium flex items-center gap-2">
-                      💰 Comissões
+                      💰 Recursos Estratégicos
                     </Label>
                   </div>
                   
@@ -1439,19 +1439,19 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                   )}
                   {comissoes.vendedor.habilitado && comissoes.vendedor.valor > 0 && (
                     <div className="flex items-center justify-between text-orange-600">
-                      <span className="text-sm">Comissão Vendedor ({comissoes.vendedor.percentual.toFixed(2)}%):</span>
+                      <span className="text-sm">Vendedor ({comissoes.vendedor.percentual.toFixed(2)}%):</span>
                       <span className="text-sm font-medium">- {formatCurrency(comissoes.vendedor.valor)}</span>
                     </div>
                   )}
                   {comissoes.orcamentista.habilitado && comissoes.orcamentista.valor > 0 && (
                     <div className="flex items-center justify-between text-orange-600">
-                      <span className="text-sm">Comissão Orçamentista ({comissoes.orcamentista.percentual.toFixed(2)}%):</span>
+                      <span className="text-sm">Orçamentista ({comissoes.orcamentista.percentual.toFixed(2)}%):</span>
                       <span className="text-sm font-medium">- {formatCurrency(comissoes.orcamentista.valor)}</span>
                     </div>
                   )}
                   {comissoes.projetista.habilitado && comissoes.projetista.valor > 0 && (
                     <div className="flex items-center justify-between text-orange-600">
-                      <span className="text-sm">Comissão Projetista ({comissoes.projetista.percentual.toFixed(2)}%):</span>
+                      <span className="text-sm">Projetista ({comissoes.projetista.percentual.toFixed(2)}%):</span>
                       <span className="text-sm font-medium">- {formatCurrency(comissoes.projetista.valor)}</span>
                     </div>
                   )}
