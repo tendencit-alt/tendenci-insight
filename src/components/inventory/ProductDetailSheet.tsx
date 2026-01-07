@@ -13,7 +13,6 @@ import { usePermissions } from "@/hooks/usePermissions";
 import EditProductDialog from "./EditProductDialog";
 import ProductMovements from "./ProductMovements";
 import ProductSuppliers from "./ProductSuppliers";
-import ProductBOMManager from "./ProductBOMManager";
 import ProductPriceChart from "./ProductPriceChart";
 
 interface ProductDetailSheetProps {
@@ -224,7 +223,6 @@ export default function ProductDetailSheet({ product, open, onOpenChange, onUpda
                 <TabsTrigger value="movements" className="flex-1">Movimentações</TabsTrigger>
                 <TabsTrigger value="prices" className="flex-1">Histórico Preços</TabsTrigger>
                 <TabsTrigger value="suppliers" className="flex-1">Fornecedores</TabsTrigger>
-                <TabsTrigger value="bom" className="flex-1">Composição</TabsTrigger>
               </TabsList>
 
               <TabsContent value="movements">
@@ -237,10 +235,6 @@ export default function ProductDetailSheet({ product, open, onOpenChange, onUpda
 
               <TabsContent value="suppliers">
                 <ProductSuppliers productId={product.id} />
-              </TabsContent>
-
-              <TabsContent value="bom">
-                <ProductBOMManager productId={product.id} productName={product.name} />
               </TabsContent>
             </Tabs>
           </div>
