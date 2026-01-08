@@ -2911,6 +2911,11 @@ function buildMasterPrompt(
   // Business values
   const nomeEmpresa = (negocio.nome_empresa as string) || "nossa empresa";
   const descricaoEmpresa = (negocio.descricao_empresa as string) || "";
+  const localizacao = (negocio.localizacao as string) || "";
+  const ramo = (negocio.ramo as string) || "";
+  const horarioFuncionamento = (negocio.horario_funcionamento as string) || "";
+  const diferenciais = (negocio.diferenciais as string) || "";
+  const publicoAlvo = (negocio.publico_alvo as string) || "";
 
   // Generate level description
   const nivelDescricao: Record<string, string> = {
@@ -3023,6 +3028,29 @@ Você ${personalidadeDescricao[personalidadePrincipal] || personalidadeDescricao
 Tom emocional: ${tomEmocional}.
 ${descricaoPersonalidade ? `\nInstruções adicionais: ${descricaoPersonalidade}` : ""}
 `);
+
+  // ========== CONTEXTO DA EMPRESA ==========
+  if (ramo || localizacao || horarioFuncionamento || diferenciais || publicoAlvo) {
+    let empresaContext = `# 🏢 SOBRE A ${nomeEmpresa.toUpperCase()}\n\n`;
+    
+    if (ramo) {
+      empresaContext += `**Ramo de atuação:** ${ramo}\n`;
+    }
+    if (localizacao) {
+      empresaContext += `**Localização:** ${localizacao}\n`;
+    }
+    if (horarioFuncionamento) {
+      empresaContext += `**Horário de funcionamento:** ${horarioFuncionamento}\n`;
+    }
+    if (diferenciais) {
+      empresaContext += `\n## Diferenciais\n${diferenciais}\n`;
+    }
+    if (publicoAlvo) {
+      empresaContext += `\n## Público-Alvo\n${publicoAlvo}\n`;
+    }
+    
+    parts.push(empresaContext);
+  }
 
   // ========== PORTFÓLIO COMPLETO DA EMPRESA ==========
   const categoriasComFoto = [...new Set(products.map(p => p.categoria).filter(Boolean))];
