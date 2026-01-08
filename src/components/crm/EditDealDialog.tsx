@@ -483,16 +483,33 @@ export function EditDealDialog({
         updateData.stage_id = formData.stage_id;
         updateData.stage_entered_at = new Date().toISOString();
       }
-      const { error: dealError } = await supabase
+      console.log("Dados sendo enviados para update:", JSON.stringify(updateData, null, 2));
+      console.log("Deal ID:", deal.id);
+
+      const { data: updatedDeal, error: dealError } = await supabase
         .from("crm_deals")
         .update(updateData)
-        .eq("id", deal.id);
+        .eq("id", deal.id)
+        .select()
+        .maybeSingle();
+
+      console.log("Resultado do update:", { updatedDeal, dealError });
 
       if (dealError) {
         setLoading(false);
         toast({
           title: "Erro ao atualizar negócio",
           description: dealError.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!updatedDeal) {
+        setLoading(false);
+        toast({
+          title: "Atualização bloqueada",
+          description: "Você não tem permissão para editar este negócio. Verifique sua especialização ou contate um administrador.",
           variant: "destructive",
         });
         return;
