@@ -35,7 +35,8 @@ serve(async (req) => {
     console.log(`🎙️ MimeType: ${mimeType || 'not specified'}`);
 
     let audioBase64 = audio;
-    let audioMimeType = mimeType || 'audio/ogg';
+    // Normalizar mimeType (remover ; codecs=opus etc)
+    let audioMimeType = (mimeType || 'audio/ogg').split(';')[0].trim();
 
     // If audio is a URL, fetch and convert to base64
     if (audio.startsWith('http')) {
