@@ -924,31 +924,35 @@ Responda em português brasileiro de forma clara e organizada.`;
       
       for (const msg of history) {
         if (msg.role === "assistant") {
+          // CRITICAL: Null check to prevent "Cannot read properties of undefined"
+          const content = msg.content || '';
+          if (!content) continue;
+          
           // Check for price mentions
-          if (/R\$\s*[\d.,]+/.test(msg.content)) {
-            const priceMatch = msg.content.match(/R\$\s*[\d.,]+/g);
+          if (/R\$\s*[\d.,]+/.test(content)) {
+            const priceMatch = content.match(/R\$\s*[\d.,]+/g);
             if (priceMatch) {
               provided.push(`Preço já informado: ${priceMatch[0]}`);
             }
           }
           
           // Check for material mentions (pés, base, estrutura)
-          if (/pés?|base|estrutura/i.test(msg.content) && /aço|metal|ferro|carbono|madeira/i.test(msg.content)) {
+          if (/pés?|base|estrutura/i.test(content) && /aço|metal|ferro|carbono|madeira/i.test(content)) {
             provided.push("Material dos pés/base já explicado");
           }
           
           // Check for size mentions
-          if (/\d+[\s,]*m(?:etros?)?|\d+\s*cm|\d+,\d+\s*m/i.test(msg.content) && /mesa|banco|cadeira/i.test(msg.content)) {
+          if (/\d+[\s,]*m(?:etros?)?|\d+\s*cm|\d+,\d+\s*m/i.test(content) && /mesa|banco|cadeira/i.test(content)) {
             provided.push("Tamanho/medidas já informados");
           }
           
           // Check for prazo/entrega
-          if (/prazo|dias úteis|semanas|entrega/i.test(msg.content) && /\d+\s*(dias?|semanas?)/i.test(msg.content)) {
+          if (/prazo|dias úteis|semanas|entrega/i.test(content) && /\d+\s*(dias?|semanas?)/i.test(content)) {
             provided.push("Prazo de entrega já mencionado");
           }
           
           // Check for acabamento
-          if (/acabamento|óleo|verniz|laca|pintura/i.test(msg.content)) {
+          if (/acabamento|óleo|verniz|laca|pintura/i.test(content)) {
             provided.push("Acabamento já explicado");
           }
         }
@@ -1305,10 +1309,34 @@ REGRAS ABSOLUTAS:
       }
     }
     
-    // Final fallback if still empty
+    // Final fallback if still empty - use contextual varied messages
     if (!assistantMessage || assistantMessage.trim().length === 0) {
-      assistantMessage = "Olá! Como posso ajudar você hoje? Estou aqui para tirar suas dúvidas sobre nossos móveis. 😊";
-      console.log("⚠️ Using default fallback message");
+      const contextualFallbacks = [
+        "Olá! Recebi sua mensagem e vou te ajudar! Me conta um pouco mais sobre o que você está procurando? 😊",
+        "Oi! Estou aqui para te ajudar. Você está buscando algum móvel específico para sua casa ou escritório? 🏠",
+        "Olá! Bem-vindo à Tendenci! Temos mesas, sofás, cadeiras e muito mais. O que te interessa? 🪑",
+        "Oi! Como posso ajudar você hoje? Conta pra mim o que você precisa! 😊"
+      ];
+      const randomFallback = contextualFallbacks[Math.floor(Math.random() * contextualFallbacks.length)];
+      assistantMessage = randomFallback;
+      
+      // Log structured failure for analysis
+      console.log(`⚠️ [FALLBACK TRIGGERED] Phone: ***${phoneNumber.slice(-4)}, UserMsg: ${combinedMessage.substring(0, 100)}`);
+      console.log(`⚠️ [FALLBACK TRIGGERED] HistoryLength: ${conversationHistory.length}, Model: ${usedModel}`);
+      
+      // Try to save to failures table for future analysis (non-blocking)
+      supabase.from("ia_processing_failures").insert({
+        phone_number: phoneNumber,
+        instance_name: instanceName,
+        user_message: combinedMessage.substring(0, 500),
+        ai_response: "",
+        error_type: "empty_ai_response",
+        model_used: usedModel,
+        prompt_size: masterPrompt.length,
+        history_size: conversationHistory.length,
+        created_at: new Date().toISOString()
+      }).then(() => console.log("📝 Failure logged for analysis"))
+        .catch(e => console.log("Could not log failure:", e.message));
     }
     
     // Log de qualidade para monitoramento
@@ -1949,7 +1977,8 @@ function extractConversationContext(history: Message[]): Record<string, string> 
   
   for (const msg of history) {
     if (msg.role === "user") {
-      const content = msg.content.toLowerCase();
+      // CRITICAL: Null check to prevent "Cannot read properties of undefined"
+      const content = (msg.content || '').toLowerCase();
       
       // Detectar tipo de ambiente/projeto
       if (/clínica|clinica|consultório|consultorio|escritório|escritorio|loja|comercial|corporativo|empresa/.test(content)) {
