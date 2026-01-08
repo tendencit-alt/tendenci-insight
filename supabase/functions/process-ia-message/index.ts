@@ -1325,18 +1325,22 @@ REGRAS ABSOLUTAS:
       console.log(`⚠️ [FALLBACK TRIGGERED] HistoryLength: ${conversationHistory.length}, Model: ${usedModel}`);
       
       // Try to save to failures table for future analysis (non-blocking)
-      supabase.from("ia_processing_failures").insert({
-        phone_number: phoneNumber,
-        instance_name: instanceName,
-        user_message: combinedMessage.substring(0, 500),
-        ai_response: "",
-        error_type: "empty_ai_response",
-        model_used: usedModel,
-        prompt_size: masterPrompt.length,
-        history_size: conversationHistory.length,
-        created_at: new Date().toISOString()
-      }).then(() => console.log("📝 Failure logged for analysis"))
-        .catch(e => console.log("Could not log failure:", e.message));
+      try {
+        await supabase.from("ia_processing_failures").insert({
+          phone_number: phoneNumber,
+          instance_name: instanceName,
+          user_message: combinedMessage.substring(0, 500),
+          ai_response: "",
+          error_type: "empty_ai_response",
+          model_used: usedModel,
+          prompt_size: masterPrompt.length,
+          history_size: conversationHistory.length,
+          created_at: new Date().toISOString()
+        });
+        console.log("📝 Failure logged for analysis");
+      } catch (logErr) {
+        console.log("Could not log failure:", logErr);
+      }
     }
     
     // Log de qualidade para monitoramento
