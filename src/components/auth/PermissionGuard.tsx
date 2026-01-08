@@ -4,24 +4,13 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import type { AppModule } from '@/contexts/PermissionsContext';
+import { routeMap, getFirstAllowedRoute } from '@/hooks/useFirstAllowedRoute';
 
 interface PermissionGuardProps {
   children: ReactNode;
   module: AppModule;
   redirectTo?: string;
 }
-
-const routeMap: Record<string, string> = {
-  'dashboard': '/',
-  'leads': '/leads',
-  'crm': '/kanban',
-  'projetos': '/projects',
-  'prospeccao': '/prospeccao',
-  'arquitetos': '/prospeccao',
-  'metas': '/metas',
-  'configuracoes': '/settings',
-  'ia_configuracao': '/ia-configuracao',
-};
 
 export function PermissionGuard({ children, module }: PermissionGuardProps) {
   const { hasModuleAccess, loading, permissions, isMaster } = usePermissions();
@@ -30,6 +19,13 @@ export function PermissionGuard({ children, module }: PermissionGuardProps) {
   const hasRedirected = useRef(false);
   const [accessChecked, setAccessChecked] = useState(false);
   const [hasAccess, setHasAccess] = useState(false);
+
+  // Reset flag quando módulo muda
+  useEffect(() => {
+    hasRedirected.current = false;
+    setAccessChecked(false);
+    setHasAccess(false);
+  }, [module]);
 
   useEffect(() => {
     // Só verificar após o loading terminar
@@ -51,18 +47,9 @@ export function PermissionGuard({ children, module }: PermissionGuardProps) {
         variant: 'destructive',
       });
       
-      // Redirecionar para um módulo que o usuário tenha acesso
-      if (permissions?.permissions && permissions.permissions.length > 0) {
-        const firstAllowedModule = permissions.permissions.find(p => p.can_view);
-        if (firstAllowedModule) {
-          const targetRoute = routeMap[firstAllowedModule.module] || '/auth';
-          navigate(targetRoute, { replace: true });
-          return;
-        }
-      }
-      
-      // Se não encontrar nenhum módulo permitido, ir para auth
-      navigate('/auth', { replace: true });
+      // Encontrar primeira rota permitida usando a função helper
+      const targetRoute = getFirstAllowedRoute(permissions?.permissions, isMaster);
+      navigate(targetRoute, { replace: true });
     }
   }, [loading, hasModuleAccess, module, navigate, toast, permissions, isMaster]);
 

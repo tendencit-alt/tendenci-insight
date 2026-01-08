@@ -10,6 +10,8 @@ import { toast } from 'sonner';
 import { Loader2, Lock } from 'lucide-react';
 import tendenciLogo from '@/assets/tendenci-logo-new.png';
 import { supabase } from '@/integrations/supabase/client';
+import { getFirstAllowedRoute, routeMap } from '@/hooks/useFirstAllowedRoute';
+
 const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [loginData, setLoginData] = useState({
@@ -30,16 +32,33 @@ const Auth = () => {
   } = useAuth();
   const navigate = useNavigate();
 
-  // Redirecionar usuários já autenticados
+  // Redirecionar usuários já autenticados baseado em suas permissões
   useEffect(() => {
-    if (user && profile) {
-      if (profile.role !== 'admin') {
-        navigate('/kanban');
-      } else {
-        navigate('/');
+    const redirectAuthenticatedUser = async () => {
+      if (user && profile) {
+        // Verificar se é admin
+        const isMaster = profile.role === 'admin';
+        
+        if (isMaster) {
+          navigate('/');
+          return;
+        }
+        
+        // Buscar permissões do usuário
+        const { data: userPermissions } = await supabase
+          .from('user_permissions')
+          .select('module, can_view')
+          .eq('user_id', user.id)
+          .eq('can_view', true);
+        
+        const targetRoute = getFirstAllowedRoute(userPermissions, false);
+        navigate(targetRoute);
       }
-    }
+    };
+    
+    redirectAuthenticatedUser();
   }, [user, profile, navigate]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!loginData.email || !loginData.password) {
@@ -47,9 +66,9 @@ const Auth = () => {
       return;
     }
     setLoading(true);
-    const {
-      error
-    } = await signIn(loginData.email, loginData.password);
+    
+    const { error } = await signIn(loginData.email, loginData.password);
+    
     if (error) {
       console.error('Login error:', error);
       if (error.message.includes('Invalid login credentials')) {
@@ -57,30 +76,44 @@ const Auth = () => {
       } else {
         toast.error(error.message || 'Erro ao fazer login');
       }
-    } else {
-      toast.success('Login realizado com sucesso!');
-
-      // Buscar profile do usuário para determinar redirecionamento
-      const {
-        data: {
-          user
-        }
-      } = await supabase.auth.getUser();
-      if (user) {
-        const {
-          data: profile
-        } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-
-        // Vendedores (não-admin) vão para /kanban
-        if (profile?.role !== 'admin') {
-          navigate('/kanban');
-        } else {
-          navigate('/');
-        }
-      } else {
-        navigate('/');
-      }
+      setLoading(false);
+      return;
     }
+    
+    toast.success('Login realizado com sucesso!');
+
+    // Buscar dados do usuário para determinar redirecionamento
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    
+    if (authUser) {
+      // Buscar profile
+      const { data: userProfile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', authUser.id)
+        .single();
+      
+      const isMaster = userProfile?.role === 'admin';
+      
+      if (isMaster) {
+        navigate('/');
+        setLoading(false);
+        return;
+      }
+      
+      // Buscar permissões do usuário
+      const { data: userPermissions } = await supabase
+        .from('user_permissions')
+        .select('module, can_view')
+        .eq('user_id', authUser.id)
+        .eq('can_view', true);
+      
+      const targetRoute = getFirstAllowedRoute(userPermissions, false);
+      navigate(targetRoute);
+    } else {
+      navigate('/');
+    }
+    
     setLoading(false);
   };
   const handleSignup = async (e: React.FormEvent) => {
