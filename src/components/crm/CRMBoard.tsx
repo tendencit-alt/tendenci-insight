@@ -1,12 +1,22 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { DealCard } from "./DealCard";
 import { DealDetailSheet } from "./DealDetailSheet";
+import { DroppableColumn } from "./DroppableColumn";
 import { useCRMStatePersistence } from "@/hooks/useCRMStatePersistence";
-
+import {
+  DndContext,
+  DragOverlay,
+  closestCenter,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+  DragStartEvent,
+} from "@dnd-kit/core";
+import { SortableContext, rectSortingStrategy } from "@dnd-kit/sortable";
 // Debounce helper function
 function debounce<T extends (...args: any[]) => any>(
   func: T,
@@ -46,6 +56,22 @@ export function CRMBoard({ pipelineId, onRefresh, autoOpenDealId, onDealOpened, 
   const [selectedDeal, setSelectedDeal] = useState<any>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [draggedDeal, setDraggedDeal] = useState<any>(null);
+  const [activeId, setActiveId] = useState<string | null>(null);
+
+  // Configurar sensores para drag-and-drop com @dnd-kit
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // Previne cliques acidentais
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 150,
+        tolerance: 5,
+      },
+    })
+  );
 
   // Memoizar filtros para evitar re-renders desnecessários
   const memoizedFilters = useMemo(() => JSON.stringify(filters), [filters]);
@@ -313,6 +339,174 @@ export function CRMBoard({ pipelineId, onRefresh, autoOpenDealId, onDealOpened, 
     return hours;
   };
 
+  // Handler para @dnd-kit drag start
+  const handleDndDragStart = (event: DragStartEvent) => {
+    const deal = deals.find(d => d.id === event.active.id);
+    setDraggedDeal(deal || null);
+    setActiveId(event.active.id as string);
+  };
+
+  // Handler para @dnd-kit drag end
+  const handleDndDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveId(null);
+    
+    if (!over || !draggedDeal) {
+      setDraggedDeal(null);
+      return;
+    }
+
+    const overId = over.id as string;
+    
+    // Verificar se é drop em coluna de Won
+    if (overId === 'column-won') {
+      await handleMoveToWon();
+      return;
+    }
+    
+    // Verificar se é drop em coluna de Lost
+    if (overId === 'column-lost') {
+      await handleMoveToLost();
+      return;
+    }
+    
+    // Verificar se é uma coluna de estágio
+    if (overId.startsWith('column-')) {
+      const stageId = overId.replace('column-', '');
+      await handleMoveToStage(stageId);
+      return;
+    }
+    
+    setDraggedDeal(null);
+  };
+
+  const handleMoveToStage = async (stageId: string) => {
+    if (!draggedDeal || draggedDeal.stage_id === stageId) {
+      setDraggedDeal(null);
+      return;
+    }
+
+    // Encontrar a etapa de destino
+    const targetStage = stages.find(s => s.id === stageId);
+    
+    // Verificar se a etapa de destino exige valor (APENAS Negociação)
+    if (targetStage) {
+      const targetName = targetStage.name.toLowerCase();
+      const requiresValue = targetName.includes('negociação');
+      
+      if (requiresValue && (!draggedDeal.value || draggedDeal.value <= 0)) {
+        toast({
+          title: "Valor obrigatório",
+          description: "Para mover para a etapa 'Negociação', o negócio precisa ter um valor (R$) definido.",
+          variant: "destructive",
+        });
+        setDraggedDeal(null);
+        return;
+      }
+    }
+
+    const updateData: any = {
+      stage_id: stageId,
+      stage_entered_at: new Date().toISOString(),
+    };
+
+    if (draggedDeal.status !== "aberto") {
+      updateData.status = "aberto";
+      updateData.lost_reason = null;
+      updateData.lost_note = null;
+    }
+
+    const { error } = await supabase
+      .from("crm_deals")
+      .update(updateData)
+      .eq("id", draggedDeal.id);
+
+    if (error) {
+      toast({
+        title: "Erro ao mover negócio",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Sucesso",
+        description: draggedDeal.status !== "aberto" 
+          ? "Negócio reativado e movido com sucesso!" 
+          : "Negócio movido com sucesso!",
+      });
+      fetchData();
+      onRefresh();
+    }
+    
+    setDraggedDeal(null);
+  };
+
+  const handleMoveToWon = async () => {
+    if (!draggedDeal || draggedDeal.status === "won") {
+      setDraggedDeal(null);
+      return;
+    }
+
+    const { error } = await supabase
+      .from("crm_deals")
+      .update({
+        status: "won",
+        stage_entered_at: new Date().toISOString(),
+      })
+      .eq("id", draggedDeal.id);
+
+    if (error) {
+      toast({
+        title: "Erro ao marcar como ganho",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "🎉 Negócio ganho!",
+        description: "O negócio foi marcado como ganho com sucesso!",
+      });
+      fetchData();
+      onRefresh();
+    }
+    
+    setDraggedDeal(null);
+  };
+
+  const handleMoveToLost = async () => {
+    if (!draggedDeal || draggedDeal.status === "lost") {
+      setDraggedDeal(null);
+      return;
+    }
+
+    const { error } = await supabase
+      .from("crm_deals")
+      .update({
+        status: "lost",
+        lost_reason: "other",
+        stage_entered_at: new Date().toISOString(),
+      })
+      .eq("id", draggedDeal.id);
+
+    if (error) {
+      toast({
+        title: "Erro ao marcar como perdido",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Negócio perdido",
+        description: "O negócio foi marcado como perdido.",
+      });
+      fetchData();
+      onRefresh();
+    }
+    
+    setDraggedDeal(null);
+  };
+
+  // Manter handlers legados para compatibilidade
   const handleDragStart = (deal: any) => (e: React.DragEvent) => {
     setDraggedDeal(deal);
     e.dataTransfer.effectAllowed = "move";
@@ -464,141 +658,115 @@ export function CRMBoard({ pipelineId, onRefresh, autoOpenDealId, onDealOpened, 
     return <div className="text-center py-12 animate-fade-in">Carregando...</div>;
   }
 
+  // Obter todos os IDs dos deals para o SortableContext
+  const allDealIds = useMemo(() => deals.map(d => d.id), [deals]);
+
   return (
     <>
       {/* Render board: container com colunas do kanban - scroll horizontal contido */}
-      <div className="overflow-x-auto pb-3">
-        <div className="flex gap-2 min-w-min">
-          {stages.map((stage) => {
-            const stageDeals = getDealsByStage(stage.id);
-            return (
-              <Card 
-                key={stage.id} 
-                className="flex-shrink-0 hover:shadow-md transition-all duration-300 border-border/50 animate-fade-in w-[220px]"
-                onDragOver={handleDragOver}
-                onDrop={handleDrop(stage.id)}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={handleDndDragStart}
+        onDragEnd={handleDndDragEnd}
+      >
+        <div className="overflow-x-auto pb-3">
+          <div className="flex gap-2 min-w-min">
+            <SortableContext items={allDealIds} strategy={rectSortingStrategy}>
+              {stages.map((stage) => {
+                const stageDeals = getDealsByStage(stage.id);
+                return (
+                  <DroppableColumn
+                    key={stage.id}
+                    id={stage.id}
+                    title={stage.name}
+                    count={stageDeals.length}
+                    value={calculateStageValue(stageDeals)}
+                  >
+                    {stageDeals.length === 0 ? (
+                      <p className="text-xs text-muted-foreground text-center py-6">
+                        Nenhum negócio nesta etapa
+                      </p>
+                    ) : (
+                      stageDeals.map((deal) => (
+                        <DealCard
+                          key={deal.id}
+                          deal={deal}
+                          timeInStage={getTimeInStage(deal)}
+                          onClick={() => handleDealClick(deal)}
+                          onDelete={handleDeleteDeal}
+                        />
+                      ))
+                    )}
+                  </DroppableColumn>
+                );
+              })}
+
+              {/* Fixed Won column */}
+              <DroppableColumn
+                id="won"
+                title="✅ Ganho"
+                count={getWonDeals().length}
+                value={calculateStageValue(getWonDeals())}
+                variant="won"
               >
-                <CardHeader className="pb-1.5 px-2 pt-2">
-                  <CardTitle className="flex flex-col gap-1 text-xs">
-                    <div className="flex items-center justify-between gap-1.5">
-                      <span className="truncate font-semibold text-xs">{stage.name}</span>
-                      <Badge variant="secondary" className="flex-shrink-0 font-medium text-[10px] h-4">{stageDeals.length}</Badge>
-                    </div>
-                    <span className="text-[10px] font-semibold text-primary">
-                      {calculateStageValue(stageDeals)}
-                    </span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent 
-                  className="space-y-1.5 px-2 pb-2 overflow-y-auto"
-                  style={{ maxHeight: '320px' }}
-                  onDragOver={handleDragOver}
-                  onDrop={handleDrop(stage.id)}
-                >
-                  {stageDeals.length === 0 ? (
-                    <p className="text-xs text-muted-foreground text-center py-6">
-                      Nenhum negócio nesta etapa
-                    </p>
-                  ) : (
-                    stageDeals.map((deal) => (
-                      <DealCard
-                        key={deal.id}
-                        deal={deal}
-                        timeInStage={getTimeInStage(deal)}
-                        onClick={() => handleDealClick(deal)}
-                        onDragStart={handleDragStart(deal)}
-                        onDelete={handleDeleteDeal}
-                      />
-                    ))
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })}
-
-          {/* Fixed Won column */}
-          <Card 
-            className="flex-shrink-0 bg-gradient-to-br from-success/5 to-success/10 border-success/30 hover:shadow-lg hover:border-success/50 transition-all duration-300 animate-fade-in w-[220px]"
-            onDragOver={handleDragOver}
-            onDrop={handleDropToWon}
-          >
-            <CardHeader className="pb-1.5 px-2 pt-2 space-y-0">
-              <CardTitle className="flex flex-col gap-1">
-                <div className="flex items-center justify-between gap-1.5">
-                  <span className="truncate font-semibold text-xs text-success">✅ Ganho</span>
-                  <Badge className="bg-success hover:bg-success/90 flex-shrink-0 font-bold text-[10px] h-4 px-1.5">
-                    {getWonDeals().length}
-                  </Badge>
-                </div>
-                {getWonDeals().length > 0 && (
-                  <span className="text-[10px] font-bold text-success">
-                    💰 {calculateStageValue(getWonDeals())}
-                  </span>
+                {getWonDeals().length === 0 ? (
+                  <div className="text-xs text-muted-foreground text-center py-6 border-2 border-dashed border-success/20 rounded-lg">
+                    <p>Nenhum negócio ganho</p>
+                  </div>
+                ) : (
+                  getWonDeals().map((deal) => (
+                    <DealCard
+                      key={deal.id}
+                      deal={deal}
+                      timeInStage={getTimeInStage(deal)}
+                      onClick={() => handleDealClick(deal)}
+                      onDelete={handleDeleteDeal}
+                    />
+                  ))
                 )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-1.5 px-2 pb-2 overflow-y-auto" style={{ maxHeight: '320px' }}>
-              {getWonDeals().length === 0 ? (
-                <div className="text-xs text-muted-foreground text-center py-6 border-2 border-dashed border-success/20 rounded-lg">
-                  <p>Nenhum negócio ganho</p>
-                </div>
-              ) : (
-                getWonDeals().map((deal) => (
-                  <DealCard
-                    key={deal.id}
-                    deal={deal}
-                    timeInStage={getTimeInStage(deal)}
-                    onClick={() => handleDealClick(deal)}
-                    onDragStart={handleDragStart(deal)}
-                    onDelete={handleDeleteDeal}
-                  />
-                ))
-              )}
-            </CardContent>
-          </Card>
+              </DroppableColumn>
 
-          {/* Fixed Lost column */}
-          <Card 
-            className="flex-shrink-0 bg-gradient-to-br from-destructive/5 to-destructive/10 border-destructive/30 hover:shadow-lg hover:border-destructive/50 transition-all duration-300 animate-fade-in w-[220px]"
-            onDragOver={handleDragOver}
-            onDrop={handleDropToLost}
-          >
-            <CardHeader className="pb-1.5 px-2 pt-2 space-y-0">
-              <CardTitle className="flex flex-col gap-1">
-                <div className="flex items-center justify-between gap-1.5">
-                  <span className="truncate font-semibold text-xs text-destructive">❌ Perdido</span>
-                  <Badge className="bg-destructive hover:bg-destructive/90 flex-shrink-0 font-bold text-[10px] h-4 px-1.5">
-                    {getLostDeals().length}
-                  </Badge>
-                </div>
-                {getLostDeals().length > 0 && (
-                  <span className="text-[10px] font-bold text-destructive">
-                    💸 {calculateStageValue(getLostDeals())}
-                  </span>
+              {/* Fixed Lost column */}
+              <DroppableColumn
+                id="lost"
+                title="❌ Perdido"
+                count={getLostDeals().length}
+                value={calculateStageValue(getLostDeals())}
+                variant="lost"
+              >
+                {getLostDeals().length === 0 ? (
+                  <div className="text-xs text-muted-foreground text-center py-6 border-2 border-dashed border-destructive/20 rounded-lg">
+                    <p>Nenhum negócio perdido</p>
+                  </div>
+                ) : (
+                  getLostDeals().map((deal) => (
+                    <DealCard
+                      key={deal.id}
+                      deal={deal}
+                      timeInStage={getTimeInStage(deal)}
+                      onClick={() => handleDealClick(deal)}
+                      onDelete={handleDeleteDeal}
+                    />
+                  ))
                 )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-1.5 px-2 pb-2 overflow-y-auto" style={{ maxHeight: '320px' }}>
-              {getLostDeals().length === 0 ? (
-                <div className="text-xs text-muted-foreground text-center py-6 border-2 border-dashed border-destructive/20 rounded-lg">
-                  <p>Nenhum negócio perdido</p>
-                </div>
-              ) : (
-                getLostDeals().map((deal) => (
-                  <DealCard
-                    key={deal.id}
-                    deal={deal}
-                    timeInStage={getTimeInStage(deal)}
-                    onClick={() => handleDealClick(deal)}
-                    onDragStart={handleDragStart(deal)}
-                    onDelete={handleDeleteDeal}
-                  />
-                ))
-              )}
-            </CardContent>
-          </Card>
+              </DroppableColumn>
+            </SortableContext>
+          </div>
         </div>
-      </div>
+
+        {/* DragOverlay para mostrar card sendo arrastado */}
+        <DragOverlay>
+          {activeId && draggedDeal ? (
+            <DealCard
+              deal={draggedDeal}
+              timeInStage={getTimeInStage(draggedDeal)}
+              onClick={() => {}}
+              isDragOverlay
+            />
+          ) : null}
+        </DragOverlay>
+      </DndContext>
 
       <DealDetailSheet
         deal={selectedDeal}
