@@ -389,7 +389,10 @@ serve(async (req) => {
     } else if (message?.audioMessage) {
       mediaType = "audio";
       
-      // Debug: ver estrutura exata do payload para encontrar base64
+      // Debug COMPLETO: ver estrutura exata do payload para encontrar base64
+      console.log(`🎙️ AUDIO DEBUG - Full message keys:`, Object.keys(message));
+      console.log(`🎙️ AUDIO DEBUG - Full messageData keys:`, Object.keys(messageData));
+      console.log(`🎙️ AUDIO DEBUG - audioMessage structure:`, JSON.stringify(message.audioMessage, null, 2).substring(0, 800));
       console.log(`🎙️ Debug messageData.media:`, JSON.stringify(messageData.media || {}).substring(0, 500));
       console.log(`🎙️ Debug messageData.base64:`, messageData.base64 ? `yes (${String(messageData.base64).length} chars)` : 'no');
       console.log(`🎙️ Debug message.audioMessage.base64:`, message.audioMessage?.base64 ? `yes (${String(message.audioMessage.base64).length} chars)` : 'no');
@@ -489,20 +492,20 @@ serve(async (req) => {
           
           if (transcribeResponse.ok) {
             const transcribeResult = await transcribeResponse.json();
-            userMessage = transcribeResult.text || "[Áudio não transcrito]";
+            userMessage = transcribeResult.text || "[O cliente enviou um áudio. Peça educadamente para ele repetir ou digitar a mensagem]";
             console.log(`🎙️ Transcribed audio: ${userMessage.substring(0, 100)}...`);
           } else {
             const errorText = await transcribeResponse.text();
             console.error(`🎙️ Transcription failed (${transcribeResponse.status}): ${errorText}`);
-            userMessage = "[Mensagem de áudio - não foi possível transcrever]";
+            userMessage = "[O cliente enviou um áudio que não carregou. Responda: 'Opa, seu áudio não chegou aqui! 😅 Pode mandar de novo ou digitar?']";
           }
         } catch (e) {
           console.error("🎙️ Error transcribing audio:", e);
-          userMessage = "[Mensagem de áudio - erro na transcrição]";
+          userMessage = "[Áudio com problema técnico. Responda: 'Desculpe, tive um probleminha com seu áudio! Pode repetir ou digitar?']";
         }
       } else {
         console.warn("🎙️ Audio message: não foi possível obter base64 após tentativas");
-        userMessage = "[Áudio recebido - não foi possível obter dados para transcrição]";
+        userMessage = "[Áudio não processado. Responda: 'Seu áudio não carregou por aqui! 😕 Pode tentar novamente?']";
       }
     } else if (message?.imageMessage) {
       mediaType = "image";
@@ -3038,6 +3041,9 @@ ${descricaoPersonalidade ? `\nInstruções adicionais: ${descricaoPersonalidade}
     }
     if (localizacao) {
       empresaContext += `**Localização:** ${localizacao}\n`;
+      // Extrair cidade/estado para reforçar
+      const cidadeEstado = localizacao.includes('-') ? localizacao.split('-').pop()?.trim() : localizacao;
+      empresaContext += `⚠️ REGRA: Nossa loja fica em ${cidadeEstado}. NUNCA mencione São Paulo, Belo Horizonte ou outra cidade!\n`;
     }
     if (horarioFuncionamento) {
       empresaContext += `**Horário de funcionamento:** ${horarioFuncionamento}\n`;
@@ -3276,6 +3282,19 @@ VOCÊ DEVE SEGUIR ESTAS REGRAS ABSOLUTAS EM TODA MENSAGEM:
 - NUNCA use listas numeradas (1. 2. 3.)
 - NUNCA liste múltiplos produtos ANTES de mostrar fotos
 - Escreva texto NORMAL, sem marcadores especiais
+
+## 🚫 NUNCA PEÇA DADOS DE CONTATO
+- VOCÊ JÁ ESTÁ NO WHATSAPP DO CLIENTE! Nunca peça o número de WhatsApp
+- Nunca peça email para "enviar fotos" - envie AQUI no chat
+- Nunca diga que vai "enviar por outro canal" - este É o canal
+- Nunca peça telefone - você já tem acesso ao número
+- Se precisar confirmar identidade, pergunte o NOME apenas
+
+## 🎙️ ÁUDIOS NÃO TRANSCRITOS
+Quando receber mensagem indicando [áudio não transcrito/carregou/problema]:
+- NUNCA diga "forneça o arquivo", "envie o áudio", termos técnicos
+- SEMPRE responda de forma amigável: "Opa, seu áudio não chegou aqui! 😅 Pode mandar de novo ou digitar?"
+- Mantenha tom leve e natural, como se fosse problema de conexão
 
 ## ✅ FORMATO OBRIGATÓRIO (Foto + Info JUNTOS):
 CADA produto = 1 mensagem com foto + informações JUNTAS
@@ -4355,12 +4374,35 @@ async function processAndSendResponse(
     await new Promise(resolve => setTimeout(resolve, 1500));
   }
 
-  // Send photos with validation and RETRY mechanism
+  // Send photos with validation, URL check and RETRY mechanism
   for (let i = 0; i < photoData.length; i++) {
     const photo = photoData[i];
     
     if (!isValidMediaUrl(photo.url)) {
       console.warn(`⚠️ Invalid photo URL skipped: "${photo.url}"`);
+      continue;
+    }
+    
+    // Verificar se URL é acessível antes de enviar
+    let urlAccessible = true;
+    try {
+      const headCheck = await fetch(photo.url, { method: 'HEAD' });
+      if (!headCheck.ok) {
+        console.warn(`⚠️ URL não acessível (${headCheck.status}): ${photo.url}`);
+        urlAccessible = false;
+      }
+    } catch (e) {
+      console.warn(`⚠️ Erro ao verificar URL: ${photo.url}`, e);
+      urlAccessible = false;
+    }
+    
+    if (!urlAccessible) {
+      // Fallback: enviar descrição do produto
+      const fallbackCaption = photo.caption || "o produto";
+      await sendWhatsAppMessage(evolutionApiUrl, evolutionApiKey, instanceName, phoneNumber, {
+        type: "text",
+        text: `📷 ${fallbackCaption} - não consegui carregar a foto, mas posso descrever o produto!`,
+      });
       continue;
     }
     
