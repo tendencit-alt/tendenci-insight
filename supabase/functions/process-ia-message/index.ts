@@ -17,8 +17,8 @@ const AI_GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
 // Debounce time will be loaded from config (default 3 seconds)
 let DEBOUNCE_MS = 3000;
-// Maximum messages to keep in context (increased from 50 to 100)
-const MAX_CONTEXT_MESSAGES = 100;
+// Maximum messages to keep in context (reduced for better performance)
+const MAX_CONTEXT_MESSAGES = 50;
 // Threshold for when to summarize older messages
 const SUMMARIZE_THRESHOLD = 80;
 
@@ -1262,9 +1262,54 @@ REGRAS ABSOLUTAS:
     }
 
     const aiData = await aiResponse.json();
-    let assistantMessage = aiData.choices?.[0]?.message?.content || "Desculpe, não consegui processar sua mensagem.";
+    let assistantMessage = aiData.choices?.[0]?.message?.content || "";
     
     console.log(`🤖 AI Response (${assistantMessage.length} chars): ${assistantMessage.substring(0, 100)}...`);
+    
+    // ========== RETRY FOR EMPTY RESPONSES ==========
+    if (!assistantMessage || assistantMessage.trim().length === 0) {
+      console.log("⚠️ AI returned empty response, retrying with fallback model and reduced context...");
+      
+      // Build simplified messages with only last 10 messages
+      const simplifiedMessages = [
+        { role: "system", content: `Você é a atendente virtual da Tendenci Móveis. Responda de forma útil e amigável. Cliente: ${pushName || 'Cliente'}` },
+        ...conversationHistory.slice(-10).map(m => ({ role: m.role, content: m.content })),
+        { role: "user", content: combinedMessage }
+      ];
+      
+      try {
+        const retryResponse = await fetch(AI_GATEWAY_URL, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${lovableApiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: AI_MODELS.lite,
+            messages: simplifiedMessages,
+            max_tokens: 500,
+            temperature: 0.8,
+          }),
+        });
+        
+        if (retryResponse.ok) {
+          const retryData = await retryResponse.json();
+          const retryContent = retryData.choices?.[0]?.message?.content;
+          if (retryContent && retryContent.trim().length > 0) {
+            assistantMessage = retryContent;
+            console.log("✅ Retry successful with fallback model");
+          }
+        }
+      } catch (retryErr) {
+        console.error("❌ Retry also failed:", retryErr);
+      }
+    }
+    
+    // Final fallback if still empty
+    if (!assistantMessage || assistantMessage.trim().length === 0) {
+      assistantMessage = "Olá! Como posso ajudar você hoje? Estou aqui para tirar suas dúvidas sobre nossos móveis. 😊";
+      console.log("⚠️ Using default fallback message");
+    }
     
     // Log de qualidade para monitoramento
     const qualityMetrics = {
@@ -1749,7 +1794,7 @@ function extractAskedQuestions(history: Message[]): string[] {
   
   for (const msg of history) {
     if (msg.role === "assistant") {
-      const content = msg.content.toLowerCase();
+      const content = (msg.content || '').toLowerCase();
       
       // Detectar grupos semânticos perguntados
       for (const [groupKey, group] of Object.entries(QUESTION_SEMANTIC_GROUPS)) {
@@ -1793,7 +1838,7 @@ function detectConfusionOrLoop(history: Message[]): ConfusionResult {
   }
   
   // 1. Detectar se cliente repete a mesma coisa 2+ vezes
-  const recentUserMsgs = userMessages.slice(-5).map(m => m.content.toLowerCase().trim());
+  const recentUserMsgs = userMessages.slice(-5).map(m => (m.content || '').toLowerCase().trim());
   
   for (let i = 0; i < recentUserMsgs.length; i++) {
     const msg = recentUserMsgs[i];
@@ -1863,7 +1908,7 @@ function detectConfusionOrLoop(history: Message[]): ConfusionResult {
   // 3. Conversa longa sem progresso (>15 mensagens sem coleta de dados essenciais)
   if (history.length > 30) {
     // Verificar se IA ainda está fazendo perguntas básicas
-    const lastAssistantMsgs = assistantMessages.slice(-3).map(m => m.content.toLowerCase());
+    const lastAssistantMsgs = assistantMessages.slice(-3).map(m => (m.content || '').toLowerCase());
     const stillAskingBasics = lastAssistantMsgs.some(msg => 
       /qual.*ambiente/i.test(msg) || 
       /como.*ajudar/i.test(msg) ||
@@ -2071,8 +2116,8 @@ interface ProductInfo {
 }
 
 function extractProductInfo(history: Message[], products: Product[]): ProductInfo {
-  // Combine all messages for analysis
-  const allText = history.map(m => m.content).join(' ').toLowerCase();
+  // Combine all messages for analysis (with null check)
+  const allText = history.map(m => m.content || '').join(' ').toLowerCase();
   
   // Product type keywords mapping
   const tipoKeywords: Record<string, string[]> = {
@@ -2259,7 +2304,7 @@ function shouldCreateLead(
   // Verificar TODAS as mensagens do usuário, não apenas a última
   const allUserMessages = conversationHistory
     .filter(m => m.role === 'user')
-    .map(m => m.content.toLowerCase())
+    .map(m => (m.content || '').toLowerCase())
     .join(' ');
   const combined = (userMessage.toLowerCase() + ' ' + allUserMessages);
   
