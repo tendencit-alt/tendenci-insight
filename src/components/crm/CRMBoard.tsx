@@ -386,6 +386,21 @@ export function CRMBoard({ pipelineId, onRefresh, autoOpenDealId, onDealOpened, 
       return;
     }
 
+    // Verificar se está saindo de etapa Lead
+    const sourceStage = stages.find(s => s.id === draggedDeal.stage_id);
+    const isFromLead = sourceStage?.name.toLowerCase().includes('lead');
+
+    // Se está saindo de Lead e não tem categoria, bloquear
+    if (isFromLead && !draggedDeal.categoria) {
+      toast({
+        title: "Categorização necessária",
+        description: "Antes de mover este lead, defina a categoria (Móveis Soltos ou Planejados) editando o negócio.",
+        variant: "destructive",
+      });
+      setDraggedDeal(null);
+      return;
+    }
+
     // Encontrar a etapa de destino
     const targetStage = stages.find(s => s.id === stageId);
     
@@ -416,15 +431,24 @@ export function CRMBoard({ pipelineId, onRefresh, autoOpenDealId, onDealOpened, 
       updateData.lost_note = null;
     }
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("crm_deals")
       .update(updateData)
-      .eq("id", draggedDeal.id);
+      .eq("id", draggedDeal.id)
+      .select()
+      .maybeSingle();
 
     if (error) {
       toast({
         title: "Erro ao mover negócio",
         description: error.message,
+        variant: "destructive",
+      });
+    } else if (!data) {
+      // RLS bloqueou - categoria não corresponde à especialização
+      toast({
+        title: "Sem permissão",
+        description: `Este negócio é da categoria "${draggedDeal.categoria || 'não definida'}" e não corresponde à sua especialização.`,
         variant: "destructive",
       });
     } else {
@@ -447,18 +471,41 @@ export function CRMBoard({ pipelineId, onRefresh, autoOpenDealId, onDealOpened, 
       return;
     }
 
-    const { error } = await supabase
+    // Verificar se está saindo de etapa Lead
+    const sourceStage = stages.find(s => s.id === draggedDeal.stage_id);
+    const isFromLead = sourceStage?.name.toLowerCase().includes('lead');
+
+    // Se está saindo de Lead e não tem categoria, bloquear
+    if (isFromLead && !draggedDeal.categoria) {
+      toast({
+        title: "Categorização necessária",
+        description: "Defina a categoria antes de marcar como ganho.",
+        variant: "destructive",
+      });
+      setDraggedDeal(null);
+      return;
+    }
+
+    const { data, error } = await supabase
       .from("crm_deals")
       .update({
         status: "won",
         stage_entered_at: new Date().toISOString(),
       })
-      .eq("id", draggedDeal.id);
+      .eq("id", draggedDeal.id)
+      .select()
+      .maybeSingle();
 
     if (error) {
       toast({
         title: "Erro ao marcar como ganho",
         description: error.message,
+        variant: "destructive",
+      });
+    } else if (!data) {
+      toast({
+        title: "Sem permissão",
+        description: `Este negócio é da categoria "${draggedDeal.categoria || 'não definida'}" e não corresponde à sua especialização.`,
         variant: "destructive",
       });
     } else {
@@ -479,19 +526,42 @@ export function CRMBoard({ pipelineId, onRefresh, autoOpenDealId, onDealOpened, 
       return;
     }
 
-    const { error } = await supabase
+    // Verificar se está saindo de etapa Lead
+    const sourceStage = stages.find(s => s.id === draggedDeal.stage_id);
+    const isFromLead = sourceStage?.name.toLowerCase().includes('lead');
+
+    // Se está saindo de Lead e não tem categoria, bloquear
+    if (isFromLead && !draggedDeal.categoria) {
+      toast({
+        title: "Categorização necessária",
+        description: "Defina a categoria antes de marcar como perdido.",
+        variant: "destructive",
+      });
+      setDraggedDeal(null);
+      return;
+    }
+
+    const { data, error } = await supabase
       .from("crm_deals")
       .update({
         status: "lost",
         lost_reason: "other",
         stage_entered_at: new Date().toISOString(),
       })
-      .eq("id", draggedDeal.id);
+      .eq("id", draggedDeal.id)
+      .select()
+      .maybeSingle();
 
     if (error) {
       toast({
         title: "Erro ao marcar como perdido",
         description: error.message,
+        variant: "destructive",
+      });
+    } else if (!data) {
+      toast({
+        title: "Sem permissão",
+        description: `Este negócio é da categoria "${draggedDeal.categoria || 'não definida'}" e não corresponde à sua especialização.`,
         variant: "destructive",
       });
     } else {
