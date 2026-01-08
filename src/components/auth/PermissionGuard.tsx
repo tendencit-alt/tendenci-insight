@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useRef } from 'react';
+import { ReactNode, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useToast } from '@/hooks/use-toast';
@@ -28,6 +28,8 @@ export function PermissionGuard({ children, module }: PermissionGuardProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
   const hasRedirected = useRef(false);
+  const [accessChecked, setAccessChecked] = useState(false);
+  const [hasAccess, setHasAccess] = useState(false);
 
   useEffect(() => {
     // Só verificar após o loading terminar
@@ -36,9 +38,11 @@ export function PermissionGuard({ children, module }: PermissionGuardProps) {
     // Evitar múltiplos redirects
     if (hasRedirected.current) return;
 
-    const hasAccess = hasModuleAccess(module);
+    const access = hasModuleAccess(module);
+    setHasAccess(access);
+    setAccessChecked(true);
     
-    if (!hasAccess) {
+    if (!access) {
       hasRedirected.current = true;
       
       toast({
@@ -57,7 +61,7 @@ export function PermissionGuard({ children, module }: PermissionGuardProps) {
         }
       }
       
-      // Se não encontrar nenhum módulo permitido, fazer logout
+      // Se não encontrar nenhum módulo permitido, ir para auth
       navigate('/auth', { replace: true });
     }
   }, [loading, hasModuleAccess, module, navigate, toast, permissions, isMaster]);
@@ -74,10 +78,13 @@ export function PermissionGuard({ children, module }: PermissionGuardProps) {
     );
   }
 
-  const hasAccess = hasModuleAccess(module);
+  // Aguardar verificação de acesso
+  if (!accessChecked) {
+    return null;
+  }
 
   // Se não tem acesso, retornar null (o useEffect já redirecionou)
-  if (!hasAccess || !permissions?.active) {
+  if (!hasAccess) {
     return null;
   }
 

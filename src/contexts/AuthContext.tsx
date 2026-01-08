@@ -1,7 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate } from 'react-router-dom';
 
 interface AuthContextType {
   user: User | null;
@@ -20,12 +19,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
 
   useEffect(() => {
+    let mounted = true;
+    
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        if (!mounted) return;
+        
         console.log('Auth state changed:', event, session?.user?.email);
         
         // Handle token refresh or sign out events
@@ -33,36 +35,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           console.log('Token refreshed successfully');
         }
         
-        if (event === 'SIGNED_OUT' || !session) {
+        if (event === 'SIGNED_OUT') {
           setSession(null);
           setUser(null);
           setProfile(null);
-          navigate('/auth');
+          setLoading(false);
+          // NÃO redirecionar aqui - deixar os guards fazerem isso
           return;
         }
 
-        setSession(session);
-        setUser(session?.user ?? null);
+        if (session) {
+          setSession(session);
+          setUser(session.user);
 
-        // Defer profile fetch with setTimeout to avoid deadlock
-        if (session?.user) {
+          // Defer profile fetch with setTimeout to avoid deadlock
           setTimeout(() => {
-            fetchProfile(session.user.id);
+            if (mounted) {
+              fetchProfile(session.user.id);
+            }
           }, 0);
         } else {
+          setSession(null);
+          setUser(null);
           setProfile(null);
         }
+        
+        setLoading(false);
       }
     );
 
     // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (!mounted) return;
+      
       if (error) {
         console.error('Session error:', error);
         setSession(null);
         setUser(null);
         setProfile(null);
-        navigate('/auth');
         setLoading(false);
         return;
       }
@@ -73,15 +83,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (session?.user) {
         setTimeout(() => {
-          fetchProfile(session.user.id);
+          if (mounted) {
+            fetchProfile(session.user.id);
+          }
         }, 0);
       }
       
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
-  }, [navigate]);
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
 
   const fetchProfile = async (userId: string) => {
     try {
@@ -94,11 +109,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) {
         console.error('Error fetching profile:', error);
         
-        // If JWT expired, sign out and redirect
+        // If JWT expired, sign out (redirect happens via ProtectedRoute)
         if (error.code === 'PGRST301' || error.code === 'PGRST302' || error.code === 'PGRST303' || error.message?.includes('JWT')) {
           console.log('JWT expired, signing out...');
           await supabase.auth.signOut();
-          navigate('/auth');
         }
         return;
       }
@@ -152,7 +166,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
     setSession(null);
     setProfile(null);
-    navigate('/auth');
+    // Redirect via window.location para evitar conflito com React Router
+    window.location.href = '/auth';
   };
 
   const value = {
