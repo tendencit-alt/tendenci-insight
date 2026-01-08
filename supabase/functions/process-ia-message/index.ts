@@ -396,43 +396,69 @@ serve(async (req) => {
       
       console.log(`🎙️ Audio message received - URL: ${audioUrl ? 'yes' : 'no'}, Base64: ${audioBase64 ? 'yes' : 'no'}, Mimetype: ${mimetype}`);
       
-      // Se não tem base64, tentar baixar via Evolution API
+      // Se não tem base64, tentar baixar via Evolution API com retry
       if (!audioBase64 && key?.id) {
         console.log(`🎙️ Buscando áudio via Evolution API (message: ${key.id})...`);
-        try {
-          const mediaResponse = await fetch(
-            `${evolutionApiUrl}/chat/getBase64FromMediaMessage/${instanceName}`,
-            {
-              method: "POST",
-              headers: {
-                "apikey": evolutionApiKey,
-                "Content-Type": "application/json"
-              },
-              body: JSON.stringify({
-                message: {
-                  key: key,
-                  message: message
+        
+        const fetchAudioFromEvolution = async (attempt: number = 1): Promise<string | null> => {
+          try {
+            // Formato correto do body para Evolution API
+            const requestBody = {
+              message: {
+                key: {
+                  id: key.id,
+                  remoteJid: key.remoteJid,
+                  fromMe: key.fromMe || false
                 }
-              })
+              },
+              convertToMp4: false
+            };
+            
+            console.log(`🎙️ Evolution API request (attempt ${attempt}):`, JSON.stringify(requestBody));
+            
+            const mediaResponse = await fetch(
+              `${evolutionApiUrl}/chat/getBase64FromMediaMessage/${instanceName}`,
+              {
+                method: "POST",
+                headers: {
+                  "apikey": evolutionApiKey,
+                  "Content-Type": "application/json"
+                },
+                body: JSON.stringify(requestBody)
+              }
+            );
+            
+            if (mediaResponse.ok) {
+              const mediaData = await mediaResponse.json();
+              if (mediaData.base64) {
+                console.log(`🎙️ Áudio baixado via Evolution API: ${mediaData.base64.length} chars`);
+                return mediaData.base64;
+              } else {
+                console.warn(`🎙️ Evolution API response OK but no base64:`, JSON.stringify(mediaData).substring(0, 200));
+              }
+            } else {
+              const errorText = await mediaResponse.text();
+              console.error(`🎙️ Evolution API getBase64 failed (${mediaResponse.status}): ${errorText.substring(0, 300)}`);
             }
-          );
-          
-          if (mediaResponse.ok) {
-            const mediaData = await mediaResponse.json();
-            audioBase64 = mediaData.base64;
-            console.log(`🎙️ Áudio baixado via Evolution API: ${audioBase64?.length || 0} chars`);
-          } else {
-            const errorText = await mediaResponse.text();
-            console.error(`🎙️ Evolution API getBase64 failed (${mediaResponse.status}): ${errorText}`);
+          } catch (err) {
+            console.error(`🎙️ Erro ao buscar áudio via Evolution API (attempt ${attempt}):`, err);
           }
-        } catch (err) {
-          console.error("🎙️ Erro ao buscar áudio via Evolution API:", err);
+          return null;
+        };
+        
+        // Tentar até 2 vezes com delay
+        audioBase64 = await fetchAudioFromEvolution(1);
+        if (!audioBase64) {
+          console.log(`🎙️ Retry após 1s...`);
+          await new Promise(r => setTimeout(r, 1000));
+          audioBase64 = await fetchAudioFromEvolution(2);
         }
       }
       
-      // Agora tentar transcrever
-      if (audioBase64 || audioUrl) {
+      // Só transcrever se tem base64 (não tentar URL encriptada)
+      if (audioBase64) {
         try {
+          console.log(`🎙️ Enviando para transcrição: ${audioBase64.length} chars, mimeType: ${mimetype}`);
           const transcribeResponse = await fetch(`${supabaseUrl}/functions/v1/transcribe-audio-gemini`, {
             method: "POST",
             headers: {
@@ -440,7 +466,7 @@ serve(async (req) => {
               "Authorization": `Bearer ${supabaseKey}`,
             },
             body: JSON.stringify({
-              audio: audioBase64 || audioUrl,
+              audio: audioBase64,
               mimeType: mimetype,
             }),
           });
@@ -459,8 +485,8 @@ serve(async (req) => {
           userMessage = "[Mensagem de áudio - erro na transcrição]";
         }
       } else {
-        console.warn("🎙️ Audio message without URL or base64 data after Evolution API attempt");
-        userMessage = "[Áudio recebido - não foi possível obter dados]";
+        console.warn("🎙️ Audio message: não foi possível obter base64 após tentativas");
+        userMessage = "[Áudio recebido - não foi possível obter dados para transcrição]";
       }
     } else if (message?.imageMessage) {
       mediaType = "image";
