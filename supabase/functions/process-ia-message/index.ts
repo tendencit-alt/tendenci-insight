@@ -317,6 +317,27 @@ serve(async (req) => {
     const pushName = messageData.pushName || "";
     console.log(`📱 From: ${phoneNumber} (${pushName})`);
 
+    // ========== DEDUPLICATION BY MESSAGE KEY ID ==========
+    const messageKeyId = key?.id || null;
+    if (messageKeyId) {
+      console.log(`🔑 Checking for duplicate message_key_id: ${messageKeyId}`);
+      
+      const { data: existingMessage } = await supabase
+        .from("ia_conversations")
+        .select("id")
+        .eq("phone_number", phoneNumber)
+        .eq("instance_name", instanceName)
+        .filter("metadata->>message_key_id", "eq", messageKeyId)
+        .limit(1);
+      
+      if (existingMessage && existingMessage.length > 0) {
+        console.log(`⏭️ Mensagem já processada (dedup by key_id): ${messageKeyId}`);
+        return new Response(JSON.stringify({ success: true, skipped: "duplicate_message" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     // Extract message content
     let userMessage = "";
     let mediaType = "text";
@@ -367,13 +388,50 @@ serve(async (req) => {
       userMessage = message.extendedTextMessage.text;
     } else if (message?.audioMessage) {
       mediaType = "audio";
+      let audioBase64 = messageData.media?.base64;
       const audioUrl = messageData.media?.url || message.audioMessage?.url;
-      const audioBase64 = messageData.media?.base64;
-      const mimetype = message.audioMessage?.mimetype || "audio/ogg";
+      // Normalizar mimetype (remover ; codecs=opus etc)
+      const rawMimetype = message.audioMessage?.mimetype || "audio/ogg";
+      const mimetype = rawMimetype.split(';')[0].trim();
       
-      console.log(`🎙️ Audio message received - URL: ${audioUrl ? 'yes' : 'no'}, Base64: ${audioBase64 ? 'yes' : 'no'}`);
+      console.log(`🎙️ Audio message received - URL: ${audioUrl ? 'yes' : 'no'}, Base64: ${audioBase64 ? 'yes' : 'no'}, Mimetype: ${mimetype}`);
       
-      if (audioUrl || audioBase64) {
+      // Se não tem base64, tentar baixar via Evolution API
+      if (!audioBase64 && key?.id) {
+        console.log(`🎙️ Buscando áudio via Evolution API (message: ${key.id})...`);
+        try {
+          const mediaResponse = await fetch(
+            `${evolutionApiUrl}/chat/getBase64FromMediaMessage/${instanceName}`,
+            {
+              method: "POST",
+              headers: {
+                "apikey": evolutionApiKey,
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({
+                message: {
+                  key: key,
+                  message: message
+                }
+              })
+            }
+          );
+          
+          if (mediaResponse.ok) {
+            const mediaData = await mediaResponse.json();
+            audioBase64 = mediaData.base64;
+            console.log(`🎙️ Áudio baixado via Evolution API: ${audioBase64?.length || 0} chars`);
+          } else {
+            const errorText = await mediaResponse.text();
+            console.error(`🎙️ Evolution API getBase64 failed (${mediaResponse.status}): ${errorText}`);
+          }
+        } catch (err) {
+          console.error("🎙️ Erro ao buscar áudio via Evolution API:", err);
+        }
+      }
+      
+      // Agora tentar transcrever
+      if (audioBase64 || audioUrl) {
         try {
           const transcribeResponse = await fetch(`${supabaseUrl}/functions/v1/transcribe-audio-gemini`, {
             method: "POST",
@@ -382,7 +440,7 @@ serve(async (req) => {
               "Authorization": `Bearer ${supabaseKey}`,
             },
             body: JSON.stringify({
-              audio: audioUrl || audioBase64,
+              audio: audioBase64 || audioUrl,
               mimeType: mimetype,
             }),
           });
@@ -401,8 +459,8 @@ serve(async (req) => {
           userMessage = "[Mensagem de áudio - erro na transcrição]";
         }
       } else {
-        console.warn("🎙️ Audio message without URL or base64 data");
-        userMessage = "[Áudio recebido - dados não disponíveis]";
+        console.warn("🎙️ Audio message without URL or base64 data after Evolution API attempt");
+        userMessage = "[Áudio recebido - não foi possível obter dados]";
       }
     } else if (message?.imageMessage) {
       mediaType = "image";
@@ -1441,7 +1499,7 @@ REGRAS ABSOLUTAS:
       console.log(`📸 Tracking ${sentProductIds.length} sent products: ${sentProductIds.join(', ')}`);
     }
 
-    // Save conversation to history
+    // Save conversation to history (with message_key_id for deduplication)
     await supabase.from("ia_conversations").insert([
       {
         phone_number: phoneNumber,
@@ -1450,7 +1508,11 @@ REGRAS ABSOLUTAS:
         content: combinedMessage,
         media_type: mediaType,
         media_url: mediaUrl,
-        metadata: { pushName: messageData.pushName, messagesConsolidated: consolidatedMessages.length },
+        metadata: { 
+          pushName: messageData.pushName, 
+          messagesConsolidated: consolidatedMessages.length,
+          message_key_id: messageKeyId // For deduplication
+        },
       },
       {
         phone_number: phoneNumber,
