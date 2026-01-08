@@ -57,6 +57,7 @@ export function EditDealDialog({
   const [sources, setSources] = useState<any[]>([]);
   const [owners, setOwners] = useState<any[]>([]);
   const [clients, setClients] = useState<any[]>([]);
+  const [loadingClients, setLoadingClients] = useState(true);
   const [scheduledCall, setScheduledCall] = useState<Date>();
   const [dealFiles, setDealFiles] = useState<any[]>([]);
   const [isRecording, setIsRecording] = useState(false);
@@ -197,6 +198,8 @@ export function EditDealDialog({
   const fetchOptions = async () => {
     if (!deal?.pipeline_id) return;
 
+    setLoadingClients(true);
+
     // Fetch stages
     const { data: stagesData } = await supabase
       .from("crm_stages")
@@ -258,6 +261,7 @@ export function EditDealDialog({
     setSources(sourcesData || []);
     setClients(finalClientsData);
     setOwners(ownersData || []);
+    setLoadingClients(false);
   };
 
   const handleArchitectCreated = async (architectId: string) => {
@@ -444,7 +448,8 @@ export function EditDealDialog({
     // Só perguntar se:
     // 1. Havia um cliente vinculado originalmente (originalLeadId existe)
     // 2. E agora não há mais cliente (currentLeadId é null/vazio)
-    const isRemovingClient = originalLeadId && !currentLeadId;
+    // 3. E a lista de clientes já foi carregada (evita falso positivo durante loading)
+    const isRemovingClient = originalLeadId && !currentLeadId && !loadingClients;
     if (isRemovingClient) {
       const confirmar = window.confirm(
         "Você está removendo o cliente vinculado a este negócio. Deseja continuar?"
@@ -790,13 +795,18 @@ export function EditDealDialog({
                 </div>
                 <Select
                   value={formData.lead_id || "none"}
+                  disabled={loadingClients && !!deal?.lead_id}
                   onValueChange={(value) => {
                     const newLeadId = value === "none" ? "" : value;
                     setFormData({ ...formData, lead_id: newLeadId });
                   }}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione o cliente" />
+                    <SelectValue placeholder={
+                      loadingClients && deal?.lead_id 
+                        ? "Carregando cliente..." 
+                        : "Selecione o cliente"
+                    } />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">Nenhum</SelectItem>
