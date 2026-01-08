@@ -689,15 +689,16 @@ export function EditDealDialog({
               <div className="space-y-2">
                 <Label htmlFor="product_type">Tipo de Produto</Label>
                 <Select
-                  value={formData.product_type}
+                  value={formData.product_type || "none"}
                   onValueChange={(value) =>
-                    setFormData({ ...formData, product_type: value })
+                    setFormData({ ...formData, product_type: value === "none" ? "" : value })
                   }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione o tipo" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="none">Selecione o tipo</SelectItem>
                     <SelectItem value="Planejado">Planejado</SelectItem>
                     <SelectItem value="Móvel">Móvel</SelectItem>
                   </SelectContent>
