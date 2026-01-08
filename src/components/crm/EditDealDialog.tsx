@@ -411,6 +411,7 @@ export function EditDealDialog({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log(">>> handleSubmit CHAMADO! formData:", JSON.stringify(formData, null, 2));
     
     if (!formData.title) {
       toast({
