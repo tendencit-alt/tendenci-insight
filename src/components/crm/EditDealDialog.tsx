@@ -126,8 +126,11 @@ export function EditDealDialog({
       // SOLUÇÃO DEFINITIVA: Só inicializar na PRIMEIRA vez que o dialog abre
       // Ignora re-renderizações subsequentes que passam novo objeto deal
       if (!isInitializedRef.current) {
-        originalLeadIdRef.current = deal.lead_id || null;
+        // Normalizar o lead_id original - garantir que strings vazias virem null
+        const normalizedLeadId = deal.lead_id && deal.lead_id.trim() !== "" ? deal.lead_id : null;
+        originalLeadIdRef.current = normalizedLeadId;
         isInitializedRef.current = true;
+        console.log("[EditDealDialog] Inicializado originalLeadIdRef:", normalizedLeadId);
       }
       
       // Limpar dados persistidos antes de carregar dados frescos do deal
@@ -440,16 +443,21 @@ export function EditDealDialog({
       return;
     }
 
-    // SOLUÇÃO DEFINITIVA: Comparar com o lead_id ORIGINAL (imutável)
-    // originalLeadIdRef.current foi definido UMA VEZ quando o dialog abriu
+    // SOLUÇÃO DEFINITIVA: Usar referência imutável para comparar
     const originalLeadId = originalLeadIdRef.current;
     const currentLeadId = formData.lead_id || null;
     
-    // Só perguntar se:
-    // 1. Havia um cliente vinculado originalmente (originalLeadId existe)
-    // 2. E agora não há mais cliente (currentLeadId é null/vazio)
-    // 3. E a lista de clientes já foi carregada (evita falso positivo durante loading)
-    const isRemovingClient = originalLeadId && !currentLeadId && !loadingClients;
+    // Só perguntar sobre remoção se:
+    // 1. Havia um cliente vinculado ORIGINALMENTE (não string vazia)
+    // 2. O usuário EXPLICITAMENTE selecionou "Nenhum" (mudou para null/vazio)
+    // 3. A lista de clientes já carregou (para evitar falso positivo)
+    // 4. O lead_id realmente mudou (não é apenas re-render)
+    const hadOriginalClient = originalLeadId && originalLeadId.trim() !== "";
+    const isNowEmpty = !currentLeadId || currentLeadId.trim() === "";
+    const clientsLoaded = !loadingClients && clients.length > 0;
+    
+    const isRemovingClient = hadOriginalClient && isNowEmpty && clientsLoaded;
+    
     if (isRemovingClient) {
       const confirmar = window.confirm(
         "Você está removendo o cliente vinculado a este negócio. Deseja continuar?"
@@ -466,9 +474,13 @@ export function EditDealDialog({
       const changes: Array<{field_name: string, old_value: string, new_value: string}> = [];
       
       // SOLUÇÃO DEFINITIVA: Comparar com referência imutável original
-      const leadIdChanged = (formData.lead_id || null) !== originalLeadIdRef.current;
+      // Normalizar valores para comparação segura
+      const originalNormalized = (originalLeadIdRef.current || "").trim();
+      const currentNormalized = (formData.lead_id || "").trim();
+      const leadIdChanged = originalNormalized !== currentNormalized;
+      
       if (leadIdChanged) {
-        const oldValue = await getDisplayValue('lead_id', deal.lead_id);
+        const oldValue = await getDisplayValue('lead_id', originalLeadIdRef.current);
         const newValue = await getDisplayValue('lead_id', formData.lead_id);
         changes.push({
           field_name: 'lead_id',
@@ -510,8 +522,10 @@ export function EditDealDialog({
         updated_at: new Date().toISOString(),
       };
 
-      // Só atualizar lead_id se foi explicitamente alterado
-      if (leadIdChanged) {
+      // Só atualizar lead_id se foi explicitamente alterado pelo usuário
+      const origNorm = (originalLeadIdRef.current || "").trim();
+      const currNorm = (formData.lead_id || "").trim();
+      if (origNorm !== currNorm) {
         updateData.lead_id = formData.lead_id || null;
       }
 
