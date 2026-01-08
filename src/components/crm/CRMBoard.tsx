@@ -654,12 +654,12 @@ export function CRMBoard({ pipelineId, onRefresh, autoOpenDealId, onDealOpened, 
     onRefresh();
   };
 
+  // Obter todos os IDs dos deals para o SortableContext (DEVE vir antes de qualquer return condicional)
+  const allDealIds = useMemo(() => deals.map(d => d.id), [deals]);
+
   if (isInitialLoading) {
     return <div className="text-center py-12 animate-fade-in">Carregando...</div>;
   }
-
-  // Obter todos os IDs dos deals para o SortableContext
-  const allDealIds = useMemo(() => deals.map(d => d.id), [deals]);
 
   return (
     <>

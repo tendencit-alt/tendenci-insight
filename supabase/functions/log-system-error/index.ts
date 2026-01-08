@@ -55,7 +55,7 @@ serve(async (req) => {
         status: 'open'
       }])
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error('❌ Error logging system error:', error);
