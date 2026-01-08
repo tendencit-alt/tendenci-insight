@@ -1998,6 +1998,45 @@ export type Database = {
         }
         Relationships: []
       }
+      ia_processing_failures: {
+        Row: {
+          ai_response: string | null
+          created_at: string | null
+          error_type: string | null
+          history_size: number | null
+          id: string
+          instance_name: string | null
+          model_used: string | null
+          phone_number: string | null
+          prompt_size: number | null
+          user_message: string | null
+        }
+        Insert: {
+          ai_response?: string | null
+          created_at?: string | null
+          error_type?: string | null
+          history_size?: number | null
+          id?: string
+          instance_name?: string | null
+          model_used?: string | null
+          phone_number?: string | null
+          prompt_size?: number | null
+          user_message?: string | null
+        }
+        Update: {
+          ai_response?: string | null
+          created_at?: string | null
+          error_type?: string | null
+          history_size?: number | null
+          id?: string
+          instance_name?: string | null
+          model_used?: string | null
+          phone_number?: string | null
+          prompt_size?: number | null
+          user_message?: string | null
+        }
+        Relationships: []
+      }
       labor_types: {
         Row: {
           active: boolean | null
