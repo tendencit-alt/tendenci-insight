@@ -233,7 +233,7 @@ async function summarizeOldHistory(
         model: AI_MODELS.lite,
         messages: [
           { role: "system", content: "Resuma esta conversa em 3-5 pontos principais em português brasileiro. Foque em: produtos mencionados, preferências do cliente, decisões tomadas." },
-          { role: "user", content: oldMessages.map(m => `${m.role === 'user' ? 'Cliente' : 'Atendente'}: ${m.content}`).join("\n") }
+          { role: "user", content: oldMessages.map(m => `${m.role === 'user' ? 'Cliente' : 'Atendente'}: ${m.content || ''}`).join("\n") }
         ],
         max_tokens: 500,
         temperature: 0.3,
@@ -993,8 +993,8 @@ Responda em português brasileiro de forma clara e organizada.`;
         // If no ID found, try to find product by name in the marker caption
         if (!foundId) {
           const captionMatch = marker.match(/:([^:\]]+)\]$/);
-          if (captionMatch) {
-            const caption = captionMatch[1].toLowerCase().trim();
+          if (captionMatch && captionMatch[1]) {
+            const caption = (captionMatch[1] || '').toLowerCase().trim();
             // Remove common suffixes like "(ID:xxx)" or "- Foto X"
             const cleanCaption = caption.replace(/\(id:[^)]+\)/gi, '').replace(/-\s*foto\s*\d+/gi, '').trim();
             
@@ -1087,15 +1087,42 @@ ${productInfo}
       }
     }
 
-    // ========== EXTRACT ANTI-REPETITION AND CONTEXT DATA ==========
-    const askedQuestions = extractAskedQuestions(conversationHistory);
-    const conversationContext = extractConversationContext(conversationHistory);
+    // ========== EXTRACT ANTI-REPETITION AND CONTEXT DATA (WITH SAFETY WRAPPERS) ==========
+    const safeExtractAskedQuestions = (history: Message[]): string[] => {
+      try {
+        return extractAskedQuestions(history);
+      } catch (e) {
+        console.error("⚠️ Error in extractAskedQuestions:", e);
+        return [];
+      }
+    };
+    
+    const safeExtractConversationContext = (history: Message[]): Record<string, string> => {
+      try {
+        return extractConversationContext(history);
+      } catch (e) {
+        console.error("⚠️ Error in extractConversationContext:", e);
+        return {};
+      }
+    };
+    
+    const safeDetectConfusionOrLoop = (history: Message[]): { isConfused: boolean; reason: string | null; shouldTransfer: boolean } => {
+      try {
+        return detectConfusionOrLoop(history);
+      } catch (e) {
+        console.error("⚠️ Error in detectConfusionOrLoop:", e);
+        return { isConfused: false, reason: null, shouldTransfer: false };
+      }
+    };
+    
+    const askedQuestions = safeExtractAskedQuestions(conversationHistory);
+    const conversationContext = safeExtractConversationContext(conversationHistory);
     
     console.log(`📋 Anti-repetição: ${askedQuestions.length} perguntas já feitas detectadas`);
     console.log(`📋 Contexto extraído:`, JSON.stringify(conversationContext));
 
     // ========== DETECT CONFUSION OR LOOP ==========
-    const confusionResult = detectConfusionOrLoop(conversationHistory);
+    const confusionResult = safeDetectConfusionOrLoop(conversationHistory);
     if (confusionResult.isConfused) {
       console.log(`🚨 [CONFUSION] Detectado: ${confusionResult.reason}`);
     }
@@ -1574,8 +1601,8 @@ REGRAS ABSOLUTAS:
       // Fallback: find product by name in the caption
       if (!foundId) {
         const captionMatch = marker.match(/:([^:\]]+)\]$/);
-        if (captionMatch) {
-          const caption = captionMatch[1].toLowerCase().trim();
+        if (captionMatch && captionMatch[1]) {
+          const caption = (captionMatch[1] || '').toLowerCase().trim();
           // Remove common suffixes
           const cleanCaption = caption.replace(/\(id:[^)]+\)/gi, '').replace(/-\s*foto\s*\d+/gi, '').trim();
           
@@ -2200,7 +2227,7 @@ function extractProductInfo(history: Message[], products: Product[]): ProductInf
   // Try to match with registered products
   if (!tipoProduto && products.length > 0) {
     for (const product of products) {
-      const productName = product.nome.toLowerCase();
+      const productName = (product.nome || '').toLowerCase();
       if (allText.includes(productName.split(' ')[0])) {
         tipoProduto = product.categoria || product.nome;
         break;
@@ -3711,7 +3738,7 @@ ${products.map((p) => {
       // Extrair tipo de madeira da descrição (se houver)
       if (p.descricao) {
         const madeiras = ['pequiá', 'jatobá', 'ipê', 'cedro', 'peroba', 'freijó', 'muiracatiara', 'carvalho', 'nogueira', 'teca', 'mogno'];
-        const madeiraEncontrada = madeiras.find(m => p.descricao.toLowerCase().includes(m));
+        const madeiraEncontrada = madeiras.find(m => (p.descricao || '').toLowerCase().includes(m));
         if (madeiraEncontrada) {
           lines.push(`- 🌳 **MADEIRA:** ${madeiraEncontrada.charAt(0).toUpperCase() + madeiraEncontrada.slice(1)}`);
         }
@@ -3813,7 +3840,7 @@ ${products.map((p) => {
           let diferencial = '-';
           if (p.descricao) {
             const madeiras = ['pequiá', 'jatobá', 'ipê', 'cedro', 'peroba', 'freijó', 'muiracatiara', 'carvalho', 'nogueira', 'teca', 'mogno'];
-            const madeiraEncontrada = madeiras.find(m => p.descricao.toLowerCase().includes(m));
+            const madeiraEncontrada = madeiras.find(m => (p.descricao || '').toLowerCase().includes(m));
             if (madeiraEncontrada) {
               diferencial = madeiraEncontrada.charAt(0).toUpperCase() + madeiraEncontrada.slice(1);
             }
