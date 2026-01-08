@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Plus, Pencil, Trash2, Package, X, Image, Video, Link, Upload, Play, Filter, Warehouse, MapPin, Ruler, Search, LinkIcon, ExternalLink, FileSpreadsheet, Check, Eye, Users } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, Package, X, Image, Video, Link, Upload, Play, Filter, Warehouse, MapPin, Ruler, Search, LinkIcon, ExternalLink, FileSpreadsheet, Check, Eye, Users, Copy } from "lucide-react";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import type { Json } from "@/integrations/supabase/types";
 import { FichaTecnicaSheet } from "./FichaTecnicaSheet";
@@ -1552,6 +1552,7 @@ export default function IAConfigProdutos() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-[100px]">ID</TableHead>
               <TableHead>Imagem</TableHead>
               <TableHead>Produto</TableHead>
               <TableHead>Categoria</TableHead>
@@ -1566,6 +1567,28 @@ export default function IAConfigProdutos() {
           <TableBody>
             {produtosFiltrados.map((produto) => (
               <TableRow key={produto.id}>
+                <TableCell>
+                  <div className="flex items-center gap-1">
+                    <code 
+                      className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded truncate max-w-[70px]" 
+                      title={produto.id}
+                    >
+                      {produto.id.substring(0, 8)}
+                    </code>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6"
+                      onClick={() => {
+                        navigator.clipboard.writeText(produto.id);
+                        toast.success("ID copiado!");
+                      }}
+                      title="Copiar ID completo"
+                    >
+                      <Copy className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </TableCell>
                 <TableCell>
                   {produto.imagem_url ? (
                     <img
