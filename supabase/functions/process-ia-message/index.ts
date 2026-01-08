@@ -388,13 +388,29 @@ serve(async (req) => {
       userMessage = message.extendedTextMessage.text;
     } else if (message?.audioMessage) {
       mediaType = "audio";
-      let audioBase64 = messageData.media?.base64;
+      
+      // Debug: ver estrutura exata do payload para encontrar base64
+      console.log(`🎙️ Debug messageData.media:`, JSON.stringify(messageData.media || {}).substring(0, 500));
+      console.log(`🎙️ Debug messageData.base64:`, messageData.base64 ? `yes (${String(messageData.base64).length} chars)` : 'no');
+      console.log(`🎙️ Debug message.audioMessage.base64:`, message.audioMessage?.base64 ? `yes (${String(message.audioMessage.base64).length} chars)` : 'no');
+      
+      // Buscar base64 em múltiplos locais possíveis (Evolution API pode enviar em lugares diferentes)
+      let audioBase64 = messageData.media?.base64 
+        || messageData.base64 
+        || message.audioMessage?.base64;
+      
+      // Limpar prefixo data:xxx;base64, se existir
+      if (audioBase64 && typeof audioBase64 === 'string' && audioBase64.includes('base64,')) {
+        console.log(`🎙️ Removendo prefixo data: do base64`);
+        audioBase64 = audioBase64.split('base64,')[1];
+      }
+      
       const audioUrl = messageData.media?.url || message.audioMessage?.url;
       // Normalizar mimetype (remover ; codecs=opus etc)
       const rawMimetype = message.audioMessage?.mimetype || "audio/ogg";
       const mimetype = rawMimetype.split(';')[0].trim();
       
-      console.log(`🎙️ Audio message received - URL: ${audioUrl ? 'yes' : 'no'}, Base64: ${audioBase64 ? 'yes' : 'no'}, Mimetype: ${mimetype}`);
+      console.log(`🎙️ Audio message received - URL: ${audioUrl ? 'yes' : 'no'}, Base64: ${audioBase64 ? `yes (${audioBase64.length} chars)` : 'no'}, Mimetype: ${mimetype}`);
       
       // Se não tem base64, tentar baixar via Evolution API com retry
       if (!audioBase64 && key?.id) {

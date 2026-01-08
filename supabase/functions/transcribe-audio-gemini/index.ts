@@ -35,6 +35,16 @@ serve(async (req) => {
     console.log(`🎙️ MimeType: ${mimeType || 'not specified'}`);
 
     let audioBase64 = audio;
+    
+    // Limpar prefixo data:xxx;base64, se existir (Evolution API às vezes envia com prefixo)
+    if (typeof audioBase64 === 'string' && audioBase64.includes('base64,')) {
+      console.log(`🎙️ Removendo prefixo data: do base64`);
+      audioBase64 = audioBase64.split('base64,')[1];
+    }
+    
+    // Log para debug
+    console.log(`🎙️ Base64 length: ${audioBase64?.length || 0}, starts with: ${audioBase64?.substring(0, 50)}...`);
+    
     // Normalizar mimeType (remover ; codecs=opus etc)
     let audioMimeType = (mimeType || 'audio/ogg').split(';')[0].trim();
 
