@@ -9,9 +9,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, FileSpreadsheet } from "lucide-react";
 import { CostCenterTagsSelector } from "./CostCenterTagsSelector";
 import ProductMediaUploader, { VideoItem } from "./ProductMediaUploader";
+import { TemplateFichaSelector } from "@/components/shared/TemplateFichaSelector";
 
 // ID da categoria "Produto" para mostrar seção de mídia
 const CATEGORIA_PRODUTO_ID = "2ca37a60-74b7-446c-9a67-fa5ff7f67731";
@@ -43,6 +44,7 @@ export default function EditProductDialog({ product, open, onOpenChange, onSucce
   const [selectedCostCenters, setSelectedCostCenters] = useState<string[]>([]);
   const [galeria, setGaleria] = useState<string[]>([]);
   const [videos, setVideos] = useState<VideoItem[]>([]);
+  const [templateFichaId, setTemplateFichaId] = useState<string | null>(null);
   const [form, setForm] = useState({
     code: "",
     name: "",
@@ -184,6 +186,12 @@ export default function EditProductDialog({ product, open, onOpenChange, onSucce
     setSelectedCostCenters(productCostCenters);
   }, [productCostCenters]);
 
+  useEffect(() => {
+    if (product) {
+      setTemplateFichaId(product.template_ficha_id || null);
+    }
+  }, [product]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -221,6 +229,7 @@ export default function EditProductDialog({ product, open, onOpenChange, onSucce
         image_url: form.image_url || null,
         galeria: isProdutoCategory ? galeria : [],
         videos: isProdutoCategory ? videos : [],
+        template_ficha_id: templateFichaId,
       };
       
       const { error } = await supabase
@@ -517,6 +526,23 @@ export default function EditProductDialog({ product, open, onOpenChange, onSucce
                 placeholder="Qtd sugerida para comprar"
               />
             </div>
+          </div>
+
+          {/* Ficha Técnica Padrão */}
+          <div className="space-y-2 p-3 border rounded-lg bg-muted/30">
+            <div className="flex items-center gap-2">
+              <FileSpreadsheet className="h-4 w-4 text-primary" />
+              <Label>Ficha Técnica Padrão (Opcional)</Label>
+            </div>
+            <TemplateFichaSelector
+              value={templateFichaId}
+              onChange={setTemplateFichaId}
+              placeholder="Vincular a uma ficha técnica padrão..."
+              disabled={loading}
+            />
+            <p className="text-xs text-muted-foreground">
+              Vincule a uma ficha técnica padrão para usar como referência de custo e composição
+            </p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

@@ -15,6 +15,8 @@ import { Loader2, Plus, Pencil, Trash2, Package, X, Image, Video, Link, Upload, 
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import type { Json } from "@/integrations/supabase/types";
 import { FichaTecnicaSheet } from "./FichaTecnicaSheet";
+import { TemplateFichaSelector } from "@/components/shared/TemplateFichaSelector";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 interface Categoria {
   id: string;
@@ -144,6 +146,7 @@ export default function IAConfigProdutos() {
   const [showVideoUrlInput, setShowVideoUrlInput] = useState(false);
   const [existingFicha, setExistingFicha] = useState<{ id: string } | null>(null);
   const [gerarFichaTecnica, setGerarFichaTecnica] = useState(false);
+  const [fichaTecnicaMode, setFichaTecnicaMode] = useState<"criar" | "vincular">("criar");
   const [categoriaFiltro, setCategoriaFiltro] = useState<string>("todas");
   const [showNewCategoriaDialog, setShowNewCategoriaDialog] = useState(false);
   const [novaCategoria, setNovaCategoria] = useState("");
@@ -1419,7 +1422,9 @@ export default function IAConfigProdutos() {
                       <p className="text-sm text-muted-foreground">
                         {existingFicha 
                           ? "Gerencie insumos e mão de obra" 
-                          : "Criar ficha técnica para gestão de produção"}
+                          : form.template_ficha_id 
+                            ? "Vinculada a ficha técnica padrão"
+                            : "Criar ou vincular ficha técnica"}
                       </p>
                     </div>
                   </div>
@@ -1428,15 +1433,25 @@ export default function IAConfigProdutos() {
                       <Check className="h-4 w-4 mr-1" />
                       Criada
                     </Badge>
+                  ) : form.template_ficha_id ? (
+                    <Badge variant="outline" className="bg-blue-50 text-blue-600 border-blue-200">
+                      <LinkIcon className="h-4 w-4 mr-1" />
+                      Vinculada
+                    </Badge>
                   ) : (
                     <Switch
                       checked={gerarFichaTecnica}
-                      onCheckedChange={setGerarFichaTecnica}
+                      onCheckedChange={(checked) => {
+                        setGerarFichaTecnica(checked);
+                        if (!checked) {
+                          setForm({ ...form, template_ficha_id: null });
+                        }
+                      }}
                     />
                   )}
                 </div>
 
-                {/* Botões de ação para ficha técnica */}
+                {/* Opções de ficha técnica */}
                 {existingFicha ? (
                   <div className="flex items-center gap-2">
                     <Button
@@ -1470,48 +1485,84 @@ export default function IAConfigProdutos() {
                       + Mão de Obra
                     </Button>
                   </div>
-                ) : editingProduto && gerarFichaTecnica ? (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={async () => {
-                      try {
-                        const { data, error } = await supabase
-                          .from("production_products")
-                          .insert({
-                            name: form.nome,
-                            description: form.descricao || null,
-                            ia_produto_id: editingProduto.id,
-                            production_order_id: null,
-                            product_id: null,
-                            status: 'rascunho',
-                            cmv_total: form.preco_base
-                          })
-                          .select()
-                          .single();
-                        
-                        if (error) throw error;
-                        
-                        toast.success("Ficha técnica criada!");
-                        setExistingFicha({ id: data.id });
-                        
-                        setDialogOpen(false);
-                        setSelectedFichaTecnicaId(data.id);
-                        setSelectedFichaTecnicaProductName(form.nome);
-                        setSelectedFichaTecnicaStatus('rascunho');
-                        setFichaTecnicaSheetOpen(true);
-                        
-                        loadData();
-                      } catch (error) {
-                        console.error("Erro ao criar ficha técnica:", error);
-                        toast.error("Erro ao criar ficha técnica");
-                      }
-                    }}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Criar Ficha Técnica Agora
-                  </Button>
+                ) : gerarFichaTecnica ? (
+                  <div className="space-y-3">
+                    <RadioGroup 
+                      value={fichaTecnicaMode} 
+                      onValueChange={(v) => {
+                        setFichaTecnicaMode(v as "criar" | "vincular");
+                        if (v === "criar") {
+                          setForm({ ...form, template_ficha_id: null });
+                        }
+                      }}
+                      className="flex flex-col gap-2"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="criar" id="criar" />
+                        <Label htmlFor="criar" className="text-sm font-normal cursor-pointer">
+                          Criar nova ficha técnica
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="vincular" id="vincular" />
+                        <Label htmlFor="vincular" className="text-sm font-normal cursor-pointer">
+                          Vincular ficha técnica existente
+                        </Label>
+                      </div>
+                    </RadioGroup>
+
+                    {fichaTecnicaMode === "criar" && editingProduto && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={async () => {
+                          try {
+                            const { data, error } = await supabase
+                              .from("production_products")
+                              .insert({
+                                name: form.nome,
+                                description: form.descricao || null,
+                                ia_produto_id: editingProduto.id,
+                                production_order_id: null,
+                                product_id: null,
+                                status: 'rascunho',
+                                cmv_total: form.preco_base
+                              })
+                              .select()
+                              .single();
+                            
+                            if (error) throw error;
+                            
+                            toast.success("Ficha técnica criada!");
+                            setExistingFicha({ id: data.id });
+                            
+                            setDialogOpen(false);
+                            setSelectedFichaTecnicaId(data.id);
+                            setSelectedFichaTecnicaProductName(form.nome);
+                            setSelectedFichaTecnicaStatus('rascunho');
+                            setFichaTecnicaSheetOpen(true);
+                            
+                            loadData();
+                          } catch (error) {
+                            console.error("Erro ao criar ficha técnica:", error);
+                            toast.error("Erro ao criar ficha técnica");
+                          }
+                        }}
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Criar Ficha Técnica Agora
+                      </Button>
+                    )}
+
+                    {fichaTecnicaMode === "vincular" && (
+                      <TemplateFichaSelector
+                        value={form.template_ficha_id}
+                        onChange={(id) => setForm({ ...form, template_ficha_id: id })}
+                        placeholder="Selecionar ficha técnica padrão..."
+                      />
+                    )}
+                  </div>
                 ) : null}
               </div>
 
