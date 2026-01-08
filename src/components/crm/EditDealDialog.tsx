@@ -103,6 +103,7 @@ export function EditDealDialog({
       note: "",
       temperature: "frio",
       product_type: "",
+      categoria: "",
       conversation_history: "",
       owner_id: "",
       source_id: "",
@@ -140,6 +141,7 @@ export function EditDealDialog({
         note: deal.note || "",
         temperature: deal.lead?.temperature || "frio",
         product_type: deal.product_type || "",
+        categoria: deal.categoria || "",
         conversation_history: deal.conversation_history || "",
         owner_id: deal.owner_id || "",
         source_id: deal.lead?.source_id?.toString() || "",
@@ -497,6 +499,7 @@ export function EditDealDialog({
         value: formData.value ? Number(formData.value) : 0,
         note: formData.note || null,
         product_type: formData.product_type || null,
+        categoria: formData.categoria || null,
         conversation_history: formData.conversation_history || null,
         scheduled_call: scheduledCall?.toISOString() || null,
         updated_at: new Date().toISOString(),
@@ -729,6 +732,25 @@ export function EditDealDialog({
                   <SelectContent>
                     <SelectItem value="Planejado">Planejado</SelectItem>
                     <SelectItem value="Móvel">Móvel</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="categoria">Categoria</Label>
+                <Select
+                  value={formData.categoria || ""}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, categoria: value === "" ? "" : value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a categoria" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Sem categoria</SelectItem>
+                    <SelectItem value="Planejados">Planejados</SelectItem>
+                    <SelectItem value="Móveis Soltos">Móveis Soltos</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

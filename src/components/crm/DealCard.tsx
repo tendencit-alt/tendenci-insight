@@ -4,6 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Clock, Flame, Snowflake, User, Bot, X, Mic, Paperclip, Target, AlertTriangle, CheckCircle } from "lucide-react";
 import { useEffect, useState, useCallback, memo } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { cn } from "@/lib/utils";
 
 interface DealCardProps {
   deal: any;
@@ -13,14 +16,35 @@ interface DealCardProps {
   onDelete?: (dealId: string) => void;
   // Props opcionais para receber dados de tasks do pai (evita N+1 queries)
   taskData?: { total: number; overdue: number };
+  // Se true, desabilita o sortable (usado no DragOverlay)
+  isDragOverlay?: boolean;
 }
 
-function DealCardComponent({ deal, timeInStage, onClick, onDragStart, onDelete, taskData }: DealCardProps) {
+function DealCardComponent({ deal, timeInStage, onClick, onDragStart, onDelete, taskData, isDragOverlay }: DealCardProps) {
   const [audioCount, setAudioCount] = useState(0);
   const [fileCount, setFileCount] = useState(0);
   const [taskCount, setTaskCount] = useState(taskData?.total || 0);
   const [overdueTaskCount, setOverdueTaskCount] = useState(taskData?.overdue || 0);
   const [hasIndication, setHasIndication] = useState(false);
+
+  // Hook do @dnd-kit para tornar o card arrastável
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ 
+    id: deal.id,
+    disabled: isDragOverlay,
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
 
   const fetchFiles = useCallback(async () => {
     const { data } = await supabase
@@ -111,10 +135,16 @@ function DealCardComponent({ deal, timeInStage, onClick, onDragStart, onDelete, 
 
   return (
     <Card
-      className="cursor-move hover:shadow-lg hover:border-primary/50 transition-all duration-200 hover:scale-[1.01] animate-fade-in relative group border-border/50 hover:bg-accent/5"
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        "cursor-grab hover:shadow-lg hover:border-primary/50 transition-all duration-200 hover:scale-[1.01] animate-fade-in relative group border-border/50 hover:bg-accent/5",
+        isDragging && "opacity-50 cursor-grabbing",
+        isDragOverlay && "shadow-xl cursor-grabbing rotate-2"
+      )}
       onClick={onClick}
-      draggable={true}
-      onDragStart={onDragStart}
+      {...attributes}
+      {...listeners}
     >
       {onDelete && (
         <Button
