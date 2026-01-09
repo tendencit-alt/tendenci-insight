@@ -37,6 +37,7 @@ const initialForm = {
   msg_despedida: "",
   msg_ausencia: "",
   exemplos_respostas: [] as ExemploResposta[],
+  human_takeover_timeout_minutes: 120, // Timeout em minutos para pausa após intervenção humana
 };
 
 const getLimiteDescription = (limite: number): string => {
@@ -178,6 +179,7 @@ export default function IAConfigComunicacao({ config, onSave, saving }: Props) {
         msg_despedida: (config.msg_despedida as string) || "",
         msg_ausencia: (config.msg_ausencia as string) || "",
         exemplos_respostas: exemplos,
+        human_takeover_timeout_minutes: (config.human_takeover_timeout_minutes as number) || 120,
       });
     }
   }, [config, hasRestoredData]);
@@ -372,6 +374,33 @@ export default function IAConfigComunicacao({ config, onSave, saving }: Props) {
               <strong>{form.tempo_resposta_ms / 1000}s</strong> de delay antes de responder (máximo 30s)
             </p>
           </div>
+        </div>
+
+        {/* Timeout de Intervenção Humana */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Label>⏸️ Timeout de Intervenção Humana</Label>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Por quanto tempo a IA deve ficar pausada após um atendente humano enviar mensagem manualmente
+          </p>
+          <div className="flex items-center gap-3">
+            <Input
+              type="number"
+              value={form.human_takeover_timeout_minutes}
+              onChange={(e) => {
+                const val = parseInt(e.target.value) || 120;
+                setForm({ ...form, human_takeover_timeout_minutes: Math.min(1440, Math.max(5, val)) });
+              }}
+              className="w-24"
+              min={5}
+              max={1440}
+            />
+            <span className="text-sm text-muted-foreground">minutos</span>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Padrão: 120 min (2h). Mínimo: 5 min. Máximo: 1440 min (24h).
+          </p>
         </div>
       </div>
 

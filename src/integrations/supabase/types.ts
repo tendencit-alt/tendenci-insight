@@ -1855,6 +1855,10 @@ export type Database = {
         Row: {
           client_name: string | null
           created_at: string
+          ia_paused: boolean | null
+          ia_paused_at: string | null
+          ia_paused_reason: string | null
+          ia_paused_until: string | null
           id: string
           instance_name: string
           interaction_count: number | null
@@ -1867,6 +1871,10 @@ export type Database = {
         Insert: {
           client_name?: string | null
           created_at?: string
+          ia_paused?: boolean | null
+          ia_paused_at?: string | null
+          ia_paused_reason?: string | null
+          ia_paused_until?: string | null
           id?: string
           instance_name: string
           interaction_count?: number | null
@@ -1879,6 +1887,10 @@ export type Database = {
         Update: {
           client_name?: string | null
           created_at?: string
+          ia_paused?: boolean | null
+          ia_paused_at?: string | null
+          ia_paused_reason?: string | null
+          ia_paused_until?: string | null
           id?: string
           instance_name?: string
           interaction_count?: number | null
