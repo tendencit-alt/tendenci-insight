@@ -59,6 +59,8 @@ export function EditDealDialog({
   const [owners, setOwners] = useState<any[]>([]);
   const [clients, setClients] = useState<any[]>([]);
   const [loadingClients, setLoadingClients] = useState(true);
+  // Estado para preservar lead_id original do deal (imutável durante edição)
+  const [originalLeadId, setOriginalLeadId] = useState<string | null>(null);
   const [scheduledCall, setScheduledCall] = useState<Date>();
   const [dealFiles, setDealFiles] = useState<any[]>([]);
   const [isRecording, setIsRecording] = useState(false);
@@ -112,6 +114,11 @@ export function EditDealDialog({
 
   useEffect(() => {
     if (open && deal) {
+      // IMPORTANTE: Salvar lead_id original ANTES de qualquer manipulação
+      // Isso garante que temos um fallback seguro caso formData.lead_id fique vazio
+      setOriginalLeadId(deal.lead_id || null);
+      console.log("🔐 Dialog aberto - originalLeadId salvo:", deal.lead_id);
+      
       // Limpar dados persistidos antes de carregar dados frescos do deal
       clearPersistedData();
       
@@ -468,9 +475,26 @@ export function EditDealDialog({
         }
       }
 
-      // CORREÇÃO: Preservar lead_id original se não foi alterado pelo usuário
-      // Usar o valor do deal original como fallback
-      const leadIdToSave = formData.lead_id || deal.lead_id || null;
+      // CORREÇÃO ROBUSTA: Lógica para preservar lead_id
+      // 1. Se formData.lead_id tem valor (UUID válido) → usar esse valor
+      // 2. Se formData.lead_id está vazio → usar originalLeadId como fallback seguro
+      // 3. originalLeadId foi salvo ao abrir o dialog e é imutável
+      let leadIdToSave: string | null = null;
+      
+      if (formData.lead_id && formData.lead_id.length > 10) {
+        // Usuário selecionou um cliente válido
+        leadIdToSave = formData.lead_id;
+      } else if (originalLeadId) {
+        // formData.lead_id está vazio mas tínhamos um cliente original - PRESERVAR
+        leadIdToSave = originalLeadId;
+      }
+      
+      console.log("🔐 Lead ID Debug:", {
+        formDataLeadId: formData.lead_id,
+        dealLeadId: deal.lead_id,
+        originalLeadId,
+        leadIdToSave
+      });
       
       const updateData: any = {
         title: formData.title,
