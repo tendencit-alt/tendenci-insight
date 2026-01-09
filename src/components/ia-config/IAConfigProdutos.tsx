@@ -165,6 +165,7 @@ export default function IAConfigProdutos() {
   
   const [form, setForm] = useState({
     nome: "",
+    codigo_interno: "",
     descricao: "",
     preco_base: 0,
     preco_original: null as number | null,
@@ -301,6 +302,7 @@ export default function IAConfigProdutos() {
     
     setForm({
       nome: "",
+      codigo_interno: "",
       descricao: "",
       preco_base: 0,
       preco_original: null,
@@ -359,6 +361,7 @@ export default function IAConfigProdutos() {
     
     setForm({
       nome: produto.nome,
+      codigo_interno: (produto as any).codigo_interno || "",
       descricao: produto.descricao || "",
       preco_base: produto.preco_base,
       preco_original: (produto as any).preco_original ?? null,
@@ -599,6 +602,7 @@ export default function IAConfigProdutos() {
 
       const produtoData = {
         nome: form.nome,
+        codigo_interno: form.codigo_interno || null,
         descricao: form.descricao || null,
         preco_base: form.preco_base,
         preco_original: form.preco_original || null,
@@ -863,6 +867,18 @@ export default function IAConfigProdutos() {
                     value={form.nome}
                     onChange={(e) => setForm({ ...form, nome: e.target.value })}
                     required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="codigo_interno" className="flex items-center gap-2">
+                    ID Interno
+                    <span className="text-xs text-muted-foreground">(código do produto)</span>
+                  </Label>
+                  <Input
+                    id="codigo_interno"
+                    value={form.codigo_interno}
+                    onChange={(e) => setForm({ ...form, codigo_interno: e.target.value })}
+                    placeholder="Ex: MESA-001, SOF-123"
                   />
                 </div>
                 <div className="space-y-2">
