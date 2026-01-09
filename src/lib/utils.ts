@@ -16,10 +16,11 @@ export function formatCurrency(value: number): string {
 export const ALLOWED_FILE_EXTENSIONS = [
   'pdf', 'doc', 'docx', 'xls', 'xlsx', 'xlsm', 'dwg', 'skp',
   'jpg', 'jpeg', 'png', 'webp', 'txt',
-  'mp3', 'wav', 'm4a', 'webm', 'ogg'
+  'mp3', 'wav', 'm4a', 'webm', 'ogg',
+  'mp4', 'mov', 'avi', 'mkv', 'wmv'
 ];
 
-export const ALLOWED_FILE_TYPES_ACCEPT = '.pdf,.doc,.docx,.xls,.xlsx,.xlsm,.dwg,.skp,.jpg,.jpeg,.png,.webp,.txt,.mp3,.wav,.m4a,.webm,.ogg';
+export const ALLOWED_FILE_TYPES_ACCEPT = '.pdf,.doc,.docx,.xls,.xlsx,.xlsm,.dwg,.skp,.jpg,.jpeg,.png,.webp,.txt,.mp3,.wav,.m4a,.webm,.ogg,.mp4,.mov,.avi,.mkv,.wmv';
 
 // MIME types permitidos para upload
 // CRÍTICO: application/octet-stream é necessário para arquivos .skp e .dwg que browsers não reconhecem
@@ -50,6 +51,12 @@ export const ALLOWED_MIME_TYPES = [
   'audio/mp4',
   'audio/webm',
   'audio/ogg',
+  'video/mp4',
+  'video/quicktime', // .mov
+  'video/x-msvideo', // .avi
+  'video/x-matroska', // .mkv
+  'video/x-ms-wmv', // .wmv
+  'video/webm',
   '' // Alguns browsers enviam MIME type vazio
 ];
 
