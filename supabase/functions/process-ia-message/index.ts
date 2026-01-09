@@ -317,6 +317,47 @@ serve(async (req) => {
     const pushName = messageData.pushName || "";
     console.log(`📱 From: ${phoneNumber} (${pushName})`);
 
+    // ========== CHECK IF IA IS PAUSED FOR THIS CLIENT (Human Takeover) ==========
+    const { data: clientMemoryCheck } = await supabase
+      .from("ia_client_memory")
+      .select("ia_paused, ia_paused_until, ia_paused_reason")
+      .eq("phone_number", phoneNumber)
+      .eq("instance_name", instanceName)
+      .single();
+
+    if (clientMemoryCheck?.ia_paused) {
+      const pausedUntil = clientMemoryCheck.ia_paused_until 
+        ? new Date(clientMemoryCheck.ia_paused_until) 
+        : null;
+      
+      // Verificar se ainda está no período de pausa
+      if (!pausedUntil || new Date() < pausedUntil) {
+        console.log(`⏸️ IA PAUSADA para ${phoneNumber} até ${pausedUntil?.toISOString() || 'indefinidamente'} (reason: ${clientMemoryCheck.ia_paused_reason})`);
+        return new Response(JSON.stringify({ 
+          success: true, 
+          skipped: "ia_paused_human_takeover",
+          paused_until: pausedUntil?.toISOString(),
+          reason: clientMemoryCheck.ia_paused_reason
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      } else {
+        // Timeout expirou, retomar IA automaticamente
+        console.log(`▶️ Timeout de pausa expirou, retomando IA para ${phoneNumber}`);
+        await supabase
+          .from("ia_client_memory")
+          .update({ 
+            ia_paused: false, 
+            ia_paused_at: null, 
+            ia_paused_until: null,
+            ia_paused_reason: null,
+            updated_at: new Date().toISOString()
+          })
+          .eq("phone_number", phoneNumber)
+          .eq("instance_name", instanceName);
+      }
+    }
+
     // ========== DEDUPLICATION BY MESSAGE KEY ID ==========
     const messageKeyId = key?.id || null;
     if (messageKeyId) {

@@ -133,6 +133,65 @@ Deno.serve(async (req) => {
       }
     }
 
+    // ========== DETECTAR INTERVENÇÃO HUMANA E PAUSAR IA ==========
+    // Se mensagem foi enviada por humano (fromMe: true) em instância IA, pausar IA
+    if (connectionData?.is_ia_instance && event === 'messages.upsert' && data?.key?.fromMe === true) {
+      const clientPhoneForPause = data?.key?.remoteJid?.replace('@s.whatsapp.net', '') || null;
+      
+      if (clientPhoneForPause && !clientPhoneForPause.includes('@g.us')) {
+        console.log('👤 HUMAN INTERVENTION DETECTED - Pausing IA for client:', clientPhoneForPause);
+        
+        // Carregar timeout da configuração
+        let timeoutMinutes = 120; // Default: 2 horas
+        try {
+          const { data: comConfig } = await supabase
+            .from('tendenci_ia_config')
+            .select('config')
+            .eq('secao', 'comunicacao')
+            .single();
+          
+          if (comConfig?.config?.human_takeover_timeout_minutes) {
+            timeoutMinutes = Number(comConfig.config.human_takeover_timeout_minutes);
+          }
+        } catch (configErr) {
+          console.warn('⚠️ Could not load timeout config, using default:', configErr);
+        }
+        
+        const pausedUntil = new Date(Date.now() + timeoutMinutes * 60 * 1000);
+        
+        // Pausar IA para este cliente
+        try {
+          await supabase
+            .from('ia_client_memory')
+            .upsert({
+              phone_number: clientPhoneForPause,
+              instance_name: instance,
+              ia_paused: true,
+              ia_paused_at: new Date().toISOString(),
+              ia_paused_until: pausedUntil.toISOString(),
+              ia_paused_reason: 'human_intervention',
+              updated_at: new Date().toISOString()
+            }, { onConflict: 'phone_number,instance_name' });
+          
+          console.log(`⏸️ IA pausada até ${pausedUntil.toISOString()} (${timeoutMinutes} minutos)`);
+          
+          // Log no webhook
+          await supabase
+            .from('tendenci_webhook_logs')
+            .insert({
+              event_type: 'human_takeover',
+              instance_name: instance,
+              phone_from: clientPhoneForPause,
+              message_content: `Intervenção humana detectada. IA pausada por ${timeoutMinutes} minutos.`,
+              raw_payload: { timeout_minutes: timeoutMinutes, paused_until: pausedUntil.toISOString() },
+              processing_status: 'human_takeover'
+            });
+        } catch (pauseErr) {
+          console.error('❌ Erro ao pausar IA:', pauseErr);
+        }
+      }
+    }
+
     // ========== LOGGING PERSISTENTE PARA DIAGNÓSTICO ==========
     const clientPhone = data?.key?.remoteJid?.replace('@s.whatsapp.net', '') || null
     const messageText = (payload as any).data?.message?.conversation || 
