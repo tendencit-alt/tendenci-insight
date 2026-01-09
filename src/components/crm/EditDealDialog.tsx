@@ -61,6 +61,8 @@ export function EditDealDialog({
   const [loadingClients, setLoadingClients] = useState(true);
   // Estado para preservar lead_id original do deal (imutável durante edição)
   const [originalLeadId, setOriginalLeadId] = useState<string | null>(null);
+  // Estado para preservar owner_id original do deal (imutável durante edição)
+  const [originalOwnerId, setOriginalOwnerId] = useState<string | null>(null);
   const [scheduledCall, setScheduledCall] = useState<Date>();
   const [dealFiles, setDealFiles] = useState<any[]>([]);
   const [isRecording, setIsRecording] = useState(false);
@@ -114,10 +116,11 @@ export function EditDealDialog({
 
   useEffect(() => {
     if (open && deal) {
-      // IMPORTANTE: Salvar lead_id original ANTES de qualquer manipulação
-      // Isso garante que temos um fallback seguro caso formData.lead_id fique vazio
+      // IMPORTANTE: Salvar lead_id e owner_id originais ANTES de qualquer manipulação
+      // Isso garante que temos um fallback seguro caso formData fique vazio
       setOriginalLeadId(deal.lead_id || null);
-      console.log("🔐 Dialog aberto - originalLeadId salvo:", deal.lead_id);
+      setOriginalOwnerId(deal.owner_id || null);
+      console.log("🔐 Dialog aberto - originalLeadId salvo:", deal.lead_id, "originalOwnerId salvo:", deal.owner_id);
       
       // Limpar dados persistidos antes de carregar dados frescos do deal
       clearPersistedData();
@@ -496,10 +499,30 @@ export function EditDealDialog({
         leadIdToSave
       });
       
+      // CORREÇÃO ROBUSTA: Lógica para preservar owner_id
+      // 1. Se formData.owner_id tem valor (UUID válido) → usar esse valor
+      // 2. Se formData.owner_id está vazio → usar originalOwnerId como fallback seguro
+      let ownerIdToSave: string | null = null;
+      
+      if (formData.owner_id && formData.owner_id.length > 10) {
+        // Usuário selecionou um vendedor válido
+        ownerIdToSave = formData.owner_id;
+      } else if (originalOwnerId) {
+        // formData.owner_id está vazio mas tínhamos um vendedor original - PRESERVAR
+        ownerIdToSave = originalOwnerId;
+      }
+      
+      console.log("🔐 Owner ID Debug:", {
+        formDataOwnerId: formData.owner_id,
+        dealOwnerId: deal.owner_id,
+        originalOwnerId,
+        ownerIdToSave
+      });
+
       const updateData: any = {
         title: formData.title,
         architect_id: formData.architect_id || null,
-        owner_id: formData.owner_id || null,
+        owner_id: ownerIdToSave,
         value: formData.value ? Number(formData.value) : 0,
         note: formData.note || null,
         tipo_produto: formData.tipos_produto.length > 0 ? formData.tipos_produto.join(", ") : null,
