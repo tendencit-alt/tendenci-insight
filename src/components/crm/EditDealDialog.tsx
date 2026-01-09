@@ -5,6 +5,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -99,7 +100,7 @@ export function EditDealDialog({
       value: "",
       note: "",
       temperature: "frio",
-      product_type: "",
+      tipos_produto: [] as string[],
       categoria: "",
       conversation_history: "",
       owner_id: "",
@@ -115,6 +116,11 @@ export function EditDealDialog({
       clearPersistedData();
       
       // Sempre usar os dados do deal, ignorando qualquer valor persistido
+      // Converter string "Sofá, Mesa" em array ["Sofá", "Mesa"]
+      const tiposProdutoArray = deal.tipo_produto 
+        ? deal.tipo_produto.split(",").map((t: string) => t.trim()).filter(Boolean)
+        : [];
+      
       setFormData({
         title: deal.title || "",
         stage_id: deal.stage_id || "",
@@ -122,7 +128,7 @@ export function EditDealDialog({
         value: deal.value?.toString() || "",
         note: deal.note || "",
         temperature: deal.lead?.temperature || "frio",
-        product_type: deal.tipo_produto || deal.product_type || "",
+        tipos_produto: tiposProdutoArray,
         categoria: deal.categoria || "",
         conversation_history: deal.conversation_history || "",
         owner_id: deal.owner_id || "",
@@ -469,7 +475,7 @@ export function EditDealDialog({
         owner_id: formData.owner_id || null,
         value: formData.value ? Number(formData.value) : 0,
         note: formData.note || null,
-        tipo_produto: formData.product_type || null,
+        tipo_produto: formData.tipos_produto.length > 0 ? formData.tipos_produto.join(", ") : null,
         categoria: formData.categoria || null,
         conversation_history: formData.conversation_history || null,
         scheduled_call: scheduledCall?.toISOString() || null,
@@ -704,23 +710,26 @@ export function EditDealDialog({
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="product_type">Tipo de Produto</Label>
-                <Select
-                  value={formData.product_type || "none"}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, product_type: value === "none" ? "" : value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o tipo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Selecione o tipo</SelectItem>
-                    <SelectItem value="Planejado">Planejado</SelectItem>
-                    <SelectItem value="Móvel">Móvel</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="space-y-2 col-span-2">
+                <Label>Tipo de Produto</Label>
+                <div className="grid grid-cols-3 gap-2 border rounded-md p-3 max-h-48 overflow-y-auto">
+                  {["Sofá", "Poltrona", "Mesa", "Cadeira", "Aparador", "Banqueta", "Rack", "Cristaleira", "Estante", "Vaso", "Quadro", "Chaise", "Personalizado"].map((tp) => (
+                    <div key={tp} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`edit-tp-${tp}`}
+                        checked={formData.tipos_produto.includes(tp)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setFormData({ ...formData, tipos_produto: [...formData.tipos_produto, tp] });
+                          } else {
+                            setFormData({ ...formData, tipos_produto: formData.tipos_produto.filter((t: string) => t !== tp) });
+                          }
+                        }}
+                      />
+                      <label htmlFor={`edit-tp-${tp}`} className="text-sm cursor-pointer">{tp}</label>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               <div className="space-y-2">
