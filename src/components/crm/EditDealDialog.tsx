@@ -468,7 +468,10 @@ export function EditDealDialog({
         }
       }
 
-      // CORREÇÃO: Só incluir lead_id no update se foi REALMENTE alterado pelo usuário
+      // CORREÇÃO: Preservar lead_id original se não foi alterado pelo usuário
+      // Usar o valor do deal original como fallback
+      const leadIdToSave = formData.lead_id || deal.lead_id || null;
+      
       const updateData: any = {
         title: formData.title,
         architect_id: formData.architect_id || null,
@@ -480,10 +483,8 @@ export function EditDealDialog({
         conversation_history: formData.conversation_history || null,
         scheduled_call: scheduledCall?.toISOString() || null,
         updated_at: new Date().toISOString(),
+        lead_id: leadIdToSave,
       };
-
-      // Sempre incluir lead_id no update (simplificado)
-      updateData.lead_id = formData.lead_id || null;
 
       // If stage changed, update stage_id and stage_entered_at
       if (formData.stage_id && formData.stage_id !== deal.stage_id) {
