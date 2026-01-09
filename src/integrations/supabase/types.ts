@@ -5712,6 +5712,7 @@ export type Database = {
           ativo: boolean | null
           categoria: string | null
           centro_custo: string | null
+          codigo_interno: string | null
           comprimento: number | null
           created_at: string | null
           descricao: string | null
@@ -5741,6 +5742,7 @@ export type Database = {
           ativo?: boolean | null
           categoria?: string | null
           centro_custo?: string | null
+          codigo_interno?: string | null
           comprimento?: number | null
           created_at?: string | null
           descricao?: string | null
@@ -5770,6 +5772,7 @@ export type Database = {
           ativo?: boolean | null
           categoria?: string | null
           centro_custo?: string | null
+          codigo_interno?: string | null
           comprimento?: number | null
           created_at?: string | null
           descricao?: string | null
