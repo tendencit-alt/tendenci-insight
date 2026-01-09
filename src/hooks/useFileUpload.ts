@@ -72,6 +72,12 @@ export function useFileUpload({
       'jpeg': 'image/jpeg',
       'gif': 'image/gif',
       'webp': 'image/webp',
+      'mp4': 'video/mp4',
+      'mov': 'video/quicktime',
+      'avi': 'video/x-msvideo',
+      'mkv': 'video/x-matroska',
+      'wmv': 'video/x-ms-wmv',
+      'webm': 'video/webm',
     };
 
     // Determinar contentType correto baseado na extensão
