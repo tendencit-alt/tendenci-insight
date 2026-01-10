@@ -30,7 +30,7 @@ export default function Catalogo() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const [whatsappNumber, setWhatsappNumber] = useState("5511999999999");
+  const [whatsappNumber] = useState("5534991312717");
 
   useEffect(() => {
     loadProducts();

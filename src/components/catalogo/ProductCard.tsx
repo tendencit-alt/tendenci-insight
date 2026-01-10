@@ -1,4 +1,4 @@
-import { Package } from "lucide-react";
+import { Package, MessageCircle } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -82,9 +82,10 @@ export function ProductCard({ product, onClick, onBuyNow }: ProductCardProps) {
             e.stopPropagation();
             onBuyNow();
           }}
-          className="w-full bg-[#C41E3A] hover:bg-[#A01830] text-white font-semibold py-5 rounded-lg transition-all duration-200 hover:shadow-lg"
+          className="w-full bg-[#25D366] hover:bg-[#128C7E] text-white font-semibold py-5 rounded-lg transition-all duration-200 hover:shadow-lg flex items-center justify-center gap-2"
         >
-          Comprar Agora
+          <MessageCircle className="h-5 w-5" />
+          Comprar com Consultor
         </Button>
       </div>
     </Card>
