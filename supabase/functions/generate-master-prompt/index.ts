@@ -618,6 +618,54 @@ ${vendas.script_followup}\n`;
 ---
 `;
     
+    // ===== REGRA DE APRESENTAÇÃO DE PRODUTOS =====
+    prodSection += `
+## 🎯 REGRA DE APRESENTAÇÃO DE PRODUTOS (OBRIGATÓRIO)
+
+### LIMITE DE PRODUTOS POR MENSAGEM
+- Mostre **NO MÁXIMO 1 PRODUTO** com foto por mensagem
+- Se cliente pedir "opções" ou "mais produtos", envie o link do catálogo
+
+### 📦 LINK DO CATÁLOGO COMPLETO
+**URL do catálogo:** https://www.tendencitech.com.br/catalogo
+
+### FORMATO DE RESPOSTA COM PRODUTO:
+1. Breve descrição/saudação
+2. Uma foto do produto mais relevante: [FOTO_PRODUTO:url:nome]
+3. Informação de preço
+4. Convite para ver todos os produtos no catálogo
+
+### EXEMPLOS CORRETOS:
+
+**Cliente:** "Vocês tem mesas?"
+**Resposta:** "Temos sim! Olha esse modelo que é muito procurado:
+[FOTO_PRODUTO:url:Mesa Cascata]
+Mesa Cascata - R$ 14.900
+
+Quer ver todas as nossas mesas? Acesse nosso catálogo completo: www.tendencitech.com.br/catalogo"
+
+**Cliente:** "Me mostra opções de sofás"
+**Resposta:** "Claro! Esse aqui é um dos mais vendidos:
+[FOTO_PRODUTO:url:Sofá Living]
+Sofá Living 3 lugares - R$ 8.500
+
+Temos vários outros modelos! Veja todos em: www.tendencitech.com.br/catalogo"
+
+### QUANDO ENVIAR O LINK DO CATÁLOGO:
+- Cliente pede para ver produtos ou opções
+- Cliente pergunta "o que vocês tem?"
+- Cliente quer comparar modelos
+- Após mostrar 1 produto, SEMPRE ofereça o catálogo
+- Quando cliente parece indeciso sobre qual modelo
+
+### QUANDO NÃO ENVIAR O LINK:
+- Cliente já especificou exatamente o produto (ex: "quero orçamento da Mesa Cascata")
+- Conversa sobre detalhes técnicos de um produto específico já escolhido
+- Cliente pedindo apenas preço de item já escolhido
+
+---
+`;
+
     if (products && products.length > 0) {
       prodSection += `## Catálogo de Produtos\n`;
       products.forEach((p: any) => {
@@ -811,6 +859,15 @@ ${p.diferenciais && p.diferenciais.length > 0 ? `Diferenciais: ${p.diferenciais.
     if (comportamento.clientes_dificeis) {
       compSection += `\n## Como Lidar com Clientes Difíceis:\n${comportamento.clientes_dificeis}\n`;
     }
+    
+    // Add mandatory catalog rule
+    compSection += `
+## 📦 REGRA DO CATÁLOGO (OBRIGATÓRIO)
+- Ao mostrar um produto, SEMPRE ofereça o link do catálogo completo
+- Link: www.tendencitech.com.br/catalogo
+- Mensagem sugerida: "Quer ver todos os nossos produtos? Acesse: www.tendencitech.com.br/catalogo"
+- Mostre NO MÁXIMO 1 produto com foto por mensagem
+`;
     
     promptSections.push(compSection);
 
