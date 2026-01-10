@@ -9,47 +9,54 @@ interface CatalogoHeaderProps {
 
 export function CatalogoHeader({ categories, selectedCategory, onSelectCategory }: CatalogoHeaderProps) {
   return (
-    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-100">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Logo */}
-        <div className="flex items-center justify-center py-6">
-          <img
-            src={logoTendenci}
-            alt="Tendenci"
-            className="h-12 md:h-16 object-contain"
-          />
+    <header className="sticky top-0 z-50">
+      {/* Logo section with black background */}
+      <div className="bg-black">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-center py-6">
+            <img
+              src={logoTendenci}
+              alt="Tendenci"
+              className="h-12 md:h-16 object-contain"
+            />
+          </div>
         </div>
-
-        {/* Categories */}
-        <nav className="pb-4">
-          <div className="flex items-center justify-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
-            <button
-              onClick={() => onSelectCategory(null)}
-              className={cn(
-                "px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200",
-                selectedCategory === null
-                  ? "bg-[#C41E3A] text-white shadow-md"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              )}
-            >
-              Todos
-            </button>
-            {categories.map((category) => (
+      </div>
+      
+      {/* Categories section with white background */}
+      <div className="bg-white/95 backdrop-blur-md border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Categories */}
+          <nav className="py-4">
+            <div className="flex items-center justify-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
               <button
-                key={category}
-                onClick={() => onSelectCategory(category)}
+                onClick={() => onSelectCategory(null)}
                 className={cn(
                   "px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200",
-                  selectedCategory === category
+                  selectedCategory === null
                     ? "bg-[#C41E3A] text-white shadow-md"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 )}
               >
-                {category}
+                Todos
               </button>
-            ))}
-          </div>
-        </nav>
+              {categories.map((category) => (
+                <button
+                  key={category}
+                  onClick={() => onSelectCategory(category)}
+                  className={cn(
+                    "px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200",
+                    selectedCategory === category
+                      ? "bg-[#C41E3A] text-white shadow-md"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  )}
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
+          </nav>
+        </div>
       </div>
     </header>
   );
