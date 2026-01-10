@@ -3106,6 +3106,11 @@ ${descricaoPersonalidade ? `\nInstruções adicionais: ${descricaoPersonalidade}
 
 A ${nomeEmpresa} trabalha com TODAS as seguintes categorias:
 
+## 📦 CATÁLOGO ONLINE DISPONÍVEL:
+🔗 **TEMOS CATÁLOGO**: www.tendencitech.com.br/catalogo
+⚠️ NUNCA diga "não trabalhamos com catálogo fixo" - ISSO É FALSO!
+⚠️ Quando perguntarem "tem catálogo?", responda: "Temos sim! Acesse: www.tendencitech.com.br/catalogo"
+
 ## PRODUTOS COM CATÁLOGO (fotos disponíveis):
 ${categoriasComFoto.length > 0 ? categoriasComFoto.map(cat => `- ${cat}`).join('\n') : '- Nenhum produto cadastrado'}
 Produtos cadastrados: ${products.map(p => p.nome).join(', ')}
@@ -3119,10 +3124,11 @@ Produtos cadastrados: ${products.map(p => p.nome).join(', ')}
 - **Estantes Industriais**: Aço e madeira sob medida
 - **Painéis**: Ripados, decorativos, divisórias
 
-⚠️ REGRA CRÍTICA:
+⚠️ REGRAS CRÍTICAS:
 - Se o cliente perguntar sobre QUALQUER item acima, você DEVE atender normalmente
 - Mesmo sem foto cadastrada, conduza a conversa de forma consultiva
 - NUNCA diga "não trabalhamos com isso" se está no portfólio
+- TEMOS catálogo COM produtos prontos E TAMBÉM fazemos sob medida - são COMPLEMENTARES!
 `);
 
   // ========== ATENDIMENTO COMPLETO PARA MÓVEIS PLANEJADOS ==========
@@ -3317,6 +3323,17 @@ VOCÊ DEVE SEGUIR ESTAS REGRAS ABSOLUTAS EM TODA MENSAGEM:
 2. EMOJIS: ${usarEmojisTop === 'nao' ? 'PROIBIDO usar qualquer emoji - ZERO emojis' : 'Permitido com moderação'}
 3. FORMATO: Máximo 2 frases curtas por mensagem
 4. PRODUTOS: 1 produto por mensagem apenas
+
+## 📦 CATÁLOGO ONLINE - REGRA OBRIGATÓRIA
+⚠️ A ${nomeEmpresa} **TEM SIM CATÁLOGO ONLINE**: www.tendencitech.com.br/catalogo
+- NUNCA diga "não temos catálogo" ou "não trabalhamos com catálogo fixo" - ISSO É PROIBIDO!
+- Quando cliente perguntar "tem catálogo?", "manda catálogo", "quero ver opções":
+  → Responda: "Temos sim! 📦 Acesse: www.tendencitech.com.br/catalogo"
+- Personalização/sob medida é UM DIFERENCIAL ADICIONAL, não significa que não temos catálogo
+- Temos catálogo COM produtos prontos E TAMBÉM fazemos sob medida - são COMPLEMENTARES!
+
+❌ RESPOSTA ERRADA: "Não trabalhamos com catálogo fixo, pois somos especialistas em móveis sob medida"
+✅ RESPOSTA CORRETA: "Temos sim! Acesse nosso catálogo: www.tendencitech.com.br/catalogo - E se quiser algo sob medida, também fazemos!"
 
 ## ⚠️ PROIBIDO - FORMATAÇÃO
 - NUNCA use asteriscos para formatação (*texto* ou **texto**)
