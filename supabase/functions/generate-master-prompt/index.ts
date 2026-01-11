@@ -252,41 +252,51 @@ Horário de funcionamento: ${negocio.horario_funcionamento || ''}`;
     const formatacao = comunicacao.usar_formatacao || 'leve';
     const emojis = comunicacao.usar_emojis || 'moderado';
     
-    // Character limit configuration
-    const limiteCaracteres = Number(comunicacao.limite_caracteres) || 0;
-    const temLimite = limiteCaracteres > 0;
+    // Character limit configuration - FIXADO EM 150
+    const limiteCaracteres = 150; // FORÇA 150 independente da config
+    const temLimite = true;
     
     let comunicacaoSection = `# COMUNICAÇÃO E ESTILO DE RESPOSTA
 
+## ⛔ LIMITE CRÍTICO DE 150 CARACTERES - REGRA ABSOLUTA
+
+**🚨 ATENÇÃO: SUAS RESPOSTAS SERÃO AUTOMATICAMENTE CORTADAS EM 150 CARACTERES!**
+
+**NÃO ADIANTA escrever mensagens longas - elas serão TRUNCADAS pelo sistema!**
+
+REGRAS OBRIGATÓRIAS:
+1. MÁXIMO de 150 caracteres por mensagem (1-2 frases curtas)
+2. Se precisar mais espaço, o SISTEMA vai dividir em 2 mensagens
+3. ELIMINE palavras desnecessárias
+4. VÁ DIRETO AO PONTO
+
+❌ PROIBIDO (será cortado automaticamente):
+- Listas longas com múltiplos itens
+- Explicações detalhadas
+- Saudações elaboradas ("Olá! Tudo bem? Que prazer falar com você!")
+- Perguntas múltiplas em uma mensagem
+- Formatação markdown (**bold**, *italic*)
+
+✅ EXEMPLOS CORRETOS (menos de 150 chars):
+- "Oi! Sim, trabalhamos com mesas. Quer ver fotos?" (49 chars)
+- "Claro! Prazo de 30-45 dias. Posso enviar orçamento?" (52 chars)
+- "Temos sim! Vou te mandar algumas opções." (42 chars)
+- "Perfeito! Anotei suas medidas. Nosso time vai te contatar." (60 chars)
+
+⚠️ LEMBRE-SE: Resposta curta = Cliente feliz = Conversa fluida!
+
 ## Formato das Mensagens
-- **Tamanho:** ${tamanhoDescricoes[tamanho] || tamanhoDescricoes.media}
+- **Tamanho:** CURTO - Máximo 150 caracteres. 1-2 frases apenas.
 - **Mensagens Sequenciais:** ${sequenciaDescricoes[sequencia] || sequenciaDescricoes['2-3']}
 
-${temLimite ? `## ⛔ LIMITE ABSOLUTO DE CARACTERES - REGRA CRÍTICA
-
-**⚠️ VOCÊ TEM EXATAMENTE ${limiteCaracteres} CARACTERES DISPONÍVEIS. NÃO MAIS!**
-
-Antes de responder, você DEVE:
-1. Contar mentalmente os caracteres da sua resposta
-2. Se ultrapassar ${limiteCaracteres}, reescrever MAIS CURTO
-3. Priorizar: saudação curta + informação essencial APENAS
-4. Eliminar: palavras desnecessárias, repetições, formatação pesada
-5. Se precisar de mais espaço, pergunte se o cliente quer detalhes
-
-**EXEMPLOS DE RESPOSTAS CURTAS (até ${limiteCaracteres} chars):**
-- "Olá! Sim, trabalhamos com esse produto. Quer saber valores?"
-- "Boa tarde! Disponível sim. Posso te enviar fotos?"
-- "Claro! Prazo de 30-45 dias. Quer agendar visita?"
-
-**LEMBRE-SE:** Respostas longas serão CORTADAS automaticamente!
-` : ''}## Modo de Atuação
+## Modo de Atuação
 - **Estilo de Resposta:** ${modoDescricoes[modo] || modoDescricoes.consultivo}
 - **Linguagem Técnica:** ${linguagemDescricoes[linguagem] || linguagemDescricoes.moderado}
 
 ## Tom e Estilo Visual
 - **Digitação:** ${digitacaoDescricoes[digitacao] || digitacaoDescricoes.natural}
-- **Formatação:** ${formatacaoDescricoes[formatacao] || formatacaoDescricoes.leve}
-- **Emojis:** ${emojiDescricoes[emojis] || emojiDescricoes.moderado}
+- **Formatação:** SEM formatação - não use ** ou * 
+- **Emojis:** ${emojiDescricoes[emojis] || emojiDescricoes.moderado} (máximo 1-2 por mensagem)
 ${comunicacao.usar_audios ? '- **Áudio:** Você pode enviar áudios curtos quando agregar valor e humanizar a conversa.' : '- **Áudio:** Responda apenas com mensagens de texto.'}`;
 
     if (comunicacao.msg_boas_vindas || comunicacao.msg_despedida || comunicacao.msg_ausencia) {

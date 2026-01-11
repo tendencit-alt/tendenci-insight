@@ -1325,13 +1325,14 @@ REGRAS ABSOLUTAS:
       console.error("AI call failed:", aiError);
       const gracefulMessage = getGracefulErrorMessage(aiError || "unknown");
       
-      // Send graceful error message to user
+      // Send graceful error message to user (with 150 char limit)
       await processAndSendResponse(
         evolutionApiUrl!,
         evolutionApiKey!,
         instanceName,
         phoneNumber,
-        gracefulMessage
+        gracefulMessage,
+        150  // Limite de 150 chars forçado
       );
       
       return new Response(JSON.stringify({ success: true, fallback: true, error: aiError }), {
@@ -1621,13 +1622,18 @@ REGRAS ABSOLUTAS:
     const cleanedMessage = cleanMessageFormat(assistantMessage);
     console.log(`🧹 Message cleaned of markdown formatting`);
 
-    // Process media markers and send response
+    // Process media markers and send response with STRICT 150 char limit
+    // IMPORTANTE: Usamos 150 como limite FIXO para garantir mensagens curtas
+    const limiteEnforcement = 150;
+    console.log(`📏 LIMITE ENFORCEMENT: ${limiteEnforcement} chars (config original: ${limiteCaracteresConfig})`);
+    
     await processAndSendResponse(
       evolutionApiUrl!,
       evolutionApiKey!,
       instanceName,
       phoneNumber,
-      cleanedMessage
+      cleanedMessage,
+      limiteEnforcement  // FORÇA 150 chars independente da config
     );
 
     // Extract product IDs from FOTO_PRODUTO markers using robust extraction
@@ -4361,12 +4367,86 @@ function parseMediaMarker(marker: string, type: 'FOTO' | 'VIDEO'): { url: string
   return { url: inner.trim(), caption: '' };
 }
 
+// ========== ENFORCEMENT DE LIMITE DE CARACTERES ==========
+// Esta função FORÇA o limite de 150 caracteres por mensagem
+// Dividindo em até 2 partes quando necessário
+function enforceMessageLimit(text: string, maxChars: number = 150): string[] {
+  // Remove formatações markdown que inflam o texto
+  let cleanText = text
+    .replace(/\*\*/g, '')        // Remove bold
+    .replace(/\*/g, '')          // Remove itálico
+    .replace(/\n{3,}/g, '\n\n')  // Remove quebras excessivas
+    .replace(/^\s+/gm, '')       // Remove espaços no início de linhas
+    .trim();
+  
+  // Se já está dentro do limite, retorna como está
+  if (cleanText.length <= maxChars) {
+    console.log(`✅ Mensagem já está dentro do limite: ${cleanText.length}/${maxChars} chars`);
+    return [cleanText];
+  }
+  
+  console.log(`⚠️ ENFORCEMENT: Dividindo mensagem de ${cleanText.length} chars em partes de max ${maxChars}`);
+  
+  // Divide em partes menores respeitando frases
+  const sentences = cleanText.split(/(?<=[.!?])\s+/);
+  const parts: string[] = [];
+  let currentPart = '';
+  
+  for (const sentence of sentences) {
+    // Se adicionar essa frase ultrapassa o limite
+    if ((currentPart + ' ' + sentence).trim().length > maxChars) {
+      if (currentPart.trim()) {
+        parts.push(currentPart.trim());
+      }
+      // Se a frase sozinha é maior que o limite, corta
+      if (sentence.length > maxChars) {
+        // Tentar cortar na última vírgula ou espaço antes do limite
+        const truncated = sentence.substring(0, maxChars);
+        const lastComma = truncated.lastIndexOf(',');
+        const lastSpace = truncated.lastIndexOf(' ');
+        const cutPoint = lastComma > maxChars * 0.6 ? lastComma : (lastSpace > maxChars * 0.7 ? lastSpace : maxChars - 3);
+        currentPart = sentence.substring(0, cutPoint).trim();
+        if (!currentPart.endsWith('.') && !currentPart.endsWith('!') && !currentPart.endsWith('?')) {
+          currentPart += '...';
+        }
+      } else {
+        currentPart = sentence;
+      }
+    } else {
+      currentPart = (currentPart + ' ' + sentence).trim();
+    }
+  }
+  
+  if (currentPart.trim()) {
+    // Se a parte final ainda é muito grande, corta
+    if (currentPart.length > maxChars) {
+      const truncated = currentPart.substring(0, maxChars - 3);
+      const lastSpace = truncated.lastIndexOf(' ');
+      if (lastSpace > maxChars * 0.7) {
+        parts.push(truncated.substring(0, lastSpace).trim() + '...');
+      } else {
+        parts.push(truncated.trim() + '...');
+      }
+    } else {
+      parts.push(currentPart.trim());
+    }
+  }
+  
+  // Limita a no máximo 2 partes para não spammar
+  const finalParts = parts.slice(0, 2);
+  
+  console.log(`✅ ENFORCEMENT: Mensagem dividida em ${finalParts.length} partes:`, finalParts.map((p, i) => `Parte ${i + 1}: ${p.length} chars`));
+  
+  return finalParts;
+}
+
 async function processAndSendResponse(
   evolutionApiUrl: string,
   evolutionApiKey: string,
   instanceName: string,
   phoneNumber: string,
-  message: string
+  message: string,
+  limiteCaracteres: number = 150  // NOVO PARÂMETRO
 ): Promise<void> {
   console.log(`📝 Processing message for media markers: "${message.substring(0, 200)}..."`);
   
@@ -4418,12 +4498,48 @@ async function processAndSendResponse(
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 
-  // Send text message first
+  // ========== ENFORCE MESSAGE LIMIT - SPLIT IF NECESSARY ==========
+  // Send text message(s) with strict character limit enforcement
   if (cleanMessage) {
-    await sendWhatsAppMessage(evolutionApiUrl, evolutionApiKey, instanceName, phoneNumber, {
-      type: "text",
-      text: cleanMessage,
-    });
+    // Apply enforcement - will split if message exceeds limit
+    const messageParts = enforceMessageLimit(cleanMessage, limiteCaracteres);
+    
+    console.log(`📤 Enviando ${messageParts.length} parte(s) de texto (limite: ${limiteCaracteres} chars)`);
+    
+    for (let i = 0; i < messageParts.length; i++) {
+      const part = messageParts[i];
+      console.log(`📤 Parte ${i + 1}/${messageParts.length}: "${part.substring(0, 50)}..." (${part.length} chars)`);
+      
+      await sendWhatsAppMessage(evolutionApiUrl, evolutionApiKey, instanceName, phoneNumber, {
+        type: "text",
+        text: part,
+      });
+      
+      // Delay entre partes para parecer mais natural (500ms)
+      if (i < messageParts.length - 1) {
+        console.log(`⏳ Aguardando 500ms antes da próxima parte...`);
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Enviar indicador de digitação entre partes
+        try {
+          await fetch(`${evolutionApiUrl}/chat/presence/${instanceName}`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              apikey: evolutionApiKey,
+            },
+            body: JSON.stringify({
+              number: phoneNumber.replace(/\D/g, ""),
+              presence: "composing",
+            }),
+          });
+        } catch (e) {
+          // Ignore typing indicator errors
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+    }
   }
 
   // Increased delay before sending media (1.5 seconds)
