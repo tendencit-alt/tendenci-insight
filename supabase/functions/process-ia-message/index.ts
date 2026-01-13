@@ -224,7 +224,25 @@ interface ProductValidationResult {
   inventedProducts: string[];
   priceMismatches: string[];
   measurementMismatches: string[];
+  criticalErrors: string[];
+  shouldBlock: boolean;
 }
+
+// KNOWN ERROR PATTERNS - Erros que já aconteceram e NUNCA devem se repetir
+const KNOWN_ERROR_PATTERNS = [
+  // Mesa Cascata com medida errada (2.47m é da Mesa Madeira Maciça, não da Cascata)
+  { pattern: /mesa\s+cascata[^-]*2[,.]4\d*/gi, error: "ERRO CONHECIDO: Mesa Cascata NÃO tem 2.47m! Essa medida é da Mesa Madeira Maciça." },
+  // Preço da Cascata errado (R$ 5.100 é da Mesa Madeira Maciça)
+  { pattern: /cascata[^-]*R\$\s*5[.,]?1\d{2}/gi, error: "ERRO CONHECIDO: Mesa Cascata NÃO custa R$ 5.100! Esse preço é da Mesa Madeira Maciça." },
+  // Placeholder de foto não processado
+  { pattern: /\[inserir\s+aqui/gi, error: "ERRO CRÍTICO: Placeholder de foto não processado." },
+  // Links inventados
+  { pattern: /catalogooii\?item=/gi, error: "ERRO CRÍTICO: Link inventado detectado." },
+  { pattern: /catalogo\?item=/gi, error: "ERRO CRÍTICO: Link com parâmetro inventado." },
+  // Fotos genéricas prometidas mas não enviadas
+  { pattern: /vou\s+te\s+enviar.*foto/gi, error: "ERRO: Prometeu enviar foto mas sem marcador [FOTO_PRODUTO:]" },
+  { pattern: /segue\s+a?\s*foto/gi, error: "ERRO: Disse que enviou foto mas sem marcador [FOTO_PRODUTO:]" },
+];
 
 function validateProductMentions(
   response: string, 
@@ -234,15 +252,50 @@ function validateProductMentions(
   const inventedProducts: string[] = [];
   const priceMismatches: string[] = [];
   const measurementMismatches: string[] = [];
+  const criticalErrors: string[] = [];
+  let shouldBlock = false;
   
-  // Skip validation if response has no product-like mentions
+  // ========== STEP 1: Check for KNOWN ERROR PATTERNS (highest priority) ==========
+  for (const { pattern, error } of KNOWN_ERROR_PATTERNS) {
+    if (pattern.test(response)) {
+      criticalErrors.push(error);
+      shouldBlock = true;
+      console.log(`🚨 [CRITICAL VALIDATION] ${error}`);
+    }
+    pattern.lastIndex = 0; // Reset regex for next test
+  }
+  
+  // ========== STEP 2: Check for placeholder photos (critical) ==========
+  if (response.includes('[Inserir') || response.includes('[inserir') || response.includes('[INSERIR')) {
+    criticalErrors.push("ERRO CRÍTICO: Resposta contém placeholder de foto não processado");
+    shouldBlock = true;
+  }
+  
+  // ========== STEP 3: Check for promised photos without markers ==========
+  const promisedPhoto = /(?:mando|envio|segue|veja|olha)\s*(?:uma?)?\s*foto/i.test(response);
+  const hasPhotoMarker = /\[FOTO_PRODUTO:/i.test(response);
+  if (promisedPhoto && !hasPhotoMarker) {
+    criticalErrors.push("ERRO: Prometeu foto mas não incluiu marcador [FOTO_PRODUTO:]");
+    // Don't block, just warn
+  }
+  
+  // Skip product validation if response has no product-like mentions
   const productKeywords = ['mesa', 'sofá', 'sofa', 'poltrona', 'banco', 'banqueta', 'aparador', 'cadeira', 'rack', 'estante', 'buffet', 'pequiá', 'pequia', 'cascata', 'jatobá', 'jatoba'];
   const hasProductMention = productKeywords.some(kw => response.toLowerCase().includes(kw));
   
   if (!hasProductMention) {
-    return { isValid: true, warnings: [], inventedProducts: [], priceMismatches: [], measurementMismatches: [] };
+    return { 
+      isValid: criticalErrors.length === 0, 
+      warnings: criticalErrors, 
+      inventedProducts: [], 
+      priceMismatches: [], 
+      measurementMismatches: [],
+      criticalErrors,
+      shouldBlock
+    };
   }
   
+  // ========== STEP 4: Validate product mentions ==========
   // Regex to detect product mentions with prices: "Mesa X - R$ Y" or "Mesa X (medida) - R$ Y"
   const productPattern = /(Mesa|Sofá|Sofa|Poltrona|Banco|Banqueta|Aparador|Cadeira|Rack|Estante|Buffet)[^-\n]{3,60}[-–]\s*R\$\s*[\d.,]+/gi;
   const mentions = response.match(productPattern) || [];
@@ -293,16 +346,21 @@ function validateProductMentions(
       if (Math.abs(matchingProduct.preco_base - mentionedPrice) > tolerance) {
         priceMismatches.push(`${matchingProduct.nome}: citou R$ ${mentionedPrice}, correto é R$ ${matchingProduct.preco_base}`);
         warnings.push(`PREÇO INCORRETO: "${matchingProduct.nome}" custa R$ ${matchingProduct.preco_base}, não R$ ${mentionedPrice}`);
+        
+        // If price mismatch is > 20%, it's likely a critical data mix
+        if (Math.abs(matchingProduct.preco_base - mentionedPrice) > matchingProduct.preco_base * 0.20) {
+          criticalErrors.push(`MISTURA DE DADOS: Preço ${mentionedPrice} muito diferente do real ${matchingProduct.preco_base}`);
+          shouldBlock = true;
+        }
       }
     }
   }
   
-  // Check for measurement mentions that don't match any product
+  // ========== STEP 5: Check for measurement mismatches ==========
   const measurementPattern = /(\d+[,.]?\d*)\s*(m|cm|metros?|centímetros?)\s*x?\s*(\d+[,.]?\d*)?\s*(m|cm|metros?|centímetros?)?/gi;
   const measurementMentions = response.match(measurementPattern) || [];
   
   for (const meas of measurementMentions) {
-    // Extract the measurement value
     const numMatch = meas.match(/(\d+[,.]?\d*)/);
     if (!numMatch) continue;
     
@@ -322,7 +380,6 @@ function validateProductMentions(
     
     // If measurement seems specific (like 2.47) and doesn't exist, flag it
     if (!measExists && measValue > 0.5 && measValue < 10) {
-      // Only flag very specific measurements that seem invented
       const isVerySpecific = meas.includes('.') || meas.includes(',');
       if (isVerySpecific) {
         measurementMismatches.push(meas);
@@ -331,12 +388,25 @@ function validateProductMentions(
   }
   
   return {
-    isValid: warnings.length === 0,
-    warnings,
+    isValid: warnings.length === 0 && criticalErrors.length === 0,
+    warnings: [...criticalErrors, ...warnings],
     inventedProducts,
     priceMismatches,
-    measurementMismatches
+    measurementMismatches,
+    criticalErrors,
+    shouldBlock
   };
+}
+
+// Generate safe fallback response when validation fails
+function generateSafeFallbackResponse(clientName: string | null): string {
+  const name = clientName || "";
+  const fallbacks = [
+    `${name ? name + ', m' : 'M'}e conta mais sobre o que você precisa! Veja nosso catálogo: www.tendencitech.com.br/catalogo`,
+    `${name ? name + ', q' : 'Q'}uer que eu te mostre nossas opções? www.tendencitech.com.br/catalogo`,
+    `${name ? 'Oi ' + name + '!' : 'Oi!'} Qual móvel te interessa? Temos mesas, sofás, poltronas...`,
+  ];
+  return fallbacks[Math.floor(Math.random() * fallbacks.length)];
 }
 
 async function logProductValidationWarning(
@@ -1599,15 +1669,41 @@ REGRAS ABSOLUTAS:
     if (!productValidation.isValid) {
       console.warn(`⚠️ [PRODUCT VALIDATION] Issues detected:`, productValidation.warnings);
       
-      // Log warning for monitoring (non-blocking)
+      // Log warning for monitoring
       logProductValidationWarning(supabase, phoneNumber, assistantMessage, productValidation);
       
-      // If invented products detected, modify response to be safer
-      if (productValidation.inventedProducts.length > 0) {
+      // ========== CRITICAL: BLOCK RESPONSE IF SHOULD BLOCK ==========
+      if (productValidation.shouldBlock) {
+        console.log(`🚨 [VALIDATION BLOCK] Critical errors detected! Using safe fallback response.`);
+        console.log(`🚨 [VALIDATION BLOCK] Errors: ${productValidation.criticalErrors.join('; ')}`);
+        
+        // Use safe fallback response instead
+        const safeResponse = generateSafeFallbackResponse(clientMemory?.client_name || pushName || null);
+        assistantMessage = safeResponse;
+        
+        // Log the blocked response for review
+        try {
+          await supabase.from('system_errors').insert({
+            source: 'process-ia-message',
+            error_type: 'invented_product_blocked',
+            message: 'IA tentou enviar resposta com dados incorretos - BLOQUEADO',
+            details: JSON.stringify({
+              phone: phoneNumber.slice(-4),
+              criticalErrors: productValidation.criticalErrors,
+              inventedProducts: productValidation.inventedProducts,
+              priceMismatches: productValidation.priceMismatches.slice(0, 3),
+              originalResponse: assistantMessage.substring(0, 500),
+              safeResponseUsed: safeResponse
+            }),
+            severity: 'high'
+          });
+          console.log('🚨 [VALIDATION BLOCK] Error logged to system_errors');
+        } catch (logErr) {
+          console.error('Failed to log blocked response:', logErr);
+        }
+      } else if (productValidation.inventedProducts.length > 0) {
         console.log(`🛡️ [VALIDATION] Detected invented products: ${productValidation.inventedProducts.join(', ')}`);
-        console.log(`🛡️ [VALIDATION] Original response will be sent but logged for review`);
-        // Note: We're logging but not blocking - the prompt rules should prevent this
-        // If this keeps happening, we'd need to add actual response modification
+        console.log(`🛡️ [VALIDATION] Response will be sent but logged for review`);
       }
     } else {
       console.log(`✅ [PRODUCT VALIDATION] Response passed validation`);
@@ -4252,6 +4348,84 @@ ${products.map((p, index) => {
       
       parts.push(alertaSection);
     }
+    
+    // ========== ERROS REAIS QUE JÁ ACONTECERAM - NUNCA REPITA! ==========
+    parts.push(`# 🚫 ERROS REAIS QUE JÁ ACONTECERAM (NUNCA REPITA!)
+
+⚠️ **ATENÇÃO MÁXIMA:** Os erros abaixo foram cometidos em atendimentos anteriores e causaram CONFUSÃO nos clientes!
+Se você repetir qualquer um destes erros, sua resposta será BLOQUEADA automaticamente.
+
+---
+
+## ❌ ERRO REAL #1: MISTURAR DADOS DE PRODUTOS DIFERENTES
+
+**O que aconteceu:** A IA respondeu "Mesa Cascata (2,47m) - R$ 5.100"
+**Por que está ERRADO:**
+- "Mesa Cascata" é um produto DIFERENTE de "Mesa Madeira Maciça"
+- 2,47m é a medida da "Mesa Madeira Maciça até 8 lugares"
+- R$ 5.100 é o preço da "Mesa Madeira Maciça", NÃO da Cascata
+- A IA MISTUROU o nome de um produto com medida e preço de outro!
+
+**REGRA:** NUNCA combine nome de um produto com preço/medida de outro!
+
+---
+
+## ❌ ERRO REAL #2: PLACEHOLDER EM VEZ DE FOTO
+
+**O que aconteceu:** A IA respondeu "[Inserir aqui uma foto da Mesa Cascata]"
+**Por que está ERRADO:**
+- O cliente viu essa mensagem estranha como se fosse um bug
+- A IA deveria ter COPIADO o marcador do catálogo
+
+**CORRETO:** Copie o marcador exato do catálogo:
+\`[FOTO_PRODUTO:https://url.../foto.png:Mesa Cascata para 10 lugares (ID:df53cf42)]\`
+
+---
+
+## ❌ ERRO REAL #3: LINKS INVENTADOS
+
+**O que aconteceu:** A IA respondeu "www.tendencitech.com.br/catalogooii?item=mesa-cascata-247m"
+**Por que está ERRADO:**
+- Esse link NÃO EXISTE! A IA inventou parâmetros
+- O cliente clicou e deu erro 404
+
+**CORRETO:** O único link válido é: www.tendencitech.com.br/catalogo (SEM parâmetros!)
+
+---
+
+## ❌ ERRO REAL #4: MENSAGEM GIGANTE
+
+**O que aconteceu:** A IA enviou 1316 caracteres listando 5 produtos com descrições longas
+**Por que está ERRADO:**
+- O limite é 150 caracteres!
+- Mensagens longas no WhatsApp são ignoradas pelos clientes
+- Parece texto de robô/spam
+
+**CORRETO:** Máximo 2 frases curtas + 1 foto por mensagem
+
+---
+
+## ❌ ERRO REAL #5: PROMETER FOTO SEM ENVIAR
+
+**O que aconteceu:** A IA disse "Vou te mandar uma foto da mesa" mas não incluiu marcador
+**Por que está ERRADO:**
+- O cliente esperou a foto e ela nunca chegou
+- A IA DEVE incluir o marcador [FOTO_PRODUTO:...] quando mencionar foto
+
+---
+
+## 🛡️ REGRA ANTI-ERRO OBRIGATÓRIA
+
+Antes de CADA resposta, faça esta checagem mental:
+
+1. ✅ Cada produto citado existe EXATAMENTE assim no catálogo? (mesmo nome, mesma medida, mesmo preço)
+2. ✅ Copiei o marcador [FOTO_PRODUTO:...] COMPLETO do catálogo?
+3. ✅ O único link que estou usando é www.tendencitech.com.br/catalogo?
+4. ✅ Minha resposta tem menos de 150 caracteres (sem contar marcadores)?
+5. ✅ Citei apenas 1 produto nesta mensagem?
+
+**Se qualquer resposta for NÃO, REESCREVA antes de enviar!**
+`);
   }
 
   // ========== KNOWLEDGE BASE (APRIMORADO COM TODOS OS CAMPOS) ==========
