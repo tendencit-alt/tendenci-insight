@@ -217,6 +217,155 @@ function getGracefulErrorMessage(errorCode: string): string {
   }
 }
 
+// ========== PRODUCT VALIDATION SYSTEM ==========
+interface ProductValidationResult {
+  isValid: boolean;
+  warnings: string[];
+  inventedProducts: string[];
+  priceMismatches: string[];
+  measurementMismatches: string[];
+}
+
+function validateProductMentions(
+  response: string, 
+  products: Product[]
+): ProductValidationResult {
+  const warnings: string[] = [];
+  const inventedProducts: string[] = [];
+  const priceMismatches: string[] = [];
+  const measurementMismatches: string[] = [];
+  
+  // Skip validation if response has no product-like mentions
+  const productKeywords = ['mesa', 'sofá', 'sofa', 'poltrona', 'banco', 'banqueta', 'aparador', 'cadeira', 'rack', 'estante', 'buffet', 'pequiá', 'pequia', 'cascata', 'jatobá', 'jatoba'];
+  const hasProductMention = productKeywords.some(kw => response.toLowerCase().includes(kw));
+  
+  if (!hasProductMention) {
+    return { isValid: true, warnings: [], inventedProducts: [], priceMismatches: [], measurementMismatches: [] };
+  }
+  
+  // Regex to detect product mentions with prices: "Mesa X - R$ Y" or "Mesa X (medida) - R$ Y"
+  const productPattern = /(Mesa|Sofá|Sofa|Poltrona|Banco|Banqueta|Aparador|Cadeira|Rack|Estante|Buffet)[^-\n]{3,60}[-–]\s*R\$\s*[\d.,]+/gi;
+  const mentions = response.match(productPattern) || [];
+  
+  for (const mention of mentions) {
+    // Parse the mention to extract name and price
+    const parts = mention.split(/[-–]/);
+    if (parts.length < 2) continue;
+    
+    const namePart = parts[0].trim().toLowerCase();
+    const pricePart = parts[parts.length - 1].trim();
+    
+    // Extract price as number (R$ 4.900 or R$ 4.900,00 or R$ 4900)
+    const priceMatch = pricePart.match(/[\d.,]+/);
+    if (!priceMatch) continue;
+    
+    // Handle Brazilian price format (4.900,00 or 4900)
+    const priceStr = priceMatch[0].replace(/\./g, '').replace(',', '.');
+    const mentionedPrice = parseFloat(priceStr);
+    
+    if (isNaN(mentionedPrice)) continue;
+    
+    // Find matching product in catalog
+    const matchingProduct = products.find(p => {
+      const productName = p.nome.toLowerCase();
+      // Check if names are similar enough (contains key parts)
+      return namePart.includes(productName.split(' ')[0]) || 
+             productName.includes(namePart.split(' ')[0]) ||
+             namePart.includes(productName.replace(/para\s*\d+\s*lugares?/gi, '').trim()) ||
+             productName.includes(namePart.replace(/para\s*\d+\s*lugares?/gi, '').trim());
+    });
+    
+    if (!matchingProduct) {
+      // Could be invented product - check if any similar name exists
+      const baseName = namePart.split(' ').slice(0, 2).join(' '); // "mesa cascata"
+      const anyMatch = products.some(p => {
+        const pBase = p.nome.toLowerCase().split(' ').slice(0, 2).join(' ');
+        return baseName.includes(pBase) || pBase.includes(baseName);
+      });
+      
+      if (!anyMatch) {
+        inventedProducts.push(parts[0].trim());
+        warnings.push(`PRODUTO POSSIVELMENTE INVENTADO: "${parts[0].trim()}" não encontrado no catálogo`);
+      }
+    } else if (matchingProduct.preco_base) {
+      // Check price mismatch (allow 5% tolerance for rounding)
+      const tolerance = matchingProduct.preco_base * 0.05;
+      if (Math.abs(matchingProduct.preco_base - mentionedPrice) > tolerance) {
+        priceMismatches.push(`${matchingProduct.nome}: citou R$ ${mentionedPrice}, correto é R$ ${matchingProduct.preco_base}`);
+        warnings.push(`PREÇO INCORRETO: "${matchingProduct.nome}" custa R$ ${matchingProduct.preco_base}, não R$ ${mentionedPrice}`);
+      }
+    }
+  }
+  
+  // Check for measurement mentions that don't match any product
+  const measurementPattern = /(\d+[,.]?\d*)\s*(m|cm|metros?|centímetros?)\s*x?\s*(\d+[,.]?\d*)?\s*(m|cm|metros?|centímetros?)?/gi;
+  const measurementMentions = response.match(measurementPattern) || [];
+  
+  for (const meas of measurementMentions) {
+    // Extract the measurement value
+    const numMatch = meas.match(/(\d+[,.]?\d*)/);
+    if (!numMatch) continue;
+    
+    const measValue = parseFloat(numMatch[1].replace(',', '.'));
+    
+    // Check if this measurement exists in any product
+    const measExists = products.some(p => {
+      const comp = parseFloat(String(p.comprimento || 0).replace(',', '.'));
+      const larg = parseFloat(String(p.largura || 0).replace(',', '.'));
+      const alt = parseFloat(String(p.altura || 0).replace(',', '.'));
+      
+      // Allow 5cm tolerance
+      return Math.abs(comp - measValue) < 0.05 ||
+             Math.abs(larg - measValue) < 0.05 ||
+             Math.abs(alt - measValue) < 0.05;
+    });
+    
+    // If measurement seems specific (like 2.47) and doesn't exist, flag it
+    if (!measExists && measValue > 0.5 && measValue < 10) {
+      // Only flag very specific measurements that seem invented
+      const isVerySpecific = meas.includes('.') || meas.includes(',');
+      if (isVerySpecific) {
+        measurementMismatches.push(meas);
+      }
+    }
+  }
+  
+  return {
+    isValid: warnings.length === 0,
+    warnings,
+    inventedProducts,
+    priceMismatches,
+    measurementMismatches
+  };
+}
+
+async function logProductValidationWarning(
+  supabase: any,
+  phoneNumber: string,
+  response: string,
+  validationResult: ProductValidationResult
+): Promise<void> {
+  try {
+    await supabase.from('system_errors').insert({
+      source: 'process-ia-message',
+      error_type: 'product_validation_warning',
+      message: 'IA mencionou produto com dados inconsistentes',
+      details: JSON.stringify({
+        phone: phoneNumber.slice(-4),
+        warnings: validationResult.warnings.slice(0, 5),
+        inventedProducts: validationResult.inventedProducts,
+        priceMismatches: validationResult.priceMismatches.slice(0, 3),
+        measurementMismatches: validationResult.measurementMismatches.slice(0, 3),
+        responseSample: response.substring(0, 300)
+      }),
+      severity: 'warning'
+    });
+    console.log('⚠️ [VALIDATION] Product validation warning logged');
+  } catch (e) {
+    console.error('Failed to log product validation warning:', e);
+  }
+}
+
 // ========== HISTORY SUMMARIZATION ==========
 async function summarizeOldHistory(
   oldMessages: Message[],
@@ -1443,6 +1592,26 @@ REGRAS ABSOLUTAS:
       transferRequested: confusionResult?.shouldTransfer || false,
     };
     console.log(`📊 [QUALITY] Metrics:`, JSON.stringify(qualityMetrics));
+
+    // ========== PRODUCT VALIDATION - DETECT INVENTED/MISMATCHED PRODUCTS ==========
+    const productValidation = validateProductMentions(assistantMessage, products);
+    
+    if (!productValidation.isValid) {
+      console.warn(`⚠️ [PRODUCT VALIDATION] Issues detected:`, productValidation.warnings);
+      
+      // Log warning for monitoring (non-blocking)
+      logProductValidationWarning(supabase, phoneNumber, assistantMessage, productValidation);
+      
+      // If invented products detected, modify response to be safer
+      if (productValidation.inventedProducts.length > 0) {
+        console.log(`🛡️ [VALIDATION] Detected invented products: ${productValidation.inventedProducts.join(', ')}`);
+        console.log(`🛡️ [VALIDATION] Original response will be sent but logged for review`);
+        // Note: We're logging but not blocking - the prompt rules should prevent this
+        // If this keeps happening, we'd need to add actual response modification
+      }
+    } else {
+      console.log(`✅ [PRODUCT VALIDATION] Response passed validation`);
+    }
 
     // ========== FORCE CHARACTER LIMIT (PRESERVING MEDIA MARKERS) ==========
     const limiteCaracteres = limiteCaracteresConfig;
@@ -3330,48 +3499,80 @@ VOCÊ DEVE SEGUIR ESTAS REGRAS ABSOLUTAS EM TODA MENSAGEM:
 3. FORMATO: Máximo 2 frases curtas por mensagem
 4. PRODUTOS: 1 produto por mensagem apenas
 
-## 🚨 PROIBIDO INVENTAR PRODUTOS, PREÇOS OU MEDIDAS
+# 🛡️ SISTEMA ANTI-CONFUSÃO DE PRODUTOS - BLINDAGEM TOTAL
 
-**REGRA ABSOLUTA:** Você SÓ pode mencionar produtos que estão EXATAMENTE listados no catálogo acima!
+## ⚠️ REGRA DE OURO: COPIE, NÃO INTERPRETE
 
-❌ PROIBIDO:
-- Inventar nomes de produtos que não existem
-- Combinar medidas de um produto com nome de outro
-- Inventar preços ou medidas aproximadas
-- Dizer "Mesa X para Y lugares" se não existe exatamente assim no catálogo
+❌ VOCÊ NÃO PODE FAZER NADA DISSO:
+1. INVENTAR nome de produto que não está EXATAMENTE no catálogo acima
+2. COMBINAR nome de um produto com preço de outro
+3. COMBINAR nome de um produto com medidas de outro
+4. Dizer "Mesa X para Y lugares" se não existe EXATAMENTE assim no catálogo
+5. Arredondar ou aproximar preços
+6. Criar variações de produtos (ex: Mesa Cascata 8 lugares se não existe)
+7. Dizer qualquer medida que não esteja EXATAMENTE no catálogo
 
-✅ OBRIGATÓRIO:
-- Use APENAS os nomes EXATOS do catálogo
-- Use APENAS os preços EXATOS do catálogo  
-- Use APENAS as medidas EXATAS do catálogo
-- Se o produto não existe exatamente, pergunte mais detalhes ao cliente
+✅ VOCÊ DEVE FAZER:
+1. COPIAR o nome EXATO do produto como está no catálogo
+2. COPIAR o preço EXATO como está no catálogo
+3. COPIAR as medidas EXATAS como estão no catálogo
+4. COPIAR o marcador [FOTO_PRODUTO:url:Nome (ID:xxx)] EXATO do catálogo
+5. Se não encontrar produto exato: PERGUNTE ao cliente, não invente!
 
-SE O PRODUTO NÃO EXISTE EXATAMENTE NO CATÁLOGO:
-→ Diga: "Qual tamanho você precisa?" ou "Temos outras opções! Quer ver?"
-→ NÃO invente um produto só porque "parece" similar
+## 🧪 TESTE MENTAL OBRIGATÓRIO (FAÇA ANTES DE CADA RESPOSTA)
 
-## 📸 FOTO OBRIGATÓRIA AO SUGERIR PRODUTO
+Antes de citar QUALQUER produto, responda mentalmente:
+1. ❓ "Eu encontro EXATAMENTE esse nome no catálogo acima?" → Se NÃO, não cite!
+2. ❓ "O preço que vou citar está EXATAMENTE igual no catálogo?" → Se NÃO, não cite!
+3. ❓ "As medidas são EXATAMENTE as que estão no catálogo?" → Se NÃO, não cite!
 
-Quando mencionar QUALQUER produto que tem foto:
-1. COPIE o marcador [FOTO_PRODUTO:url:Nome (ID:xxx)] do catálogo
-2. COLE na sua resposta SEMPRE
-3. A foto será enviada automaticamente
+⛔ SE QUALQUER RESPOSTA FOR "NÃO" = NÃO MENCIONE O PRODUTO!
+
+## 🚫 EXEMPLO DE ERRO GRAVE (NUNCA FAÇA ISSO)
+
+❌ ERRADO: "Mesa Cascata (2,47m) - R$ 5.100"
+→ Mesa Cascata NÃO TEM 2,47m! 
+→ Mesa Cascata NÃO CUSTA R$ 5.100!
+→ Você MISTUROU dados de produtos diferentes!
+
+✅ CORRETO: Copiar EXATAMENTE do catálogo:
+"[FOTO_PRODUTO:url:Mesa Cascata para 10 lugares (ID:xxx)]
+Mesa Cascata 10 lugares - R$ 14.900"
+
+## 📦 QUANDO O PRODUTO NÃO EXISTE EXATAMENTE
+
+Se cliente pedir algo que não existe NO CATÁLOGO EXATO:
+
+✅ RESPONDA ASSIM:
+- "Qual tamanho de mesa você precisa?"
+- "Temos algumas opções! Quer que eu te mostre?"
+- "Veja nosso catálogo completo: www.tendencitech.com.br/catalogo"
+
+❌ NUNCA responda inventando um produto "parecido"!
+
+## 📸 FOTO OBRIGATÓRIA - REGRA INVIOLÁVEL
+
+Quando mencionar QUALQUER produto:
+1. LOCALIZE o marcador [FOTO_PRODUTO:...] no catálogo acima
+2. COPIE o marcador INTEIRO incluindo o (ID:xxx)
+3. COLE na sua resposta
 
 ❌ ERRADO (sem foto):
 "Mesa Pequiá 8 lugares - R$ 4.900"
 
 ✅ CORRETO (com foto):
-"[FOTO_PRODUTO:url:Mesa Pequiá (ID:xxx)]
+"[FOTO_PRODUTO:url:Mesa Pequiá para 8 lugares (ID:c70a9826)]
 Mesa Pequiá - R$ 4.900"
 
 ## 🔗 CATÁLOGO OBRIGATÓRIO PARA "MAIS OPÇÕES"
 
 Quando cliente pedir "opções", "mais modelos", "o que vocês tem":
-1. Mostre 1 produto com foto
+1. Mostre APENAS 1 produto (com foto)
 2. SEMPRE envie: www.tendencitech.com.br/catalogo
 
-Exemplo: "Olha essa! [FOTO_PRODUTO:url:Nome]
-Veja todas: www.tendencitech.com.br/catalogo"
+Exemplo correto:
+"[FOTO_PRODUTO:url:Mesa Pequiá (ID:xxx)]
+Olha essa! Veja todas: www.tendencitech.com.br/catalogo"
 
 ## 📦 CATÁLOGO ONLINE - REGRA OBRIGATÓRIA
 ⚠️ A ${nomeEmpresa} **TEM SIM CATÁLOGO ONLINE**: www.tendencitech.com.br/catalogo
@@ -3407,9 +3608,8 @@ Quando receber mensagem indicando [áudio não transcrito/carregou/problema]:
 CADA produto = 1 mensagem com foto + informações JUNTAS
 
 CORRETO (foto + info juntos):
-"[FOTO_PRODUTO:url:Mesa Cascata (ID:abc123)]
-Mesa Cascata (3,25m x 0,90m) - R$ 14.900
-Acabamento em óleo mineral"
+"[FOTO_PRODUTO:url:Mesa Cascata para 10 lugares (ID:abc123)]
+Mesa Cascata 10 lugares (3,25m x 0,90m) - R$ 14.900"
 
 ERRADO (texto listando tudo, fotos depois - PROIBIDO!):
 "1. *Mesa Cascata* (3,25m) - R$ 14.900
@@ -3871,95 +4071,118 @@ ${objecoes.map(o => `**Se o cliente disser:** "${o.objecao}"\n**Responda:** "${o
   if (products.length > 0) {
     const productsWithMediaLocal = products.filter(p => p.imagem_url || p.galeria?.length || p.video_url || p.videos?.length);
     
-    parts.push(`# 🪵 CATÁLOGO DE PRODUTOS COM FOTOS
-⚠️ Esta é a lista de produtos COM FOTOS disponíveis. A empresa trabalha com MUITO MAIS!
-Consulte a seção "PORTFÓLIO COMPLETO" para ver todos os serviços (móveis planejados, etc).
+    parts.push(`# 🪵 CATÁLOGO DE PRODUTOS - FONTE ÚNICA DE VERDADE
 
-Total: ${products.length} produtos com foto | ${productsWithMediaLocal.length} com mídia
+⚠️ ATENÇÃO MÁXIMA: ESTE É O CATÁLOGO OFICIAL!
+- Os produtos abaixo são os ÚNICOS que você pode mencionar com certeza
+- CADA produto é um BLOCO INDIVISÍVEL - nome, preço e medidas pertencem JUNTOS
+- NUNCA misture dados de produtos diferentes!
 
-## ⚠️ REGRA CRÍTICA - FORMATO OBRIGATÓRIO:
-Quando recomendar um produto, COPIE E COLE o marcador EXATO incluindo o (ID:xxx) no final!
+Total: ${products.length} produtos oficiais | ${productsWithMediaLocal.length} com mídia
 
-**FORMATO CORRETO:** [FOTO_PRODUTO:url:Nome do Produto (ID:abc12345)]
-**FORMATO ERRADO:** [FOTO_PRODUTO:url:Nome do Produto] ← FALTA O ID!
+## ⚠️ REGRA DE CÓPIA EXATA:
+Para mencionar um produto, você DEVE:
+1. ENCONTRAR o produto no catálogo abaixo
+2. COPIAR o nome EXATO como está escrito
+3. COPIAR o preço EXATO como está escrito
+4. COPIAR o marcador [FOTO_PRODUTO:...] COMPLETO
+5. NUNCA inventar variações que não existem
 
-O ID é OBRIGATÓRIO para rastrear qual produto foi mostrado!
+---
 
-${products.map((p) => {
+${products.map((p, index) => {
       const shortId = p.id.slice(0, 8);
-      const lines = [`## ${p.nome} [ID:${shortId}]`];
-      lines.push(`- 🆔 **ID único:** ${shortId}`);
-      lines.push(`- Categoria: ${p.categoria || "Geral"}`);
-      if (p.preco_base) lines.push(`- Preço: R$ ${p.preco_base.toFixed(2)}`);
-      if (p.descricao) lines.push(`- Descrição: ${p.descricao}`);
-      if (p.quando_oferecer) lines.push(`- Quando oferecer: ${p.quando_oferecer}`);
-      if (p.diferenciais?.length) lines.push(`- Diferenciais: ${p.diferenciais.join(", ")}`);
+      const lines: string[] = [];
       
-      // NOVOS CAMPOS: Medidas como DIFERENCIADOR PRINCIPAL (logo após nome)
+      // FORMATO BLINDADO: Cada produto é um bloco único e indivisível
+      lines.push(`╔════════════════════════════════════════════════════════════╗`);
+      lines.push(`║ PRODUTO #${String(index + 1).padStart(3, '0')} - BLOCO ÚNICO (NÃO MISTURAR!)           ║`);
+      lines.push(`╠════════════════════════════════════════════════════════════╣`);
+      lines.push(`║ 🆔 ID ÚNICO: ${shortId}`);
+      lines.push(`║ 📛 NOME EXATO: ${p.nome}`);
+      lines.push(`║ 📁 Categoria: ${p.categoria || "Geral"}`);
+      
+      // Preço - destacado e único
+      if (p.preco_base) {
+        lines.push(`║ 💰 PREÇO ÚNICO: R$ ${p.preco_base.toFixed(2).replace('.', ',')} (COPIE EXATO!)`);
+      } else {
+        lines.push(`║ 💰 PREÇO: Sob consulta`);
+      }
+      
+      // Medidas - todas juntas como bloco
       if (p.comprimento || p.largura || p.altura) {
         const medidas = [];
         const unidade = p.unidade_medida || 'cm';
         if (p.comprimento) medidas.push(`C: ${p.comprimento}${unidade}`);
         if (p.largura) medidas.push(`L: ${p.largura}${unidade}`);
         if (p.altura) medidas.push(`A: ${p.altura}${unidade}`);
-        lines.push(`- 📐 **MEDIDAS DISTINTIVAS:** ${medidas.join(' x ')}`);
+        lines.push(`║ 📐 MEDIDAS EXATAS: ${medidas.join(' x ')} (COPIE EXATO!)`);
       }
+      
+      if (p.descricao) lines.push(`║ 📝 Descrição: ${p.descricao.substring(0, 100)}${p.descricao.length > 100 ? '...' : ''}`);
+      if (p.quando_oferecer) lines.push(`║ 🎯 Quando oferecer: ${p.quando_oferecer}`);
+      if (p.diferenciais?.length) lines.push(`║ ⭐ Diferenciais: ${p.diferenciais.join(", ")}`);
       
       // Extrair tipo de madeira da descrição (se houver)
       if (p.descricao) {
         const madeiras = ['pequiá', 'jatobá', 'ipê', 'cedro', 'peroba', 'freijó', 'muiracatiara', 'carvalho', 'nogueira', 'teca', 'mogno'];
         const madeiraEncontrada = madeiras.find(m => (p.descricao || '').toLowerCase().includes(m));
         if (madeiraEncontrada) {
-          lines.push(`- 🌳 **MADEIRA:** ${madeiraEncontrada.charAt(0).toUpperCase() + madeiraEncontrada.slice(1)}`);
+          lines.push(`║ 🌳 Madeira: ${madeiraEncontrada.charAt(0).toUpperCase() + madeiraEncontrada.slice(1)}`);
         }
       }
       
-      // NOVOS CAMPOS: Estoque e Personalização
+      // Estoque e Personalização
       if (p.permite_venda_sem_estoque) {
-        lines.push(`- 🎨 **PERSONALIZÁVEL:** Sim - pode ser produzido sob medida`);
-        lines.push(`- 💡 Dica: Mencione que "esse modelo pode ser feito em outras medidas"`);
+        lines.push(`║ 🎨 PERSONALIZÁVEL: Sim - pode ser produzido sob medida`);
       }
       
       if (p.estoque !== undefined && p.estoque !== null) {
         if (p.estoque > 0) {
-          lines.push(`- ✅ Em estoque: ${p.estoque} unidades`);
+          lines.push(`║ ✅ Em estoque: ${p.estoque} unidades`);
         } else if (p.permite_venda_sem_estoque) {
-          lines.push(`- 🛠️ **PRODUÇÃO:** Sob encomenda (produção exclusiva para o cliente)`);
+          lines.push(`║ 🛠️ PRODUÇÃO: Sob encomenda`);
         } else {
-          lines.push(`- ❌ Fora de estoque temporariamente`);
+          lines.push(`║ ❌ Fora de estoque temporariamente`);
         }
       }
       
-      // NOVO CAMPO: Prazo de entrega
       if (p.prazo_entrega_dias) {
-        lines.push(`- 🚚 Prazo de entrega: ${p.prazo_entrega_dias} dias úteis`);
+        lines.push(`║ 🚚 Prazo: ${p.prazo_entrega_dias} dias úteis`);
       }
       
-      // Foto principal COM ID para identificação única
+      lines.push(`╠════════════════════════════════════════════════════════════╣`);
+      lines.push(`║ 📸 PARA ENVIAR FOTO, COPIE EXATAMENTE:`);
+      
+      // Foto principal COM ID - formato blindado
       if (p.imagem_url && p.imagem_url.startsWith('http')) {
-        lines.push(`- 📸 **FOTO PRINCIPAL [ID:${shortId}]:** [FOTO_PRODUTO:${p.imagem_url}:${p.nome} (ID:${shortId})]`);
+        lines.push(`║ [FOTO_PRODUTO:${p.imagem_url}:${p.nome} (ID:${shortId})]`);
+      } else {
+        lines.push(`║ (sem foto disponível)`);
       }
       
       // Galeria de fotos adicionais COM ID
       if (p.galeria && p.galeria.length > 0) {
-        lines.push(`- 📸 **GALERIA DO PRODUTO "${p.nome}" [ID:${shortId}] (${p.galeria.length} fotos):**`);
-        p.galeria.forEach((url, index) => {
+        lines.push(`║ 📸 GALERIA (${p.galeria.length} fotos adicionais):`);
+        p.galeria.forEach((url, idx) => {
           if (url && url.startsWith('http')) {
-            lines.push(`  - Foto ${index + 1}: [FOTO_PRODUTO:${url}:${p.nome} (ID:${shortId}) - Foto ${index + 1}]`);
+            lines.push(`║ [FOTO_PRODUTO:${url}:${p.nome} - Foto ${idx + 1} (ID:${shortId})]`);
           }
         });
       }
       
       if (p.video_url && p.video_url.startsWith('http')) {
-        lines.push(`- 🎬 **PARA ENVIAR VÍDEO, COPIE:** [VIDEO_PRODUTO:${p.video_url}:${p.nome}]`);
+        lines.push(`║ 🎬 VÍDEO: [VIDEO_PRODUTO:${p.video_url}:${p.nome}]`);
       }
       if (p.videos?.length) {
         p.videos.forEach(v => {
           if (v.url && v.url.startsWith('http')) {
-            lines.push(`- 🎬 **PARA ENVIAR "${v.nome}", COPIE:** [VIDEO_PRODUTO:${v.url}:${v.nome}]`);
+            lines.push(`║ 🎬 VÍDEO "${v.nome}": [VIDEO_PRODUTO:${v.url}:${v.nome}]`);
           }
         });
       }
+      
+      lines.push(`╚════════════════════════════════════════════════════════════╝`);
       
       return lines.join("\n");
     }).join("\n\n")}
