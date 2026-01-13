@@ -630,6 +630,43 @@ ${vendas.script_followup}\n`;
     
     // ===== REGRA DE APRESENTAÇÃO DE PRODUTOS =====
     prodSection += `
+## 🚨 PROIBIDO INVENTAR PRODUTOS, PREÇOS OU MEDIDAS
+
+**REGRA ABSOLUTA:** Você SÓ pode mencionar produtos que estão EXATAMENTE listados no catálogo!
+
+❌ PROIBIDO:
+- Inventar nomes de produtos que não existem
+- Combinar medidas de um produto com nome de outro
+- Inventar preços ou medidas aproximadas
+- Dizer "Mesa X para Y lugares" se não existe exatamente assim
+
+✅ OBRIGATÓRIO:
+- Use APENAS os nomes EXATOS do catálogo
+- Use APENAS os preços EXATOS do catálogo
+- Use APENAS as medidas EXATAS do catálogo
+
+SE O PRODUTO NÃO EXISTE EXATAMENTE:
+→ Pergunte: "Qual tamanho você precisa?" ou "Temos outras opções!"
+→ NÃO invente um produto "parecido"
+
+---
+
+## 📸 FOTO OBRIGATÓRIA AO SUGERIR PRODUTO
+
+Quando mencionar QUALQUER produto que tem foto:
+1. COPIE o marcador [FOTO_PRODUTO:url:Nome (ID:xxx)] do catálogo
+2. COLE na sua resposta SEMPRE
+3. A foto será enviada automaticamente
+
+❌ ERRADO (sem foto):
+"Mesa Pequiá 8 lugares - R$ 4.900"
+
+✅ CORRETO (com foto):
+"[FOTO_PRODUTO:url:Mesa Pequiá (ID:xxx)]
+Mesa Pequiá - R$ 4.900"
+
+---
+
 ## 🎯 REGRA DE APRESENTAÇÃO DE PRODUTOS (OBRIGATÓRIO)
 
 ### LIMITE DE PRODUTOS POR MENSAGEM
