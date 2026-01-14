@@ -17,6 +17,7 @@ import type { Json } from "@/integrations/supabase/types";
 import { FichaTecnicaSheet } from "./FichaTecnicaSheet";
 import { TemplateFichaSelector } from "@/components/shared/TemplateFichaSelector";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { usePermissions } from "@/hooks/usePermissions";
 
 interface Categoria {
   id: string;
@@ -133,6 +134,11 @@ const formatMeasure = (value: string): string => {
 };
 
 export default function IAConfigProdutos() {
+  const { hasModuleAccess, isMaster } = usePermissions();
+  const canDelete = isMaster || hasModuleAccess('ia_configuracao', 'delete');
+  const canCreate = isMaster || hasModuleAccess('ia_configuracao', 'create');
+  const canEdit = isMaster || hasModuleAccess('ia_configuracao', 'edit');
+  
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [locations, setLocations] = useState<StockLocation[]>([]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
@@ -711,6 +717,11 @@ export default function IAConfigProdutos() {
   };
 
   const deleteProduto = async (id: string) => {
+    if (!canDelete) {
+      toast.error("Você não tem permissão para excluir produtos");
+      return;
+    }
+    
     if (!confirm("Tem certeza que deseja excluir este produto?")) return;
 
     try {
@@ -719,12 +730,20 @@ export default function IAConfigProdutos() {
         .delete()
         .eq("id", id);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Erro ao excluir:", error);
+        if (error.code === '42501' || error.message?.includes('policy')) {
+          toast.error("Sem permissão para excluir. Verifique suas permissões com o administrador.");
+        } else {
+          toast.error("Erro ao excluir produto: " + (error.message || "Erro desconhecido"));
+        }
+        return;
+      }
       toast.success("Produto excluído!");
       loadData();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao excluir:", error);
-      toast.error("Erro ao excluir produto");
+      toast.error("Erro ao excluir produto: " + (error?.message || "Erro desconhecido"));
     }
   };
 
@@ -846,12 +865,14 @@ export default function IAConfigProdutos() {
           </Button>
           
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={openNewDialog}>
-                <Plus className="h-4 w-4 mr-2" />
-                Novo Produto
-              </Button>
-            </DialogTrigger>
+            {canCreate && (
+              <DialogTrigger asChild>
+                <Button onClick={openNewDialog}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Novo Produto
+                </Button>
+              </DialogTrigger>
+            )}
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
@@ -1768,16 +1789,21 @@ export default function IAConfigProdutos() {
                   <Switch
                     checked={produto.ativo}
                     onCheckedChange={() => toggleAtivo(produto)}
+                    disabled={!canEdit}
                   />
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" onClick={() => openEditDialog(produto)}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => deleteProduto(produto.id)}>
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                    {canEdit && (
+                      <Button variant="ghost" size="icon" onClick={() => openEditDialog(produto)}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {canDelete && (
+                      <Button variant="ghost" size="icon" onClick={() => deleteProduto(produto.id)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>
