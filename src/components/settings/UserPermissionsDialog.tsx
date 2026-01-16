@@ -43,7 +43,8 @@ const MODULE_LABELS: Record<AppModule, string> = {
   'compras': 'Compras',
   'pedidos': 'Pedidos',
   'fichas_tecnicas': 'Fichas Técnicas',
-  'ia_configuracao': 'Configuração da IA'
+  'ia_configuracao': 'Configuração da IA',
+  'financeiro': 'Financeiro'
 };
 
 const ALL_MODULES: AppModule[] = [
@@ -62,6 +63,7 @@ const ALL_MODULES: AppModule[] = [
   'estoque',
   'compras',
   'pedidos',
+  'financeiro',
   'ia_configuracao'
 ];
 
