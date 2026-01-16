@@ -9,7 +9,8 @@ import {
   PanelTop,
   Activity,
   Zap,
-  Bot
+  Bot,
+  Wallet
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
@@ -34,6 +35,7 @@ const menuItems = [
   { title: "Prospecção Arquitetos", url: "/prospeccao", icon: UserSearch, module: "arquitetos" },
   { title: "CRM CLIENTES", url: "/kanban", icon: MessageSquare, module: "crm" },
   { title: "Metas", url: "/metas", icon: Target, module: "metas" },
+  { title: "Financeiro", url: "/financeiro", icon: Wallet, module: "financeiro" },
   { title: "Configuração IA", url: "/ia-configuracao", icon: Bot, module: "ia_configuracao" },
   { title: "Central de Atividades", url: "/atividades", icon: Activity, module: null, masterOnly: true },
   { title: "Central de Automações", url: "/automacoes", icon: Zap, module: null, masterOnly: true },
