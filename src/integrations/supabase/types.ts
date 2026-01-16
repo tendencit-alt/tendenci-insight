@@ -1780,6 +1780,896 @@ export type Database = {
         }
         Relationships: []
       }
+      fin_attachments: {
+        Row: {
+          created_at: string | null
+          entity_id: string
+          entity_type: string
+          file_name: string
+          file_path: string
+          file_size: number | null
+          id: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          entity_id: string
+          entity_type: string
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          id?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          entity_id?: string
+          entity_type?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          id?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fin_attachments_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fin_audit_logs: {
+        Row: {
+          action: string
+          after_data: Json | null
+          before_data: Json | null
+          created_at: string | null
+          entity_id: string
+          entity_type: string
+          id: string
+          ip_address: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          after_data?: Json | null
+          before_data?: Json | null
+          created_at?: string | null
+          entity_id: string
+          entity_type: string
+          id?: string
+          ip_address?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          after_data?: Json | null
+          before_data?: Json | null
+          created_at?: string | null
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          ip_address?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fin_audit_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fin_bank_accounts: {
+        Row: {
+          account_number: string | null
+          active: boolean | null
+          agency: string | null
+          bank_name: string | null
+          created_at: string | null
+          id: string
+          nickname: string
+          opening_balance: number | null
+          opening_balance_date: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          account_number?: string | null
+          active?: boolean | null
+          agency?: string | null
+          bank_name?: string | null
+          created_at?: string | null
+          id?: string
+          nickname: string
+          opening_balance?: number | null
+          opening_balance_date?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          account_number?: string | null
+          active?: boolean | null
+          agency?: string | null
+          bank_name?: string | null
+          created_at?: string | null
+          id?: string
+          nickname?: string
+          opening_balance?: number | null
+          opening_balance_date?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      fin_bank_transactions: {
+        Row: {
+          amount: number
+          bank_account_id: string
+          bank_memo: string | null
+          bank_transaction_id: string
+          created_at: string | null
+          date: string
+          direction: string
+          file_hash: string | null
+          id: string
+          import_batch_id: string | null
+          raw_data: Json | null
+          status: string | null
+        }
+        Insert: {
+          amount: number
+          bank_account_id: string
+          bank_memo?: string | null
+          bank_transaction_id: string
+          created_at?: string | null
+          date: string
+          direction: string
+          file_hash?: string | null
+          id?: string
+          import_batch_id?: string | null
+          raw_data?: Json | null
+          status?: string | null
+        }
+        Update: {
+          amount?: number
+          bank_account_id?: string
+          bank_memo?: string | null
+          bank_transaction_id?: string
+          created_at?: string | null
+          date?: string
+          direction?: string
+          file_hash?: string | null
+          id?: string
+          import_batch_id?: string | null
+          raw_data?: Json | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fin_bank_transactions_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "fin_bank_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fin_budgets: {
+        Row: {
+          amount: number
+          chart_account_id: string | null
+          cost_center_id: string | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          month: number
+          notes: string | null
+          project_id: string | null
+          updated_at: string | null
+          version: number | null
+          year: number
+        }
+        Insert: {
+          amount: number
+          chart_account_id?: string | null
+          cost_center_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          month: number
+          notes?: string | null
+          project_id?: string | null
+          updated_at?: string | null
+          version?: number | null
+          year: number
+        }
+        Update: {
+          amount?: number
+          chart_account_id?: string | null
+          cost_center_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          month?: number
+          notes?: string | null
+          project_id?: string | null
+          updated_at?: string | null
+          version?: number | null
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fin_budgets_chart_account_id_fkey"
+            columns: ["chart_account_id"]
+            isOneToOne: false
+            referencedRelation: "fin_chart_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_budgets_cost_center_id_fkey"
+            columns: ["cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "fin_cost_centers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_budgets_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_budgets_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "fin_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fin_chart_accounts: {
+        Row: {
+          active: boolean | null
+          code: string
+          created_at: string | null
+          dre_order: number | null
+          id: string
+          in_cashflow: boolean | null
+          in_dre: boolean | null
+          name: string
+          nature: string | null
+          parent_id: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          code: string
+          created_at?: string | null
+          dre_order?: number | null
+          id?: string
+          in_cashflow?: boolean | null
+          in_dre?: boolean | null
+          name: string
+          nature?: string | null
+          parent_id?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          code?: string
+          created_at?: string | null
+          dre_order?: number | null
+          id?: string
+          in_cashflow?: boolean | null
+          in_dre?: boolean | null
+          name?: string
+          nature?: string | null
+          parent_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fin_chart_accounts_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "fin_chart_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fin_cost_centers: {
+        Row: {
+          active: boolean | null
+          code: string | null
+          created_at: string | null
+          id: string
+          name: string
+          owner_id: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          code?: string | null
+          created_at?: string | null
+          id?: string
+          name: string
+          owner_id?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          code?: string | null
+          created_at?: string | null
+          id?: string
+          name?: string
+          owner_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fin_cost_centers_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fin_ledger_entries: {
+        Row: {
+          amount: number
+          bank_account_id: string | null
+          cash_date: string | null
+          chart_account_id: string | null
+          competence_date: string
+          cost_center_id: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string
+          document_number: string | null
+          id: string
+          installment_number: number | null
+          notes: string | null
+          party_id: string | null
+          party_type: string | null
+          payment_method: string | null
+          project_id: string | null
+          reconciled: boolean | null
+          reversal_of_id: string | null
+          status: string | null
+          tags: string[] | null
+          total_installments: number | null
+          type: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          bank_account_id?: string | null
+          cash_date?: string | null
+          chart_account_id?: string | null
+          competence_date: string
+          cost_center_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description: string
+          document_number?: string | null
+          id?: string
+          installment_number?: number | null
+          notes?: string | null
+          party_id?: string | null
+          party_type?: string | null
+          payment_method?: string | null
+          project_id?: string | null
+          reconciled?: boolean | null
+          reversal_of_id?: string | null
+          status?: string | null
+          tags?: string[] | null
+          total_installments?: number | null
+          type?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          bank_account_id?: string | null
+          cash_date?: string | null
+          chart_account_id?: string | null
+          competence_date?: string
+          cost_center_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string
+          document_number?: string | null
+          id?: string
+          installment_number?: number | null
+          notes?: string | null
+          party_id?: string | null
+          party_type?: string | null
+          payment_method?: string | null
+          project_id?: string | null
+          reconciled?: boolean | null
+          reversal_of_id?: string | null
+          status?: string | null
+          tags?: string[] | null
+          total_installments?: number | null
+          type?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fin_ledger_entries_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "fin_bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_ledger_entries_chart_account_id_fkey"
+            columns: ["chart_account_id"]
+            isOneToOne: false
+            referencedRelation: "fin_chart_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_ledger_entries_cost_center_id_fkey"
+            columns: ["cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "fin_cost_centers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_ledger_entries_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_ledger_entries_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "fin_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_ledger_entries_reversal_of_id_fkey"
+            columns: ["reversal_of_id"]
+            isOneToOne: false
+            referencedRelation: "fin_ledger_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fin_payables: {
+        Row: {
+          amount: number
+          bank_account_id: string | null
+          chart_account_id: string | null
+          competence_date: string | null
+          cost_center_id: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          document_number: string | null
+          due_date: string
+          id: string
+          installment: number | null
+          ledger_entry_id: string | null
+          notes: string | null
+          paid_amount: number | null
+          payment_date: string | null
+          project_id: string | null
+          reconciled: boolean | null
+          status: string | null
+          supplier_id: string | null
+          total_installments: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          bank_account_id?: string | null
+          chart_account_id?: string | null
+          competence_date?: string | null
+          cost_center_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          document_number?: string | null
+          due_date: string
+          id?: string
+          installment?: number | null
+          ledger_entry_id?: string | null
+          notes?: string | null
+          paid_amount?: number | null
+          payment_date?: string | null
+          project_id?: string | null
+          reconciled?: boolean | null
+          status?: string | null
+          supplier_id?: string | null
+          total_installments?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          bank_account_id?: string | null
+          chart_account_id?: string | null
+          competence_date?: string | null
+          cost_center_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          document_number?: string | null
+          due_date?: string
+          id?: string
+          installment?: number | null
+          ledger_entry_id?: string | null
+          notes?: string | null
+          paid_amount?: number | null
+          payment_date?: string | null
+          project_id?: string | null
+          reconciled?: boolean | null
+          status?: string | null
+          supplier_id?: string | null
+          total_installments?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fin_payables_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "fin_bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_payables_chart_account_id_fkey"
+            columns: ["chart_account_id"]
+            isOneToOne: false
+            referencedRelation: "fin_chart_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_payables_cost_center_id_fkey"
+            columns: ["cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "fin_cost_centers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_payables_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_payables_ledger_entry_id_fkey"
+            columns: ["ledger_entry_id"]
+            isOneToOne: false
+            referencedRelation: "fin_ledger_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_payables_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "fin_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_payables_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fin_projects: {
+        Row: {
+          budget: number | null
+          code: string | null
+          created_at: string | null
+          end_date: string | null
+          id: string
+          name: string
+          owner_id: string | null
+          start_date: string | null
+          status: string | null
+        }
+        Insert: {
+          budget?: number | null
+          code?: string | null
+          created_at?: string | null
+          end_date?: string | null
+          id?: string
+          name: string
+          owner_id?: string | null
+          start_date?: string | null
+          status?: string | null
+        }
+        Update: {
+          budget?: number | null
+          code?: string | null
+          created_at?: string | null
+          end_date?: string | null
+          id?: string
+          name?: string
+          owner_id?: string | null
+          start_date?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fin_projects_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fin_receivables: {
+        Row: {
+          amount: number
+          bank_account_id: string | null
+          chart_account_id: string | null
+          competence_date: string | null
+          cost_center_id: string | null
+          created_at: string | null
+          created_by: string | null
+          customer_id: string | null
+          deal_id: string | null
+          description: string | null
+          document_number: string | null
+          due_date: string
+          id: string
+          installment: number | null
+          ledger_entry_id: string | null
+          notes: string | null
+          order_id: string | null
+          project_id: string | null
+          receipt_date: string | null
+          received_amount: number | null
+          reconciled: boolean | null
+          status: string | null
+          total_installments: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          bank_account_id?: string | null
+          chart_account_id?: string | null
+          competence_date?: string | null
+          cost_center_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          customer_id?: string | null
+          deal_id?: string | null
+          description?: string | null
+          document_number?: string | null
+          due_date: string
+          id?: string
+          installment?: number | null
+          ledger_entry_id?: string | null
+          notes?: string | null
+          order_id?: string | null
+          project_id?: string | null
+          receipt_date?: string | null
+          received_amount?: number | null
+          reconciled?: boolean | null
+          status?: string | null
+          total_installments?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          bank_account_id?: string | null
+          chart_account_id?: string | null
+          competence_date?: string | null
+          cost_center_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          customer_id?: string | null
+          deal_id?: string | null
+          description?: string | null
+          document_number?: string | null
+          due_date?: string
+          id?: string
+          installment?: number | null
+          ledger_entry_id?: string | null
+          notes?: string | null
+          order_id?: string | null
+          project_id?: string | null
+          receipt_date?: string | null
+          received_amount?: number | null
+          reconciled?: boolean | null
+          status?: string | null
+          total_installments?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fin_receivables_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "fin_bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_receivables_chart_account_id_fkey"
+            columns: ["chart_account_id"]
+            isOneToOne: false
+            referencedRelation: "fin_chart_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_receivables_cost_center_id_fkey"
+            columns: ["cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "fin_cost_centers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_receivables_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_receivables_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_receivables_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "crm_deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_receivables_ledger_entry_id_fkey"
+            columns: ["ledger_entry_id"]
+            isOneToOne: false
+            referencedRelation: "fin_ledger_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_receivables_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_receivables_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "fin_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fin_reconciliation_links: {
+        Row: {
+          bank_transaction_id: string | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          ledger_entry_id: string | null
+          match_type: string | null
+          score: number | null
+        }
+        Insert: {
+          bank_transaction_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          ledger_entry_id?: string | null
+          match_type?: string | null
+          score?: number | null
+        }
+        Update: {
+          bank_transaction_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          ledger_entry_id?: string | null
+          match_type?: string | null
+          score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fin_reconciliation_links_bank_transaction_id_fkey"
+            columns: ["bank_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "fin_bank_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_reconciliation_links_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_reconciliation_links_ledger_entry_id_fkey"
+            columns: ["ledger_entry_id"]
+            isOneToOne: false
+            referencedRelation: "fin_ledger_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fin_reconciliation_rules: {
+        Row: {
+          active: boolean | null
+          chart_account_id: string | null
+          cost_center_id: string | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          keywords: string[] | null
+          name: string
+          party_id: string | null
+          party_type: string | null
+          pattern_regex: string | null
+          priority: number | null
+        }
+        Insert: {
+          active?: boolean | null
+          chart_account_id?: string | null
+          cost_center_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          keywords?: string[] | null
+          name: string
+          party_id?: string | null
+          party_type?: string | null
+          pattern_regex?: string | null
+          priority?: number | null
+        }
+        Update: {
+          active?: boolean | null
+          chart_account_id?: string | null
+          cost_center_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          keywords?: string[] | null
+          name?: string
+          party_id?: string | null
+          party_type?: string | null
+          pattern_regex?: string | null
+          priority?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fin_reconciliation_rules_chart_account_id_fkey"
+            columns: ["chart_account_id"]
+            isOneToOne: false
+            referencedRelation: "fin_chart_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_reconciliation_rules_cost_center_id_fkey"
+            columns: ["cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "fin_cost_centers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_reconciliation_rules_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       followup_logs: {
         Row: {
           created_at: string | null

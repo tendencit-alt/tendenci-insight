@@ -1,0 +1,237 @@
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { FinanceiroFiltersState } from "./FinanceiroFilters";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Plus, BookOpen, ArrowUpCircle, ArrowDownCircle, RefreshCw, History } from "lucide-react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { CreateLedgerEntryDialog } from "./CreateLedgerEntryDialog";
+import { LedgerAuditSheet } from "./LedgerAuditSheet";
+
+interface LedgerTabProps {
+  filters: FinanceiroFiltersState;
+}
+
+export function LedgerTab({ filters }: LedgerTabProps) {
+  const [createOpen, setCreateOpen] = useState(false);
+  const [auditOpen, setAuditOpen] = useState(false);
+  const [selectedEntry, setSelectedEntry] = useState<any>(null);
+
+  const dateField = filters.regime === "CAIXA" ? "cash_date" : "competence_date";
+
+  const { data: entries, isLoading, refetch } = useQuery({
+    queryKey: ["fin-ledger-entries", filters],
+    queryFn: async () => {
+      const dateFrom = format(filters.dateFrom, "yyyy-MM-dd");
+      const dateTo = format(filters.dateTo, "yyyy-MM-dd");
+
+      let query = supabase
+        .from("fin_ledger_entries")
+        .select(`
+          *,
+          bank_account:fin_bank_accounts(nickname),
+          chart_account:fin_chart_accounts(name, code),
+          cost_center:fin_cost_centers(name),
+          project:fin_projects(name)
+        `)
+        .gte(dateField, dateFrom)
+        .lte(dateField, dateTo)
+        .order(dateField, { ascending: false });
+
+      if (filters.bankAccountId) {
+        query = query.eq("bank_account_id", filters.bankAccountId);
+      }
+      if (filters.costCenterId) {
+        query = query.eq("cost_center_id", filters.costCenterId);
+      }
+      if (filters.projectId) {
+        query = query.eq("project_id", filters.projectId);
+      }
+      if (filters.search) {
+        query = query.ilike("description", `%${filters.search}%`);
+      }
+
+      const { data } = await query;
+      return data || [];
+    },
+  });
+
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case "RECEITA":
+        return <ArrowUpCircle className="h-4 w-4 text-green-600" />;
+      case "DESPESA":
+        return <ArrowDownCircle className="h-4 w-4 text-red-600" />;
+      case "TRANSFERENCIA":
+        return <RefreshCw className="h-4 w-4 text-blue-600" />;
+      default:
+        return null;
+    }
+  };
+
+  const getTypeBadge = (type: string) => {
+    switch (type) {
+      case "RECEITA":
+        return <Badge className="bg-green-600 gap-1">{getTypeIcon(type)} Receita</Badge>;
+      case "DESPESA":
+        return <Badge variant="destructive" className="gap-1">{getTypeIcon(type)} Despesa</Badge>;
+      case "TRANSFERENCIA":
+        return <Badge variant="secondary" className="gap-1">{getTypeIcon(type)} Transferência</Badge>;
+      case "AJUSTE":
+        return <Badge variant="outline" className="gap-1">Ajuste</Badge>;
+      default:
+        return <Badge variant="outline">{type}</Badge>;
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "PAGO_RECEBIDO":
+        return <Badge className="bg-green-600">Realizado</Badge>;
+      case "ABERTO":
+        return <Badge variant="outline">Aberto</Badge>;
+      case "CANCELADO":
+        return <Badge variant="destructive">Cancelado</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+
+  const formatCurrency = (value: number, type: string) => {
+    const formatted = Math.abs(value).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+    if (type === "DESPESA") {
+      return <span className="text-red-600">-{formatted}</span>;
+    }
+    return <span className="text-green-600">+{formatted}</span>;
+  };
+
+  const handleViewAudit = (entry: any) => {
+    setSelectedEntry(entry);
+    setAuditOpen(true);
+  };
+
+  // Calculate totals
+  const totals = entries?.reduce(
+    (acc, e) => {
+      if (e.status !== "CANCELADO") {
+        if (e.type === "RECEITA") acc.entradas += Number(e.amount);
+        if (e.type === "DESPESA") acc.saidas += Number(e.amount);
+      }
+      return acc;
+    },
+    { entradas: 0, saidas: 0 }
+  ) || { entradas: 0, saidas: 0 };
+
+  return (
+    <div className="space-y-4">
+      {/* Header with action */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <BookOpen className="h-5 w-5" />
+            Lançamentos ({filters.regime === "CAIXA" ? "Regime de Caixa" : "Regime de Competência"})
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Livro de lançamentos financeiros - Single Source of Truth
+          </p>
+        </div>
+        <Button onClick={() => setCreateOpen(true)} className="gap-2">
+          <Plus className="h-4 w-4" />
+          Novo Lançamento
+        </Button>
+      </div>
+
+      {/* Table */}
+      <Card>
+        <CardContent className="pt-4">
+          {isLoading ? (
+            <div className="space-y-2">
+              {[...Array(5)].map((_, i) => (
+                <Skeleton key={i} className="h-12 w-full" />
+              ))}
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Data</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Descrição</TableHead>
+                  <TableHead>Conta</TableHead>
+                  <TableHead>Categoria</TableHead>
+                  <TableHead className="text-right">Valor</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {entries?.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                      Nenhum lançamento encontrado no período
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  entries?.map((entry) => (
+                    <TableRow key={entry.id} className={entry.status === "CANCELADO" ? "opacity-50" : ""}>
+                      <TableCell className="font-medium">
+                        {entry[dateField] && format(new Date(entry[dateField]), "dd/MM/yyyy", { locale: ptBR })}
+                      </TableCell>
+                      <TableCell>{getTypeBadge(entry.type)}</TableCell>
+                      <TableCell className="max-w-[200px] truncate">
+                        {entry.description}
+                        {entry.reversal_of_id && (
+                          <span className="text-xs text-muted-foreground ml-1">(Estorno)</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-sm">{entry.bank_account?.nickname || "-"}</TableCell>
+                      <TableCell className="text-xs">
+                        {entry.chart_account ? `${entry.chart_account.code} - ${entry.chart_account.name}` : "-"}
+                      </TableCell>
+                      <TableCell className="text-right font-medium">
+                        {formatCurrency(Number(entry.amount), entry.type)}
+                      </TableCell>
+                      <TableCell>{getStatusBadge(entry.status)}</TableCell>
+                      <TableCell>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleViewAudit(entry)}
+                        >
+                          <History className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+              {entries && entries.length > 0 && (
+                <tfoot>
+                  <TableRow className="bg-muted/50 font-medium">
+                    <TableCell colSpan={5} className="text-right">Totais:</TableCell>
+                    <TableCell className="text-right">
+                      <div className="text-green-600">+{totals.entradas.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</div>
+                      <div className="text-red-600">-{totals.saidas.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</div>
+                      <div className={totals.entradas - totals.saidas >= 0 ? "text-green-600" : "text-red-600"}>
+                        = {(totals.entradas - totals.saidas).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                      </div>
+                    </TableCell>
+                    <TableCell colSpan={2}></TableCell>
+                  </TableRow>
+                </tfoot>
+              )}
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      <CreateLedgerEntryDialog open={createOpen} onOpenChange={setCreateOpen} onSuccess={refetch} />
+      <LedgerAuditSheet open={auditOpen} onOpenChange={setAuditOpen} entry={selectedEntry} />
+    </div>
+  );
+}
