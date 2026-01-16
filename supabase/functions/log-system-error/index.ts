@@ -41,7 +41,7 @@ serve(async (req) => {
 
     console.log(`🐛 Logging system error: ${payload.title} (${payload.module})`);
 
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('system_errors')
       .insert({
         title: payload.title,
@@ -53,9 +53,7 @@ serve(async (req) => {
         stack_trace: payload.stack_trace || null,
         metadata: payload.metadata || null,
         status: 'open'
-      })
-      .select('id')
-      .single();
+      });
 
     if (error) {
       console.error('❌ Error logging system error:', error);
@@ -65,10 +63,10 @@ serve(async (req) => {
       );
     }
 
-    console.log(`✅ System error logged with id: ${data?.id}`);
+    console.log(`✅ System error logged successfully`);
 
     return new Response(
-      JSON.stringify({ success: true, id: data?.id }),
+      JSON.stringify({ success: true }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
