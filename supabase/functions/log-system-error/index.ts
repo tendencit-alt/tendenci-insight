@@ -43,7 +43,7 @@ serve(async (req) => {
 
     const { data, error } = await supabase
       .from('system_errors')
-      .insert([{
+      .insert({
         title: payload.title,
         description: payload.description || null,
         module: payload.module,
@@ -53,9 +53,9 @@ serve(async (req) => {
         stack_trace: payload.stack_trace || null,
         metadata: payload.metadata || null,
         status: 'open'
-      }])
-      .select()
-      .maybeSingle();
+      })
+      .select('id')
+      .single();
 
     if (error) {
       console.error('❌ Error logging system error:', error);
@@ -65,18 +65,10 @@ serve(async (req) => {
       );
     }
 
-    if (!data) {
-      console.error('❌ No data returned from insert');
-      return new Response(
-        JSON.stringify({ error: 'Failed to insert error log' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    console.log(`✅ System error logged with id: ${data.id}`);
+    console.log(`✅ System error logged with id: ${data?.id}`);
 
     return new Response(
-      JSON.stringify({ success: true, id: data.id }),
+      JSON.stringify({ success: true, id: data?.id }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
