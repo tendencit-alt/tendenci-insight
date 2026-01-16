@@ -65,6 +65,14 @@ serve(async (req) => {
       );
     }
 
+    if (!data) {
+      console.error('❌ No data returned from insert');
+      return new Response(
+        JSON.stringify({ error: 'Failed to insert error log' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     console.log(`✅ System error logged with id: ${data.id}`);
 
     return new Response(
