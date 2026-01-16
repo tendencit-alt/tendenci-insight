@@ -19,7 +19,8 @@ export type AppModule =
   | 'compras'
   | 'pedidos'
   | 'fichas_tecnicas'
-  | 'ia_configuracao';
+  | 'ia_configuracao'
+  | 'financeiro';
 
 export interface ModulePermission {
   module: AppModule;
