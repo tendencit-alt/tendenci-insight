@@ -121,11 +121,27 @@ export function ChartAccountsManager() {
       active: form.active,
     };
 
+    // Generate a temporary ID for new items
+    const tempId = `temp-${Date.now()}`;
+
     // Optimistic update
     if (editing) {
       optimisticUpdate((prev) =>
         prev.map((a) => (a.id === editing.id ? { ...a, ...data } : a))
       );
+    } else {
+      // Add new item optimistically with temp ID
+      const newItem = {
+        id: tempId,
+        ...data,
+        created_at: new Date().toISOString(),
+        dre_order: null,
+      };
+      optimisticUpdate((prev) => {
+        // Insert in the right position based on code
+        const newList = [...prev, newItem];
+        return newList.sort((a, b) => a.code.localeCompare(b.code));
+      });
     }
 
     setDialogOpen(false);
@@ -146,7 +162,7 @@ export function ChartAccountsManager() {
         toast.success("Conta criada!");
       }
 
-      refetch();
+      refetch(); // Sync with real data from server
     } catch (error: any) {
       toast.error("Erro: " + error.message);
       refetch(); // Rollback on error
