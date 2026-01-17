@@ -409,71 +409,122 @@ export function ChartAccountsManager() {
     return descendants;
   }, []);
 
-  // Calculate new code for an account when moved
-  const calculateNewCode = useCallback((
-    targetParentId: string | null,
-    position: number,
+  // Renumber all siblings under a parent sequentially (1, 2, 3... or 1.1, 1.2, 1.3...)
+  const renumberSiblings = useCallback((
+    parentId: string | null,
     allAccounts: any[],
-    draggedAccountId: string
-  ): string => {
-    // Get ALL existing codes to ensure uniqueness (excluding the dragged account and its descendants)
-    const draggedDescendants = getDescendantIds(draggedAccountId, allAccounts);
-    const allExistingCodes = new Set(
-      allAccounts
-        .filter(a => a.id !== draggedAccountId && !draggedDescendants.has(a.id))
-        .map(a => a.code)
-    );
-
-    if (!targetParentId) {
-      // Root level - find next available root code
-      let newCode = 1;
-      while (allExistingCodes.has(String(newCode))) {
-        newCode++;
-      }
-      return String(newCode);
-    }
-
-    const parentAccount = allAccounts.find(a => a.id === targetParentId);
-    if (!parentAccount) return "1";
-
-    // Find next available sub-code under this parent
-    let newSubCode = 1;
-    let candidateCode = `${parentAccount.code}.${newSubCode}`;
+    excludeIds: string[] = []
+  ): { id: string; oldCode: string; newCode: string }[] => {
+    const updates: { id: string; oldCode: string; newCode: string }[] = [];
     
-    while (allExistingCodes.has(candidateCode)) {
-      newSubCode++;
-      candidateCode = `${parentAccount.code}.${newSubCode}`;
-    }
+    // Get parent code prefix
+    const parentAccount = parentId ? allAccounts.find(a => a.id === parentId) : null;
+    const parentCode = parentAccount?.code || "";
+    
+    // Get all direct children of this parent, sorted by current code
+    const siblings = allAccounts
+      .filter(a => a.parent_id === parentId && !excludeIds.includes(a.id))
+      .sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }));
+    
+    // Renumber sequentially
+    siblings.forEach((sibling, index) => {
+      const newNumber = index + 1;
+      const newCode = parentCode ? `${parentCode}.${newNumber}` : String(newNumber);
+      
+      if (sibling.code !== newCode) {
+        updates.push({ id: sibling.id, oldCode: sibling.code, newCode });
+      }
+    });
+    
+    return updates;
+  }, []);
 
-    return candidateCode;
-  }, [getDescendantIds]);
-
-  // Update all children codes recursively - synchronous version
-  const updateChildrenCodes = useCallback((
+  // Recursively update all descendant codes when a parent code changes
+  const getDescendantCodeUpdates = useCallback((
     accountId: string,
-    oldCodePrefix: string,
-    newCodePrefix: string,
+    oldCode: string,
+    newCode: string,
     allAccounts: any[]
-  ): { id: string; newCode: string }[] => {
-    const updates: { id: string; newCode: string }[] = [];
+  ): { id: string; oldCode: string; newCode: string }[] => {
+    const updates: { id: string; oldCode: string; newCode: string }[] = [];
     
     const children = allAccounts.filter(a => a.parent_id === accountId);
     for (const child of children) {
-      // Replace the old prefix with the new one at the start of the code
-      const newChildCode = newCodePrefix + child.code.substring(oldCodePrefix.length);
-      updates.push({ id: child.id, newCode: newChildCode });
+      const childNewCode = newCode + child.code.substring(oldCode.length);
+      updates.push({ id: child.id, oldCode: child.code, newCode: childNewCode });
       
       // Recursively get grandchildren updates
-      const grandchildUpdates = updateChildrenCodes(
+      const grandchildUpdates = getDescendantCodeUpdates(
         child.id,
         child.code,
-        newChildCode,
+        childNewCode,
         allAccounts
       );
       updates.push(...grandchildUpdates);
     }
     
     return updates;
+  }, []);
+
+  // Apply all code updates to database
+  const applyCodeUpdates = useCallback(async (
+    updates: { id: string; oldCode: string; newCode: string }[]
+  ): Promise<boolean> => {
+    for (const update of updates) {
+      const { error } = await supabase
+        .from("fin_chart_accounts")
+        .update({ code: update.newCode })
+        .eq("id", update.id);
+      
+      if (error) {
+        console.error("Error updating code:", error);
+        return false;
+      }
+    }
+    return true;
+  }, []);
+
+  // Full renumber: renumber siblings and all their descendants
+  const fullRenumberSiblings = useCallback((
+    parentId: string | null,
+    allAccounts: any[],
+    excludeIds: string[] = []
+  ): { id: string; oldCode: string; newCode: string }[] => {
+    const allUpdates: { id: string; oldCode: string; newCode: string }[] = [];
+    
+    // First get sibling updates
+    const siblingUpdates = renumberSiblings(parentId, allAccounts, excludeIds);
+    
+    // For each sibling that changes, also update all its descendants
+    for (const siblingUpdate of siblingUpdates) {
+      allUpdates.push(siblingUpdate);
+      
+      // Get descendant updates for this sibling
+      const descendantUpdates = getDescendantCodeUpdates(
+        siblingUpdate.id,
+        siblingUpdate.oldCode,
+        siblingUpdate.newCode,
+        allAccounts
+      );
+      allUpdates.push(...descendantUpdates);
+    }
+    
+    return allUpdates;
+  }, [renumberSiblings, getDescendantCodeUpdates]);
+
+  // Calculate the next available code for a new account under a parent
+  const getNextCode = useCallback((
+    parentId: string | null,
+    allAccounts: any[]
+  ): string => {
+    const parentAccount = parentId ? allAccounts.find(a => a.id === parentId) : null;
+    const parentCode = parentAccount?.code || "";
+    
+    // Count existing siblings
+    const siblingCount = allAccounts.filter(a => a.parent_id === parentId).length;
+    const newNumber = siblingCount + 1;
+    
+    return parentCode ? `${parentCode}.${newNumber}` : String(newNumber);
   }, []);
 
   // Handle drag start
@@ -551,17 +602,8 @@ export function ChartAccountsManager() {
       return;
     }
 
-    // Calculate new code
     const oldCode = draggedAccount.code;
-    const newCode = calculateNewCode(newParentId, 0, accounts, draggedAccount.id);
-
-    // Get all children that need updating (synchronous now)
-    const childUpdates = updateChildrenCodes(
-      draggedAccount.id,
-      oldCode,
-      newCode,
-      accounts
-    );
+    const oldParentId = draggedAccount.parent_id;
 
     // Close dialog first to prevent DOM conflicts
     setMoveDialogOpen(false);
@@ -573,38 +615,57 @@ export function ChartAccountsManager() {
     // Use setTimeout to allow React to finish DOM updates before optimistic update
     await new Promise(resolve => setTimeout(resolve, 50));
 
-    // Optimistic update
-    optimisticUpdate((prev) => {
-      const updated = prev.map(a => {
-        if (a.id === draggedAccount.id) {
-          return { ...a, code: newCode, parent_id: newParentId };
-        }
-        const childUpdate = childUpdates.find(u => u.id === a.id);
-        if (childUpdate) {
-          return { ...a, code: childUpdate.newCode };
-        }
-        return a;
-      });
-      return updated.sort((a, b) => a.code.localeCompare(b.code));
-    });
-
     try {
-      // Update the dragged account
-      const { error: mainError } = await supabase
+      // Step 1: Move the account to new parent (temporarily with a placeholder code)
+      const tempCode = `__TEMP__${Date.now()}`;
+      await supabase
         .from("fin_chart_accounts")
-        .update({ code: newCode, parent_id: newParentId })
+        .update({ code: tempCode, parent_id: newParentId })
         .eq("id", draggedAccount.id);
 
-      if (mainError) throw mainError;
+      // Step 2: Renumber the OLD parent's children (to fill the gap)
+      if (oldParentId !== newParentId) {
+        // Create a virtual accounts list without the dragged account
+        const accountsWithoutDragged = accounts.filter(a => a.id !== draggedAccount.id);
+        const oldParentUpdates = fullRenumberSiblings(oldParentId, accountsWithoutDragged);
+        await applyCodeUpdates(oldParentUpdates);
+      }
 
-      // Update all children codes in database
-      for (const update of childUpdates) {
-        const { error } = await supabase
-          .from("fin_chart_accounts")
-          .update({ code: update.newCode })
-          .eq("id", update.id);
-        
-        if (error) throw error;
+      // Step 3: Get fresh data to calculate proper position
+      const { data: freshAccounts } = await supabase
+        .from("fin_chart_accounts")
+        .select("*")
+        .order("code");
+
+      if (!freshAccounts) throw new Error("Erro ao buscar dados atualizados");
+
+      // Step 4: Calculate the new code (will be at the end of siblings)
+      const newCode = getNextCode(newParentId, freshAccounts.filter(a => a.id !== draggedAccount.id));
+      
+      // Step 5: Update the dragged account with final code
+      await supabase
+        .from("fin_chart_accounts")
+        .update({ code: newCode })
+        .eq("id", draggedAccount.id);
+
+      // Step 6: Update all descendants of the dragged account
+      const descendantUpdates = getDescendantCodeUpdates(
+        draggedAccount.id,
+        oldCode,
+        newCode,
+        accounts
+      );
+      await applyCodeUpdates(descendantUpdates);
+
+      // Step 7: Final renumber of new parent's siblings (to ensure sequential order)
+      const { data: finalAccounts } = await supabase
+        .from("fin_chart_accounts")
+        .select("*")
+        .order("code");
+
+      if (finalAccounts) {
+        const newParentUpdates = fullRenumberSiblings(newParentId, finalAccounts);
+        await applyCodeUpdates(newParentUpdates);
       }
 
       toast.success(`Conta movida: ${oldCode} → ${newCode}`);
@@ -614,7 +675,7 @@ export function ChartAccountsManager() {
       toast.error("Erro ao mover conta: " + error.message);
       await refetch();
     }
-  }, [accounts, pendingMove, getDescendantIds, calculateNewCode, updateChildrenCodes, optimisticUpdate, refetch]);
+  }, [accounts, pendingMove, getDescendantIds, getNextCode, fullRenumberSiblings, getDescendantCodeUpdates, applyCodeUpdates, refetch]);
 
   // Helper to get the new type preview
   const getMoveTypePreview = useCallback((moveType: 'sibling' | 'child'): { depth: number; name: string } => {
@@ -662,10 +723,6 @@ export function ChartAccountsManager() {
 
   const handleSubmit = async () => {
     // Validações com mensagens claras
-    if (!form.code) {
-      toast.error("Campo obrigatório: Código da conta não informado");
-      return;
-    }
     if (!form.name) {
       toast.error("Campo obrigatório: Nome da conta não informado");
       return;
@@ -675,88 +732,103 @@ export function ChartAccountsManager() {
       return;
     }
 
-    // Validar formato do código
-    if (!/^[0-9]+(\.[0-9]+)*$/.test(form.code)) {
-      toast.error("Código inválido: Use apenas números separados por ponto (ex: 1, 1.1, 1.1.1)");
-      return;
-    }
-
-    // Verificar código duplicado
-    const isDuplicate = accounts?.some(a => 
-      a.code === form.code && a.id !== editing?.id
-    );
-    if (isDuplicate) {
-      toast.error(`Código duplicado: O código "${form.code}" já está sendo usado por outra conta`);
-      return;
-    }
-
-    // Validar hierarquia - código deve ser compatível com o parent
-    if (form.parent_id) {
-      const parent = accounts?.find(a => a.id === form.parent_id);
-      if (parent && !form.code.startsWith(parent.code + '.')) {
-        toast.error(`Código incompatível: O código deve começar com "${parent.code}." para ser subconta de "${parent.name}"`);
-        return;
-      }
-    }
-
     setLoading(true);
-    const data = {
-      code: form.code,
-      name: form.name,
-      nature: form.nature,
-      parent_id: form.parent_id || null,
-      in_dre: form.in_dre,
-      in_cashflow: form.in_cashflow,
-      active: form.active,
-    };
-
-    // Generate a temporary ID for new items
-    const tempId = `temp-${Date.now()}`;
-
-    // Optimistic update
-    if (editing) {
-      optimisticUpdate((prev) =>
-        prev.map((a) => (a.id === editing.id ? { ...a, ...data } : a))
-      );
-    } else {
-      // Add new item optimistically with temp ID
-      const newItem = {
-        id: tempId,
-        ...data,
-        created_at: new Date().toISOString(),
-        dre_order: null,
-      };
-      optimisticUpdate((prev) => {
-        // Insert in the right position based on code
-        const newList = [...prev, newItem];
-        return newList.sort((a, b) => a.code.localeCompare(b.code));
-      });
-    }
-
     setDialogOpen(false);
 
     try {
+      const parentId = form.parent_id || null;
+
       if (editing) {
-        const { error } = await supabase
-          .from("fin_chart_accounts")
-          .update(data)
-          .eq("id", editing.id);
-        if (error) throw error;
+        // Update existing account
+        const data = {
+          name: form.name,
+          nature: form.nature,
+          parent_id: parentId,
+          in_dre: form.in_dre,
+          in_cashflow: form.in_cashflow,
+          active: form.active,
+        };
+
+        // If parent changed, we need to recalculate code
+        if (editing.parent_id !== parentId) {
+          const oldParentId = editing.parent_id;
+          const oldCode = editing.code;
+
+          // Get fresh accounts
+          const { data: freshAccounts } = await supabase
+            .from("fin_chart_accounts")
+            .select("*")
+            .order("code");
+
+          if (!freshAccounts) throw new Error("Erro ao buscar dados");
+
+          // Calculate new code for the new parent
+          const newCode = getNextCode(parentId, freshAccounts.filter(a => a.id !== editing.id));
+
+          // Update the account with new parent and code
+          const { error } = await supabase
+            .from("fin_chart_accounts")
+            .update({ ...data, code: newCode })
+            .eq("id", editing.id);
+          if (error) throw error;
+
+          // Update descendants
+          const descendantUpdates = getDescendantCodeUpdates(editing.id, oldCode, newCode, freshAccounts);
+          await applyCodeUpdates(descendantUpdates);
+
+          // Renumber old parent's siblings
+          const accountsWithoutEdited = freshAccounts.filter(a => a.id !== editing.id);
+          const oldParentRenumber = fullRenumberSiblings(oldParentId, accountsWithoutEdited);
+          await applyCodeUpdates(oldParentRenumber);
+
+          // Renumber new parent's siblings
+          const { data: finalAccounts } = await supabase.from("fin_chart_accounts").select("*").order("code");
+          if (finalAccounts) {
+            const newParentRenumber = fullRenumberSiblings(parentId, finalAccounts);
+            await applyCodeUpdates(newParentRenumber);
+          }
+        } else {
+          // Just update without code change
+          const { error } = await supabase
+            .from("fin_chart_accounts")
+            .update(data)
+            .eq("id", editing.id);
+          if (error) throw error;
+        }
+
         toast.success("Conta atualizada!");
-        // Refetch to ensure data consistency and get real ID
-        await refetch();
       } else {
+        // Create new account - auto-generate code
+        const { data: freshAccounts } = await supabase
+          .from("fin_chart_accounts")
+          .select("*")
+          .order("code");
+
+        const accountsForCalc = freshAccounts || [];
+        const newCode = getNextCode(parentId, accountsForCalc);
+
+        const data = {
+          code: newCode,
+          name: form.name,
+          nature: form.nature,
+          parent_id: parentId,
+          in_dre: form.in_dre,
+          in_cashflow: form.in_cashflow,
+          active: form.active,
+        };
+
         const { error } = await supabase
           .from("fin_chart_accounts")
           .insert(data);
         if (error) throw error;
-        toast.success("Conta criada!");
-        // Refetch to get the real ID from database
-        await refetch();
+
+        toast.success(`Conta criada com código ${newCode}!`);
       }
+
+      await refetch();
     } catch (error: any) {
       toast.error("Erro: " + error.message);
-      await refetch(); // Rollback on error
+      await refetch();
     } finally {
       setLoading(false);
     }
@@ -831,7 +903,7 @@ export function ChartAccountsManager() {
   };
 
   const handleBulkDelete = async () => {
-    if (selectedIds.size === 0) {
+    if (selectedIds.size === 0 || !accounts) {
       toast.error("Nenhuma conta selecionada para exclusão");
       return;
     }
@@ -840,12 +912,12 @@ export function ChartAccountsManager() {
     
     // Verificar se alguma conta tem filhos
     const accountsWithChildren = idsToDelete.filter(id => 
-      accounts?.some(a => a.parent_id === id)
+      accounts.some(a => a.parent_id === id)
     );
     
     if (accountsWithChildren.length > 0) {
       const accountNames = accountsWithChildren.map(id => {
-        const acc = accounts?.find(a => a.id === id);
+        const acc = accounts.find(a => a.id === id);
         return acc ? `${acc.code} - ${acc.name}` : id;
       }).join(', ');
       toast.error(`Não é possível excluir: As seguintes contas possuem subcontas: ${accountNames}. Exclua primeiro as subcontas.`);
@@ -853,8 +925,14 @@ export function ChartAccountsManager() {
       return;
     }
 
-    // Optimistic update - remove immediately
-    optimisticUpdate((prev) => prev.filter((a) => !idsToDelete.includes(a.id)));
+    // Get all parent IDs of accounts being deleted for later renumbering
+    const affectedParentIds = new Set<string | null>();
+    idsToDelete.forEach(id => {
+      const acc = accounts.find(a => a.id === id);
+      if (acc) {
+        affectedParentIds.add(acc.parent_id);
+      }
+    });
 
     setBulkDeleteDialogOpen(false);
     clearSelection();
@@ -867,19 +945,30 @@ export function ChartAccountsManager() {
         .in("id", idsToDelete);
 
       if (error) {
-        // Mensagem específica para erro de foreign key
         if (error.message.includes('foreign key') || error.message.includes('violates')) {
           throw new Error("Esta conta está vinculada a lançamentos financeiros e não pode ser excluída");
         }
         throw error;
       }
 
+      // Renumber all affected parent groups
+      const { data: freshAccounts } = await supabase
+        .from("fin_chart_accounts")
+        .select("*")
+        .order("code");
+
+      if (freshAccounts) {
+        for (const parentId of affectedParentIds) {
+          const renumberUpdates = fullRenumberSiblings(parentId, freshAccounts);
+          await applyCodeUpdates(renumberUpdates);
+        }
+      }
+
       toast.success(`${idsToDelete.length} conta(s) excluída(s) com sucesso!`);
-      // Refetch to ensure consistency
       await refetch();
     } catch (error: any) {
       toast.error(`Erro ao excluir: ${error.message}`);
-      await refetch(); // Rollback on error
+      await refetch();
     } finally {
       setBulkLoading(false);
     }
@@ -890,6 +979,7 @@ export function ChartAccountsManager() {
     if (!accountToDelete || !accounts) return;
 
     const idToDelete = accountToDelete.id;
+    const parentIdOfDeleted = accountToDelete.parent_id;
     
     // Check if account has children
     const hasChildren = accounts.some(a => a.parent_id === idToDelete);
@@ -899,9 +989,6 @@ export function ChartAccountsManager() {
       setAccountToDelete(null);
       return;
     }
-
-    // Optimistic update
-    optimisticUpdate((prev) => prev.filter((a) => a.id !== idToDelete));
 
     setDeleteDialogOpen(false);
     setAccountToDelete(null);
@@ -920,12 +1007,22 @@ export function ChartAccountsManager() {
         throw error;
       }
 
+      // After deletion, renumber siblings to fill the gap
+      const { data: freshAccounts } = await supabase
+        .from("fin_chart_accounts")
+        .select("*")
+        .order("code");
+
+      if (freshAccounts) {
+        const renumberUpdates = fullRenumberSiblings(parentIdOfDeleted, freshAccounts);
+        await applyCodeUpdates(renumberUpdates);
+      }
+
       toast.success(`Conta "${accountToDelete.code} - ${accountToDelete.name}" excluída com sucesso!`);
-      // Refetch to ensure consistency
       await refetch();
     } catch (error: any) {
       toast.error(`Erro ao excluir conta: ${error.message}`);
-      await refetch(); // Rollback on error
+      await refetch();
     }
   };
 
@@ -1127,12 +1224,16 @@ export function ChartAccountsManager() {
           <div className="space-y-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Código *</Label>
-                <Input
-                  placeholder="Ex: 4.1.1"
-                  value={form.code}
-                  onChange={(e) => setForm({ ...form, code: e.target.value })}
-                />
+                <Label>Código</Label>
+                {editing ? (
+                  <div className="flex items-center gap-2 p-2 bg-muted rounded-md border h-10">
+                    <span className="font-mono font-medium">{editing.code}</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-md border h-10 text-muted-foreground">
+                    <span className="text-sm italic">Gerado automaticamente</span>
+                  </div>
+                )}
               </div>
               <div className="space-y-2">
                 <Label>Natureza *</Label>
