@@ -237,6 +237,13 @@ export function ChartAccountsManager() {
 
   // Drag state
   const [activeId, setActiveId] = useState<string | null>(null);
+  
+  // Move confirmation dialog state
+  const [moveDialogOpen, setMoveDialogOpen] = useState(false);
+  const [pendingMove, setPendingMove] = useState<{
+    draggedAccount: any;
+    targetAccount: any;
+  } | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -473,8 +480,8 @@ export function ChartAccountsManager() {
     setActiveId(event.active.id as string);
   }, []);
 
-  // Handle drag end
-  const handleDragEnd = useCallback(async (event: DragEndEvent) => {
+  // Handle drag end - opens confirmation dialog
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
     setActiveId(null);
 
@@ -492,23 +499,36 @@ export function ChartAccountsManager() {
       return;
     }
 
-    // Determine new parent based on target's depth
-    // If target is at depth 0 or 1, dropped item becomes sibling
-    // If target depth is 2, can only be sibling (max 3 levels)
+    // Store pending move and open dialog
+    setPendingMove({ draggedAccount, targetAccount });
+    setMoveDialogOpen(true);
+  }, [accounts, getDescendantIds]);
+
+  // Execute move after user confirmation
+  const executeMove = useCallback(async (moveType: 'sibling' | 'child') => {
+    if (!pendingMove || !accounts) return;
+
+    const { draggedAccount, targetAccount } = pendingMove;
     const targetDepth = getDepthFromCode(targetAccount.code);
     
     let newParentId: string | null;
     
-    if (targetDepth >= 2) {
-      // Target is at max depth, new account becomes sibling
-      newParentId = targetAccount.parent_id;
+    if (moveType === 'child') {
+      // Become child of target
+      if (targetDepth >= 2) {
+        toast.error("Não é possível adicionar filho: limite de 3 níveis");
+        setMoveDialogOpen(false);
+        setPendingMove(null);
+        return;
+      }
+      newParentId = targetAccount.id;
     } else {
-      // Can be child of target (user can drop on a parent to nest)
-      // For simplicity, we'll make it a sibling at the same level
+      // Become sibling of target (same parent)
       newParentId = targetAccount.parent_id;
     }
 
     // Check if this would exceed max depth
+    const descendants = getDescendantIds(draggedAccount.id, accounts);
     const draggedDepth = getDepthFromCode(draggedAccount.code);
     const draggedMaxChildDepth = Math.max(
       draggedDepth,
@@ -525,6 +545,8 @@ export function ChartAccountsManager() {
     
     if (newDepth + draggedTreeHeight > 2) {
       toast.error("Movimento inválido: excederia o limite de 3 níveis de hierarquia");
+      setMoveDialogOpen(false);
+      setPendingMove(null);
       return;
     }
 
@@ -555,6 +577,10 @@ export function ChartAccountsManager() {
       return updated.sort((a, b) => a.code.localeCompare(b.code));
     });
 
+    // Close dialog
+    setMoveDialogOpen(false);
+    setPendingMove(null);
+
     try {
       // Update the dragged account
       const { error: mainError } = await supabase
@@ -579,7 +605,23 @@ export function ChartAccountsManager() {
       toast.error("Erro ao mover conta: " + error.message);
       await refetch();
     }
-  }, [accounts, getDescendantIds, calculateNewCode, updateChildrenCodes, optimisticUpdate, refetch]);
+  }, [accounts, pendingMove, getDescendantIds, calculateNewCode, updateChildrenCodes, optimisticUpdate, refetch]);
+
+  // Helper to get the new type preview
+  const getMoveTypePreview = useCallback((moveType: 'sibling' | 'child'): { depth: number; name: string } => {
+    if (!pendingMove || !accounts) return { depth: 0, name: 'Raiz' };
+    
+    const { targetAccount } = pendingMove;
+    const targetDepth = getDepthFromCode(targetAccount.code);
+    
+    if (moveType === 'child') {
+      const newDepth = targetDepth + 1;
+      return { depth: newDepth, name: getLevelName(newDepth) };
+    } else {
+      // Sibling - same level as target
+      return { depth: targetDepth, name: getLevelName(targetDepth) };
+    }
+  }, [pendingMove, accounts, getLevelName]);
 
   const handleEdit = (account: any) => {
     setEditing(account);
@@ -1249,6 +1291,58 @@ export function ChartAccountsManager() {
             >
               Excluir
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Move Confirmation Dialog */}
+      <AlertDialog open={moveDialogOpen} onOpenChange={(open) => {
+        setMoveDialogOpen(open);
+        if (!open) setPendingMove(null);
+      }}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Movimentação</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-4">
+                <div className="p-3 bg-muted rounded-lg space-y-2">
+                  <p className="text-sm">
+                    <span className="text-muted-foreground">Mover:</span>{" "}
+                    <strong className="text-foreground">{pendingMove?.draggedAccount?.code} - {pendingMove?.draggedAccount?.name}</strong>
+                  </p>
+                  <p className="text-sm">
+                    <span className="text-muted-foreground">Para posição relativa a:</span>{" "}
+                    <strong className="text-foreground">{pendingMove?.targetAccount?.code} - {pendingMove?.targetAccount?.name}</strong>
+                  </p>
+                </div>
+                
+                <p className="font-medium text-foreground">Como deseja posicionar?</p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel className="sm:mr-auto">Cancelar</AlertDialogCancel>
+            
+            {/* Sibling button */}
+            <Button 
+              variant="outline"
+              onClick={() => executeMove('sibling')}
+              className="flex items-center gap-2"
+            >
+              Mesmo nível (Irmão)
+              {getLevelBadge(getMoveTypePreview('sibling').depth)}
+            </Button>
+            
+            {/* Child button - only if target depth allows */}
+            {pendingMove && getDepthFromCode(pendingMove.targetAccount?.code || "") < 2 && (
+              <Button 
+                onClick={() => executeMove('child')}
+                className="flex items-center gap-2"
+              >
+                Dentro de (Filho)
+                {getLevelBadge(getMoveTypePreview('child').depth)}
+              </Button>
+            )}
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
