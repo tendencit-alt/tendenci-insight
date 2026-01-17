@@ -265,6 +265,8 @@ export function ChartAccountsManager() {
         .order("code");
       return data || [];
     },
+    refetchOnWindowFocus: true,
+    staleTime: 0, // Always refetch when component mounts
   });
 
   // Initialize expanded state with root accounts when data loads
