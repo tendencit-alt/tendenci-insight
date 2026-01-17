@@ -162,10 +162,10 @@ export function ChartAccountsManager() {
         toast.success("Conta criada!");
       }
 
-      refetch(); // Sync with real data from server
+      // Success - optimistic update already applied, no refetch needed
     } catch (error: any) {
       toast.error("Erro: " + error.message);
-      refetch(); // Rollback on error
+      await refetch(); // Rollback on error
     } finally {
       setLoading(false);
     }
@@ -229,10 +229,10 @@ export function ChartAccountsManager() {
       if (error) throw error;
 
       toast.success(`${idsToUpdate.length} conta(s) atualizada(s)!`);
-      refetch();
+      // Success - optimistic update already applied, no refetch needed
     } catch (error: any) {
       toast.error("Erro: " + error.message);
-      refetch(); // Rollback on error
+      await refetch(); // Rollback on error
     } finally {
       setBulkLoading(false);
     }
@@ -259,10 +259,10 @@ export function ChartAccountsManager() {
       if (error) throw error;
 
       toast.success(`${idsToDelete.length} conta(s) excluída(s)!`);
-      refetch();
+      // Success - optimistic update already applied, no refetch needed
     } catch (error: any) {
       toast.error("Erro: " + error.message);
-      refetch(); // Rollback on error
+      await refetch(); // Rollback on error
     } finally {
       setBulkLoading(false);
     }
@@ -289,10 +289,10 @@ export function ChartAccountsManager() {
       if (error) throw error;
 
       toast.success("Conta excluída!");
-      refetch();
+      // Success - optimistic update already applied, no refetch needed
     } catch (error: any) {
       toast.error("Erro: " + error.message);
-      refetch(); // Rollback on error
+      await refetch(); // Rollback on error
     }
   };
 
