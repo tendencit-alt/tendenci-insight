@@ -739,15 +739,17 @@ export function ChartAccountsManager() {
           .eq("id", editing.id);
         if (error) throw error;
         toast.success("Conta atualizada!");
+        // Refetch to ensure data consistency and get real ID
+        await refetch();
       } else {
         const { error } = await supabase
           .from("fin_chart_accounts")
           .insert(data);
         if (error) throw error;
         toast.success("Conta criada!");
+        // Refetch to get the real ID from database
+        await refetch();
       }
-
-      // Success - optimistic update already applied, no refetch needed
     } catch (error: any) {
       toast.error("Erro: " + error.message);
       await refetch(); // Rollback on error
@@ -814,7 +816,8 @@ export function ChartAccountsManager() {
       if (error) throw error;
 
       toast.success(`${idsToUpdate.length} conta(s) atualizada(s)!`);
-      // Success - optimistic update already applied, no refetch needed
+      // Refetch to ensure consistency
+      await refetch();
     } catch (error: any) {
       toast.error("Erro: " + error.message);
       await refetch(); // Rollback on error
@@ -868,6 +871,8 @@ export function ChartAccountsManager() {
       }
 
       toast.success(`${idsToDelete.length} conta(s) excluída(s) com sucesso!`);
+      // Refetch to ensure consistency
+      await refetch();
     } catch (error: any) {
       toast.error(`Erro ao excluir: ${error.message}`);
       await refetch(); // Rollback on error
@@ -912,6 +917,8 @@ export function ChartAccountsManager() {
       }
 
       toast.success(`Conta "${accountToDelete.code} - ${accountToDelete.name}" excluída com sucesso!`);
+      // Refetch to ensure consistency
+      await refetch();
     } catch (error: any) {
       toast.error(`Erro ao excluir conta: ${error.message}`);
       await refetch(); // Rollback on error
