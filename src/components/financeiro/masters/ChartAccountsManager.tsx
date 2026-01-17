@@ -1226,7 +1226,7 @@ export function ChartAccountsManager() {
           </Button>
           <Button variant="outline" size="sm" onClick={collapseAll} className="gap-1">
             <ChevronsUpDown className="h-4 w-4" />
-            Colapsar
+            Agrupar
           </Button>
           <Button onClick={handleNew} size="sm" className="gap-2">
             <Plus className="h-4 w-4" />
