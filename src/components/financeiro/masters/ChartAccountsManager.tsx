@@ -414,15 +414,17 @@ export function ChartAccountsManager() {
     allAccounts: any[],
     draggedAccountId: string
   ): string => {
+    // Get ALL existing codes to ensure uniqueness
+    const allExistingCodes = new Set(
+      allAccounts
+        .filter(a => a.id !== draggedAccountId)
+        .map(a => a.code)
+    );
+
     if (!targetParentId) {
       // Root level - find next available root code
-      const rootAccounts = allAccounts
-        .filter(a => !a.parent_id && a.id !== draggedAccountId)
-        .map(a => parseInt(a.code.split('.')[0]) || 0);
-      
-      const existingCodes = new Set(rootAccounts);
       let newCode = 1;
-      while (existingCodes.has(newCode)) {
+      while (allExistingCodes.has(String(newCode))) {
         newCode++;
       }
       return String(newCode);
@@ -431,21 +433,16 @@ export function ChartAccountsManager() {
     const parentAccount = allAccounts.find(a => a.id === targetParentId);
     if (!parentAccount) return "1";
 
-    // Find siblings (accounts with same parent, excluding the dragged one)
-    const siblings = allAccounts
-      .filter(a => a.parent_id === targetParentId && a.id !== draggedAccountId)
-      .map(a => {
-        const parts = a.code.split('.');
-        return parseInt(parts[parts.length - 1]) || 0;
-      });
-
-    const existingCodes = new Set(siblings);
+    // Find next available sub-code under this parent
     let newSubCode = 1;
-    while (existingCodes.has(newSubCode)) {
+    let candidateCode = `${parentAccount.code}.${newSubCode}`;
+    
+    while (allExistingCodes.has(candidateCode)) {
       newSubCode++;
+      candidateCode = `${parentAccount.code}.${newSubCode}`;
     }
 
-    return `${parentAccount.code}.${newSubCode}`;
+    return candidateCode;
   }, []);
 
   // Update all children codes recursively
