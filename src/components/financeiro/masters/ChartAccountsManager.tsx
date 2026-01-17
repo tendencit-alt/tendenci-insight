@@ -1193,9 +1193,9 @@ export function ChartAccountsManager() {
       case "DESPESA":
         return <Badge variant="destructive">Despesa</Badge>;
       case "RESULTADO":
-        return <Badge className="bg-amber-600">Resultado</Badge>;
+        return <Badge className="bg-blue-600">Resultado</Badge>;
       case "FINANCIAMENTO":
-        return <Badge className="bg-indigo-600">Financiamento</Badge>;
+        return <Badge className="bg-orange-500">Financiamento</Badge>;
       default:
         return <Badge variant="outline">{nature}</Badge>;
     }
