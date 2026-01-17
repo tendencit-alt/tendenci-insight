@@ -51,6 +51,10 @@ export function ChartAccountsManager() {
   const [bulkEditValue, setBulkEditValue] = useState<string | boolean>("");
   const [bulkLoading, setBulkLoading] = useState(false);
 
+  // Single delete state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [accountToDelete, setAccountToDelete] = useState<any>(null);
+
   const { data: accounts, isLoading, refetch } = useQuery({
     queryKey: ["fin-chart-accounts-all"],
     queryFn: async () => {
@@ -248,6 +252,39 @@ export function ChartAccountsManager() {
     }
   };
 
+  // Single delete handler
+  const handleDeleteSingle = async () => {
+    if (!accountToDelete) return;
+
+    const idToDelete = accountToDelete.id;
+
+    // Optimistic update
+    optimisticUpdate((prev) => prev.filter((a) => a.id !== idToDelete));
+
+    setDeleteDialogOpen(false);
+    setAccountToDelete(null);
+
+    try {
+      const { error } = await supabase
+        .from("fin_chart_accounts")
+        .delete()
+        .eq("id", idToDelete);
+
+      if (error) throw error;
+
+      toast.success("Conta excluída!");
+      refetch();
+    } catch (error: any) {
+      toast.error("Erro: " + error.message);
+      refetch(); // Rollback on error
+    }
+  };
+
+  const openDeleteDialog = (account: any) => {
+    setAccountToDelete(account);
+    setDeleteDialogOpen(true);
+  };
+
   const getNatureBadge = (nature: string) => {
     switch (nature) {
       case "RECEITA":
@@ -411,9 +448,19 @@ export function ChartAccountsManager() {
                     )}
                   </TableCell>
                   <TableCell>
-                    <Button variant="ghost" size="sm" onClick={() => handleEdit(account)}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="sm" onClick={() => handleEdit(account)}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => openDeleteDialog(account)}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -645,6 +692,28 @@ export function ChartAccountsManager() {
             >
               {bulkLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Excluir {selectedIds.size} conta(s)
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Single Delete Confirmation */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir conta?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Você está prestes a excluir a conta <strong>{accountToDelete?.code} - {accountToDelete?.name}</strong>.
+              Esta ação não pode ser desfeita e pode afetar lançamentos vinculados.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteSingle}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
