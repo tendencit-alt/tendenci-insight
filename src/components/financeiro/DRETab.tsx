@@ -324,9 +324,9 @@ export function DRETab({ filters }: DRETabProps) {
       
       if (rootCode === "7") {
         financial.push(line);
-      } else if (rootCode === "9" || line.nature === "CAPITAL") {
+      } else if (rootCode === "9" || line.nature === "FINANCIAMENTO") {
         capital.push(line);
-      } else if (rootCode === "10" || line.nature === "CAIXA") {
+      } else if (rootCode === "10") {
         cash.push(line);
       } else {
         operational.push(line);
@@ -370,7 +370,7 @@ export function DRETab({ filters }: DRETabProps) {
     const isExpanded = expandedAccounts.has(line.id);
     const isReceita = line.nature === "RECEITA";
     const isDespesa = line.nature === "DESPESA";
-    const isCapital = line.nature === "CAPITAL";
+    const isFinanciamento = line.nature === "FINANCIAMENTO";
     
     return (
       <TableRow 
@@ -378,7 +378,7 @@ export function DRETab({ filters }: DRETabProps) {
         className={cn(
           line.level === 0 && "bg-muted/50 font-semibold",
           line.isSubtotal && "font-bold",
-          isCapital && "bg-blue-50/50 dark:bg-blue-950/20"
+          isFinanciamento && "bg-blue-50/50 dark:bg-blue-950/20"
         )}
       >
         <TableCell 
@@ -405,13 +405,13 @@ export function DRETab({ filters }: DRETabProps) {
             "text-right",
             isReceita && line.value > 0 && "text-green-600",
             isDespesa && line.value > 0 && "text-red-600",
-            isCapital && line.value > 0 && "text-blue-600",
+            isFinanciamento && line.value > 0 && "text-blue-600",
             line.value < 0 && "text-red-600"
           )}
         >
           {isDespesa && line.value > 0 ? (
             `(${formatCurrency(line.value)})`
-          ) : isCapital && line.code === "9.2" && line.value > 0 ? (
+          ) : isFinanciamento && line.code === "9.2" && line.value > 0 ? (
             `(${formatCurrency(line.value)})`
           ) : (
             formatCurrency(line.value)
