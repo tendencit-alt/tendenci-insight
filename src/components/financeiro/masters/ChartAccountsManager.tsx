@@ -414,8 +414,6 @@ export function ChartAccountsManager() {
         return <Badge className="bg-green-600">Receita</Badge>;
       case "DESPESA":
         return <Badge variant="destructive">Despesa</Badge>;
-      case "RESULTADO":
-        return <Badge variant="secondary">Resultado</Badge>;
       default:
         return <Badge variant="outline">{nature}</Badge>;
     }
@@ -676,9 +674,6 @@ export function ChartAccountsManager() {
                   <SelectContent>
                     <SelectItem value="RECEITA">Receita</SelectItem>
                     <SelectItem value="DESPESA">Despesa</SelectItem>
-                    <SelectItem value="ATIVO">Ativo</SelectItem>
-                    <SelectItem value="PASSIVO">Passivo</SelectItem>
-                    <SelectItem value="RESULTADO">Resultado</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -784,9 +779,6 @@ export function ChartAccountsManager() {
                   <SelectContent>
                     <SelectItem value="RECEITA">Receita</SelectItem>
                     <SelectItem value="DESPESA">Despesa</SelectItem>
-                    <SelectItem value="ATIVO">Ativo</SelectItem>
-                    <SelectItem value="PASSIVO">Passivo</SelectItem>
-                    <SelectItem value="RESULTADO">Resultado</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
