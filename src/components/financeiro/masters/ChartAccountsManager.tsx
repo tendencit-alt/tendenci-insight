@@ -1169,20 +1169,6 @@ export function ChartAccountsManager() {
           Plano de Contas
         </CardTitle>
         <div className="flex items-center gap-2 flex-wrap">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={renumberAllAccounts} 
-            disabled={bulkLoading}
-            className="gap-1"
-          >
-            {bulkLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <RefreshCw className="h-4 w-4" />
-            )}
-            Renumerar
-          </Button>
           <Button variant="outline" size="sm" onClick={expandAll} className="gap-1">
             <ChevronsUpDown className="h-4 w-4" />
             Expandir
