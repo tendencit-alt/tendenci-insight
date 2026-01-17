@@ -362,9 +362,9 @@ export function ChartAccountsManager() {
       }
     });
 
-    // Sort children by code
+    // Sort children by code (numeric order)
     const sortChildren = (nodes: any[]) => {
-      nodes.sort((a, b) => a.code.localeCompare(b.code));
+      nodes.sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }));
       nodes.forEach(node => {
         if (node.children && node.children.length > 0) {
           sortChildren(node.children);
