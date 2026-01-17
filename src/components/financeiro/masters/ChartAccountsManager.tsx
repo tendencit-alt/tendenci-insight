@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Pencil, FileSpreadsheet, Loader2, Trash2, X } from "lucide-react";
+import { Plus, Pencil, FileSpreadsheet, Loader2, Trash2, X, ChevronRight, ChevronDown, ChevronsUpDown } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
@@ -55,6 +55,9 @@ export function ChartAccountsManager() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [accountToDelete, setAccountToDelete] = useState<any>(null);
 
+  // Tree expansion state
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+
   const { data: accounts, isLoading, refetch } = useQuery({
     queryKey: ["fin-chart-accounts-all"],
     queryFn: async () => {
@@ -65,6 +68,37 @@ export function ChartAccountsManager() {
       return data || [];
     },
   });
+
+  // Initialize expanded state with root accounts when data loads
+  useEffect(() => {
+    if (accounts && accounts.length > 0 && expandedIds.size === 0) {
+      const rootIds = accounts.filter(a => !a.parent_id).map(a => a.id);
+      setExpandedIds(new Set(rootIds));
+    }
+  }, [accounts]);
+
+  const toggleExpanded = (id: string) => {
+    setExpandedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const expandAll = () => {
+    if (accounts) {
+      const allIds = accounts.map(a => a.id);
+      setExpandedIds(new Set(allIds));
+    }
+  };
+
+  const collapseAll = () => {
+    setExpandedIds(new Set());
+  };
 
   // Optimistic update helper
   const optimisticUpdate = (updater: (prev: any[]) => any[]) => {
@@ -99,19 +133,23 @@ export function ChartAccountsManager() {
     return roots;
   };
 
-  // Flatten tree for table display with depth info
-  const flattenTree = (nodes: any[], depth: number = 0): any[] => {
+  // Flatten tree for table display with depth info, respecting expansion state
+  const flattenTree = (nodes: any[], depth: number = 0, parentExpanded: boolean = true): any[] => {
     const result: any[] = [];
     nodes.forEach((node) => {
-      result.push({ ...node, depth });
-      if (node.children && node.children.length > 0) {
-        result.push(...flattenTree(node.children, depth + 1));
+      if (parentExpanded) {
+        result.push({ ...node, depth });
+        if (node.children && node.children.length > 0) {
+          const isExpanded = expandedIds.has(node.id);
+          result.push(...flattenTree(node.children, depth + 1, isExpanded));
+        }
       }
     });
     return result;
   };
 
-  const hierarchicalAccounts = accounts ? flattenTree(buildTree(accounts)) : [];
+  const treeData = useMemo(() => accounts ? buildTree(accounts) : [], [accounts]);
+  const hierarchicalAccounts = useMemo(() => flattenTree(treeData), [treeData, expandedIds]);
 
   const handleEdit = (account: any) => {
     setEditing(account);
@@ -371,10 +409,20 @@ export function ChartAccountsManager() {
           <FileSpreadsheet className="h-5 w-5" />
           Plano de Contas
         </CardTitle>
-        <Button onClick={handleNew} size="sm" className="gap-2">
-          <Plus className="h-4 w-4" />
-          Nova Conta
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={expandAll} className="gap-1">
+            <ChevronsUpDown className="h-4 w-4" />
+            Expandir
+          </Button>
+          <Button variant="outline" size="sm" onClick={collapseAll} className="gap-1">
+            <ChevronsUpDown className="h-4 w-4" />
+            Colapsar
+          </Button>
+          <Button onClick={handleNew} size="sm" className="gap-2">
+            <Plus className="h-4 w-4" />
+            Nova Conta
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         {/* Bulk Actions Bar */}
@@ -463,7 +511,8 @@ export function ChartAccountsManager() {
             </TableHeader>
             <TableBody>
               {hierarchicalAccounts.map((account) => {
-                const isGroup = account.children && account.children.length > 0;
+                const hasChildren = account.children && account.children.length > 0;
+                const isExpanded = expandedIds.has(account.id);
                 const paddingLeft = account.depth * 24;
                 
                 return (
@@ -471,7 +520,7 @@ export function ChartAccountsManager() {
                     key={account.id}
                     className={cn(
                       selectedIds.has(account.id) && "bg-muted/50",
-                      isGroup && "bg-muted/30 font-semibold"
+                      hasChildren && "bg-muted/30"
                     )}
                   >
                     <TableCell>
@@ -485,13 +534,31 @@ export function ChartAccountsManager() {
                       className="font-medium"
                       style={{ paddingLeft: `${paddingLeft + 16}px` }}
                     >
-                      <span className={cn(
-                        account.depth === 0 && "text-foreground font-bold",
-                        account.depth === 1 && "text-foreground/90 font-semibold",
-                        account.depth >= 2 && "text-muted-foreground"
-                      )}>
-                        {account.code}
-                      </span>
+                      <div className="flex items-center gap-1">
+                        {hasChildren ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0 hover:bg-muted"
+                            onClick={() => toggleExpanded(account.id)}
+                          >
+                            {isExpanded ? (
+                              <ChevronDown className="h-4 w-4" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4" />
+                            )}
+                          </Button>
+                        ) : (
+                          <span className="w-6" />
+                        )}
+                        <span className={cn(
+                          account.depth === 0 && "text-foreground font-bold",
+                          account.depth === 1 && "text-foreground/90 font-semibold",
+                          account.depth >= 2 && "text-muted-foreground"
+                        )}>
+                          {account.code}
+                        </span>
+                      </div>
                     </TableCell>
                     <TableCell>
                       <span className={cn(
