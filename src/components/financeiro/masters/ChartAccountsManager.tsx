@@ -11,9 +11,22 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Pencil, FileSpreadsheet, Loader2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Plus, Pencil, FileSpreadsheet, Loader2, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
+type BulkEditField = "nature" | "in_dre" | "in_cashflow" | "active" | null;
 
 export function ChartAccountsManager() {
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -28,6 +41,14 @@ export function ChartAccountsManager() {
     in_cashflow: true,
     active: true,
   });
+
+  // Bulk selection state
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkEditDialogOpen, setBulkEditDialogOpen] = useState(false);
+  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
+  const [bulkEditField, setBulkEditField] = useState<BulkEditField>(null);
+  const [bulkEditValue, setBulkEditValue] = useState<string | boolean>("");
+  const [bulkLoading, setBulkLoading] = useState(false);
 
   const { data: accounts, isLoading, refetch } = useQuery({
     queryKey: ["fin-chart-accounts-all"],
@@ -112,6 +133,88 @@ export function ChartAccountsManager() {
     }
   };
 
+  // Bulk selection handlers
+  const handleSelectAll = (checked: boolean) => {
+    if (checked && accounts) {
+      setSelectedIds(new Set(accounts.map((a) => a.id)));
+    } else {
+      setSelectedIds(new Set());
+    }
+  };
+
+  const handleSelectOne = (id: string, checked: boolean) => {
+    const newSelected = new Set(selectedIds);
+    if (checked) {
+      newSelected.add(id);
+    } else {
+      newSelected.delete(id);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const clearSelection = () => {
+    setSelectedIds(new Set());
+  };
+
+  const openBulkEditDialog = (field: BulkEditField) => {
+    setBulkEditField(field);
+    if (field === "nature") {
+      setBulkEditValue("DESPESA");
+    } else {
+      setBulkEditValue(true);
+    }
+    setBulkEditDialogOpen(true);
+  };
+
+  const handleBulkEdit = async () => {
+    if (!bulkEditField || selectedIds.size === 0) return;
+
+    setBulkLoading(true);
+    try {
+      const updateData: Record<string, any> = {};
+      updateData[bulkEditField] = bulkEditValue;
+
+      const { error } = await supabase
+        .from("fin_chart_accounts")
+        .update(updateData)
+        .in("id", Array.from(selectedIds));
+
+      if (error) throw error;
+
+      toast.success(`${selectedIds.size} conta(s) atualizada(s)!`);
+      refetch();
+      setBulkEditDialogOpen(false);
+      clearSelection();
+    } catch (error: any) {
+      toast.error("Erro: " + error.message);
+    } finally {
+      setBulkLoading(false);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+
+    setBulkLoading(true);
+    try {
+      const { error } = await supabase
+        .from("fin_chart_accounts")
+        .delete()
+        .in("id", Array.from(selectedIds));
+
+      if (error) throw error;
+
+      toast.success(`${selectedIds.size} conta(s) excluída(s)!`);
+      refetch();
+      setBulkDeleteDialogOpen(false);
+      clearSelection();
+    } catch (error: any) {
+      toast.error("Erro: " + error.message);
+    } finally {
+      setBulkLoading(false);
+    }
+  };
+
   const getNatureBadge = (nature: string) => {
     switch (nature) {
       case "RECEITA":
@@ -124,6 +227,19 @@ export function ChartAccountsManager() {
         return <Badge variant="outline">{nature}</Badge>;
     }
   };
+
+  const getFieldLabel = (field: BulkEditField) => {
+    switch (field) {
+      case "nature": return "Natureza";
+      case "in_dre": return "DRE";
+      case "in_cashflow": return "Fluxo de Caixa";
+      case "active": return "Status";
+      default: return "";
+    }
+  };
+
+  const isAllSelected = accounts && accounts.length > 0 && selectedIds.size === accounts.length;
+  const isSomeSelected = selectedIds.size > 0;
 
   return (
     <Card>
@@ -138,6 +254,64 @@ export function ChartAccountsManager() {
         </Button>
       </CardHeader>
       <CardContent>
+        {/* Bulk Actions Bar */}
+        {isSomeSelected && (
+          <div className="mb-4 p-3 bg-muted rounded-lg flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className="font-normal">
+                {selectedIds.size} selecionado(s)
+              </Badge>
+              <Button variant="ghost" size="sm" onClick={clearSelection} className="h-7 px-2">
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-sm text-muted-foreground mr-2">Editar em massa:</span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => openBulkEditDialog("nature")}
+                className="h-8"
+              >
+                Natureza
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => openBulkEditDialog("in_dre")}
+                className="h-8"
+              >
+                DRE
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => openBulkEditDialog("in_cashflow")}
+                className="h-8"
+              >
+                Fluxo de Caixa
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => openBulkEditDialog("active")}
+                className="h-8"
+              >
+                Status
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => setBulkDeleteDialogOpen(true)}
+                className="h-8 gap-1"
+              >
+                <Trash2 className="h-4 w-4" />
+                Excluir
+              </Button>
+            </div>
+          </div>
+        )}
+
         {isLoading ? (
           <div className="space-y-2">
             {[...Array(5)].map((_, i) => (
@@ -148,6 +322,13 @@ export function ChartAccountsManager() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-12">
+                  <Checkbox
+                    checked={isAllSelected}
+                    onCheckedChange={handleSelectAll}
+                    aria-label="Selecionar todos"
+                  />
+                </TableHead>
                 <TableHead>Código</TableHead>
                 <TableHead>Nome</TableHead>
                 <TableHead>Natureza</TableHead>
@@ -159,7 +340,17 @@ export function ChartAccountsManager() {
             </TableHeader>
             <TableBody>
               {accounts?.map((account) => (
-                <TableRow key={account.id}>
+                <TableRow 
+                  key={account.id}
+                  className={cn(selectedIds.has(account.id) && "bg-muted/50")}
+                >
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedIds.has(account.id)}
+                      onCheckedChange={(checked) => handleSelectOne(account.id, !!checked)}
+                      aria-label={`Selecionar ${account.name}`}
+                    />
+                  </TableCell>
                   <TableCell className={cn("font-medium", account.parent_id && "pl-8")}>
                     {account.code}
                   </TableCell>
@@ -198,6 +389,7 @@ export function ChartAccountsManager() {
         )}
       </CardContent>
 
+      {/* Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -290,6 +482,140 @@ export function ChartAccountsManager() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Bulk Edit Dialog */}
+      <Dialog open={bulkEditDialogOpen} onOpenChange={setBulkEditDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar {getFieldLabel(bulkEditField)} em Massa</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm text-muted-foreground mb-4">
+              Alterando <strong>{selectedIds.size}</strong> conta(s) selecionada(s)
+            </p>
+            
+            {bulkEditField === "nature" && (
+              <div className="space-y-2">
+                <Label>Nova Natureza</Label>
+                <Select 
+                  value={bulkEditValue as string} 
+                  onValueChange={(v) => setBulkEditValue(v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="RECEITA">Receita</SelectItem>
+                    <SelectItem value="DESPESA">Despesa</SelectItem>
+                    <SelectItem value="ATIVO">Ativo</SelectItem>
+                    <SelectItem value="PASSIVO">Passivo</SelectItem>
+                    <SelectItem value="RESULTADO">Resultado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {bulkEditField === "in_dre" && (
+              <div className="space-y-2">
+                <Label>Incluir no DRE</Label>
+                <div className="flex items-center gap-4 mt-2">
+                  <Button
+                    variant={bulkEditValue === true ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setBulkEditValue(true)}
+                  >
+                    Sim
+                  </Button>
+                  <Button
+                    variant={bulkEditValue === false ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setBulkEditValue(false)}
+                  >
+                    Não
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {bulkEditField === "in_cashflow" && (
+              <div className="space-y-2">
+                <Label>Incluir no Fluxo de Caixa</Label>
+                <div className="flex items-center gap-4 mt-2">
+                  <Button
+                    variant={bulkEditValue === true ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setBulkEditValue(true)}
+                  >
+                    Sim
+                  </Button>
+                  <Button
+                    variant={bulkEditValue === false ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setBulkEditValue(false)}
+                  >
+                    Não
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {bulkEditField === "active" && (
+              <div className="space-y-2">
+                <Label>Status da Conta</Label>
+                <div className="flex items-center gap-4 mt-2">
+                  <Button
+                    variant={bulkEditValue === true ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setBulkEditValue(true)}
+                  >
+                    Ativa
+                  </Button>
+                  <Button
+                    variant={bulkEditValue === false ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setBulkEditValue(false)}
+                  >
+                    Inativa
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBulkEditDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleBulkEdit} disabled={bulkLoading}>
+              {bulkLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Aplicar a {selectedIds.size} conta(s)
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Delete Confirmation */}
+      <AlertDialog open={bulkDeleteDialogOpen} onOpenChange={setBulkDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir contas selecionadas?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Você está prestes a excluir <strong>{selectedIds.size}</strong> conta(s) do plano de contas.
+              Esta ação não pode ser desfeita e pode afetar lançamentos vinculados.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={bulkLoading}
+            >
+              {bulkLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Excluir {selectedIds.size} conta(s)
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }
