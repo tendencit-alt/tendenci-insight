@@ -45,14 +45,25 @@ export function ExecutiveView({ filters }: ExecutiveViewProps) {
       const currentMonth = filters.dateFrom.getMonth() + 1;
       const currentYear = filters.dateFrom.getFullYear();
 
-      // Fetch chart accounts with category_type
+      // Fetch chart accounts
       const { data: chartAccounts } = await supabase
         .from("fin_chart_accounts")
-        .select("id, code, name, nature, category_type")
+        .select("id, code, name, nature")
         .eq("active", true);
 
+      // Helper to classify accounts by code prefix
+      const classifyAccount = (code: string, nature: string | null) => {
+        if (code.startsWith("4.1")) return "receita_operacional";
+        if (code.startsWith("5.1")) return "custo_variavel";
+        if (code.startsWith("5.2") || code.startsWith("6.")) return "despesa_operacional";
+        if (code.startsWith("7.")) return "resultado_financeiro";
+        if (code.startsWith("8.1")) return "capital_entrada";
+        if (code.startsWith("8.2")) return "capital_saida";
+        return nature === "RECEITA" ? "receita_operacional" : "despesa_operacional";
+      };
+
       // Create account maps for classification
-      const accountMap = new Map(chartAccounts?.map(a => [a.id, a]) || []);
+      const accountMap = new Map(chartAccounts?.map(a => [a.id, { ...a, category_type: classifyAccount(a.code, a.nature) }]) || []);
 
       // Fetch ledger entries for DRE (competence)
       let dreQuery = supabase
