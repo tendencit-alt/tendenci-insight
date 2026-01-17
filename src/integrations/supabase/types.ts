@@ -2113,6 +2113,73 @@ export type Database = {
           },
         ]
       }
+      fin_financial_goals: {
+        Row: {
+          cost_center_id: string | null
+          created_at: string | null
+          created_by: string | null
+          goal_type: string
+          id: string
+          metric_key: string
+          month: number
+          notes: string | null
+          project_id: string | null
+          target_amount: number
+          updated_at: string | null
+          year: number
+        }
+        Insert: {
+          cost_center_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          goal_type: string
+          id?: string
+          metric_key: string
+          month: number
+          notes?: string | null
+          project_id?: string | null
+          target_amount: number
+          updated_at?: string | null
+          year: number
+        }
+        Update: {
+          cost_center_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          goal_type?: string
+          id?: string
+          metric_key?: string
+          month?: number
+          notes?: string | null
+          project_id?: string | null
+          target_amount?: number
+          updated_at?: string | null
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fin_financial_goals_cost_center_id_fkey"
+            columns: ["cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "fin_cost_centers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_financial_goals_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_financial_goals_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "fin_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fin_ledger_entries: {
         Row: {
           amount: number
