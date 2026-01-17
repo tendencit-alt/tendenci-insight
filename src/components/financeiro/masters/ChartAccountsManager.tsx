@@ -76,6 +76,43 @@ export function ChartAccountsManager() {
 
   const parentAccounts = accounts?.filter((a) => !a.parent_id) || [];
 
+  // Build hierarchical tree structure
+  const buildTree = (items: any[]): any[] => {
+    const map = new Map<string, any>();
+    const roots: any[] = [];
+
+    // First pass: create map of all items
+    items.forEach((item) => {
+      map.set(item.id, { ...item, children: [] });
+    });
+
+    // Second pass: build parent-child relationships
+    items.forEach((item) => {
+      const node = map.get(item.id);
+      if (item.parent_id && map.has(item.parent_id)) {
+        map.get(item.parent_id).children.push(node);
+      } else {
+        roots.push(node);
+      }
+    });
+
+    return roots;
+  };
+
+  // Flatten tree for table display with depth info
+  const flattenTree = (nodes: any[], depth: number = 0): any[] => {
+    const result: any[] = [];
+    nodes.forEach((node) => {
+      result.push({ ...node, depth });
+      if (node.children && node.children.length > 0) {
+        result.push(...flattenTree(node.children, depth + 1));
+      }
+    });
+    return result;
+  };
+
+  const hierarchicalAccounts = accounts ? flattenTree(buildTree(accounts)) : [];
+
   const handleEdit = (account: any) => {
     setEditing(account);
     setForm({
@@ -425,61 +462,86 @@ export function ChartAccountsManager() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {accounts?.map((account) => (
-                <TableRow 
-                  key={account.id}
-                  className={cn(selectedIds.has(account.id) && "bg-muted/50")}
-                >
-                  <TableCell>
-                    <Checkbox
-                      checked={selectedIds.has(account.id)}
-                      onCheckedChange={(checked) => handleSelectOne(account.id, !!checked)}
-                      aria-label={`Selecionar ${account.name}`}
-                    />
-                  </TableCell>
-                  <TableCell className={cn("font-medium", account.parent_id && "pl-8")}>
-                    {account.code}
-                  </TableCell>
-                  <TableCell>{account.name}</TableCell>
-                  <TableCell>{getNatureBadge(account.nature)}</TableCell>
-                  <TableCell>
-                    {account.in_dre ? (
-                      <Badge variant="outline" className="text-green-600 border-green-600">Sim</Badge>
-                    ) : (
-                      <Badge variant="outline">Não</Badge>
+              {hierarchicalAccounts.map((account) => {
+                const isGroup = account.children && account.children.length > 0;
+                const paddingLeft = account.depth * 24;
+                
+                return (
+                  <TableRow 
+                    key={account.id}
+                    className={cn(
+                      selectedIds.has(account.id) && "bg-muted/50",
+                      isGroup && "bg-muted/30 font-semibold"
                     )}
-                  </TableCell>
-                  <TableCell>
-                    {account.in_cashflow ? (
-                      <Badge variant="outline" className="text-green-600 border-green-600">Sim</Badge>
-                    ) : (
-                      <Badge variant="outline">Não</Badge>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {account.active ? (
-                      <Badge className="bg-green-600">Ativa</Badge>
-                    ) : (
-                      <Badge variant="secondary">Inativa</Badge>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1">
-                      <Button variant="ghost" size="sm" onClick={() => handleEdit(account)}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => openDeleteDialog(account)}
-                        className="text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
+                  >
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedIds.has(account.id)}
+                        onCheckedChange={(checked) => handleSelectOne(account.id, !!checked)}
+                        aria-label={`Selecionar ${account.name}`}
+                      />
+                    </TableCell>
+                    <TableCell 
+                      className="font-medium"
+                      style={{ paddingLeft: `${paddingLeft + 16}px` }}
+                    >
+                      <span className={cn(
+                        account.depth === 0 && "text-foreground font-bold",
+                        account.depth === 1 && "text-foreground/90 font-semibold",
+                        account.depth >= 2 && "text-muted-foreground"
+                      )}>
+                        {account.code}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <span className={cn(
+                        account.depth === 0 && "font-bold",
+                        account.depth === 1 && "font-semibold",
+                        account.depth >= 2 && "text-muted-foreground"
+                      )}>
+                        {account.name}
+                      </span>
+                    </TableCell>
+                    <TableCell>{getNatureBadge(account.nature)}</TableCell>
+                    <TableCell>
+                      {account.in_dre ? (
+                        <Badge variant="outline" className="text-green-600 border-green-600">Sim</Badge>
+                      ) : (
+                        <Badge variant="outline">Não</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {account.in_cashflow ? (
+                        <Badge variant="outline" className="text-green-600 border-green-600">Sim</Badge>
+                      ) : (
+                        <Badge variant="outline">Não</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {account.active ? (
+                        <Badge className="bg-green-600">Ativa</Badge>
+                      ) : (
+                        <Badge variant="secondary">Inativa</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <Button variant="ghost" size="sm" onClick={() => handleEdit(account)}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => openDeleteDialog(account)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         )}
