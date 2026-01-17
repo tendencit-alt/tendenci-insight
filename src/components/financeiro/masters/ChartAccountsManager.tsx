@@ -416,10 +416,11 @@ export function ChartAccountsManager() {
     allAccounts: any[],
     draggedAccountId: string
   ): string => {
-    // Get ALL existing codes to ensure uniqueness
+    // Get ALL existing codes to ensure uniqueness (excluding the dragged account and its descendants)
+    const draggedDescendants = getDescendantIds(draggedAccountId, allAccounts);
     const allExistingCodes = new Set(
       allAccounts
-        .filter(a => a.id !== draggedAccountId)
+        .filter(a => a.id !== draggedAccountId && !draggedDescendants.has(a.id))
         .map(a => a.code)
     );
 
@@ -445,24 +446,25 @@ export function ChartAccountsManager() {
     }
 
     return candidateCode;
-  }, []);
+  }, [getDescendantIds]);
 
-  // Update all children codes recursively
-  const updateChildrenCodes = useCallback(async (
+  // Update all children codes recursively - synchronous version
+  const updateChildrenCodes = useCallback((
     accountId: string,
     oldCodePrefix: string,
     newCodePrefix: string,
     allAccounts: any[]
-  ): Promise<{ id: string; newCode: string }[]> => {
+  ): { id: string; newCode: string }[] => {
     const updates: { id: string; newCode: string }[] = [];
     
     const children = allAccounts.filter(a => a.parent_id === accountId);
     for (const child of children) {
-      const newChildCode = child.code.replace(oldCodePrefix, newCodePrefix);
+      // Replace the old prefix with the new one at the start of the code
+      const newChildCode = newCodePrefix + child.code.substring(oldCodePrefix.length);
       updates.push({ id: child.id, newCode: newChildCode });
       
       // Recursively get grandchildren updates
-      const grandchildUpdates = await updateChildrenCodes(
+      const grandchildUpdates = updateChildrenCodes(
         child.id,
         child.code,
         newChildCode,
@@ -553,8 +555,8 @@ export function ChartAccountsManager() {
     const oldCode = draggedAccount.code;
     const newCode = calculateNewCode(newParentId, 0, accounts, draggedAccount.id);
 
-    // Get all children that need updating
-    const childUpdates = await updateChildrenCodes(
+    // Get all children that need updating (synchronous now)
+    const childUpdates = updateChildrenCodes(
       draggedAccount.id,
       oldCode,
       newCode,
@@ -595,7 +597,7 @@ export function ChartAccountsManager() {
 
       if (mainError) throw mainError;
 
-      // Update all children
+      // Update all children codes in database
       for (const update of childUpdates) {
         const { error } = await supabase
           .from("fin_chart_accounts")
@@ -606,6 +608,8 @@ export function ChartAccountsManager() {
       }
 
       toast.success(`Conta movida: ${oldCode} → ${newCode}`);
+      // Force refetch to ensure data consistency
+      await refetch();
     } catch (error: any) {
       toast.error("Erro ao mover conta: " + error.message);
       await refetch();
