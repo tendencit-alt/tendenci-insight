@@ -820,9 +820,18 @@ export function ChartAccountsManager() {
 
   // Single delete handler
   const handleDeleteSingle = async () => {
-    if (!accountToDelete) return;
+    if (!accountToDelete || !accounts) return;
 
     const idToDelete = accountToDelete.id;
+    
+    // Check if account has children
+    const hasChildren = accounts.some(a => a.parent_id === idToDelete);
+    if (hasChildren) {
+      toast.error("Não é possível excluir: esta conta possui subcontas. Exclua primeiro as subcontas.");
+      setDeleteDialogOpen(false);
+      setAccountToDelete(null);
+      return;
+    }
 
     // Optimistic update
     optimisticUpdate((prev) => prev.filter((a) => a.id !== idToDelete));
