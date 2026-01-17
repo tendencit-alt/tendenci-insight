@@ -108,7 +108,39 @@ export function ChartAccountsManager() {
     });
   };
 
-  const parentAccounts = accounts?.filter((a) => !a.parent_id) || [];
+  // Helper function to get level name
+  const getLevelName = (depth: number): string => {
+    switch (depth) {
+      case 0: return "Raiz";
+      case 1: return "Grupo";
+      case 2: return "Subgrupo";
+      default: return "Subgrupo";
+    }
+  };
+
+  // Helper function to get level badge
+  const getLevelBadge = (depth: number) => {
+    switch (depth) {
+      case 0:
+        return <Badge className="bg-primary text-primary-foreground text-xs">Raiz</Badge>;
+      case 1:
+        return <Badge className="bg-secondary text-secondary-foreground text-xs">Grupo</Badge>;
+      case 2:
+      default:
+        return <Badge variant="outline" className="text-muted-foreground text-xs">Subgrupo</Badge>;
+    }
+  };
+
+  // Calculate depth based on code pattern (count dots)
+  const getDepthFromCode = (code: string): number => {
+    return (code.match(/\./g) || []).length;
+  };
+
+  // Allow Raiz (depth 0) and Grupo (depth 1) as parent accounts - max 3 levels
+  const parentAccounts = accounts?.filter((a) => {
+    const depth = getDepthFromCode(a.code);
+    return depth < 2; // Only Raiz and Grupo can be parents
+  }) || [];
 
   // Build hierarchical tree structure
   const buildTree = (items: any[]): any[] => {
@@ -501,6 +533,7 @@ export function ChartAccountsManager() {
                   />
                 </TableHead>
                 <TableHead>Código</TableHead>
+                <TableHead>Tipo</TableHead>
                 <TableHead>Nome</TableHead>
                 <TableHead>Natureza</TableHead>
                 <TableHead>DRE</TableHead>
@@ -559,6 +592,9 @@ export function ChartAccountsManager() {
                           {account.code}
                         </span>
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      {getLevelBadge(account.depth)}
                     </TableCell>
                     <TableCell>
                       <span className={cn(
@@ -658,18 +694,34 @@ export function ChartAccountsManager() {
             </div>
 
             <div className="space-y-2">
-              <Label>Conta Pai</Label>
+              <Label>Conta Superior</Label>
               <Select value={form.parent_id || "none"} onValueChange={(v) => setForm({ ...form, parent_id: v === "none" ? "" : v })}>
                 <SelectTrigger>
                   <SelectValue placeholder="Nenhuma (conta raiz)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">Nenhuma (conta raiz)</SelectItem>
-                  {parentAccounts.map((a) => (
-                    <SelectItem key={a.id} value={a.id}>{a.code} - {a.name}</SelectItem>
-                  ))}
+                  <SelectItem value="none">Nenhuma (Raiz)</SelectItem>
+                  {parentAccounts.map((a) => {
+                    const depth = getDepthFromCode(a.code);
+                    const levelName = getLevelName(depth);
+                    return (
+                      <SelectItem key={a.id} value={a.id}>
+                        [{levelName}] {a.code} - {a.name}
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
+              {form.parent_id && (
+                <p className="text-xs text-muted-foreground">
+                  Esta conta será um <strong>{getLevelName(getDepthFromCode(parentAccounts.find(a => a.id === form.parent_id)?.code || "") + 1)}</strong>
+                </p>
+              )}
+              {!form.parent_id && (
+                <p className="text-xs text-muted-foreground">
+                  Esta conta será uma <strong>Raiz</strong>
+                </p>
+              )}
             </div>
 
             <div className="flex items-center gap-6">
