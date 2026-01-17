@@ -655,9 +655,42 @@ export function ChartAccountsManager() {
   };
 
   const handleSubmit = async () => {
-    if (!form.code || !form.name || !form.nature) {
-      toast.error("Preencha os campos obrigatórios");
+    // Validações com mensagens claras
+    if (!form.code) {
+      toast.error("Campo obrigatório: Código da conta não informado");
       return;
+    }
+    if (!form.name) {
+      toast.error("Campo obrigatório: Nome da conta não informado");
+      return;
+    }
+    if (!form.nature) {
+      toast.error("Campo obrigatório: Natureza da conta não informada");
+      return;
+    }
+
+    // Validar formato do código
+    if (!/^[0-9]+(\.[0-9]+)*$/.test(form.code)) {
+      toast.error("Código inválido: Use apenas números separados por ponto (ex: 1, 1.1, 1.1.1)");
+      return;
+    }
+
+    // Verificar código duplicado
+    const isDuplicate = accounts?.some(a => 
+      a.code === form.code && a.id !== editing?.id
+    );
+    if (isDuplicate) {
+      toast.error(`Código duplicado: O código "${form.code}" já está sendo usado por outra conta`);
+      return;
+    }
+
+    // Validar hierarquia - código deve ser compatível com o parent
+    if (form.parent_id) {
+      const parent = accounts?.find(a => a.id === form.parent_id);
+      if (parent && !form.code.startsWith(parent.code + '.')) {
+        toast.error(`Código incompatível: O código deve começar com "${parent.code}." para ser subconta de "${parent.name}"`);
+        return;
+      }
     }
 
     setLoading(true);
@@ -789,9 +822,27 @@ export function ChartAccountsManager() {
   };
 
   const handleBulkDelete = async () => {
-    if (selectedIds.size === 0) return;
+    if (selectedIds.size === 0) {
+      toast.error("Nenhuma conta selecionada para exclusão");
+      return;
+    }
 
     const idsToDelete = Array.from(selectedIds);
+    
+    // Verificar se alguma conta tem filhos
+    const accountsWithChildren = idsToDelete.filter(id => 
+      accounts?.some(a => a.parent_id === id)
+    );
+    
+    if (accountsWithChildren.length > 0) {
+      const accountNames = accountsWithChildren.map(id => {
+        const acc = accounts?.find(a => a.id === id);
+        return acc ? `${acc.code} - ${acc.name}` : id;
+      }).join(', ');
+      toast.error(`Não é possível excluir: As seguintes contas possuem subcontas: ${accountNames}. Exclua primeiro as subcontas.`);
+      setBulkDeleteDialogOpen(false);
+      return;
+    }
 
     // Optimistic update - remove immediately
     optimisticUpdate((prev) => prev.filter((a) => !idsToDelete.includes(a.id)));
@@ -806,12 +857,17 @@ export function ChartAccountsManager() {
         .delete()
         .in("id", idsToDelete);
 
-      if (error) throw error;
+      if (error) {
+        // Mensagem específica para erro de foreign key
+        if (error.message.includes('foreign key') || error.message.includes('violates')) {
+          throw new Error("Esta conta está vinculada a lançamentos financeiros e não pode ser excluída");
+        }
+        throw error;
+      }
 
-      toast.success(`${idsToDelete.length} conta(s) excluída(s)!`);
-      // Success - optimistic update already applied, no refetch needed
+      toast.success(`${idsToDelete.length} conta(s) excluída(s) com sucesso!`);
     } catch (error: any) {
-      toast.error("Erro: " + error.message);
+      toast.error(`Erro ao excluir: ${error.message}`);
       await refetch(); // Rollback on error
     } finally {
       setBulkLoading(false);
@@ -845,12 +901,17 @@ export function ChartAccountsManager() {
         .delete()
         .eq("id", idToDelete);
 
-      if (error) throw error;
+      if (error) {
+        // Mensagem específica para erro de foreign key
+        if (error.message.includes('foreign key') || error.message.includes('violates')) {
+          throw new Error("Esta conta está vinculada a lançamentos financeiros e não pode ser excluída. Remova os lançamentos primeiro.");
+        }
+        throw error;
+      }
 
-      toast.success("Conta excluída!");
-      // Success - optimistic update already applied, no refetch needed
+      toast.success(`Conta "${accountToDelete.code} - ${accountToDelete.name}" excluída com sucesso!`);
     } catch (error: any) {
-      toast.error("Erro: " + error.message);
+      toast.error(`Erro ao excluir conta: ${error.message}`);
       await refetch(); // Rollback on error
     }
   };
