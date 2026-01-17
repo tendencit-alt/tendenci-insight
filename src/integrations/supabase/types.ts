@@ -2194,6 +2194,7 @@ export type Database = {
           document_number: string | null
           id: string
           installment_number: number | null
+          loan_contract_id: string | null
           notes: string | null
           party_id: string | null
           party_type: string | null
@@ -2220,6 +2221,7 @@ export type Database = {
           document_number?: string | null
           id?: string
           installment_number?: number | null
+          loan_contract_id?: string | null
           notes?: string | null
           party_id?: string | null
           party_type?: string | null
@@ -2246,6 +2248,7 @@ export type Database = {
           document_number?: string | null
           id?: string
           installment_number?: number | null
+          loan_contract_id?: string | null
           notes?: string | null
           party_id?: string | null
           party_type?: string | null
@@ -2289,6 +2292,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "fin_ledger_entries_loan_contract_id_fkey"
+            columns: ["loan_contract_id"]
+            isOneToOne: false
+            referencedRelation: "fin_loan_contracts"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "fin_ledger_entries_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
@@ -2300,6 +2310,62 @@ export type Database = {
             columns: ["reversal_of_id"]
             isOneToOne: false
             referencedRelation: "fin_ledger_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fin_loan_contracts: {
+        Row: {
+          bank_name: string
+          contract_number: string
+          created_at: string | null
+          created_by: string | null
+          end_date: string | null
+          id: string
+          installments: number | null
+          interest_rate: number | null
+          notes: string | null
+          principal_amount: number
+          start_date: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          bank_name: string
+          contract_number: string
+          created_at?: string | null
+          created_by?: string | null
+          end_date?: string | null
+          id?: string
+          installments?: number | null
+          interest_rate?: number | null
+          notes?: string | null
+          principal_amount: number
+          start_date: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          bank_name?: string
+          contract_number?: string
+          created_at?: string | null
+          created_by?: string | null
+          end_date?: string | null
+          id?: string
+          installments?: number | null
+          interest_rate?: number | null
+          notes?: string | null
+          principal_amount?: number
+          start_date?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fin_loan_contracts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
