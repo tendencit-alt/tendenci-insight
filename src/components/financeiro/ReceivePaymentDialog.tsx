@@ -150,7 +150,7 @@ export function ReceivePaymentDialog({ open, onOpenChange, receivable, onSuccess
 
           <div className="space-y-2">
             <Label>Conta Bancária *</Label>
-            <Select value={form.bank_account_id || undefined} onValueChange={(v) => setForm({ ...form, bank_account_id: v })}>
+            <Select value={form.bank_account_id} onValueChange={(v) => setForm({ ...form, bank_account_id: v })}>
               <SelectTrigger>
                 <SelectValue placeholder="Selecione a conta..." />
               </SelectTrigger>

@@ -206,10 +206,7 @@ export function CreateLedgerEntryDialog({ open, onOpenChange, onSuccess }: Creat
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Conta Bancária</Label>
-              <Select 
-                value={form.bank_account_id || undefined} 
-                onValueChange={(v) => setForm({ ...form, bank_account_id: v })}
-              >
+              <Select value={form.bank_account_id} onValueChange={(v) => setForm({ ...form, bank_account_id: v })}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione..." />
                 </SelectTrigger>
@@ -223,10 +220,7 @@ export function CreateLedgerEntryDialog({ open, onOpenChange, onSuccess }: Creat
 
             <div className="space-y-2">
               <Label>Forma de Pagamento</Label>
-              <Select 
-                value={form.payment_method || undefined} 
-                onValueChange={(v) => setForm({ ...form, payment_method: v })}
-              >
+              <Select value={form.payment_method} onValueChange={(v) => setForm({ ...form, payment_method: v })}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione..." />
                 </SelectTrigger>
@@ -244,10 +238,7 @@ export function CreateLedgerEntryDialog({ open, onOpenChange, onSuccess }: Creat
 
           <div className="space-y-2">
             <Label>Categoria (Plano de Contas)</Label>
-            <Select 
-              value={form.chart_account_id || undefined} 
-              onValueChange={(v) => setForm({ ...form, chart_account_id: v })}
-            >
+            <Select value={form.chart_account_id} onValueChange={(v) => setForm({ ...form, chart_account_id: v })}>
               <SelectTrigger>
                 <SelectValue placeholder="Selecione a categoria..." />
               </SelectTrigger>
@@ -262,10 +253,7 @@ export function CreateLedgerEntryDialog({ open, onOpenChange, onSuccess }: Creat
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Centro de Custo</Label>
-              <Select 
-                value={form.cost_center_id || undefined} 
-                onValueChange={(v) => setForm({ ...form, cost_center_id: v })}
-              >
+              <Select value={form.cost_center_id} onValueChange={(v) => setForm({ ...form, cost_center_id: v })}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione..." />
                 </SelectTrigger>
@@ -279,10 +267,7 @@ export function CreateLedgerEntryDialog({ open, onOpenChange, onSuccess }: Creat
 
             <div className="space-y-2">
               <Label>Projeto</Label>
-              <Select 
-                value={form.project_id || undefined} 
-                onValueChange={(v) => setForm({ ...form, project_id: v })}
-              >
+              <Select value={form.project_id} onValueChange={(v) => setForm({ ...form, project_id: v })}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione..." />
                 </SelectTrigger>

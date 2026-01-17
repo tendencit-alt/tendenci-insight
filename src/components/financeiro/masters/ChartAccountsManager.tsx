@@ -242,15 +242,12 @@ export function ChartAccountsManager() {
 
             <div className="space-y-2">
               <Label>Conta Pai</Label>
-              <Select 
-                value={form.parent_id || "__none__"} 
-                onValueChange={(v) => setForm({ ...form, parent_id: v === "__none__" ? "" : v })}
-              >
+              <Select value={form.parent_id} onValueChange={(v) => setForm({ ...form, parent_id: v })}>
                 <SelectTrigger>
                   <SelectValue placeholder="Nenhuma (conta raiz)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="__none__">Nenhuma (conta raiz)</SelectItem>
+                  <SelectItem value="">Nenhuma (conta raiz)</SelectItem>
                   {parentAccounts.map((a) => (
                     <SelectItem key={a.id} value={a.id}>{a.code} - {a.name}</SelectItem>
                   ))}
