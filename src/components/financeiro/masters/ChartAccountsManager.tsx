@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Pencil, FileSpreadsheet, Loader2, Trash2, X, ChevronRight, ChevronDown, ChevronsUpDown, GripVertical } from "lucide-react";
+import { Plus, Pencil, FileSpreadsheet, Loader2, Trash2, X, ChevronRight, ChevronDown, ChevronsUpDown, GripVertical, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
@@ -526,6 +526,110 @@ export function ChartAccountsManager() {
     
     return parentCode ? `${parentCode}.${newNumber}` : String(newNumber);
   }, []);
+
+  // Renumber entire chart of accounts to ensure sequential codes
+  const renumberAllAccounts = useCallback(async () => {
+    if (!accounts || accounts.length === 0) return;
+
+    setBulkLoading(true);
+    
+    try {
+      // Get fresh data
+      const { data: freshAccounts } = await supabase
+        .from("fin_chart_accounts")
+        .select("*")
+        .order("code");
+
+      if (!freshAccounts) throw new Error("Erro ao buscar dados");
+
+      // Build tree to process in order
+      const buildOrderedTree = (items: any[], parentId: string | null = null): any[] => {
+        const children = items
+          .filter(a => a.parent_id === parentId)
+          .sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }));
+        
+        const result: any[] = [];
+        children.forEach((child, index) => {
+          result.push({ ...child, newIndex: index + 1 });
+          result.push(...buildOrderedTree(items, child.id));
+        });
+        return result;
+      };
+
+      const orderedAccounts = buildOrderedTree(freshAccounts);
+      const updates: { id: string; newCode: string }[] = [];
+
+      // Calculate new codes for each account
+      const getNewCode = (account: any, allAccounts: any[]): string => {
+        if (!account.parent_id) {
+          // Root account
+          const rootSiblings = allAccounts
+            .filter(a => a.parent_id === null)
+            .sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }));
+          const index = rootSiblings.findIndex(a => a.id === account.id);
+          return String(index + 1);
+        }
+        
+        // Child account - find parent's new code first
+        const parent = allAccounts.find(a => a.id === account.parent_id);
+        if (!parent) return account.code;
+        
+        const parentNewCode = updates.find(u => u.id === parent.id)?.newCode || parent.code;
+        const siblings = allAccounts
+          .filter(a => a.parent_id === account.parent_id)
+          .sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }));
+        const index = siblings.findIndex(a => a.id === account.id);
+        
+        return `${parentNewCode}.${index + 1}`;
+      };
+
+      // Process accounts level by level (roots first, then children)
+      const processLevel = (items: any[], parentId: string | null = null) => {
+        const levelItems = items
+          .filter(a => a.parent_id === parentId)
+          .sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }));
+        
+        levelItems.forEach((item, index) => {
+          const parentUpdate = parentId ? updates.find(u => u.id === parentId) : null;
+          const parentCode = parentUpdate?.newCode || (parentId ? freshAccounts.find(a => a.id === parentId)?.code : "");
+          const newCode = parentCode ? `${parentCode}.${index + 1}` : String(index + 1);
+          
+          if (item.code !== newCode) {
+            updates.push({ id: item.id, newCode });
+          }
+          
+          // Process children of this item
+          processLevel(items, item.id);
+        });
+      };
+
+      processLevel(freshAccounts);
+
+      if (updates.length === 0) {
+        toast.info("Todos os códigos já estão em ordem sequencial!");
+        setBulkLoading(false);
+        return;
+      }
+
+      // Apply updates to database
+      for (const update of updates) {
+        const { error } = await supabase
+          .from("fin_chart_accounts")
+          .update({ code: update.newCode })
+          .eq("id", update.id);
+        
+        if (error) throw error;
+      }
+
+      toast.success(`${updates.length} código(s) renumerado(s) com sucesso!`);
+      await refetch();
+    } catch (error: any) {
+      toast.error("Erro ao renumerar: " + error.message);
+      await refetch();
+    } finally {
+      setBulkLoading(false);
+    }
+  }, [accounts, refetch]);
 
   // Handle drag start
   const handleDragStart = useCallback((event: DragStartEvent) => {
@@ -1064,7 +1168,21 @@ export function ChartAccountsManager() {
           <FileSpreadsheet className="h-5 w-5" />
           Plano de Contas
         </CardTitle>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={renumberAllAccounts} 
+            disabled={bulkLoading}
+            className="gap-1"
+          >
+            {bulkLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4" />
+            )}
+            Renumerar
+          </Button>
           <Button variant="outline" size="sm" onClick={expandAll} className="gap-1">
             <ChevronsUpDown className="h-4 w-4" />
             Expandir
