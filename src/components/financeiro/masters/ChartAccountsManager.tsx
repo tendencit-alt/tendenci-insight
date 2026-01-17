@@ -668,6 +668,7 @@ export function ChartAccountsManager() {
     const targetDepth = getDepthFromCode(targetAccount.code);
     
     let newParentId: string | null;
+    let targetPosition: number | null = null; // Position to insert at (for siblings)
     
     if (moveType === 'child') {
       // Become child of target
@@ -679,8 +680,16 @@ export function ChartAccountsManager() {
       }
       newParentId = targetAccount.id;
     } else {
-      // Become sibling of target (same parent)
+      // Become sibling of target (same parent) - INSERT AT TARGET'S POSITION
       newParentId = targetAccount.parent_id;
+      
+      // Get target's position among its siblings
+      const targetSiblings = accounts
+        .filter(a => a.parent_id === newParentId && a.id !== draggedAccount.id)
+        .sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }));
+      
+      const targetIndex = targetSiblings.findIndex(a => a.id === targetAccount.id);
+      targetPosition = targetIndex >= 0 ? targetIndex : targetSiblings.length;
     }
 
     // Check if this would exceed max depth
@@ -720,22 +729,16 @@ export function ChartAccountsManager() {
     await new Promise(resolve => setTimeout(resolve, 50));
 
     try {
-      // Step 1: Move the account to new parent (temporarily with a placeholder code)
+      // Step 1: Move the account to new parent with a placeholder code
       const tempCode = `__TEMP__${Date.now()}`;
-      await supabase
+      const { error: moveError } = await supabase
         .from("fin_chart_accounts")
         .update({ code: tempCode, parent_id: newParentId })
         .eq("id", draggedAccount.id);
 
-      // Step 2: Renumber the OLD parent's children (to fill the gap)
-      if (oldParentId !== newParentId) {
-        // Create a virtual accounts list without the dragged account
-        const accountsWithoutDragged = accounts.filter(a => a.id !== draggedAccount.id);
-        const oldParentUpdates = fullRenumberSiblings(oldParentId, accountsWithoutDragged);
-        await applyCodeUpdates(oldParentUpdates);
-      }
+      if (moveError) throw moveError;
 
-      // Step 3: Get fresh data to calculate proper position
+      // Step 2: Get fresh data 
       const { data: freshAccounts } = await supabase
         .from("fin_chart_accounts")
         .select("*")
@@ -743,16 +746,61 @@ export function ChartAccountsManager() {
 
       if (!freshAccounts) throw new Error("Erro ao buscar dados atualizados");
 
-      // Step 4: Calculate the new code (will be at the end of siblings)
-      const newCode = getNextCode(newParentId, freshAccounts.filter(a => a.id !== draggedAccount.id));
+      // Step 3: Calculate the new code based on position
+      const parentAccount = newParentId ? freshAccounts.find(a => a.id === newParentId) : null;
+      const parentCode = parentAccount?.code || "";
       
-      // Step 5: Update the dragged account with final code
-      await supabase
+      let newCode: string;
+      
+      if (moveType === 'sibling' && targetPosition !== null) {
+        // For sibling: insert at target's position
+        // Get siblings (excluding the dragged account with temp code)
+        const siblings = freshAccounts
+          .filter(a => a.parent_id === newParentId && !a.code.startsWith("__TEMP__"))
+          .sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }));
+        
+        // Insert at target position - will push others down
+        const newNumber = targetPosition + 1;
+        newCode = parentCode ? `${parentCode}.${newNumber}` : String(newNumber);
+        
+        // Update siblings that need to shift (those at or after the target position)
+        for (let i = siblings.length - 1; i >= targetPosition; i--) {
+          const sibling = siblings[i];
+          const shiftedNumber = i + 2; // +2 because we're inserting before
+          const shiftedCode = parentCode ? `${parentCode}.${shiftedNumber}` : String(shiftedNumber);
+          
+          if (sibling.code !== shiftedCode) {
+            // First update descendants with the new parent code
+            const siblingDescendants = getDescendantCodeUpdates(
+              sibling.id,
+              sibling.code,
+              shiftedCode,
+              freshAccounts
+            );
+            await applyCodeUpdates(siblingDescendants);
+            
+            // Then update the sibling itself
+            await supabase
+              .from("fin_chart_accounts")
+              .update({ code: shiftedCode })
+              .eq("id", sibling.id);
+          }
+        }
+      } else {
+        // For child: add at the end
+        const siblingCount = freshAccounts.filter(a => a.parent_id === newParentId && !a.code.startsWith("__TEMP__")).length;
+        newCode = parentCode ? `${parentCode}.${siblingCount + 1}` : String(siblingCount + 1);
+      }
+      
+      // Step 4: Update the dragged account with final code
+      const { error: updateError } = await supabase
         .from("fin_chart_accounts")
         .update({ code: newCode })
         .eq("id", draggedAccount.id);
 
-      // Step 6: Update all descendants of the dragged account
+      if (updateError) throw updateError;
+
+      // Step 5: Update all descendants of the dragged account
       const descendantUpdates = getDescendantCodeUpdates(
         draggedAccount.id,
         oldCode,
@@ -761,25 +809,28 @@ export function ChartAccountsManager() {
       );
       await applyCodeUpdates(descendantUpdates);
 
-      // Step 7: Final renumber of new parent's siblings (to ensure sequential order)
-      const { data: finalAccounts } = await supabase
-        .from("fin_chart_accounts")
-        .select("*")
-        .order("code");
+      // Step 6: Renumber old parent's siblings if parent changed
+      if (oldParentId !== newParentId) {
+        const { data: postMoveAccounts } = await supabase
+          .from("fin_chart_accounts")
+          .select("*")
+          .order("code");
 
-      if (finalAccounts) {
-        const newParentUpdates = fullRenumberSiblings(newParentId, finalAccounts);
-        await applyCodeUpdates(newParentUpdates);
+        if (postMoveAccounts) {
+          const oldParentUpdates = fullRenumberSiblings(oldParentId, postMoveAccounts);
+          await applyCodeUpdates(oldParentUpdates);
+        }
       }
 
       toast.success(`Conta movida: ${oldCode} → ${newCode}`);
       // Force refetch to ensure data consistency
       await refetch();
     } catch (error: any) {
+      console.error("Erro ao mover conta:", error);
       toast.error("Erro ao mover conta: " + error.message);
       await refetch();
     }
-  }, [accounts, pendingMove, getDescendantIds, getNextCode, fullRenumberSiblings, getDescendantCodeUpdates, applyCodeUpdates, refetch]);
+  }, [accounts, pendingMove, getDescendantIds, fullRenumberSiblings, getDescendantCodeUpdates, applyCodeUpdates, refetch]);
 
   // Helper to get the new type preview
   const getMoveTypePreview = useCallback((moveType: 'sibling' | 'child'): { depth: number; name: string } => {
