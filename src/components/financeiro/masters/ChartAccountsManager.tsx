@@ -559,6 +559,16 @@ export function ChartAccountsManager() {
       accounts
     );
 
+    // Close dialog first to prevent DOM conflicts
+    setMoveDialogOpen(false);
+    setPendingMove(null);
+    
+    // Clear drag state to prevent DnD DOM errors
+    setActiveId(null);
+
+    // Use setTimeout to allow React to finish DOM updates before optimistic update
+    await new Promise(resolve => setTimeout(resolve, 50));
+
     // Optimistic update
     optimisticUpdate((prev) => {
       const updated = prev.map(a => {
@@ -573,10 +583,6 @@ export function ChartAccountsManager() {
       });
       return updated.sort((a, b) => a.code.localeCompare(b.code));
     });
-
-    // Close dialog
-    setMoveDialogOpen(false);
-    setPendingMove(null);
 
     try {
       // Update the dragged account
