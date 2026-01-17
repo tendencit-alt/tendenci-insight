@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Pencil, FileSpreadsheet, Loader2, Trash2, X, ChevronRight, ChevronDown, ChevronsUpDown } from "lucide-react";
+import { Plus, Pencil, FileSpreadsheet, Loader2, Trash2, X, ChevronRight, ChevronDown, ChevronsUpDown, GripVertical } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
@@ -25,8 +25,185 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  DndContext,
+  DragOverlay,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragStartEvent,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 
 type BulkEditField = "nature" | "in_dre" | "in_cashflow" | "active" | null;
+
+// Draggable Row Component
+function DraggableAccountRow({
+  account,
+  isSelected,
+  isExpanded,
+  hasChildren,
+  onSelect,
+  onToggleExpand,
+  onEdit,
+  onDelete,
+  getLevelBadge,
+  getNatureBadge,
+}: {
+  account: any;
+  isSelected: boolean;
+  isExpanded: boolean;
+  hasChildren: boolean;
+  onSelect: (id: string, checked: boolean) => void;
+  onToggleExpand: (id: string) => void;
+  onEdit: (account: any) => void;
+  onDelete: (account: any) => void;
+  getLevelBadge: (depth: number) => React.ReactNode;
+  getNatureBadge: (nature: string) => React.ReactNode;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: account.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  const paddingLeft = account.depth * 24;
+
+  return (
+    <TableRow
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        isSelected && "bg-muted/50",
+        hasChildren && "bg-muted/30",
+        isDragging && "opacity-50 bg-muted"
+      )}
+    >
+      <TableCell className="w-8 p-0">
+        <div
+          {...attributes}
+          {...listeners}
+          className={cn(
+            "flex items-center justify-center h-full w-8 cursor-grab active:cursor-grabbing",
+            "text-muted-foreground hover:text-foreground transition-colors"
+          )}
+        >
+          <GripVertical className="h-4 w-4" />
+        </div>
+      </TableCell>
+      <TableCell>
+        <Checkbox
+          checked={isSelected}
+          onCheckedChange={(checked) => onSelect(account.id, !!checked)}
+          aria-label={`Selecionar ${account.name}`}
+        />
+      </TableCell>
+      <TableCell
+        className="font-medium"
+        style={{ paddingLeft: `${paddingLeft + 16}px` }}
+      >
+        <div className="flex items-center gap-1">
+          {hasChildren ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0 hover:bg-muted"
+              onClick={() => onToggleExpand(account.id)}
+            >
+              {isExpanded ? (
+                <ChevronDown className="h-4 w-4" />
+              ) : (
+                <ChevronRight className="h-4 w-4" />
+              )}
+            </Button>
+          ) : (
+            <span className="w-6" />
+          )}
+          <span
+            className={cn(
+              account.depth === 0 && "text-foreground font-bold",
+              account.depth === 1 && "text-foreground/90 font-semibold",
+              account.depth >= 2 && "text-muted-foreground"
+            )}
+          >
+            {account.code}
+          </span>
+        </div>
+      </TableCell>
+      <TableCell>{getLevelBadge(account.depth)}</TableCell>
+      <TableCell>
+        <span
+          className={cn(
+            account.depth === 0 && "font-bold",
+            account.depth === 1 && "font-semibold",
+            account.depth >= 2 && "text-muted-foreground"
+          )}
+        >
+          {account.name}
+        </span>
+      </TableCell>
+      <TableCell>{getNatureBadge(account.nature)}</TableCell>
+      <TableCell>
+        {account.in_dre ? (
+          <Badge variant="outline" className="text-green-600 border-green-600">
+            Sim
+          </Badge>
+        ) : (
+          <Badge variant="outline">Não</Badge>
+        )}
+      </TableCell>
+      <TableCell>
+        {account.in_cashflow ? (
+          <Badge variant="outline" className="text-green-600 border-green-600">
+            Sim
+          </Badge>
+        ) : (
+          <Badge variant="outline">Não</Badge>
+        )}
+      </TableCell>
+      <TableCell>
+        {account.active ? (
+          <Badge className="bg-green-600">Ativa</Badge>
+        ) : (
+          <Badge variant="secondary">Inativa</Badge>
+        )}
+      </TableCell>
+      <TableCell>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="sm" onClick={() => onEdit(account)}>
+            <Pencil className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onDelete(account)}
+            className="text-destructive hover:text-destructive"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      </TableCell>
+    </TableRow>
+  );
+}
 
 export function ChartAccountsManager() {
   const queryClient = useQueryClient();
@@ -57,6 +234,20 @@ export function ChartAccountsManager() {
 
   // Tree expansion state
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+
+  // Drag state
+  const [activeId, setActiveId] = useState<string | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   const { data: accounts, isLoading, refetch } = useQuery({
     queryKey: ["fin-chart-accounts-all"],
@@ -119,7 +310,7 @@ export function ChartAccountsManager() {
   };
 
   // Helper function to get level badge
-  const getLevelBadge = (depth: number) => {
+  const getLevelBadge = useCallback((depth: number) => {
     switch (depth) {
       case 0:
         return <Badge className="bg-primary text-primary-foreground text-xs">Raiz</Badge>;
@@ -129,7 +320,7 @@ export function ChartAccountsManager() {
       default:
         return <Badge variant="outline" className="text-muted-foreground text-xs">Subgrupo</Badge>;
     }
-  };
+  }, []);
 
   // Calculate depth based on code pattern (count dots)
   const getDepthFromCode = (code: string): number => {
@@ -162,6 +353,17 @@ export function ChartAccountsManager() {
       }
     });
 
+    // Sort children by code
+    const sortChildren = (nodes: any[]) => {
+      nodes.sort((a, b) => a.code.localeCompare(b.code));
+      nodes.forEach(node => {
+        if (node.children && node.children.length > 0) {
+          sortChildren(node.children);
+        }
+      });
+    };
+    sortChildren(roots);
+
     return roots;
   };
 
@@ -182,6 +384,202 @@ export function ChartAccountsManager() {
 
   const treeData = useMemo(() => accounts ? buildTree(accounts) : [], [accounts]);
   const hierarchicalAccounts = useMemo(() => flattenTree(treeData), [treeData, expandedIds]);
+
+  // Get all descendants of an account (for preventing invalid drops)
+  const getDescendantIds = useCallback((accountId: string, accountsList: any[]): Set<string> => {
+    const descendants = new Set<string>();
+    const findDescendants = (parentId: string) => {
+      accountsList.forEach(acc => {
+        if (acc.parent_id === parentId) {
+          descendants.add(acc.id);
+          findDescendants(acc.id);
+        }
+      });
+    };
+    findDescendants(accountId);
+    return descendants;
+  }, []);
+
+  // Calculate new code for an account when moved
+  const calculateNewCode = useCallback((
+    targetParentId: string | null,
+    position: number,
+    allAccounts: any[],
+    draggedAccountId: string
+  ): string => {
+    if (!targetParentId) {
+      // Root level - find next available root code
+      const rootAccounts = allAccounts
+        .filter(a => !a.parent_id && a.id !== draggedAccountId)
+        .map(a => parseInt(a.code.split('.')[0]) || 0);
+      
+      const existingCodes = new Set(rootAccounts);
+      let newCode = 1;
+      while (existingCodes.has(newCode)) {
+        newCode++;
+      }
+      return String(newCode);
+    }
+
+    const parentAccount = allAccounts.find(a => a.id === targetParentId);
+    if (!parentAccount) return "1";
+
+    // Find siblings (accounts with same parent, excluding the dragged one)
+    const siblings = allAccounts
+      .filter(a => a.parent_id === targetParentId && a.id !== draggedAccountId)
+      .map(a => {
+        const parts = a.code.split('.');
+        return parseInt(parts[parts.length - 1]) || 0;
+      });
+
+    const existingCodes = new Set(siblings);
+    let newSubCode = 1;
+    while (existingCodes.has(newSubCode)) {
+      newSubCode++;
+    }
+
+    return `${parentAccount.code}.${newSubCode}`;
+  }, []);
+
+  // Update all children codes recursively
+  const updateChildrenCodes = useCallback(async (
+    accountId: string,
+    oldCodePrefix: string,
+    newCodePrefix: string,
+    allAccounts: any[]
+  ): Promise<{ id: string; newCode: string }[]> => {
+    const updates: { id: string; newCode: string }[] = [];
+    
+    const children = allAccounts.filter(a => a.parent_id === accountId);
+    for (const child of children) {
+      const newChildCode = child.code.replace(oldCodePrefix, newCodePrefix);
+      updates.push({ id: child.id, newCode: newChildCode });
+      
+      // Recursively get grandchildren updates
+      const grandchildUpdates = await updateChildrenCodes(
+        child.id,
+        child.code,
+        newChildCode,
+        allAccounts
+      );
+      updates.push(...grandchildUpdates);
+    }
+    
+    return updates;
+  }, []);
+
+  // Handle drag start
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  }, []);
+
+  // Handle drag end
+  const handleDragEnd = useCallback(async (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveId(null);
+
+    if (!over || !accounts || active.id === over.id) return;
+
+    const draggedAccount = accounts.find(a => a.id === active.id);
+    const targetAccount = accounts.find(a => a.id === over.id);
+
+    if (!draggedAccount || !targetAccount) return;
+
+    // Check if trying to drop into a descendant (invalid)
+    const descendants = getDescendantIds(draggedAccount.id, accounts);
+    if (descendants.has(targetAccount.id)) {
+      toast.error("Não é possível mover uma conta para dentro de seus próprios filhos");
+      return;
+    }
+
+    // Determine new parent based on target's depth
+    // If target is at depth 0 or 1, dropped item becomes sibling
+    // If target depth is 2, can only be sibling (max 3 levels)
+    const targetDepth = getDepthFromCode(targetAccount.code);
+    
+    let newParentId: string | null;
+    
+    if (targetDepth >= 2) {
+      // Target is at max depth, new account becomes sibling
+      newParentId = targetAccount.parent_id;
+    } else {
+      // Can be child of target (user can drop on a parent to nest)
+      // For simplicity, we'll make it a sibling at the same level
+      newParentId = targetAccount.parent_id;
+    }
+
+    // Check if this would exceed max depth
+    const draggedDepth = getDepthFromCode(draggedAccount.code);
+    const draggedMaxChildDepth = Math.max(
+      draggedDepth,
+      ...Array.from(descendants).map(id => {
+        const acc = accounts.find(a => a.id === id);
+        return acc ? getDepthFromCode(acc.code) : 0;
+      })
+    );
+    const draggedTreeHeight = draggedMaxChildDepth - draggedDepth;
+    
+    const newDepth = newParentId 
+      ? getDepthFromCode(accounts.find(a => a.id === newParentId)?.code || "") + 1
+      : 0;
+    
+    if (newDepth + draggedTreeHeight > 2) {
+      toast.error("Movimento inválido: excederia o limite de 3 níveis de hierarquia");
+      return;
+    }
+
+    // Calculate new code
+    const oldCode = draggedAccount.code;
+    const newCode = calculateNewCode(newParentId, 0, accounts, draggedAccount.id);
+
+    // Get all children that need updating
+    const childUpdates = await updateChildrenCodes(
+      draggedAccount.id,
+      oldCode,
+      newCode,
+      accounts
+    );
+
+    // Optimistic update
+    optimisticUpdate((prev) => {
+      const updated = prev.map(a => {
+        if (a.id === draggedAccount.id) {
+          return { ...a, code: newCode, parent_id: newParentId };
+        }
+        const childUpdate = childUpdates.find(u => u.id === a.id);
+        if (childUpdate) {
+          return { ...a, code: childUpdate.newCode };
+        }
+        return a;
+      });
+      return updated.sort((a, b) => a.code.localeCompare(b.code));
+    });
+
+    try {
+      // Update the dragged account
+      const { error: mainError } = await supabase
+        .from("fin_chart_accounts")
+        .update({ code: newCode, parent_id: newParentId })
+        .eq("id", draggedAccount.id);
+
+      if (mainError) throw mainError;
+
+      // Update all children
+      for (const update of childUpdates) {
+        const { error } = await supabase
+          .from("fin_chart_accounts")
+          .update({ code: update.newCode })
+          .eq("id", update.id);
+        
+        if (error) throw error;
+      }
+
+      toast.success(`Conta movida: ${oldCode} → ${newCode}`);
+    } catch (error: any) {
+      toast.error("Erro ao mover conta: " + error.message);
+      await refetch();
+    }
+  }, [accounts, getDescendantIds, calculateNewCode, updateChildrenCodes, optimisticUpdate, refetch]);
 
   const handleEdit = (account: any) => {
     setEditing(account);
@@ -408,7 +806,7 @@ export function ChartAccountsManager() {
     setDeleteDialogOpen(true);
   };
 
-  const getNatureBadge = (nature: string) => {
+  const getNatureBadge = useCallback((nature: string) => {
     switch (nature) {
       case "RECEITA":
         return <Badge className="bg-green-600">Receita</Badge>;
@@ -417,7 +815,7 @@ export function ChartAccountsManager() {
       default:
         return <Badge variant="outline">{nature}</Badge>;
     }
-  };
+  }, []);
 
   const getFieldLabel = (field: BulkEditField) => {
     switch (field) {
@@ -431,6 +829,8 @@ export function ChartAccountsManager() {
 
   const isAllSelected = accounts && accounts.length > 0 && selectedIds.size === accounts.length;
   const isSomeSelected = selectedIds.size > 0;
+
+  const activeAccount = activeId ? hierarchicalAccounts.find(a => a.id === activeId) : null;
 
   return (
     <Card>
@@ -520,131 +920,72 @@ export function ChartAccountsManager() {
             ))}
           </div>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-12">
-                  <Checkbox
-                    checked={isAllSelected}
-                    onCheckedChange={handleSelectAll}
-                    aria-label="Selecionar todos"
-                  />
-                </TableHead>
-                <TableHead>Código</TableHead>
-                <TableHead>Tipo</TableHead>
-                <TableHead>Nome</TableHead>
-                <TableHead>Natureza</TableHead>
-                <TableHead>DRE</TableHead>
-                <TableHead>Fluxo</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {hierarchicalAccounts.map((account) => {
-                const hasChildren = account.children && account.children.length > 0;
-                const isExpanded = expandedIds.has(account.id);
-                const paddingLeft = account.depth * 24;
-                
-                return (
-                  <TableRow 
-                    key={account.id}
-                    className={cn(
-                      selectedIds.has(account.id) && "bg-muted/50",
-                      hasChildren && "bg-muted/30"
-                    )}
-                  >
-                    <TableCell>
-                      <Checkbox
-                        checked={selectedIds.has(account.id)}
-                        onCheckedChange={(checked) => handleSelectOne(account.id, !!checked)}
-                        aria-label={`Selecionar ${account.name}`}
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+            modifiers={[restrictToVerticalAxis]}
+          >
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-8"></TableHead>
+                  <TableHead className="w-12">
+                    <Checkbox
+                      checked={isAllSelected}
+                      onCheckedChange={handleSelectAll}
+                      aria-label="Selecionar todos"
+                    />
+                  </TableHead>
+                  <TableHead>Código</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>Natureza</TableHead>
+                  <TableHead>DRE</TableHead>
+                  <TableHead>Fluxo</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <SortableContext
+                  items={hierarchicalAccounts.map(a => a.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  {hierarchicalAccounts.map((account) => {
+                    const hasChildren = account.children && account.children.length > 0;
+                    const isExpanded = expandedIds.has(account.id);
+
+                    return (
+                      <DraggableAccountRow
+                        key={account.id}
+                        account={account}
+                        isSelected={selectedIds.has(account.id)}
+                        isExpanded={isExpanded}
+                        hasChildren={hasChildren}
+                        onSelect={handleSelectOne}
+                        onToggleExpand={toggleExpanded}
+                        onEdit={handleEdit}
+                        onDelete={openDeleteDialog}
+                        getLevelBadge={getLevelBadge}
+                        getNatureBadge={getNatureBadge}
                       />
-                    </TableCell>
-                    <TableCell 
-                      className="font-medium"
-                      style={{ paddingLeft: `${paddingLeft + 16}px` }}
-                    >
-                      <div className="flex items-center gap-1">
-                        {hasChildren ? (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0 hover:bg-muted"
-                            onClick={() => toggleExpanded(account.id)}
-                          >
-                            {isExpanded ? (
-                              <ChevronDown className="h-4 w-4" />
-                            ) : (
-                              <ChevronRight className="h-4 w-4" />
-                            )}
-                          </Button>
-                        ) : (
-                          <span className="w-6" />
-                        )}
-                        <span className={cn(
-                          account.depth === 0 && "text-foreground font-bold",
-                          account.depth === 1 && "text-foreground/90 font-semibold",
-                          account.depth >= 2 && "text-muted-foreground"
-                        )}>
-                          {account.code}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {getLevelBadge(account.depth)}
-                    </TableCell>
-                    <TableCell>
-                      <span className={cn(
-                        account.depth === 0 && "font-bold",
-                        account.depth === 1 && "font-semibold",
-                        account.depth >= 2 && "text-muted-foreground"
-                      )}>
-                        {account.name}
-                      </span>
-                    </TableCell>
-                    <TableCell>{getNatureBadge(account.nature)}</TableCell>
-                    <TableCell>
-                      {account.in_dre ? (
-                        <Badge variant="outline" className="text-green-600 border-green-600">Sim</Badge>
-                      ) : (
-                        <Badge variant="outline">Não</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {account.in_cashflow ? (
-                        <Badge variant="outline" className="text-green-600 border-green-600">Sim</Badge>
-                      ) : (
-                        <Badge variant="outline">Não</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {account.active ? (
-                        <Badge className="bg-green-600">Ativa</Badge>
-                      ) : (
-                        <Badge variant="secondary">Inativa</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="sm" onClick={() => handleEdit(account)}>
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => openDeleteDialog(account)}
-                          className="text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+                    );
+                  })}
+                </SortableContext>
+              </TableBody>
+            </Table>
+            <DragOverlay>
+              {activeAccount ? (
+                <div className="bg-background border-2 border-primary rounded-md shadow-lg p-3 flex items-center gap-3">
+                  <GripVertical className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium">{activeAccount.code}</span>
+                  <span className="text-muted-foreground">{activeAccount.name}</span>
+                </div>
+              ) : null}
+            </DragOverlay>
+          </DndContext>
         )}
       </CardContent>
 
