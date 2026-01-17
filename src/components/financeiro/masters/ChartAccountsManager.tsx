@@ -1048,16 +1048,20 @@ export function ChartAccountsManager() {
                   })}
                 </SelectContent>
               </Select>
-              {form.parent_id && (
-                <p className="text-xs text-muted-foreground">
-                  Esta conta será um <strong>{getLevelName(getDepthFromCode(parentAccounts.find(a => a.id === form.parent_id)?.code || "") + 1)}</strong>
-                </p>
-              )}
-              {!form.parent_id && (
-                <p className="text-xs text-muted-foreground">
-                  Esta conta será uma <strong>Raiz</strong>
-                </p>
-              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label>Tipo da Conta</Label>
+              <div className="flex items-center gap-2 p-3 bg-muted rounded-md border">
+                {getLevelBadge(
+                  form.parent_id 
+                    ? getDepthFromCode(parentAccounts.find(a => a.id === form.parent_id)?.code || "") + 1 
+                    : 0
+                )}
+                <span className="text-sm text-muted-foreground">
+                  (definido automaticamente pela Conta Superior)
+                </span>
+              </div>
             </div>
 
             <div className="flex items-center gap-6">
