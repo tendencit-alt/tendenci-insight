@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,7 @@ import {
 type BulkEditField = "nature" | "in_dre" | "in_cashflow" | "active" | null;
 
 export function ChartAccountsManager() {
+  const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -60,6 +61,14 @@ export function ChartAccountsManager() {
       return data || [];
     },
   });
+
+  // Optimistic update helper
+  const optimisticUpdate = (updater: (prev: any[]) => any[]) => {
+    queryClient.setQueryData(["fin-chart-accounts-all"], (old: any[] | undefined) => {
+      if (!old) return old;
+      return updater(old);
+    });
+  };
 
   const parentAccounts = accounts?.filter((a) => !a.parent_id) || [];
 
@@ -98,17 +107,26 @@ export function ChartAccountsManager() {
     }
 
     setLoading(true);
-    try {
-      const data = {
-        code: form.code,
-        name: form.name,
-        nature: form.nature,
-        parent_id: form.parent_id || null,
-        in_dre: form.in_dre,
-        in_cashflow: form.in_cashflow,
-        active: form.active,
-      };
+    const data = {
+      code: form.code,
+      name: form.name,
+      nature: form.nature,
+      parent_id: form.parent_id || null,
+      in_dre: form.in_dre,
+      in_cashflow: form.in_cashflow,
+      active: form.active,
+    };
 
+    // Optimistic update
+    if (editing) {
+      optimisticUpdate((prev) =>
+        prev.map((a) => (a.id === editing.id ? { ...a, ...data } : a))
+      );
+    }
+
+    setDialogOpen(false);
+
+    try {
       if (editing) {
         const { error } = await supabase
           .from("fin_chart_accounts")
@@ -125,9 +143,9 @@ export function ChartAccountsManager() {
       }
 
       refetch();
-      setDialogOpen(false);
     } catch (error: any) {
       toast.error("Erro: " + error.message);
+      refetch(); // Rollback on error
     } finally {
       setLoading(false);
     }
@@ -169,24 +187,32 @@ export function ChartAccountsManager() {
   const handleBulkEdit = async () => {
     if (!bulkEditField || selectedIds.size === 0) return;
 
-    setBulkLoading(true);
-    try {
-      const updateData: Record<string, any> = {};
-      updateData[bulkEditField] = bulkEditValue;
+    const idsToUpdate = Array.from(selectedIds);
+    const updateData: Record<string, any> = {};
+    updateData[bulkEditField] = bulkEditValue;
 
+    // Optimistic update - apply immediately
+    optimisticUpdate((prev) =>
+      prev.map((a) => (idsToUpdate.includes(a.id) ? { ...a, ...updateData } : a))
+    );
+
+    setBulkEditDialogOpen(false);
+    clearSelection();
+    setBulkLoading(true);
+
+    try {
       const { error } = await supabase
         .from("fin_chart_accounts")
         .update(updateData)
-        .in("id", Array.from(selectedIds));
+        .in("id", idsToUpdate);
 
       if (error) throw error;
 
-      toast.success(`${selectedIds.size} conta(s) atualizada(s)!`);
+      toast.success(`${idsToUpdate.length} conta(s) atualizada(s)!`);
       refetch();
-      setBulkEditDialogOpen(false);
-      clearSelection();
     } catch (error: any) {
       toast.error("Erro: " + error.message);
+      refetch(); // Rollback on error
     } finally {
       setBulkLoading(false);
     }
@@ -195,21 +221,28 @@ export function ChartAccountsManager() {
   const handleBulkDelete = async () => {
     if (selectedIds.size === 0) return;
 
+    const idsToDelete = Array.from(selectedIds);
+
+    // Optimistic update - remove immediately
+    optimisticUpdate((prev) => prev.filter((a) => !idsToDelete.includes(a.id)));
+
+    setBulkDeleteDialogOpen(false);
+    clearSelection();
     setBulkLoading(true);
+
     try {
       const { error } = await supabase
         .from("fin_chart_accounts")
         .delete()
-        .in("id", Array.from(selectedIds));
+        .in("id", idsToDelete);
 
       if (error) throw error;
 
-      toast.success(`${selectedIds.size} conta(s) excluída(s)!`);
+      toast.success(`${idsToDelete.length} conta(s) excluída(s)!`);
       refetch();
-      setBulkDeleteDialogOpen(false);
-      clearSelection();
     } catch (error: any) {
       toast.error("Erro: " + error.message);
+      refetch(); // Rollback on error
     } finally {
       setBulkLoading(false);
     }
