@@ -590,41 +590,174 @@ export function FinProjectsManager() {
             </DialogDescription>
           </DialogHeader>
 
-          {selectedProject && (
+          {selectedProject && (() => {
+            const budget = Number(selectedProject.budget) || 0;
+            const projectData = realizedByProject[selectedProject.id] || { total: 0, receitas: 0, despesas: 0, entries: [] };
+            const despesas = projectData.despesas;
+            const receitas = projectData.receitas;
+            const saldo = projectData.total;
+            const saldoOrcamento = budget - despesas;
+            const percentUsed = budget > 0 ? (despesas / budget) * 100 : 0;
+            const entryCount = projectData.entries.length;
+            const reconciledCount = projectData.entries.filter((e: LedgerEntry) => e.reconciled).length;
+            const pendingCount = entryCount - reconciledCount;
+
+            return (
             <div className="space-y-4">
-              {/* Project Summary */}
-              <div className="grid grid-cols-3 gap-4 p-4 rounded-lg bg-muted/50">
-                <div>
-                  <p className="text-xs text-muted-foreground">Receitas</p>
-                  <p className="text-lg font-bold text-green-600">
-                    {formatCurrency(realizedByProject[selectedProject.id]?.receitas || 0)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Despesas</p>
-                  <p className="text-lg font-bold text-red-600">
-                    {formatCurrency(realizedByProject[selectedProject.id]?.despesas || 0)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Saldo</p>
-                  <p className={`text-lg font-bold ${(realizedByProject[selectedProject.id]?.total || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {formatCurrency(realizedByProject[selectedProject.id]?.total || 0)}
-                  </p>
-                </div>
+              {/* Individual Project KPIs */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {/* Orçamento */}
+                <Card className="border-l-4 border-l-blue-500">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs text-muted-foreground uppercase tracking-wide">Orçamento</p>
+                        <p className="text-xl font-bold">{budget > 0 ? formatCurrency(budget) : "N/D"}</p>
+                      </div>
+                      <Target className="h-6 w-6 text-blue-500 opacity-70" />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Despesas Realizadas */}
+                <Card className="border-l-4 border-l-orange-500">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs text-muted-foreground uppercase tracking-wide">Despesas</p>
+                        <p className="text-xl font-bold text-orange-600">{formatCurrency(despesas)}</p>
+                        {budget > 0 && (
+                          <p className="text-xs text-muted-foreground">{percentUsed.toFixed(1)}% do orçamento</p>
+                        )}
+                      </div>
+                      <TrendingDown className="h-6 w-6 text-orange-500 opacity-70" />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Receitas */}
+                <Card className="border-l-4 border-l-green-500">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs text-muted-foreground uppercase tracking-wide">Receitas</p>
+                        <p className="text-xl font-bold text-green-600">{formatCurrency(receitas)}</p>
+                      </div>
+                      <TrendingUp className="h-6 w-6 text-green-500 opacity-70" />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Saldo Orçamentário */}
+                <Card className={`border-l-4 ${saldoOrcamento >= 0 ? 'border-l-green-500' : 'border-l-red-500'}`}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs text-muted-foreground uppercase tracking-wide">Saldo Orçamento</p>
+                        <p className={`text-xl font-bold ${saldoOrcamento >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {budget > 0 ? formatCurrency(saldoOrcamento) : "N/D"}
+                        </p>
+                      </div>
+                      {saldoOrcamento >= 0 ? (
+                        <CheckCircle2 className="h-6 w-6 text-green-500 opacity-70" />
+                      ) : (
+                        <AlertTriangle className="h-6 w-6 text-red-500 opacity-70" />
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
 
+              {/* Secondary KPIs Row */}
+              <div className="grid grid-cols-3 gap-3">
+                {/* Resultado Líquido */}
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs text-muted-foreground">Resultado Líquido</p>
+                        <p className={`text-lg font-bold ${saldo >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {formatCurrency(saldo)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">Receitas - Despesas</p>
+                      </div>
+                      <DollarSign className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Total de Lançamentos */}
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs text-muted-foreground">Total Lançamentos</p>
+                        <p className="text-lg font-bold">{entryCount}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {reconciledCount} conciliados
+                        </p>
+                      </div>
+                      <FolderKanban className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Pendentes */}
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs text-muted-foreground">Pendentes</p>
+                        <p className={`text-lg font-bold ${pendingCount > 0 ? 'text-yellow-600' : 'text-green-600'}`}>
+                          {pendingCount}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {entryCount > 0 ? ((reconciledCount / entryCount) * 100).toFixed(0) : 0}% conciliado
+                        </p>
+                      </div>
+                      {pendingCount > 0 ? (
+                        <AlertTriangle className="h-5 w-5 text-yellow-500" />
+                      ) : (
+                        <CheckCircle2 className="h-5 w-5 text-green-500" />
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Progress Bar for Budget */}
+              {budget > 0 && (
+                <div className="p-4 rounded-lg border bg-muted/30">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium">Consumo do Orçamento</span>
+                    <span className={`text-sm font-bold ${percentUsed > 100 ? 'text-red-600' : percentUsed > 80 ? 'text-yellow-600' : 'text-green-600'}`}>
+                      {percentUsed.toFixed(1)}%
+                    </span>
+                  </div>
+                  <Progress 
+                    value={Math.min(percentUsed, 100)} 
+                    className={`h-3 ${percentUsed > 100 ? '[&>div]:bg-red-600' : percentUsed > 80 ? '[&>div]:bg-yellow-600' : ''}`}
+                  />
+                  <div className="flex justify-between mt-1 text-xs text-muted-foreground">
+                    <span>Gasto: {formatCurrency(despesas)}</span>
+                    <span>Disponível: {formatCurrency(Math.max(0, saldoOrcamento))}</span>
+                  </div>
+                </div>
+              )}
+
               {/* Entries List */}
-              <ScrollArea className="h-[400px]">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Data</TableHead>
-                      <TableHead>Descrição</TableHead>
-                      <TableHead>Plano de Conta</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Valor</TableHead>
-                    </TableRow>
+              <div>
+                <h4 className="text-sm font-medium mb-2">Lançamentos do Projeto</h4>
+                <ScrollArea className="h-[280px] border rounded-lg">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Data</TableHead>
+                        <TableHead>Descrição</TableHead>
+                        <TableHead>Plano de Conta</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Valor</TableHead>
+                      </TableRow>
                   </TableHeader>
                   <TableBody>
                     {realizedByProject[selectedProject.id]?.entries.map((entry: LedgerEntry) => (
@@ -669,7 +802,9 @@ export function FinProjectsManager() {
                 </Table>
               </ScrollArea>
             </div>
-          )}
+          </div>
+          );
+          })()}
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setViewEntriesOpen(false)}>Fechar</Button>
