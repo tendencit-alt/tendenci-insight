@@ -59,7 +59,7 @@ export default function Financeiro() {
             <TabsList className="flex flex-wrap h-auto w-full justify-start gap-1 bg-muted/50 p-1.5">
               <TabsTrigger value="dashboard" className="flex items-center gap-1.5 px-3 py-2 text-sm">
                 <LayoutDashboard className="h-4 w-4 flex-shrink-0" />
-                <span>Dashboard</span>
+                <span>BI/Dashboard</span>
               </TabsTrigger>
               <TabsTrigger value="dre-cashflow" className="flex items-center gap-1.5 px-3 py-2 text-sm">
                 <BarChart3 className="h-4 w-4 flex-shrink-0" />
