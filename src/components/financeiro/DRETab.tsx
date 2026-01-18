@@ -553,40 +553,41 @@ export function DRETab({ filters }: DRETabProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between flex-wrap gap-2">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <BarChart3 className="h-5 w-5" />
+          <h2 className="text-base sm:text-lg font-semibold flex items-center gap-2">
+            <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5" />
             DRE <span className="text-primary">(Competência)</span>
           </h2>
-          <p className="text-sm text-muted-foreground">
-            Demonstração do Resultado do Exercício - Clique para expandir e ver lançamentos
+          <p className="text-xs sm:text-sm text-muted-foreground">
+            Demonstração do Resultado - Clique para expandir
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={expandAll}>
-            Expandir Tudo
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button variant="outline" size="sm" onClick={expandAll} className="text-xs h-8">
+            Expandir
           </Button>
-          <Button variant="outline" size="sm" onClick={collapseAll}>
-            Recolher Tudo
+          <Button variant="outline" size="sm" onClick={collapseAll} className="text-xs h-8">
+            Recolher
           </Button>
-          <Button variant="outline" className="gap-2">
-            <Download className="h-4 w-4" />
-            Exportar PDF
+          <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8">
+            <Download className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Exportar</span> PDF
           </Button>
         </div>
       </div>
 
       <Card>
-        <CardContent className="pt-6">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[50%]">Conta</TableHead>
-                <TableHead className="text-right">Meta Econômica</TableHead>
-                <TableHead className="text-right">Realizado</TableHead>
-              </TableRow>
-            </TableHeader>
+        <CardContent className="p-2 sm:pt-6 sm:px-6">
+          <div className="overflow-x-auto -mx-2 sm:mx-0">
+            <Table className="min-w-[500px]">
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[50%] text-xs sm:text-sm">Conta</TableHead>
+                  <TableHead className="text-right text-xs sm:text-sm hidden md:table-cell">Meta</TableHead>
+                  <TableHead className="text-right text-xs sm:text-sm">Realizado</TableHead>
+                </TableRow>
+              </TableHeader>
             <TableBody>
               {visibleLines.map(line => renderLine(line))}
               
@@ -643,6 +644,7 @@ export function DRETab({ filters }: DRETabProps) {
               </TableRow>
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
     </div>

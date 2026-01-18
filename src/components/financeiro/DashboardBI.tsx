@@ -590,7 +590,7 @@ export function DashboardBI({ filters }: DashboardBIProps) {
   return (
     <div className="space-y-6">
       {/* Executive Dashboard - Clickable KPIs */}
-      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
+      <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
         {kpis.map((kpi) => (
           <Card 
             key={kpi.key}
@@ -601,27 +601,27 @@ export function DashboardBI({ filters }: DashboardBIProps) {
             )}
             onClick={() => setSelectedKPI(selectedKPI === kpi.key ? null : kpi.key)}
           >
-            <CardContent className="pt-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
+            <CardContent className="p-3 sm:pt-4 sm:px-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div className="space-y-0.5 sm:space-y-1 min-w-0 flex-1">
                   <div className="flex items-center gap-1">
-                    <p className="text-xs text-muted-foreground font-medium">{kpi.title}</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground font-medium truncate">{kpi.title}</p>
                     {getStatusIcon(kpi.status)}
                   </div>
-                  <p className={cn("text-xl font-bold", getTextColor(kpi.status))}>
+                  <p className={cn("text-base sm:text-xl font-bold truncate", getTextColor(kpi.status))}>
                     {kpi.isMeses 
                       ? `${kpi.value} meses` 
                       : formatCurrency(kpi.value)
                     }
                   </p>
                   {kpi.meta && (
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
                       Meta: {formatCurrency(kpi.meta)}
                     </p>
                   )}
                 </div>
-                <div className={cn("p-2 rounded-full", getIconBgColor(kpi.status))}>
-                  <kpi.icon className={cn("h-5 w-5", getTextColor(kpi.status) || "text-muted-foreground")} />
+                <div className={cn("p-1.5 sm:p-2 rounded-full hidden sm:block", getIconBgColor(kpi.status))}>
+                  <kpi.icon className={cn("h-4 w-4 sm:h-5 sm:w-5", getTextColor(kpi.status) || "text-muted-foreground")} />
                 </div>
               </div>
             </CardContent>
