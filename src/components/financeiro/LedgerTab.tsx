@@ -171,17 +171,17 @@ export function LedgerTab({ filters }: LedgerTabProps) {
             </div>
           ) : (
             <div className="overflow-x-auto -mx-4 sm:mx-0">
-              <Table className="w-full table-fixed">
+              <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-xs w-[70px] sm:w-[85px]">Data</TableHead>
-                    <TableHead className="text-xs w-[35px] sm:w-[100px]">Tipo</TableHead>
-                    <TableHead className="text-xs">Descrição</TableHead>
-                    <TableHead className="text-xs hidden md:table-cell w-[100px]">Conta</TableHead>
-                    <TableHead className="text-xs hidden lg:table-cell w-[120px]">Categoria</TableHead>
-                    <TableHead className="text-xs text-right w-[90px] sm:w-[100px]">Valor</TableHead>
-                    <TableHead className="text-xs hidden sm:table-cell w-[70px]">Status</TableHead>
-                    <TableHead className="text-xs w-[45px]">Ações</TableHead>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="text-xs w-[80px]">Data</TableHead>
+                    <TableHead className="text-xs w-[100px]">Tipo</TableHead>
+                    <TableHead className="text-xs min-w-[150px]">Descrição</TableHead>
+                    <TableHead className="text-xs hidden md:table-cell w-[120px]">Conta</TableHead>
+                    <TableHead className="text-xs hidden lg:table-cell w-[150px]">Categoria</TableHead>
+                    <TableHead className="text-xs text-right w-[120px]">Valor</TableHead>
+                    <TableHead className="text-xs hidden sm:table-cell w-[90px] text-center">Status</TableHead>
+                    <TableHead className="text-xs w-[50px] text-center">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -194,28 +194,32 @@ export function LedgerTab({ filters }: LedgerTabProps) {
                   ) : (
                     entries?.map((entry) => (
                       <TableRow key={entry.id} className={entry.status === "CANCELADO" ? "opacity-50" : ""}>
-                        <TableCell className="font-medium text-xs truncate">
+                        <TableCell className="font-medium text-xs py-3">
                           {entry[dateField] && format(new Date(entry[dateField]), "dd/MM/yy", { locale: ptBR })}
                         </TableCell>
-                        <TableCell className="text-xs">
+                        <TableCell className="text-xs py-3">
                           <span className="sm:hidden">{getTypeBadge(entry.type, true)}</span>
                           <span className="hidden sm:inline">{getTypeBadge(entry.type)}</span>
                         </TableCell>
-                        <TableCell className="text-xs truncate">
-                          {entry.description}
-                          {entry.reversal_of_id && (
-                            <span className="text-xs text-muted-foreground ml-1">(Estorno)</span>
-                          )}
+                        <TableCell className="text-xs py-3 max-w-[200px] lg:max-w-none">
+                          <div className="truncate">
+                            {entry.description}
+                            {entry.reversal_of_id && (
+                              <span className="text-xs text-muted-foreground ml-1">(Estorno)</span>
+                            )}
+                          </div>
                         </TableCell>
-                        <TableCell className="text-xs hidden md:table-cell truncate">{entry.bank_account?.nickname || "-"}</TableCell>
-                        <TableCell className="text-xs hidden lg:table-cell truncate">
-                          {entry.chart_account ? entry.chart_account.name : "-"}
+                        <TableCell className="text-xs hidden md:table-cell py-3">
+                          <div className="truncate max-w-[100px]">{entry.bank_account?.nickname || "-"}</div>
                         </TableCell>
-                        <TableCell className="text-right font-medium text-xs">
+                        <TableCell className="text-xs hidden lg:table-cell py-3">
+                          <div className="truncate max-w-[140px]">{entry.chart_account ? entry.chart_account.name : "-"}</div>
+                        </TableCell>
+                        <TableCell className="text-right font-semibold text-xs py-3 whitespace-nowrap">
                           {formatCurrency(Number(entry.amount), entry.type)}
                         </TableCell>
-                        <TableCell className="hidden sm:table-cell">{getStatusBadge(entry.status)}</TableCell>
-                        <TableCell>
+                        <TableCell className="hidden sm:table-cell py-3 text-center">{getStatusBadge(entry.status)}</TableCell>
+                        <TableCell className="py-3 text-center">
                           <Button 
                             variant="ghost" 
                             size="sm"
@@ -231,13 +235,17 @@ export function LedgerTab({ filters }: LedgerTabProps) {
                 </TableBody>
                 {entries && entries.length > 0 && (
                   <tfoot>
-                    <TableRow className="bg-muted/50 font-medium">
-                      <TableCell colSpan={5} className="text-right text-xs">Totais:</TableCell>
-                      <TableCell className="text-right text-xs">
-                        <div className="text-green-600">+{totals.entradas.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</div>
-                        <div className="text-red-600">-{totals.saidas.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</div>
-                        <div className={totals.entradas - totals.saidas >= 0 ? "text-green-600" : "text-red-600"}>
-                          = {(totals.entradas - totals.saidas).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                    <TableRow className="bg-muted/50 font-medium border-t-2">
+                      <TableCell colSpan={5} className="text-right text-xs py-4 pr-4">
+                        <span className="text-muted-foreground">Totais:</span>
+                      </TableCell>
+                      <TableCell className="text-right text-xs py-4">
+                        <div className="space-y-0.5">
+                          <div className="text-green-600 font-semibold">+{totals.entradas.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</div>
+                          <div className="text-red-600 font-semibold">-{totals.saidas.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</div>
+                          <div className={`font-bold pt-1 border-t ${totals.entradas - totals.saidas >= 0 ? "text-green-600" : "text-red-600"}`}>
+                            = {(totals.entradas - totals.saidas).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell colSpan={2}></TableCell>
