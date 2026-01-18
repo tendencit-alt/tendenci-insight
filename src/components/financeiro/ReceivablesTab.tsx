@@ -311,11 +311,16 @@ export function ReceivablesTab({ filters }: ReceivablesTabProps) {
   const FilterPopover = ({ column, value, onChange, placeholder, options }: { column: string; value: string; onChange: (v: string) => void; placeholder: string; options?: string[] }) => (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="sm" className={`h-6 w-6 p-0 ${value ? "text-primary" : "opacity-50"}`}>
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className={`h-6 w-6 p-0 ${value ? "text-primary" : "opacity-50"}`}
+          onClick={(e) => e.stopPropagation()}
+        >
           <Filter className="h-3 w-3" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-48 p-2" align="start">
+      <PopoverContent className="w-48 p-2" align="start" onClick={(e) => e.stopPropagation()}>
         {options ? (
           <Select value={value} onValueChange={onChange}>
             <SelectTrigger className="h-8">
