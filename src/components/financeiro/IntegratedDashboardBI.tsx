@@ -3,26 +3,18 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { FinanceiroFiltersState } from "./FinanceiroFilters";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   TrendingUp, 
   TrendingDown, 
   Wallet, 
-  Target,
   BarChart3,
-  ArrowRight,
-  ChevronDown,
-  ChevronUp,
-  Info
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { DRETab } from "./DRETab";
 import { CashflowTab } from "./CashflowTab";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface IntegratedDashboardBIProps {
   filters: FinanceiroFiltersState;
@@ -42,19 +34,13 @@ interface KPIData {
   value: number;
   target: number;
   percentage: number;
-  trend: "up" | "down" | "neutral";
   type: "dre" | "cashflow";
-  icon: typeof TrendingUp;
-  description: string;
-  drilldownFilter?: string;
 }
 
 export function IntegratedDashboardBI({ filters }: IntegratedDashboardBIProps) {
   const [selectedKPI, setSelectedKPI] = useState<KPIKey | null>(null);
   const [biViewMode, setBiViewMode] = useState<"dre" | "cashflow">("dre");
-  const [compareMode, setCompareMode] = useState<"meta" | "anterior">("meta");
 
-  // Fetch executive KPIs data
   const { data: kpiData, isLoading } = useQuery({
     queryKey: ["integrated-dashboard-kpis", filters],
     queryFn: async () => {
@@ -63,13 +49,11 @@ export function IntegratedDashboardBI({ filters }: IntegratedDashboardBIProps) {
       const currentMonth = filters.dateFrom.getMonth() + 1;
       const currentYear = filters.dateFrom.getFullYear();
 
-      // Fetch chart accounts
       const { data: chartAccounts } = await supabase
         .from("fin_chart_accounts")
         .select("id, code, name, nature")
         .eq("active", true);
 
-      // Helper to classify accounts by numeric code ranges
       const classifyAccount = (code: string, nature: string | null) => {
         const mainCode = parseFloat(code.split('.')[0]);
         const subCode = code.includes('.') ? parseFloat(code.split('.')[1]) : 0;
@@ -88,7 +72,6 @@ export function IntegratedDashboardBI({ filters }: IntegratedDashboardBIProps) {
 
       const accountMap = new Map(chartAccounts?.map(a => [a.id, { ...a, category_type: classifyAccount(a.code, a.nature) }]) || []);
 
-      // Fetch DRE entries (competence)
       let dreQuery = supabase
         .from("fin_ledger_entries")
         .select("chart_account_id, amount, type")
@@ -102,7 +85,6 @@ export function IntegratedDashboardBI({ filters }: IntegratedDashboardBIProps) {
 
       const { data: dreEntries } = await dreQuery;
 
-      // Fetch Cashflow entries (cash_date)
       let cashQuery = supabase
         .from("fin_ledger_entries")
         .select("chart_account_id, amount, type")
@@ -117,7 +99,6 @@ export function IntegratedDashboardBI({ filters }: IntegratedDashboardBIProps) {
 
       const { data: cashEntries } = await cashQuery;
 
-      // Get opening balance
       let balanceQuery = supabase
         .from("fin_bank_accounts")
         .select("opening_balance")
@@ -128,7 +109,6 @@ export function IntegratedDashboardBI({ filters }: IntegratedDashboardBIProps) {
       const { data: accounts } = await balanceQuery;
       const openingBalance = accounts?.reduce((sum, a) => sum + Number(a.opening_balance || 0), 0) || 0;
 
-      // Fetch goals
       const { data: goalsData } = await supabase
         .from("fin_financial_goals")
         .select("goal_type, metric_key, target_amount")
@@ -146,7 +126,6 @@ export function IntegratedDashboardBI({ filters }: IntegratedDashboardBIProps) {
         }
       });
 
-      // Calculate DRE values
       let totalReceitas = 0;
       let custosVariaveis = 0;
       let cmv = 0;
@@ -174,7 +153,6 @@ export function IntegratedDashboardBI({ filters }: IntegratedDashboardBIProps) {
       const ebitda = margemContribuicao - despesasOperacionais;
       const resultadoEconomico = ebitda - resultadoFinanceiro;
 
-      // Calculate Cashflow values
       let entradasOperacionais = 0;
       let saidasOperacionais = 0;
       let capitalEntrada = 0;
@@ -221,22 +199,20 @@ export function IntegratedDashboardBI({ filters }: IntegratedDashboardBIProps) {
     return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   };
 
+  const formatCompact = (value: number) => {
+    const abs = Math.abs(value);
+    if (abs >= 1000000) {
+      return (value / 1000000).toFixed(1) + "M";
+    }
+    if (abs >= 1000) {
+      return (value / 1000).toFixed(0) + "K";
+    }
+    return value.toFixed(0);
+  };
+
   const getPercentage = (actual: number, target: number) => {
     if (target === 0) return 0;
     return (actual / target) * 100;
-  };
-
-  const getTrend = (value: number, target: number): "up" | "down" | "neutral" => {
-    const pct = getPercentage(value, target);
-    if (pct >= 100) return "up";
-    if (pct < 80) return "down";
-    return "neutral";
-  };
-
-  const getStatusColor = (pct: number) => {
-    if (pct >= 100) return "text-green-600 bg-green-50 border-green-200 dark:bg-green-950/30 dark:border-green-800";
-    if (pct >= 80) return "text-yellow-600 bg-yellow-50 border-yellow-200 dark:bg-yellow-950/30 dark:border-yellow-800";
-    return "text-red-600 bg-red-50 border-red-200 dark:bg-red-950/30 dark:border-red-800";
   };
 
   const kpis: KPIData[] = useMemo(() => {
@@ -249,23 +225,15 @@ export function IntegratedDashboardBI({ filters }: IntegratedDashboardBIProps) {
         value: kpiData.receita_bruta,
         target: kpiData.goals.dre.receita_liquida || 0,
         percentage: getPercentage(kpiData.receita_bruta, kpiData.goals.dre.receita_liquida || 0),
-        trend: getTrend(kpiData.receita_bruta, kpiData.goals.dre.receita_liquida || 0),
         type: "dre",
-        icon: TrendingUp,
-        description: "Total de receitas no período",
-        drilldownFilter: "1",
       },
       {
         key: "margem_contribuicao" as KPIKey,
-        label: "Margem de Contribuição",
+        label: "Margem",
         value: kpiData.margem_contribuicao,
         target: kpiData.goals.dre.margem_contribuicao || 0,
         percentage: getPercentage(kpiData.margem_contribuicao, kpiData.goals.dre.margem_contribuicao || 0),
-        trend: getTrend(kpiData.margem_contribuicao, kpiData.goals.dre.margem_contribuicao || 0),
         type: "dre",
-        icon: BarChart3,
-        description: "Receita - Custos Variáveis - CMV - Despesas s/ Venda",
-        drilldownFilter: "4",
       },
       {
         key: "ebitda" as KPIKey,
@@ -273,247 +241,180 @@ export function IntegratedDashboardBI({ filters }: IntegratedDashboardBIProps) {
         value: kpiData.ebitda,
         target: kpiData.goals.dre.resultado_operacional || 0,
         percentage: getPercentage(kpiData.ebitda, kpiData.goals.dre.resultado_operacional || 0),
-        trend: getTrend(kpiData.ebitda, kpiData.goals.dre.resultado_operacional || 0),
         type: "dre",
-        icon: Target,
-        description: "Margem de Contribuição - Despesas Operacionais",
-        drilldownFilter: "6",
       },
       {
         key: "resultado_economico" as KPIKey,
-        label: "Resultado Econômico",
+        label: "Resultado",
         value: kpiData.resultado_economico,
         target: kpiData.goals.dre.resultado_antes_capital || 0,
         percentage: getPercentage(kpiData.resultado_economico, kpiData.goals.dre.resultado_antes_capital || 0),
-        trend: getTrend(kpiData.resultado_economico, kpiData.goals.dre.resultado_antes_capital || 0),
         type: "dre",
-        icon: kpiData.resultado_economico >= 0 ? TrendingUp : TrendingDown,
-        description: "Linha final da DRE (Meta Econômica)",
-        drilldownFilter: "8",
       },
       {
         key: "saldo_caixa" as KPIKey,
-        label: "Saldo de Caixa",
+        label: "Saldo Caixa",
         value: kpiData.saldo_caixa,
         target: kpiData.goals.cashflow.saldo_final || 0,
         percentage: getPercentage(kpiData.saldo_caixa, kpiData.goals.cashflow.saldo_final || 0),
-        trend: getTrend(kpiData.saldo_caixa, kpiData.goals.cashflow.saldo_final || 0),
         type: "cashflow",
-        icon: Wallet,
-        description: "Saldo atual de caixa (Meta de Caixa)",
       },
       {
         key: "variacao_liquida" as KPIKey,
-        label: "Variação Líquida de Caixa",
+        label: "Variação",
         value: kpiData.variacao_liquida,
         target: kpiData.goals.cashflow.variacao_liquida || 0,
         percentage: getPercentage(kpiData.variacao_liquida, kpiData.goals.cashflow.variacao_liquida || 0),
-        trend: getTrend(kpiData.variacao_liquida, kpiData.goals.cashflow.variacao_liquida || 0),
         type: "cashflow",
-        icon: kpiData.variacao_liquida >= 0 ? TrendingUp : TrendingDown,
-        description: "Entradas - Saídas no período",
       },
     ];
   }, [kpiData]);
 
   const handleKPIClick = (kpi: KPIData) => {
-    setSelectedKPI(kpi.key);
-    setBiViewMode(kpi.type);
+    if (selectedKPI === kpi.key) {
+      setSelectedKPI(null);
+    } else {
+      setSelectedKPI(kpi.key);
+      setBiViewMode(kpi.type);
+    }
   };
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
+      <div className="space-y-4">
+        <div className="flex gap-2 overflow-x-auto pb-2">
           {[...Array(6)].map((_, i) => (
-            <Skeleton key={i} className="h-36" />
+            <Skeleton key={i} className="h-20 w-32 flex-shrink-0" />
           ))}
         </div>
-        <Skeleton className="h-[600px]" />
+        <Skeleton className="h-[500px]" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* TOPO — DASHBOARD EXECUTIVO */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-bold flex items-center gap-2">
-              <BarChart3 className="h-5 w-5 text-primary" />
-              Dashboard Executivo
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Clique em qualquer KPI para análise detalhada no BI
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant={compareMode === "meta" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setCompareMode("meta")}
+    <div className="space-y-4">
+      {/* KPI Strip - Compact horizontal cards */}
+      <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
+        {kpis.map((kpi) => {
+          const isSelected = selectedKPI === kpi.key;
+          const isPositive = kpi.value >= 0;
+          const hasTarget = kpi.target > 0;
+          const isOnTrack = kpi.percentage >= 100;
+          const isWarning = kpi.percentage >= 80 && kpi.percentage < 100;
+          const isCritical = hasTarget && kpi.percentage < 80;
+
+          return (
+            <Card
+              key={kpi.key}
+              onClick={() => handleKPIClick(kpi)}
+              className={cn(
+                "flex-shrink-0 cursor-pointer transition-all duration-150 min-w-[140px]",
+                "hover:shadow-md active:scale-[0.98]",
+                isSelected 
+                  ? "ring-2 ring-primary bg-primary/5 border-primary" 
+                  : "hover:border-muted-foreground/30",
+                isCritical && !isSelected && "border-red-200 dark:border-red-900"
+              )}
             >
-              vs Meta
-            </Button>
-            <Button
-              variant={compareMode === "anterior" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setCompareMode("anterior")}
-            >
-              vs Anterior
-            </Button>
-          </div>
-        </div>
-
-        {/* KPI Cards */}
-        <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-6">
-          {kpis.map((kpi) => {
-            const isSelected = selectedKPI === kpi.key;
-            const statusColor = getStatusColor(kpi.percentage);
-            const Icon = kpi.icon;
-            const isOffTarget = kpi.target > 0 && kpi.percentage < 80;
-
-            return (
-              <Card
-                key={kpi.key}
-                className={cn(
-                  "cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-[1.02] border-2",
-                  isSelected && "ring-2 ring-primary border-primary shadow-lg",
-                  !isSelected && "hover:border-primary/50",
-                  isOffTarget && !isSelected && "animate-pulse border-red-300"
-                )}
-                onClick={() => handleKPIClick(kpi)}
-              >
-                <CardContent className="p-4 space-y-3">
-                  {/* Header */}
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-2">
-                      <Icon className={cn(
-                        "h-4 w-4",
-                        kpi.type === "dre" ? "text-purple-600" : "text-cyan-600"
-                      )} />
-                      <Tooltip>
-                        <TooltipTrigger>
-                          <Info className="h-3 w-3 text-muted-foreground" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="max-w-xs">{kpi.description}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </div>
-                    <Badge variant="outline" className={cn(
-                      "text-xs",
-                      kpi.type === "dre" ? "border-purple-300 text-purple-600" : "border-cyan-300 text-cyan-600"
-                    )}>
-                      {kpi.type === "dre" ? "DRE" : "Caixa"}
-                    </Badge>
-                  </div>
-
-                  {/* Label */}
-                  <p className="text-xs font-medium text-muted-foreground truncate">
+              <CardContent className="p-3 space-y-1">
+                {/* Label + Type indicator */}
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide truncate">
                     {kpi.label}
-                  </p>
-
-                  {/* Value */}
+                  </span>
                   <div className={cn(
-                    "text-lg font-bold font-mono",
-                    kpi.value >= 0 ? "text-foreground" : "text-red-600"
-                  )}>
-                    {formatCurrency(kpi.value)}
-                  </div>
+                    "w-1.5 h-1.5 rounded-full",
+                    kpi.type === "dre" ? "bg-purple-500" : "bg-cyan-500"
+                  )} />
+                </div>
 
-                  {/* Target & Percentage */}
-                  {kpi.target > 0 ? (
-                    <div className={cn("flex items-center gap-2 p-2 rounded-md border", statusColor)}>
-                      <div className="flex items-center gap-1">
-                        {kpi.trend === "up" ? (
-                          <ChevronUp className="h-4 w-4" />
-                        ) : kpi.trend === "down" ? (
-                          <ChevronDown className="h-4 w-4" />
-                        ) : null}
-                        <span className="font-bold text-sm">
-                          {kpi.percentage.toFixed(0)}%
-                        </span>
-                      </div>
-                      <div className="text-xs opacity-75 truncate">
-                        Meta: {formatCurrency(kpi.target)}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2 p-2 rounded-md border border-muted bg-muted/30">
-                      <span className="text-xs text-muted-foreground">Sem meta definida</span>
-                    </div>
-                  )}
+                {/* Value */}
+                <div className={cn(
+                  "text-lg font-bold font-mono leading-tight",
+                  isPositive ? "text-foreground" : "text-red-600"
+                )}>
+                  {isPositive ? "" : "-"}R$ {formatCompact(Math.abs(kpi.value))}
+                </div>
 
-                  {/* Click indicator */}
-                  <div className="flex items-center justify-end text-xs text-muted-foreground">
-                    <ArrowRight className={cn(
-                      "h-3 w-3 transition-transform",
-                      isSelected && "translate-x-1 text-primary"
-                    )} />
+                {/* Progress indicator */}
+                {hasTarget ? (
+                  <div className="flex items-center gap-1.5">
+                    <div className="flex-1 h-1 bg-muted rounded-full overflow-hidden">
+                      <div 
+                        className={cn(
+                          "h-full rounded-full transition-all",
+                          isOnTrack && "bg-green-500",
+                          isWarning && "bg-yellow-500",
+                          isCritical && "bg-red-500"
+                        )}
+                        style={{ width: `${Math.min(kpi.percentage, 100)}%` }}
+                      />
+                    </div>
+                    <span className={cn(
+                      "text-[10px] font-semibold tabular-nums",
+                      isOnTrack && "text-green-600",
+                      isWarning && "text-yellow-600",
+                      isCritical && "text-red-600"
+                    )}>
+                      {kpi.percentage.toFixed(0)}%
+                    </span>
                   </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+                ) : (
+                  <div className="h-1" />
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
-      {/* Separator */}
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t" />
-        </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-background px-4 text-muted-foreground font-medium">
-            {selectedKPI 
-              ? `Análise Detalhada: ${kpis.find(k => k.key === selectedKPI)?.label}`
-              : "BI Financeiro — Selecione um KPI para análise direcionada"
-            }
-          </span>
-        </div>
-      </div>
-
-      {/* CORPO — BI FINANCEIRO DINÂMICO */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between flex-wrap gap-4">
+      {/* BI Section */}
+      <div className="space-y-3">
+        {/* View Toggle */}
+        <div className="flex items-center justify-between">
           <Tabs value={biViewMode} onValueChange={(v) => setBiViewMode(v as "dre" | "cashflow")}>
-            <TabsList>
-              <TabsTrigger value="dre" className="gap-2">
-                <BarChart3 className="h-4 w-4" />
-                DRE (Competência)
+            <TabsList className="h-8">
+              <TabsTrigger value="dre" className="text-xs gap-1.5 h-7 px-3">
+                <BarChart3 className="h-3.5 w-3.5" />
+                DRE
               </TabsTrigger>
-              <TabsTrigger value="cashflow" className="gap-2">
-                <Wallet className="h-4 w-4" />
-                Fluxo de Caixa (Realizado)
+              <TabsTrigger value="cashflow" className="text-xs gap-1.5 h-7 px-3">
+                <Wallet className="h-3.5 w-3.5" />
+                Fluxo de Caixa
               </TabsTrigger>
             </TabsList>
           </Tabs>
 
           {selectedKPI && (
-            <Button
-              variant="ghost"
-              size="sm"
+            <button
               onClick={() => setSelectedKPI(null)}
-              className="text-muted-foreground"
+              className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
             >
-              Limpar filtro
-            </Button>
+              {kpis.find(k => k.key === selectedKPI)?.value! >= 0 ? (
+                <TrendingUp className="h-3 w-3" />
+              ) : (
+                <TrendingDown className="h-3 w-3" />
+              )}
+              Analisando: {kpis.find(k => k.key === selectedKPI)?.label}
+              <span className="ml-1 text-muted-foreground/50">×</span>
+            </button>
           )}
         </div>
 
         {/* BI Content */}
-        <div className={cn(
-          "rounded-lg border bg-card",
-          selectedKPI && "ring-2 ring-primary/20"
+        <Card className={cn(
+          "overflow-hidden",
+          selectedKPI && "ring-1 ring-primary/20"
         )}>
-          {biViewMode === "dre" ? (
-            <DRETab filters={filters} />
-          ) : (
-            <CashflowTab filters={filters} />
-          )}
-        </div>
+          <CardContent className="p-0">
+            {biViewMode === "dre" ? (
+              <DRETab filters={filters} />
+            ) : (
+              <CashflowTab filters={filters} />
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
