@@ -383,6 +383,10 @@ export function CashflowTab({ filters }: CashflowTabProps) {
             )}
           </div>
         </TableCell>
+        <TableCell className="text-right p-2 text-muted-foreground font-mono text-sm">
+          {/* Orçamento de Caixa - placeholder para integração futura */}
+          -
+        </TableCell>
         <TableCell className="text-right p-2">
           <span className={cn(
             "font-mono",
@@ -424,6 +428,9 @@ export function CashflowTab({ filters }: CashflowTabProps) {
                 )}
               </div>
             </TableCell>
+            <TableCell className="text-right text-muted-foreground font-mono text-sm">
+              -
+            </TableCell>
             <TableCell 
               className={cn(
                 "text-right font-mono text-sm",
@@ -464,7 +471,7 @@ export function CashflowTab({ filters }: CashflowTabProps) {
         <div>
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <TrendingUp className="h-5 w-5" />
-            Fluxo de Caixa por Plano de Contas
+            Fluxo de Caixa <span className="text-primary">(Realizado)</span>
           </h2>
           <p className="text-sm text-muted-foreground">
             Regime de Caixa - Clique para expandir e ver lançamentos
@@ -490,8 +497,9 @@ export function CashflowTab({ filters }: CashflowTabProps) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[65%]">Conta</TableHead>
-                <TableHead className="text-right">Valor</TableHead>
+                <TableHead className="w-[50%]">Conta</TableHead>
+                <TableHead className="text-right">Orçamento de Caixa</TableHead>
+                <TableHead className="text-right">Realizado</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -499,16 +507,18 @@ export function CashflowTab({ filters }: CashflowTabProps) {
               
               {/* Summary */}
               <TableRow>
-                <TableCell colSpan={2} className="h-4 bg-muted/30" />
+                <TableCell colSpan={3} className="h-4 bg-muted/30" />
               </TableRow>
               <TableRow className="bg-green-50 dark:bg-green-950/20 font-semibold">
                 <TableCell>TOTAL ENTRADAS</TableCell>
+                <TableCell className="text-right text-muted-foreground font-mono">-</TableCell>
                 <TableCell className="text-right text-green-600 font-mono">
                   {formatCurrency(cashflowData?.totalEntradas || 0)}
                 </TableCell>
               </TableRow>
               <TableRow className="bg-red-50 dark:bg-red-950/20 font-semibold">
                 <TableCell>TOTAL SAÍDAS</TableCell>
+                <TableCell className="text-right text-muted-foreground font-mono">-</TableCell>
                 <TableCell className="text-right text-red-600 font-mono">
                   ({formatCurrency(cashflowData?.totalSaidas || 0)})
                 </TableCell>
