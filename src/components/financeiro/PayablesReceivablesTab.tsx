@@ -111,14 +111,25 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
           bank_account:fin_bank_accounts(nickname)
         `)
         .gte("due_date", dateFrom)
-        .lte("due_date", dateTo)
-        .order("due_date", { ascending: true });
+        .lte("due_date", dateTo);
+
+      // Apply sorting from global filters
+      if (filters.sortField === "date") {
+        query = query.order("due_date", { ascending: filters.sortDirection === "asc" });
+      } else if (filters.sortField === "value") {
+        query = query.order("amount", { ascending: filters.sortDirection === "asc" });
+      } else {
+        query = query.order("due_date", { ascending: true });
+      }
 
       if (filters.costCenterId) {
         query = query.eq("cost_center_id", filters.costCenterId);
       }
       if (filters.projectId) {
         query = query.eq("project_id", filters.projectId);
+      }
+      if (filters.categoryId) {
+        query = query.eq("chart_account_id", filters.categoryId);
       }
       if (filters.search) {
         query = query.ilike("description", `%${filters.search}%`);
@@ -145,14 +156,25 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
           bank_account:fin_bank_accounts(nickname)
         `)
         .gte("due_date", dateFrom)
-        .lte("due_date", dateTo)
-        .order("due_date", { ascending: true });
+        .lte("due_date", dateTo);
+
+      // Apply sorting from global filters
+      if (filters.sortField === "date") {
+        query = query.order("due_date", { ascending: filters.sortDirection === "asc" });
+      } else if (filters.sortField === "value") {
+        query = query.order("amount", { ascending: filters.sortDirection === "asc" });
+      } else {
+        query = query.order("due_date", { ascending: true });
+      }
 
       if (filters.costCenterId) {
         query = query.eq("cost_center_id", filters.costCenterId);
       }
       if (filters.projectId) {
         query = query.eq("project_id", filters.projectId);
+      }
+      if (filters.categoryId) {
+        query = query.eq("chart_account_id", filters.categoryId);
       }
       if (filters.search) {
         query = query.ilike("description", `%${filters.search}%`);

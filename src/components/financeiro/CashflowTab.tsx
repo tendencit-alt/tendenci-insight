@@ -206,6 +206,9 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
       if (filters.projectId) {
         query = query.eq("project_id", filters.projectId);
       }
+      if (filters.categoryId) {
+        query = query.eq("chart_account_id", filters.categoryId);
+      }
 
       const { data: entries } = await query;
 

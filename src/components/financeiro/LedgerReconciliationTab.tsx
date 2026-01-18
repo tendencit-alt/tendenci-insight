@@ -95,8 +95,16 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
           project:fin_projects(name)
         `)
         .gte(dateField, dateFrom)
-        .lte(dateField, dateTo)
-        .order(dateField, { ascending: false });
+        .lte(dateField, dateTo);
+
+      // Apply sorting based on filter
+      if (filters.sortField === "date") {
+        query = query.order(dateField, { ascending: filters.sortDirection === "asc" });
+      } else if (filters.sortField === "value") {
+        query = query.order("amount", { ascending: filters.sortDirection === "asc" });
+      } else {
+        query = query.order(dateField, { ascending: false });
+      }
 
       if (filters.bankAccountId) {
         query = query.eq("bank_account_id", filters.bankAccountId);
@@ -106,6 +114,9 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
       }
       if (filters.projectId) {
         query = query.eq("project_id", filters.projectId);
+      }
+      if (filters.categoryId) {
+        query = query.eq("chart_account_id", filters.categoryId);
       }
       if (filters.search) {
         query = query.ilike("description", `%${filters.search}%`);

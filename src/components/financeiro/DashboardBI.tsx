@@ -74,8 +74,8 @@ export function DashboardBI({ filters }: DashboardBIProps) {
       const dateFrom = format(filters.dateFrom, "yyyy-MM-dd");
       const dateTo = format(filters.dateTo, "yyyy-MM-dd");
 
-      // Get all ledger entries with chart accounts
-      const { data: entries } = await supabase
+      // Build ledger entries query
+      let entriesQuery = supabase
         .from("fin_ledger_entries")
         .select(`
           id, type, amount, description, cash_date, competence_date, 
@@ -86,6 +86,26 @@ export function DashboardBI({ filters }: DashboardBIProps) {
         .gte("cash_date", dateFrom)
         .lte("cash_date", dateTo)
         .not("cash_date", "is", null);
+
+      // Apply sorting from global filters
+      if (filters.sortField === "date") {
+        entriesQuery = entriesQuery.order("cash_date", { ascending: filters.sortDirection === "asc" });
+      } else if (filters.sortField === "value") {
+        entriesQuery = entriesQuery.order("amount", { ascending: filters.sortDirection === "asc" });
+      }
+
+      if (filters.costCenterId) {
+        entriesQuery = entriesQuery.eq("cost_center_id", filters.costCenterId);
+      }
+      if (filters.projectId) {
+        entriesQuery = entriesQuery.eq("project_id", filters.projectId);
+      }
+      if (filters.categoryId) {
+        entriesQuery = entriesQuery.eq("chart_account_id", filters.categoryId);
+      }
+
+      // Get all ledger entries with chart accounts
+      const { data: entries } = await entriesQuery;
 
       // Get chart accounts for grouping
       const { data: chartAccounts } = await supabase

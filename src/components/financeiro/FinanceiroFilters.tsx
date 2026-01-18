@@ -5,12 +5,15 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
-import { CalendarIcon, Search, X, ChevronDown, ChevronUp } from "lucide-react";
+import { CalendarIcon, Search, X, ChevronDown, ChevronUp, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+
+export type SortDirection = "asc" | "desc" | null;
+export type SortField = "date" | "value" | null;
 
 export interface FinanceiroFiltersState {
   dateFrom: Date;
@@ -19,6 +22,9 @@ export interface FinanceiroFiltersState {
   costCenterId: string | null;
   projectId: string | null;
   search: string;
+  categoryId: string | null;
+  sortField: SortField;
+  sortDirection: SortDirection;
 }
 
 interface FinanceiroFiltersProps {
@@ -65,11 +71,24 @@ export function FinanceiroFilters({ filters, onChange }: FinanceiroFiltersProps)
     },
   });
 
+  const { data: categories } = useQuery({
+    queryKey: ["fin-chart-accounts-filter"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("fin_chart_accounts")
+        .select("id, code, name")
+        .eq("active", true)
+        .order("code");
+      return data || [];
+    },
+  });
+
   const activeFiltersCount = [
     filters.bankAccountId,
     filters.costCenterId,
     filters.projectId,
     filters.search,
+    filters.categoryId,
   ].filter(Boolean).length;
 
   const handlePresetPeriod = (preset: string) => {
@@ -110,7 +129,35 @@ export function FinanceiroFilters({ filters, onChange }: FinanceiroFiltersProps)
       costCenterId: null,
       projectId: null,
       search: "",
+      categoryId: null,
+      sortField: null,
+      sortDirection: null,
     });
+  };
+
+  const handleSortToggle = (field: SortField) => {
+    if (filters.sortField === field) {
+      // Cycle through: asc -> desc -> null
+      if (filters.sortDirection === "asc") {
+        onChange({ ...filters, sortDirection: "desc" });
+      } else if (filters.sortDirection === "desc") {
+        onChange({ ...filters, sortField: null, sortDirection: null });
+      } else {
+        onChange({ ...filters, sortDirection: "asc" });
+      }
+    } else {
+      onChange({ ...filters, sortField: field, sortDirection: "asc" });
+    }
+  };
+
+  const getSortIcon = (field: SortField) => {
+    if (filters.sortField !== field) {
+      return <ArrowUpDown className="h-3.5 w-3.5" />;
+    }
+    if (filters.sortDirection === "asc") {
+      return <ArrowUp className="h-3.5 w-3.5" />;
+    }
+    return <ArrowDown className="h-3.5 w-3.5" />;
   };
 
   return (
@@ -127,9 +174,14 @@ export function FinanceiroFilters({ filters, onChange }: FinanceiroFiltersProps)
                 (+{activeFiltersCount} filtros ativos)
               </span>
             )}
+            {filters.sortField && (
+              <span className="text-xs text-primary">
+                Ordenado por {filters.sortField === "date" ? "Data" : "Valor"} ({filters.sortDirection === "asc" ? "↑" : "↓"})
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-2">
-            {activeFiltersCount > 0 && (
+            {(activeFiltersCount > 0 || filters.sortField) && (
               <Button variant="ghost" size="sm" onClick={clearFilters} className="h-7 px-2 text-xs">
                 <X className="mr-1 h-3 w-3" />
                 Limpar
@@ -144,110 +196,157 @@ export function FinanceiroFilters({ filters, onChange }: FinanceiroFiltersProps)
         </div>
 
         <CollapsibleContent>
-          <div className="p-3 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-            {/* Period Presets */}
-            <Select onValueChange={handlePresetPeriod}>
-              <SelectTrigger className="h-9">
-                <SelectValue placeholder="Período rápido" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="today">Hoje</SelectItem>
-                <SelectItem value="this_week">Esta Semana</SelectItem>
-                <SelectItem value="this_month">Este Mês</SelectItem>
-                <SelectItem value="last_month">Mês Passado</SelectItem>
-                <SelectItem value="this_year">Este Ano</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="p-3 space-y-3">
+            {/* First Row: Period & Search */}
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+              {/* Period Presets */}
+              <Select onValueChange={handlePresetPeriod}>
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Período rápido" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="today">Hoje</SelectItem>
+                  <SelectItem value="this_week">Esta Semana</SelectItem>
+                  <SelectItem value="this_month">Este Mês</SelectItem>
+                  <SelectItem value="last_month">Mês Passado</SelectItem>
+                  <SelectItem value="this_year">Este Ano</SelectItem>
+                </SelectContent>
+              </Select>
 
-            {/* Date Range */}
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="h-9 justify-start gap-2 text-sm font-normal">
-                  <CalendarIcon className="h-4 w-4" />
-                  <span className="truncate">
-                    {format(filters.dateFrom, "dd/MM", { locale: ptBR })} - {format(filters.dateTo, "dd/MM", { locale: ptBR })}
-                  </span>
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 z-50" align="start">
-                <Calendar
-                  mode="range"
-                  selected={{ from: filters.dateFrom, to: filters.dateTo }}
-                  onSelect={(range) => {
-                    if (range?.from && range?.to) {
-                      onChange({ ...filters, dateFrom: range.from, dateTo: range.to });
-                    }
-                  }}
-                  locale={ptBR}
-                  numberOfMonths={2}
+              {/* Date Range */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="h-9 justify-start gap-2 text-sm font-normal">
+                    <CalendarIcon className="h-4 w-4" />
+                    <span className="truncate">
+                      {format(filters.dateFrom, "dd/MM", { locale: ptBR })} - {format(filters.dateTo, "dd/MM", { locale: ptBR })}
+                    </span>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0 z-50" align="start">
+                  <Calendar
+                    mode="range"
+                    selected={{ from: filters.dateFrom, to: filters.dateTo }}
+                    onSelect={(range) => {
+                      if (range?.from && range?.to) {
+                        onChange({ ...filters, dateFrom: range.from, dateTo: range.to });
+                      }
+                    }}
+                    locale={ptBR}
+                    numberOfMonths={2}
+                  />
+                </PopoverContent>
+              </Popover>
+
+              {/* Search */}
+              <div className="relative">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar..."
+                  value={filters.search}
+                  onChange={(e) => onChange({ ...filters, search: e.target.value })}
+                  className="h-9 pl-8"
                 />
-              </PopoverContent>
-            </Popover>
+              </div>
 
-            {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar..."
-                value={filters.search}
-                onChange={(e) => onChange({ ...filters, search: e.target.value })}
-                className="h-9 pl-8"
-              />
+              {/* Category Filter */}
+              <Select
+                value={filters.categoryId || "all"}
+                onValueChange={(value) => onChange({ ...filters, categoryId: value === "all" ? null : value })}
+              >
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Categoria" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas categorias</SelectItem>
+                  {categories?.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id}>
+                      {cat.code} - {cat.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Bank Account */}
+              <Select
+                value={filters.bankAccountId || "all"}
+                onValueChange={(value) => onChange({ ...filters, bankAccountId: value === "all" ? null : value })}
+              >
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Conta Bancária" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas as contas</SelectItem>
+                  {bankAccounts?.map((account) => (
+                    <SelectItem key={account.id} value={account.id}>
+                      {account.nickname}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Cost Center */}
+              <Select
+                value={filters.costCenterId || "all"}
+                onValueChange={(value) => onChange({ ...filters, costCenterId: value === "all" ? null : value })}
+              >
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Centro de Custo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os centros</SelectItem>
+                  {costCenters?.map((center) => (
+                    <SelectItem key={center.id} value={center.id}>
+                      {center.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
-            {/* Bank Account */}
-            <Select
-              value={filters.bankAccountId || "all"}
-              onValueChange={(value) => onChange({ ...filters, bankAccountId: value === "all" ? null : value })}
-            >
-              <SelectTrigger className="h-9">
-                <SelectValue placeholder="Conta Bancária" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas as contas</SelectItem>
-                {bankAccounts?.map((account) => (
-                  <SelectItem key={account.id} value={account.id}>
-                    {account.nickname}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {/* Second Row: Sort & Project */}
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Sort Buttons */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">Ordenar:</span>
+                <Button
+                  variant={filters.sortField === "date" ? "default" : "outline"}
+                  size="sm"
+                  className="h-8 gap-1.5 text-xs"
+                  onClick={() => handleSortToggle("date")}
+                >
+                  {getSortIcon("date")}
+                  Data
+                </Button>
+                <Button
+                  variant={filters.sortField === "value" ? "default" : "outline"}
+                  size="sm"
+                  className="h-8 gap-1.5 text-xs"
+                  onClick={() => handleSortToggle("value")}
+                >
+                  {getSortIcon("value")}
+                  Valor
+                </Button>
+              </div>
 
-            {/* Cost Center */}
-            <Select
-              value={filters.costCenterId || "all"}
-              onValueChange={(value) => onChange({ ...filters, costCenterId: value === "all" ? null : value })}
-            >
-              <SelectTrigger className="h-9">
-                <SelectValue placeholder="Centro de Custo" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os centros</SelectItem>
-                {costCenters?.map((center) => (
-                  <SelectItem key={center.id} value={center.id}>
-                    {center.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {/* Project */}
-            <Select
-              value={filters.projectId || "all"}
-              onValueChange={(value) => onChange({ ...filters, projectId: value === "all" ? null : value })}
-            >
-              <SelectTrigger className="h-9">
-                <SelectValue placeholder="Projeto" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os projetos</SelectItem>
-                {projects?.map((project) => (
-                  <SelectItem key={project.id} value={project.id}>
-                    {project.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              {/* Project */}
+              <Select
+                value={filters.projectId || "all"}
+                onValueChange={(value) => onChange({ ...filters, projectId: value === "all" ? null : value })}
+              >
+                <SelectTrigger className="h-8 w-[180px]">
+                  <SelectValue placeholder="Projeto" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os projetos</SelectItem>
+                  {projects?.map((project) => (
+                    <SelectItem key={project.id} value={project.id}>
+                      {project.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </CollapsibleContent>
       </Collapsible>
