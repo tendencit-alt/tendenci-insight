@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { FinanceiroFiltersState } from "./FinanceiroFilters";
@@ -12,7 +12,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Plus, Receipt, AlertTriangle, Clock, CheckCircle, ArrowUpCircle, Trash2, Edit, Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Plus, Receipt, AlertTriangle, Clock, CheckCircle, ArrowUpCircle, Trash2, Edit, Loader2, ArrowUpDown, ArrowUp, ArrowDown, Filter, X } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { CreateReceivableDialog } from "./CreateReceivableDialog";
@@ -20,9 +21,22 @@ import { ReceivePaymentDialog } from "./ReceivePaymentDialog";
 import { toast } from "sonner";
 import { useFinanceiroSync } from "@/hooks/useFinanceiroSync";
 import { bulkUpdateReceivablesWithSync, bulkDeleteReceivablesWithSync } from "@/lib/financeiroIntegration";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface ReceivablesTabProps {
   filters: FinanceiroFiltersState;
+}
+
+type SortDirection = "asc" | "desc" | null;
+type SortColumn = "due_date" | "customer" | "description" | "category" | "amount" | "status" | null;
+
+interface ColumnFilters {
+  due_date: string;
+  customer: string;
+  description: string;
+  category: string;
+  amount: string;
+  status: string;
 }
 
 export function ReceivablesTab({ filters }: ReceivablesTabProps) {
@@ -33,10 +47,22 @@ export function ReceivablesTab({ filters }: ReceivablesTabProps) {
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [bulkLoading, setBulkLoading] = useState(false);
-  const [bulkEditForm, setBulkEditForm] = useState({
+  const [bulkEditForm, setBulkEditForm] = useState({ status: "" });
+  const { invalidateReceivables } = useFinanceiroSync();
+
+  // Sorting state
+  const [sortColumn, setSortColumn] = useState<SortColumn>("due_date");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+
+  // Column filters state
+  const [columnFilters, setColumnFilters] = useState<ColumnFilters>({
+    due_date: "",
+    customer: "",
+    description: "",
+    category: "",
+    amount: "",
     status: "",
   });
-  const { invalidateReceivables } = useFinanceiroSync();
 
   const { data: receivables, isLoading, refetch } = useQuery({
     queryKey: ["fin-receivables", filters],
@@ -71,7 +97,7 @@ export function ReceivablesTab({ filters }: ReceivablesTabProps) {
     },
   });
 
-  // Fetch summary with 7d, 15d, 30d
+  // Fetch summary - includes RECEBIDO
   const { data: summary, isLoading: summaryLoading } = useQuery({
     queryKey: ["fin-receivables-summary-tab"],
     queryFn: async () => {
@@ -87,12 +113,15 @@ export function ReceivablesTab({ filters }: ReceivablesTabProps) {
 
       const abertas = data?.filter(d => d.status === "ABERTO") || [];
       const vencidas = data?.filter(d => d.status === "VENCIDO") || [];
+      const recebidas = data?.filter(d => d.status === "RECEBIDO") || [];
 
       return {
         abertasCount: abertas.length,
         abertasValor: abertas.reduce((sum, d) => sum + Number(d.amount) - Number(d.received_amount || 0), 0),
         vencidasCount: vencidas.length,
         vencidasValor: vencidas.reduce((sum, d) => sum + Number(d.amount) - Number(d.received_amount || 0), 0),
+        recebidasCount: recebidas.length,
+        recebidasValor: recebidas.reduce((sum, d) => sum + Number(d.amount), 0),
         aVencer7d: abertas.filter(d => new Date(d.due_date) <= in7Days).length,
         aVencer15d: abertas.filter(d => new Date(d.due_date) <= in15Days).length,
         aVencer30d: abertas.filter(d => new Date(d.due_date) <= in30Days).length,
@@ -100,8 +129,66 @@ export function ReceivablesTab({ filters }: ReceivablesTabProps) {
     },
   });
 
-  // Calculate KPIs
-  const kpis = receivables?.reduce(
+  // Filter and sort data
+  const filteredAndSortedData = useMemo(() => {
+    if (!receivables) return [];
+
+    let result = receivables.filter((r) => {
+      if (columnFilters.due_date && !format(new Date(r.due_date), "dd/MM/yyyy").includes(columnFilters.due_date)) return false;
+      if (columnFilters.customer && !(r.customer?.name || "").toLowerCase().includes(columnFilters.customer.toLowerCase())) return false;
+      if (columnFilters.description && !(r.description || "").toLowerCase().includes(columnFilters.description.toLowerCase())) return false;
+      if (columnFilters.category) {
+        const catText = r.chart_account ? `${r.chart_account.code} - ${r.chart_account.name}` : "";
+        if (!catText.toLowerCase().includes(columnFilters.category.toLowerCase())) return false;
+      }
+      if (columnFilters.amount && !String(r.amount).includes(columnFilters.amount)) return false;
+      if (columnFilters.status && r.status !== columnFilters.status) return false;
+      return true;
+    });
+
+    if (sortColumn && sortDirection) {
+      result.sort((a, b) => {
+        let aVal: any, bVal: any;
+        switch (sortColumn) {
+          case "due_date":
+            aVal = new Date(a.due_date).getTime();
+            bVal = new Date(b.due_date).getTime();
+            break;
+          case "customer":
+            aVal = a.customer?.name || "";
+            bVal = b.customer?.name || "";
+            break;
+          case "description":
+            aVal = a.description || "";
+            bVal = b.description || "";
+            break;
+          case "category":
+            aVal = a.chart_account?.code || "";
+            bVal = b.chart_account?.code || "";
+            break;
+          case "amount":
+            aVal = Number(a.amount);
+            bVal = Number(b.amount);
+            break;
+          case "status":
+            aVal = a.status;
+            bVal = b.status;
+            break;
+          default:
+            return 0;
+        }
+        if (typeof aVal === "string") {
+          return sortDirection === "asc" ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+        }
+        return sortDirection === "asc" ? aVal - bVal : bVal - aVal;
+      });
+    }
+
+    return result;
+  }, [receivables, columnFilters, sortColumn, sortDirection]);
+
+  // Calculate KPIs from filtered data
+  const kpis = filteredAndSortedData.reduce(
     (acc, r) => {
       const pendingAmount = Number(r.amount) - Number(r.received_amount || 0);
       if (r.status === "ABERTO") {
@@ -117,7 +204,7 @@ export function ReceivablesTab({ filters }: ReceivablesTabProps) {
       return acc;
     },
     { aberto: 0, abertoCount: 0, vencido: 0, vencidoCount: 0, recebido: 0, recebidoCount: 0 }
-  ) || { aberto: 0, abertoCount: 0, vencido: 0, vencidoCount: 0, recebido: 0, recebidoCount: 0 };
+  );
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -146,10 +233,10 @@ export function ReceivablesTab({ filters }: ReceivablesTabProps) {
   };
 
   const toggleSelectAll = () => {
-    if (selectedIds.size === receivables?.length) {
+    if (selectedIds.size === filteredAndSortedData.length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(receivables?.map(r => r.id) || []));
+      setSelectedIds(new Set(filteredAndSortedData.map(r => r.id)));
     }
   };
 
@@ -163,19 +250,37 @@ export function ReceivablesTab({ filters }: ReceivablesTabProps) {
     setSelectedIds(newSelected);
   };
 
+  const handleSort = (column: SortColumn) => {
+    if (sortColumn === column) {
+      if (sortDirection === "asc") setSortDirection("desc");
+      else if (sortDirection === "desc") { setSortColumn(null); setSortDirection(null); }
+      else setSortDirection("asc");
+    } else {
+      setSortColumn(column);
+      setSortDirection("asc");
+    }
+  };
+
+  const getSortIcon = (column: SortColumn) => {
+    if (sortColumn !== column) return <ArrowUpDown className="h-3 w-3 ml-1 opacity-50" />;
+    if (sortDirection === "asc") return <ArrowUp className="h-3 w-3 ml-1" />;
+    return <ArrowDown className="h-3 w-3 ml-1" />;
+  };
+
+  const clearFilters = () => {
+    setColumnFilters({ due_date: "", customer: "", description: "", category: "", amount: "", status: "" });
+  };
+
+  const hasActiveFilters = Object.values(columnFilters).some(v => v !== "");
+
   const handleBulkEdit = async () => {
     if (!bulkEditForm.status) {
       toast.error("Selecione um status");
       return;
     }
-
     setBulkLoading(true);
     try {
-      await bulkUpdateReceivablesWithSync(
-        Array.from(selectedIds),
-        bulkEditForm.status
-      );
-
+      await bulkUpdateReceivablesWithSync(Array.from(selectedIds), bulkEditForm.status);
       toast.success(`${selectedIds.size} contas atualizadas com sucesso`);
       setSelectedIds(new Set());
       setBulkEditOpen(false);
@@ -192,7 +297,6 @@ export function ReceivablesTab({ filters }: ReceivablesTabProps) {
     setBulkLoading(true);
     try {
       await bulkDeleteReceivablesWithSync(Array.from(selectedIds));
-
       toast.success(`${selectedIds.size} contas excluídas com sucesso`);
       setSelectedIds(new Set());
       setBulkDeleteOpen(false);
@@ -204,6 +308,38 @@ export function ReceivablesTab({ filters }: ReceivablesTabProps) {
     }
   };
 
+  const FilterPopover = ({ column, value, onChange, placeholder, options }: { column: string; value: string; onChange: (v: string) => void; placeholder: string; options?: string[] }) => (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="ghost" size="sm" className={`h-6 w-6 p-0 ${value ? "text-primary" : "opacity-50"}`}>
+          <Filter className="h-3 w-3" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-48 p-2" align="start">
+        {options ? (
+          <Select value={value} onValueChange={onChange}>
+            <SelectTrigger className="h-8">
+              <SelectValue placeholder={placeholder} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">Todos</SelectItem>
+              {options.map(opt => (
+                <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : (
+          <Input
+            placeholder={placeholder}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            className="h-8"
+          />
+        )}
+      </PopoverContent>
+    </Popover>
+  );
+
   return (
     <div className="space-y-4">
       {/* Summary Cards */}
@@ -212,7 +348,7 @@ export function ReceivablesTab({ filters }: ReceivablesTabProps) {
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-base font-medium flex items-center gap-2">
               <ArrowUpCircle className="h-5 w-5 text-green-500" />
-              Contas a Receber
+              Contas a Receber - Resumo Global
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -233,6 +369,12 @@ export function ReceivablesTab({ filters }: ReceivablesTabProps) {
                   <span className="text-sm">Vencidas</span>
                   <span className="font-semibold">
                     {summary?.vencidasCount || 0} títulos - R$ {(summary?.vencidasValor || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-green-600">
+                  <span className="text-sm">Recebidas</span>
+                  <span className="font-semibold">
+                    {summary?.recebidasCount || 0} títulos - R$ {(summary?.recebidasValor || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                   </span>
                 </div>
                 <div className="flex gap-4 text-xs text-muted-foreground pt-2 border-t">
@@ -314,10 +456,18 @@ export function ReceivablesTab({ filters }: ReceivablesTabProps) {
       {/* Table */}
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-base font-medium flex items-center gap-2">
-            <Receipt className="h-5 w-5" />
-            Contas a Receber
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base font-medium flex items-center gap-2">
+              <Receipt className="h-5 w-5" />
+              Contas a Receber ({filteredAndSortedData.length})
+            </CardTitle>
+            {hasActiveFilters && (
+              <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1 text-xs">
+                <X className="h-3 w-3" />
+                Limpar Filtros
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -327,73 +477,117 @@ export function ReceivablesTab({ filters }: ReceivablesTabProps) {
               ))}
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-10">
-                    <Checkbox 
-                      checked={receivables?.length > 0 && selectedIds.size === receivables?.length}
-                      onCheckedChange={toggleSelectAll}
-                    />
-                  </TableHead>
-                  <TableHead>Vencimento</TableHead>
-                  <TableHead>Cliente</TableHead>
-                  <TableHead>Descrição</TableHead>
-                  <TableHead>Categoria</TableHead>
-                  <TableHead className="text-right">Valor</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {receivables?.length === 0 ? (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
-                      Nenhuma conta a receber encontrada no período
-                    </TableCell>
+                    <TableHead className="w-10">
+                      <Checkbox 
+                        checked={filteredAndSortedData.length > 0 && selectedIds.size === filteredAndSortedData.length}
+                        onCheckedChange={toggleSelectAll}
+                      />
+                    </TableHead>
+                    <TableHead>
+                      <div className="flex items-center gap-1">
+                        <button onClick={() => handleSort("due_date")} className="flex items-center hover:text-foreground">
+                          Vencimento {getSortIcon("due_date")}
+                        </button>
+                        <FilterPopover column="due_date" value={columnFilters.due_date} onChange={(v) => setColumnFilters(f => ({...f, due_date: v}))} placeholder="dd/mm/aaaa" />
+                      </div>
+                    </TableHead>
+                    <TableHead>
+                      <div className="flex items-center gap-1">
+                        <button onClick={() => handleSort("customer")} className="flex items-center hover:text-foreground">
+                          Cliente {getSortIcon("customer")}
+                        </button>
+                        <FilterPopover column="customer" value={columnFilters.customer} onChange={(v) => setColumnFilters(f => ({...f, customer: v}))} placeholder="Buscar..." />
+                      </div>
+                    </TableHead>
+                    <TableHead>
+                      <div className="flex items-center gap-1">
+                        <button onClick={() => handleSort("description")} className="flex items-center hover:text-foreground">
+                          Descrição {getSortIcon("description")}
+                        </button>
+                        <FilterPopover column="description" value={columnFilters.description} onChange={(v) => setColumnFilters(f => ({...f, description: v}))} placeholder="Buscar..." />
+                      </div>
+                    </TableHead>
+                    <TableHead>
+                      <div className="flex items-center gap-1">
+                        <button onClick={() => handleSort("category")} className="flex items-center hover:text-foreground">
+                          Categoria {getSortIcon("category")}
+                        </button>
+                        <FilterPopover column="category" value={columnFilters.category} onChange={(v) => setColumnFilters(f => ({...f, category: v}))} placeholder="Buscar..." />
+                      </div>
+                    </TableHead>
+                    <TableHead className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <button onClick={() => handleSort("amount")} className="flex items-center hover:text-foreground">
+                          Valor {getSortIcon("amount")}
+                        </button>
+                        <FilterPopover column="amount" value={columnFilters.amount} onChange={(v) => setColumnFilters(f => ({...f, amount: v}))} placeholder="Valor..." />
+                      </div>
+                    </TableHead>
+                    <TableHead>
+                      <div className="flex items-center gap-1">
+                        <button onClick={() => handleSort("status")} className="flex items-center hover:text-foreground">
+                          Status {getSortIcon("status")}
+                        </button>
+                        <FilterPopover column="status" value={columnFilters.status} onChange={(v) => setColumnFilters(f => ({...f, status: v}))} placeholder="Status" options={["ABERTO", "VENCIDO", "RECEBIDO", "PARCIAL", "CANCELADO"]} />
+                      </div>
+                    </TableHead>
+                    <TableHead>Ações</TableHead>
                   </TableRow>
-                ) : (
-                  receivables?.map((receivable) => (
-                    <TableRow key={receivable.id} className={selectedIds.has(receivable.id) ? "bg-muted/50" : ""}>
-                      <TableCell>
-                        <Checkbox 
-                          checked={selectedIds.has(receivable.id)}
-                          onCheckedChange={() => toggleSelect(receivable.id)}
-                        />
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {format(new Date(receivable.due_date), "dd/MM/yyyy", { locale: ptBR })}
-                      </TableCell>
-                      <TableCell>{receivable.customer?.name || "-"}</TableCell>
-                      <TableCell className="max-w-[200px] truncate">{receivable.description || "-"}</TableCell>
-                      <TableCell className="text-xs">
-                        {receivable.chart_account ? `${receivable.chart_account.code} - ${receivable.chart_account.name}` : "-"}
-                      </TableCell>
-                      <TableCell className="text-right font-medium">
-                        {formatCurrency(Number(receivable.amount))}
-                        {receivable.received_amount > 0 && (
-                          <div className="text-xs text-muted-foreground">
-                            Recebido: {formatCurrency(Number(receivable.received_amount))}
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell>{getStatusBadge(receivable.status)}</TableCell>
-                      <TableCell>
-                        {receivable.status !== "RECEBIDO" && (
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleReceive(receivable)}
-                          >
-                            Receber
-                          </Button>
-                        )}
+                </TableHeader>
+                <TableBody>
+                  {filteredAndSortedData.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                        Nenhuma conta a receber encontrada
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                  ) : (
+                    filteredAndSortedData.map((receivable) => (
+                      <TableRow key={receivable.id} className={selectedIds.has(receivable.id) ? "bg-muted/50" : ""}>
+                        <TableCell>
+                          <Checkbox 
+                            checked={selectedIds.has(receivable.id)}
+                            onCheckedChange={() => toggleSelect(receivable.id)}
+                          />
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          {format(new Date(receivable.due_date), "dd/MM/yyyy", { locale: ptBR })}
+                        </TableCell>
+                        <TableCell>{receivable.customer?.name || "-"}</TableCell>
+                        <TableCell className="max-w-[200px] truncate">{receivable.description || "-"}</TableCell>
+                        <TableCell className="text-xs">
+                          {receivable.chart_account ? `${receivable.chart_account.code} - ${receivable.chart_account.name}` : "-"}
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          {formatCurrency(Number(receivable.amount))}
+                          {receivable.received_amount > 0 && (
+                            <div className="text-xs text-muted-foreground">
+                              Recebido: {formatCurrency(Number(receivable.received_amount))}
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell>{getStatusBadge(receivable.status)}</TableCell>
+                        <TableCell>
+                          {receivable.status !== "RECEBIDO" && receivable.status !== "CANCELADO" && (
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleReceive(receivable)}
+                            >
+                              Receber
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -435,7 +629,7 @@ export function ReceivablesTab({ filters }: ReceivablesTabProps) {
             <Button variant="outline" onClick={() => setBulkEditOpen(false)}>Cancelar</Button>
             <Button onClick={handleBulkEdit} disabled={bulkLoading}>
               {bulkLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Aplicar
+              Confirmar
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -445,17 +639,18 @@ export function ReceivablesTab({ filters }: ReceivablesTabProps) {
       <AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir contas selecionadas?</AlertDialogTitle>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
             <AlertDialogDescription>
               Você está prestes a excluir <strong>{selectedIds.size}</strong> conta(s) a receber.
+              Os lançamentos vinculados serão marcados como cancelados mas não serão excluídos.
               Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <AlertDialogAction onClick={handleBulkDelete} disabled={bulkLoading} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               {bulkLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Excluir {selectedIds.size} conta(s)
+              Excluir
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
