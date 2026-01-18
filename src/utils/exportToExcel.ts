@@ -1,4 +1,4 @@
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 
 interface ExportConfig {
   filename: string;
@@ -6,7 +6,7 @@ interface ExportConfig {
   headers?: Record<string, string>;
 }
 
-export function exportToExcel(
+export async function exportToExcel(
   data: Record<string, any>[],
   config: ExportConfig
 ) {
@@ -26,29 +26,56 @@ export function exportToExcel(
     });
   }
 
-  // Create worksheet
-  const ws = XLSX.utils.json_to_sheet(exportData);
+  // Create workbook and worksheet
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet(config.sheetName || "Dados");
+
+  // Add headers
+  const headers = Object.keys(exportData[0] || {});
+  worksheet.addRow(headers);
+
+  // Style header row
+  const headerRow = worksheet.getRow(1);
+  headerRow.font = { bold: true };
+  headerRow.fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'FFE0E0E0' }
+  };
+
+  // Add data rows
+  exportData.forEach((row) => {
+    worksheet.addRow(headers.map((h) => row[h] ?? ""));
+  });
 
   // Auto-size columns
-  const colWidths = Object.keys(exportData[0] || {}).map((key) => {
-    const maxLength = Math.max(
-      key.length,
-      ...exportData.map((row) => String(row[key] || "").length)
-    );
-    return { wch: Math.min(maxLength + 2, 50) };
+  worksheet.columns.forEach((column, index) => {
+    const headerLength = headers[index]?.length || 10;
+    let maxLength = headerLength;
+    
+    exportData.forEach((row) => {
+      const cellValue = String(row[headers[index]] || "");
+      maxLength = Math.max(maxLength, cellValue.length);
+    });
+    
+    column.width = Math.min(maxLength + 2, 50);
   });
-  ws["!cols"] = colWidths;
-
-  // Create workbook
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, config.sheetName || "Dados");
 
   // Generate filename with date
   const date = new Date().toISOString().split("T")[0];
   const filename = `${config.filename}_${date}.xlsx`;
 
-  // Save file
-  XLSX.writeFile(wb, filename);
+  // Generate and download file
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  window.URL.revokeObjectURL(url);
 }
 
 // Pre-configured exports
