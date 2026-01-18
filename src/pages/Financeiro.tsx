@@ -38,15 +38,17 @@ export default function Financeiro() {
   return (
     <DashboardLayout>
       <div className="space-y-4">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-col gap-2">
           <div>
             <h1 className="text-2xl font-bold">Financeiro</h1>
             <p className="text-muted-foreground text-sm">
               Gestão financeira completa: caixa, contas a pagar/receber, DRE e conciliação
             </p>
           </div>
-          <FinanceiroFilters filters={filters} onChange={setFilters} />
         </div>
+
+        {/* Filtros sempre visíveis */}
+        <FinanceiroFilters filters={filters} onChange={setFilters} />
 
         {/* Orphan Entries Alert - Shows when ledger entries are not synced */}
         <OrphanEntriesAlert />
