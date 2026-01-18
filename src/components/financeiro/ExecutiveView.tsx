@@ -51,14 +51,30 @@ export function ExecutiveView({ filters }: ExecutiveViewProps) {
         .select("id, code, name, nature")
         .eq("active", true);
 
-      // Helper to classify accounts by code prefix
+      // Helper to classify accounts by numeric code ranges
       const classifyAccount = (code: string, nature: string | null) => {
-        if (code.startsWith("4.1")) return "receita_operacional";
-        if (code.startsWith("5.1")) return "custo_variavel";
-        if (code.startsWith("5.2") || code.startsWith("6.")) return "despesa_operacional";
-        if (code.startsWith("7.")) return "resultado_financeiro";
-        if (code.startsWith("8.1")) return "capital_entrada";
-        if (code.startsWith("8.2")) return "capital_saida";
+        const mainCode = parseFloat(code.split('.')[0]);
+        const subCode = code.includes('.') ? parseFloat(code.split('.')[1]) : 0;
+        
+        // Faixa 4: Receitas Operacionais
+        if (mainCode === 4) return "receita_operacional";
+        
+        // Faixa 5.1: Custos Variáveis
+        if (mainCode === 5 && subCode === 1) return "custo_variavel";
+        
+        // Faixa 5.2+ e 6: Despesas Operacionais
+        if ((mainCode === 5 && subCode >= 2) || mainCode === 6) return "despesa_operacional";
+        
+        // Faixa 7: Resultado Financeiro
+        if (mainCode === 7) return "resultado_financeiro";
+        
+        // Faixa 8.1: Capital Entrada
+        if (mainCode === 8 && subCode === 1) return "capital_entrada";
+        
+        // Faixa 8.2: Capital Saída
+        if (mainCode === 8 && subCode === 2) return "capital_saida";
+        
+        // Fallback baseado na natureza
         return nature === "RECEITA" ? "receita_operacional" : "despesa_operacional";
       };
 
