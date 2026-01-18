@@ -25,6 +25,7 @@ import { Separator } from "@/components/ui/separator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -41,6 +42,7 @@ import {
 } from "lucide-react";
 import { useFinanceiroSync } from "@/hooks/useFinanceiroSync";
 import { reconcileWithSync } from "@/lib/financeiroIntegration";
+import { CurrencyInput, parseCurrencyToNumber, formatToCurrencyDisplay } from "@/components/ui/currency-input";
 
 interface LedgerEntry {
   id: string;
@@ -79,6 +81,10 @@ export function ReconcileDialog({
   const [chartAccountId, setChartAccountId] = useState("");
   const [vinculo, setVinculo] = useState("");
   const [jurosAtraso, setJurosAtraso] = useState<number>(0);
+  
+  // Partial payment fields
+  const [isPartialPayment, setIsPartialPayment] = useState(false);
+  const [partialAmount, setPartialAmount] = useState("");
 
   // Get unique bank account ids from selected entries
   const bankAccountIds = [...new Set(entries.map((e) => e.bank_account_id).filter(Boolean))];
@@ -169,8 +175,18 @@ export function ReconcileDialog({
       setChartAccountId("");
       setVinculo("");
       setJurosAtraso(0);
+      setIsPartialPayment(false);
+      setPartialAmount("");
     }
   }, [open]);
+  
+  // Update partial amount when entries change
+  useEffect(() => {
+    if (open && entries.length > 0) {
+      const total = entries.reduce((sum, e) => sum + Math.abs(Number(e.amount)), 0);
+      setPartialAmount(formatToCurrencyDisplay(total));
+    }
+  }, [open, entries]);
 
   const totalAmount = entries.reduce((sum, e) => {
     const amt = Number(e.amount);
@@ -186,8 +202,13 @@ export function ReconcileDialog({
 
   // Validation for manual reconciliation
   const isManualFormValid = reconcileMethod === "manual" 
-    ? dataMovimento && contaBancariaId && chartAccountId && vinculo
+    ? dataMovimento && contaBancariaId && chartAccountId && vinculo && (!isPartialPayment || parseCurrencyToNumber(partialAmount) > 0)
     : true;
+    
+  // Calculate the amount being reconciled
+  const totalEntryAmount = entries.reduce((sum, e) => sum + Math.abs(Number(e.amount)), 0);
+  const reconcileAmount = isPartialPayment ? parseCurrencyToNumber(partialAmount) : totalEntryAmount;
+  const isPartial = isPartialPayment && reconcileAmount < totalEntryAmount;
 
   const handleSubmit = async () => {
     // Validate required fields for manual reconciliation
@@ -208,61 +229,110 @@ export function ReconcileDialog({
         toast.error("Vínculo é obrigatório");
         return;
       }
+      if (isPartialPayment && reconcileAmount <= 0) {
+        toast.error("Valor a conciliar deve ser maior que zero");
+        return;
+      }
+      if (isPartialPayment && reconcileAmount > totalEntryAmount) {
+        toast.error("Valor a conciliar não pode ser maior que o valor total");
+        return;
+      }
     }
 
     setIsSubmitting(true);
 
     try {
-      // Update ledger entries as reconciled
-      const updateData: any = {
-        reconciled: true,
-        document_number: documentNumber || null,
-        notes: notes ? (entries.length === 1 ? notes : `[Conciliação em lote] ${notes}`) : undefined,
-      };
+      // For partial payments, we need to handle each entry individually
+      if (isPartial && entries.length === 1) {
+        const entry = entries[0];
+        const originalAmount = Math.abs(Number(entry.amount));
+        const remainingAmount = originalAmount - reconcileAmount;
+        
+        // Update the original entry with the partial amount as reconciled
+        const updateData: any = {
+          amount: reconcileAmount,
+          reconciled: true,
+          document_number: documentNumber || null,
+          cash_date: dataPagamento,
+          bank_account_id: contaBancariaId,
+          chart_account_id: chartAccountId,
+          juros_atraso: jurosAtraso || 0,
+          notes: notes 
+            ? `[Vínculo: ${vinculo}] [Pagamento Parcial] ${notes}` 
+            : `[Vínculo: ${vinculo}] [Pagamento Parcial]`,
+        };
 
-      // Add manual reconciliation fields
-      if (reconcileMethod === "manual") {
-        updateData.cash_date = dataPagamento; // Auto date
-        updateData.bank_account_id = contaBancariaId;
-        updateData.chart_account_id = chartAccountId;
-        updateData.juros_atraso = jurosAtraso || 0;
-        // vinculo could be stored in notes or a dedicated field if available
-        updateData.notes = notes 
-          ? `[Vínculo: ${vinculo}] ${notes}` 
-          : `[Vínculo: ${vinculo}]`;
+        const { error: updateError } = await supabase
+          .from("fin_ledger_entries")
+          .update(updateData)
+          .eq("id", entry.id);
+
+        if (updateError) throw updateError;
+
+        // Create a new entry for the remaining amount
+        const { error: insertError } = await supabase
+          .from("fin_ledger_entries")
+          .insert({
+            type: entry.type,
+            description: `${entry.description} (Saldo pendente)`,
+            amount: remainingAmount,
+            competence_date: entry.cash_date,
+            cash_date: null,
+            bank_account_id: entry.bank_account_id,
+            chart_account_id: chartAccountId || null,
+            status: "PENDENTE",
+            reconciled: false,
+            notes: `Saldo restante de pagamento parcial - Original: ${formatCurrency(originalAmount)}, Pago: ${formatCurrency(reconcileAmount)}`,
+          });
+
+        if (insertError) throw insertError;
+        
+        toast.success(`Pagamento parcial de ${formatCurrency(reconcileAmount)} conciliado! Saldo de ${formatCurrency(remainingAmount)} pendente.`);
+      } else {
+        // Full reconciliation (original logic)
+        const updateData: any = {
+          reconciled: true,
+          document_number: documentNumber || null,
+          notes: notes ? (entries.length === 1 ? notes : `[Conciliação em lote] ${notes}`) : undefined,
+        };
+
+        // Add manual reconciliation fields
+        if (reconcileMethod === "manual") {
+          updateData.cash_date = dataPagamento;
+          updateData.bank_account_id = contaBancariaId;
+          updateData.chart_account_id = chartAccountId;
+          updateData.juros_atraso = jurosAtraso || 0;
+          updateData.notes = notes 
+            ? `[Vínculo: ${vinculo}] ${notes}` 
+            : `[Vínculo: ${vinculo}]`;
+        }
+
+        const { error: updateError } = await supabase
+          .from("fin_ledger_entries")
+          .update(updateData)
+          .in("id", entries.map((e) => e.id));
+
+        if (updateError) throw updateError;
+
+        // If bank transaction was selected, create reconciliation link and update bank transaction
+        if (reconcileMethod === "bank" && selectedBankTransactionId) {
+          await supabase
+            .from("fin_bank_transactions")
+            .update({ status: "CONCILIADA" })
+            .eq("id", selectedBankTransactionId);
+
+          const links = entries.map((entry) => ({
+            bank_transaction_id: selectedBankTransactionId,
+            ledger_entry_id: entry.id,
+            match_type: "MANUAL" as const,
+          }));
+
+          await supabase.from("fin_reconciliation_links").insert(links);
+        }
+
+        toast.success(`${entries.length} lançamento(s) conciliado(s) com sucesso!`);
       }
 
-      const { error: updateError } = await supabase
-        .from("fin_ledger_entries")
-        .update(updateData)
-        .in(
-          "id",
-          entries.map((e) => e.id)
-        );
-
-      if (updateError) throw updateError;
-
-      // If bank transaction was selected, create reconciliation link and update bank transaction
-      if (reconcileMethod === "bank" && selectedBankTransactionId) {
-        // Update bank transaction status
-        await supabase
-          .from("fin_bank_transactions")
-          .update({ status: "CONCILIADA" })
-          .eq("id", selectedBankTransactionId);
-
-        // Create reconciliation links for each entry
-        const links = entries.map((entry) => ({
-          bank_transaction_id: selectedBankTransactionId,
-          ledger_entry_id: entry.id,
-          match_type: "MANUAL" as const,
-        }));
-
-        await supabase.from("fin_reconciliation_links").insert(links);
-      }
-
-      toast.success(
-        `${entries.length} lançamento(s) conciliado(s) com sucesso!`
-      );
       invalidateReconciliation();
       onSuccess();
       onOpenChange(false);
@@ -481,6 +551,42 @@ export function ReconcileDialog({
                         Conciliação sem documento de referência. Recomenda-se incluir para auditoria.
                       </AlertDescription>
                     </Alert>
+                  )}
+
+                  {/* Partial Payment Option - Only for single entries */}
+                  {entries.length === 1 && (
+                    <div className="space-y-3 p-3 rounded-lg border bg-background">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="partialPayment"
+                          checked={isPartialPayment}
+                          onCheckedChange={(checked) => setIsPartialPayment(checked === true)}
+                        />
+                        <Label htmlFor="partialPayment" className="text-sm font-medium cursor-pointer">
+                          Pagamento Parcial
+                        </Label>
+                      </div>
+                      
+                      {isPartialPayment && (
+                        <div className="space-y-2 pl-6">
+                          <Label className="flex items-center gap-1">
+                            Valor a Conciliar <span className="text-red-500">*</span>
+                          </Label>
+                          <CurrencyInput
+                            value={partialAmount}
+                            onChange={setPartialAmount}
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Valor total: {formatCurrency(totalEntryAmount)} — Restante: {formatCurrency(totalEntryAmount - parseCurrencyToNumber(partialAmount))}
+                          </p>
+                          {parseCurrencyToNumber(partialAmount) > totalEntryAmount && (
+                            <p className="text-xs text-destructive">
+                              O valor não pode ser maior que o total
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   )}
 
                   {/* Data de Pagamento/Recebimento - Auto and locked */}
