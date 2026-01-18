@@ -530,10 +530,68 @@ export default function IAConfigProdutos() {
         setForm(prev => ({ ...prev, imagem_url: publicUrl }));
       }
 
-      toast.success("Imagem enviada!");
+      return publicUrl;
     } catch (error) {
       console.error("Erro no upload:", error);
       toast.error("Erro ao enviar imagem");
+      return null;
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const uploadMultipleImages = async (files: FileList, isGallery = false) => {
+    const fileArray = Array.from(files);
+    if (fileArray.length === 0) return;
+
+    setUploading(true);
+    let successCount = 0;
+    const uploadedUrls: string[] = [];
+
+    try {
+      for (const file of fileArray) {
+        const fileExt = file.name.split(".").pop();
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const filePath = `produtos/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("ia-assets")
+          .upload(filePath, file);
+
+        if (uploadError) {
+          console.error("Erro no upload:", uploadError);
+          continue;
+        }
+
+        const { data } = supabase.storage.from("ia-assets").getPublicUrl(filePath);
+        uploadedUrls.push(data.publicUrl);
+        successCount++;
+      }
+
+      if (uploadedUrls.length > 0) {
+        if (isGallery) {
+          setForm(prev => ({ ...prev, galeria: [...prev.galeria, ...uploadedUrls] }));
+        } else {
+          // Para imagem principal, usa a primeira
+          setForm(prev => ({ 
+            ...prev, 
+            imagem_url: uploadedUrls[0],
+            // Se tiver mais de uma, adiciona o resto na galeria
+            galeria: uploadedUrls.length > 1 ? [...prev.galeria, ...uploadedUrls.slice(1)] : prev.galeria
+          }));
+        }
+      }
+
+      if (successCount === fileArray.length) {
+        toast.success(`${successCount} ${successCount === 1 ? 'imagem enviada' : 'imagens enviadas'}!`);
+      } else if (successCount > 0) {
+        toast.warning(`${successCount} de ${fileArray.length} imagens enviadas`);
+      } else {
+        toast.error("Erro ao enviar imagens");
+      }
+    } catch (error) {
+      console.error("Erro no upload múltiplo:", error);
+      toast.error("Erro ao enviar imagens");
     } finally {
       setUploading(false);
     }
@@ -1383,11 +1441,15 @@ export default function IAConfigProdutos() {
                     <input
                       type="file"
                       accept="image/*"
+                      multiple
                       className="hidden"
                       disabled={uploading}
                       onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) uploadImage(file);
+                        const files = e.target.files;
+                        if (files && files.length > 0) {
+                          uploadMultipleImages(files, false);
+                        }
+                        e.target.value = ''; // Reset input
                       }}
                     />
                     {uploading ? (
@@ -1396,6 +1458,7 @@ export default function IAConfigProdutos() {
                       <>
                         <Upload className="h-6 w-6 text-muted-foreground" />
                         <span className="text-sm text-muted-foreground mt-1">Enviar</span>
+                        <span className="text-xs text-muted-foreground">(múltiplas)</span>
                       </>
                     )}
                   </label>
@@ -1427,21 +1490,28 @@ export default function IAConfigProdutos() {
                       </Button>
                     </div>
                   ))}
-                  <label className="flex items-center justify-center h-20 w-20 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+                  <label className="flex flex-col items-center justify-center h-20 min-w-[80px] px-4 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
                     <input
                       type="file"
                       accept="image/*"
+                      multiple
                       className="hidden"
                       disabled={uploading}
                       onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) uploadImage(file, true);
+                        const files = e.target.files;
+                        if (files && files.length > 0) {
+                          uploadMultipleImages(files, true);
+                        }
+                        e.target.value = ''; // Reset input
                       }}
                     />
                     {uploading ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      <Plus className="h-6 w-6 text-muted-foreground" />
+                      <>
+                        <Plus className="h-5 w-5 text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground mt-0.5">Várias</span>
+                      </>
                     )}
                   </label>
                 </div>
