@@ -2192,6 +2192,7 @@ export type Database = {
           created_by: string | null
           description: string
           document_number: string | null
+          has_splits: boolean | null
           id: string
           installment_number: number | null
           loan_contract_id: string | null
@@ -2219,6 +2220,7 @@ export type Database = {
           created_by?: string | null
           description: string
           document_number?: string | null
+          has_splits?: boolean | null
           id?: string
           installment_number?: number | null
           loan_contract_id?: string | null
@@ -2246,6 +2248,7 @@ export type Database = {
           created_by?: string | null
           description?: string
           document_number?: string | null
+          has_splits?: boolean | null
           id?: string
           installment_number?: number | null
           loan_contract_id?: string | null
@@ -2308,6 +2311,71 @@ export type Database = {
           {
             foreignKeyName: "fin_ledger_entries_reversal_of_id_fkey"
             columns: ["reversal_of_id"]
+            isOneToOne: false
+            referencedRelation: "fin_ledger_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fin_ledger_splits: {
+        Row: {
+          amount: number
+          chart_account_id: string | null
+          cost_center_id: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string
+          id: string
+          parent_entry_id: string
+          percentage: number | null
+        }
+        Insert: {
+          amount: number
+          chart_account_id?: string | null
+          cost_center_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description: string
+          id?: string
+          parent_entry_id: string
+          percentage?: number | null
+        }
+        Update: {
+          amount?: number
+          chart_account_id?: string | null
+          cost_center_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string
+          id?: string
+          parent_entry_id?: string
+          percentage?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fin_ledger_splits_chart_account_id_fkey"
+            columns: ["chart_account_id"]
+            isOneToOne: false
+            referencedRelation: "fin_chart_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_ledger_splits_cost_center_id_fkey"
+            columns: ["cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "fin_cost_centers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_ledger_splits_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_ledger_splits_parent_entry_id_fkey"
+            columns: ["parent_entry_id"]
             isOneToOne: false
             referencedRelation: "fin_ledger_entries"
             referencedColumns: ["id"]

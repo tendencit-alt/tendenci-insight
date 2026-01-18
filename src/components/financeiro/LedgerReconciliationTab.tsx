@@ -25,14 +25,23 @@ import {
   Upload,
   CheckCircle,
   Clock,
-  Link2
+  Link2,
+  Split,
+  MoreHorizontal
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { CreateLedgerEntryDialog } from "./CreateLedgerEntryDialog";
 import { LedgerAuditSheet } from "./LedgerAuditSheet";
 import { ReconcileDialog } from "./ReconcileDialog";
+import { SplitEntryDialog } from "./SplitEntryDialog";
 import { toast } from "sonner";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface LedgerReconciliationTabProps {
   filters: FinanceiroFiltersState;
@@ -46,6 +55,8 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
   const [alertOpen, setAlertOpen] = useState(true);
   const [selectedForReconcile, setSelectedForReconcile] = useState<Set<string>>(new Set());
   const [reconcileDialogOpen, setReconcileDialogOpen] = useState(false);
+  const [splitDialogOpen, setSplitDialogOpen] = useState(false);
+  const [selectedForSplit, setSelectedForSplit] = useState<any>(null);
   const [importing, setImporting] = useState(false);
 
   const dateField = "cash_date";
@@ -229,6 +240,24 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
     setSelectedForReconcile(new Set());
     refetchEntries();
     refetchTransactions();
+  };
+
+  const handleSplitSuccess = () => {
+    setSelectedForSplit(null);
+    refetchEntries();
+  };
+
+  const handleOpenSplit = (entry: any) => {
+    if (entry.has_splits) {
+      toast.error("Este lançamento já possui desdobramentos");
+      return;
+    }
+    if (entry.reconciled) {
+      toast.error("Não é possível desdobrar lançamentos já conciliados");
+      return;
+    }
+    setSelectedForSplit(entry);
+    setSplitDialogOpen(true);
   };
 
   const handleViewAudit = (entry: any) => {
@@ -519,14 +548,32 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
                               )}
                             </TableCell>
                             <TableCell className="py-3 text-center">
-                              <Button 
-                                variant="ghost" 
-                                size="sm"
-                                className="h-7 w-7 p-0"
-                                onClick={() => handleViewAudit(entry)}
-                              >
-                                <History className="h-3.5 w-3.5" />
-                              </Button>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm"
+                                    className="h-7 w-7 p-0"
+                                  >
+                                    <MoreHorizontal className="h-3.5 w-3.5" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => handleViewAudit(entry)} className="gap-2">
+                                    <History className="h-4 w-4" />
+                                    Histórico
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem 
+                                    onClick={() => handleOpenSplit(entry)} 
+                                    className="gap-2"
+                                    disabled={entry.has_splits || entry.reconciled}
+                                  >
+                                    <Split className="h-4 w-4" />
+                                    Desdobrar
+                                    {entry.has_splits && <Badge variant="secondary" className="ml-auto text-[10px]">Já possui</Badge>}
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             </TableCell>
                           </TableRow>
                         ))
@@ -692,6 +739,12 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
         onOpenChange={setReconcileDialogOpen} 
         entries={selectedEntries} 
         onSuccess={handleReconcileSuccess} 
+      />
+      <SplitEntryDialog
+        open={splitDialogOpen}
+        onOpenChange={setSplitDialogOpen}
+        entry={selectedForSplit}
+        onSuccess={handleSplitSuccess}
       />
     </div>
   );
