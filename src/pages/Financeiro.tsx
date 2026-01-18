@@ -42,32 +42,34 @@ export default function Financeiro() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="flex flex-wrap h-auto gap-1 bg-muted/50 p-1">
-            <TabsTrigger value="dashboard" className="flex items-center gap-2">
-              <LayoutDashboard className="h-4 w-4" />
-              <span className="hidden sm:inline">Dashboard</span>
-            </TabsTrigger>
-            <TabsTrigger value="dre-cashflow" className="flex items-center gap-2">
-              <BarChart3 className="h-4 w-4" />
-              <span className="hidden sm:inline">DRE / Fluxo de Caixa</span>
-            </TabsTrigger>
-            <TabsTrigger value="payables-receivables" className="flex items-center gap-2">
-              <Wallet className="h-4 w-4" />
-              <span className="hidden sm:inline">Contas a Pagar/Receber</span>
-            </TabsTrigger>
-            <TabsTrigger value="ledger" className="flex items-center gap-2">
-              <BookOpen className="h-4 w-4" />
-              <span className="hidden sm:inline">Lançamentos</span>
-            </TabsTrigger>
-            <TabsTrigger value="reconciliation" className="flex items-center gap-2">
-              <RefreshCw className="h-4 w-4" />
-              <span className="hidden sm:inline">Conciliação</span>
-            </TabsTrigger>
-            <TabsTrigger value="masters" className="flex items-center gap-2">
-              <Settings2 className="h-4 w-4" />
-              <span className="hidden sm:inline">Cadastros</span>
-            </TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto pb-2 -mx-2 px-2">
+            <TabsList className="inline-flex h-auto min-w-max gap-1 bg-muted/50 p-1 md:flex md:flex-wrap md:min-w-0">
+              <TabsTrigger value="dashboard" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm sm:px-3 sm:py-2">
+                <LayoutDashboard className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                <span className="whitespace-nowrap">Dashboard</span>
+              </TabsTrigger>
+              <TabsTrigger value="dre-cashflow" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm sm:px-3 sm:py-2">
+                <BarChart3 className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                <span className="whitespace-nowrap">DRE / Fluxo</span>
+              </TabsTrigger>
+              <TabsTrigger value="payables-receivables" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm sm:px-3 sm:py-2">
+                <Wallet className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                <span className="whitespace-nowrap">Pagar/Receber</span>
+              </TabsTrigger>
+              <TabsTrigger value="ledger" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm sm:px-3 sm:py-2">
+                <BookOpen className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                <span className="whitespace-nowrap">Lançamentos</span>
+              </TabsTrigger>
+              <TabsTrigger value="reconciliation" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm sm:px-3 sm:py-2">
+                <RefreshCw className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                <span className="whitespace-nowrap">Conciliação</span>
+              </TabsTrigger>
+              <TabsTrigger value="masters" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm sm:px-3 sm:py-2">
+                <Settings2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                <span className="whitespace-nowrap">Cadastros</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="dashboard" className="space-y-4">
             <FinanceiroDashboard filters={filters} />
