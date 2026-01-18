@@ -189,14 +189,14 @@ export function FinanceiroFilters({ filters, onChange }: FinanceiroFiltersProps)
             </div>
 
             <Select
-              value={filters.bankAccountId || ""}
-              onValueChange={(value) => onChange({ ...filters, bankAccountId: value || null })}
+              value={filters.bankAccountId || "all"}
+              onValueChange={(value) => onChange({ ...filters, bankAccountId: value === "all" ? null : value })}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Conta Bancária" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todas as contas</SelectItem>
+                <SelectItem value="all">Todas as contas</SelectItem>
                 {bankAccounts?.map((account) => (
                   <SelectItem key={account.id} value={account.id}>
                     {account.nickname}
@@ -206,14 +206,14 @@ export function FinanceiroFilters({ filters, onChange }: FinanceiroFiltersProps)
             </Select>
 
             <Select
-              value={filters.costCenterId || ""}
-              onValueChange={(value) => onChange({ ...filters, costCenterId: value || null })}
+              value={filters.costCenterId || "all"}
+              onValueChange={(value) => onChange({ ...filters, costCenterId: value === "all" ? null : value })}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Centro de Custo" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos os centros</SelectItem>
+                <SelectItem value="all">Todos os centros</SelectItem>
                 {costCenters?.map((center) => (
                   <SelectItem key={center.id} value={center.id}>
                     {center.name}
@@ -223,14 +223,14 @@ export function FinanceiroFilters({ filters, onChange }: FinanceiroFiltersProps)
             </Select>
 
             <Select
-              value={filters.projectId || ""}
-              onValueChange={(value) => onChange({ ...filters, projectId: value || null })}
+              value={filters.projectId || "all"}
+              onValueChange={(value) => onChange({ ...filters, projectId: value === "all" ? null : value })}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Projeto" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos os projetos</SelectItem>
+                <SelectItem value="all">Todos os projetos</SelectItem>
                 {projects?.map((project) => (
                   <SelectItem key={project.id} value={project.id}>
                     {project.name}
