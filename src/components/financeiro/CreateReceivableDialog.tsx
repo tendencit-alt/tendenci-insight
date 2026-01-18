@@ -13,6 +13,8 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { Loader2, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { createReceivableWithLedger } from "@/lib/financeiroIntegration";
+import { useFinanceiroSync } from "@/hooks/useFinanceiroSync";
 
 interface CreateReceivableDialogProps {
   open: boolean;
@@ -40,6 +42,7 @@ interface FormErrors {
 export function CreateReceivableDialog({ open, onOpenChange, onSuccess, initialData }: CreateReceivableDialogProps) {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
+  const { invalidateReceivables } = useFinanceiroSync();
   const [form, setForm] = useState({
     customer_id: "",
     amount: "",
@@ -160,24 +163,24 @@ export function CreateReceivableDialog({ open, onOpenChange, onSuccess, initialD
 
     setLoading(true);
     try {
-      const { error } = await supabase.from("fin_receivables").insert({
+      // Use integrated service to create receivable AND ledger entry
+      await createReceivableWithLedger({
         customer_id: form.customer_id,
         amount: parseCurrencyToNumber(form.amount),
         due_date: form.due_date,
         competence_date: form.competence_date,
         chart_account_id: form.chart_account_id,
-        cost_center_id: form.cost_center_id || null,
-        project_id: form.project_id || null,
+        cost_center_id: form.cost_center_id || undefined,
+        project_id: form.project_id || undefined,
         description: form.description,
-        document_number: form.document_number || null,
+        document_number: form.document_number || undefined,
         installment: parseInt(form.installment) || 1,
         total_installments: parseInt(form.total_installments) || 1,
-        notes: form.notes || null,
+        notes: form.notes || undefined,
       });
 
-      if (error) throw error;
-
-      toast.success("Conta a receber criada com sucesso!");
+      toast.success("Conta a receber e lançamento criados com sucesso!");
+      invalidateReceivables(); // Sync all related queries
       onSuccess();
       onOpenChange(false);
       resetForm();
