@@ -146,7 +146,23 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
     },
   });
 
-  // Ledger helpers
+  // Fetch last import date
+  const { data: lastImportData } = useQuery({
+    queryKey: ["fin-last-import-date"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("fin_bank_transactions")
+        .select("created_at")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data;
+    },
+  });
+
+  const lastImportDate = lastImportData?.created_at 
+    ? format(new Date(lastImportData.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })
+    : null;
   const getTypeIcon = (type: string) => {
     switch (type) {
       case "RECEITA":
@@ -430,7 +446,17 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
         <Card className="bg-muted/30">
           <CardContent className="pt-3 pb-3">
             <p className="text-xs text-muted-foreground">% Conciliado</p>
-            <p className="text-xl font-bold text-green-600">{percentConciliados}%</p>
+            <p className={`text-xl font-bold ${percentConciliados === 100 ? 'text-green-600' : 'text-red-600'}`}>
+              {percentConciliados}%
+            </p>
+          </CardContent>
+        </Card>
+        <Card className="bg-muted/30 col-span-2 md:col-span-4">
+          <CardContent className="pt-3 pb-3">
+            <p className="text-xs text-muted-foreground">Último Extrato Importado</p>
+            <p className="text-sm font-medium">
+              {lastImportDate ? lastImportDate : "Nenhum extrato importado"}
+            </p>
           </CardContent>
         </Card>
       </div>
