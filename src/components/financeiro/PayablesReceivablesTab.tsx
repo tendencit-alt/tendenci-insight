@@ -502,30 +502,36 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
     }
   };
 
-  const FilterPopover = ({ value, onChange, placeholder, options }: { value: string; onChange: (v: string) => void; placeholder: string; options?: string[] }) => (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="ghost" size="sm" className={`h-5 w-5 p-0 ${value ? "text-primary" : "opacity-50"}`} onClick={(e) => e.stopPropagation()}>
-          <Filter className="h-3 w-3" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-48 p-2" align="start" onClick={(e) => e.stopPropagation()}>
-        {options ? (
-          <Select value={value} onValueChange={onChange}>
-            <SelectTrigger className="h-8">
-              <SelectValue placeholder={placeholder} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">Todos</SelectItem>
-              {options.map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        ) : (
-          <Input placeholder={placeholder} value={value} onChange={(e) => onChange(e.target.value)} className="h-8" />
-        )}
-      </PopoverContent>
-    </Popover>
-  );
+  const FilterPopover = ({ value, onChange, placeholder, options }: { value: string; onChange: (v: string) => void; placeholder: string; options?: string[] }) => {
+    const handleSelectChange = (val: string) => {
+      onChange(val === "__all__" ? "" : val);
+    };
+    
+    return (
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button variant="ghost" size="sm" className={`h-5 w-5 p-0 ${value ? "text-primary" : "opacity-50"}`} onClick={(e) => e.stopPropagation()}>
+            <Filter className="h-3 w-3" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-48 p-2" align="start" onClick={(e) => e.stopPropagation()}>
+          {options ? (
+            <Select value={value || "__all__"} onValueChange={handleSelectChange}>
+              <SelectTrigger className="h-8">
+                <SelectValue placeholder={placeholder} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">Todos</SelectItem>
+                {options.map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          ) : (
+            <Input placeholder={placeholder} value={value} onChange={(e) => onChange(e.target.value)} className="h-8" />
+          )}
+        </PopoverContent>
+      </Popover>
+    );
+  };
 
   const showPayables = viewType === "all" || viewType === "payables";
   const showReceivables = viewType === "all" || viewType === "receivables";
