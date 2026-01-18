@@ -192,7 +192,7 @@ export function LedgerTab({ filters }: LedgerTabProps) {
                         </TableCell>
                         <TableCell className="text-xs sm:text-sm hidden md:table-cell">{entry.bank_account?.nickname || "-"}</TableCell>
                         <TableCell className="text-xs hidden lg:table-cell">
-                          {entry.chart_account ? `${entry.chart_account.code}` : "-"}
+                          {entry.chart_account ? entry.chart_account.name : "-"}
                         </TableCell>
                         <TableCell className="text-right font-medium text-xs sm:text-sm whitespace-nowrap">
                           {formatCurrency(Number(entry.amount), entry.type)}
