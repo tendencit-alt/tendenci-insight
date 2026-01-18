@@ -8,6 +8,7 @@ import { LedgerReconciliationTab } from "@/components/financeiro/LedgerReconcili
 import { DRECashflowView } from "@/components/financeiro/DRECashflowView";
 import { MastersTab } from "@/components/financeiro/MastersTab";
 import { PendingAlertsCard } from "@/components/financeiro/PendingAlertsCard";
+import { OrphanEntriesAlert } from "@/components/financeiro/OrphanEntriesAlert";
 import {
   LayoutDashboard, 
   Wallet, 
@@ -39,6 +40,9 @@ export default function Financeiro() {
           </div>
           <FinanceiroFilters filters={filters} onChange={setFilters} />
         </div>
+
+        {/* Orphan Entries Alert - Shows when ledger entries are not synced */}
+        <OrphanEntriesAlert />
 
         {/* Global Pending Alerts */}
         <PendingAlertsCard />
