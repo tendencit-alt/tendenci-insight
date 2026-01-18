@@ -487,51 +487,39 @@ export function ReceivablesTab({ filters }: ReceivablesTabProps) {
                         onCheckedChange={toggleSelectAll}
                       />
                     </TableHead>
-                    <TableHead>
+                    <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("due_date")}>
                       <div className="flex items-center gap-1">
-                        <button onClick={() => handleSort("due_date")} className="flex items-center hover:text-foreground">
-                          Vencimento {getSortIcon("due_date")}
-                        </button>
+                        Vencimento {getSortIcon("due_date")}
                         <FilterPopover column="due_date" value={columnFilters.due_date} onChange={(v) => setColumnFilters(f => ({...f, due_date: v}))} placeholder="dd/mm/aaaa" />
                       </div>
                     </TableHead>
-                    <TableHead>
+                    <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("customer")}>
                       <div className="flex items-center gap-1">
-                        <button onClick={() => handleSort("customer")} className="flex items-center hover:text-foreground">
-                          Cliente {getSortIcon("customer")}
-                        </button>
+                        Cliente {getSortIcon("customer")}
                         <FilterPopover column="customer" value={columnFilters.customer} onChange={(v) => setColumnFilters(f => ({...f, customer: v}))} placeholder="Buscar..." />
                       </div>
                     </TableHead>
-                    <TableHead>
+                    <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("description")}>
                       <div className="flex items-center gap-1">
-                        <button onClick={() => handleSort("description")} className="flex items-center hover:text-foreground">
-                          Descrição {getSortIcon("description")}
-                        </button>
+                        Descrição {getSortIcon("description")}
                         <FilterPopover column="description" value={columnFilters.description} onChange={(v) => setColumnFilters(f => ({...f, description: v}))} placeholder="Buscar..." />
                       </div>
                     </TableHead>
-                    <TableHead>
+                    <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("category")}>
                       <div className="flex items-center gap-1">
-                        <button onClick={() => handleSort("category")} className="flex items-center hover:text-foreground">
-                          Categoria {getSortIcon("category")}
-                        </button>
+                        Categoria {getSortIcon("category")}
                         <FilterPopover column="category" value={columnFilters.category} onChange={(v) => setColumnFilters(f => ({...f, category: v}))} placeholder="Buscar..." />
                       </div>
                     </TableHead>
-                    <TableHead className="text-right">
+                    <TableHead className="text-right cursor-pointer hover:bg-muted/50" onClick={() => handleSort("amount")}>
                       <div className="flex items-center justify-end gap-1">
-                        <button onClick={() => handleSort("amount")} className="flex items-center hover:text-foreground">
-                          Valor {getSortIcon("amount")}
-                        </button>
+                        Valor {getSortIcon("amount")}
                         <FilterPopover column="amount" value={columnFilters.amount} onChange={(v) => setColumnFilters(f => ({...f, amount: v}))} placeholder="Valor..." />
                       </div>
                     </TableHead>
-                    <TableHead>
+                    <TableHead className="cursor-pointer hover:bg-muted/50" onClick={() => handleSort("status")}>
                       <div className="flex items-center gap-1">
-                        <button onClick={() => handleSort("status")} className="flex items-center hover:text-foreground">
-                          Status {getSortIcon("status")}
-                        </button>
+                        Status {getSortIcon("status")}
                         <FilterPopover column="status" value={columnFilters.status} onChange={(v) => setColumnFilters(f => ({...f, status: v}))} placeholder="Status" options={["ABERTO", "VENCIDO", "RECEBIDO", "PARCIAL", "CANCELADO"]} />
                       </div>
                     </TableHead>
