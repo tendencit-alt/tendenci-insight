@@ -9,12 +9,14 @@ import { DRECashflowView } from "@/components/financeiro/DRECashflowView";
 import { MastersTab } from "@/components/financeiro/MastersTab";
 import { PendingAlertsCard } from "@/components/financeiro/PendingAlertsCard";
 import { OrphanEntriesAlert } from "@/components/financeiro/OrphanEntriesAlert";
+import { PurchasesTab } from "@/components/financeiro/PurchasesTab";
 import {
   LayoutDashboard, 
   Wallet, 
   BookOpen, 
   BarChart3, 
-  Settings2 
+  Settings2,
+  ShoppingCart
 } from "lucide-react";
 
 export default function Financeiro() {
@@ -66,6 +68,10 @@ export default function Financeiro() {
                 <BookOpen className="h-4 w-4 flex-shrink-0" />
                 <span>Lançamentos & Conciliação</span>
               </TabsTrigger>
+              <TabsTrigger value="purchases" className="flex items-center gap-1.5 px-3 py-2 text-sm">
+                <ShoppingCart className="h-4 w-4 flex-shrink-0" />
+                <span>Compras</span>
+              </TabsTrigger>
               <TabsTrigger value="masters" className="flex items-center gap-1.5 px-3 py-2 text-sm">
                 <Settings2 className="h-4 w-4 flex-shrink-0" />
                 <span>Cadastros</span>
@@ -87,6 +93,10 @@ export default function Financeiro() {
 
           <TabsContent value="ledger-reconciliation" className="space-y-4">
             <LedgerReconciliationTab filters={filters} />
+          </TabsContent>
+
+          <TabsContent value="purchases" className="space-y-4">
+            <PurchasesTab />
           </TabsContent>
 
           <TabsContent value="masters" className="space-y-4">

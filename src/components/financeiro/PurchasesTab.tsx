@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import PurchasesKPIs from "@/components/purchases/PurchasesKPIs";
@@ -10,7 +9,7 @@ import PurchaseOrdersTable from "@/components/purchases/PurchaseOrdersTable";
 import CreatePurchaseOrderDialog from "@/components/purchases/CreatePurchaseOrderDialog";
 import PurchaseOrderDetailSheet from "@/components/purchases/PurchaseOrderDetailSheet";
 
-export default function Purchases() {
+export function PurchasesTab() {
   const [createOpen, setCreateOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [filters, setFilters] = useState({
@@ -72,42 +71,40 @@ export default function Purchases() {
   });
 
   return (
-    <DashboardLayout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Compras</h1>
-            <p className="text-sm text-muted-foreground">Pedidos de compra e recebimentos</p>
-          </div>
-          <Button onClick={() => setCreateOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Novo Pedido de Compra
-          </Button>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-semibold text-foreground">Pedidos de Compra</h2>
+          <p className="text-sm text-muted-foreground">Gerencie pedidos de compra e recebimentos</p>
         </div>
-
-        <PurchasesKPIs />
-
-        <PurchasesFilters filters={filters} setFilters={setFilters} />
-
-        <PurchaseOrdersTable 
-          orders={orders} 
-          isLoading={isLoading}
-          onSelect={setSelectedOrder}
-        />
-
-        <CreatePurchaseOrderDialog 
-          open={createOpen} 
-          onOpenChange={setCreateOpen}
-          onSuccess={refetch}
-        />
-
-        <PurchaseOrderDetailSheet
-          order={selectedOrder}
-          open={!!selectedOrder}
-          onOpenChange={(open) => !open && setSelectedOrder(null)}
-          onUpdate={refetch}
-        />
+        <Button onClick={() => setCreateOpen(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          Novo Pedido de Compra
+        </Button>
       </div>
-    </DashboardLayout>
+
+      <PurchasesKPIs />
+
+      <PurchasesFilters filters={filters} setFilters={setFilters} />
+
+      <PurchaseOrdersTable 
+        orders={orders} 
+        isLoading={isLoading}
+        onSelect={setSelectedOrder}
+      />
+
+      <CreatePurchaseOrderDialog 
+        open={createOpen} 
+        onOpenChange={setCreateOpen}
+        onSuccess={refetch}
+      />
+
+      <PurchaseOrderDetailSheet
+        order={selectedOrder}
+        open={!!selectedOrder}
+        onOpenChange={(open) => !open && setSelectedOrder(null)}
+        onUpdate={refetch}
+      />
+    </div>
   );
 }
