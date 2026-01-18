@@ -7,7 +7,8 @@ import { PayablesReceivablesTab } from "@/components/financeiro/PayablesReceivab
 import { LedgerReconciliationTab } from "@/components/financeiro/LedgerReconciliationTab";
 import { DRECashflowView } from "@/components/financeiro/DRECashflowView";
 import { MastersTab } from "@/components/financeiro/MastersTab";
-import { 
+import { PendingAlertsCard } from "@/components/financeiro/PendingAlertsCard";
+import {
   LayoutDashboard, 
   Wallet, 
   BookOpen, 
@@ -38,6 +39,9 @@ export default function Financeiro() {
           </div>
           <FinanceiroFilters filters={filters} onChange={setFilters} />
         </div>
+
+        {/* Global Pending Alerts */}
+        <PendingAlertsCard />
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <div className="w-full">
