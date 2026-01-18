@@ -11,7 +11,8 @@ import { SearchableSelect } from "./SearchableSelect";
 import { CurrencyInput, parseCurrencyToNumber } from "@/components/ui/currency-input";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { Loader2, AlertCircle } from "lucide-react";
+import { Loader2, AlertCircle, Plus } from "lucide-react";
+import { QuickCreateClientDialog } from "./QuickCreateClientDialog";
 import { cn } from "@/lib/utils";
 import { createReceivableWithLedger } from "@/lib/financeiroIntegration";
 import { useFinanceiroSync } from "@/hooks/useFinanceiroSync";
@@ -42,6 +43,7 @@ interface FormErrors {
 export function CreateReceivableDialog({ open, onOpenChange, onSuccess, initialData }: CreateReceivableDialogProps) {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
+  const [showCreateClient, setShowCreateClient] = useState(false);
   const { invalidateReceivables } = useFinanceiroSync();
   const [form, setForm] = useState({
     customer_id: "",
@@ -229,22 +231,33 @@ export function CreateReceivableDialog({ open, onOpenChange, onSuccess, initialD
               <Label className="flex items-center gap-1">
                 Cliente <span className="text-destructive">*</span>
               </Label>
-              <Select 
-                value={form.customer_id} 
-                onValueChange={(v) => {
-                  setForm({ ...form, customer_id: v });
-                  if (errors.customer_id) setErrors({ ...errors, customer_id: undefined });
-                }}
-              >
-                <SelectTrigger className={cn(errors.customer_id && "border-destructive")}>
-                  <SelectValue placeholder="Selecione..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {clients?.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex gap-2">
+                <Select 
+                  value={form.customer_id} 
+                  onValueChange={(v) => {
+                    setForm({ ...form, customer_id: v });
+                    if (errors.customer_id) setErrors({ ...errors, customer_id: undefined });
+                  }}
+                >
+                  <SelectTrigger className={cn("flex-1", errors.customer_id && "border-destructive")}>
+                    <SelectValue placeholder="Selecione..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clients?.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="icon"
+                  onClick={() => setShowCreateClient(true)}
+                  title="Criar novo cliente"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
               {errors.customer_id && (
                 <p className="text-xs text-destructive flex items-center gap-1">
                   <AlertCircle className="h-3 w-3" />
@@ -470,6 +483,15 @@ export function CreateReceivableDialog({ open, onOpenChange, onSuccess, initialD
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      <QuickCreateClientDialog
+        open={showCreateClient}
+        onOpenChange={setShowCreateClient}
+        onCreated={(clientId) => {
+          setForm({ ...form, customer_id: clientId });
+          if (errors.customer_id) setErrors({ ...errors, customer_id: undefined });
+        }}
+      />
     </Dialog>
   );
 }
