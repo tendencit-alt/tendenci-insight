@@ -186,17 +186,27 @@ export default function IAConfiguracao() {
     return { sections, completed, total: sections.length };
   }, [configs, produtosCount, conhecimentoCount]);
 
-  // Contar regras e técnicas
-  const regrasCount = useMemo(() => {
+  // Extrair regras e técnicas
+  const { regrasCount, regrasData } = useMemo(() => {
     const regrasConfig = configs.regras?.config as Record<string, unknown> | undefined;
-    const regras = regrasConfig?.regras as unknown[] | undefined;
-    return Array.isArray(regras) ? regras.length : 0;
+    const regras = regrasConfig?.regras as { tipo?: string; descricao?: string }[] | undefined;
+    return {
+      regrasCount: Array.isArray(regras) ? regras.length : 0,
+      regrasData: Array.isArray(regras) 
+        ? regras.map(r => ({ tipo: r.tipo || "", descricao: r.descricao || "" }))
+        : []
+    };
   }, [configs]);
 
-  const tecnicasCount = useMemo(() => {
+  const { tecnicasCount, tecnicasData } = useMemo(() => {
     const vendasConfig = configs.vendas?.config as Record<string, unknown> | undefined;
-    const tecnicas = vendasConfig?.tecnicas as unknown[] | undefined;
-    return Array.isArray(tecnicas) ? tecnicas.length : 0;
+    const tecnicas = vendasConfig?.tecnicas as { nome?: string; descricao?: string }[] | undefined;
+    return {
+      tecnicasCount: Array.isArray(tecnicas) ? tecnicas.length : 0,
+      tecnicasData: Array.isArray(tecnicas)
+        ? tecnicas.map(t => ({ nome: t.nome || "", descricao: t.descricao || "" }))
+        : []
+    };
   }, [configs]);
 
   const getStatusIcon = (status: 'complete' | 'partial' | 'empty') => {
@@ -253,6 +263,8 @@ export default function IAConfiguracao() {
           conhecimentoCount={conhecimentoCount}
           regrasCount={regrasCount}
           tecnicasCount={tecnicasCount}
+          regrasData={regrasData}
+          tecnicasData={tecnicasData}
         />
 
         {/* Conexão WhatsApp */}
