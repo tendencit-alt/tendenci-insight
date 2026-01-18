@@ -108,11 +108,11 @@ export function ProjectKPIs() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[300px]">Projeto</TableHead>
-              <TableHead className="text-right">Orçamento</TableHead>
-              <TableHead className="text-right">Executado</TableHead>
-              <TableHead className="text-right">Disponível</TableHead>
-              <TableHead className="w-[150px]">Progresso</TableHead>
+              <TableHead className="w-[250px]">Projeto</TableHead>
+              <TableHead className="text-right w-[120px]">Orçamento</TableHead>
+              <TableHead className="text-right w-[120px]">Executado</TableHead>
+              <TableHead className="text-right w-[120px]">Disponível</TableHead>
+              <TableHead className="w-[300px]">Progresso</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -154,17 +154,41 @@ export function ProjectKPIs() {
                   </TableCell>
                   <TableCell>
                     {budget > 0 ? (
-                      <div className="flex items-center gap-2">
-                        <Progress 
-                          value={Math.min(percent, 100)} 
-                          className={`h-2 flex-1 ${isOverBudget ? '[&>div]:bg-red-600' : isNearLimit ? '[&>div]:bg-yellow-600' : ''}`}
-                        />
-                        <Badge 
-                          variant={isOverBudget ? "destructive" : isNearLimit ? "outline" : "secondary"}
-                          className="text-xs min-w-[50px] justify-center"
-                        >
-                          {percent.toFixed(0)}%
-                        </Badge>
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between text-xs mb-1">
+                          <span className="text-muted-foreground">
+                            {formatCurrency(executed)} de {formatCurrency(budget)}
+                          </span>
+                          <Badge 
+                            variant={isOverBudget ? "destructive" : isNearLimit ? "outline" : "secondary"}
+                            className="text-xs"
+                          >
+                            {percent.toFixed(0)}%
+                          </Badge>
+                        </div>
+                        <div className="relative h-4 w-full rounded-full bg-muted overflow-hidden">
+                          <div 
+                            className={`absolute inset-y-0 left-0 rounded-full transition-all ${
+                              isOverBudget 
+                                ? 'bg-red-500' 
+                                : isNearLimit 
+                                  ? 'bg-yellow-500' 
+                                  : 'bg-green-500'
+                            }`}
+                            style={{ width: `${Math.min(percent, 100)}%` }}
+                          />
+                          {isOverBudget && (
+                            <div 
+                              className="absolute inset-y-0 right-0 bg-red-600/30 rounded-r-full"
+                              style={{ width: `${Math.min(percent - 100, 50)}%` }}
+                            />
+                          )}
+                        </div>
+                        <div className="flex justify-between text-[10px] text-muted-foreground">
+                          <span>0%</span>
+                          <span>50%</span>
+                          <span>100%</span>
+                        </div>
                       </div>
                     ) : (
                       <span className="text-xs text-muted-foreground">Sem orçamento</span>
