@@ -5,11 +5,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { BarChart3, Download, ChevronRight, ChevronDown, Wallet } from "lucide-react";
+import { BarChart3, Download, ChevronRight, ChevronDown } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 
 interface DRETabProps {
   filters: FinanceiroFiltersState;
@@ -32,22 +31,20 @@ interface DRELine {
   value: number;
   level: number;
   hasChildren: boolean;
-  isSubtotal: boolean;
   parentId: string | null;
-  isCalculated?: boolean;
+  isCalculated: boolean;
 }
 
-interface DRESummary {
-  totalReceitas: number;
-  totalDespesas: number;
-  margemContribuicao: number;
-  resultadoOperacional: number;
-  resultadoFinanceiro: number;
-  resultadoAntesCapital: number;
-  contratacaoEmprestimos: number;
-  liquidacaoEmprestimos: number;
-  variacaoLiquidaCaixa: number;
-  lucroLiquido: number;
+// Numeric sorting for codes
+function numericCodeSort(a: string, b: string): number {
+  const aParts = a.split('.').map(p => parseFloat(p) || 0);
+  const bParts = b.split('.').map(p => parseFloat(p) || 0);
+  for (let i = 0; i < Math.max(aParts.length, bParts.length); i++) {
+    const aVal = aParts[i] || 0;
+    const bVal = bParts[i] || 0;
+    if (aVal !== bVal) return aVal - bVal;
+  }
+  return 0;
 }
 
 // Build hierarchical tree from flat accounts
@@ -62,18 +59,9 @@ function buildTree(accounts: ChartAccount[]): Map<string | null, ChartAccount[]>
     tree.get(parentId)!.push(account);
   });
   
-  // Sort children by code
+  // Sort children by code numerically
   tree.forEach((children) => {
-    children.sort((a, b) => {
-      const aParts = a.code.split('.').map(Number);
-      const bParts = b.code.split('.').map(Number);
-      for (let i = 0; i < Math.max(aParts.length, bParts.length); i++) {
-        const aVal = aParts[i] || 0;
-        const bVal = bParts[i] || 0;
-        if (aVal !== bVal) return aVal - bVal;
-      }
-      return 0;
-    });
+    children.sort((a, b) => numericCodeSort(a.code, b.code));
   });
   
   return tree;
@@ -97,10 +85,11 @@ function calculateTotals(
   return total;
 }
 
-// Flatten tree to ordered lines for display
+// Flatten tree to ordered lines for display - following exact chart structure
 function flattenTree(
   tree: Map<string | null, ChartAccount[]>,
   accountValues: Map<string, number>,
+  calculatedValues: Map<string, number>,
   parentId: string | null,
   level: number,
   lines: DRELine[]
@@ -109,9 +98,17 @@ function flattenTree(
   
   children.forEach(account => {
     const hasChildren = tree.has(account.id) && (tree.get(account.id)?.length || 0) > 0;
-    const directValue = accountValues.get(account.id) || 0;
-    const childrenTotal = hasChildren ? calculateTotals(tree, accountValues, account.id) : 0;
-    const totalValue = directValue + childrenTotal;
+    const isCalculated = account.nature === "RESULTADO";
+    
+    let totalValue: number;
+    if (isCalculated) {
+      // Use pre-calculated value for RESULTADO accounts
+      totalValue = calculatedValues.get(account.code) || 0;
+    } else {
+      const directValue = accountValues.get(account.id) || 0;
+      const childrenTotal = hasChildren ? calculateTotals(tree, accountValues, account.id) : 0;
+      totalValue = directValue + childrenTotal;
+    }
     
     lines.push({
       id: account.id,
@@ -121,19 +118,18 @@ function flattenTree(
       value: totalValue,
       level,
       hasChildren,
-      isSubtotal: hasChildren && level === 0,
       parentId: account.parent_id,
+      isCalculated,
     });
     
     if (hasChildren) {
-      flattenTree(tree, accountValues, account.id, level + 1, lines);
+      flattenTree(tree, accountValues, calculatedValues, account.id, level + 1, lines);
     }
   });
 }
 
 export function DRETab({ filters }: DRETabProps) {
   const [expandedAccounts, setExpandedAccounts] = useState<Set<string>>(new Set());
-  const [capitalExpanded, setCapitalExpanded] = useState(true);
   const queryClient = useQueryClient();
   const dateField = filters.regime === "CAIXA" ? "cash_date" : "competence_date";
 
@@ -149,7 +145,6 @@ export function DRETab({ filters }: DRETabProps) {
           table: 'fin_chart_accounts'
         },
         () => {
-          // Invalidate DRE query when chart accounts change
           queryClient.invalidateQueries({ queryKey: ["fin-dre"] });
         }
       )
@@ -166,7 +161,7 @@ export function DRETab({ filters }: DRETabProps) {
       const dateFrom = format(filters.dateFrom, "yyyy-MM-dd");
       const dateTo = format(filters.dateTo, "yyyy-MM-dd");
 
-      // Get chart accounts ordered by code (following the chart of accounts structure)
+      // Get ALL chart accounts with in_dre = true, ordered by code
       const { data: chartAccounts } = await supabase
         .from("fin_chart_accounts")
         .select("id, code, name, nature, parent_id, dre_order")
@@ -192,7 +187,7 @@ export function DRETab({ filters }: DRETabProps) {
 
       const { data: entries } = await query;
 
-      // Calculate values for each account
+      // Calculate values for each account from entries
       const accountValues = new Map<string, number>();
       entries?.forEach((entry) => {
         if (entry.chart_account_id) {
@@ -201,89 +196,97 @@ export function DRETab({ filters }: DRETabProps) {
         }
       });
 
-      // Build tree and flatten
+      // Build tree
       const tree = buildTree(chartAccounts || []);
-      const lines: DRELine[] = [];
-      flattenTree(tree, accountValues, null, 0, lines);
 
-      // Calculate summary totals based on nature and code patterns
-      let totalReceitas = 0;
-      let totalDespesasVariaveis = 0; // CMV, Despesas sobre venda
-      let totalDespesasOperacionais = 0;
-      let resultadoFinanceiro = 0;
-      let contratacaoEmprestimos = 0;
-      let liquidacaoEmprestimos = 0;
+      // Calculate totals for root-level operational accounts
+      let totalReceitas = 0;           // Code 1
+      let totalDespesasSobreVenda = 0; // Code 3
+      let totalCMV = 0;                // Code 2
+      let totalDespesasOp = 0;         // Code 5
+      let totalResultadoFinanceiro = 0; // Code 7
+      let totalCapitalEntrada = 0;     // Code 9.1
+      let totalCapitalSaida = 0;       // Code 9.2
 
-      // Only sum root level accounts to avoid double counting
       const rootAccounts = chartAccounts?.filter(a => !a.parent_id) || [];
       
       rootAccounts.forEach(account => {
+        if (account.nature === "RESULTADO") return; // Skip calculated accounts
+        
         const directValue = accountValues.get(account.id) || 0;
         const childrenTotal = calculateTotals(tree, accountValues, account.id);
         const total = directValue + childrenTotal;
         
-        // Classify by code and nature
-        const code = account.code;
+        const mainCode = parseFloat(account.code.split('.')[0]);
         
-        if (code === "1" || account.nature === "RECEITA" && !account.parent_id && code !== "7") {
+        if (mainCode === 1) {
           totalReceitas += total;
-        } else if (code === "2" || code === "3") {
-          // CMV and Despesas sobre Venda
-          totalDespesasVariaveis += total;
-        } else if (code === "5") {
-          // Despesas Operacionais
-          totalDespesasOperacionais += total;
-        } else if (code === "7") {
-          // Resultado Financeiro
-          resultadoFinanceiro += total;
-        } else if (code === "9") {
-          // Movimentações de Capital
+        } else if (mainCode === 2) {
+          totalCMV += total;
+        } else if (mainCode === 3) {
+          totalDespesasSobreVenda += total;
+        } else if (mainCode === 5) {
+          totalDespesasOp += total;
+        } else if (mainCode === 7) {
+          totalResultadoFinanceiro += total;
+        } else if (mainCode === 9) {
+          // Capital movements - need to check sub-accounts
           const children = tree.get(account.id) || [];
           children.forEach(child => {
             const childValue = accountValues.get(child.id) || 0;
             const childChildrenTotal = calculateTotals(tree, accountValues, child.id);
             const childTotal = childValue + childChildrenTotal;
             
-            if (child.code === "9.1") {
-              contratacaoEmprestimos += childTotal;
-            } else if (child.code === "9.2") {
-              liquidacaoEmprestimos += childTotal;
+            const subCode = parseFloat(child.code.split('.')[1] || '0');
+            if (subCode === 1) {
+              totalCapitalEntrada += childTotal;
+            } else if (subCode === 2) {
+              totalCapitalSaida += childTotal;
             }
           });
-        } else if (account.nature === "DESPESA" && !["2", "3", "5", "7"].includes(code)) {
-          totalDespesasOperacionais += total;
         }
       });
 
-      // Calculate derived values
-      const margemContribuicao = totalReceitas - totalDespesasVariaveis;
-      const resultadoOperacional = margemContribuicao - totalDespesasOperacionais;
-      const resultadoAntesCapital = resultadoOperacional - resultadoFinanceiro;
-      const variacaoLiquidaCaixa = resultadoAntesCapital + contratacaoEmprestimos - liquidacaoEmprestimos;
-      const lucroLiquido = resultadoOperacional - resultadoFinanceiro;
+      // Calculate derived values based on DRE structure
+      // 4 - Margem de Contribuição = Receitas - Despesas sobre Venda - CMV
+      const margemContribuicao = totalReceitas - totalDespesasSobreVenda - totalCMV;
+      
+      // 6 - Resultado Operacional = Margem de Contribuição - Despesas Operacionais
+      const resultadoOperacional = margemContribuicao - totalDespesasOp;
+      
+      // 8 - Resultado Antes do Capital = Resultado Operacional - Resultado Financeiro
+      const resultadoAntesCapital = resultadoOperacional - totalResultadoFinanceiro;
+      
+      // 10 - Variação Líquida de Caixa = Resultado Antes do Capital + Capital Entrada - Capital Saída
+      const variacaoLiquidaCaixa = resultadoAntesCapital + totalCapitalEntrada - totalCapitalSaida;
 
-      const summary: DRESummary = {
-        totalReceitas,
-        totalDespesas: totalDespesasVariaveis + totalDespesasOperacionais,
-        margemContribuicao,
-        resultadoOperacional,
-        resultadoFinanceiro,
-        resultadoAntesCapital,
-        contratacaoEmprestimos,
-        liquidacaoEmprestimos,
-        variacaoLiquidaCaixa,
-        lucroLiquido,
-      };
+      // Map calculated values to their codes
+      const calculatedValues = new Map<string, number>();
+      calculatedValues.set("4", margemContribuicao);
+      calculatedValues.set("6", resultadoOperacional);
+      calculatedValues.set("8", resultadoAntesCapital);
+      calculatedValues.set("10", variacaoLiquidaCaixa);
+
+      // Flatten tree following exact chart structure
+      const lines: DRELine[] = [];
+      flattenTree(tree, accountValues, calculatedValues, null, 0, lines);
 
       return {
         lines,
-        summary,
+        summary: {
+          totalReceitas,
+          totalDespesas: totalDespesasSobreVenda + totalCMV + totalDespesasOp,
+          margemContribuicao,
+          resultadoOperacional,
+          resultadoFinanceiro: totalResultadoFinanceiro,
+          resultadoAntesCapital,
+          variacaoLiquidaCaixa,
+        },
         chartAccounts: chartAccounts || [],
       };
     },
   });
 
-  // Handle expand/collapse with initial state
   const toggleExpand = (accountId: string) => {
     setExpandedAccounts(prev => {
       const next = new Set(prev);
@@ -307,40 +310,13 @@ export function DRETab({ filters }: DRETabProps) {
     setExpandedAccounts(new Set());
   };
 
-  // Separate lines by category
-  const categorizedLines = useMemo(() => {
-    if (!dreData?.lines) return { operational: [], financial: [], capital: [], cash: [] };
-    
-    const operational: DRELine[] = [];
-    const financial: DRELine[] = [];
-    const capital: DRELine[] = [];
-    const cash: DRELine[] = [];
-    
-    dreData.lines.forEach(line => {
-      // Skip calculated result lines (they're handled separately)
-      if (line.nature === "RESULTADO") return;
-      
-      const rootCode = line.code.split('.')[0];
-      
-      if (rootCode === "7") {
-        financial.push(line);
-      } else if (rootCode === "9" || line.nature === "FINANCIAMENTO") {
-        capital.push(line);
-      } else if (rootCode === "10") {
-        cash.push(line);
-      } else {
-        operational.push(line);
-      }
-    });
-    
-    return { operational, financial, capital, cash };
-  }, [dreData?.lines]);
-
   // Filter visible lines based on expanded state
-  const getVisibleLines = (lines: DRELine[]) => {
+  const getVisibleLines = () => {
+    if (!dreData?.lines) return [];
+    
     const visible: DRELine[] = [];
     
-    lines.forEach(line => {
+    dreData.lines.forEach(line => {
       // Check if any ancestor is collapsed
       let shouldHide = false;
       let currentParentId = line.parentId;
@@ -350,7 +326,7 @@ export function DRETab({ filters }: DRETabProps) {
           shouldHide = true;
           break;
         }
-        const parent = dreData?.lines.find(l => l.id === currentParentId);
+        const parent = dreData.lines.find(l => l.id === currentParentId);
         currentParentId = parent?.parentId || null;
       }
       
@@ -370,15 +346,22 @@ export function DRETab({ filters }: DRETabProps) {
     const isExpanded = expandedAccounts.has(line.id);
     const isReceita = line.nature === "RECEITA";
     const isDespesa = line.nature === "DESPESA";
+    const isResultado = line.nature === "RESULTADO";
     const isFinanciamento = line.nature === "FINANCIAMENTO";
+    
+    // Determine styling based on nature and code
+    const mainCode = parseFloat(line.code.split('.')[0]);
+    const isCapital = mainCode === 9;
     
     return (
       <TableRow 
         key={line.id}
         className={cn(
           line.level === 0 && "bg-muted/50 font-semibold",
-          line.isSubtotal && "font-bold",
-          isFinanciamento && "bg-blue-50/50 dark:bg-blue-950/20"
+          line.level === 0 && line.hasChildren && "font-bold",
+          isResultado && "bg-primary/10 font-bold",
+          isFinanciamento && "bg-blue-50/50 dark:bg-blue-950/20",
+          isCapital && !isResultado && "bg-blue-50/30 dark:bg-blue-950/10"
         )}
       >
         <TableCell 
@@ -396,66 +379,31 @@ export function DRETab({ filters }: DRETabProps) {
             ) : (
               <span className="w-4" />
             )}
-            <span className="text-muted-foreground">{line.code}</span>
+            <span className="text-muted-foreground font-mono text-sm">{line.code}</span>
             <span>{line.name}</span>
+            {isResultado && (
+              <span className="text-xs text-muted-foreground ml-1">(calculado)</span>
+            )}
           </div>
         </TableCell>
         <TableCell 
           className={cn(
-            "text-right",
+            "text-right font-mono",
             isReceita && line.value > 0 && "text-green-600",
             isDespesa && line.value > 0 && "text-red-600",
+            isResultado && line.value >= 0 && "text-green-600 font-bold",
+            isResultado && line.value < 0 && "text-red-600 font-bold",
             isFinanciamento && line.value > 0 && "text-blue-600",
-            line.value < 0 && "text-red-600"
+            isCapital && !isResultado && "text-blue-600"
           )}
         >
           {isDespesa && line.value > 0 ? (
             `(${formatCurrency(line.value)})`
-          ) : isFinanciamento && line.code === "9.2" && line.value > 0 ? (
+          ) : isCapital && line.code.startsWith("9.2") && line.value > 0 ? (
             `(${formatCurrency(line.value)})`
           ) : (
             formatCurrency(line.value)
           )}
-        </TableCell>
-      </TableRow>
-    );
-  };
-
-  const renderResultRow = (label: string, value: number, options?: { 
-    variant?: 'normal' | 'highlight' | 'subtotal' | 'capital' | 'cash',
-    showSign?: boolean 
-  }) => {
-    const { variant = 'normal', showSign = false } = options || {};
-    
-    const isPositive = value >= 0;
-    const prefix = showSign && isPositive ? '+ ' : showSign && !isPositive ? '- ' : '';
-    
-    return (
-      <TableRow 
-        className={cn(
-          variant === 'highlight' && "bg-primary/10 font-bold text-lg",
-          variant === 'subtotal' && "bg-muted/70 font-semibold",
-          variant === 'capital' && "bg-blue-50 dark:bg-blue-950/30 font-semibold",
-          variant === 'cash' && "bg-amber-50 dark:bg-amber-950/30 font-bold"
-        )}
-      >
-        <TableCell className={cn(
-          variant === 'highlight' && "pl-4",
-          variant === 'subtotal' && "pl-4",
-          variant === 'capital' && "pl-6",
-          variant === 'cash' && "pl-4"
-        )}>
-          {variant === 'cash' && <Wallet className="inline h-4 w-4 mr-2" />}
-          {label}
-        </TableCell>
-        <TableCell 
-          className={cn(
-            "text-right",
-            isPositive ? "text-green-600" : "text-red-600",
-            variant === 'capital' && "text-blue-600"
-          )}
-        >
-          {prefix}{formatCurrency(Math.abs(value))}
         </TableCell>
       </TableRow>
     );
@@ -470,10 +418,7 @@ export function DRETab({ filters }: DRETabProps) {
     );
   }
 
-  const summary = dreData?.summary;
-  const visibleOperational = getVisibleLines(categorizedLines.operational);
-  const visibleFinancial = getVisibleLines(categorizedLines.financial);
-  const visibleCapital = getVisibleLines(categorizedLines.capital);
+  const visibleLines = getVisibleLines();
 
   return (
     <div className="space-y-4">
@@ -484,7 +429,7 @@ export function DRETab({ filters }: DRETabProps) {
             Demonstração do Resultado do Exercício (DRE)
           </h2>
           <p className="text-sm text-muted-foreground">
-            {filters.regime === "CAIXA" ? "Regime de Caixa" : "Regime de Competência"} - Estrutura baseada no Plano de Contas
+            {filters.regime === "CAIXA" ? "Regime de Caixa" : "Regime de Competência"} - Estrutura fiel ao Plano de Contas
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -506,139 +451,27 @@ export function DRETab({ filters }: DRETabProps) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[60%]">Conta</TableHead>
+                <TableHead className="w-[65%]">Conta</TableHead>
                 <TableHead className="text-right">Valor</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {/* Operational Lines (1-6) */}
-              {visibleOperational.map(renderLine)}
-
-              {/* Margem de Contribuição */}
-              {renderResultRow("= MARGEM DE CONTRIBUIÇÃO", summary?.margemContribuicao || 0, { variant: 'subtotal' })}
-
-              {/* Resultado Operacional */}
-              {renderResultRow("= RESULTADO OPERACIONAL", summary?.resultadoOperacional || 0, { variant: 'subtotal' })}
-
-              {/* Financial Lines (7) */}
-              {visibleFinancial.length > 0 && (
-                <>
-                  <TableRow>
-                    <TableCell colSpan={2} className="h-2 bg-muted/30" />
-                  </TableRow>
-                  {visibleFinancial.map(renderLine)}
-                </>
-              )}
-
-              {/* Resultado Antes do Capital */}
-              {renderResultRow("= RESULTADO ANTES DO CAPITAL", summary?.resultadoAntesCapital || 0, { variant: 'highlight' })}
-
-              {/* Capital Lines (9) - Collapsible */}
-              {visibleCapital.length > 0 && (
-                <>
-                  <TableRow>
-                    <TableCell colSpan={2} className="h-1" />
-                  </TableRow>
-                  <TableRow className="bg-blue-100/50 dark:bg-blue-950/40">
-                    <TableCell colSpan={2} className="py-3">
-                      <Collapsible open={capitalExpanded} onOpenChange={setCapitalExpanded}>
-                        <CollapsibleTrigger className="flex items-center gap-2 font-semibold text-blue-800 dark:text-blue-300 hover:underline">
-                          {capitalExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                          Movimentações de Capital – Empréstimos
-                          <span className="text-xs font-normal text-muted-foreground ml-2">
-                            (Não impacta resultado operacional)
-                          </span>
-                        </CollapsibleTrigger>
-                        <CollapsibleContent>
-                          <Table className="mt-2">
-                            <TableBody>
-                              {visibleCapital.filter(l => l.code !== "9").map(line => (
-                                <TableRow 
-                                  key={line.id}
-                                  className="bg-blue-50/50 dark:bg-blue-950/20"
-                                >
-                                  <TableCell style={{ paddingLeft: `${16}px` }}>
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-muted-foreground">{line.code}</span>
-                                      <span>{line.name}</span>
-                                    </div>
-                                  </TableCell>
-                                  <TableCell 
-                                    className={cn(
-                                      "text-right text-blue-600",
-                                    )}
-                                  >
-                                    {line.code === "9.2" && line.value > 0 ? (
-                                      `(${formatCurrency(line.value)})`
-                                    ) : (
-                                      formatCurrency(line.value)
-                                    )}
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </CollapsibleContent>
-                      </Collapsible>
-                    </TableCell>
-                  </TableRow>
-                </>
-              )}
-
-              {/* Variação Líquida de Caixa */}
-              <TableRow>
-                <TableCell colSpan={2} className="h-2" />
-              </TableRow>
-              <TableRow className="bg-amber-100/70 dark:bg-amber-950/40 font-bold">
-                <TableCell className="pl-4">
-                  <div className="flex items-center gap-2">
-                    <Wallet className="h-5 w-5 text-amber-700 dark:text-amber-400" />
-                    <span className="text-amber-800 dark:text-amber-300">
-                      VARIAÇÃO LÍQUIDA DE CAIXA
-                    </span>
-                    <span className="text-xs font-normal text-muted-foreground ml-2">
-                      (Resultado de caixa, não lucro)
-                    </span>
-                  </div>
-                </TableCell>
-                <TableCell 
-                  className={cn(
-                    "text-right text-lg font-bold",
-                    (summary?.variacaoLiquidaCaixa || 0) >= 0 
-                      ? "text-green-600" 
-                      : "text-red-600"
-                  )}
-                >
-                  {formatCurrency(summary?.variacaoLiquidaCaixa || 0)}
-                </TableCell>
-              </TableRow>
-
-              {/* Summary Section */}
+              {visibleLines.map(renderLine)}
+              
+              {/* Summary footer */}
               <TableRow>
                 <TableCell colSpan={2} className="h-4 bg-muted/30" />
               </TableRow>
-
               <TableRow className="bg-green-50 dark:bg-green-950/20 font-semibold">
                 <TableCell>TOTAL RECEITAS</TableCell>
-                <TableCell className="text-right text-green-600">
-                  {formatCurrency(summary?.totalReceitas || 0)}
+                <TableCell className="text-right text-green-600 font-mono">
+                  {formatCurrency(dreData?.summary.totalReceitas || 0)}
                 </TableCell>
               </TableRow>
               <TableRow className="bg-red-50 dark:bg-red-950/20 font-semibold">
                 <TableCell>TOTAL DESPESAS</TableCell>
-                <TableCell className="text-right text-red-600">
-                  ({formatCurrency(summary?.totalDespesas || 0)})
-                </TableCell>
-              </TableRow>
-              <TableRow className="bg-primary/10 font-bold text-lg">
-                <TableCell>= RESULTADO LÍQUIDO</TableCell>
-                <TableCell 
-                  className={cn(
-                    "text-right",
-                    (summary?.lucroLiquido || 0) >= 0 ? "text-green-600" : "text-red-600"
-                  )}
-                >
-                  {formatCurrency(summary?.lucroLiquido || 0)}
+                <TableCell className="text-right text-red-600 font-mono">
+                  ({formatCurrency(dreData?.summary.totalDespesas || 0)})
                 </TableCell>
               </TableRow>
             </TableBody>
