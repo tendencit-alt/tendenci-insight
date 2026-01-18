@@ -355,7 +355,7 @@ export function ReconcileDialog({
               </div>
             )}
 
-            {/* Manual reconciliation fields - always visible */}
+            {/* Manual reconciliation fields - comprehensive form */}
             {reconcileMethod === "manual" && (
               <>
                 <Separator />
@@ -364,27 +364,127 @@ export function ReconcileDialog({
                     Informações da Conciliação Manual
                   </Label>
                   
+                  {/* Row 1: Document and Date */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="documentNumber">
+                        Número do Documento / Referência *
+                      </Label>
+                      <Input
+                        id="documentNumber"
+                        placeholder="Ex: NF 12345, TED 98765, PIX..."
+                        value={documentNumber}
+                        onChange={(e) => setDocumentNumber(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="reconcileDate">
+                        Data da Conciliação
+                      </Label>
+                      <Input
+                        id="reconcileDate"
+                        type="date"
+                        defaultValue={format(new Date(), "yyyy-MM-dd")}
+                        disabled
+                        className="bg-muted"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Row 2: Payment Method and Confirmation Value */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="paymentMethod">
+                        Forma de Pagamento / Recebimento
+                      </Label>
+                      <Select defaultValue="pix">
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pix">PIX</SelectItem>
+                          <SelectItem value="ted">TED/DOC</SelectItem>
+                          <SelectItem value="boleto">Boleto</SelectItem>
+                          <SelectItem value="cartao_credito">Cartão de Crédito</SelectItem>
+                          <SelectItem value="cartao_debito">Cartão de Débito</SelectItem>
+                          <SelectItem value="dinheiro">Dinheiro</SelectItem>
+                          <SelectItem value="cheque">Cheque</SelectItem>
+                          <SelectItem value="deposito">Depósito</SelectItem>
+                          <SelectItem value="outro">Outro</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Valor Confirmado</Label>
+                      <div className={`flex items-center gap-2 p-2 rounded-md border bg-muted ${totalAmount >= 0 ? 'border-green-600/50' : 'border-red-600/50'}`}>
+                        <Check className={`h-4 w-4 ${totalAmount >= 0 ? 'text-green-600' : 'text-red-600'}`} />
+                        <span className={`font-bold ${totalAmount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {totalAmount >= 0 ? '+' : '-'}{formatCurrency(totalAmount)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Row 3: Bank Account Info */}
+                  {entries[0]?.bank_account && (
+                    <div className="space-y-2">
+                      <Label>Conta Bancária Vinculada</Label>
+                      <div className="flex items-center gap-2 p-2 rounded-md border bg-muted">
+                        <Building2 className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm">{entries[0].bank_account.nickname}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Row 4: Justification */}
                   <div className="space-y-2">
-                    <Label htmlFor="documentNumber">
-                      Número do Documento / Referência
+                    <Label htmlFor="justification">
+                      Justificativa da Conciliação Manual
+                    </Label>
+                    <Select defaultValue="comprovante_conferido">
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o motivo..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="comprovante_conferido">Comprovante conferido manualmente</SelectItem>
+                        <SelectItem value="extrato_nao_disponivel">Extrato bancário não disponível</SelectItem>
+                        <SelectItem value="transacao_nao_aparece">Transação não aparece no extrato</SelectItem>
+                        <SelectItem value="ajuste_interno">Ajuste interno / Lançamento contábil</SelectItem>
+                        <SelectItem value="pagamento_dinheiro">Pagamento em dinheiro</SelectItem>
+                        <SelectItem value="outro">Outro motivo</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Row 5: Reference/Proof */}
+                  <div className="space-y-2">
+                    <Label htmlFor="proofReference">
+                      Referência do Comprovante (opcional)
                     </Label>
                     <Input
-                      id="documentNumber"
-                      placeholder="Ex: NF 12345, TED 98765, PIX..."
-                      value={documentNumber}
-                      onChange={(e) => setDocumentNumber(e.target.value)}
+                      id="proofReference"
+                      placeholder="Ex: Comprovante anexo no drive, ID da transação..."
                     />
                   </div>
 
+                  {/* Row 6: Notes */}
                   <div className="space-y-2">
-                    <Label htmlFor="notes">Observações da Conciliação</Label>
+                    <Label htmlFor="notes">Observações Adicionais</Label>
                     <Textarea
                       id="notes"
-                      placeholder="Adicione observações sobre esta conciliação..."
+                      placeholder="Adicione observações detalhadas sobre esta conciliação..."
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
                       rows={3}
                     />
+                  </div>
+
+                  {/* Summary confirmation */}
+                  <div className="flex items-start gap-2 p-3 rounded-md bg-amber-500/10 border border-amber-500/30">
+                    <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                    <p className="text-xs text-amber-600">
+                      Ao confirmar a conciliação manual, você atesta que verificou os dados e comprovantes correspondentes a este(s) lançamento(s).
+                    </p>
                   </div>
                 </div>
               </>
