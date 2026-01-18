@@ -219,6 +219,7 @@ export function CreatePayableDialog({ open, onOpenChange, onSuccess, initialData
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -483,15 +484,16 @@ export function CreatePayableDialog({ open, onOpenChange, onSuccess, initialData
           </Button>
         </DialogFooter>
       </DialogContent>
-
-      <QuickCreateSupplierDialog
-        open={showCreateSupplier}
-        onOpenChange={setShowCreateSupplier}
-        onCreated={(supplierId) => {
-          setForm({ ...form, supplier_id: supplierId });
-          if (errors.supplier_id) setErrors({ ...errors, supplier_id: undefined });
-        }}
-      />
     </Dialog>
+
+    <QuickCreateSupplierDialog
+      open={showCreateSupplier}
+      onOpenChange={setShowCreateSupplier}
+      onCreated={(supplierId) => {
+        setForm({ ...form, supplier_id: supplierId });
+        if (errors.supplier_id) setErrors({ ...errors, supplier_id: undefined });
+      }}
+    />
+  </>
   );
 }
