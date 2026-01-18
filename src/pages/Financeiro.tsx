@@ -10,6 +10,7 @@ import { MastersTab } from "@/components/financeiro/MastersTab";
 import { PendingAlertsCard } from "@/components/financeiro/PendingAlertsCard";
 import { OrphanEntriesAlert } from "@/components/financeiro/OrphanEntriesAlert";
 import { PurchasesTab } from "@/components/financeiro/PurchasesTab";
+import { useFinanceiroRealtime } from "@/hooks/useFinanceiroRealtime";
 
 import {
   LayoutDashboard, 
@@ -21,6 +22,9 @@ import {
 } from "lucide-react";
 
 export default function Financeiro() {
+  // Enable real-time updates for all financial data
+  useFinanceiroRealtime();
+
   const [activeTab, setActiveTab] = useState("dashboard");
   const [filters, setFilters] = useState<FinanceiroFiltersState>({
     dateFrom: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
