@@ -12,7 +12,8 @@ import { CurrencyInput, parseCurrencyToNumber, formatToCurrencyDisplay } from "@
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Loader2, AlertCircle, Eye, Edit } from "lucide-react";
+import { Loader2, AlertCircle, Eye, Edit, Plus } from "lucide-react";
+import { QuickCreateSupplierDialog } from "./QuickCreateSupplierDialog";
 import { cn } from "@/lib/utils";
 import { useFinanceiroSync } from "@/hooks/useFinanceiroSync";
 import { Badge } from "@/components/ui/badge";
@@ -38,6 +39,7 @@ export function ViewEditPayableDialog({ open, onOpenChange, payable, onSuccess, 
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   const [isEditing, setIsEditing] = useState(mode === "edit");
+  const [showCreateSupplier, setShowCreateSupplier] = useState(false);
   const { invalidatePayables } = useFinanceiroSync();
   
   const [form, setForm] = useState({
@@ -181,6 +183,7 @@ export function ViewEditPayableDialog({ open, onOpenChange, payable, onSuccess, 
   if (!payable) return null;
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -232,14 +235,25 @@ export function ViewEditPayableDialog({ open, onOpenChange, payable, onSuccess, 
               <Label>Fornecedor {isEditing && <span className="text-destructive">*</span>}</Label>
               {isEditing ? (
                 <>
-                  <Select value={form.supplier_id} onValueChange={(v) => setForm({ ...form, supplier_id: v })}>
-                    <SelectTrigger className={cn(errors.supplier_id && "border-destructive")}>
-                      <SelectValue placeholder="Selecione..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {suppliers?.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex gap-2">
+                    <Select value={form.supplier_id} onValueChange={(v) => setForm({ ...form, supplier_id: v })}>
+                      <SelectTrigger className={cn("flex-1", errors.supplier_id && "border-destructive")}>
+                        <SelectValue placeholder="Selecione..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {suppliers?.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="icon"
+                      onClick={() => setShowCreateSupplier(true)}
+                      title="Criar novo fornecedor"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
                   {errors.supplier_id && <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle className="h-3 w-3" />{errors.supplier_id}</p>}
                 </>
               ) : (
@@ -402,5 +416,15 @@ export function ViewEditPayableDialog({ open, onOpenChange, payable, onSuccess, 
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    <QuickCreateSupplierDialog
+      open={showCreateSupplier}
+      onOpenChange={setShowCreateSupplier}
+      onCreated={(supplierId) => {
+        setForm({ ...form, supplier_id: supplierId });
+        if (errors.supplier_id) setErrors({ ...errors, supplier_id: undefined });
+      }}
+    />
+    </>
   );
 }
