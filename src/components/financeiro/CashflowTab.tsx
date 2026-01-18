@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { FinanceiroFiltersState } from "./FinanceiroFilters";
 import { CostCenterSubFilter } from "./CostCenterSubFilter";
+import { EntryDetailsDialog } from "./EntryDetailsDialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -133,6 +134,8 @@ function flattenTree(
 export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
   const [expandedAccounts, setExpandedAccounts] = useState<Set<string>>(new Set());
   const [expandedEntries, setExpandedEntries] = useState<Set<string>>(new Set());
+  const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
+  const [entryDialogOpen, setEntryDialogOpen] = useState(false);
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -420,7 +423,16 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
               style={{ paddingLeft: `${((line.level + 1) * 24) + 16}px` }}
             >
               <div className="flex items-center gap-3">
-                <FileText className="h-3 w-3 text-muted-foreground" />
+                <button
+                  onClick={() => {
+                    setSelectedEntryId(entry.id);
+                    setEntryDialogOpen(true);
+                  }}
+                  className="p-1 rounded hover:bg-muted transition-colors"
+                  title="Ver detalhes do lançamento"
+                >
+                  <FileText className="h-3 w-3 text-muted-foreground hover:text-primary" />
+                </button>
                 <span className="text-muted-foreground font-mono text-xs">
                   {formatDate(entry.cash_date)}
                 </span>
@@ -632,6 +644,13 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
           </CardContent>
         </Card>
       </div>
+
+      {/* Entry Details Dialog */}
+      <EntryDetailsDialog 
+        entryId={selectedEntryId} 
+        open={entryDialogOpen} 
+        onOpenChange={setEntryDialogOpen} 
+      />
     </div>
   );
 }
