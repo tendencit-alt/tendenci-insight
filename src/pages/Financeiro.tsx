@@ -6,13 +6,11 @@ import { FinanceiroDashboard } from "@/components/financeiro/FinanceiroDashboard
 import { PayablesTab } from "@/components/financeiro/PayablesTab";
 import { ReceivablesTab } from "@/components/financeiro/ReceivablesTab";
 import { LedgerTab } from "@/components/financeiro/LedgerTab";
-import { CashflowTab } from "@/components/financeiro/CashflowTab";
-import { DRETab } from "@/components/financeiro/DRETab";
+import { DRECashflowView } from "@/components/financeiro/DRECashflowView";
 import { ReconciliationTab } from "@/components/financeiro/ReconciliationTab";
 import { MastersTab } from "@/components/financeiro/MastersTab";
 import { 
   LayoutDashboard, 
-  TrendingUp, 
   CreditCard, 
   Receipt, 
   BookOpen, 
@@ -52,9 +50,9 @@ export default function Financeiro() {
               <LayoutDashboard className="h-4 w-4" />
               <span className="hidden sm:inline">Dashboard</span>
             </TabsTrigger>
-            <TabsTrigger value="cashflow" className="flex items-center gap-2">
-              <TrendingUp className="h-4 w-4" />
-              <span className="hidden sm:inline">Fluxo de Caixa</span>
+            <TabsTrigger value="dre-cashflow" className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4" />
+              <span className="hidden sm:inline">DRE / Fluxo de Caixa</span>
             </TabsTrigger>
             <TabsTrigger value="payables" className="flex items-center gap-2">
               <CreditCard className="h-4 w-4" />
@@ -67,10 +65,6 @@ export default function Financeiro() {
             <TabsTrigger value="ledger" className="flex items-center gap-2">
               <BookOpen className="h-4 w-4" />
               <span className="hidden sm:inline">Lançamentos</span>
-            </TabsTrigger>
-            <TabsTrigger value="dre" className="flex items-center gap-2">
-              <BarChart3 className="h-4 w-4" />
-              <span className="hidden sm:inline">DRE</span>
             </TabsTrigger>
             <TabsTrigger value="reconciliation" className="flex items-center gap-2">
               <RefreshCw className="h-4 w-4" />
@@ -86,8 +80,8 @@ export default function Financeiro() {
             <FinanceiroDashboard filters={filters} />
           </TabsContent>
 
-          <TabsContent value="cashflow" className="space-y-4">
-            <CashflowTab filters={filters} />
+          <TabsContent value="dre-cashflow" className="space-y-4">
+            <DRECashflowView filters={filters} />
           </TabsContent>
 
           <TabsContent value="payables" className="space-y-4">
@@ -100,10 +94,6 @@ export default function Financeiro() {
 
           <TabsContent value="ledger" className="space-y-4">
             <LedgerTab filters={filters} />
-          </TabsContent>
-
-          <TabsContent value="dre" className="space-y-4">
-            <DRETab filters={filters} />
           </TabsContent>
 
           <TabsContent value="reconciliation" className="space-y-4">
