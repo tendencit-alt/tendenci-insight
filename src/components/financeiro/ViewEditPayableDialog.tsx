@@ -236,14 +236,17 @@ export function ViewEditPayableDialog({ open, onOpenChange, payable, onSuccess, 
               {isEditing ? (
                 <>
                   <div className="flex gap-2">
-                    <Select value={form.supplier_id} onValueChange={(v) => setForm({ ...form, supplier_id: v })}>
-                      <SelectTrigger className={cn("flex-1", errors.supplier_id && "border-destructive")}>
-                        <SelectValue placeholder="Selecione..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {suppliers?.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
+                    <div className="flex-1">
+                      <SearchableSelect
+                        options={(suppliers || []).map(s => ({ value: s.id, label: s.name }))}
+                        value={form.supplier_id}
+                        onChange={(v) => setForm({ ...form, supplier_id: v })}
+                        placeholder="Selecione o fornecedor..."
+                        searchPlaceholder="Buscar fornecedor..."
+                        emptyMessage="Nenhum fornecedor encontrado."
+                        className={cn(errors.supplier_id && "border-destructive")}
+                      />
+                    </div>
                     <Button 
                       type="button" 
                       variant="outline" 
