@@ -102,6 +102,16 @@ export function CreateLedgerEntryDialog({ open, onOpenChange, onSuccess }: Creat
       return;
     }
 
+    if (!form.cost_center_id) {
+      toast.error("Selecione um Centro de Custo");
+      return;
+    }
+
+    if (!form.project_id) {
+      toast.error("Selecione um Projeto");
+      return;
+    }
+
     setLoading(true);
     try {
       const { error } = await supabase.from("fin_ledger_entries").insert({
@@ -256,7 +266,7 @@ export function CreateLedgerEntryDialog({ open, onOpenChange, onSuccess }: Creat
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Centro de Custo</Label>
+              <Label>Centro de Custo *</Label>
               <Select value={form.cost_center_id} onValueChange={(v) => setForm({ ...form, cost_center_id: v })}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione..." />
@@ -270,7 +280,7 @@ export function CreateLedgerEntryDialog({ open, onOpenChange, onSuccess }: Creat
             </div>
 
             <div className="space-y-2">
-              <Label>Projeto</Label>
+              <Label>Projeto *</Label>
               <Select value={form.project_id} onValueChange={(v) => setForm({ ...form, project_id: v })}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione..." />
