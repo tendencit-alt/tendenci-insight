@@ -96,6 +96,11 @@ export function CreateLedgerEntryDialog({ open, onOpenChange, onSuccess }: Creat
       return;
     }
 
+    if (!form.chart_account_id) {
+      toast.error("Selecione uma categoria (Plano de Contas) para que o lançamento apareça no DRE e Fluxo de Caixa");
+      return;
+    }
+
     setLoading(true);
     try {
       const { error } = await supabase.from("fin_ledger_entries").insert({
@@ -238,7 +243,7 @@ export function CreateLedgerEntryDialog({ open, onOpenChange, onSuccess }: Creat
           </div>
 
           <div className="space-y-2">
-            <Label>Categoria (Plano de Contas)</Label>
+            <Label>Categoria (Plano de Contas) *</Label>
             <SearchableSelect
               options={(filteredChartAccounts || []).map(a => ({ value: a.id, label: a.name, code: a.code }))}
               value={form.chart_account_id}
@@ -247,6 +252,7 @@ export function CreateLedgerEntryDialog({ open, onOpenChange, onSuccess }: Creat
               searchPlaceholder="Buscar categoria..."
               emptyMessage="Nenhuma categoria encontrada."
             />
+            <p className="text-xs text-muted-foreground">Obrigatório para aparecer no DRE e Fluxo de Caixa</p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
