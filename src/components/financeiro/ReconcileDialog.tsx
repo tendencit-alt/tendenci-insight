@@ -269,7 +269,7 @@ export function ReconcileDialog({
 
         if (updateError) throw updateError;
 
-        // Create a new entry for the remaining amount
+        // Create a new entry for the remaining amount, linked to the original
         const { error: insertError } = await supabase
           .from("fin_ledger_entries")
           .insert({
@@ -282,7 +282,8 @@ export function ReconcileDialog({
             chart_account_id: chartAccountId || null,
             status: "PENDENTE",
             reconciled: false,
-            notes: `Saldo restante de pagamento parcial - Original: ${formatCurrency(originalAmount)}, Pago: ${formatCurrency(reconcileAmount)}`,
+            parent_entry_id: entry.id, // Link to original entry for traceability
+            notes: `Saldo restante de pagamento parcial - Vinculado ao lançamento #${entry.id.slice(0, 8)} - Original: ${formatCurrency(originalAmount)}, Pago: ${formatCurrency(reconcileAmount)}`,
           });
 
         if (insertError) throw insertError;
