@@ -3,12 +3,16 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FinanceiroFilters, FinanceiroFiltersState } from "@/components/financeiro/FinanceiroFilters";
 import { IntegratedDashboardBI } from "@/components/financeiro/IntegratedDashboardBI";
+import { DRETab } from "@/components/financeiro/DRETab";
+import { CashflowTab } from "@/components/financeiro/CashflowTab";
 import { PayablesReceivablesTab } from "@/components/financeiro/PayablesReceivablesTab";
 import { LedgerTab } from "@/components/financeiro/LedgerTab";
 import { ReconciliationTab } from "@/components/financeiro/ReconciliationTab";
 import { MastersTab } from "@/components/financeiro/MastersTab";
 import { 
   LayoutDashboard, 
+  FileText,
+  Banknote,
   Wallet, 
   BookOpen, 
   RefreshCw, 
@@ -34,7 +38,7 @@ export default function Financeiro() {
           <div>
             <h1 className="text-2xl font-bold">Financeiro</h1>
             <p className="text-muted-foreground text-sm">
-              Gestão financeira completa: Dashboard + BI integrados, contas a pagar/receber e conciliação
+              Gestão financeira completa: Dashboard, DRE, Fluxo de Caixa e conciliação
             </p>
           </div>
           <FinanceiroFilters filters={filters} onChange={setFilters} />
@@ -45,6 +49,14 @@ export default function Financeiro() {
             <TabsTrigger value="dashboard" className="flex items-center gap-2">
               <LayoutDashboard className="h-4 w-4" />
               <span className="hidden sm:inline">Dashboard + BI</span>
+            </TabsTrigger>
+            <TabsTrigger value="dre" className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              <span className="hidden sm:inline">DRE</span>
+            </TabsTrigger>
+            <TabsTrigger value="cashflow" className="flex items-center gap-2">
+              <Banknote className="h-4 w-4" />
+              <span className="hidden sm:inline">Fluxo de Caixa</span>
             </TabsTrigger>
             <TabsTrigger value="payables-receivables" className="flex items-center gap-2">
               <Wallet className="h-4 w-4" />
@@ -66,6 +78,14 @@ export default function Financeiro() {
 
           <TabsContent value="dashboard" className="space-y-4">
             <IntegratedDashboardBI filters={filters} />
+          </TabsContent>
+
+          <TabsContent value="dre" className="space-y-4">
+            <DRETab filters={filters} />
+          </TabsContent>
+
+          <TabsContent value="cashflow" className="space-y-4">
+            <CashflowTab filters={filters} />
           </TabsContent>
 
           <TabsContent value="payables-receivables" className="space-y-4">
