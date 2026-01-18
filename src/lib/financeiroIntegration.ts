@@ -648,3 +648,165 @@ export async function bulkDeleteReceivablesWithSync(receivableIds: string[]) {
 
   return { success: true, deletedCount: receivableIds.length };
 }
+
+/**
+ * Get orphan ledger entries (DESPESA/RECEITA without linked payables/receivables)
+ */
+export async function getOrphanLedgerEntries() {
+  // Get all DESPESA entries (ABERTO or PAGO_RECEBIDO)
+  const { data: despesas, error: despesaError } = await supabase
+    .from("fin_ledger_entries")
+    .select(`
+      id,
+      type,
+      description,
+      amount,
+      competence_date,
+      status,
+      party_id,
+      party_type,
+      chart_account_id,
+      cost_center_id,
+      project_id,
+      document_number,
+      notes,
+      cash_date,
+      bank_account_id
+    `)
+    .eq("type", "DESPESA")
+    .in("status", ["ABERTO", "PAGO_RECEBIDO"]);
+
+  if (despesaError) throw despesaError;
+
+  // Get all RECEITA entries (ABERTO or PAGO_RECEBIDO)
+  const { data: receitas, error: receitaError } = await supabase
+    .from("fin_ledger_entries")
+    .select(`
+      id,
+      type,
+      description,
+      amount,
+      competence_date,
+      status,
+      party_id,
+      party_type,
+      chart_account_id,
+      cost_center_id,
+      project_id,
+      document_number,
+      notes,
+      cash_date,
+      bank_account_id
+    `)
+    .eq("type", "RECEITA")
+    .in("status", ["ABERTO", "PAGO_RECEBIDO"]);
+
+  if (receitaError) throw receitaError;
+
+  // Get existing linked payables
+  const { data: linkedPayables } = await supabase
+    .from("fin_payables")
+    .select("ledger_entry_id")
+    .not("ledger_entry_id", "is", null);
+
+  const linkedPayableIds = new Set(linkedPayables?.map(p => p.ledger_entry_id) || []);
+
+  // Get existing linked receivables
+  const { data: linkedReceivables } = await supabase
+    .from("fin_receivables")
+    .select("ledger_entry_id")
+    .not("ledger_entry_id", "is", null);
+
+  const linkedReceivableIds = new Set(linkedReceivables?.map(r => r.ledger_entry_id) || []);
+
+  // Filter orphan entries
+  const orphanDespesas = (despesas || []).filter(d => !linkedPayableIds.has(d.id));
+  const orphanReceitas = (receitas || []).filter(r => !linkedReceivableIds.has(r.id));
+
+  return {
+    orphanDespesas,
+    orphanReceitas,
+    totalOrphans: orphanDespesas.length + orphanReceitas.length,
+    totalValue: orphanDespesas.reduce((sum, d) => sum + (d.amount || 0), 0) + 
+                orphanReceitas.reduce((sum, r) => sum + (r.amount || 0), 0)
+  };
+}
+
+/**
+ * Sync orphan ledger entries by creating corresponding payables/receivables
+ */
+export async function syncOrphanLedgerEntries() {
+  const orphans = await getOrphanLedgerEntries();
+  let createdPayables = 0;
+  let createdReceivables = 0;
+  const errors: string[] = [];
+
+  // Create payables for orphan DESPESA entries
+  for (const entry of orphans.orphanDespesas) {
+    const payableStatus = entry.status === "PAGO_RECEBIDO" ? "PAGO" : "ABERTO";
+    
+    const { error } = await supabase
+      .from("fin_payables")
+      .insert({
+        supplier_id: entry.party_id || null,
+        amount: entry.amount,
+        due_date: entry.competence_date, // Use competence_date as due_date
+        competence_date: entry.competence_date,
+        chart_account_id: entry.chart_account_id,
+        cost_center_id: entry.cost_center_id,
+        project_id: entry.project_id,
+        description: entry.description,
+        document_number: entry.document_number,
+        notes: entry.notes,
+        ledger_entry_id: entry.id,
+        status: payableStatus,
+        payment_date: entry.cash_date,
+        bank_account_id: entry.bank_account_id,
+        paid_amount: payableStatus === "PAGO" ? entry.amount : 0,
+      });
+
+    if (error) {
+      errors.push(`Erro ao criar conta a pagar para "${entry.description}": ${error.message}`);
+    } else {
+      createdPayables++;
+    }
+  }
+
+  // Create receivables for orphan RECEITA entries
+  for (const entry of orphans.orphanReceitas) {
+    const receivableStatus = entry.status === "PAGO_RECEBIDO" ? "RECEBIDO" : "ABERTO";
+    
+    const { error } = await supabase
+      .from("fin_receivables")
+      .insert({
+        customer_id: entry.party_id || null,
+        amount: entry.amount,
+        due_date: entry.competence_date, // Use competence_date as due_date
+        competence_date: entry.competence_date,
+        chart_account_id: entry.chart_account_id,
+        cost_center_id: entry.cost_center_id,
+        project_id: entry.project_id,
+        description: entry.description,
+        document_number: entry.document_number,
+        notes: entry.notes,
+        ledger_entry_id: entry.id,
+        status: receivableStatus,
+        receipt_date: entry.cash_date,
+        bank_account_id: entry.bank_account_id,
+        received_amount: receivableStatus === "RECEBIDO" ? entry.amount : 0,
+      });
+
+    if (error) {
+      errors.push(`Erro ao criar conta a receber para "${entry.description}": ${error.message}`);
+    } else {
+      createdReceivables++;
+    }
+  }
+
+  return {
+    success: errors.length === 0,
+    createdPayables,
+    createdReceivables,
+    errors
+  };
+}
