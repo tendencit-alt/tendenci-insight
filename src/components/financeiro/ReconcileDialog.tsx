@@ -24,6 +24,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -35,7 +36,8 @@ import {
   FileText, 
   Building2,
   Calendar,
-  AlertTriangle 
+  AlertTriangle,
+  Lock
 } from "lucide-react";
 
 interface LedgerEntry {
@@ -67,9 +69,43 @@ export function ReconcileDialog({
   const [documentNumber, setDocumentNumber] = useState("");
   const [notes, setNotes] = useState("");
   const [selectedBankTransactionId, setSelectedBankTransactionId] = useState<string>("");
+  
+  // New required fields for manual reconciliation
+  const [dataMovimento, setDataMovimento] = useState("");
+  const [contaBancariaId, setContaBancariaId] = useState("");
+  const [chartAccountId, setChartAccountId] = useState("");
+  const [vinculo, setVinculo] = useState("");
 
   // Get unique bank account ids from selected entries
   const bankAccountIds = [...new Set(entries.map((e) => e.bank_account_id).filter(Boolean))];
+
+  // Fetch bank accounts
+  const { data: bankAccounts } = useQuery({
+    queryKey: ["bank-accounts-reconcile"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("fin_bank_accounts")
+        .select("id, nickname, bank_name")
+        .eq("active", true)
+        .order("nickname");
+      return data || [];
+    },
+    enabled: open,
+  });
+
+  // Fetch chart accounts (grouped)
+  const { data: chartAccounts } = useQuery({
+    queryKey: ["chart-accounts-reconcile"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("fin_chart_accounts")
+        .select("id, code, name, parent_id, nature")
+        .eq("active", true)
+        .order("code");
+      return data || [];
+    },
+    enabled: open,
+  });
 
   // Fetch pending bank transactions for matching
   const { data: bankTransactions } = useQuery({
@@ -93,6 +129,30 @@ export function ReconcileDialog({
     enabled: open && bankAccountIds.length > 0,
   });
 
+  // Auto payment date (today, non-editable)
+  const dataPagamento = format(new Date(), "yyyy-MM-dd");
+  const dataPagamentoFormatted = format(new Date(), "dd/MM/yyyy", { locale: ptBR });
+
+  // Group chart accounts by parent
+  const groupedChartAccounts = chartAccounts?.reduce((acc, account) => {
+    if (!account.parent_id) {
+      // This is a parent account
+      if (!acc[account.id]) {
+        acc[account.id] = { parent: account, children: [] };
+      } else {
+        acc[account.id].parent = account;
+      }
+    } else {
+      // This is a child account
+      if (!acc[account.parent_id]) {
+        acc[account.parent_id] = { parent: null, children: [account] };
+      } else {
+        acc[account.parent_id].children.push(account);
+      }
+    }
+    return acc;
+  }, {} as Record<string, { parent: any; children: any[] }>) || {};
+
   // Reset form when dialog opens
   useEffect(() => {
     if (open) {
@@ -100,6 +160,10 @@ export function ReconcileDialog({
       setDocumentNumber("");
       setNotes("");
       setSelectedBankTransactionId("");
+      setDataMovimento("");
+      setContaBancariaId("");
+      setChartAccountId("");
+      setVinculo("");
     }
   }, [open]);
 
@@ -115,18 +179,56 @@ export function ReconcileDialog({
     });
   };
 
+  // Validation for manual reconciliation
+  const isManualFormValid = reconcileMethod === "manual" 
+    ? dataMovimento && contaBancariaId && chartAccountId && vinculo
+    : true;
+
   const handleSubmit = async () => {
+    // Validate required fields for manual reconciliation
+    if (reconcileMethod === "manual") {
+      if (!dataMovimento) {
+        toast.error("Data do Movimento é obrigatória");
+        return;
+      }
+      if (!contaBancariaId) {
+        toast.error("Conta Bancária é obrigatória");
+        return;
+      }
+      if (!chartAccountId) {
+        toast.error("Plano de Conta é obrigatório");
+        return;
+      }
+      if (!vinculo) {
+        toast.error("Vínculo é obrigatório");
+        return;
+      }
+    }
+
     setIsSubmitting(true);
 
     try {
       // Update ledger entries as reconciled
+      const updateData: any = {
+        reconciled: true,
+        document_number: documentNumber || null,
+        notes: notes ? (entries.length === 1 ? notes : `[Conciliação em lote] ${notes}`) : undefined,
+      };
+
+      // Add manual reconciliation fields
+      if (reconcileMethod === "manual") {
+        updateData.cash_date = dataPagamento; // Auto date
+        updateData.bank_account_id = contaBancariaId;
+        updateData.chart_account_id = chartAccountId;
+        // vinculo could be stored in notes or a dedicated field if available
+        updateData.notes = notes 
+          ? `[Vínculo: ${vinculo}] ${notes}` 
+          : `[Vínculo: ${vinculo}]`;
+      }
+
       const { error: updateError } = await supabase
         .from("fin_ledger_entries")
-        .update({
-          reconciled: true,
-          document_number: documentNumber || null,
-          notes: notes ? (entries.length === 1 ? notes : `[Conciliação em lote] ${notes}`) : undefined,
-        })
+        .update(updateData)
         .in(
           "id",
           entries.map((e) => e.id)
@@ -355,7 +457,7 @@ export function ReconcileDialog({
               </div>
             )}
 
-            {/* Manual reconciliation fields - always visible */}
+            {/* Manual reconciliation fields */}
             {reconcileMethod === "manual" && (
               <>
                 <Separator />
@@ -363,7 +465,124 @@ export function ReconcileDialog({
                   <Label className="text-xs text-muted-foreground uppercase tracking-wide">
                     Informações da Conciliação Manual
                   </Label>
+
+                  {/* Alert for missing document */}
+                  {!documentNumber && (
+                    <Alert className="border-amber-500 bg-amber-50 dark:bg-amber-950/20">
+                      <AlertTriangle className="h-4 w-4 text-amber-600" />
+                      <AlertDescription className="text-amber-700 dark:text-amber-400 text-sm">
+                        Conciliação sem documento de referência. Recomenda-se incluir para auditoria.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  {/* Data de Pagamento/Recebimento - Auto and locked */}
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <Lock className="h-3 w-3 text-muted-foreground" />
+                      Data de Pagamento / Recebimento
+                    </Label>
+                    <Input
+                      value={dataPagamentoFormatted}
+                      disabled
+                      className="bg-muted cursor-not-allowed"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Data automática do sistema (não editável)
+                    </p>
+                  </div>
+
+                  {/* Data do Movimento - Required */}
+                  <div className="space-y-2">
+                    <Label htmlFor="dataMovimento" className="flex items-center gap-1">
+                      Data do Movimento
+                      <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="dataMovimento"
+                      type="date"
+                      value={dataMovimento}
+                      onChange={(e) => setDataMovimento(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  {/* Conta Bancária - Required */}
+                  <div className="space-y-2">
+                    <Label htmlFor="contaBancaria" className="flex items-center gap-1">
+                      Conta Bancária
+                      <span className="text-red-500">*</span>
+                    </Label>
+                    <Select value={contaBancariaId} onValueChange={setContaBancariaId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione a conta bancária" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {bankAccounts?.map((account) => (
+                          <SelectItem key={account.id} value={account.id}>
+                            {account.nickname} {account.bank_name && `(${account.bank_name})`}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Plano de Conta (Grupo e Subgrupo) - Required */}
+                  <div className="space-y-2">
+                    <Label htmlFor="chartAccount" className="flex items-center gap-1">
+                      Plano de Conta (Grupo / Subgrupo)
+                      <span className="text-red-500">*</span>
+                    </Label>
+                    <Select value={chartAccountId} onValueChange={setChartAccountId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o plano de conta" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.values(groupedChartAccounts).map((group) => (
+                          group.parent && (
+                            <div key={group.parent.id}>
+                              <SelectItem 
+                                value={group.parent.id} 
+                                className="font-semibold text-muted-foreground"
+                                disabled
+                              >
+                                {group.parent.code} - {group.parent.name}
+                              </SelectItem>
+                              {group.children.map((child) => (
+                                <SelectItem key={child.id} value={child.id} className="pl-6">
+                                  {child.code} - {child.name}
+                                </SelectItem>
+                              ))}
+                            </div>
+                          )
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Vínculo - Required */}
+                  <div className="space-y-2">
+                    <Label htmlFor="vinculo" className="flex items-center gap-1">
+                      Vínculo
+                      <span className="text-red-500">*</span>
+                    </Label>
+                    <Select value={vinculo} onValueChange={setVinculo}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o vínculo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="cliente">Cliente</SelectItem>
+                        <SelectItem value="fornecedor">Fornecedor</SelectItem>
+                        <SelectItem value="funcionario">Funcionário</SelectItem>
+                        <SelectItem value="socio">Sócio</SelectItem>
+                        <SelectItem value="banco">Banco / Instituição Financeira</SelectItem>
+                        <SelectItem value="governo">Governo / Impostos</SelectItem>
+                        <SelectItem value="outro">Outro</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                   
+                  {/* Document Number */}
                   <div className="space-y-2">
                     <Label htmlFor="documentNumber">
                       Número do Documento / Referência
@@ -376,6 +595,7 @@ export function ReconcileDialog({
                     />
                   </div>
 
+                  {/* Notes */}
                   <div className="space-y-2">
                     <Label htmlFor="notes">Observações da Conciliação</Label>
                     <Textarea
@@ -431,7 +651,8 @@ export function ReconcileDialog({
             onClick={handleSubmit}
             disabled={
               isSubmitting ||
-              (reconcileMethod === "bank" && !selectedBankTransactionId)
+              (reconcileMethod === "bank" && !selectedBankTransactionId) ||
+              (reconcileMethod === "manual" && !isManualFormValid)
             }
             className="gap-2 bg-green-600 hover:bg-green-700"
           >
