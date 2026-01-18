@@ -32,6 +32,21 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // ========== VALIDAÇÃO DE SEGURANÇA (OPCIONAL) ==========
+    // Se EVOLUTION_WEBHOOK_SECRET estiver configurado, valida o token
+    const webhookSecret = Deno.env.get('EVOLUTION_WEBHOOK_SECRET')
+    if (webhookSecret) {
+      const requestToken = req.headers.get('x-webhook-token') || req.headers.get('authorization')?.replace('Bearer ', '')
+      if (requestToken !== webhookSecret) {
+        console.warn('⚠️ Webhook token inválido ou ausente')
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), { 
+          status: 401, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+      console.log('✅ Webhook token validado com sucesso')
+    }
+
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
