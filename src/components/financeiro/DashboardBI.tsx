@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { FinanceiroFiltersState } from "./FinanceiroFilters";
+import { FinanceiroKPIs } from "./FinanceiroKPIs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -20,18 +21,14 @@ import {
   TrendingDown, 
   Wallet, 
   PiggyBank, 
-  Flame, 
-  Calendar,
   ChevronRight,
   ChevronDown,
   ArrowUpCircle,
   ArrowDownCircle,
-  Target,
-  AlertTriangle,
-  CheckCircle,
   X,
   FileText,
-  Info
+  Info,
+  BarChart3
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -41,7 +38,7 @@ interface DashboardBIProps {
   filters: FinanceiroFiltersState;
 }
 
-type KPIType = "saldo" | "receitas" | "despesas" | "resultado" | "burn" | "runway" | null;
+type KPIType = "saldo" | "receitas" | "despesas" | "resultado" | null;
 
 interface CategoryData {
   id: string;
@@ -117,8 +114,6 @@ export function DashboardBI({ filters }: DashboardBIProps) {
       const saldoInicial = accounts?.reduce((sum, a) => sum + Number(a.opening_balance || 0), 0) || 0;
       const resultado = receitas - despesas;
       const saldoAtual = saldoInicial + resultado;
-      const burnRate = despesas / 30;
-      const runway = burnRate > 0 ? Math.floor(saldoAtual / (burnRate * 30)) : 99;
 
       // Group entries by chart account for BI
       const receitasByAccount = new Map<string, CategoryData>();
@@ -151,118 +146,25 @@ export function DashboardBI({ filters }: DashboardBIProps) {
         });
       });
 
-      // Get metas for comparison
-      const metaReceitas = goals?.find(g => g.metric_key === "receitas")?.target_amount || receitas * 1.1;
-      const metaDespesas = goals?.find(g => g.metric_key === "despesas")?.target_amount || despesas * 0.9;
-      const metaResultado = goals?.find(g => g.metric_key === "resultado")?.target_amount || resultado * 1.05;
-
       return {
         receitas,
         despesas,
         resultado,
         saldoAtual,
         saldoInicial,
-        burnRate: burnRate * 30,
-        runway,
         receitasCategories: Array.from(receitasByAccount.values()).sort((a, b) => b.value - a.value),
         despesasCategories: Array.from(despesasByAccount.values()).sort((a, b) => b.value - a.value),
-        metas: {
-          receitas: metaReceitas,
-          despesas: metaDespesas,
-          resultado: metaResultado,
-        },
       };
     },
   });
 
-  // Determine KPI status based on value positivity and alert threshold
-  // Green = positive, Red = negative, Yellow = close to becoming negative (within 15% of zero)
-  const getValueStatus = (value: number, alertThreshold?: number) => {
-    if (value < 0) return "red";
-    
-    // If there's a threshold, check if we're close to it
-    if (alertThreshold !== undefined && value <= alertThreshold) {
-      return "yellow";
-    }
-    
-    if (value > 0) return "green";
-    return "neutral";
-  };
-
-  const kpis = useMemo(() => {
-    if (!data) return [];
-
-    // Alert thresholds (15% of total for most metrics)
-    const receitaAlertThreshold = data.metas.receitas * 0.85;
-    const despesaAlertThreshold = data.metas.despesas * 1.15; // For despesas, alert when getting too high
-    
-    return [
-      {
-        key: "saldo" as KPIType,
-        title: "Saldo Consolidado",
-        value: data.saldoAtual,
-        icon: Wallet,
-        // Alert when saldo is positive but below 15% of initial + expected result
-        status: data.saldoAtual < 0 
-          ? "red" 
-          : data.saldoAtual < (data.saldoInicial * 0.15) 
-            ? "yellow" 
-            : "green",
-        info: "Soma de todos os saldos das contas bancárias. Use para avaliar a liquidez imediata da empresa e capacidade de honrar compromissos de curto prazo.",
-      },
-      {
-        key: "receitas" as KPIType,
-        title: "Receitas",
-        value: data.receitas,
-        meta: data.metas.receitas,
-        icon: TrendingUp,
-        status: data.receitas >= data.metas.receitas 
-          ? "green" 
-          : data.receitas >= receitaAlertThreshold 
-            ? "yellow" 
-            : "red",
-        info: "Total de receitas recebidas no período. Analise tendências de crescimento e sazonalidade. Quedas consecutivas indicam necessidade de ação comercial.",
-      },
-      {
-        key: "despesas" as KPIType,
-        title: "Despesas",
-        value: data.despesas,
-        meta: data.metas.despesas,
-        icon: TrendingDown,
-        // For expenses: green if under meta, yellow if close to meta, red if over
-        status: data.despesas <= data.metas.despesas 
-          ? "green" 
-          : data.despesas <= despesaAlertThreshold 
-            ? "yellow" 
-            : "red",
-        info: "Total de despesas pagas no período. Monitore para identificar gastos excessivos ou oportunidades de redução de custos.",
-      },
-      {
-        key: "resultado" as KPIType,
-        title: "Resultado Econômico",
-        value: data.resultado,
-        meta: data.metas.resultado,
-        icon: PiggyBank,
-        // Green if positive, red if negative, yellow if close to zero (within 10% of revenue)
-        status: data.resultado < 0 
-          ? "red" 
-          : data.resultado < (data.receitas * 0.05) 
-            ? "yellow" 
-            : "green",
-        info: "Diferença entre entradas e saídas. Resultado negativo recorrente indica que a operação não é sustentável. Avalie corte de custos ou aumento de receita.",
-      },
-      {
-        key: "burn" as KPIType,
-        title: "Consumo / Fôlego",
-        value: data.burnRate,
-        secondaryValue: data.runway,
-        icon: Flame,
-        status: data.runway <= 3 ? "red" : data.runway <= 6 ? "yellow" : "green",
-        isCombo: true,
-        info: "Consumo mensal médio e quantos meses a empresa pode operar com o saldo atual. Menos de 3 meses = urgente buscar capital ou cortar custos. 3-6 meses = atenção.",
-      },
-    ];
-  }, [data]);
+  // Metrics for KPIs component
+  const metrics = data ? {
+    entradas: data.receitas,
+    saidas: data.despesas,
+    resultado: data.resultado,
+    saldoConsolidado: data.saldoAtual,
+  } : undefined;
 
   const toggleCategory = (categoryId: string) => {
     const newExpanded = new Set(expandedCategories);
@@ -272,42 +174,6 @@ export function DashboardBI({ filters }: DashboardBIProps) {
       newExpanded.add(categoryId);
     }
     setExpandedCategories(newExpanded);
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "green": return "border-green-500/50 bg-green-500/5";
-      case "yellow": return "border-yellow-500/50 bg-yellow-500/5";
-      case "red": return "border-red-500/50 bg-red-500/5";
-      default: return "border-border bg-card";
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "green": return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case "yellow": return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
-      case "red": return <AlertTriangle className="h-4 w-4 text-red-500" />;
-      default: return null;
-    }
-  };
-
-  const getTextColor = (status: string) => {
-    switch (status) {
-      case "green": return "text-green-600";
-      case "yellow": return "text-yellow-600";
-      case "red": return "text-red-600";
-      default: return "text-muted-foreground";
-    }
-  };
-
-  const getIconBgColor = (status: string) => {
-    switch (status) {
-      case "green": return "bg-green-500/10";
-      case "yellow": return "bg-yellow-500/10";
-      case "red": return "bg-red-500/10";
-      default: return "bg-muted";
-    }
   };
 
   // Render BI content based on selected KPI
@@ -403,50 +269,6 @@ export function DashboardBI({ filters }: DashboardBIProps) {
             </div>
           </div>
         );
-      case "burn":
-        return (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold flex items-center gap-2">
-                <Flame className="h-5 w-5" />
-                Análise de Consumo & Fôlego Financeiro
-              </h3>
-              <Button variant="ghost" size="sm" onClick={() => setSelectedKPI(null)}>
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-            <div className="grid md:grid-cols-3 gap-4">
-              <Card>
-                <CardContent className="pt-4">
-                  <p className="text-sm text-muted-foreground">Consumo Mensal</p>
-                  <p className="text-2xl font-bold text-red-600">{formatCurrency(data.burnRate)}</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="pt-4">
-                  <p className="text-sm text-muted-foreground">Saldo Disponível</p>
-                  <p className="text-2xl font-bold">{formatCurrency(data.saldoAtual)}</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="pt-4">
-                  <p className="text-sm text-muted-foreground">Fôlego Estimado</p>
-                  <p className={cn("text-2xl font-bold", data.runway > 6 ? "text-green-600" : data.runway > 3 ? "text-yellow-600" : "text-red-600")}>
-                    {data.runway} meses
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Principais Despesas</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {renderCategoryTable(data.despesasCategories.slice(0, 5), data.despesas, "red")}
-              </CardContent>
-            </Card>
-          </div>
-        );
       default:
         return null;
     }
@@ -477,7 +299,7 @@ export function DashboardBI({ filters }: DashboardBIProps) {
     }
 
     return (
-      <ScrollArea className="h-[400px]">
+      <ScrollArea className="h-[calc(100vh-400px)] min-h-[400px]">
         <Table>
           <TableHeader>
             <TableRow>
@@ -561,16 +383,7 @@ export function DashboardBI({ filters }: DashboardBIProps) {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
-          {[...Array(6)].map((_, i) => (
-            <Card key={i}>
-              <CardContent className="pt-4">
-                <Skeleton className="h-4 w-24 mb-2" />
-                <Skeleton className="h-8 w-32" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <FinanceiroKPIs metrics={undefined} isLoading={true} />
         <Card>
           <CardContent className="pt-6">
             <Skeleton className="h-64 w-full" />
@@ -583,65 +396,78 @@ export function DashboardBI({ filters }: DashboardBIProps) {
   return (
     <TooltipProvider>
       <div className="space-y-6">
-        {/* Executive Dashboard - Clickable KPIs */}
-        <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
-          {kpis.map((kpi) => (
-            <Card 
-              key={kpi.key}
-              className={cn(
-                "relative overflow-hidden cursor-pointer transition-all border-2",
-                selectedKPI === kpi.key ? "ring-2 ring-primary" : "",
-                getStatusColor(kpi.status)
-              )}
-              onClick={() => setSelectedKPI(selectedKPI === kpi.key ? null : kpi.key)}
-            >
-              <CardContent className="p-3 sm:pt-4 sm:px-4">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                  <div className="space-y-0.5 sm:space-y-1 min-w-0 flex-1">
-                    <div className="flex items-center gap-1">
-                      <p className="text-[10px] sm:text-xs text-muted-foreground font-medium truncate">{kpi.title}</p>
-                      {getStatusIcon(kpi.status)}
-                      <Tooltip>
-                        <TooltipTrigger asChild onClick={(e) => e.stopPropagation()}>
-                          <Info className="h-3 w-3 text-muted-foreground/60 cursor-help flex-shrink-0" />
-                        </TooltipTrigger>
-                        <TooltipContent side="top" className="max-w-[250px] text-xs">
-                          <p>{kpi.info}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </div>
-                    {kpi.isCombo ? (
-                      <div>
-                        <p className="text-xs sm:text-sm text-muted-foreground">
-                          {formatCurrency(kpi.value)}/mês
-                        </p>
-                        <p className={cn("text-base sm:text-xl font-bold", getTextColor(kpi.status))}>
-                          {kpi.secondaryValue} meses
-                        </p>
-                      </div>
-                    ) : (
-                      <p className={cn("text-base sm:text-xl font-bold truncate", getTextColor(kpi.status))}>
-                        {formatCurrency(kpi.value)}
-                      </p>
-                    )}
-                    {kpi.meta && (
-                      <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
-                        Meta: {formatCurrency(kpi.meta)}
-                      </p>
-                    )}
-                  </div>
-                  <div className={cn("p-1.5 sm:p-2 rounded-full hidden sm:block", getIconBgColor(kpi.status))}>
-                    <kpi.icon className={cn("h-4 w-4 sm:h-5 sm:w-5", getTextColor(kpi.status) || "text-muted-foreground")} />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+        {/* New unified KPIs */}
+        <FinanceiroKPIs metrics={metrics} isLoading={false} />
+
+        {/* Clickable summary cards for BI drill-down */}
+        <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
+          <Card 
+            className={cn(
+              "cursor-pointer transition-all hover:shadow-md",
+              selectedKPI === "receitas" ? "ring-2 ring-green-500" : ""
+            )}
+            onClick={() => setSelectedKPI(selectedKPI === "receitas" ? null : "receitas")}
+          >
+            <CardContent className="pt-4 pb-4">
+              <div className="flex items-center gap-2">
+                <ArrowUpCircle className="h-4 w-4 text-green-600" />
+                <p className="text-xs text-muted-foreground">Ver Receitas</p>
+              </div>
+              <p className="text-lg font-bold text-green-600">{formatCurrency(data?.receitas || 0)}</p>
+            </CardContent>
+          </Card>
+          <Card 
+            className={cn(
+              "cursor-pointer transition-all hover:shadow-md",
+              selectedKPI === "despesas" ? "ring-2 ring-red-500" : ""
+            )}
+            onClick={() => setSelectedKPI(selectedKPI === "despesas" ? null : "despesas")}
+          >
+            <CardContent className="pt-4 pb-4">
+              <div className="flex items-center gap-2">
+                <ArrowDownCircle className="h-4 w-4 text-red-600" />
+                <p className="text-xs text-muted-foreground">Ver Despesas</p>
+              </div>
+              <p className="text-lg font-bold text-red-600">{formatCurrency(data?.despesas || 0)}</p>
+            </CardContent>
+          </Card>
+          <Card 
+            className={cn(
+              "cursor-pointer transition-all hover:shadow-md",
+              selectedKPI === "resultado" ? "ring-2 ring-primary" : ""
+            )}
+            onClick={() => setSelectedKPI(selectedKPI === "resultado" ? null : "resultado")}
+          >
+            <CardContent className="pt-4 pb-4">
+              <div className="flex items-center gap-2">
+                <PiggyBank className="h-4 w-4" />
+                <p className="text-xs text-muted-foreground">Ver Resultado</p>
+              </div>
+              <p className={cn("text-lg font-bold", (data?.resultado || 0) >= 0 ? "text-green-600" : "text-red-600")}>
+                {formatCurrency(data?.resultado || 0)}
+              </p>
+            </CardContent>
+          </Card>
+          <Card 
+            className={cn(
+              "cursor-pointer transition-all hover:shadow-md",
+              selectedKPI === "saldo" ? "ring-2 ring-blue-500" : ""
+            )}
+            onClick={() => setSelectedKPI(selectedKPI === "saldo" ? null : "saldo")}
+          >
+            <CardContent className="pt-4 pb-4">
+              <div className="flex items-center gap-2">
+                <Wallet className="h-4 w-4 text-blue-600" />
+                <p className="text-xs text-muted-foreground">Ver Saldo</p>
+              </div>
+              <p className="text-lg font-bold text-blue-600">{formatCurrency(data?.saldoAtual || 0)}</p>
+            </CardContent>
+          </Card>
         </div>
 
         {/* BI Section - Dynamic content based on selected KPI */}
         {selectedKPI && (
-          <Card>
+          <Card className="min-h-[500px]">
             <CardContent className="pt-6">
               {renderBIContent()}
             </CardContent>
