@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 
 interface CostCenterKPIsProps {
@@ -228,7 +229,7 @@ export function CostCenterKPIs({ filters }: CostCenterKPIsProps) {
             KPIs por Centro de Custo
           </h2>
           <p className="text-xs sm:text-sm text-muted-foreground">
-            Acompanhamento de metas de receita - {format(new Date(), "MMMM/yyyy", { locale: require("date-fns/locale/pt-BR").ptBR })}
+            Acompanhamento de metas de receita - {format(new Date(), "MMMM/yyyy", { locale: ptBR })}
           </p>
         </div>
       </div>
@@ -382,7 +383,7 @@ export function CostCenterKPIs({ filters }: CostCenterKPIsProps) {
                 <p className="font-semibold">{selectedCostCenter.code} - {selectedCostCenter.name}</p>
               </div>
               <div className="space-y-2">
-                <Label>Meta de Receita ({format(new Date(), "MMMM/yyyy", { locale: require("date-fns/locale/pt-BR").ptBR })})</Label>
+                <Label>Meta de Receita ({format(new Date(), "MMMM/yyyy", { locale: ptBR })})</Label>
                 <Input
                   type="number"
                   placeholder="0,00"
