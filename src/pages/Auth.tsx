@@ -40,7 +40,7 @@ const Auth = () => {
         const isMaster = profile.role === 'admin';
         
         if (isMaster) {
-          navigate('/');
+          navigate('/financeiro');
           return;
         }
         
