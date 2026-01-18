@@ -7,11 +7,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { SearchableSelect } from "./SearchableSelect";
 import { CurrencyInput, parseCurrencyToNumber } from "@/components/ui/currency-input";
 import { toast } from "sonner";
-import { format } from "date-fns";
-import { Loader2 } from "lucide-react";
+import { format, addDays, addWeeks, addMonths, addYears } from "date-fns";
+import { Loader2, Repeat, Info } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface CreateLedgerEntryDialogProps {
   open: boolean;
@@ -34,6 +41,10 @@ export function CreateLedgerEntryDialog({ open, onOpenChange, onSuccess }: Creat
     payment_method: "",
     document_number: "",
     notes: "",
+    // Recurrence fields
+    is_recurring: false,
+    recurrence_type: "monthly" as "daily" | "weekly" | "monthly" | "yearly",
+    recurrence_count: 12,
   });
 
   const { data: bankAccounts } = useQuery({
@@ -91,6 +102,33 @@ export function CreateLedgerEntryDialog({ open, onOpenChange, onSuccess }: Creat
     return true;
   });
 
+  // Calculate next date based on recurrence type
+  const calculateNextDate = (baseDate: string, recurrenceType: string, index: number): string => {
+    const date = new Date(baseDate);
+    switch (recurrenceType) {
+      case "daily":
+        return format(addDays(date, index), "yyyy-MM-dd");
+      case "weekly":
+        return format(addWeeks(date, index), "yyyy-MM-dd");
+      case "monthly":
+        return format(addMonths(date, index), "yyyy-MM-dd");
+      case "yearly":
+        return format(addYears(date, index), "yyyy-MM-dd");
+      default:
+        return format(addMonths(date, index), "yyyy-MM-dd");
+    }
+  };
+
+  const getRecurrenceLabel = (type: string) => {
+    switch (type) {
+      case "daily": return "dias";
+      case "weekly": return "semanas";
+      case "monthly": return "meses";
+      case "yearly": return "anos";
+      default: return "meses";
+    }
+  };
+
   const handleSubmit = async () => {
     if (!form.type || !form.description || !form.amount || !form.competence_date) {
       toast.error("Preencha os campos obrigatórios");
@@ -112,9 +150,14 @@ export function CreateLedgerEntryDialog({ open, onOpenChange, onSuccess }: Creat
       return;
     }
 
+    if (form.is_recurring && (!form.recurrence_count || form.recurrence_count < 1)) {
+      toast.error("Informe a quantidade de repetições");
+      return;
+    }
+
     setLoading(true);
     try {
-      const { error } = await supabase.from("fin_ledger_entries").insert({
+      const baseEntry = {
         type: form.type,
         description: form.description,
         amount: parseCurrencyToNumber(form.amount),
@@ -128,11 +171,52 @@ export function CreateLedgerEntryDialog({ open, onOpenChange, onSuccess }: Creat
         document_number: form.document_number || null,
         notes: form.notes || null,
         status: form.cash_date ? "PAGO_RECEBIDO" : "ABERTO",
-      });
+        is_recurring: form.is_recurring,
+        recurrence_type: form.is_recurring ? form.recurrence_type : null,
+        recurrence_count: form.is_recurring ? form.recurrence_count : null,
+      };
 
-      if (error) throw error;
+      if (form.is_recurring && form.recurrence_count > 1) {
+        // Create the parent entry first
+        const { data: parentEntry, error: parentError } = await supabase
+          .from("fin_ledger_entries")
+          .insert(baseEntry)
+          .select("id")
+          .single();
 
-      toast.success("Lançamento criado com sucesso!");
+        if (parentError) throw parentError;
+
+        // Create child entries for the remaining occurrences
+        const childEntries = [];
+        for (let i = 1; i < form.recurrence_count; i++) {
+          const nextCompetenceDate = calculateNextDate(form.competence_date, form.recurrence_type, i);
+          const nextCashDate = form.cash_date ? calculateNextDate(form.cash_date, form.recurrence_type, i) : null;
+          
+          childEntries.push({
+            ...baseEntry,
+            competence_date: nextCompetenceDate,
+            cash_date: nextCashDate,
+            parent_entry_id: parentEntry.id,
+            document_number: form.document_number ? `${form.document_number} (${i + 1}/${form.recurrence_count})` : null,
+            installment_number: i + 1,
+            total_installments: form.recurrence_count,
+            status: "ABERTO", // Child entries are always open initially
+          });
+        }
+
+        if (childEntries.length > 0) {
+          const { error: childError } = await supabase.from("fin_ledger_entries").insert(childEntries);
+          if (childError) throw childError;
+        }
+
+        toast.success(`${form.recurrence_count} lançamentos criados com sucesso!`);
+      } else {
+        // Single entry
+        const { error } = await supabase.from("fin_ledger_entries").insert(baseEntry);
+        if (error) throw error;
+        toast.success("Lançamento criado com sucesso!");
+      }
+
       onSuccess();
       onOpenChange(false);
       setForm({
@@ -148,6 +232,9 @@ export function CreateLedgerEntryDialog({ open, onOpenChange, onSuccess }: Creat
         payment_method: "",
         document_number: "",
         notes: "",
+        is_recurring: false,
+        recurrence_type: "monthly",
+        recurrence_count: 12,
       });
     } catch (error: any) {
       toast.error("Erro ao criar lançamento: " + error.message);
@@ -216,6 +303,91 @@ export function CreateLedgerEntryDialog({ open, onOpenChange, onSuccess }: Creat
                 onChange={(e) => setForm({ ...form, cash_date: e.target.value })}
               />
             </div>
+          </div>
+
+          {/* Recurrence Section */}
+          <div className="border rounded-lg p-4 space-y-4 bg-muted/30">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Repeat className="h-4 w-4 text-muted-foreground" />
+                <Label htmlFor="is_recurring" className="font-medium">Lançamento Recorrente</Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-[250px] text-xs">
+                      <p>Cria automaticamente múltiplos lançamentos com as mesmas características, distribuídos ao longo do período selecionado.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <Switch
+                id="is_recurring"
+                checked={form.is_recurring}
+                onCheckedChange={(checked) => setForm({ ...form, is_recurring: checked })}
+              />
+            </div>
+
+            {form.is_recurring && (
+              <div className="grid grid-cols-2 gap-4 pt-2">
+                <div className="space-y-2">
+                  <Label>Período</Label>
+                  <Select
+                    value={form.recurrence_type}
+                    onValueChange={(v) => setForm({ ...form, recurrence_type: v as any })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="daily">Diário</SelectItem>
+                      <SelectItem value="weekly">Semanal</SelectItem>
+                      <SelectItem value="monthly">Mensal</SelectItem>
+                      <SelectItem value="yearly">Anual</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Repetir por</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      min={1}
+                      max={120}
+                      value={form.recurrence_count}
+                      onChange={(e) => setForm({ ...form, recurrence_count: parseInt(e.target.value) || 1 })}
+                      className="w-20"
+                    />
+                    <span className="text-sm text-muted-foreground">
+                      {getRecurrenceLabel(form.recurrence_type)}
+                    </span>
+                  </div>
+                </div>
+
+                {form.recurrence_count > 1 && (
+                  <div className="col-span-2 text-xs text-muted-foreground bg-background p-2 rounded border">
+                    <p>
+                      Serão criados <strong>{form.recurrence_count} lançamentos</strong> de{" "}
+                      <strong>R$ {form.amount || "0,00"}</strong> cada, totalizando{" "}
+                      <strong>
+                        R$ {(parseCurrencyToNumber(form.amount) * form.recurrence_count).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                      </strong>
+                    </p>
+                    <p className="mt-1">
+                      Último lançamento em:{" "}
+                      <strong>
+                        {format(
+                          new Date(calculateNextDate(form.competence_date, form.recurrence_type, form.recurrence_count - 1)),
+                          "dd/MM/yyyy"
+                        )}
+                      </strong>
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -317,7 +489,9 @@ export function CreateLedgerEntryDialog({ open, onOpenChange, onSuccess }: Creat
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
           <Button onClick={handleSubmit} disabled={loading}>
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Criar Lançamento
+            {form.is_recurring && form.recurrence_count > 1 
+              ? `Criar ${form.recurrence_count} Lançamentos` 
+              : "Criar Lançamento"}
           </Button>
         </DialogFooter>
       </DialogContent>
