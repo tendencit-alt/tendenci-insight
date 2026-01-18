@@ -454,9 +454,11 @@ export function DRETab({ filters }: DRETabProps) {
             )}
           </div>
         </TableCell>
-        <TableCell className="text-right p-2 text-muted-foreground font-mono text-sm">
-          {/* Meta Econômica - placeholder para integração futura */}
-          -
+        <TableCell className="text-right p-2">
+          <div className="flex items-center justify-end gap-2">
+            <span className="text-muted-foreground font-mono text-sm">-</span>
+            <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">-%</span>
+          </div>
         </TableCell>
         <TableCell className="text-right p-2">
           {isResultado ? (
@@ -594,14 +596,24 @@ export function DRETab({ filters }: DRETabProps) {
               </TableRow>
               <TableRow className="bg-green-50 dark:bg-green-950/20 font-semibold">
                 <TableCell>TOTAL RECEITAS</TableCell>
-                <TableCell className="text-right text-muted-foreground font-mono">-</TableCell>
+                <TableCell className="text-right">
+                  <div className="flex items-center justify-end gap-2">
+                    <span className="text-muted-foreground font-mono">-</span>
+                    <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">-%</span>
+                  </div>
+                </TableCell>
                 <TableCell className="text-right text-green-600 font-mono">
                   {formatCurrency(dreData?.summary.totalReceitas || 0)}
                 </TableCell>
               </TableRow>
               <TableRow className="bg-red-50 dark:bg-red-950/20 font-semibold">
                 <TableCell>TOTAL DESPESAS</TableCell>
-                <TableCell className="text-right text-muted-foreground font-mono">-</TableCell>
+                <TableCell className="text-right">
+                  <div className="flex items-center justify-end gap-2">
+                    <span className="text-muted-foreground font-mono">-</span>
+                    <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">-%</span>
+                  </div>
+                </TableCell>
                 <TableCell className="text-right text-red-600 font-mono">
                   ({formatCurrency(dreData?.summary.totalDespesas || 0)})
                 </TableCell>
@@ -613,7 +625,12 @@ export function DRETab({ filters }: DRETabProps) {
                   : "bg-red-100 dark:bg-red-950/30 border-red-400"
               )}>
                 <TableCell className="text-base">RESULTADO</TableCell>
-                <TableCell className="text-right text-muted-foreground font-mono">-</TableCell>
+                <TableCell className="text-right">
+                  <div className="flex items-center justify-end gap-2">
+                    <span className="text-muted-foreground font-mono">-</span>
+                    <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">-%</span>
+                  </div>
+                </TableCell>
                 <TableCell className={cn(
                   "text-right font-mono text-base",
                   ((dreData?.summary.totalReceitas || 0) - (dreData?.summary.totalDespesas || 0)) >= 0 
