@@ -34,7 +34,7 @@ import Production from "./pages/Production";
 import Orders from "./pages/Orders";
 import Suppliers from "./pages/Suppliers";
 import Inventory from "./pages/Inventory";
-import Purchases from "./pages/Purchases";
+
 import SystemErrors from "./pages/SystemErrors";
 import ActivityCenter from "./pages/ActivityCenter";
 import AutomacoesDocumentacao from "./pages/AutomacoesDocumentacao";
@@ -71,7 +71,7 @@ const App = () => (
               <Route path="/pedidos" element={<ProtectedRoute><PermissionGuard module="pedidos"><Orders /></PermissionGuard></ProtectedRoute>} />
               <Route path="/fornecedores" element={<ProtectedRoute><PermissionGuard module="fornecedores"><Suppliers /></PermissionGuard></ProtectedRoute>} />
               <Route path="/estoque" element={<ProtectedRoute><PermissionGuard module="estoque"><Inventory /></PermissionGuard></ProtectedRoute>} />
-              <Route path="/compras" element={<ProtectedRoute><PermissionGuard module="compras"><Purchases /></PermissionGuard></ProtectedRoute>} />
+              <Route path="/compras" element={<Navigate to="/financeiro" replace />} />
               <Route path="/financeiro" element={<ProtectedRoute><PermissionGuard module="financeiro"><Financeiro /></PermissionGuard></ProtectedRoute>} />
               <Route path="/metas" element={<ProtectedRoute><PermissionGuard module="metas"><Goals /></PermissionGuard></ProtectedRoute>} />
               <Route path="/metas/gestao" element={<ProtectedRoute><PermissionGuard module="metas"><GoalsManagement /></PermissionGuard></ProtectedRoute>} />
