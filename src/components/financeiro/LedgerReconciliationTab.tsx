@@ -35,6 +35,7 @@ import { CreateLedgerEntryDialog } from "./CreateLedgerEntryDialog";
 import { LedgerAuditSheet } from "./LedgerAuditSheet";
 import { ReconcileDialog } from "./ReconcileDialog";
 import { SplitEntryDialog } from "./SplitEntryDialog";
+import { FinanceiroAlerts } from "./FinanceiroAlerts";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -378,6 +379,16 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
           </CardContent>
         </Card>
       </div>
+
+      {/* System Alerts */}
+      <FinanceiroAlerts 
+        entries={entries || []} 
+        transactions={transactions || []} 
+        onNavigateToEntry={(id) => {
+          const entry = entries?.find(e => e.id === id);
+          if (entry) handleViewAudit(entry);
+        }}
+      />
 
       {/* Alert for unreconciled entries */}
       {unreconciledEntries.length > 0 && (

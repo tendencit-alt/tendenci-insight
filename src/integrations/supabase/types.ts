@@ -2195,6 +2195,7 @@ export type Database = {
           has_splits: boolean | null
           id: string
           installment_number: number | null
+          juros_atraso: number | null
           loan_contract_id: string | null
           notes: string | null
           party_id: string | null
@@ -2223,6 +2224,7 @@ export type Database = {
           has_splits?: boolean | null
           id?: string
           installment_number?: number | null
+          juros_atraso?: number | null
           loan_contract_id?: string | null
           notes?: string | null
           party_id?: string | null
@@ -2251,6 +2253,7 @@ export type Database = {
           has_splits?: boolean | null
           id?: string
           installment_number?: number | null
+          juros_atraso?: number | null
           loan_contract_id?: string | null
           notes?: string | null
           party_id?: string | null
