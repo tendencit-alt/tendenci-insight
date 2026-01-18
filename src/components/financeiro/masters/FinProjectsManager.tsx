@@ -125,6 +125,8 @@ export function FinProjectsManager() {
     }
   };
 
+  const sortedProjects = useMemo(() => numericCodeSort(projects || [], 'code'), [projects]);
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -157,7 +159,7 @@ export function FinProjectsManager() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {useMemo(() => numericCodeSort(projects || [], 'code'), [projects]).map((project) => (
+              {sortedProjects.map((project) => (
                 <TableRow key={project.id}>
                   <TableCell className="font-medium">{project.code || "-"}</TableCell>
                   <TableCell>{project.name}</TableCell>
