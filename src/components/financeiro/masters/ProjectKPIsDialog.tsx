@@ -1,0 +1,286 @@
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { 
+  FolderKanban, 
+  TrendingUp, 
+  TrendingDown, 
+  Target, 
+  DollarSign, 
+  AlertTriangle, 
+  CheckCircle2, 
+  ArrowUpCircle, 
+  ArrowDownCircle 
+} from "lucide-react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+
+interface LedgerEntry {
+  id: string;
+  description: string;
+  amount: number;
+  type: string;
+  competence_date: string;
+  cash_date: string | null;
+  status: string;
+  reconciled: boolean;
+  chart_account?: { name: string; code: string } | null;
+}
+
+interface ProjectData {
+  total: number;
+  receitas: number;
+  despesas: number;
+  entries: LedgerEntry[];
+}
+
+interface ProjectKPIsDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  project: any;
+  projectData: ProjectData;
+}
+
+export function ProjectKPIsDialog({ open, onOpenChange, project, projectData }: ProjectKPIsDialogProps) {
+  const formatCurrency = (value: number) => {
+    return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  };
+
+  if (!project) return null;
+
+  const budget = Number(project.budget) || 0;
+  const despesas = projectData.despesas;
+  const receitas = projectData.receitas;
+  const saldo = projectData.total;
+  const saldoOrcamento = budget - despesas;
+  const percentUsed = budget > 0 ? (despesas / budget) * 100 : 0;
+  const entryCount = projectData.entries.length;
+  const reconciledCount = projectData.entries.filter((e) => e.reconciled).length;
+  const pendingCount = entryCount - reconciledCount;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <FolderKanban className="h-5 w-5" />
+            Lançamentos do Projeto: {project.name}
+          </DialogTitle>
+          <DialogDescription>
+            {project.code && `Código: ${project.code} • `}
+            Orçamento: {budget > 0 ? formatCurrency(budget) : "Não definido"}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          {/* Individual Project KPIs */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {/* Orçamento */}
+            <Card className="border-l-4 border-l-blue-500">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Orçamento</p>
+                    <p className="text-xl font-bold">{budget > 0 ? formatCurrency(budget) : "N/D"}</p>
+                  </div>
+                  <Target className="h-6 w-6 text-blue-500 opacity-70" />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Despesas Realizadas */}
+            <Card className="border-l-4 border-l-orange-500">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Despesas</p>
+                    <p className="text-xl font-bold text-orange-600">{formatCurrency(despesas)}</p>
+                    {budget > 0 && (
+                      <p className="text-xs text-muted-foreground">{percentUsed.toFixed(1)}% do orçamento</p>
+                    )}
+                  </div>
+                  <TrendingDown className="h-6 w-6 text-orange-500 opacity-70" />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Receitas */}
+            <Card className="border-l-4 border-l-green-500">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Receitas</p>
+                    <p className="text-xl font-bold text-green-600">{formatCurrency(receitas)}</p>
+                  </div>
+                  <TrendingUp className="h-6 w-6 text-green-500 opacity-70" />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Saldo Orçamentário */}
+            <Card className={`border-l-4 ${saldoOrcamento >= 0 ? 'border-l-green-500' : 'border-l-red-500'}`}>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Saldo Orçamento</p>
+                    <p className={`text-xl font-bold ${saldoOrcamento >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {budget > 0 ? formatCurrency(saldoOrcamento) : "N/D"}
+                    </p>
+                  </div>
+                  {saldoOrcamento >= 0 ? (
+                    <CheckCircle2 className="h-6 w-6 text-green-500 opacity-70" />
+                  ) : (
+                    <AlertTriangle className="h-6 w-6 text-red-500 opacity-70" />
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Secondary KPIs Row */}
+          <div className="grid grid-cols-3 gap-3">
+            {/* Resultado Líquido */}
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Resultado Líquido</p>
+                    <p className={`text-lg font-bold ${saldo >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {formatCurrency(saldo)}
+                    </p>
+                    <p className="text-xs text-muted-foreground">Receitas - Despesas</p>
+                  </div>
+                  <DollarSign className="h-5 w-5 text-muted-foreground" />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Total de Lançamentos */}
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Total Lançamentos</p>
+                    <p className="text-lg font-bold">{entryCount}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {reconciledCount} conciliados
+                    </p>
+                  </div>
+                  <FolderKanban className="h-5 w-5 text-muted-foreground" />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Pendentes */}
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Pendentes</p>
+                    <p className={`text-lg font-bold ${pendingCount > 0 ? 'text-yellow-600' : 'text-green-600'}`}>
+                      {pendingCount}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {entryCount > 0 ? ((reconciledCount / entryCount) * 100).toFixed(0) : 0}% conciliado
+                    </p>
+                  </div>
+                  {pendingCount > 0 ? (
+                    <AlertTriangle className="h-5 w-5 text-yellow-500" />
+                  ) : (
+                    <CheckCircle2 className="h-5 w-5 text-green-500" />
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Progress Bar for Budget */}
+          {budget > 0 && (
+            <div className="p-4 rounded-lg border bg-muted/30">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium">Consumo do Orçamento</span>
+                <span className={`text-sm font-bold ${percentUsed > 100 ? 'text-red-600' : percentUsed > 80 ? 'text-yellow-600' : 'text-green-600'}`}>
+                  {percentUsed.toFixed(1)}%
+                </span>
+              </div>
+              <Progress 
+                value={Math.min(percentUsed, 100)} 
+                className={`h-3 ${percentUsed > 100 ? '[&>div]:bg-red-600' : percentUsed > 80 ? '[&>div]:bg-yellow-600' : ''}`}
+              />
+              <div className="flex justify-between mt-1 text-xs text-muted-foreground">
+                <span>Gasto: {formatCurrency(despesas)}</span>
+                <span>Disponível: {formatCurrency(Math.max(0, saldoOrcamento))}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Entries List */}
+          <div>
+            <h4 className="text-sm font-medium mb-2">Lançamentos do Projeto</h4>
+            <ScrollArea className="h-[280px] border rounded-lg">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Data</TableHead>
+                    <TableHead>Descrição</TableHead>
+                    <TableHead>Plano de Conta</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Valor</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {projectData.entries.map((entry) => (
+                    <TableRow key={entry.id}>
+                      <TableCell className="text-sm">
+                        {format(new Date(entry.competence_date), "dd/MM/yyyy", { locale: ptBR })}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {entry.type === "RECEITA" ? (
+                            <ArrowUpCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
+                          ) : (
+                            <ArrowDownCircle className="h-4 w-4 text-red-600 flex-shrink-0" />
+                          )}
+                          <span className="truncate max-w-[200px]">{entry.description}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {entry.chart_account ? `${entry.chart_account.code} - ${entry.chart_account.name}` : "-"}
+                      </TableCell>
+                      <TableCell>
+                        {entry.reconciled ? (
+                          <Badge variant="secondary" className="text-xs">Conciliado</Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-xs">{entry.status}</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className={`text-right font-medium ${entry.type === "RECEITA" ? "text-green-600" : "text-red-600"}`}>
+                        {entry.type === "RECEITA" ? "+" : "-"}
+                        {formatCurrency(Math.abs(Number(entry.amount)))}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {projectData.entries.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                        Nenhum lançamento vinculado a este projeto
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </ScrollArea>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Fechar</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
