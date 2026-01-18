@@ -4,15 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { 
   AlertTriangle, 
-  FileWarning, 
   Calculator, 
   FileQuestion,
   ChevronDown,
-  ChevronRight,
-  Upload
+  ChevronRight
 } from "lucide-react";
 import { useState } from "react";
-import { differenceInDays, differenceInHours } from "date-fns";
 
 interface FinanceiroAlertsProps {
   entries: any[];
@@ -46,45 +43,6 @@ export function FinanceiroAlerts({ entries, transactions, lastImportDate, onNavi
 
   // Calculate alerts
   const alerts: AlertItem[] = [];
-
-  // 0. Check if OFX import is overdue (more than 1 day)
-  const isImportOverdue = (() => {
-    if (!lastImportDate) return true; // Never imported
-    const lastDate = new Date(lastImportDate);
-    const now = new Date();
-    const daysDiff = differenceInDays(now, lastDate);
-    return daysDiff >= 1;
-  })();
-
-  const getImportOverdueMessage = () => {
-    if (!lastImportDate) {
-      return "Nenhum extrato OFX foi importado ainda. Importe o extrato bancário para manter os dados atualizados.";
-    }
-    const lastDate = new Date(lastImportDate);
-    const now = new Date();
-    const daysDiff = differenceInDays(now, lastDate);
-    const hoursDiff = differenceInHours(now, lastDate);
-    
-    if (daysDiff === 1) {
-      return `Último extrato importado há 1 dia. Importe o extrato atualizado.`;
-    } else if (daysDiff > 1) {
-      return `Último extrato importado há ${daysDiff} dias. Importe o extrato atualizado urgentemente!`;
-    } else if (hoursDiff >= 24) {
-      return `Último extrato importado há mais de 24 horas. Importe o extrato atualizado.`;
-    }
-    return "";
-  };
-
-  if (isImportOverdue) {
-    alerts.push({
-      id: 'import-overdue',
-      type: 'error',
-      category: 'Extrato',
-      title: 'Extrato OFX desatualizado',
-      description: getImportOverdueMessage(),
-      count: 1,
-    });
-  }
 
   // 1. Unreconciled bank transactions
   const unreconciledTransactions = transactions?.filter(t => 
@@ -195,10 +153,7 @@ export function FinanceiroAlerts({ entries, transactions, lastImportDate, onNavi
 
   if (alerts.length === 0) return null;
 
-  const getAlertIcon = (type: string, alertId?: string) => {
-    if (alertId === 'import-overdue') {
-      return <Upload className="h-4 w-4" />;
-    }
+  const getAlertIcon = (type: string) => {
     switch (type) {
       case 'error':
         return <Calculator className="h-4 w-4" />;
@@ -253,7 +208,7 @@ export function FinanceiroAlerts({ entries, transactions, lastImportDate, onNavi
           <Alert className={getAlertStyles(alert.type)}>
             <div className="flex items-start gap-2">
               <span className={getTextColor(alert.type)}>
-                {getAlertIcon(alert.type, alert.id)}
+                {getAlertIcon(alert.type)}
               </span>
               <div className="flex-1">
                 <AlertTitle className={`${getTextColor(alert.type)} flex items-center justify-between text-sm`}>
