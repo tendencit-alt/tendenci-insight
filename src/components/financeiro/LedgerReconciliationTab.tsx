@@ -345,6 +345,23 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
           </p>
         </div>
         <div className="flex gap-2">
+          <input
+            type="file"
+            accept=".ofx"
+            onChange={handleFileUpload}
+            className="hidden"
+            id="ofx-upload-header"
+          />
+          <Button 
+            variant="outline" 
+            size="sm"
+            className="gap-1.5 text-xs sm:text-sm"
+            onClick={() => document.getElementById("ofx-upload-header")?.click()}
+            disabled={importing}
+          >
+            <Upload className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            Importar OFX
+          </Button>
           <Button onClick={() => setCreateOpen(true)} size="sm" className="gap-1.5 text-xs sm:text-sm">
             <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             Novo Lançamento
@@ -652,25 +669,6 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
             </Card>
           </div>
 
-          {/* Upload button */}
-          <div className="flex justify-end">
-            <input
-              type="file"
-              accept=".ofx"
-              onChange={handleFileUpload}
-              className="hidden"
-              id="ofx-upload"
-            />
-            <Button 
-              variant="outline" 
-              className="gap-2"
-              onClick={() => document.getElementById("ofx-upload")?.click()}
-              disabled={importing}
-            >
-              <Upload className="h-4 w-4" />
-              Importar OFX
-            </Button>
-          </div>
 
           {/* Bank transactions table */}
           <Card>
