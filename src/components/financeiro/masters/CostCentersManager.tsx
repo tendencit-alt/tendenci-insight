@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,7 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, Pencil, Building2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-
+import { numericCodeSort } from "@/lib/numericCodeSort";
 export function CostCentersManager() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
@@ -122,7 +122,7 @@ export function CostCentersManager() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {centers?.map((center) => (
+              {useMemo(() => numericCodeSort(centers || [], 'code'), [centers]).map((center) => (
                 <TableRow key={center.id}>
                   <TableCell className="font-medium">{center.code || "-"}</TableCell>
                   <TableCell>{center.name}</TableCell>

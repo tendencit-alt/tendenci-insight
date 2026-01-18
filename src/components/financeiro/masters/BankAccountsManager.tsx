@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,7 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, Pencil, Landmark, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
-
+import { numericCodeSort } from "@/lib/numericCodeSort";
 export function BankAccountsManager() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
@@ -146,7 +146,7 @@ export function BankAccountsManager() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {accounts?.map((account) => (
+              {useMemo(() => numericCodeSort(accounts || [], 'nickname'), [accounts]).map((account) => (
                 <TableRow key={account.id}>
                   <TableCell className="font-medium">{account.nickname}</TableCell>
                   <TableCell>{account.bank_name || "-"}</TableCell>
