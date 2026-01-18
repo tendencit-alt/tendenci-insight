@@ -15,7 +15,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { CreateLedgerEntryDialog } from "./CreateLedgerEntryDialog";
 import { LedgerAuditSheet } from "./LedgerAuditSheet";
-import { toast } from "sonner";
+import { ReconcileDialog } from "./ReconcileDialog";
 
 interface LedgerTabProps {
   filters: FinanceiroFiltersState;
@@ -27,7 +27,7 @@ export function LedgerTab({ filters }: LedgerTabProps) {
   const [selectedEntry, setSelectedEntry] = useState<any>(null);
   const [alertOpen, setAlertOpen] = useState(true);
   const [selectedForReconcile, setSelectedForReconcile] = useState<Set<string>>(new Set());
-  const [isReconciling, setIsReconciling] = useState(false);
+  const [reconcileDialogOpen, setReconcileDialogOpen] = useState(false);
 
   const dateField = "cash_date";
 
@@ -174,28 +174,18 @@ export function LedgerTab({ filters }: LedgerTabProps) {
     }
   };
 
-  const handleReconcileSelected = async () => {
+  const handleOpenReconcileDialog = () => {
     if (selectedForReconcile.size === 0) return;
-    
-    setIsReconciling(true);
-    try {
-      const { error } = await supabase
-        .from("fin_ledger_entries")
-        .update({ reconciled: true })
-        .in("id", Array.from(selectedForReconcile));
-      
-      if (error) throw error;
-      
-      toast.success(`${selectedForReconcile.size} lançamento(s) conciliado(s) com sucesso!`);
-      setSelectedForReconcile(new Set());
-      refetch();
-    } catch (error) {
-      console.error("Error reconciling entries:", error);
-      toast.error("Erro ao conciliar lançamentos");
-    } finally {
-      setIsReconciling(false);
-    }
+    setReconcileDialogOpen(true);
   };
+
+  const handleReconcileSuccess = () => {
+    setSelectedForReconcile(new Set());
+    refetch();
+  };
+
+  // Get the selected entries for the dialog
+  const selectedEntries = unreconciledEntries.filter(e => selectedForReconcile.has(e.id));
 
   return (
     <div className="space-y-4">
@@ -273,12 +263,11 @@ export function LedgerTab({ filters }: LedgerTabProps) {
                   </span>
                   <Button 
                     size="sm" 
-                    onClick={handleReconcileSelected}
-                    disabled={isReconciling}
+                    onClick={handleOpenReconcileDialog}
                     className="gap-1.5 bg-green-600 hover:bg-green-700"
                   >
                     <Check className="h-3.5 w-3.5" />
-                    {isReconciling ? "Conciliando..." : "Conciliar Selecionados"}
+                    Conciliar Selecionados
                   </Button>
                 </div>
               )}
@@ -404,6 +393,12 @@ export function LedgerTab({ filters }: LedgerTabProps) {
 
       <CreateLedgerEntryDialog open={createOpen} onOpenChange={setCreateOpen} onSuccess={refetch} />
       <LedgerAuditSheet open={auditOpen} onOpenChange={setAuditOpen} entry={selectedEntry} />
+      <ReconcileDialog 
+        open={reconcileDialogOpen} 
+        onOpenChange={setReconcileDialogOpen} 
+        entries={selectedEntries} 
+        onSuccess={handleReconcileSuccess} 
+      />
     </div>
   );
 }
