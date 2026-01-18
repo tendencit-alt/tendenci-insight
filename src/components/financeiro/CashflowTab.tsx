@@ -1,24 +1,172 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { FinanceiroFiltersState } from "./FinanceiroFilters";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { TrendingUp, Wallet, ArrowUpCircle, ArrowDownCircle } from "lucide-react";
-import { format, eachDayOfInterval } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { Button } from "@/components/ui/button";
+import { TrendingUp, Download, ChevronRight, ChevronDown, FileText, Wallet, ArrowUpCircle, ArrowDownCircle } from "lucide-react";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
+import { useState, useEffect } from "react";
 
 interface CashflowTabProps {
   filters: FinanceiroFiltersState;
 }
 
+interface ChartAccount {
+  id: string;
+  code: string;
+  name: string;
+  nature: string | null;
+  parent_id: string | null;
+}
+
+interface LedgerEntry {
+  id: string;
+  chart_account_id: string;
+  description: string;
+  amount: number;
+  cash_date: string;
+  document_number: string | null;
+}
+
+interface CashflowLine {
+  id: string;
+  code: string;
+  name: string;
+  nature: string | null;
+  value: number;
+  level: number;
+  hasChildren: boolean;
+  parentId: string | null;
+  entries: LedgerEntry[];
+}
+
+// Numeric sorting for codes
+function numericCodeSort(a: string, b: string): number {
+  const aParts = a.split('.').map(p => parseFloat(p) || 0);
+  const bParts = b.split('.').map(p => parseFloat(p) || 0);
+  for (let i = 0; i < Math.max(aParts.length, bParts.length); i++) {
+    const aVal = aParts[i] || 0;
+    const bVal = bParts[i] || 0;
+    if (aVal !== bVal) return aVal - bVal;
+  }
+  return 0;
+}
+
+// Build hierarchical tree from flat accounts
+function buildTree(accounts: ChartAccount[]): Map<string | null, ChartAccount[]> {
+  const tree = new Map<string | null, ChartAccount[]>();
+  
+  accounts.forEach(account => {
+    const parentId = account.parent_id;
+    if (!tree.has(parentId)) {
+      tree.set(parentId, []);
+    }
+    tree.get(parentId)!.push(account);
+  });
+  
+  tree.forEach((children) => {
+    children.sort((a, b) => numericCodeSort(a.code, b.code));
+  });
+  
+  return tree;
+}
+
+// Calculate totals recursively
+function calculateTotals(
+  tree: Map<string | null, ChartAccount[]>,
+  accountValues: Map<string, number>,
+  accountId: string | null
+): number {
+  const children = tree.get(accountId) || [];
+  let total = 0;
+  
+  children.forEach(child => {
+    const directValue = accountValues.get(child.id) || 0;
+    const childrenTotal = calculateTotals(tree, accountValues, child.id);
+    total += directValue + childrenTotal;
+  });
+  
+  return total;
+}
+
+// Flatten tree to ordered lines
+function flattenTree(
+  tree: Map<string | null, ChartAccount[]>,
+  accountValues: Map<string, number>,
+  entriesByAccount: Map<string, LedgerEntry[]>,
+  parentId: string | null,
+  level: number,
+  lines: CashflowLine[]
+): void {
+  const children = tree.get(parentId) || [];
+  
+  children.forEach(account => {
+    const hasChildren = tree.has(account.id) && (tree.get(account.id)?.length || 0) > 0;
+    const directValue = accountValues.get(account.id) || 0;
+    const childrenTotal = hasChildren ? calculateTotals(tree, accountValues, account.id) : 0;
+    const totalValue = directValue + childrenTotal;
+    const entries = entriesByAccount.get(account.id) || [];
+    
+    lines.push({
+      id: account.id,
+      code: account.code,
+      name: account.name,
+      nature: account.nature,
+      value: totalValue,
+      level,
+      hasChildren,
+      parentId: account.parent_id,
+      entries,
+    });
+    
+    if (hasChildren) {
+      flattenTree(tree, accountValues, entriesByAccount, account.id, level + 1, lines);
+    }
+  });
+}
+
 export function CashflowTab({ filters }: CashflowTabProps) {
+  const [expandedAccounts, setExpandedAccounts] = useState<Set<string>>(new Set());
+  const [expandedEntries, setExpandedEntries] = useState<Set<string>>(new Set());
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('cashflow-chart-accounts-sync')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'fin_chart_accounts'
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["fin-cashflow-list"] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
   const { data: cashflowData, isLoading } = useQuery({
-    queryKey: ["fin-cashflow", filters],
+    queryKey: ["fin-cashflow-list", filters],
     queryFn: async () => {
       const dateFrom = format(filters.dateFrom, "yyyy-MM-dd");
       const dateTo = format(filters.dateTo, "yyyy-MM-dd");
+
+      // Get chart accounts with in_cashflow = true
+      const { data: chartAccounts } = await supabase
+        .from("fin_chart_accounts")
+        .select("id, code, name, nature, parent_id")
+        .eq("in_cashflow", true)
+        .eq("active", true)
+        .order("code");
 
       // Get opening balance
       let balanceQuery = supabase
@@ -33,82 +181,281 @@ export function CashflowTab({ filters }: CashflowTabProps) {
       const { data: accounts } = await balanceQuery;
       const openingBalance = accounts?.reduce((sum, a) => sum + Number(a.opening_balance || 0), 0) || 0;
 
-      // Get entries
-      let entriesQuery = supabase
+      // Get ledger entries with cash_date
+      let query = supabase
         .from("fin_ledger_entries")
-        .select("type, amount, cash_date, status")
+        .select("id, chart_account_id, description, amount, cash_date, document_number")
         .neq("status", "CANCELADO")
         .not("cash_date", "is", null)
         .gte("cash_date", dateFrom)
         .lte("cash_date", dateTo);
 
       if (filters.bankAccountId) {
-        entriesQuery = entriesQuery.eq("bank_account_id", filters.bankAccountId);
+        query = query.eq("bank_account_id", filters.bankAccountId);
       }
       if (filters.costCenterId) {
-        entriesQuery = entriesQuery.eq("cost_center_id", filters.costCenterId);
+        query = query.eq("cost_center_id", filters.costCenterId);
       }
       if (filters.projectId) {
-        entriesQuery = entriesQuery.eq("project_id", filters.projectId);
+        query = query.eq("project_id", filters.projectId);
       }
 
-      const { data: entries } = await entriesQuery;
+      const { data: entries } = await query;
 
-      // Build daily cashflow
-      const days = eachDayOfInterval({ start: filters.dateFrom, end: filters.dateTo });
-      let runningBalance = openingBalance;
-
-      const dailyData = days.map((day) => {
-        const dayStr = format(day, "yyyy-MM-dd");
-        const dayEntries = entries?.filter((e) => e.cash_date === dayStr) || [];
-
-        const entradas = dayEntries
-          .filter((e) => e.type === "RECEITA")
-          .reduce((sum, e) => sum + Number(e.amount), 0);
-        const saidas = dayEntries
-          .filter((e) => e.type === "DESPESA")
-          .reduce((sum, e) => sum + Number(e.amount), 0);
-
-        runningBalance += entradas - saidas;
-
-        return {
-          date: format(day, "dd/MM", { locale: ptBR }),
-          fullDate: format(day, "dd/MM/yyyy", { locale: ptBR }),
-          entradas,
-          saidas,
-          saldo: runningBalance,
-        };
+      // Group entries by account and calculate values
+      const accountValues = new Map<string, number>();
+      const entriesByAccount = new Map<string, LedgerEntry[]>();
+      
+      entries?.forEach((entry) => {
+        if (entry.chart_account_id) {
+          const current = accountValues.get(entry.chart_account_id) || 0;
+          accountValues.set(entry.chart_account_id, current + Number(entry.amount));
+          
+          if (!entriesByAccount.has(entry.chart_account_id)) {
+            entriesByAccount.set(entry.chart_account_id, []);
+          }
+          entriesByAccount.get(entry.chart_account_id)!.push({
+            id: entry.id,
+            chart_account_id: entry.chart_account_id,
+            description: entry.description,
+            amount: Number(entry.amount),
+            cash_date: entry.cash_date!,
+            document_number: entry.document_number,
+          });
+        }
       });
 
-      const totalEntradas = entries?.filter((e) => e.type === "RECEITA").reduce((sum, e) => sum + Number(e.amount), 0) || 0;
-      const totalSaidas = entries?.filter((e) => e.type === "DESPESA").reduce((sum, e) => sum + Number(e.amount), 0) || 0;
+      // Sort entries by date
+      entriesByAccount.forEach((entries) => {
+        entries.sort((a, b) => a.cash_date.localeCompare(b.cash_date));
+      });
+
+      // Build tree and flatten
+      const tree = buildTree(chartAccounts || []);
+      const lines: CashflowLine[] = [];
+      flattenTree(tree, accountValues, entriesByAccount, null, 0, lines);
+
+      // Calculate totals
+      let totalEntradas = 0;
+      let totalSaidas = 0;
+
+      const rootAccounts = chartAccounts?.filter(a => !a.parent_id) || [];
+      rootAccounts.forEach(account => {
+        const directValue = accountValues.get(account.id) || 0;
+        const childrenTotal = calculateTotals(tree, accountValues, account.id);
+        const total = directValue + childrenTotal;
+        
+        if (account.nature === "RECEITA") {
+          totalEntradas += total;
+        } else if (account.nature === "DESPESA") {
+          totalSaidas += total;
+        }
+      });
 
       return {
+        lines,
         openingBalance,
         totalEntradas,
         totalSaidas,
         closingBalance: openingBalance + totalEntradas - totalSaidas,
-        dailyData,
       };
     },
   });
+
+  const toggleExpand = (accountId: string) => {
+    setExpandedAccounts(prev => {
+      const next = new Set(prev);
+      if (next.has(accountId)) {
+        next.delete(accountId);
+      } else {
+        next.add(accountId);
+      }
+      return next;
+    });
+  };
+
+  const toggleEntries = (accountId: string) => {
+    setExpandedEntries(prev => {
+      const next = new Set(prev);
+      if (next.has(accountId)) {
+        next.delete(accountId);
+      } else {
+        next.add(accountId);
+      }
+      return next;
+    });
+  };
+
+  const expandAll = () => {
+    const allIds = cashflowData?.lines
+      .filter(l => l.hasChildren || l.entries.length > 0)
+      .map(l => l.id) || [];
+    setExpandedAccounts(new Set(allIds));
+    setExpandedEntries(new Set(allIds));
+  };
+
+  const collapseAll = () => {
+    setExpandedAccounts(new Set());
+    setExpandedEntries(new Set());
+  };
+
+  const getVisibleLines = () => {
+    if (!cashflowData?.lines) return [];
+    
+    const visible: CashflowLine[] = [];
+    
+    cashflowData.lines.forEach(line => {
+      let shouldHide = false;
+      let currentParentId = line.parentId;
+      
+      while (currentParentId) {
+        if (!expandedAccounts.has(currentParentId)) {
+          shouldHide = true;
+          break;
+        }
+        const parent = cashflowData.lines.find(l => l.id === currentParentId);
+        currentParentId = parent?.parentId || null;
+      }
+      
+      if (!shouldHide) {
+        visible.push(line);
+      }
+    });
+    
+    return visible;
+  };
 
   const formatCurrency = (value: number) => {
     return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   };
 
+  const formatDate = (dateStr: string) => {
+    return format(new Date(dateStr + 'T12:00:00'), "dd/MM/yyyy");
+  };
+
+  const renderLine = (line: CashflowLine) => {
+    const isExpanded = expandedAccounts.has(line.id);
+    const isEntriesExpanded = expandedEntries.has(line.id);
+    const isReceita = line.nature === "RECEITA";
+    const isDespesa = line.nature === "DESPESA";
+    const isFinanciamento = line.nature === "FINANCIAMENTO";
+    const hasEntries = line.entries.length > 0;
+    const canExpand = line.hasChildren || hasEntries;
+    
+    const rows: JSX.Element[] = [];
+    
+    rows.push(
+      <TableRow 
+        key={line.id}
+        className={cn(
+          line.level === 0 && "bg-muted/50 font-semibold",
+          line.level === 0 && line.hasChildren && "font-bold",
+          isFinanciamento && "bg-orange-50/50 dark:bg-orange-950/20"
+        )}
+      >
+        <TableCell 
+          className="cursor-pointer select-none"
+          style={{ paddingLeft: `${(line.level * 24) + 16}px` }}
+          onClick={() => {
+            if (line.hasChildren) {
+              toggleExpand(line.id);
+            } else if (hasEntries) {
+              toggleEntries(line.id);
+            }
+          }}
+        >
+          <div className="flex items-center gap-2">
+            {canExpand ? (
+              (isExpanded || isEntriesExpanded) ? (
+                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+              ) : (
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              )
+            ) : (
+              <span className="w-4" />
+            )}
+            <span className="text-muted-foreground font-mono text-sm">{line.code}</span>
+            <span>{line.name}</span>
+            {hasEntries && !line.hasChildren && (
+              <span className="text-xs text-muted-foreground ml-1">
+                ({line.entries.length} lançamento{line.entries.length !== 1 ? 's' : ''})
+              </span>
+            )}
+          </div>
+        </TableCell>
+        <TableCell className="text-right p-2">
+          <span className={cn(
+            "font-mono",
+            isReceita && "text-green-600",
+            isDespesa && "text-red-600",
+            isFinanciamento && "text-orange-500"
+          )}>
+            {isDespesa && line.value > 0 ? (
+              `(${formatCurrency(line.value)})`
+            ) : (
+              formatCurrency(line.value)
+            )}
+          </span>
+        </TableCell>
+      </TableRow>
+    );
+    
+    // Entry rows
+    if (isEntriesExpanded && !line.hasChildren && hasEntries) {
+      line.entries.forEach((entry) => {
+        rows.push(
+          <TableRow 
+            key={`${line.id}-entry-${entry.id}`}
+            className="bg-muted/20 text-sm hover:bg-muted/40"
+          >
+            <TableCell 
+              style={{ paddingLeft: `${((line.level + 1) * 24) + 16}px` }}
+            >
+              <div className="flex items-center gap-3">
+                <FileText className="h-3 w-3 text-muted-foreground" />
+                <span className="text-muted-foreground font-mono text-xs">
+                  {formatDate(entry.cash_date)}
+                </span>
+                <span className="text-foreground/80">{entry.description}</span>
+                {entry.document_number && (
+                  <span className="text-xs text-muted-foreground">
+                    Doc: {entry.document_number}
+                  </span>
+                )}
+              </div>
+            </TableCell>
+            <TableCell 
+              className={cn(
+                "text-right font-mono text-sm",
+                isReceita && "text-green-600/80",
+                isDespesa && "text-red-600/80",
+                isFinanciamento && "text-orange-500/80"
+              )}
+            >
+              {isDespesa ? (
+                `(${formatCurrency(entry.amount)})`
+              ) : (
+                formatCurrency(entry.amount)
+              )}
+            </TableCell>
+          </TableRow>
+        );
+      });
+    }
+    
+    return rows;
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-4">
-        <div className="grid gap-4 md:grid-cols-4">
-          {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="h-24" />
-          ))}
-        </div>
-        <Skeleton className="h-[300px]" />
+        <Skeleton className="h-10 w-48" />
+        <Skeleton className="h-[500px]" />
       </div>
     );
   }
+
+  const visibleLines = getVisibleLines();
 
   return (
     <div className="space-y-4">
@@ -119,7 +466,7 @@ export function CashflowTab({ filters }: CashflowTabProps) {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-muted-foreground">Saldo Inicial</p>
-                <p className="text-xl font-bold">{formatCurrency(cashflowData?.openingBalance || 0)}</p>
+                <p className="text-xl font-bold font-mono">{formatCurrency(cashflowData?.openingBalance || 0)}</p>
               </div>
               <Wallet className="h-8 w-8 text-muted-foreground opacity-50" />
             </div>
@@ -130,7 +477,7 @@ export function CashflowTab({ filters }: CashflowTabProps) {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-muted-foreground">Entradas</p>
-                <p className="text-xl font-bold text-green-600">{formatCurrency(cashflowData?.totalEntradas || 0)}</p>
+                <p className="text-xl font-bold text-green-600 font-mono">{formatCurrency(cashflowData?.totalEntradas || 0)}</p>
               </div>
               <ArrowUpCircle className="h-8 w-8 text-green-600 opacity-50" />
             </div>
@@ -141,7 +488,7 @@ export function CashflowTab({ filters }: CashflowTabProps) {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-muted-foreground">Saídas</p>
-                <p className="text-xl font-bold text-red-600">{formatCurrency(cashflowData?.totalSaidas || 0)}</p>
+                <p className="text-xl font-bold text-red-600 font-mono">{formatCurrency(cashflowData?.totalSaidas || 0)}</p>
               </div>
               <ArrowDownCircle className="h-8 w-8 text-red-600 opacity-50" />
             </div>
@@ -152,7 +499,10 @@ export function CashflowTab({ filters }: CashflowTabProps) {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-muted-foreground">Saldo Final</p>
-                <p className={`text-xl font-bold ${(cashflowData?.closingBalance || 0) >= 0 ? "text-green-600" : "text-red-600"}`}>
+                <p className={cn(
+                  "text-xl font-bold font-mono",
+                  (cashflowData?.closingBalance || 0) >= 0 ? "text-green-600" : "text-red-600"
+                )}>
                   {formatCurrency(cashflowData?.closingBalance || 0)}
                 </p>
               </div>
@@ -162,87 +512,80 @@ export function CashflowTab({ filters }: CashflowTabProps) {
         </Card>
       </div>
 
-      {/* Chart */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base font-medium">Evolução do Fluxo de Caixa</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={cashflowData?.dailyData}>
-              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-              <XAxis
-                dataKey="date"
-                tick={{ fontSize: 11 }}
-                tickLine={false}
-                axisLine={false}
-              />
-              <YAxis
-                tickFormatter={(v) => `R$ ${(v / 1000).toFixed(0)}k`}
-                tick={{ fontSize: 11 }}
-                tickLine={false}
-                axisLine={false}
-                width={60}
-              />
-              <Tooltip
-                formatter={(value: number) => formatCurrency(value)}
-                labelFormatter={(label) => `Data: ${label}`}
-                contentStyle={{
-                  backgroundColor: "hsl(var(--background))",
-                  border: "1px solid hsl(var(--border))",
-                  borderRadius: "8px",
-                }}
-              />
-              <Line
-                type="monotone"
-                dataKey="saldo"
-                stroke="hsl(var(--primary))"
-                strokeWidth={2}
-                dot={false}
-                name="Saldo"
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
+      {/* Header */}
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div>
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <TrendingUp className="h-5 w-5" />
+            Fluxo de Caixa por Plano de Contas
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Regime de Caixa - Clique para expandir e ver lançamentos
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={expandAll}>
+            Expandir Tudo
+          </Button>
+          <Button variant="outline" size="sm" onClick={collapseAll}>
+            Recolher Tudo
+          </Button>
+          <Button variant="outline" className="gap-2">
+            <Download className="h-4 w-4" />
+            Exportar PDF
+          </Button>
+        </div>
+      </div>
 
-      {/* Daily Table */}
+      {/* Table */}
       <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base font-medium">Movimentações Diárias</CardTitle>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Data</TableHead>
-                <TableHead className="text-right">Entradas</TableHead>
-                <TableHead className="text-right">Saídas</TableHead>
-                <TableHead className="text-right">Saldo Acumulado</TableHead>
+                <TableHead className="w-[65%]">Conta</TableHead>
+                <TableHead className="text-right">Valor</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {cashflowData?.dailyData.filter((d) => d.entradas > 0 || d.saidas > 0).map((day, i) => (
-                <TableRow key={i}>
-                  <TableCell className="font-medium">{day.fullDate}</TableCell>
-                  <TableCell className="text-right text-green-600">
-                    {day.entradas > 0 ? `+${formatCurrency(day.entradas)}` : "-"}
-                  </TableCell>
-                  <TableCell className="text-right text-red-600">
-                    {day.saidas > 0 ? `-${formatCurrency(day.saidas)}` : "-"}
-                  </TableCell>
-                  <TableCell className={`text-right font-medium ${day.saldo >= 0 ? "text-green-600" : "text-red-600"}`}>
-                    {formatCurrency(day.saldo)}
-                  </TableCell>
-                </TableRow>
-              ))}
-              {cashflowData?.dailyData.filter((d) => d.entradas > 0 || d.saidas > 0).length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
-                    Nenhuma movimentação no período
-                  </TableCell>
-                </TableRow>
-              )}
+              {visibleLines.map(line => renderLine(line))}
+              
+              {/* Summary */}
+              <TableRow>
+                <TableCell colSpan={2} className="h-4 bg-muted/30" />
+              </TableRow>
+              <TableRow className="bg-green-50 dark:bg-green-950/20 font-semibold">
+                <TableCell>TOTAL ENTRADAS</TableCell>
+                <TableCell className="text-right text-green-600 font-mono">
+                  {formatCurrency(cashflowData?.totalEntradas || 0)}
+                </TableCell>
+              </TableRow>
+              <TableRow className="bg-red-50 dark:bg-red-950/20 font-semibold">
+                <TableCell>TOTAL SAÍDAS</TableCell>
+                <TableCell className="text-right text-red-600 font-mono">
+                  ({formatCurrency(cashflowData?.totalSaidas || 0)})
+                </TableCell>
+              </TableRow>
+              <TableRow className="bg-primary/10 font-bold">
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <Wallet className="h-4 w-4" />
+                    SALDO FINAL DO PERÍODO
+                  </div>
+                </TableCell>
+                <TableCell className="text-right p-2">
+                  <div className={cn(
+                    "inline-flex items-center justify-end px-3 py-1.5 rounded-md font-bold font-mono text-sm",
+                    "bg-white dark:bg-slate-900 shadow-sm border",
+                    (cashflowData?.closingBalance || 0) >= 0 
+                      ? "border-green-300 dark:border-green-700 text-green-700 dark:text-green-400" 
+                      : "border-red-300 dark:border-red-700 text-red-700 dark:text-red-400"
+                  )}>
+                    {(cashflowData?.closingBalance || 0) >= 0 ? "▲ " : "▼ "}
+                    {formatCurrency(Math.abs(cashflowData?.closingBalance || 0))}
+                  </div>
+                </TableCell>
+              </TableRow>
             </TableBody>
           </Table>
         </CardContent>
