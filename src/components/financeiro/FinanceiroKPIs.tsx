@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Wallet, HeartPulse, Shield, BarChart3, Info } from "lucide-react";
+import { TrendingDown, Wind, BarChart3, Shield, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Tooltip,
@@ -33,42 +33,50 @@ export function FinanceiroKPIs({ metrics, isLoading }: FinanceiroKPIsProps) {
   const resultado = metrics?.resultado || 0;
   const saldoConsolidado = metrics?.saldoConsolidado || 0;
 
-  // Burn Rate e Runway (Saúde Financeira)
-  const burnRate = saidas > 0 ? saidas / 30 : 0;
+  // Fôlego de Caixa: Burn Rate mensal e Runway (meses)
+  const burnRate = saidas; // consumo mensal total
   const runway = burnRate > 0 && saldoConsolidado > 0
-    ? Math.floor(saldoConsolidado / (burnRate * 30))
+    ? Math.floor(saldoConsolidado / burnRate)
     : 0;
 
   // DSCR = Entradas / Saídas (Cobertura da Dívida)
   const dscr = saidas > 0 ? entradas / saidas : entradas > 0 ? 999 : 0;
   const hasDivida = saidas > 0;
 
-  // Qualidade do Caixa: Conversão (% do resultado sobre entradas) + Dependência (% saldo/saídas)
+  // Qualidade do Caixa: Conversão (% do resultado sobre entradas) + Cobertura (% saldo/saídas)
   const conversao = entradas > 0 ? (resultado / entradas) * 100 : 0;
-  const dependencia = saidas > 0 ? (saldoConsolidado / saidas) * 100 : 0;
+  const cobertura = saidas > 0 ? (saldoConsolidado / saidas) * 100 : 0;
 
-  // Status colors - Saúde Financeira
-  const getSaudeColor = () => {
-    if (resultado >= 0 && runway > 6) return { text: "text-green-600", bg: "bg-green-50", status: "Saudável" };
-    if (resultado >= 0 || runway > 3) return { text: "text-yellow-600", bg: "bg-yellow-50", status: "Atenção" };
-    return { text: "text-red-600", bg: "bg-red-50", status: "Crítico" };
+  // Status colors - Resultado
+  const getResultadoColor = () => {
+    if (resultado > 0) return { text: "text-green-600", bg: "bg-green-50", border: "border-l-green-500" };
+    if (resultado === 0) return { text: "text-yellow-600", bg: "bg-yellow-50", border: "border-l-yellow-500" };
+    return { text: "text-red-600", bg: "bg-red-50", border: "border-l-red-500" };
+  };
+
+  // Status colors - Fôlego de Caixa
+  const getFolegoColor = () => {
+    if (runway > 6) return { text: "text-green-600", bg: "bg-green-50", status: "Confortável", border: "border-l-green-500" };
+    if (runway >= 3) return { text: "text-yellow-600", bg: "bg-yellow-50", status: "Atenção", border: "border-l-yellow-500" };
+    return { text: "text-red-600", bg: "bg-red-50", status: "Crítico", border: "border-l-red-500" };
   };
 
   // Status colors - Qualidade do Caixa
   const getQualidadeColor = () => {
-    if (conversao >= 10 && dependencia >= 100) return { text: "text-green-600", bg: "bg-green-50", status: "Excelente" };
-    if (conversao >= 0 && dependencia >= 50) return { text: "text-yellow-600", bg: "bg-yellow-50", status: "Regular" };
-    return { text: "text-red-600", bg: "bg-red-50", status: "Baixa" };
+    if (conversao >= 10 && cobertura >= 100) return { text: "text-green-600", bg: "bg-green-50", status: "Boa", border: "border-l-green-500" };
+    if (conversao >= 0 && cobertura >= 50) return { text: "text-yellow-600", bg: "bg-yellow-50", status: "Atenção", border: "border-l-yellow-500" };
+    return { text: "text-red-600", bg: "bg-red-50", status: "Crítica", border: "border-l-red-500" };
   };
 
   // Status colors - DSCR
   const getDscrColor = () => {
-    if (dscr >= 1.5) return { text: "text-green-600", bg: "bg-green-50", status: "Saudável" };
-    if (dscr >= 1.0) return { text: "text-yellow-600", bg: "bg-yellow-50", status: "Atenção" };
-    return { text: "text-red-600", bg: "bg-red-50", status: "Crítico" };
+    if (dscr >= 1.5) return { text: "text-green-600", bg: "bg-green-50", status: "Saudável", border: "border-l-green-500" };
+    if (dscr >= 1.0) return { text: "text-yellow-600", bg: "bg-yellow-50", status: "Atenção", border: "border-l-yellow-500" };
+    return { text: "text-red-600", bg: "bg-red-50", status: "Crítico", border: "border-l-red-500" };
   };
 
-  const saudeColors = getSaudeColor();
+  const resultadoColors = getResultadoColor();
+  const folegoColors = getFolegoColor();
   const qualidadeColors = getQualidadeColor();
   const dscrColors = getDscrColor();
 
@@ -90,80 +98,77 @@ export function FinanceiroKPIs({ metrics, isLoading }: FinanceiroKPIsProps) {
   return (
     <TooltipProvider>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {/* 💰 Saldo Consolidado */}
-        <Card className="relative overflow-hidden border-l-4 border-l-blue-500">
+        {/* ✅ 1. Resultado Líquido do Período */}
+        <Card className={cn("relative overflow-hidden border-l-4", resultadoColors.border)}>
           <CardContent className="pt-4 pb-4">
             <div className="flex items-center justify-between">
               <div className="space-y-1 flex-1">
                 <div className="flex items-center gap-1">
-                  <span className="text-sm">💰</span>
-                  <p className="text-xs text-muted-foreground font-medium">Saldo Consolidado</p>
+                  <span className="text-sm">📊</span>
+                  <p className="text-xs text-muted-foreground font-medium">Resultado Líquido</p>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Info className="h-3 w-3 text-muted-foreground/60 cursor-help" />
                     </TooltipTrigger>
                     <TooltipContent side="top" className="max-w-[250px] text-xs">
-                      <p>Soma de todos os saldos das contas bancárias. Avalia a liquidez imediata e capacidade de honrar compromissos.</p>
+                      <p>Lucro ou prejuízo do período filtrado.</p>
+                      <p className="mt-1 text-muted-foreground">Receitas – Despesas = Resultado</p>
                     </TooltipContent>
                   </Tooltip>
                 </div>
-                <p className={cn("text-2xl font-bold", saldoConsolidado >= 0 ? "text-blue-600" : "text-red-600")}>
-                  {formatCurrency(saldoConsolidado)}
+                <p className={cn("text-2xl font-bold", resultadoColors.text)}>
+                  {formatCurrency(resultado)}
                 </p>
               </div>
-              <div className={cn("p-3 rounded-full", saldoConsolidado >= 0 ? "bg-blue-50" : "bg-red-50")}>
-                <Wallet className={cn("h-6 w-6", saldoConsolidado >= 0 ? "text-blue-600" : "text-red-600")} />
+              <div className={cn("p-3 rounded-full", resultadoColors.bg)}>
+                <TrendingDown className={cn("h-6 w-6", resultadoColors.text)} />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* 🔴 Saúde Financeira (Resultado + Burn + Runway) */}
-        <Card className={cn("relative overflow-hidden border-l-4", 
-          saudeColors.text === "text-green-600" ? "border-l-green-500" : 
-          saudeColors.text === "text-yellow-600" ? "border-l-yellow-500" : "border-l-red-500"
-        )}>
+        {/* ✅ 2. Fôlego de Caixa (unifica Burn + Runway + Saúde) */}
+        <Card className={cn("relative overflow-hidden border-l-4", folegoColors.border)}>
           <CardContent className="pt-4 pb-4">
             <div className="flex items-center justify-between">
               <div className="space-y-1 flex-1">
                 <div className="flex items-center gap-1">
-                  <span className="text-sm">🔴</span>
-                  <p className="text-xs text-muted-foreground font-medium">Saúde Financeira</p>
+                  <span className="text-sm">💨</span>
+                  <p className="text-xs text-muted-foreground font-medium">Fôlego de Caixa</p>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Info className="h-3 w-3 text-muted-foreground/60 cursor-help" />
                     </TooltipTrigger>
                     <TooltipContent side="top" className="max-w-[280px] text-xs">
-                      <p><strong>Resultado:</strong> Lucro/Prejuízo do período</p>
-                      <p><strong>Burn Rate:</strong> Consumo mensal de caixa</p>
-                      <p><strong>Runway:</strong> Meses que pode operar com saldo atual</p>
+                      <p><strong>Consumo:</strong> Total de saídas no mês</p>
+                      <p><strong>Fôlego:</strong> Quantos meses pode operar com o saldo atual</p>
                       <p className="mt-1 text-muted-foreground">Menos de 3 meses = urgente buscar capital ou cortar custos</p>
                     </TooltipContent>
                   </Tooltip>
                 </div>
                 <div className="space-y-0.5">
-                  <p className={cn("text-xl font-bold", resultado >= 0 ? "text-green-600" : "text-red-600")}>
-                    {formatCurrency(resultado)}
-                  </p>
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                    <span>Burn: <span className="font-medium text-foreground">{formatCurrency(saidas)}/mês</span></span>
-                    <span>•</span>
-                    <span>Fôlego: <span className={cn("font-semibold", saudeColors.text)}>{runway} meses</span></span>
+                  <div className="flex items-center gap-2">
+                    <span className={cn("text-xl font-bold", folegoColors.text)}>
+                      {runway} {runway === 1 ? "mês" : "meses"}
+                    </span>
+                    <span className={cn("text-xs px-1.5 py-0.5 rounded font-medium", folegoColors.bg, folegoColors.text)}>
+                      {folegoColors.status}
+                    </span>
                   </div>
+                  <p className="text-xs text-muted-foreground">
+                    Consumo: <span className="font-medium text-foreground">{formatCurrency(burnRate)}/mês</span>
+                  </p>
                 </div>
               </div>
-              <div className={cn("p-3 rounded-full", saudeColors.bg)}>
-                <HeartPulse className={cn("h-6 w-6", saudeColors.text)} />
+              <div className={cn("p-3 rounded-full", folegoColors.bg)}>
+                <Wind className={cn("h-6 w-6", folegoColors.text)} />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* 🟡 Qualidade do Caixa (Conversão + Dependência Financeira) */}
-        <Card className={cn("relative overflow-hidden border-l-4", 
-          qualidadeColors.text === "text-green-600" ? "border-l-green-500" : 
-          qualidadeColors.text === "text-yellow-600" ? "border-l-yellow-500" : "border-l-red-500"
-        )}>
+        {/* ✅ 3. Qualidade do Caixa (simplificado) */}
+        <Card className={cn("relative overflow-hidden border-l-4", qualidadeColors.border)}>
           <CardContent className="pt-4 pb-4">
             <div className="flex items-center justify-between">
               <div className="space-y-1 flex-1">
@@ -174,23 +179,21 @@ export function FinanceiroKPIs({ metrics, isLoading }: FinanceiroKPIsProps) {
                     <TooltipTrigger asChild>
                       <Info className="h-3 w-3 text-muted-foreground/60 cursor-help" />
                     </TooltipTrigger>
-                    <TooltipContent side="top" className="max-w-[280px] text-xs">
-                      <p><strong>Conversão:</strong> % do resultado sobre as receitas (margem operacional)</p>
-                      <p><strong>Cobertura:</strong> % do saldo em relação às despesas mensais</p>
-                      <p className="mt-1 text-muted-foreground">Conversão alta + Cobertura alta = Caixa saudável</p>
+                    <TooltipContent side="top" className="max-w-[300px] text-xs">
+                      <p className="font-semibold mb-1">Detalhamento:</p>
+                      <p><strong>Conversão:</strong> {conversao.toFixed(1)}% (margem sobre receitas)</p>
+                      <p><strong>Cobertura:</strong> {cobertura.toFixed(0)}% (saldo vs despesas)</p>
+                      <p className="mt-2 text-muted-foreground">
+                        Boa = Conversão ≥10% e Cobertura ≥100%<br/>
+                        Atenção = Conversão ≥0% e Cobertura ≥50%<br/>
+                        Crítica = Abaixo dos limites
+                      </p>
                     </TooltipContent>
                   </Tooltip>
                 </div>
-                <div className="space-y-0.5">
-                  <p className={cn("text-xl font-bold", qualidadeColors.text)}>
-                    {qualidadeColors.status}
-                  </p>
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                    <span>Conversão: <span className={cn("font-medium", conversao >= 10 ? "text-green-600" : conversao >= 0 ? "text-yellow-600" : "text-red-600")}>{conversao.toFixed(1)}%</span></span>
-                    <span>•</span>
-                    <span>Cobertura: <span className={cn("font-medium", dependencia >= 100 ? "text-green-600" : dependencia >= 50 ? "text-yellow-600" : "text-red-600")}>{dependencia.toFixed(0)}%</span></span>
-                  </div>
-                </div>
+                <p className={cn("text-2xl font-bold", qualidadeColors.text)}>
+                  {qualidadeColors.status}
+                </p>
               </div>
               <div className={cn("p-3 rounded-full", qualidadeColors.bg)}>
                 <BarChart3 className={cn("h-6 w-6", qualidadeColors.text)} />
@@ -199,11 +202,9 @@ export function FinanceiroKPIs({ metrics, isLoading }: FinanceiroKPIsProps) {
           </CardContent>
         </Card>
 
-        {/* 🏦 Cobertura da Dívida (DSCR) */}
+        {/* ✅ 4. DSCR - Cobertura Financeira */}
         <Card className={cn("relative overflow-hidden border-l-4", 
-          !hasDivida ? "border-l-gray-300" :
-          dscrColors.text === "text-green-600" ? "border-l-green-500" : 
-          dscrColors.text === "text-yellow-600" ? "border-l-yellow-500" : "border-l-red-500"
+          !hasDivida ? "border-l-gray-300" : dscrColors.border
         )}>
           <CardContent className="pt-4 pb-4">
             <div className="flex items-center justify-between">
