@@ -22,7 +22,7 @@ export function LedgerTab({ filters }: LedgerTabProps) {
   const [auditOpen, setAuditOpen] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<any>(null);
 
-  const dateField = filters.regime === "CAIXA" ? "cash_date" : "competence_date";
+  const dateField = "cash_date";
 
   const { data: entries, isLoading, refetch } = useQuery({
     queryKey: ["fin-ledger-entries", filters],
@@ -134,7 +134,7 @@ export function LedgerTab({ filters }: LedgerTabProps) {
         <div>
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <BookOpen className="h-5 w-5" />
-            Lançamentos ({filters.regime === "CAIXA" ? "Regime de Caixa" : "Regime de Competência"})
+            Lançamentos
           </h2>
           <p className="text-sm text-muted-foreground">
             Livro de lançamentos financeiros - Single Source of Truth

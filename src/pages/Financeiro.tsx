@@ -22,7 +22,6 @@ export default function Financeiro() {
   const [filters, setFilters] = useState<FinanceiroFiltersState>({
     dateFrom: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
     dateTo: new Date(),
-    regime: "CAIXA",
     bankAccountId: null,
     costCenterId: null,
     projectId: null,

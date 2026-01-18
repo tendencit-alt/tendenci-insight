@@ -149,7 +149,7 @@ export function DRETab({ filters }: DRETabProps) {
   const [expandedAccounts, setExpandedAccounts] = useState<Set<string>>(new Set());
   const [expandedEntries, setExpandedEntries] = useState<Set<string>>(new Set());
   const queryClient = useQueryClient();
-  const dateField = filters.regime === "CAIXA" ? "cash_date" : "competence_date";
+  const dateField = "cash_date";
 
   // Subscribe to real-time changes
   useEffect(() => {
@@ -236,8 +236,8 @@ export function DRETab({ filters }: DRETabProps) {
       // Sort entries by date
       entriesByAccount.forEach((entries) => {
         entries.sort((a, b) => {
-          const dateA = filters.regime === "CAIXA" ? a.cash_date : a.competence_date;
-          const dateB = filters.regime === "CAIXA" ? b.cash_date : b.competence_date;
+          const dateA = a.cash_date;
+          const dateB = b.cash_date;
           return (dateA || '').localeCompare(dateB || '');
         });
       });
@@ -493,7 +493,7 @@ export function DRETab({ filters }: DRETabProps) {
     // Entry rows (when expanded and no children - leaf accounts)
     if (isEntriesExpanded && !line.hasChildren && hasEntries) {
       line.entries.forEach((entry, idx) => {
-        const entryDate = filters.regime === "CAIXA" ? entry.cash_date : entry.competence_date;
+        const entryDate = entry.cash_date;
         rows.push(
           <TableRow 
             key={`${line.id}-entry-${entry.id}`}
