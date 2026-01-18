@@ -3,14 +3,13 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { FinanceiroFiltersState } from "./FinanceiroFilters";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, CreditCard, AlertTriangle, Clock, CheckCircle, ArrowDownCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { CreditCard, AlertTriangle, Clock, CheckCircle, ArrowDownCircle, Info } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CreatePayableDialog } from "./CreatePayableDialog";
 import { PayPayableDialog } from "./PayPayableDialog";
 
 interface PayablesTabProps {
@@ -18,10 +17,8 @@ interface PayablesTabProps {
 }
 
 export function PayablesTab({ filters }: PayablesTabProps) {
-  const [createOpen, setCreateOpen] = useState(false);
   const [payDialogOpen, setPayDialogOpen] = useState(false);
   const [selectedPayable, setSelectedPayable] = useState<any>(null);
-
   const { data: payables, isLoading, refetch } = useQuery({
     queryKey: ["fin-payables", filters],
     queryFn: async () => {
@@ -170,11 +167,13 @@ export function PayablesTab({ filters }: PayablesTabProps) {
             )}
           </CardContent>
         </Card>
-        <Card className="flex items-center justify-center">
-          <Button onClick={() => setCreateOpen(true)} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Nova Conta a Pagar
-          </Button>
+        <Card className="flex items-center justify-center p-4">
+          <div className="text-center text-sm text-muted-foreground">
+            <Info className="h-5 w-5 mx-auto mb-2" />
+            <p>Para criar novas contas a pagar,</p>
+            <p>use a aba <strong>"Lançamentos & Conciliação"</strong></p>
+            <p className="text-xs mt-1">e selecione um fornecedor ao criar o lançamento</p>
+          </div>
         </Card>
       </div>
 
@@ -293,7 +292,6 @@ export function PayablesTab({ filters }: PayablesTabProps) {
         </CardContent>
       </Card>
 
-      <CreatePayableDialog open={createOpen} onOpenChange={setCreateOpen} onSuccess={refetch} />
       <PayPayableDialog 
         open={payDialogOpen} 
         onOpenChange={setPayDialogOpen} 
