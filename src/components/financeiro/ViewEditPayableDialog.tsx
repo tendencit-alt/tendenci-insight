@@ -189,7 +189,7 @@ export function ViewEditPayableDialog({ open, onOpenChange, payable, onSuccess, 
               {isEditing ? <Edit className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
               {isEditing ? "Editar Conta a Pagar" : "Visualizar Conta a Pagar"}
             </DialogTitle>
-            {!isEditing && payable.status !== "PAGO" && (
+            {!isEditing && (
               <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
                 <Edit className="h-4 w-4 mr-1" /> Editar
               </Button>

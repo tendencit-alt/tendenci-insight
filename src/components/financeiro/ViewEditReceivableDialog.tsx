@@ -189,7 +189,7 @@ export function ViewEditReceivableDialog({ open, onOpenChange, receivable, onSuc
               {isEditing ? <Edit className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
               {isEditing ? "Editar Conta a Receber" : "Visualizar Conta a Receber"}
             </DialogTitle>
-            {!isEditing && receivable.status !== "RECEBIDO" && (
+            {!isEditing && (
               <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
                 <Edit className="h-4 w-4 mr-1" /> Editar
               </Button>
