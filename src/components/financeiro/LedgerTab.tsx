@@ -7,7 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, BookOpen, ArrowUpCircle, ArrowDownCircle, RefreshCw, History } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Plus, BookOpen, ArrowUpCircle, ArrowDownCircle, RefreshCw, History, AlertTriangle, ChevronDown, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { CreateLedgerEntryDialog } from "./CreateLedgerEntryDialog";
@@ -21,6 +23,7 @@ export function LedgerTab({ filters }: LedgerTabProps) {
   const [createOpen, setCreateOpen] = useState(false);
   const [auditOpen, setAuditOpen] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<any>(null);
+  const [alertOpen, setAlertOpen] = useState(true);
 
   const dateField = "cash_date";
 
@@ -141,8 +144,74 @@ export function LedgerTab({ filters }: LedgerTabProps) {
     { entradas: 0, saidas: 0 }
   ) || { entradas: 0, saidas: 0 };
 
+  // Get unreconciled entries
+  const unreconciledEntries = entries?.filter(e => !e.reconciled && e.status !== "CANCELADO") || [];
+  const unreconciledTotal = unreconciledEntries.reduce((sum, e) => sum + Math.abs(Number(e.amount)), 0);
+
+  const formatCurrencySimple = (value: number) => {
+    return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  };
+
   return (
     <div className="space-y-4">
+      {/* Alert for unreconciled entries */}
+      {unreconciledEntries.length > 0 && (
+        <Collapsible open={alertOpen} onOpenChange={setAlertOpen}>
+          <Alert variant="destructive" className="border-yellow-500/50 bg-yellow-500/10">
+            <AlertTriangle className="h-4 w-4 text-yellow-600" />
+            <AlertTitle className="text-yellow-600 flex items-center justify-between">
+              <span>Lançamentos Pendentes de Conciliação</span>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-yellow-600">
+                  {alertOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                </Button>
+              </CollapsibleTrigger>
+            </AlertTitle>
+            <AlertDescription className="text-yellow-600/90">
+              <span className="font-medium">{unreconciledEntries.length}</span> lançamento(s) não conciliado(s) 
+              totalizando <span className="font-medium">{formatCurrencySimple(unreconciledTotal)}</span>
+            </AlertDescription>
+            <CollapsibleContent className="mt-3">
+              <div className="max-h-[200px] overflow-y-auto rounded border border-yellow-500/30 bg-background/50">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="hover:bg-transparent">
+                      <TableHead className="text-xs h-8">Data</TableHead>
+                      <TableHead className="text-xs h-8">Tipo</TableHead>
+                      <TableHead className="text-xs h-8">Descrição</TableHead>
+                      <TableHead className="text-xs text-right h-8">Valor</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {unreconciledEntries.slice(0, 10).map((entry) => (
+                      <TableRow key={entry.id} className="hover:bg-yellow-500/5">
+                        <TableCell className="text-xs py-2">
+                          {entry.cash_date && format(new Date(entry.cash_date), "dd/MM/yy", { locale: ptBR })}
+                        </TableCell>
+                        <TableCell className="text-xs py-2">
+                          {getTypeBadge(entry.type, true)}
+                        </TableCell>
+                        <TableCell className="text-xs py-2 max-w-[200px] truncate">
+                          {entry.description}
+                        </TableCell>
+                        <TableCell className="text-xs py-2 text-right font-medium">
+                          {formatCurrency(Number(entry.amount), entry.type)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                {unreconciledEntries.length > 10 && (
+                  <p className="text-xs text-center py-2 text-muted-foreground">
+                    ... e mais {unreconciledEntries.length - 10} lançamento(s)
+                  </p>
+                )}
+              </div>
+            </CollapsibleContent>
+          </Alert>
+        </Collapsible>
+      )}
+
       {/* Header with action */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
