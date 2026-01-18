@@ -8,7 +8,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { BarChart3, Download, ChevronRight, ChevronDown, FileText, Target, TrendingUp, AlertTriangle, CheckCircle } from "lucide-react";
+import { BarChart3, Download, ChevronRight, ChevronDown, FileText, Target, TrendingUp, AlertTriangle, CheckCircle, Info } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
@@ -649,6 +650,15 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
                   <Target className="h-3 w-3" />
                   Ponto Equilíbrio Meta
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Info className="h-3 w-3 text-muted-foreground/50" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p className="text-xs">Calculado automaticamente: Custos Fixos ÷ Margem de Contribuição %</p>
+                      <p className="text-xs text-muted-foreground mt-1">Baseado na meta de receitas cadastrada</p>
+                    </TooltipContent>
+                  </Tooltip>
                 </p>
                 <p className="text-lg sm:text-xl font-bold text-primary">
                   {formatCurrency(dreData?.summary.pontoEquilibrioMeta || 0)}
@@ -674,6 +684,21 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
                   <TrendingUp className="h-3 w-3" />
                   Ponto Equilíbrio Realizado
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Info className="h-3 w-3 text-muted-foreground/50" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs text-left">
+                      <p className="text-xs font-semibold mb-1">Fórmula: Custos Fixos ÷ MC%</p>
+                      <div className="text-xs space-y-0.5">
+                        <p>📊 <span className="text-green-500">Receitas (1.x):</span> {formatCurrency(dreData?.summary.totalReceitas || 0)}</p>
+                        <p>📦 <span className="text-orange-500">Custos Variáveis (2.x + 3.x):</span> {formatCurrency(dreData?.summary.custosVariaveis || 0)}</p>
+                        <p>🏢 <span className="text-red-500">Custos Fixos (5.x):</span> {formatCurrency(dreData?.summary.custosFixos || 0)}</p>
+                        <p>📈 <span className="text-blue-500">Margem Contribuição:</span> {(dreData?.summary.margemContribuicaoPercent || 0).toFixed(1)}%</p>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2 border-t pt-1">Contas identificadas automaticamente pelo código</p>
+                    </TooltipContent>
+                  </Tooltip>
                 </p>
                 <p className={cn(
                   "text-lg sm:text-xl font-bold",
@@ -705,7 +730,18 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
           <CardContent className="p-3 sm:p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground">Margem Contribuição</p>
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  Margem Contribuição
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Info className="h-3 w-3 text-muted-foreground/50" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p className="text-xs">MC = Receitas - Custos Variáveis</p>
+                      <p className="text-xs text-muted-foreground mt-1">MC% = (MC ÷ Receitas) × 100</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </p>
                 <p className="text-lg sm:text-xl font-bold">
                   {(dreData?.summary.margemContribuicaoPercent || 0).toFixed(1)}%
                 </p>
@@ -735,7 +771,10 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
                   </Badge>
                 )}
                 <p className="text-xs text-muted-foreground mt-1">
-                  Faltam: {formatCurrency(Math.max(0, (dreData?.summary.pontoEquilibrioRealizado || 0) - (dreData?.summary.totalReceitas || 0)))}
+                  {(dreData?.summary.totalReceitas || 0) >= (dreData?.summary.pontoEquilibrioRealizado || 0) 
+                    ? `Excedente: ${formatCurrency((dreData?.summary.totalReceitas || 0) - (dreData?.summary.pontoEquilibrioRealizado || 0))}`
+                    : `Faltam: ${formatCurrency((dreData?.summary.pontoEquilibrioRealizado || 0) - (dreData?.summary.totalReceitas || 0))}`
+                  }
                 </p>
               </div>
             </div>
@@ -743,6 +782,19 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
         </Card>
       </div>
 
+      {/* Account Mapping Info */}
+      <div className="text-xs text-muted-foreground bg-muted/30 rounded-lg p-3 flex items-start gap-2">
+        <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
+        <div>
+          <p className="font-medium">Contas identificadas automaticamente:</p>
+          <p className="mt-1">
+            <span className="text-green-600">1.x = Receitas</span> • 
+            <span className="text-orange-500 ml-1">2.x = CMV</span> • 
+            <span className="text-orange-500 ml-1">3.x = Desp. s/ Venda (variáveis)</span> • 
+            <span className="text-red-500 ml-1">5.x = Desp. Operacionais (fixos)</span>
+          </p>
+        </div>
+      </div>
       <Card>
         <CardContent className="p-2 sm:pt-6 sm:px-6">
           <div className="overflow-x-auto -mx-2 sm:mx-0">

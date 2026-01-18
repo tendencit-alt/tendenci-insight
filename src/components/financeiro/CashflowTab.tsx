@@ -8,7 +8,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, Download, ChevronRight, ChevronDown, FileText, Wallet, ArrowUpCircle, ArrowDownCircle, Target, AlertTriangle, CheckCircle } from "lucide-react";
+import { TrendingUp, Download, ChevronRight, ChevronDown, FileText, Wallet, ArrowUpCircle, ArrowDownCircle, Target, AlertTriangle, CheckCircle, Info } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
@@ -548,6 +549,14 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
                   <Target className="h-3 w-3" />
                   Ponto Equilíbrio Meta
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Info className="h-3 w-3 text-muted-foreground/50" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p className="text-xs">Baseado na meta de saídas cadastrada para o período</p>
+                    </TooltipContent>
+                  </Tooltip>
                 </p>
                 <p className="text-lg sm:text-xl font-bold text-primary">
                   {formatCurrency(cashflowData?.pontoEquilibrioMeta || 0)}
@@ -573,6 +582,19 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
                   <TrendingUp className="h-3 w-3" />
                   Ponto Equilíbrio Realizado
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Info className="h-3 w-3 text-muted-foreground/50" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs text-left">
+                      <p className="text-xs font-semibold mb-1">Equilíbrio = Total de Saídas</p>
+                      <div className="text-xs space-y-0.5">
+                        <p>📈 <span className="text-green-500">Entradas (RECEITA):</span> {formatCurrency(cashflowData?.totalEntradas || 0)}</p>
+                        <p>📉 <span className="text-red-500">Saídas (DESPESA):</span> {formatCurrency(cashflowData?.totalSaidas || 0)}</p>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2 border-t pt-1">Contas identificadas pela natureza no plano de contas</p>
+                    </TooltipContent>
+                  </Tooltip>
                 </p>
                 <p className={cn(
                   "text-lg sm:text-xl font-bold",
@@ -648,7 +670,18 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
         </Card>
       </div>
 
-      {/* Table */}
+      {/* Account Mapping Info */}
+      <div className="text-xs text-muted-foreground bg-muted/30 rounded-lg p-3 flex items-start gap-2">
+        <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
+        <div>
+          <p className="font-medium">Contas identificadas automaticamente:</p>
+          <p className="mt-1">
+            <span className="text-green-600">Natureza RECEITA = Entradas</span> • 
+            <span className="text-red-500 ml-1">Natureza DESPESA = Saídas</span> • 
+            <span className="text-muted-foreground ml-1">Contas com in_cashflow = true</span>
+          </p>
+        </div>
+      </div>
       <Card>
         <CardContent className="p-2 sm:pt-6 sm:px-6">
           <div className="overflow-x-auto -mx-2 sm:mx-0">
