@@ -321,9 +321,16 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
       
       // Ponto de Equilíbrio Realizado = Custos Fixos / Margem de Contribuição %
       // Fórmula: PE = CF / MC%  onde MC% está em decimal (ex: 0.40 para 40%)
-      const pontoEquilibrioRealizado = margemContribuicaoPercent > 0 
-        ? custosFixos / (margemContribuicaoPercent / 100)
-        : custosFixos > 0 ? Infinity : 0;
+      // Se não há custos fixos, PE = 0 (não precisa vender nada para cobrir)
+      // Se não há margem, PE = infinito (impossível cobrir custos fixos)
+      let pontoEquilibrioRealizado = 0;
+      if (custosFixos > 0 && margemContribuicaoPercent > 0) {
+        pontoEquilibrioRealizado = custosFixos / (margemContribuicaoPercent / 100);
+      } else if (custosFixos > 0 && margemContribuicaoPercent <= 0) {
+        // Margem negativa ou zero - impossível atingir equilíbrio
+        pontoEquilibrioRealizado = Number.MAX_SAFE_INTEGER;
+      }
+      // Se custosFixos = 0, pontoEquilibrioRealizado = 0 (já está em equilíbrio)
 
       const calculatedValues = new Map<string, number>();
       calculatedValues.set("4", margemContribuicao);
@@ -358,9 +365,12 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
         ? (metaMargemValor / metaReceitas) * 100
         : margemContribuicaoPercent;
       
-      const pontoEquilibrioMeta = metaMargemPercent > 0 
-        ? metaDespesasFixas / (metaMargemPercent / 100)
-        : metaDespesasFixas > 0 ? Infinity : 0;
+      let pontoEquilibrioMeta = 0;
+      if (metaDespesasFixas > 0 && metaMargemPercent > 0) {
+        pontoEquilibrioMeta = metaDespesasFixas / (metaMargemPercent / 100);
+      } else if (metaDespesasFixas > 0 && metaMargemPercent <= 0) {
+        pontoEquilibrioMeta = Number.MAX_SAFE_INTEGER;
+      }
 
       return {
         lines,
@@ -674,7 +684,11 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
                   </Tooltip>
                 </p>
                 <p className="text-lg sm:text-xl font-bold text-primary">
-                  {formatCurrency(dreData?.summary.pontoEquilibrioMeta || 0)}
+                  {(dreData?.summary.pontoEquilibrioMeta || 0) >= Number.MAX_SAFE_INTEGER 
+                    ? "∞ (Impossível)" 
+                    : (dreData?.summary.custosFixos || 0) === 0 
+                      ? "Sem custos fixos"
+                      : formatCurrency(dreData?.summary.pontoEquilibrioMeta || 0)}
                 </p>
               </div>
               <div className="hidden sm:block p-2 rounded-full bg-primary/10">
@@ -715,11 +729,17 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
                 </p>
                 <p className={cn(
                   "text-lg sm:text-xl font-bold",
-                  (dreData?.summary.totalReceitas || 0) >= (dreData?.summary.pontoEquilibrioRealizado || 0)
-                    ? "text-green-600"
-                    : "text-red-600"
+                  (dreData?.summary.pontoEquilibrioRealizado || 0) >= Number.MAX_SAFE_INTEGER 
+                    ? "text-red-600"
+                    : (dreData?.summary.totalReceitas || 0) >= (dreData?.summary.pontoEquilibrioRealizado || 0)
+                      ? "text-green-600"
+                      : "text-red-600"
                 )}>
-                  {formatCurrency(dreData?.summary.pontoEquilibrioRealizado || 0)}
+                  {(dreData?.summary.pontoEquilibrioRealizado || 0) >= Number.MAX_SAFE_INTEGER 
+                    ? "∞ (Impossível)" 
+                    : (dreData?.summary.custosFixos || 0) === 0 
+                      ? "Sem custos fixos"
+                      : formatCurrency(dreData?.summary.pontoEquilibrioRealizado || 0)}
                 </p>
               </div>
               <div className={cn(
