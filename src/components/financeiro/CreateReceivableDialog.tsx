@@ -32,6 +32,8 @@ interface FormErrors {
   due_date?: string;
   competence_date?: string;
   chart_account_id?: string;
+  cost_center_id?: string;
+  project_id?: string;
   description?: string;
 }
 
@@ -128,6 +130,12 @@ export function CreateReceivableDialog({ open, onOpenChange, onSuccess, initialD
     }
     if (!form.chart_account_id) {
       newErrors.chart_account_id = "Categoria é obrigatória";
+    }
+    if (!form.cost_center_id) {
+      newErrors.cost_center_id = "Centro de Custo é obrigatório";
+    }
+    if (!form.project_id) {
+      newErrors.project_id = "Projeto é obrigatório";
     }
     if (!form.description?.trim()) {
       newErrors.description = "Descrição é obrigatória";
@@ -333,9 +341,17 @@ export function CreateReceivableDialog({ open, onOpenChange, onSuccess, initialD
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Centro de Custo</Label>
-              <Select value={form.cost_center_id} onValueChange={(v) => setForm({ ...form, cost_center_id: v })}>
-                <SelectTrigger>
+              <Label className="flex items-center gap-1">
+                Centro de Custo <span className="text-destructive">*</span>
+              </Label>
+              <Select 
+                value={form.cost_center_id} 
+                onValueChange={(v) => {
+                  setForm({ ...form, cost_center_id: v });
+                  if (errors.cost_center_id) setErrors({ ...errors, cost_center_id: undefined });
+                }}
+              >
+                <SelectTrigger className={cn(errors.cost_center_id && "border-destructive")}>
                   <SelectValue placeholder="Selecione..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -344,12 +360,26 @@ export function CreateReceivableDialog({ open, onOpenChange, onSuccess, initialD
                   ))}
                 </SelectContent>
               </Select>
+              {errors.cost_center_id && (
+                <p className="text-xs text-destructive flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />
+                  {errors.cost_center_id}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
-              <Label>Projeto</Label>
-              <Select value={form.project_id} onValueChange={(v) => setForm({ ...form, project_id: v })}>
-                <SelectTrigger>
+              <Label className="flex items-center gap-1">
+                Projeto <span className="text-destructive">*</span>
+              </Label>
+              <Select 
+                value={form.project_id} 
+                onValueChange={(v) => {
+                  setForm({ ...form, project_id: v });
+                  if (errors.project_id) setErrors({ ...errors, project_id: undefined });
+                }}
+              >
+                <SelectTrigger className={cn(errors.project_id && "border-destructive")}>
                   <SelectValue placeholder="Selecione..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -358,6 +388,12 @@ export function CreateReceivableDialog({ open, onOpenChange, onSuccess, initialD
                   ))}
                 </SelectContent>
               </Select>
+              {errors.project_id && (
+                <p className="text-xs text-destructive flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />
+                  {errors.project_id}
+                </p>
+              )}
             </div>
           </div>
 
