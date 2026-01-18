@@ -149,8 +149,9 @@ export function ProjectKPIs() {
     queryFn: async () => {
       const { data } = await supabase
         .from("fin_ledger_entries")
-        .select("project_id, amount, type")
-        .not("project_id", "is", null);
+        .select("project_id, amount, type, status")
+        .not("project_id", "is", null)
+        .eq("status", "PAGO_RECEBIDO"); // Only count paid entries as "Executed"
       return data || [];
     },
   });
