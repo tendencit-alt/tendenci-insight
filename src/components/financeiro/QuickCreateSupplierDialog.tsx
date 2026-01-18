@@ -42,6 +42,14 @@ export function QuickCreateSupplierDialog({
 
     setLoading(true);
     try {
+      // Verify user is authenticated
+      const { data: { user } } = await supabase.auth.getUser();
+      console.log("Current user for supplier creation:", user?.id, user?.email);
+      
+      if (!user) {
+        toast.error("Você precisa estar autenticado para criar fornecedores");
+        return;
+      }
       const { data, error } = await supabase
         .from("suppliers")
         .insert({
@@ -69,7 +77,7 @@ export function QuickCreateSupplierDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md z-[100]">
         <DialogHeader>
           <DialogTitle>Criar Novo Fornecedor</DialogTitle>
         </DialogHeader>
