@@ -232,22 +232,20 @@ export function CreateReceivableDialog({ open, onOpenChange, onSuccess, initialD
                 Cliente <span className="text-destructive">*</span>
               </Label>
               <div className="flex gap-2">
-                <Select 
-                  value={form.customer_id} 
-                  onValueChange={(v) => {
-                    setForm({ ...form, customer_id: v });
-                    if (errors.customer_id) setErrors({ ...errors, customer_id: undefined });
-                  }}
-                >
-                  <SelectTrigger className={cn("flex-1", errors.customer_id && "border-destructive")}>
-                    <SelectValue placeholder="Selecione..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {clients?.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="flex-1">
+                  <SearchableSelect
+                    options={(clients || []).map(c => ({ value: c.id, label: c.name }))}
+                    value={form.customer_id}
+                    onChange={(v) => {
+                      setForm({ ...form, customer_id: v });
+                      if (errors.customer_id) setErrors({ ...errors, customer_id: undefined });
+                    }}
+                    placeholder="Selecione o cliente..."
+                    searchPlaceholder="Buscar cliente..."
+                    emptyMessage="Nenhum cliente encontrado."
+                    className={cn(errors.customer_id && "border-destructive")}
+                  />
+                </div>
                 <Button 
                   type="button" 
                   variant="outline" 
