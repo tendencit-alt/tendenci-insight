@@ -7,7 +7,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { BarChart3, Download, ChevronRight, ChevronDown, FileText } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { BarChart3, Download, ChevronRight, ChevronDown, FileText, Target, TrendingUp, AlertTriangle, CheckCircle } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
@@ -303,6 +304,17 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
       const resultadoAntesCapital = resultadoOperacional - totalResultadoFinanceiro;
       const variacaoLiquidaCaixa = resultadoAntesCapital + totalCapitalEntrada - totalCapitalSaida;
 
+      // Calculate breakeven point
+      // Ponto de Equilíbrio = Custos Fixos / Margem de Contribuição %
+      const custosVariaveis = totalDespesasSobreVenda + totalCMV;
+      const custosFixos = totalDespesasOp;
+      const margemContribuicaoPercent = totalReceitas > 0 
+        ? ((totalReceitas - custosVariaveis) / totalReceitas) * 100 
+        : 0;
+      const pontoEquilibrioRealizado = margemContribuicaoPercent > 0 
+        ? custosFixos / (margemContribuicaoPercent / 100) 
+        : 0;
+
       const calculatedValues = new Map<string, number>();
       calculatedValues.set("4", margemContribuicao);
       calculatedValues.set("6", resultadoOperacional);
@@ -313,16 +325,45 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
       const lines: DRELine[] = [];
       flattenTree(tree, accountValues, calculatedValues, entriesByAccount, null, 0, lines);
 
+      // Fetch goals for breakeven meta
+      const month = new Date().getMonth() + 1;
+      const year = new Date().getFullYear();
+      
+      const { data: goalsData } = await supabase
+        .from("fin_financial_goals")
+        .select("metric_key, target_amount")
+        .eq("month", month)
+        .eq("year", year)
+        .is("cost_center_id", null)
+        .is("project_id", null);
+
+      const metaReceitas = goalsData?.find(g => g.metric_key === "receitas")?.target_amount || 0;
+      const metaDespesasFixas = goalsData?.find(g => g.metric_key === "despesas_fixas")?.target_amount || custosFixos;
+      
+      // Meta breakeven calculation using same formula
+      const metaMargemPercent = metaReceitas > 0 && custosVariaveis > 0
+        ? ((metaReceitas - custosVariaveis) / metaReceitas) * 100
+        : margemContribuicaoPercent;
+      const pontoEquilibrioMeta = metaMargemPercent > 0 
+        ? metaDespesasFixas / (metaMargemPercent / 100)
+        : 0;
+
       return {
         lines,
         summary: {
           totalReceitas,
           totalDespesas: totalDespesasSobreVenda + totalCMV + totalDespesasOp,
           margemContribuicao,
+          margemContribuicaoPercent,
           resultadoOperacional,
           resultadoFinanceiro: totalResultadoFinanceiro,
           resultadoAntesCapital,
           variacaoLiquidaCaixa,
+          custosFixos,
+          custosVariaveis,
+          pontoEquilibrioRealizado,
+          pontoEquilibrioMeta,
+          metaReceitas,
         },
       };
     },
@@ -596,6 +637,110 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
             <span className="hidden sm:inline">Exportar</span> PDF
           </Button>
         </div>
+      </div>
+
+      {/* Breakeven Point Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        {/* Ponto de Equilíbrio Meta */}
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Target className="h-3 w-3" />
+                  Ponto Equilíbrio Meta
+                </p>
+                <p className="text-lg sm:text-xl font-bold text-primary">
+                  {formatCurrency(dreData?.summary.pontoEquilibrioMeta || 0)}
+                </p>
+              </div>
+              <div className="hidden sm:block p-2 rounded-full bg-primary/10">
+                <Target className="h-5 w-5 text-primary" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Ponto de Equilíbrio Realizado */}
+        <Card className={cn(
+          "border-2",
+          (dreData?.summary.totalReceitas || 0) >= (dreData?.summary.pontoEquilibrioRealizado || 0)
+            ? "border-green-500/30 bg-green-500/5"
+            : "border-red-500/30 bg-red-500/5"
+        )}>
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <TrendingUp className="h-3 w-3" />
+                  Ponto Equilíbrio Realizado
+                </p>
+                <p className={cn(
+                  "text-lg sm:text-xl font-bold",
+                  (dreData?.summary.totalReceitas || 0) >= (dreData?.summary.pontoEquilibrioRealizado || 0)
+                    ? "text-green-600"
+                    : "text-red-600"
+                )}>
+                  {formatCurrency(dreData?.summary.pontoEquilibrioRealizado || 0)}
+                </p>
+              </div>
+              <div className={cn(
+                "hidden sm:block p-2 rounded-full",
+                (dreData?.summary.totalReceitas || 0) >= (dreData?.summary.pontoEquilibrioRealizado || 0)
+                  ? "bg-green-500/10"
+                  : "bg-red-500/10"
+              )}>
+                {(dreData?.summary.totalReceitas || 0) >= (dreData?.summary.pontoEquilibrioRealizado || 0) ? (
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                ) : (
+                  <AlertTriangle className="h-5 w-5 text-red-600" />
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Margem de Contribuição */}
+        <Card>
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Margem Contribuição</p>
+                <p className="text-lg sm:text-xl font-bold">
+                  {(dreData?.summary.margemContribuicaoPercent || 0).toFixed(1)}%
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {formatCurrency(dreData?.summary.margemContribuicao || 0)}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Status */}
+        <Card>
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Status</p>
+                {(dreData?.summary.totalReceitas || 0) >= (dreData?.summary.pontoEquilibrioRealizado || 0) ? (
+                  <Badge className="bg-green-600 mt-1 gap-1">
+                    <CheckCircle className="h-3 w-3" />
+                    Acima do Equilíbrio
+                  </Badge>
+                ) : (
+                  <Badge variant="destructive" className="mt-1 gap-1">
+                    <AlertTriangle className="h-3 w-3" />
+                    Abaixo do Equilíbrio
+                  </Badge>
+                )}
+                <p className="text-xs text-muted-foreground mt-1">
+                  Faltam: {formatCurrency(Math.max(0, (dreData?.summary.pontoEquilibrioRealizado || 0) - (dreData?.summary.totalReceitas || 0)))}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <Card>

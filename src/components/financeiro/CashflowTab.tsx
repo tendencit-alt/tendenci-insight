@@ -7,7 +7,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, Download, ChevronRight, ChevronDown, FileText, Wallet, ArrowUpCircle, ArrowDownCircle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { TrendingUp, Download, ChevronRight, ChevronDown, FileText, Wallet, ArrowUpCircle, ArrowDownCircle, Target, AlertTriangle, CheckCircle } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
@@ -257,12 +258,35 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
         }
       });
 
+      // Calculate breakeven for cashflow
+      // Ponto de Equilíbrio de Caixa = Saídas Fixas quando Entradas = Saídas
+      const pontoEquilibrioCaixa = totalSaidas;
+      
+      // Fetch goals for meta
+      const month = new Date().getMonth() + 1;
+      const year = new Date().getFullYear();
+      
+      const { data: goalsData } = await supabase
+        .from("fin_financial_goals")
+        .select("metric_key, target_amount")
+        .eq("month", month)
+        .eq("year", year)
+        .is("cost_center_id", null)
+        .is("project_id", null);
+
+      const metaEntradas = goalsData?.find(g => g.metric_key === "receitas")?.target_amount || 0;
+      const metaSaidas = goalsData?.find(g => g.metric_key === "despesas")?.target_amount || totalSaidas;
+      const pontoEquilibrioMeta = metaSaidas;
+
       return {
         lines,
         openingBalance,
         totalEntradas,
         totalSaidas,
         closingBalance: openingBalance + totalEntradas - totalSaidas,
+        pontoEquilibrioCaixa,
+        pontoEquilibrioMeta,
+        metaEntradas,
       };
     },
   });
@@ -512,6 +536,116 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
             <span className="hidden sm:inline">Exportar</span> PDF
           </Button>
         </div>
+      </div>
+
+      {/* Breakeven Point Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        {/* Ponto de Equilíbrio Meta */}
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Target className="h-3 w-3" />
+                  Ponto Equilíbrio Meta
+                </p>
+                <p className="text-lg sm:text-xl font-bold text-primary">
+                  {formatCurrency(cashflowData?.pontoEquilibrioMeta || 0)}
+                </p>
+              </div>
+              <div className="hidden sm:block p-2 rounded-full bg-primary/10">
+                <Target className="h-5 w-5 text-primary" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Ponto de Equilíbrio Realizado */}
+        <Card className={cn(
+          "border-2",
+          (cashflowData?.totalEntradas || 0) >= (cashflowData?.pontoEquilibrioCaixa || 0)
+            ? "border-green-500/30 bg-green-500/5"
+            : "border-red-500/30 bg-red-500/5"
+        )}>
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <TrendingUp className="h-3 w-3" />
+                  Ponto Equilíbrio Realizado
+                </p>
+                <p className={cn(
+                  "text-lg sm:text-xl font-bold",
+                  (cashflowData?.totalEntradas || 0) >= (cashflowData?.pontoEquilibrioCaixa || 0)
+                    ? "text-green-600"
+                    : "text-red-600"
+                )}>
+                  {formatCurrency(cashflowData?.pontoEquilibrioCaixa || 0)}
+                </p>
+              </div>
+              <div className={cn(
+                "hidden sm:block p-2 rounded-full",
+                (cashflowData?.totalEntradas || 0) >= (cashflowData?.pontoEquilibrioCaixa || 0)
+                  ? "bg-green-500/10"
+                  : "bg-red-500/10"
+              )}>
+                {(cashflowData?.totalEntradas || 0) >= (cashflowData?.pontoEquilibrioCaixa || 0) ? (
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                ) : (
+                  <AlertTriangle className="h-5 w-5 text-red-600" />
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Saldo de Caixa */}
+        <Card>
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Saldo de Caixa</p>
+                <p className={cn(
+                  "text-lg sm:text-xl font-bold",
+                  (cashflowData?.closingBalance || 0) >= 0 ? "text-green-600" : "text-red-600"
+                )}>
+                  {formatCurrency(cashflowData?.closingBalance || 0)}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Inicial: {formatCurrency(cashflowData?.openingBalance || 0)}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Status */}
+        <Card>
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Status</p>
+                {(cashflowData?.totalEntradas || 0) >= (cashflowData?.pontoEquilibrioCaixa || 0) ? (
+                  <Badge className="bg-green-600 mt-1 gap-1">
+                    <CheckCircle className="h-3 w-3" />
+                    Caixa Positivo
+                  </Badge>
+                ) : (
+                  <Badge variant="destructive" className="mt-1 gap-1">
+                    <AlertTriangle className="h-3 w-3" />
+                    Caixa Negativo
+                  </Badge>
+                )}
+                <p className="text-xs text-muted-foreground mt-1">
+                  {(cashflowData?.totalEntradas || 0) >= (cashflowData?.pontoEquilibrioCaixa || 0) 
+                    ? `Excedente: ${formatCurrency((cashflowData?.totalEntradas || 0) - (cashflowData?.pontoEquilibrioCaixa || 0))}`
+                    : `Faltam: ${formatCurrency((cashflowData?.pontoEquilibrioCaixa || 0) - (cashflowData?.totalEntradas || 0))}`
+                  }
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Table */}
