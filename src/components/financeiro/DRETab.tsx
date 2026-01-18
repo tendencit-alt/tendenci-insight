@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { FinanceiroFiltersState } from "./FinanceiroFilters";
+import { CostCenterSubFilter } from "./CostCenterSubFilter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -12,6 +13,7 @@ import { useState, useEffect } from "react";
 
 interface DRETabProps {
   filters: FinanceiroFiltersState;
+  onFiltersChange: (filters: FinanceiroFiltersState) => void;
 }
 
 interface ChartAccount {
@@ -145,7 +147,7 @@ function flattenTree(
   });
 }
 
-export function DRETab({ filters }: DRETabProps) {
+export function DRETab({ filters, onFiltersChange }: DRETabProps) {
   const [expandedAccounts, setExpandedAccounts] = useState<Set<string>>(new Set());
   const [expandedEntries, setExpandedEntries] = useState<Set<string>>(new Set());
   const queryClient = useQueryClient();
@@ -553,6 +555,13 @@ export function DRETab({ filters }: DRETabProps) {
 
   return (
     <div className="space-y-4">
+      {/* Sub-filter for Cost Center */}
+      <CostCenterSubFilter
+        value={filters.costCenterId}
+        onChange={(costCenterId) => onFiltersChange({ ...filters, costCenterId })}
+        className="pb-2 border-b"
+      />
+
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
           <h2 className="text-base sm:text-lg font-semibold flex items-center gap-2">

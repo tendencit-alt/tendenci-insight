@@ -13,11 +13,12 @@ import {
 
 interface DRECashflowViewProps {
   filters: FinanceiroFiltersState;
+  onFiltersChange: (filters: FinanceiroFiltersState) => void;
 }
 
 type ViewMode = "both" | "dre" | "cashflow";
 
-export function DRECashflowView({ filters }: DRECashflowViewProps) {
+export function DRECashflowView({ filters, onFiltersChange }: DRECashflowViewProps) {
   const [viewMode, setViewMode] = useState<ViewMode>("both");
 
   return (
@@ -74,7 +75,7 @@ export function DRECashflowView({ filters }: DRECashflowViewProps) {
         >
           <ResizablePanel defaultSize={50} minSize={30}>
             <div className="h-full overflow-auto p-4 bg-background">
-              <DRETab filters={filters} />
+              <DRETab filters={filters} onFiltersChange={onFiltersChange} />
             </div>
           </ResizablePanel>
           
@@ -82,14 +83,14 @@ export function DRECashflowView({ filters }: DRECashflowViewProps) {
           
           <ResizablePanel defaultSize={50} minSize={30}>
             <div className="h-full overflow-auto p-4 bg-background">
-              <CashflowTab filters={filters} />
+              <CashflowTab filters={filters} onFiltersChange={onFiltersChange} />
             </div>
           </ResizablePanel>
         </ResizablePanelGroup>
       ) : viewMode === "dre" ? (
-        <DRETab filters={filters} />
+        <DRETab filters={filters} onFiltersChange={onFiltersChange} />
       ) : (
-        <CashflowTab filters={filters} />
+        <CashflowTab filters={filters} onFiltersChange={onFiltersChange} />
       )}
     </div>
   );
