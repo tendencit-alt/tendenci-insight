@@ -9,6 +9,12 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { CostCenterKPIs } from "./CostCenterKPIs";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -24,7 +30,8 @@ import {
   AlertTriangle,
   CheckCircle,
   X,
-  FileText
+  FileText,
+  Info
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -201,6 +208,7 @@ export function DashboardBI({ filters }: DashboardBIProps) {
           : data.saldoAtual < (data.saldoInicial * 0.15) 
             ? "yellow" 
             : "green",
+        info: "Soma de todos os saldos das contas bancárias. Use para avaliar a liquidez imediata da empresa e capacidade de honrar compromissos de curto prazo.",
       },
       {
         key: "receitas" as KPIType,
@@ -213,6 +221,7 @@ export function DashboardBI({ filters }: DashboardBIProps) {
           : data.receitas >= receitaAlertThreshold 
             ? "yellow" 
             : "red",
+        info: "Total de receitas recebidas no período. Analise tendências de crescimento e sazonalidade. Quedas consecutivas indicam necessidade de ação comercial.",
       },
       {
         key: "despesas" as KPIType,
@@ -226,6 +235,7 @@ export function DashboardBI({ filters }: DashboardBIProps) {
           : data.despesas <= despesaAlertThreshold 
             ? "yellow" 
             : "red",
+        info: "Total de despesas pagas no período. Monitore para identificar gastos excessivos ou oportunidades de redução de custos.",
       },
       {
         key: "resultado" as KPIType,
@@ -239,6 +249,7 @@ export function DashboardBI({ filters }: DashboardBIProps) {
           : data.resultado < (data.receitas * 0.05) 
             ? "yellow" 
             : "green",
+        info: "Diferença entre entradas e saídas. Resultado negativo recorrente indica que a operação não é sustentável. Avalie corte de custos ou aumento de receita.",
       },
       {
         key: "burn" as KPIType,
@@ -248,6 +259,7 @@ export function DashboardBI({ filters }: DashboardBIProps) {
         icon: Flame,
         status: data.runway <= 3 ? "red" : data.runway <= 6 ? "yellow" : "green",
         isCombo: true,
+        info: "Consumo mensal médio e quantos meses a empresa pode operar com o saldo atual. Menos de 3 meses = urgente buscar capital ou cortar custos. 3-6 meses = atenção.",
       },
     ];
   }, [data]);
@@ -301,15 +313,7 @@ export function DashboardBI({ filters }: DashboardBIProps) {
   // Render BI content based on selected KPI
   const renderBIContent = () => {
     if (!selectedKPI || !data) {
-      return (
-        <div className="flex items-center justify-center h-64 text-muted-foreground">
-          <div className="text-center">
-            <Target className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p className="text-lg font-medium">Selecione um KPI acima</p>
-            <p className="text-sm">Clique em qualquer indicador para ver a composição detalhada</p>
-          </div>
-        </div>
-      );
+      return null;
     }
 
     let categories: CategoryData[] = [];
@@ -577,64 +581,76 @@ export function DashboardBI({ filters }: DashboardBIProps) {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Executive Dashboard - Clickable KPIs */}
-      <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
-        {kpis.map((kpi) => (
-          <Card 
-            key={kpi.key}
-            className={cn(
-              "relative overflow-hidden cursor-pointer transition-all border-2",
-              selectedKPI === kpi.key ? "ring-2 ring-primary" : "",
-              getStatusColor(kpi.status)
-            )}
-            onClick={() => setSelectedKPI(selectedKPI === kpi.key ? null : kpi.key)}
-          >
-            <CardContent className="p-3 sm:pt-4 sm:px-4">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                <div className="space-y-0.5 sm:space-y-1 min-w-0 flex-1">
-                  <div className="flex items-center gap-1">
-                    <p className="text-[10px] sm:text-xs text-muted-foreground font-medium truncate">{kpi.title}</p>
-                    {getStatusIcon(kpi.status)}
-                  </div>
-                  {kpi.isCombo ? (
-                    <div>
-                      <p className="text-xs sm:text-sm text-muted-foreground">
-                        {formatCurrency(kpi.value)}/mês
-                      </p>
-                      <p className={cn("text-base sm:text-xl font-bold", getTextColor(kpi.status))}>
-                        {kpi.secondaryValue} meses
-                      </p>
+    <TooltipProvider>
+      <div className="space-y-6">
+        {/* Executive Dashboard - Clickable KPIs */}
+        <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
+          {kpis.map((kpi) => (
+            <Card 
+              key={kpi.key}
+              className={cn(
+                "relative overflow-hidden cursor-pointer transition-all border-2",
+                selectedKPI === kpi.key ? "ring-2 ring-primary" : "",
+                getStatusColor(kpi.status)
+              )}
+              onClick={() => setSelectedKPI(selectedKPI === kpi.key ? null : kpi.key)}
+            >
+              <CardContent className="p-3 sm:pt-4 sm:px-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                  <div className="space-y-0.5 sm:space-y-1 min-w-0 flex-1">
+                    <div className="flex items-center gap-1">
+                      <p className="text-[10px] sm:text-xs text-muted-foreground font-medium truncate">{kpi.title}</p>
+                      {getStatusIcon(kpi.status)}
+                      <Tooltip>
+                        <TooltipTrigger asChild onClick={(e) => e.stopPropagation()}>
+                          <Info className="h-3 w-3 text-muted-foreground/60 cursor-help flex-shrink-0" />
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-[250px] text-xs">
+                          <p>{kpi.info}</p>
+                        </TooltipContent>
+                      </Tooltip>
                     </div>
-                  ) : (
-                    <p className={cn("text-base sm:text-xl font-bold truncate", getTextColor(kpi.status))}>
-                      {formatCurrency(kpi.value)}
-                    </p>
-                  )}
-                  {kpi.meta && (
-                    <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
-                      Meta: {formatCurrency(kpi.meta)}
-                    </p>
-                  )}
+                    {kpi.isCombo ? (
+                      <div>
+                        <p className="text-xs sm:text-sm text-muted-foreground">
+                          {formatCurrency(kpi.value)}/mês
+                        </p>
+                        <p className={cn("text-base sm:text-xl font-bold", getTextColor(kpi.status))}>
+                          {kpi.secondaryValue} meses
+                        </p>
+                      </div>
+                    ) : (
+                      <p className={cn("text-base sm:text-xl font-bold truncate", getTextColor(kpi.status))}>
+                        {formatCurrency(kpi.value)}
+                      </p>
+                    )}
+                    {kpi.meta && (
+                      <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
+                        Meta: {formatCurrency(kpi.meta)}
+                      </p>
+                    )}
+                  </div>
+                  <div className={cn("p-1.5 sm:p-2 rounded-full hidden sm:block", getIconBgColor(kpi.status))}>
+                    <kpi.icon className={cn("h-4 w-4 sm:h-5 sm:w-5", getTextColor(kpi.status) || "text-muted-foreground")} />
+                  </div>
                 </div>
-                <div className={cn("p-1.5 sm:p-2 rounded-full hidden sm:block", getIconBgColor(kpi.status))}>
-                  <kpi.icon className={cn("h-4 w-4 sm:h-5 sm:w-5", getTextColor(kpi.status) || "text-muted-foreground")} />
-                </div>
-              </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* BI Section - Dynamic content based on selected KPI */}
+        {selectedKPI && (
+          <Card>
+            <CardContent className="pt-6">
+              {renderBIContent()}
             </CardContent>
           </Card>
-        ))}
+        )}
+
+        {/* Cost Center KPIs */}
+        <CostCenterKPIs filters={filters} />
       </div>
-
-      {/* BI Section - Dynamic content based on selected KPI */}
-      <Card>
-        <CardContent className="pt-6">
-          {renderBIContent()}
-        </CardContent>
-      </Card>
-
-      {/* Cost Center KPIs */}
-      <CostCenterKPIs filters={filters} />
-    </div>
+    </TooltipProvider>
   );
 }
