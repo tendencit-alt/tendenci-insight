@@ -523,6 +523,24 @@ export function CashflowTab({ filters }: CashflowTabProps) {
                   ({formatCurrency(cashflowData?.totalSaidas || 0)})
                 </TableCell>
               </TableRow>
+              <TableRow className={cn(
+                "font-bold border-t-2",
+                ((cashflowData?.totalEntradas || 0) - (cashflowData?.totalSaidas || 0)) >= 0 
+                  ? "bg-green-100 dark:bg-green-950/30 border-green-400" 
+                  : "bg-red-100 dark:bg-red-950/30 border-red-400"
+              )}>
+                <TableCell className="text-base">RESULTADO</TableCell>
+                <TableCell className="text-right text-muted-foreground font-mono">-</TableCell>
+                <TableCell className={cn(
+                  "text-right font-mono text-base",
+                  ((cashflowData?.totalEntradas || 0) - (cashflowData?.totalSaidas || 0)) >= 0 
+                    ? "text-green-700 dark:text-green-400" 
+                    : "text-red-700 dark:text-red-400"
+                )}>
+                  {((cashflowData?.totalEntradas || 0) - (cashflowData?.totalSaidas || 0)) >= 0 ? "▲ " : "▼ "}
+                  {formatCurrency(Math.abs((cashflowData?.totalEntradas || 0) - (cashflowData?.totalSaidas || 0)))}
+                </TableCell>
+              </TableRow>
             </TableBody>
           </Table>
         </CardContent>
