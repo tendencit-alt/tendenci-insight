@@ -113,6 +113,8 @@ export function BankAccountsManager() {
     return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   };
 
+  const sortedAccounts = useMemo(() => numericCodeSort(accounts || [], 'nickname'), [accounts]);
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -146,7 +148,7 @@ export function BankAccountsManager() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {useMemo(() => numericCodeSort(accounts || [], 'nickname'), [accounts]).map((account) => (
+              {sortedAccounts.map((account) => (
                 <TableRow key={account.id}>
                   <TableCell className="font-medium">{account.nickname}</TableCell>
                   <TableCell>{account.bank_name || "-"}</TableCell>
