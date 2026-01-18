@@ -161,7 +161,7 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
     queryFn: async () => {
       const { data } = await supabase
         .from("fin_payables")
-        .select("status, amount, paid_amount, due_date")
+        .select("status, amount, paid_amount, due_date, payment_date")
         .neq("status", "CANCELADO");
 
       const today = new Date();
@@ -171,12 +171,15 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
 
       const abertas = data?.filter(d => d.status === "ABERTO") || [];
       const vencidas = data?.filter(d => d.status === "VENCIDO") || [];
+      const pagas = data?.filter(d => d.status === "PAGO") || [];
 
       return {
         abertasCount: abertas.length,
         abertasValor: abertas.reduce((sum, d) => sum + Number(d.amount) - Number(d.paid_amount || 0), 0),
         vencidasCount: vencidas.length,
         vencidasValor: vencidas.reduce((sum, d) => sum + Number(d.amount) - Number(d.paid_amount || 0), 0),
+        pagasCount: pagas.length,
+        pagasValor: pagas.reduce((sum, d) => sum + Number(d.paid_amount || d.amount), 0),
         aVencer7d: abertas.filter(d => new Date(d.due_date) <= in7Days).length,
         aVencer15d: abertas.filter(d => new Date(d.due_date) <= in15Days).length,
         aVencer30d: abertas.filter(d => new Date(d.due_date) <= in30Days).length,
@@ -200,12 +203,15 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
 
       const abertas = data?.filter(d => d.status === "ABERTO") || [];
       const vencidas = data?.filter(d => d.status === "VENCIDO") || [];
+      const recebidas = data?.filter(d => d.status === "RECEBIDO") || [];
 
       return {
         abertasCount: abertas.length,
         abertasValor: abertas.reduce((sum, d) => sum + Number(d.amount) - Number(d.received_amount || 0), 0),
         vencidasCount: vencidas.length,
         vencidasValor: vencidas.reduce((sum, d) => sum + Number(d.amount) - Number(d.received_amount || 0), 0),
+        recebidasCount: recebidas.length,
+        recebidasValor: recebidas.reduce((sum, d) => sum + Number(d.received_amount || d.amount), 0),
         aVencer7d: abertas.filter(d => new Date(d.due_date) <= in7Days).length,
         aVencer15d: abertas.filter(d => new Date(d.due_date) <= in15Days).length,
         aVencer30d: abertas.filter(d => new Date(d.due_date) <= in30Days).length,
@@ -623,6 +629,10 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
                   <span className="text-sm">Vencidas</span>
                   <span className="font-semibold">{payablesSummary?.vencidasCount || 0} títulos - {formatCurrency(payablesSummary?.vencidasValor || 0)}</span>
                 </div>
+                <div className="flex items-center justify-between text-blue-600">
+                  <span className="text-sm">Pagas</span>
+                  <span className="font-semibold">{payablesSummary?.pagasCount || 0} títulos - {formatCurrency(payablesSummary?.pagasValor || 0)}</span>
+                </div>
                 <div className="flex gap-4 text-xs text-muted-foreground pt-2 border-t">
                   <span className="flex items-center gap-1"><Clock className="h-3 w-3" />7d: {payablesSummary?.aVencer7d || 0}</span>
                   <span>15d: {payablesSummary?.aVencer15d || 0}</span>
@@ -649,9 +659,13 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
                   <span className="text-muted-foreground text-sm">Em Aberto</span>
                   <span className="font-semibold">{receivablesSummary?.abertasCount || 0} títulos - {formatCurrency(receivablesSummary?.abertasValor || 0)}</span>
                 </div>
-                <div className="flex items-center justify-between text-green-600">
+                <div className="flex items-center justify-between text-red-600">
                   <span className="text-sm">Vencidas</span>
                   <span className="font-semibold">{receivablesSummary?.vencidasCount || 0} títulos - {formatCurrency(receivablesSummary?.vencidasValor || 0)}</span>
+                </div>
+                <div className="flex items-center justify-between text-green-600">
+                  <span className="text-sm">Recebidas</span>
+                  <span className="font-semibold">{receivablesSummary?.recebidasCount || 0} títulos - {formatCurrency(receivablesSummary?.recebidasValor || 0)}</span>
                 </div>
                 <div className="flex gap-4 text-xs text-muted-foreground pt-2 border-t">
                   <span className="flex items-center gap-1"><Clock className="h-3 w-3" />7d: {receivablesSummary?.aVencer7d || 0}</span>
