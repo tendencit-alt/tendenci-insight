@@ -454,9 +454,12 @@ export function DRETab({ filters }: DRETabProps) {
             )}
           </div>
         </TableCell>
+        <TableCell className="text-right p-2 text-muted-foreground font-mono text-sm">
+          {/* Meta Econômica - placeholder para integração futura */}
+          -
+        </TableCell>
         <TableCell className="text-right p-2">
           {isResultado ? (
-            // Resultado calculado em caixa branca com destaque
             <div className={cn(
               "inline-flex items-center justify-end px-3 py-1.5 rounded-md font-bold font-mono text-sm",
               "bg-white dark:bg-slate-900 shadow-sm border",
@@ -510,6 +513,9 @@ export function DRETab({ filters }: DRETabProps) {
                 )}
               </div>
             </TableCell>
+            <TableCell className="text-right text-muted-foreground font-mono text-sm">
+              -
+            </TableCell>
             <TableCell 
               className={cn(
                 "text-right font-mono text-sm",
@@ -549,10 +555,10 @@ export function DRETab({ filters }: DRETabProps) {
         <div>
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <BarChart3 className="h-5 w-5" />
-            Demonstração do Resultado do Exercício (DRE)
+            DRE <span className="text-primary">(Competência)</span>
           </h2>
           <p className="text-sm text-muted-foreground">
-            {filters.regime === "CAIXA" ? "Regime de Caixa" : "Regime de Competência"} - Clique para expandir e ver lançamentos
+            Demonstração do Resultado do Exercício - Clique para expandir e ver lançamentos
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -574,8 +580,9 @@ export function DRETab({ filters }: DRETabProps) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[65%]">Conta</TableHead>
-                <TableHead className="text-right">Valor</TableHead>
+                <TableHead className="w-[50%]">Conta</TableHead>
+                <TableHead className="text-right">Meta Econômica</TableHead>
+                <TableHead className="text-right">Realizado</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -583,16 +590,18 @@ export function DRETab({ filters }: DRETabProps) {
               
               {/* Summary footer */}
               <TableRow>
-                <TableCell colSpan={2} className="h-4 bg-muted/30" />
+                <TableCell colSpan={3} className="h-4 bg-muted/30" />
               </TableRow>
               <TableRow className="bg-green-50 dark:bg-green-950/20 font-semibold">
                 <TableCell>TOTAL RECEITAS</TableCell>
+                <TableCell className="text-right text-muted-foreground font-mono">-</TableCell>
                 <TableCell className="text-right text-green-600 font-mono">
                   {formatCurrency(dreData?.summary.totalReceitas || 0)}
                 </TableCell>
               </TableRow>
               <TableRow className="bg-red-50 dark:bg-red-950/20 font-semibold">
                 <TableCell>TOTAL DESPESAS</TableCell>
+                <TableCell className="text-right text-muted-foreground font-mono">-</TableCell>
                 <TableCell className="text-right text-red-600 font-mono">
                   ({formatCurrency(dreData?.summary.totalDespesas || 0)})
                 </TableCell>
