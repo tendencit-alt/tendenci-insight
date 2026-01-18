@@ -42,12 +42,13 @@ export function QuickCreateSupplierDialog({
 
     setLoading(true);
     try {
-      // Verify user is authenticated
-      const { data: { user } } = await supabase.auth.getUser();
-      console.log("Current user for supplier creation:", user?.id, user?.email);
+      // Verify user is authenticated using session (cached)
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log("Current session for supplier creation:", session?.user?.id, session?.user?.email);
       
-      if (!user) {
+      if (!session?.user) {
         toast.error("Você precisa estar autenticado para criar fornecedores");
+        setLoading(false);
         return;
       }
       const { data, error } = await supabase
