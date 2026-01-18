@@ -170,12 +170,6 @@ export function ReceivablesTab({ filters }: ReceivablesTabProps) {
             )}
           </CardContent>
         </Card>
-        <Card className="flex items-center justify-center">
-          <Button onClick={() => setCreateOpen(true)} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Nova Conta a Receber
-          </Button>
-        </Card>
       </div>
 
       {/* KPI Cards */}
