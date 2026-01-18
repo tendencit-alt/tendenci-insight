@@ -7985,7 +7985,9 @@ export type Database = {
       }
       calculate_seller_rankings: { Args: never; Returns: undefined }
       can_delete_architects: { Args: never; Returns: boolean }
-      can_delete_master_idea: { Args: never; Returns: boolean }
+      can_delete_master_idea:
+        | { Args: never; Returns: boolean }
+        | { Args: { p_master_idea_id: string }; Returns: boolean }
       check_and_expire_goals: { Args: never; Returns: undefined }
       check_and_move_inactive_architects: { Args: never; Returns: undefined }
       check_and_update_inactive_architects: { Args: never; Returns: undefined }
@@ -8118,50 +8120,84 @@ export type Database = {
           valor_total: number
         }[]
       }
-      get_campaign_evolution: {
-        Args: {
-          p_end_date: string
-          p_start_date: string
-          p_vendedor_id?: string
-        }
-        Returns: {
-          convertidos: number
-          data: string
-          envios: number
-          respostas: number
-        }[]
-      }
-      get_campaign_metrics: {
-        Args: {
-          p_end_date: string
-          p_start_date: string
-          p_vendedor_id?: string
-        }
-        Returns: {
-          taxa_conversao: number
-          taxa_resposta: number
-          total_campanhas: number
-          total_convertidos: number
-          total_envios: number
-          total_respostas: number
-        }[]
-      }
-      get_campaign_vendor_comparison: {
-        Args: {
-          p_end_date: string
-          p_start_date: string
-          p_vendedor_id?: string
-        }
-        Returns: {
-          taxa_conversao: number
-          taxa_resposta: number
-          total_convertidos: number
-          total_envios: number
-          total_respostas: number
-          vendedor_id: string
-          vendedor_nome: string
-        }[]
-      }
+      get_campaign_evolution:
+        | {
+            Args: { p_end_date: string; p_start_date: string }
+            Returns: {
+              conversion_rate: number
+              period_date: string
+              total_deals: number
+              total_leads: number
+              total_value: number
+            }[]
+          }
+        | {
+            Args: {
+              p_end_date: string
+              p_start_date: string
+              p_vendedor_id?: string
+            }
+            Returns: {
+              convertidos: number
+              data: string
+              envios: number
+              respostas: number
+            }[]
+          }
+      get_campaign_metrics:
+        | {
+            Args: { p_end_date: string; p_start_date: string }
+            Returns: {
+              avg_deal_value: number
+              conversion_rate: number
+              total_deals: number
+              total_leads: number
+              total_value: number
+            }[]
+          }
+        | {
+            Args: {
+              p_end_date: string
+              p_start_date: string
+              p_vendedor_id?: string
+            }
+            Returns: {
+              taxa_conversao: number
+              taxa_resposta: number
+              total_campanhas: number
+              total_convertidos: number
+              total_envios: number
+              total_respostas: number
+            }[]
+          }
+      get_campaign_vendor_comparison:
+        | {
+            Args: { p_end_date: string; p_start_date: string }
+            Returns: {
+              conversion_rate: number
+              total_deals: number
+              total_leads: number
+              total_value: number
+              vendor_id: string
+              vendor_name: string
+            }[]
+          }
+        | {
+            Args: {
+              p_end_date: string
+              p_start_date: string
+              p_vendedor_id?: string
+            }
+            Returns: {
+              taxa_conversao: number
+              taxa_resposta: number
+              total_convertidos: number
+              total_envios: number
+              total_respostas: number
+              vendedor_id: string
+              vendedor_nome: string
+            }[]
+          }
       get_current_goals_status: {
         Args: { p_user_id?: string }
         Returns: {
@@ -8207,7 +8243,9 @@ export type Database = {
         Args: { p_phase_id: string }
         Returns: number
       }
-      get_ia_config: { Args: never; Returns: Json }
+      get_ia_config:
+        | { Args: never; Returns: Json }
+        | { Args: { config_key_param: string }; Returns: string }
       get_monthly_goal_records: {
         Args: { p_month?: string; p_vendedor_id?: string }
         Returns: {
@@ -8332,7 +8370,16 @@ export type Database = {
               whatsapp_valido: boolean
             }[]
           }
-      get_seller_goal_stats: { Args: { p_vendedor_id: string }; Returns: Json }
+      get_seller_goal_stats:
+        | {
+            Args: { p_month: number; p_user_id: string; p_year: number }
+            Returns: {
+              current_amount: number
+              goal_amount: number
+              percentage: number
+            }[]
+          }
+        | { Args: { p_vendedor_id: string }; Returns: Json }
       get_seller_performance_by_goal: {
         Args: { p_seller_goal_id: string }
         Returns: Json
