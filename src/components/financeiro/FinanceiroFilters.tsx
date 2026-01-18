@@ -4,12 +4,13 @@ import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { CalendarIcon, Filter, Search, X } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { CalendarIcon, Search, X, ChevronDown, ChevronUp } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 export interface FinanceiroFiltersState {
   dateFrom: Date;
@@ -26,7 +27,7 @@ interface FinanceiroFiltersProps {
 }
 
 export function FinanceiroFilters({ filters, onChange }: FinanceiroFiltersProps) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
 
   const { data: bankAccounts } = useQuery({
     queryKey: ["fin-bank-accounts"],
@@ -113,37 +114,40 @@ export function FinanceiroFilters({ filters, onChange }: FinanceiroFiltersProps)
   };
 
   return (
-    <Popover open={isOpen} onOpenChange={setIsOpen}>
-      <PopoverTrigger asChild>
-        <Button variant="outline" size="sm" className="h-9 gap-2">
-          <Filter className="h-4 w-4" />
-          <span className="hidden md:inline">
-            {format(filters.dateFrom, "dd/MM/yy", { locale: ptBR })} - {format(filters.dateTo, "dd/MM/yy", { locale: ptBR })}
-          </span>
-          <span className="md:hidden">Filtros</span>
-          {activeFiltersCount > 0 && (
-            <Badge variant="secondary" className="h-5 w-5 rounded-full p-0 text-xs">
-              {activeFiltersCount}
-            </Badge>
-          )}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-80" align="end">
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h4 className="font-medium">Filtros</h4>
+    <Card className="sticky top-0 z-10 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
+      <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
+        <div className="flex items-center justify-between p-3 border-b">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium">Filtros</span>
+            <span className="text-xs text-muted-foreground">
+              {format(filters.dateFrom, "dd/MM/yy", { locale: ptBR })} - {format(filters.dateTo, "dd/MM/yy", { locale: ptBR })}
+            </span>
             {activeFiltersCount > 0 && (
-              <Button variant="ghost" size="sm" onClick={clearFilters}>
+              <span className="text-xs text-muted-foreground">
+                (+{activeFiltersCount} filtros ativos)
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            {activeFiltersCount > 0 && (
+              <Button variant="ghost" size="sm" onClick={clearFilters} className="h-7 px-2 text-xs">
                 <X className="mr-1 h-3 w-3" />
                 Limpar
               </Button>
             )}
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </Button>
+            </CollapsibleTrigger>
           </div>
+        </div>
 
-          <div className="space-y-3">
+        <CollapsibleContent>
+          <div className="p-3 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
             {/* Period Presets */}
             <Select onValueChange={handlePresetPeriod}>
-              <SelectTrigger>
+              <SelectTrigger className="h-9">
                 <SelectValue placeholder="Período rápido" />
               </SelectTrigger>
               <SelectContent>
@@ -158,12 +162,14 @@ export function FinanceiroFilters({ filters, onChange }: FinanceiroFiltersProps)
             {/* Date Range */}
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" className="w-full justify-start gap-2">
+                <Button variant="outline" className="h-9 justify-start gap-2 text-sm font-normal">
                   <CalendarIcon className="h-4 w-4" />
-                  {format(filters.dateFrom, "dd/MM/yy", { locale: ptBR })} - {format(filters.dateTo, "dd/MM/yy", { locale: ptBR })}
+                  <span className="truncate">
+                    {format(filters.dateFrom, "dd/MM", { locale: ptBR })} - {format(filters.dateTo, "dd/MM", { locale: ptBR })}
+                  </span>
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
+              <PopoverContent className="w-auto p-0 z-50" align="start">
                 <Calendar
                   mode="range"
                   selected={{ from: filters.dateFrom, to: filters.dateTo }}
@@ -178,21 +184,23 @@ export function FinanceiroFilters({ filters, onChange }: FinanceiroFiltersProps)
               </PopoverContent>
             </Popover>
 
+            {/* Search */}
             <div className="relative">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Buscar descrição..."
+                placeholder="Buscar..."
                 value={filters.search}
                 onChange={(e) => onChange({ ...filters, search: e.target.value })}
-                className="pl-8"
+                className="h-9 pl-8"
               />
             </div>
 
+            {/* Bank Account */}
             <Select
               value={filters.bankAccountId || "all"}
               onValueChange={(value) => onChange({ ...filters, bankAccountId: value === "all" ? null : value })}
             >
-              <SelectTrigger>
+              <SelectTrigger className="h-9">
                 <SelectValue placeholder="Conta Bancária" />
               </SelectTrigger>
               <SelectContent>
@@ -205,11 +213,12 @@ export function FinanceiroFilters({ filters, onChange }: FinanceiroFiltersProps)
               </SelectContent>
             </Select>
 
+            {/* Cost Center */}
             <Select
               value={filters.costCenterId || "all"}
               onValueChange={(value) => onChange({ ...filters, costCenterId: value === "all" ? null : value })}
             >
-              <SelectTrigger>
+              <SelectTrigger className="h-9">
                 <SelectValue placeholder="Centro de Custo" />
               </SelectTrigger>
               <SelectContent>
@@ -222,11 +231,12 @@ export function FinanceiroFilters({ filters, onChange }: FinanceiroFiltersProps)
               </SelectContent>
             </Select>
 
+            {/* Project */}
             <Select
               value={filters.projectId || "all"}
               onValueChange={(value) => onChange({ ...filters, projectId: value === "all" ? null : value })}
             >
-              <SelectTrigger>
+              <SelectTrigger className="h-9">
                 <SelectValue placeholder="Projeto" />
               </SelectTrigger>
               <SelectContent>
@@ -239,8 +249,8 @@ export function FinanceiroFilters({ filters, onChange }: FinanceiroFiltersProps)
               </SelectContent>
             </Select>
           </div>
-        </div>
-      </PopoverContent>
-    </Popover>
+        </CollapsibleContent>
+      </Collapsible>
+    </Card>
   );
 }
