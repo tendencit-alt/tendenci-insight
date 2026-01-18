@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { TrendingUp, TrendingDown, Wallet, PiggyBank, Flame, Calendar } from "lucide-react";
+import { TrendingUp, TrendingDown, Wallet, PiggyBank, Flame } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface FinanceiroKPIsProps {
@@ -56,26 +56,20 @@ export function FinanceiroKPIs({ metrics, isLoading }: FinanceiroKPIsProps) {
       bgColor: (metrics?.resultado || 0) >= 0 ? "bg-green-50" : "bg-red-50",
     },
     {
-      title: "Burn Rate (Mensal)",
+      title: "Consumo / Fôlego",
       value: burnRate * 30,
+      secondaryValue: runway,
       icon: Flame,
-      color: "text-orange-600",
-      bgColor: "bg-orange-50",
-    },
-    {
-      title: "Runway",
-      value: runway,
-      icon: Calendar,
       color: runway > 6 ? "text-green-600" : runway > 3 ? "text-yellow-600" : "text-red-600",
       bgColor: runway > 6 ? "bg-green-50" : runway > 3 ? "bg-yellow-50" : "bg-red-50",
-      isMeses: true,
+      isCombo: true,
     },
   ];
 
   if (isLoading) {
     return (
-      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
-        {[...Array(6)].map((_, i) => (
+      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-5">
+        {[...Array(5)].map((_, i) => (
           <Card key={i}>
             <CardContent className="pt-4">
               <Skeleton className="h-4 w-24 mb-2" />
@@ -88,19 +82,27 @@ export function FinanceiroKPIs({ metrics, isLoading }: FinanceiroKPIsProps) {
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
+    <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-5">
       {kpis.map((kpi, index) => (
         <Card key={index} className="relative overflow-hidden">
           <CardContent className="pt-4">
             <div className="flex items-center justify-between">
               <div className="space-y-1">
                 <p className="text-xs text-muted-foreground font-medium">{kpi.title}</p>
-                <p className={cn("text-xl font-bold", kpi.color)}>
-                  {kpi.isMeses 
-                    ? `${kpi.value} meses` 
-                    : formatCurrency(kpi.value)
-                  }
-                </p>
+                {kpi.isCombo ? (
+                  <div>
+                    <p className="text-sm text-muted-foreground">
+                      {formatCurrency(kpi.value)}/mês
+                    </p>
+                    <p className={cn("text-xl font-bold", kpi.color)}>
+                      {kpi.secondaryValue} meses
+                    </p>
+                  </div>
+                ) : (
+                  <p className={cn("text-xl font-bold", kpi.color)}>
+                    {formatCurrency(kpi.value)}
+                  </p>
+                )}
               </div>
               <div className={cn("p-2 rounded-full", kpi.bgColor)}>
                 <kpi.icon className={cn("h-5 w-5", kpi.color)} />

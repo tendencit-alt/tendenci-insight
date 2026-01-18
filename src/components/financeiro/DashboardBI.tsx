@@ -242,23 +242,12 @@ export function DashboardBI({ filters }: DashboardBIProps) {
       },
       {
         key: "burn" as KPIType,
-        title: "Burn Rate (Mensal)",
+        title: "Consumo / Fôlego",
         value: data.burnRate,
+        secondaryValue: data.runway,
         icon: Flame,
-        // Alert if burn rate is higher than expected (compare to revenue)
-        status: data.burnRate > data.receitas 
-          ? "red" 
-          : data.burnRate > (data.receitas * 0.9) 
-            ? "yellow" 
-            : "green",
-      },
-      {
-        key: "runway" as KPIType,
-        title: "Runway",
-        value: data.runway,
-        isMeses: true,
-        icon: Calendar,
         status: data.runway <= 3 ? "red" : data.runway <= 6 ? "yellow" : "green",
+        isCombo: true,
       },
     ];
   }, [data]);
@@ -411,13 +400,12 @@ export function DashboardBI({ filters }: DashboardBIProps) {
           </div>
         );
       case "burn":
-      case "runway":
         return (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold flex items-center gap-2">
                 <Flame className="h-5 w-5" />
-                Análise de Burn Rate & Runway
+                Análise de Consumo & Fôlego Financeiro
               </h3>
               <Button variant="ghost" size="sm" onClick={() => setSelectedKPI(null)}>
                 <X className="h-4 w-4" />
@@ -426,7 +414,7 @@ export function DashboardBI({ filters }: DashboardBIProps) {
             <div className="grid md:grid-cols-3 gap-4">
               <Card>
                 <CardContent className="pt-4">
-                  <p className="text-sm text-muted-foreground">Despesas Mensais</p>
+                  <p className="text-sm text-muted-foreground">Consumo Mensal</p>
                   <p className="text-2xl font-bold text-red-600">{formatCurrency(data.burnRate)}</p>
                 </CardContent>
               </Card>
@@ -438,7 +426,7 @@ export function DashboardBI({ filters }: DashboardBIProps) {
               </Card>
               <Card>
                 <CardContent className="pt-4">
-                  <p className="text-sm text-muted-foreground">Runway Estimado</p>
+                  <p className="text-sm text-muted-foreground">Fôlego Estimado</p>
                   <p className={cn("text-2xl font-bold", data.runway > 6 ? "text-green-600" : data.runway > 3 ? "text-yellow-600" : "text-red-600")}>
                     {data.runway} meses
                   </p>
@@ -609,12 +597,20 @@ export function DashboardBI({ filters }: DashboardBIProps) {
                     <p className="text-[10px] sm:text-xs text-muted-foreground font-medium truncate">{kpi.title}</p>
                     {getStatusIcon(kpi.status)}
                   </div>
-                  <p className={cn("text-base sm:text-xl font-bold truncate", getTextColor(kpi.status))}>
-                    {kpi.isMeses 
-                      ? `${kpi.value} meses` 
-                      : formatCurrency(kpi.value)
-                    }
-                  </p>
+                  {kpi.isCombo ? (
+                    <div>
+                      <p className="text-xs sm:text-sm text-muted-foreground">
+                        {formatCurrency(kpi.value)}/mês
+                      </p>
+                      <p className={cn("text-base sm:text-xl font-bold", getTextColor(kpi.status))}>
+                        {kpi.secondaryValue} meses
+                      </p>
+                    </div>
+                  ) : (
+                    <p className={cn("text-base sm:text-xl font-bold truncate", getTextColor(kpi.status))}>
+                      {formatCurrency(kpi.value)}
+                    </p>
+                  )}
                   {kpi.meta && (
                     <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
                       Meta: {formatCurrency(kpi.meta)}
