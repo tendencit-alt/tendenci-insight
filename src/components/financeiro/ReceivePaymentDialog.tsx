@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { Loader2 } from "lucide-react";
+import { receivePaymentWithLedgerSync } from "@/lib/financeiroIntegration";
+import { useFinanceiroSync } from "@/hooks/useFinanceiroSync";
 
 interface ReceivePaymentDialogProps {
   open: boolean;
@@ -19,6 +21,7 @@ interface ReceivePaymentDialogProps {
 
 export function ReceivePaymentDialog({ open, onOpenChange, receivable, onSuccess }: ReceivePaymentDialogProps) {
   const [loading, setLoading] = useState(false);
+  const { invalidateReceivables } = useFinanceiroSync();
   const [form, setForm] = useState({
     amount: "",
     receipt_date: format(new Date(), "yyyy-MM-dd"),
@@ -57,48 +60,29 @@ export function ReceivePaymentDialog({ open, onOpenChange, receivable, onSuccess
     setLoading(true);
     try {
       const receiptAmount = parseFloat(form.amount.replace(",", "."));
-      const newReceivedAmount = Number(receivable.received_amount || 0) + receiptAmount;
-      const totalAmount = Number(receivable.amount);
 
-      let newStatus = "PARCIAL";
-      if (newReceivedAmount >= totalAmount) {
-        newStatus = "RECEBIDO";
-      }
-
-      // Update receivable
-      const { error: receivableError } = await supabase
-        .from("fin_receivables")
-        .update({
-          received_amount: newReceivedAmount,
-          status: newStatus,
-          receipt_date: newStatus === "RECEBIDO" ? form.receipt_date : null,
-          bank_account_id: form.bank_account_id,
-        })
-        .eq("id", receivable.id);
-
-      if (receivableError) throw receivableError;
-
-      // Create ledger entry
-      const { error: ledgerError } = await supabase
-        .from("fin_ledger_entries")
-        .insert({
-          type: "RECEITA",
-          description: receivable.description || `Recebimento - ${receivable.customer?.name || "Cliente"}`,
-          amount: receiptAmount,
-          competence_date: receivable.competence_date || form.receipt_date,
-          cash_date: form.receipt_date,
-          bank_account_id: form.bank_account_id,
+      // Use integrated service for receipt
+      await receivePaymentWithLedgerSync(
+        receivable.id,
+        receiptAmount,
+        form.receipt_date,
+        form.bank_account_id,
+        Number(receivable.received_amount || 0),
+        Number(receivable.amount),
+        receivable.ledger_entry_id,
+        {
+          description: receivable.description,
+          customer_id: receivable.customer_id,
+          customer_name: receivable.customer?.name,
+          competence_date: receivable.competence_date,
           chart_account_id: receivable.chart_account_id,
           cost_center_id: receivable.cost_center_id,
           project_id: receivable.project_id,
-          party_id: receivable.customer_id,
-          party_type: "client",
-          status: "PAGO_RECEBIDO",
-        });
-
-      if (ledgerError) throw ledgerError;
+        }
+      );
 
       toast.success("Recebimento registrado com sucesso!");
+      invalidateReceivables(); // Sync all related queries
       onSuccess();
       onOpenChange(false);
     } catch (error: any) {

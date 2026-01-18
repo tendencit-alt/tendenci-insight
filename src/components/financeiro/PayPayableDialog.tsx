@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { Loader2 } from "lucide-react";
+import { payPayableWithLedgerSync } from "@/lib/financeiroIntegration";
+import { useFinanceiroSync } from "@/hooks/useFinanceiroSync";
 
 interface PayPayableDialogProps {
   open: boolean;
@@ -19,6 +21,7 @@ interface PayPayableDialogProps {
 
 export function PayPayableDialog({ open, onOpenChange, payable, onSuccess }: PayPayableDialogProps) {
   const [loading, setLoading] = useState(false);
+  const { invalidatePayables } = useFinanceiroSync();
   const [form, setForm] = useState({
     amount: "",
     payment_date: format(new Date(), "yyyy-MM-dd"),
@@ -57,48 +60,29 @@ export function PayPayableDialog({ open, onOpenChange, payable, onSuccess }: Pay
     setLoading(true);
     try {
       const paymentAmount = parseFloat(form.amount.replace(",", "."));
-      const newPaidAmount = Number(payable.paid_amount || 0) + paymentAmount;
-      const totalAmount = Number(payable.amount);
 
-      let newStatus = "PARCIAL";
-      if (newPaidAmount >= totalAmount) {
-        newStatus = "PAGO";
-      }
-
-      // Update payable
-      const { error: payableError } = await supabase
-        .from("fin_payables")
-        .update({
-          paid_amount: newPaidAmount,
-          status: newStatus,
-          payment_date: newStatus === "PAGO" ? form.payment_date : null,
-          bank_account_id: form.bank_account_id,
-        })
-        .eq("id", payable.id);
-
-      if (payableError) throw payableError;
-
-      // Create ledger entry
-      const { error: ledgerError } = await supabase
-        .from("fin_ledger_entries")
-        .insert({
-          type: "DESPESA",
-          description: payable.description || `Pagamento - ${payable.supplier?.name || "Fornecedor"}`,
-          amount: paymentAmount,
-          competence_date: payable.competence_date || form.payment_date,
-          cash_date: form.payment_date,
-          bank_account_id: form.bank_account_id,
+      // Use integrated service for payment
+      await payPayableWithLedgerSync(
+        payable.id,
+        paymentAmount,
+        form.payment_date,
+        form.bank_account_id,
+        Number(payable.paid_amount || 0),
+        Number(payable.amount),
+        payable.ledger_entry_id,
+        {
+          description: payable.description,
+          supplier_id: payable.supplier_id,
+          supplier_name: payable.supplier?.name,
+          competence_date: payable.competence_date,
           chart_account_id: payable.chart_account_id,
           cost_center_id: payable.cost_center_id,
           project_id: payable.project_id,
-          party_id: payable.supplier_id,
-          party_type: "supplier",
-          status: "PAGO_RECEBIDO",
-        });
-
-      if (ledgerError) throw ledgerError;
+        }
+      );
 
       toast.success("Pagamento registrado com sucesso!");
+      invalidatePayables(); // Sync all related queries
       onSuccess();
       onOpenChange(false);
     } catch (error: any) {
