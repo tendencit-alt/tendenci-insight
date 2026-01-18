@@ -75,6 +75,7 @@ export function ReconcileDialog({
   const [contaBancariaId, setContaBancariaId] = useState("");
   const [chartAccountId, setChartAccountId] = useState("");
   const [vinculo, setVinculo] = useState("");
+  const [jurosAtraso, setJurosAtraso] = useState<number>(0);
 
   // Get unique bank account ids from selected entries
   const bankAccountIds = [...new Set(entries.map((e) => e.bank_account_id).filter(Boolean))];
@@ -164,6 +165,7 @@ export function ReconcileDialog({
       setContaBancariaId("");
       setChartAccountId("");
       setVinculo("");
+      setJurosAtraso(0);
     }
   }, [open]);
 
@@ -220,6 +222,7 @@ export function ReconcileDialog({
         updateData.cash_date = dataPagamento; // Auto date
         updateData.bank_account_id = contaBancariaId;
         updateData.chart_account_id = chartAccountId;
+        updateData.juros_atraso = jurosAtraso || 0;
         // vinculo could be stored in notes or a dedicated field if available
         updateData.notes = notes 
           ? `[Vínculo: ${vinculo}] ${notes}` 
@@ -580,6 +583,25 @@ export function ReconcileDialog({
                         <SelectItem value="outro">Outro</SelectItem>
                       </SelectContent>
                     </Select>
+                  </div>
+
+                  {/* Juros por Atraso */}
+                  <div className="space-y-2">
+                    <Label htmlFor="jurosAtraso">
+                      Juros por Atraso (R$)
+                    </Label>
+                    <Input
+                      id="jurosAtraso"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="0,00"
+                      value={jurosAtraso || ""}
+                      onChange={(e) => setJurosAtraso(parseFloat(e.target.value) || 0)}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Informe se houve cobrança de juros por atraso no pagamento
+                    </p>
                   </div>
                   
                   {/* Document Number */}
