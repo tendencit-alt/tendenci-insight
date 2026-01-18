@@ -459,59 +459,6 @@ export function CashflowTab({ filters }: CashflowTabProps) {
 
   return (
     <div className="space-y-4">
-      {/* KPI Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground">Saldo Inicial</p>
-                <p className="text-xl font-bold font-mono">{formatCurrency(cashflowData?.openingBalance || 0)}</p>
-              </div>
-              <Wallet className="h-8 w-8 text-muted-foreground opacity-50" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground">Entradas</p>
-                <p className="text-xl font-bold text-green-600 font-mono">{formatCurrency(cashflowData?.totalEntradas || 0)}</p>
-              </div>
-              <ArrowUpCircle className="h-8 w-8 text-green-600 opacity-50" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground">Saídas</p>
-                <p className="text-xl font-bold text-red-600 font-mono">{formatCurrency(cashflowData?.totalSaidas || 0)}</p>
-              </div>
-              <ArrowDownCircle className="h-8 w-8 text-red-600 opacity-50" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground">Saldo Final</p>
-                <p className={cn(
-                  "text-xl font-bold font-mono",
-                  (cashflowData?.closingBalance || 0) >= 0 ? "text-green-600" : "text-red-600"
-                )}>
-                  {formatCurrency(cashflowData?.closingBalance || 0)}
-                </p>
-              </div>
-              <TrendingUp className="h-8 w-8 text-primary opacity-50" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
@@ -566,30 +513,69 @@ export function CashflowTab({ filters }: CashflowTabProps) {
                   ({formatCurrency(cashflowData?.totalSaidas || 0)})
                 </TableCell>
               </TableRow>
-              <TableRow className="bg-primary/10 font-bold">
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <Wallet className="h-4 w-4" />
-                    SALDO FINAL DO PERÍODO
-                  </div>
-                </TableCell>
-                <TableCell className="text-right p-2">
-                  <div className={cn(
-                    "inline-flex items-center justify-end px-3 py-1.5 rounded-md font-bold font-mono text-sm",
-                    "bg-white dark:bg-slate-900 shadow-sm border",
-                    (cashflowData?.closingBalance || 0) >= 0 
-                      ? "border-green-300 dark:border-green-700 text-green-700 dark:text-green-400" 
-                      : "border-red-300 dark:border-red-700 text-red-700 dark:text-red-400"
-                  )}>
-                    {(cashflowData?.closingBalance || 0) >= 0 ? "▲ " : "▼ "}
-                    {formatCurrency(Math.abs(cashflowData?.closingBalance || 0))}
-                  </div>
-                </TableCell>
-              </TableRow>
             </TableBody>
           </Table>
         </CardContent>
       </Card>
+
+      {/* KPI Cards - After table */}
+      <div className="grid gap-4 md:grid-cols-4">
+        <Card>
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Saldo Inicial</p>
+                <p className="text-xl font-bold font-mono">{formatCurrency(cashflowData?.openingBalance || 0)}</p>
+              </div>
+              <Wallet className="h-8 w-8 text-muted-foreground opacity-50" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Entradas</p>
+                <p className="text-xl font-bold text-green-600 font-mono">{formatCurrency(cashflowData?.totalEntradas || 0)}</p>
+              </div>
+              <ArrowUpCircle className="h-8 w-8 text-green-600 opacity-50" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Saídas</p>
+                <p className="text-xl font-bold text-red-600 font-mono">{formatCurrency(cashflowData?.totalSaidas || 0)}</p>
+              </div>
+              <ArrowDownCircle className="h-8 w-8 text-red-600 opacity-50" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card className={cn(
+          "border-2",
+          (cashflowData?.closingBalance || 0) >= 0 
+            ? "border-green-300 dark:border-green-700" 
+            : "border-red-300 dark:border-red-700"
+        )}>
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Saldo Final</p>
+                <p className={cn(
+                  "text-xl font-bold font-mono",
+                  (cashflowData?.closingBalance || 0) >= 0 ? "text-green-600" : "text-red-600"
+                )}>
+                  {(cashflowData?.closingBalance || 0) >= 0 ? "▲ " : "▼ "}
+                  {formatCurrency(cashflowData?.closingBalance || 0)}
+                </p>
+              </div>
+              <TrendingUp className="h-8 w-8 text-primary opacity-50" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
