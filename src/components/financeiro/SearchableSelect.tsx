@@ -50,7 +50,7 @@ export function SearchableSelect({
   }, [options, value]);
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={setOpen} modal={true}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
@@ -70,7 +70,12 @@ export function SearchableSelect({
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+      <PopoverContent 
+        className="w-[--radix-popover-trigger-width] p-0 z-[9999] bg-popover border shadow-lg" 
+        align="start"
+        sideOffset={4}
+        style={{ pointerEvents: 'auto' }}
+      >
         <Command>
           <CommandInput placeholder={searchPlaceholder} />
           <CommandList className="max-h-[300px] overflow-y-auto">
