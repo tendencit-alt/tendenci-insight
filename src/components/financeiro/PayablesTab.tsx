@@ -7,11 +7,17 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, CreditCard, AlertTriangle, Clock, CheckCircle, ArrowDownCircle } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Plus, CreditCard, AlertTriangle, Clock, CheckCircle, ArrowDownCircle, Trash2, Edit, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { CreatePayableDialog } from "./CreatePayableDialog";
 import { PayPayableDialog } from "./PayPayableDialog";
+import { toast } from "sonner";
 
 interface PayablesTabProps {
   filters: FinanceiroFiltersState;
@@ -21,6 +27,13 @@ export function PayablesTab({ filters }: PayablesTabProps) {
   const [createOpen, setCreateOpen] = useState(false);
   const [payDialogOpen, setPayDialogOpen] = useState(false);
   const [selectedPayable, setSelectedPayable] = useState<any>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkEditOpen, setBulkEditOpen] = useState(false);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [bulkLoading, setBulkLoading] = useState(false);
+  const [bulkEditForm, setBulkEditForm] = useState({
+    status: "",
+  });
 
   const { data: payables, isLoading, refetch } = useQuery({
     queryKey: ["fin-payables", filters],
@@ -113,6 +126,8 @@ export function PayablesTab({ filters }: PayablesTabProps) {
         return <Badge className="bg-green-600 gap-1"><CheckCircle className="h-3 w-3" /> Pago</Badge>;
       case "PARCIAL":
         return <Badge variant="secondary" className="gap-1">Parcial</Badge>;
+      case "CANCELADO":
+        return <Badge variant="outline" className="gap-1 text-muted-foreground">Cancelado</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -125,6 +140,72 @@ export function PayablesTab({ filters }: PayablesTabProps) {
   const handlePay = (payable: any) => {
     setSelectedPayable(payable);
     setPayDialogOpen(true);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === payables?.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(payables?.map(p => p.id) || []));
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const handleBulkEdit = async () => {
+    if (!bulkEditForm.status) {
+      toast.error("Selecione um status");
+      return;
+    }
+
+    setBulkLoading(true);
+    try {
+      const { error } = await supabase
+        .from("fin_payables")
+        .update({ status: bulkEditForm.status })
+        .in("id", Array.from(selectedIds));
+
+      if (error) throw error;
+
+      toast.success(`${selectedIds.size} contas atualizadas com sucesso`);
+      setSelectedIds(new Set());
+      setBulkEditOpen(false);
+      setBulkEditForm({ status: "" });
+      refetch();
+    } catch (error: any) {
+      toast.error("Erro ao atualizar: " + error.message);
+    } finally {
+      setBulkLoading(false);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    setBulkLoading(true);
+    try {
+      const { error } = await supabase
+        .from("fin_payables")
+        .delete()
+        .in("id", Array.from(selectedIds));
+
+      if (error) throw error;
+
+      toast.success(`${selectedIds.size} contas excluídas com sucesso`);
+      setSelectedIds(new Set());
+      setBulkDeleteOpen(false);
+      refetch();
+    } catch (error: any) {
+      toast.error("Erro ao excluir: " + error.message);
+    } finally {
+      setBulkLoading(false);
+    }
   };
 
   return (
@@ -218,6 +299,22 @@ export function PayablesTab({ filters }: PayablesTabProps) {
         </Card>
       </div>
 
+      {/* Bulk Actions */}
+      {selectedIds.size > 0 && (
+        <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
+          <span className="text-sm font-medium">{selectedIds.size} selecionado(s)</span>
+          <div className="flex-1" />
+          <Button variant="outline" size="sm" onClick={() => setBulkEditOpen(true)} className="gap-2">
+            <Edit className="h-4 w-4" />
+            Alterar Status
+          </Button>
+          <Button variant="destructive" size="sm" onClick={() => setBulkDeleteOpen(true)} className="gap-2">
+            <Trash2 className="h-4 w-4" />
+            Excluir
+          </Button>
+        </div>
+      )}
+
       {/* Table */}
       <Card>
         <CardHeader className="pb-2">
@@ -237,6 +334,12 @@ export function PayablesTab({ filters }: PayablesTabProps) {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-10">
+                    <Checkbox 
+                      checked={payables?.length > 0 && selectedIds.size === payables?.length}
+                      onCheckedChange={toggleSelectAll}
+                    />
+                  </TableHead>
                   <TableHead>Vencimento</TableHead>
                   <TableHead>Fornecedor</TableHead>
                   <TableHead>Descrição</TableHead>
@@ -249,13 +352,19 @@ export function PayablesTab({ filters }: PayablesTabProps) {
               <TableBody>
                 {payables?.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                       Nenhuma conta a pagar encontrada no período
                     </TableCell>
                   </TableRow>
                 ) : (
                   payables?.map((payable) => (
-                    <TableRow key={payable.id}>
+                    <TableRow key={payable.id} className={selectedIds.has(payable.id) ? "bg-muted/50" : ""}>
+                      <TableCell>
+                        <Checkbox 
+                          checked={selectedIds.has(payable.id)}
+                          onCheckedChange={() => toggleSelect(payable.id)}
+                        />
+                      </TableCell>
                       <TableCell className="font-medium">
                         {format(new Date(payable.due_date), "dd/MM/yyyy", { locale: ptBR })}
                       </TableCell>
@@ -300,6 +409,61 @@ export function PayablesTab({ filters }: PayablesTabProps) {
         payable={selectedPayable}
         onSuccess={refetch}
       />
+
+      {/* Bulk Edit Dialog */}
+      <Dialog open={bulkEditOpen} onOpenChange={setBulkEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Alterar Status em Massa</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <p className="text-sm text-muted-foreground">
+              Você está alterando o status de <strong>{selectedIds.size}</strong> conta(s) a pagar.
+            </p>
+            <div className="space-y-2">
+              <Label>Novo Status</Label>
+              <Select value={bulkEditForm.status} onValueChange={(v) => setBulkEditForm({ status: v })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o status..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ABERTO">Aberto</SelectItem>
+                  <SelectItem value="VENCIDO">Vencido</SelectItem>
+                  <SelectItem value="PAGO">Pago</SelectItem>
+                  <SelectItem value="CANCELADO">Cancelado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBulkEditOpen(false)}>Cancelar</Button>
+            <Button onClick={handleBulkEdit} disabled={bulkLoading}>
+              {bulkLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Aplicar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Delete Dialog */}
+      <AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir contas selecionadas?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Você está prestes a excluir <strong>{selectedIds.size}</strong> conta(s) a pagar.
+              Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {bulkLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Excluir {selectedIds.size} conta(s)
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
