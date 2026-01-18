@@ -3,14 +3,13 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { FinanceiroFiltersState } from "./FinanceiroFilters";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Receipt, AlertTriangle, Clock, CheckCircle, ArrowUpCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Receipt, AlertTriangle, Clock, CheckCircle, ArrowUpCircle, Info } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CreateReceivableDialog } from "./CreateReceivableDialog";
 import { ReceivePaymentDialog } from "./ReceivePaymentDialog";
 
 interface ReceivablesTabProps {
@@ -18,7 +17,6 @@ interface ReceivablesTabProps {
 }
 
 export function ReceivablesTab({ filters }: ReceivablesTabProps) {
-  const [createOpen, setCreateOpen] = useState(false);
   const [receiveDialogOpen, setReceiveDialogOpen] = useState(false);
   const [selectedReceivable, setSelectedReceivable] = useState<any>(null);
 
@@ -170,11 +168,13 @@ export function ReceivablesTab({ filters }: ReceivablesTabProps) {
             )}
           </CardContent>
         </Card>
-        <Card className="flex items-center justify-center">
-          <Button onClick={() => setCreateOpen(true)} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Nova Conta a Receber
-          </Button>
+        <Card className="flex items-center justify-center p-4">
+          <div className="text-center text-sm text-muted-foreground">
+            <Info className="h-5 w-5 mx-auto mb-2" />
+            <p>Para criar novas contas a receber,</p>
+            <p>use a aba <strong>"Lançamentos & Conciliação"</strong></p>
+            <p className="text-xs mt-1">e selecione um cliente ao criar o lançamento</p>
+          </div>
         </Card>
       </div>
 
@@ -293,7 +293,6 @@ export function ReceivablesTab({ filters }: ReceivablesTabProps) {
         </CardContent>
       </Card>
 
-      <CreateReceivableDialog open={createOpen} onOpenChange={setCreateOpen} onSuccess={refetch} />
       <ReceivePaymentDialog 
         open={receiveDialogOpen} 
         onOpenChange={setReceiveDialogOpen} 
