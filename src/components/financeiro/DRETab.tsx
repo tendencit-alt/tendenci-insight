@@ -440,21 +440,12 @@ export function DRETab({ filters }: DRETabProps) {
             ) : (
               <span className="w-4" />
             )}
+            <span className="text-muted-foreground font-mono text-sm">{line.code}</span>
             <span className={cn(
-              "font-mono text-sm",
-              isReceita && "text-green-600",
-              isDespesa && "text-red-600",
-              isResultado && "text-blue-600",
-              isFinanciamento && "text-orange-500"
-            )}>{line.code}</span>
-            <span className={cn(
-              isReceita && "text-green-700 dark:text-green-500",
-              isDespesa && "text-red-700 dark:text-red-500",
-              isResultado && "text-blue-700 dark:text-blue-400 font-semibold",
-              isFinanciamento && "text-orange-600 dark:text-orange-400"
+              isResultado && "font-semibold"
             )}>{line.name}</span>
             {isResultado && (
-              <span className="text-xs text-blue-500 ml-1">(calculado)</span>
+              <span className="text-xs text-muted-foreground ml-1">(calculado)</span>
             )}
             {hasEntries && !line.hasChildren && (
               <span className="text-xs text-muted-foreground ml-1">
