@@ -232,14 +232,15 @@ export function ViewEditReceivableDialog({ open, onOpenChange, receivable, onSuc
               <Label>Cliente {isEditing && <span className="text-destructive">*</span>}</Label>
               {isEditing ? (
                 <>
-                  <Select value={form.customer_id} onValueChange={(v) => setForm({ ...form, customer_id: v })}>
-                    <SelectTrigger className={cn(errors.customer_id && "border-destructive")}>
-                      <SelectValue placeholder="Selecione..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {clients?.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                  <SearchableSelect
+                    options={(clients || []).map(c => ({ value: c.id, label: c.name }))}
+                    value={form.customer_id}
+                    onChange={(v) => setForm({ ...form, customer_id: v })}
+                    placeholder="Selecione o cliente..."
+                    searchPlaceholder="Buscar cliente..."
+                    emptyMessage="Nenhum cliente encontrado."
+                    className={cn(errors.customer_id && "border-destructive")}
+                  />
                   {errors.customer_id && <p className="text-xs text-destructive flex items-center gap-1"><AlertCircle className="h-3 w-3" />{errors.customer_id}</p>}
                 </>
               ) : (
