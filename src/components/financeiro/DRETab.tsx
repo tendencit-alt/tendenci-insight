@@ -414,11 +414,9 @@ export function DRETab({ filters }: DRETabProps) {
       <TableRow 
         key={line.id}
         className={cn(
-          line.level === 0 && "bg-muted/50 font-semibold",
-          line.level === 0 && line.hasChildren && "font-bold",
-          isResultado && "bg-primary/10 font-bold",
-          isFinanciamento && "bg-blue-50/50 dark:bg-blue-950/20",
-          isCapital && !isResultado && "bg-blue-50/30 dark:bg-blue-950/10"
+          line.level === 0 && !isResultado && "bg-muted/50 font-semibold",
+          line.level === 0 && line.hasChildren && !isResultado && "font-bold",
+          isFinanciamento && "bg-orange-50/50 dark:bg-orange-950/20"
         )}
       >
         <TableCell 
@@ -442,10 +440,21 @@ export function DRETab({ filters }: DRETabProps) {
             ) : (
               <span className="w-4" />
             )}
-            <span className="text-muted-foreground font-mono text-sm">{line.code}</span>
-            <span>{line.name}</span>
+            <span className={cn(
+              "font-mono text-sm",
+              isReceita && "text-green-600",
+              isDespesa && "text-red-600",
+              isResultado && "text-blue-600",
+              isFinanciamento && "text-orange-500"
+            )}>{line.code}</span>
+            <span className={cn(
+              isReceita && "text-green-700 dark:text-green-500",
+              isDespesa && "text-red-700 dark:text-red-500",
+              isResultado && "text-blue-700 dark:text-blue-400 font-semibold",
+              isFinanciamento && "text-orange-600 dark:text-orange-400"
+            )}>{line.name}</span>
             {isResultado && (
-              <span className="text-xs text-muted-foreground ml-1">(calculado)</span>
+              <span className="text-xs text-blue-500 ml-1">(calculado)</span>
             )}
             {hasEntries && !line.hasChildren && (
               <span className="text-xs text-muted-foreground ml-1">
@@ -454,23 +463,32 @@ export function DRETab({ filters }: DRETabProps) {
             )}
           </div>
         </TableCell>
-        <TableCell 
-          className={cn(
-            "text-right font-mono",
-            isReceita && line.value > 0 && "text-green-600",
-            isDespesa && line.value > 0 && "text-red-600",
-            isResultado && line.value >= 0 && "text-green-600 font-bold",
-            isResultado && line.value < 0 && "text-red-600 font-bold",
-            isFinanciamento && line.value > 0 && "text-blue-600",
-            isCapital && !isResultado && "text-blue-600"
-          )}
-        >
-          {isDespesa && line.value > 0 ? (
-            `(${formatCurrency(line.value)})`
-          ) : isCapital && line.code.startsWith("9.2") && line.value > 0 ? (
-            `(${formatCurrency(line.value)})`
+        <TableCell className="text-right p-2">
+          {isResultado ? (
+            // Resultado calculado em caixa branca com destaque
+            <div className={cn(
+              "inline-flex items-center justify-end px-3 py-1.5 rounded-md font-bold font-mono text-sm",
+              "bg-white dark:bg-slate-900 shadow-sm border",
+              line.value >= 0 
+                ? "border-green-300 dark:border-green-700 text-green-700 dark:text-green-400" 
+                : "border-red-300 dark:border-red-700 text-red-700 dark:text-red-400"
+            )}>
+              {line.value >= 0 ? "▲ " : "▼ "}
+              {formatCurrency(Math.abs(line.value))}
+            </div>
           ) : (
-            formatCurrency(line.value)
+            <span className={cn(
+              "font-mono",
+              isReceita && "text-green-600",
+              isDespesa && "text-red-600",
+              isFinanciamento && "text-orange-500"
+            )}>
+              {isDespesa && line.value > 0 ? (
+                `(${formatCurrency(line.value)})`
+              ) : (
+                formatCurrency(line.value)
+              )}
+            </span>
           )}
         </TableCell>
       </TableRow>
@@ -506,7 +524,7 @@ export function DRETab({ filters }: DRETabProps) {
                 "text-right font-mono text-sm",
                 isReceita && "text-green-600/80",
                 isDespesa && "text-red-600/80",
-                isCapital && "text-blue-600/80"
+                isFinanciamento && "text-orange-500/80"
               )}
             >
               {isDespesa ? (
