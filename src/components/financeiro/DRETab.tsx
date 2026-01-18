@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { BarChart3, Download, ChevronRight, ChevronDown } from "lucide-react";
+import { BarChart3, Download, ChevronRight, ChevronDown, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
@@ -23,6 +23,18 @@ interface ChartAccount {
   dre_order: number | null;
 }
 
+interface LedgerEntry {
+  id: string;
+  chart_account_id: string;
+  description: string;
+  amount: number;
+  competence_date: string;
+  cash_date: string | null;
+  document_number: string | null;
+  party_type: string | null;
+  party_id: string | null;
+}
+
 interface DRELine {
   id: string;
   code: string;
@@ -33,6 +45,7 @@ interface DRELine {
   hasChildren: boolean;
   parentId: string | null;
   isCalculated: boolean;
+  entries: LedgerEntry[];
 }
 
 // Numeric sorting for codes
@@ -90,6 +103,7 @@ function flattenTree(
   tree: Map<string | null, ChartAccount[]>,
   accountValues: Map<string, number>,
   calculatedValues: Map<string, number>,
+  entriesByAccount: Map<string, LedgerEntry[]>,
   parentId: string | null,
   level: number,
   lines: DRELine[]
@@ -102,13 +116,15 @@ function flattenTree(
     
     let totalValue: number;
     if (isCalculated) {
-      // Use pre-calculated value for RESULTADO accounts
       totalValue = calculatedValues.get(account.code) || 0;
     } else {
       const directValue = accountValues.get(account.id) || 0;
       const childrenTotal = hasChildren ? calculateTotals(tree, accountValues, account.id) : 0;
       totalValue = directValue + childrenTotal;
     }
+    
+    // Get entries for this account
+    const entries = entriesByAccount.get(account.id) || [];
     
     lines.push({
       id: account.id,
@@ -120,20 +136,22 @@ function flattenTree(
       hasChildren,
       parentId: account.parent_id,
       isCalculated,
+      entries,
     });
     
     if (hasChildren) {
-      flattenTree(tree, accountValues, calculatedValues, account.id, level + 1, lines);
+      flattenTree(tree, accountValues, calculatedValues, entriesByAccount, account.id, level + 1, lines);
     }
   });
 }
 
 export function DRETab({ filters }: DRETabProps) {
   const [expandedAccounts, setExpandedAccounts] = useState<Set<string>>(new Set());
+  const [expandedEntries, setExpandedEntries] = useState<Set<string>>(new Set());
   const queryClient = useQueryClient();
   const dateField = filters.regime === "CAIXA" ? "cash_date" : "competence_date";
 
-  // Subscribe to real-time changes on fin_chart_accounts
+  // Subscribe to real-time changes
   useEffect(() => {
     const channel = supabase
       .channel('dre-chart-accounts-sync')
@@ -161,7 +179,7 @@ export function DRETab({ filters }: DRETabProps) {
       const dateFrom = format(filters.dateFrom, "yyyy-MM-dd");
       const dateTo = format(filters.dateTo, "yyyy-MM-dd");
 
-      // Get ALL chart accounts with in_dre = true, ordered by code
+      // Get ALL chart accounts with in_dre = true
       const { data: chartAccounts } = await supabase
         .from("fin_chart_accounts")
         .select("id, code, name, nature, parent_id, dre_order")
@@ -169,10 +187,10 @@ export function DRETab({ filters }: DRETabProps) {
         .eq("active", true)
         .order("code");
 
-      // Get ledger entries
+      // Get ledger entries with full details
       let query = supabase
         .from("fin_ledger_entries")
-        .select("chart_account_id, amount, type")
+        .select("id, chart_account_id, description, amount, competence_date, cash_date, document_number, party_type, party_id")
         .neq("status", "CANCELADO")
         .gte(dateField, dateFrom)
         .lte(dateField, dateTo)
@@ -187,31 +205,59 @@ export function DRETab({ filters }: DRETabProps) {
 
       const { data: entries } = await query;
 
-      // Calculate values for each account from entries
+      // Group entries by account and calculate values
       const accountValues = new Map<string, number>();
+      const entriesByAccount = new Map<string, LedgerEntry[]>();
+      
       entries?.forEach((entry) => {
         if (entry.chart_account_id) {
+          // Sum values
           const current = accountValues.get(entry.chart_account_id) || 0;
           accountValues.set(entry.chart_account_id, current + Number(entry.amount));
+          
+          // Group entries
+          if (!entriesByAccount.has(entry.chart_account_id)) {
+            entriesByAccount.set(entry.chart_account_id, []);
+          }
+          entriesByAccount.get(entry.chart_account_id)!.push({
+            id: entry.id,
+            chart_account_id: entry.chart_account_id,
+            description: entry.description,
+            amount: Number(entry.amount),
+            competence_date: entry.competence_date,
+            cash_date: entry.cash_date,
+            document_number: entry.document_number,
+            party_type: entry.party_type,
+            party_id: entry.party_id,
+          });
         }
+      });
+
+      // Sort entries by date
+      entriesByAccount.forEach((entries) => {
+        entries.sort((a, b) => {
+          const dateA = filters.regime === "CAIXA" ? a.cash_date : a.competence_date;
+          const dateB = filters.regime === "CAIXA" ? b.cash_date : b.competence_date;
+          return (dateA || '').localeCompare(dateB || '');
+        });
       });
 
       // Build tree
       const tree = buildTree(chartAccounts || []);
 
-      // Calculate totals for root-level operational accounts
-      let totalReceitas = 0;           // Code 1
-      let totalDespesasSobreVenda = 0; // Code 3
-      let totalCMV = 0;                // Code 2
-      let totalDespesasOp = 0;         // Code 5
-      let totalResultadoFinanceiro = 0; // Code 7
-      let totalCapitalEntrada = 0;     // Code 9.1
-      let totalCapitalSaida = 0;       // Code 9.2
+      // Calculate totals for root-level accounts
+      let totalReceitas = 0;
+      let totalDespesasSobreVenda = 0;
+      let totalCMV = 0;
+      let totalDespesasOp = 0;
+      let totalResultadoFinanceiro = 0;
+      let totalCapitalEntrada = 0;
+      let totalCapitalSaida = 0;
 
       const rootAccounts = chartAccounts?.filter(a => !a.parent_id) || [];
       
       rootAccounts.forEach(account => {
-        if (account.nature === "RESULTADO") return; // Skip calculated accounts
+        if (account.nature === "RESULTADO") return;
         
         const directValue = accountValues.get(account.id) || 0;
         const childrenTotal = calculateTotals(tree, accountValues, account.id);
@@ -230,7 +276,6 @@ export function DRETab({ filters }: DRETabProps) {
         } else if (mainCode === 7) {
           totalResultadoFinanceiro += total;
         } else if (mainCode === 9) {
-          // Capital movements - need to check sub-accounts
           const children = tree.get(account.id) || [];
           children.forEach(child => {
             const childValue = accountValues.get(child.id) || 0;
@@ -247,29 +292,21 @@ export function DRETab({ filters }: DRETabProps) {
         }
       });
 
-      // Calculate derived values based on DRE structure
-      // 4 - Margem de Contribuição = Receitas - Despesas sobre Venda - CMV
+      // Calculate derived values
       const margemContribuicao = totalReceitas - totalDespesasSobreVenda - totalCMV;
-      
-      // 6 - Resultado Operacional = Margem de Contribuição - Despesas Operacionais
       const resultadoOperacional = margemContribuicao - totalDespesasOp;
-      
-      // 8 - Resultado Antes do Capital = Resultado Operacional - Resultado Financeiro
       const resultadoAntesCapital = resultadoOperacional - totalResultadoFinanceiro;
-      
-      // 10 - Variação Líquida de Caixa = Resultado Antes do Capital + Capital Entrada - Capital Saída
       const variacaoLiquidaCaixa = resultadoAntesCapital + totalCapitalEntrada - totalCapitalSaida;
 
-      // Map calculated values to their codes
       const calculatedValues = new Map<string, number>();
       calculatedValues.set("4", margemContribuicao);
       calculatedValues.set("6", resultadoOperacional);
       calculatedValues.set("8", resultadoAntesCapital);
       calculatedValues.set("10", variacaoLiquidaCaixa);
 
-      // Flatten tree following exact chart structure
+      // Flatten tree
       const lines: DRELine[] = [];
-      flattenTree(tree, accountValues, calculatedValues, null, 0, lines);
+      flattenTree(tree, accountValues, calculatedValues, entriesByAccount, null, 0, lines);
 
       return {
         lines,
@@ -282,7 +319,6 @@ export function DRETab({ filters }: DRETabProps) {
           resultadoAntesCapital,
           variacaoLiquidaCaixa,
         },
-        chartAccounts: chartAccounts || [],
       };
     },
   });
@@ -299,15 +335,29 @@ export function DRETab({ filters }: DRETabProps) {
     });
   };
 
+  const toggleEntries = (accountId: string) => {
+    setExpandedEntries(prev => {
+      const next = new Set(prev);
+      if (next.has(accountId)) {
+        next.delete(accountId);
+      } else {
+        next.add(accountId);
+      }
+      return next;
+    });
+  };
+
   const expandAll = () => {
     const allParentIds = dreData?.lines
-      .filter(l => l.hasChildren)
+      .filter(l => l.hasChildren || l.entries.length > 0)
       .map(l => l.id) || [];
     setExpandedAccounts(new Set(allParentIds));
+    setExpandedEntries(new Set(allParentIds));
   };
 
   const collapseAll = () => {
     setExpandedAccounts(new Set());
+    setExpandedEntries(new Set());
   };
 
   // Filter visible lines based on expanded state
@@ -317,7 +367,6 @@ export function DRETab({ filters }: DRETabProps) {
     const visible: DRELine[] = [];
     
     dreData.lines.forEach(line => {
-      // Check if any ancestor is collapsed
       let shouldHide = false;
       let currentParentId = line.parentId;
       
@@ -342,18 +391,26 @@ export function DRETab({ filters }: DRETabProps) {
     return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   };
 
+  const formatDate = (dateStr: string) => {
+    return format(new Date(dateStr + 'T12:00:00'), "dd/MM/yyyy");
+  };
+
   const renderLine = (line: DRELine) => {
     const isExpanded = expandedAccounts.has(line.id);
+    const isEntriesExpanded = expandedEntries.has(line.id);
     const isReceita = line.nature === "RECEITA";
     const isDespesa = line.nature === "DESPESA";
     const isResultado = line.nature === "RESULTADO";
     const isFinanciamento = line.nature === "FINANCIAMENTO";
-    
-    // Determine styling based on nature and code
     const mainCode = parseFloat(line.code.split('.')[0]);
     const isCapital = mainCode === 9;
+    const hasEntries = line.entries.length > 0;
+    const canExpand = line.hasChildren || hasEntries;
     
-    return (
+    const rows: JSX.Element[] = [];
+    
+    // Main account row
+    rows.push(
       <TableRow 
         key={line.id}
         className={cn(
@@ -367,11 +424,17 @@ export function DRETab({ filters }: DRETabProps) {
         <TableCell 
           className={cn("cursor-pointer select-none")}
           style={{ paddingLeft: `${(line.level * 24) + 16}px` }}
-          onClick={() => line.hasChildren && toggleExpand(line.id)}
+          onClick={() => {
+            if (line.hasChildren) {
+              toggleExpand(line.id);
+            } else if (hasEntries) {
+              toggleEntries(line.id);
+            }
+          }}
         >
           <div className="flex items-center gap-2">
-            {line.hasChildren ? (
-              isExpanded ? (
+            {canExpand ? (
+              (isExpanded || isEntriesExpanded) ? (
                 <ChevronDown className="h-4 w-4 text-muted-foreground" />
               ) : (
                 <ChevronRight className="h-4 w-4 text-muted-foreground" />
@@ -383,6 +446,11 @@ export function DRETab({ filters }: DRETabProps) {
             <span>{line.name}</span>
             {isResultado && (
               <span className="text-xs text-muted-foreground ml-1">(calculado)</span>
+            )}
+            {hasEntries && !line.hasChildren && (
+              <span className="text-xs text-muted-foreground ml-1">
+                ({line.entries.length} lançamento{line.entries.length !== 1 ? 's' : ''})
+              </span>
             )}
           </div>
         </TableCell>
@@ -407,6 +475,52 @@ export function DRETab({ filters }: DRETabProps) {
         </TableCell>
       </TableRow>
     );
+    
+    // Entry rows (when expanded and no children - leaf accounts)
+    if (isEntriesExpanded && !line.hasChildren && hasEntries) {
+      line.entries.forEach((entry, idx) => {
+        const entryDate = filters.regime === "CAIXA" ? entry.cash_date : entry.competence_date;
+        rows.push(
+          <TableRow 
+            key={`${line.id}-entry-${entry.id}`}
+            className="bg-muted/20 text-sm hover:bg-muted/40"
+          >
+            <TableCell 
+              style={{ paddingLeft: `${((line.level + 1) * 24) + 16}px` }}
+            >
+              <div className="flex items-center gap-3">
+                <FileText className="h-3 w-3 text-muted-foreground" />
+                <span className="text-muted-foreground font-mono text-xs">
+                  {entryDate ? formatDate(entryDate) : '-'}
+                </span>
+                <span className="text-foreground/80">{entry.description}</span>
+                {entry.document_number && (
+                  <span className="text-xs text-muted-foreground">
+                    Doc: {entry.document_number}
+                  </span>
+                )}
+              </div>
+            </TableCell>
+            <TableCell 
+              className={cn(
+                "text-right font-mono text-sm",
+                isReceita && "text-green-600/80",
+                isDespesa && "text-red-600/80",
+                isCapital && "text-blue-600/80"
+              )}
+            >
+              {isDespesa ? (
+                `(${formatCurrency(entry.amount)})`
+              ) : (
+                formatCurrency(entry.amount)
+              )}
+            </TableCell>
+          </TableRow>
+        );
+      });
+    }
+    
+    return rows;
   };
 
   if (isLoading) {
@@ -429,7 +543,7 @@ export function DRETab({ filters }: DRETabProps) {
             Demonstração do Resultado do Exercício (DRE)
           </h2>
           <p className="text-sm text-muted-foreground">
-            {filters.regime === "CAIXA" ? "Regime de Caixa" : "Regime de Competência"} - Estrutura fiel ao Plano de Contas
+            {filters.regime === "CAIXA" ? "Regime de Caixa" : "Regime de Competência"} - Clique para expandir e ver lançamentos
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -456,7 +570,7 @@ export function DRETab({ filters }: DRETabProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {visibleLines.map(renderLine)}
+              {visibleLines.map(line => renderLine(line))}
               
               {/* Summary footer */}
               <TableRow>
