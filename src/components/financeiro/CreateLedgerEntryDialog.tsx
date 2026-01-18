@@ -12,13 +12,15 @@ import { SearchableSelect } from "./SearchableSelect";
 import { CurrencyInput, parseCurrencyToNumber } from "@/components/ui/currency-input";
 import { toast } from "sonner";
 import { format, addDays, addWeeks, addMonths, addYears } from "date-fns";
-import { Loader2, Repeat, Info } from "lucide-react";
+import { Loader2, Repeat, Info, Link2 } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useFinanceiroSync } from "@/hooks/useFinanceiroSync";
+import { createLedgerEntryWithIntegration } from "@/lib/financeiroIntegration";
 
 interface CreateLedgerEntryDialogProps {
   open: boolean;
@@ -28,6 +30,7 @@ interface CreateLedgerEntryDialogProps {
 
 export function CreateLedgerEntryDialog({ open, onOpenChange, onSuccess }: CreateLedgerEntryDialogProps) {
   const [loading, setLoading] = useState(false);
+  const { invalidateLedger } = useFinanceiroSync();
   const [form, setForm] = useState({
     type: "DESPESA",
     description: "",
@@ -45,6 +48,11 @@ export function CreateLedgerEntryDialog({ open, onOpenChange, onSuccess }: Creat
     is_recurring: false,
     recurrence_type: "monthly" as "daily" | "weekly" | "monthly" | "yearly",
     recurrence_count: 12,
+    // Integration fields
+    create_linked_record: false,
+    party_id: "",
+    party_type: "" as "" | "supplier" | "client",
+    due_date: format(new Date(), "yyyy-MM-dd"),
   });
 
   const { data: bankAccounts } = useQuery({
@@ -90,6 +98,30 @@ export function CreateLedgerEntryDialog({ open, onOpenChange, onSuccess }: Creat
         .from("fin_projects")
         .select("id, name")
         .eq("status", "ativo")
+        .order("name");
+      return data || [];
+    },
+  });
+
+  // Fetch suppliers for linking
+  const { data: suppliers } = useQuery({
+    queryKey: ["suppliers-ledger"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("suppliers")
+        .select("id, name")
+        .order("name");
+      return data || [];
+    },
+  });
+
+  // Fetch clients for linking
+  const { data: clients } = useQuery({
+    queryKey: ["clients-ledger"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("clients")
+        .select("id, name")
         .order("name");
       return data || [];
     },
@@ -155,68 +187,81 @@ export function CreateLedgerEntryDialog({ open, onOpenChange, onSuccess }: Creat
       return;
     }
 
+    // Validate linked record fields
+    if (form.create_linked_record) {
+      if (!form.party_id) {
+        toast.error(form.type === "DESPESA" ? "Selecione um Fornecedor" : "Selecione um Cliente");
+        return;
+      }
+      if (!form.due_date) {
+        toast.error("Informe a Data de Vencimento");
+        return;
+      }
+    }
+
     setLoading(true);
     try {
-      const baseEntry = {
-        type: form.type,
-        description: form.description,
-        amount: parseCurrencyToNumber(form.amount),
-        competence_date: form.competence_date,
-        cash_date: form.cash_date || null,
-        bank_account_id: form.bank_account_id || null,
-        chart_account_id: form.chart_account_id || null,
-        cost_center_id: form.cost_center_id || null,
-        project_id: form.project_id || null,
-        payment_method: form.payment_method || null,
-        document_number: form.document_number || null,
-        notes: form.notes || null,
-        status: form.cash_date ? "PAGO_RECEBIDO" : "ABERTO",
-        is_recurring: form.is_recurring,
-        recurrence_type: form.is_recurring ? form.recurrence_type : null,
-        recurrence_count: form.is_recurring ? form.recurrence_count : null,
-      };
-
       if (form.is_recurring && form.recurrence_count > 1) {
-        // Create the parent entry first
-        const { data: parentEntry, error: parentError } = await supabase
-          .from("fin_ledger_entries")
-          .insert(baseEntry)
-          .select("id")
-          .single();
-
-        if (parentError) throw parentError;
-
-        // Create child entries for the remaining occurrences
-        const childEntries = [];
-        for (let i = 1; i < form.recurrence_count; i++) {
+        // Create recurring entries with integration
+        for (let i = 0; i < form.recurrence_count; i++) {
           const nextCompetenceDate = calculateNextDate(form.competence_date, form.recurrence_type, i);
           const nextCashDate = form.cash_date ? calculateNextDate(form.cash_date, form.recurrence_type, i) : null;
-          
-          childEntries.push({
-            ...baseEntry,
-            competence_date: nextCompetenceDate,
-            cash_date: nextCashDate,
-            parent_entry_id: parentEntry.id,
-            document_number: form.document_number ? `${form.document_number} (${i + 1}/${form.recurrence_count})` : null,
-            installment_number: i + 1,
-            total_installments: form.recurrence_count,
-            status: "ABERTO", // Child entries are always open initially
-          });
-        }
+          const nextDueDate = form.create_linked_record ? calculateNextDate(form.due_date, form.recurrence_type, i) : undefined;
 
-        if (childEntries.length > 0) {
-          const { error: childError } = await supabase.from("fin_ledger_entries").insert(childEntries);
-          if (childError) throw childError;
+          await createLedgerEntryWithIntegration(
+            {
+              type: form.type,
+              description: form.description,
+              amount: parseCurrencyToNumber(form.amount),
+              competence_date: nextCompetenceDate,
+              cash_date: nextCashDate,
+              bank_account_id: form.bank_account_id || null,
+              chart_account_id: form.chart_account_id || null,
+              cost_center_id: form.cost_center_id || null,
+              project_id: form.project_id || null,
+              payment_method: form.payment_method || null,
+              document_number: form.document_number ? `${form.document_number} (${i + 1}/${form.recurrence_count})` : null,
+              notes: form.notes || null,
+              party_id: form.create_linked_record ? form.party_id : null,
+              party_type: form.create_linked_record ? form.party_type : null,
+            },
+            form.create_linked_record,
+            nextDueDate
+          );
         }
-
         toast.success(`${form.recurrence_count} lançamentos criados com sucesso!`);
       } else {
-        // Single entry
-        const { error } = await supabase.from("fin_ledger_entries").insert(baseEntry);
-        if (error) throw error;
-        toast.success("Lançamento criado com sucesso!");
+        // Single entry with integration
+        await createLedgerEntryWithIntegration(
+          {
+            type: form.type,
+            description: form.description,
+            amount: parseCurrencyToNumber(form.amount),
+            competence_date: form.competence_date,
+            cash_date: form.cash_date || null,
+            bank_account_id: form.bank_account_id || null,
+            chart_account_id: form.chart_account_id || null,
+            cost_center_id: form.cost_center_id || null,
+            project_id: form.project_id || null,
+            payment_method: form.payment_method || null,
+            document_number: form.document_number || null,
+            notes: form.notes || null,
+            party_id: form.create_linked_record ? form.party_id : null,
+            party_type: form.create_linked_record ? form.party_type : null,
+          },
+          form.create_linked_record,
+          form.due_date
+        );
+        
+        if (form.create_linked_record) {
+          const linkedType = form.type === "DESPESA" ? "Conta a Pagar" : "Conta a Receber";
+          toast.success(`Lançamento e ${linkedType} criados com sucesso!`);
+        } else {
+          toast.success("Lançamento criado com sucesso!");
+        }
       }
 
+      invalidateLedger();
       onSuccess();
       onOpenChange(false);
       setForm({
@@ -235,6 +280,10 @@ export function CreateLedgerEntryDialog({ open, onOpenChange, onSuccess }: Creat
         is_recurring: false,
         recurrence_type: "monthly",
         recurrence_count: 12,
+        create_linked_record: false,
+        party_id: "",
+        party_type: "",
+        due_date: format(new Date(), "yyyy-MM-dd"),
       });
     } catch (error: any) {
       toast.error("Erro ao criar lançamento: " + error.message);
@@ -389,6 +438,74 @@ export function CreateLedgerEntryDialog({ open, onOpenChange, onSuccess }: Creat
               </div>
             )}
           </div>
+
+          {/* Integration Section - Create linked Payable/Receivable */}
+          {(form.type === "DESPESA" || form.type === "RECEITA") && (
+            <div className="border rounded-lg p-4 space-y-4 bg-muted/30">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Link2 className="h-4 w-4 text-muted-foreground" />
+                  <Label htmlFor="create_linked_record" className="font-medium">
+                    Criar {form.type === "DESPESA" ? "Conta a Pagar" : "Conta a Receber"}
+                  </Label>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-[250px] text-xs">
+                        <p>Ao ativar, será criada automaticamente uma {form.type === "DESPESA" ? "conta a pagar" : "conta a receber"} vinculada a este lançamento.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                <Switch
+                  id="create_linked_record"
+                  checked={form.create_linked_record}
+                  onCheckedChange={(checked) => setForm({ 
+                    ...form, 
+                    create_linked_record: checked,
+                    party_type: checked ? (form.type === "DESPESA" ? "supplier" : "client") : ""
+                  })}
+                />
+              </div>
+
+              {form.create_linked_record && (
+                <div className="grid grid-cols-2 gap-4 pt-2">
+                  <div className="space-y-2">
+                    <Label>{form.type === "DESPESA" ? "Fornecedor *" : "Cliente *"}</Label>
+                    <Select 
+                      value={form.party_id} 
+                      onValueChange={(v) => setForm({ ...form, party_id: v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {form.type === "DESPESA" 
+                          ? suppliers?.map((s) => (
+                              <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                            ))
+                          : clients?.map((c) => (
+                              <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                            ))
+                        }
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Data de Vencimento *</Label>
+                    <Input
+                      type="date"
+                      value={form.due_date}
+                      onChange={(e) => setForm({ ...form, due_date: e.target.value })}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
