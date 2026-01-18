@@ -15,13 +15,15 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
-import { Plus, CreditCard, Receipt, AlertTriangle, Clock, CheckCircle, ArrowDownCircle, ArrowUpCircle, Landmark, TrendingUp, TrendingDown, ArrowUpDown, ArrowUp, ArrowDown, Filter, X, Edit, Trash2, Loader2 } from "lucide-react";
+import { Plus, CreditCard, Receipt, AlertTriangle, Clock, CheckCircle, ArrowDownCircle, ArrowUpCircle, Landmark, TrendingUp, TrendingDown, ArrowUpDown, ArrowUp, ArrowDown, Filter, X, Edit, Trash2, Loader2, Eye } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { CreatePayableDialog } from "./CreatePayableDialog";
 import { PayPayableDialog } from "./PayPayableDialog";
 import { CreateReceivableDialog } from "./CreateReceivableDialog";
 import { ReceivePaymentDialog } from "./ReceivePaymentDialog";
+import { ViewEditPayableDialog } from "./ViewEditPayableDialog";
+import { ViewEditReceivableDialog } from "./ViewEditReceivableDialog";
 import { toast } from "sonner";
 import { useFinanceiroSync } from "@/hooks/useFinanceiroSync";
 import { bulkUpdatePayablesWithSync, bulkDeletePayablesWithSync, bulkUpdateReceivablesWithSync, bulkDeleteReceivablesWithSync } from "@/lib/financeiroIntegration";
@@ -62,6 +64,12 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
   const [selectedPayable, setSelectedPayable] = useState<any>(null);
   const [selectedReceivable, setSelectedReceivable] = useState<any>(null);
   const { invalidatePayables, invalidateReceivables } = useFinanceiroSync();
+
+  // View/Edit dialog states
+  const [viewEditPayableOpen, setViewEditPayableOpen] = useState(false);
+  const [viewEditPayableMode, setViewEditPayableMode] = useState<"view" | "edit">("view");
+  const [viewEditReceivableOpen, setViewEditReceivableOpen] = useState(false);
+  const [viewEditReceivableMode, setViewEditReceivableMode] = useState<"view" | "edit">("view");
 
   // Payables selection and sorting
   const [selectedPayableIds, setSelectedPayableIds] = useState<Set<string>>(new Set());
@@ -363,6 +371,10 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
 
   const handlePay = (payable: any) => { setSelectedPayable(payable); setPayDialogOpen(true); };
   const handleReceive = (receivable: any) => { setSelectedReceivable(receivable); setReceiveDialogOpen(true); };
+  const handleViewPayable = (payable: any) => { setSelectedPayable(payable); setViewEditPayableMode("view"); setViewEditPayableOpen(true); };
+  const handleEditPayable = (payable: any) => { setSelectedPayable(payable); setViewEditPayableMode("edit"); setViewEditPayableOpen(true); };
+  const handleViewReceivable = (receivable: any) => { setSelectedReceivable(receivable); setViewEditReceivableMode("view"); setViewEditReceivableOpen(true); };
+  const handleEditReceivable = (receivable: any) => { setSelectedReceivable(receivable); setViewEditReceivableMode("edit"); setViewEditReceivableOpen(true); };
 
   // Payable selection handlers
   const togglePayableSelectAll = () => {
@@ -775,9 +787,19 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
                           </TableCell>
                           <TableCell>{getPayableStatusBadge(payable.status)}</TableCell>
                           <TableCell>
-                            {payable.status !== "PAGO" && (
-                              <Button variant="outline" size="sm" className="text-xs h-7 px-2" onClick={() => handlePay(payable)}>Pagar</Button>
-                            )}
+                            <div className="flex items-center gap-1">
+                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleViewPayable(payable)} title="Visualizar">
+                                <Eye className="h-3.5 w-3.5" />
+                              </Button>
+                              {payable.status !== "PAGO" && (
+                                <>
+                                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleEditPayable(payable)} title="Editar">
+                                    <Edit className="h-3.5 w-3.5" />
+                                  </Button>
+                                  <Button variant="outline" size="sm" className="text-xs h-7 px-2" onClick={() => handlePay(payable)}>Pagar</Button>
+                                </>
+                              )}
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))
@@ -881,9 +903,19 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
                           </TableCell>
                           <TableCell>{getReceivableStatusBadge(receivable.status)}</TableCell>
                           <TableCell>
-                            {receivable.status !== "RECEBIDO" && (
-                              <Button variant="outline" size="sm" className="text-xs h-7 px-2" onClick={() => handleReceive(receivable)}>Receber</Button>
-                            )}
+                            <div className="flex items-center gap-1">
+                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleViewReceivable(receivable)} title="Visualizar">
+                                <Eye className="h-3.5 w-3.5" />
+                              </Button>
+                              {receivable.status !== "RECEBIDO" && (
+                                <>
+                                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleEditReceivable(receivable)} title="Editar">
+                                    <Edit className="h-3.5 w-3.5" />
+                                  </Button>
+                                  <Button variant="outline" size="sm" className="text-xs h-7 px-2" onClick={() => handleReceive(receivable)}>Receber</Button>
+                                </>
+                              )}
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))
@@ -901,6 +933,8 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
       <PayPayableDialog open={payDialogOpen} onOpenChange={setPayDialogOpen} payable={selectedPayable} onSuccess={refetchPayables} />
       <CreateReceivableDialog open={createReceivableOpen} onOpenChange={setCreateReceivableOpen} onSuccess={refetchReceivables} />
       <ReceivePaymentDialog open={receiveDialogOpen} onOpenChange={setReceiveDialogOpen} receivable={selectedReceivable} onSuccess={refetchReceivables} />
+      <ViewEditPayableDialog open={viewEditPayableOpen} onOpenChange={setViewEditPayableOpen} payable={selectedPayable} onSuccess={refetchPayables} mode={viewEditPayableMode} />
+      <ViewEditReceivableDialog open={viewEditReceivableOpen} onOpenChange={setViewEditReceivableOpen} receivable={selectedReceivable} onSuccess={refetchReceivables} mode={viewEditReceivableMode} />
 
       {/* Payable Bulk Edit Dialog */}
       <Dialog open={payableBulkEditOpen} onOpenChange={setPayableBulkEditOpen}>
