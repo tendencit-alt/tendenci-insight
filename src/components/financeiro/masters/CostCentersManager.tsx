@@ -92,6 +92,8 @@ export function CostCentersManager() {
     }
   };
 
+  const sortedCenters = useMemo(() => numericCodeSort(centers || [], 'code'), [centers]);
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -122,7 +124,7 @@ export function CostCentersManager() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {useMemo(() => numericCodeSort(centers || [], 'code'), [centers]).map((center) => (
+              {sortedCenters.map((center) => (
                 <TableRow key={center.id}>
                   <TableCell className="font-medium">{center.code || "-"}</TableCell>
                   <TableCell>{center.name}</TableCell>
