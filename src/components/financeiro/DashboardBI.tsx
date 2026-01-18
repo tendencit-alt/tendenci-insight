@@ -167,24 +167,26 @@ export function DashboardBI({ filters }: DashboardBIProps) {
     },
   });
 
-  // Determine KPI status (green/yellow/red)
-  const getKPIStatus = (value: number, meta: number, inverse = false) => {
-    const ratio = value / meta;
-    if (inverse) {
-      // For expenses: lower is better
-      if (ratio <= 0.9) return "green";
-      if (ratio <= 1.0) return "yellow";
-      return "red";
-    } else {
-      // For revenue/result: higher is better
-      if (ratio >= 1.0) return "green";
-      if (ratio >= 0.85) return "yellow";
-      return "red";
+  // Determine KPI status based on value positivity and alert threshold
+  // Green = positive, Red = negative, Yellow = close to becoming negative (within 15% of zero)
+  const getValueStatus = (value: number, alertThreshold?: number) => {
+    if (value < 0) return "red";
+    
+    // If there's a threshold, check if we're close to it
+    if (alertThreshold !== undefined && value <= alertThreshold) {
+      return "yellow";
     }
+    
+    if (value > 0) return "green";
+    return "neutral";
   };
 
   const kpis = useMemo(() => {
     if (!data) return [];
+
+    // Alert thresholds (15% of total for most metrics)
+    const receitaAlertThreshold = data.metas.receitas * 0.85;
+    const despesaAlertThreshold = data.metas.despesas * 1.15; // For despesas, alert when getting too high
     
     return [
       {
@@ -192,7 +194,12 @@ export function DashboardBI({ filters }: DashboardBIProps) {
         title: "Saldo Consolidado",
         value: data.saldoAtual,
         icon: Wallet,
-        status: data.saldoAtual >= 0 ? "green" : "red",
+        // Alert when saldo is positive but below 15% of initial + expected result
+        status: data.saldoAtual < 0 
+          ? "red" 
+          : data.saldoAtual < (data.saldoInicial * 0.15) 
+            ? "yellow" 
+            : "green",
       },
       {
         key: "receitas" as KPIType,
@@ -200,7 +207,11 @@ export function DashboardBI({ filters }: DashboardBIProps) {
         value: data.receitas,
         meta: data.metas.receitas,
         icon: TrendingUp,
-        status: getKPIStatus(data.receitas, data.metas.receitas),
+        status: data.receitas >= data.metas.receitas 
+          ? "green" 
+          : data.receitas >= receitaAlertThreshold 
+            ? "yellow" 
+            : "red",
       },
       {
         key: "despesas" as KPIType,
@@ -208,7 +219,12 @@ export function DashboardBI({ filters }: DashboardBIProps) {
         value: data.despesas,
         meta: data.metas.despesas,
         icon: TrendingDown,
-        status: getKPIStatus(data.despesas, data.metas.despesas, true),
+        // For expenses: green if under meta, yellow if close to meta, red if over
+        status: data.despesas <= data.metas.despesas 
+          ? "green" 
+          : data.despesas <= despesaAlertThreshold 
+            ? "yellow" 
+            : "red",
       },
       {
         key: "resultado" as KPIType,
@@ -216,14 +232,24 @@ export function DashboardBI({ filters }: DashboardBIProps) {
         value: data.resultado,
         meta: data.metas.resultado,
         icon: PiggyBank,
-        status: getKPIStatus(data.resultado, data.metas.resultado),
+        // Green if positive, red if negative, yellow if close to zero (within 10% of revenue)
+        status: data.resultado < 0 
+          ? "red" 
+          : data.resultado < (data.receitas * 0.05) 
+            ? "yellow" 
+            : "green",
       },
       {
         key: "burn" as KPIType,
         title: "Burn Rate (Mensal)",
         value: data.burnRate,
         icon: Flame,
-        status: "neutral",
+        // Alert if burn rate is higher than expected (compare to revenue)
+        status: data.burnRate > data.receitas 
+          ? "red" 
+          : data.burnRate > (data.receitas * 0.9) 
+            ? "yellow" 
+            : "green",
       },
       {
         key: "runway" as KPIType,
@@ -231,7 +257,7 @@ export function DashboardBI({ filters }: DashboardBIProps) {
         value: data.runway,
         isMeses: true,
         icon: Calendar,
-        status: data.runway > 6 ? "green" : data.runway > 3 ? "yellow" : "red",
+        status: data.runway <= 3 ? "red" : data.runway <= 6 ? "yellow" : "green",
       },
     ];
   }, [data]);
@@ -248,10 +274,10 @@ export function DashboardBI({ filters }: DashboardBIProps) {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "green": return "border-green-500 bg-green-500/10";
-      case "yellow": return "border-yellow-500 bg-yellow-500/10";
-      case "red": return "border-red-500 bg-red-500/10";
-      default: return "border-border";
+      case "green": return "border-green-500/50 bg-green-500/5";
+      case "yellow": return "border-yellow-500/50 bg-yellow-500/5";
+      case "red": return "border-red-500/50 bg-red-500/5";
+      default: return "border-border bg-card";
     }
   };
 
@@ -269,7 +295,16 @@ export function DashboardBI({ filters }: DashboardBIProps) {
       case "green": return "text-green-600";
       case "yellow": return "text-yellow-600";
       case "red": return "text-red-600";
-      default: return "text-foreground";
+      default: return "text-muted-foreground";
+    }
+  };
+
+  const getIconBgColor = (status: string) => {
+    switch (status) {
+      case "green": return "bg-green-500/10";
+      case "yellow": return "bg-yellow-500/10";
+      case "red": return "bg-red-500/10";
+      default: return "bg-muted";
     }
   };
 
@@ -585,8 +620,8 @@ export function DashboardBI({ filters }: DashboardBIProps) {
                     </p>
                   )}
                 </div>
-                <div className={cn("p-2 rounded-full", kpi.status === "green" ? "bg-green-100" : kpi.status === "yellow" ? "bg-yellow-100" : kpi.status === "red" ? "bg-red-100" : "bg-muted")}>
-                  <kpi.icon className={cn("h-5 w-5", getTextColor(kpi.status))} />
+                <div className={cn("p-2 rounded-full", getIconBgColor(kpi.status))}>
+                  <kpi.icon className={cn("h-5 w-5", getTextColor(kpi.status) || "text-muted-foreground")} />
                 </div>
               </div>
             </CardContent>
