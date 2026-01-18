@@ -29,7 +29,7 @@ import {
   Split,
   MoreHorizontal
 } from "lucide-react";
-import { format } from "date-fns";
+import { format, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { CreateLedgerEntryDialog } from "./CreateLedgerEntryDialog";
 import { CreatePayableDialog } from "./CreatePayableDialog";
@@ -163,6 +163,15 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
   const lastImportDate = lastImportData?.created_at 
     ? format(new Date(lastImportData.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })
     : null;
+  
+  // Check if import is overdue (more than 1 day)
+  const isImportOverdue = (() => {
+    if (!lastImportData?.created_at) return true; // Never imported
+    const lastDate = new Date(lastImportData.created_at);
+    const now = new Date();
+    return differenceInDays(now, lastDate) >= 1;
+  })();
+
   const getTypeIcon = (type: string) => {
     switch (type) {
       case "RECEITA":
@@ -451,12 +460,20 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
             </p>
           </CardContent>
         </Card>
-        <Card className="bg-muted/30 col-span-2 md:col-span-4">
+        <Card className={`col-span-2 md:col-span-4 ${isImportOverdue ? 'bg-red-500/10 border-red-500/50' : 'bg-muted/30'}`}>
           <CardContent className="pt-3 pb-3">
-            <p className="text-xs text-muted-foreground">Último Extrato Importado</p>
-            <p className="text-sm font-medium">
+            <p className={`text-xs ${isImportOverdue ? 'text-red-600 font-medium' : 'text-muted-foreground'}`}>
+              Último Extrato Importado
+              {isImportOverdue && <AlertTriangle className="inline h-3 w-3 ml-1" />}
+            </p>
+            <p className={`text-sm font-medium ${isImportOverdue ? 'text-red-600' : ''}`}>
               {lastImportDate ? lastImportDate : "Nenhum extrato importado"}
             </p>
+            {isImportOverdue && (
+              <p className="text-xs text-red-500 mt-1">
+                ⚠️ Importe o extrato atualizado
+              </p>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -465,6 +482,7 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
       <FinanceiroAlerts 
         entries={entries || []} 
         transactions={transactions || []} 
+        lastImportDate={lastImportData?.created_at}
         onNavigateToEntry={(id) => {
           const entry = entries?.find(e => e.id === id);
           if (entry) handleViewAudit(entry);

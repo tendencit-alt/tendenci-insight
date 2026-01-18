@@ -8,13 +8,16 @@ import {
   Calculator, 
   FileQuestion,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Upload
 } from "lucide-react";
 import { useState } from "react";
+import { differenceInDays, differenceInHours } from "date-fns";
 
 interface FinanceiroAlertsProps {
   entries: any[];
   transactions: any[];
+  lastImportDate?: string | null;
   onNavigateToEntry?: (entryId: string) => void;
 }
 
@@ -28,7 +31,7 @@ interface AlertItem {
   items?: { id: string; label: string; value?: string }[];
 }
 
-export function FinanceiroAlerts({ entries, transactions, onNavigateToEntry }: FinanceiroAlertsProps) {
+export function FinanceiroAlerts({ entries, transactions, lastImportDate, onNavigateToEntry }: FinanceiroAlertsProps) {
   const [expandedAlerts, setExpandedAlerts] = useState<Set<string>>(new Set());
 
   const toggleAlert = (alertId: string) => {
@@ -44,6 +47,45 @@ export function FinanceiroAlerts({ entries, transactions, onNavigateToEntry }: F
   // Calculate alerts
   const alerts: AlertItem[] = [];
 
+  // 0. Check if OFX import is overdue (more than 1 day)
+  const isImportOverdue = (() => {
+    if (!lastImportDate) return true; // Never imported
+    const lastDate = new Date(lastImportDate);
+    const now = new Date();
+    const daysDiff = differenceInDays(now, lastDate);
+    return daysDiff >= 1;
+  })();
+
+  const getImportOverdueMessage = () => {
+    if (!lastImportDate) {
+      return "Nenhum extrato OFX foi importado ainda. Importe o extrato bancário para manter os dados atualizados.";
+    }
+    const lastDate = new Date(lastImportDate);
+    const now = new Date();
+    const daysDiff = differenceInDays(now, lastDate);
+    const hoursDiff = differenceInHours(now, lastDate);
+    
+    if (daysDiff === 1) {
+      return `Último extrato importado há 1 dia. Importe o extrato atualizado.`;
+    } else if (daysDiff > 1) {
+      return `Último extrato importado há ${daysDiff} dias. Importe o extrato atualizado urgentemente!`;
+    } else if (hoursDiff >= 24) {
+      return `Último extrato importado há mais de 24 horas. Importe o extrato atualizado.`;
+    }
+    return "";
+  };
+
+  if (isImportOverdue) {
+    alerts.push({
+      id: 'import-overdue',
+      type: 'error',
+      category: 'Extrato',
+      title: 'Extrato OFX desatualizado',
+      description: getImportOverdueMessage(),
+      count: 1,
+    });
+  }
+
   // 1. Unreconciled bank transactions
   const unreconciledTransactions = transactions?.filter(t => 
     t.status === 'PENDENTE' || t.status === 'SUGERIDA'
@@ -53,9 +95,9 @@ export function FinanceiroAlerts({ entries, transactions, onNavigateToEntry }: F
     alerts.push({
       id: 'unreconciled-transactions',
       type: 'warning',
-      category: 'Extrato',
-      title: 'Extrato não conciliado',
-      description: `${unreconciledTransactions.length} transação(ões) do extrato bancário ainda não foram conciliadas`,
+      category: 'Conciliação',
+      title: 'Transações pendentes de conciliação',
+      description: `${unreconciledTransactions.length} transação(ões) do extrato bancário aguardando conciliação`,
       count: unreconciledTransactions.length,
       items: unreconciledTransactions.slice(0, 5).map(t => ({
         id: t.id,
@@ -153,7 +195,10 @@ export function FinanceiroAlerts({ entries, transactions, onNavigateToEntry }: F
 
   if (alerts.length === 0) return null;
 
-  const getAlertIcon = (type: string) => {
+  const getAlertIcon = (type: string, alertId?: string) => {
+    if (alertId === 'import-overdue') {
+      return <Upload className="h-4 w-4" />;
+    }
     switch (type) {
       case 'error':
         return <Calculator className="h-4 w-4" />;
@@ -208,7 +253,7 @@ export function FinanceiroAlerts({ entries, transactions, onNavigateToEntry }: F
           <Alert className={getAlertStyles(alert.type)}>
             <div className="flex items-start gap-2">
               <span className={getTextColor(alert.type)}>
-                {getAlertIcon(alert.type)}
+                {getAlertIcon(alert.type, alert.id)}
               </span>
               <div className="flex-1">
                 <AlertTitle className={`${getTextColor(alert.type)} flex items-center justify-between text-sm`}>
