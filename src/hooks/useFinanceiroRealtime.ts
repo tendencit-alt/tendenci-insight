@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -9,109 +9,140 @@ import { supabase } from "@/integrations/supabase/client";
 export function useFinanceiroRealtime() {
   const queryClient = useQueryClient();
 
+  const invalidateFinanceiroQueries = useCallback(() => {
+    console.log("[Realtime] Invalidating all financial queries...");
+    
+    // Force refetch all queries that match the predicate
+    queryClient.invalidateQueries({
+      predicate: (query) => {
+        const key = query.queryKey[0];
+        const shouldInvalidate = typeof key === 'string' && (
+          key.startsWith('fin-') ||
+          key === 'financeiro-summary' ||
+          key === 'suppliers-list' ||
+          key === 'clients-list'
+        );
+        if (shouldInvalidate) {
+          console.log("[Realtime] Invalidating query:", query.queryKey);
+        }
+        return shouldInvalidate;
+      },
+      refetchType: 'all', // Force immediate refetch
+    });
+  }, [queryClient]);
+
   useEffect(() => {
+    console.log("[Realtime] Setting up financeiro realtime subscriptions...");
+    
     // Subscribe to all financial tables for real-time updates
     const channel = supabase
       .channel("financeiro-realtime")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "fin_ledger_entries" },
-        () => {
-          console.log("[Realtime] fin_ledger_entries changed");
+        (payload) => {
+          console.log("[Realtime] fin_ledger_entries changed:", payload.eventType);
           invalidateFinanceiroQueries();
         }
       )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "fin_payables" },
-        () => {
-          console.log("[Realtime] fin_payables changed");
+        (payload) => {
+          console.log("[Realtime] fin_payables changed:", payload.eventType);
           invalidateFinanceiroQueries();
         }
       )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "fin_receivables" },
-        () => {
-          console.log("[Realtime] fin_receivables changed");
+        (payload) => {
+          console.log("[Realtime] fin_receivables changed:", payload.eventType);
           invalidateFinanceiroQueries();
         }
       )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "fin_bank_accounts" },
-        () => {
-          console.log("[Realtime] fin_bank_accounts changed");
+        (payload) => {
+          console.log("[Realtime] fin_bank_accounts changed:", payload.eventType);
           invalidateFinanceiroQueries();
         }
       )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "fin_financial_goals" },
-        () => {
-          console.log("[Realtime] fin_financial_goals changed");
+        (payload) => {
+          console.log("[Realtime] fin_financial_goals changed:", payload.eventType);
           invalidateFinanceiroQueries();
         }
       )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "fin_projects" },
-        () => {
-          console.log("[Realtime] fin_projects changed");
+        (payload) => {
+          console.log("[Realtime] fin_projects changed:", payload.eventType);
           invalidateFinanceiroQueries();
         }
       )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "fin_cost_centers" },
-        () => {
-          console.log("[Realtime] fin_cost_centers changed");
+        (payload) => {
+          console.log("[Realtime] fin_cost_centers changed:", payload.eventType);
           invalidateFinanceiroQueries();
         }
       )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "fin_chart_accounts" },
-        () => {
-          console.log("[Realtime] fin_chart_accounts changed");
+        (payload) => {
+          console.log("[Realtime] fin_chart_accounts changed:", payload.eventType);
+          invalidateFinanceiroQueries();
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "fin_bank_transactions" },
+        (payload) => {
+          console.log("[Realtime] fin_bank_transactions changed:", payload.eventType);
+          invalidateFinanceiroQueries();
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "fin_loan_contracts" },
+        (payload) => {
+          console.log("[Realtime] fin_loan_contracts changed:", payload.eventType);
           invalidateFinanceiroQueries();
         }
       )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "suppliers" },
-        () => {
-          console.log("[Realtime] suppliers changed");
-          queryClient.invalidateQueries({ queryKey: ["suppliers-list"] });
+        (payload) => {
+          console.log("[Realtime] suppliers changed:", payload.eventType);
+          invalidateFinanceiroQueries();
         }
       )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "clients" },
-        () => {
-          console.log("[Realtime] clients changed");
-          queryClient.invalidateQueries({ queryKey: ["clients-list"] });
+        (payload) => {
+          console.log("[Realtime] clients changed:", payload.eventType);
+          invalidateFinanceiroQueries();
         }
       )
-      .subscribe((status) => {
+      .subscribe((status, err) => {
         console.log("[Realtime] Financeiro channel status:", status);
+        if (err) {
+          console.error("[Realtime] Subscription error:", err);
+        }
       });
 
-    function invalidateFinanceiroQueries() {
-      // Invalidate all financial queries (using predicate to match any query starting with these keys)
-      queryClient.invalidateQueries({ predicate: (query) => {
-        const key = query.queryKey[0];
-        return typeof key === 'string' && (
-          key.startsWith('fin-') ||
-          key === 'financeiro-summary' ||
-          key === 'suppliers-list' ||
-          key === 'clients-list'
-        );
-      }});
-    }
-
     return () => {
+      console.log("[Realtime] Cleaning up financeiro realtime subscriptions...");
       supabase.removeChannel(channel);
     };
-  }, [queryClient]);
+  }, [invalidateFinanceiroQueries]);
 }
