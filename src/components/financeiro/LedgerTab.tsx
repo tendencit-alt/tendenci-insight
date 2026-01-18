@@ -9,11 +9,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Plus, BookOpen, ArrowUpCircle, ArrowDownCircle, RefreshCw, History, AlertTriangle, ChevronDown, ChevronRight } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Plus, BookOpen, ArrowUpCircle, ArrowDownCircle, RefreshCw, History, AlertTriangle, ChevronDown, ChevronRight, Check } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { CreateLedgerEntryDialog } from "./CreateLedgerEntryDialog";
 import { LedgerAuditSheet } from "./LedgerAuditSheet";
+import { toast } from "sonner";
 
 interface LedgerTabProps {
   filters: FinanceiroFiltersState;
@@ -24,6 +26,8 @@ export function LedgerTab({ filters }: LedgerTabProps) {
   const [auditOpen, setAuditOpen] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<any>(null);
   const [alertOpen, setAlertOpen] = useState(true);
+  const [selectedForReconcile, setSelectedForReconcile] = useState<Set<string>>(new Set());
+  const [isReconciling, setIsReconciling] = useState(false);
 
   const dateField = "cash_date";
 
@@ -152,6 +156,47 @@ export function LedgerTab({ filters }: LedgerTabProps) {
     return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   };
 
+  const toggleSelectForReconcile = (entryId: string) => {
+    const newSelected = new Set(selectedForReconcile);
+    if (newSelected.has(entryId)) {
+      newSelected.delete(entryId);
+    } else {
+      newSelected.add(entryId);
+    }
+    setSelectedForReconcile(newSelected);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedForReconcile.size === unreconciledEntries.length) {
+      setSelectedForReconcile(new Set());
+    } else {
+      setSelectedForReconcile(new Set(unreconciledEntries.map(e => e.id)));
+    }
+  };
+
+  const handleReconcileSelected = async () => {
+    if (selectedForReconcile.size === 0) return;
+    
+    setIsReconciling(true);
+    try {
+      const { error } = await supabase
+        .from("fin_ledger_entries")
+        .update({ reconciled: true })
+        .in("id", Array.from(selectedForReconcile));
+      
+      if (error) throw error;
+      
+      toast.success(`${selectedForReconcile.size} lançamento(s) conciliado(s) com sucesso!`);
+      setSelectedForReconcile(new Set());
+      refetch();
+    } catch (error) {
+      console.error("Error reconciling entries:", error);
+      toast.error("Erro ao conciliar lançamentos");
+    } finally {
+      setIsReconciling(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Alert for unreconciled entries */}
@@ -171,11 +216,18 @@ export function LedgerTab({ filters }: LedgerTabProps) {
               <span className="font-medium">{unreconciledEntries.length}</span> lançamento(s) não conciliado(s) 
               totalizando <span className="font-medium">{formatCurrencySimple(unreconciledTotal)}</span>
             </AlertDescription>
-            <CollapsibleContent className="mt-3">
-              <div className="max-h-[200px] overflow-y-auto rounded border border-yellow-500/30 bg-background/50">
+            <CollapsibleContent className="mt-3 space-y-3">
+              <div className="max-h-[250px] overflow-y-auto rounded border border-yellow-500/30 bg-background/50">
                 <Table>
                   <TableHeader>
                     <TableRow className="hover:bg-transparent">
+                      <TableHead className="text-xs h-8 w-[40px]">
+                        <Checkbox 
+                          checked={selectedForReconcile.size === unreconciledEntries.length && unreconciledEntries.length > 0}
+                          onCheckedChange={toggleSelectAll}
+                          className="border-yellow-600 data-[state=checked]:bg-yellow-600"
+                        />
+                      </TableHead>
                       <TableHead className="text-xs h-8">Data</TableHead>
                       <TableHead className="text-xs h-8">Tipo</TableHead>
                       <TableHead className="text-xs h-8">Descrição</TableHead>
@@ -183,8 +235,20 @@ export function LedgerTab({ filters }: LedgerTabProps) {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {unreconciledEntries.slice(0, 10).map((entry) => (
-                      <TableRow key={entry.id} className="hover:bg-yellow-500/5">
+                    {unreconciledEntries.map((entry) => (
+                      <TableRow 
+                        key={entry.id} 
+                        className={`hover:bg-yellow-500/5 cursor-pointer ${selectedForReconcile.has(entry.id) ? "bg-yellow-500/10" : ""}`}
+                        onClick={() => toggleSelectForReconcile(entry.id)}
+                      >
+                        <TableCell className="text-xs py-2">
+                          <Checkbox 
+                            checked={selectedForReconcile.has(entry.id)}
+                            onCheckedChange={() => toggleSelectForReconcile(entry.id)}
+                            onClick={(e) => e.stopPropagation()}
+                            className="border-yellow-600 data-[state=checked]:bg-yellow-600"
+                          />
+                        </TableCell>
                         <TableCell className="text-xs py-2">
                           {entry.cash_date && format(new Date(entry.cash_date), "dd/MM/yy", { locale: ptBR })}
                         </TableCell>
@@ -201,12 +265,23 @@ export function LedgerTab({ filters }: LedgerTabProps) {
                     ))}
                   </TableBody>
                 </Table>
-                {unreconciledEntries.length > 10 && (
-                  <p className="text-xs text-center py-2 text-muted-foreground">
-                    ... e mais {unreconciledEntries.length - 10} lançamento(s)
-                  </p>
-                )}
               </div>
+              {selectedForReconcile.size > 0 && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-yellow-600">
+                    {selectedForReconcile.size} selecionado(s)
+                  </span>
+                  <Button 
+                    size="sm" 
+                    onClick={handleReconcileSelected}
+                    disabled={isReconciling}
+                    className="gap-1.5 bg-green-600 hover:bg-green-700"
+                  >
+                    <Check className="h-3.5 w-3.5" />
+                    {isReconciling ? "Conciliando..." : "Conciliar Selecionados"}
+                  </Button>
+                </div>
+              )}
             </CollapsibleContent>
           </Alert>
         </Collapsible>
