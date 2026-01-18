@@ -543,24 +543,16 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
       </div>
 
       {/* Breakeven Point Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
         {/* Ponto de Equilíbrio Meta */}
         <Card className="border-primary/20 bg-primary/5">
-          <CardContent className="p-3 sm:p-4">
+          <CardContent className="p-2 sm:p-3">
             <div>
-              <p className="text-xs text-muted-foreground flex items-center gap-1">
-                <Target className="h-3 w-3" />
-                Ponto Equilíbrio Meta
-                <Tooltip>
-                  <TooltipTrigger>
-                    <Info className="h-3 w-3 text-muted-foreground/50" />
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-xs">
-                    <p className="text-xs">Baseado na meta de saídas cadastrada para o período</p>
-                  </TooltipContent>
-                </Tooltip>
+              <p className="text-[10px] sm:text-xs text-muted-foreground flex items-center gap-0.5 sm:gap-1 flex-wrap">
+                <Target className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0" />
+                <span>Equilíbrio Meta</span>
               </p>
-              <p className="text-base sm:text-lg font-bold text-primary">
+              <p className="text-sm sm:text-base font-bold text-primary truncate">
                 {formatCurrency(cashflowData?.pontoEquilibrioMeta || 0)}
               </p>
             </div>
@@ -574,26 +566,14 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
             ? "border-green-500/30 bg-green-500/5"
             : "border-red-500/30 bg-red-500/5"
         )}>
-          <CardContent className="p-3 sm:p-4">
+          <CardContent className="p-2 sm:p-3">
             <div>
-              <p className="text-xs text-muted-foreground flex items-center gap-1">
-                <TrendingUp className="h-3 w-3" />
-                Ponto Equilíbrio Realizado
-                <Tooltip>
-                  <TooltipTrigger>
-                    <Info className="h-3 w-3 text-muted-foreground/50" />
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-xs text-left">
-                    <p className="text-xs font-semibold mb-1">Equilíbrio = Total de Saídas</p>
-                    <div className="text-xs space-y-0.5">
-                      <p>📈 <span className="text-green-500">Entradas (RECEITA):</span> {formatCurrency(cashflowData?.totalEntradas || 0)}</p>
-                      <p>📉 <span className="text-red-500">Saídas (DESPESA):</span> {formatCurrency(cashflowData?.totalSaidas || 0)}</p>
-                    </div>
-                  </TooltipContent>
-                </Tooltip>
+              <p className="text-[10px] sm:text-xs text-muted-foreground flex items-center gap-0.5 sm:gap-1 flex-wrap">
+                <TrendingUp className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0" />
+                <span>Equilíbrio Real</span>
               </p>
               <p className={cn(
-                "text-base sm:text-lg font-bold",
+                "text-sm sm:text-base font-bold truncate",
                 (cashflowData?.totalEntradas || 0) >= (cashflowData?.pontoEquilibrioCaixa || 0)
                   ? "text-green-600"
                   : "text-red-600"
@@ -606,16 +586,16 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
 
         {/* Saldo de Caixa */}
         <Card>
-          <CardContent className="p-3 sm:p-4">
+          <CardContent className="p-2 sm:p-3">
             <div>
-              <p className="text-xs text-muted-foreground">Saldo de Caixa</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">Saldo de Caixa</p>
               <p className={cn(
-                "text-base sm:text-lg font-bold",
+                "text-sm sm:text-base font-bold truncate",
                 (cashflowData?.closingBalance || 0) >= 0 ? "text-green-600" : "text-red-600"
               )}>
                 {formatCurrency(cashflowData?.closingBalance || 0)}
               </p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
                 Inicial: {formatCurrency(cashflowData?.openingBalance || 0)}
               </p>
             </div>
@@ -629,27 +609,27 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
             ? "border-green-500/50 bg-green-500/10"
             : "border-red-500/50 bg-red-500/10"
         )}>
-          <CardContent className="p-3 sm:p-4">
+          <CardContent className="p-2 sm:p-3">
             <div>
-              <p className="text-xs text-muted-foreground">Status</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">Status</p>
               {(cashflowData?.totalEntradas || 0) >= (cashflowData?.pontoEquilibrioCaixa || 0) ? (
                 <>
-                  <Badge className="bg-green-600 mt-1 gap-1">
-                    <CheckCircle className="h-3 w-3" />
-                    Caixa Positivo
+                  <Badge className="bg-green-600 mt-1 gap-0.5 text-[10px] sm:text-xs h-5 sm:h-6 px-1.5">
+                    <CheckCircle className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                    Positivo
                   </Badge>
-                  <p className="text-sm text-green-600 font-medium mt-2">
-                    Excedente: {formatCurrency((cashflowData?.totalEntradas || 0) - (cashflowData?.pontoEquilibrioCaixa || 0))}
+                  <p className="text-xs sm:text-sm text-green-600 font-medium mt-1 truncate">
+                    +{formatCurrency((cashflowData?.totalEntradas || 0) - (cashflowData?.pontoEquilibrioCaixa || 0))}
                   </p>
                 </>
               ) : (
                 <>
-                  <Badge variant="destructive" className="mt-1 gap-1">
-                    <AlertTriangle className="h-3 w-3" />
-                    Caixa Negativo
+                  <Badge variant="destructive" className="mt-1 gap-0.5 text-[10px] sm:text-xs h-5 sm:h-6 px-1.5">
+                    <AlertTriangle className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                    Negativo
                   </Badge>
-                  <p className="text-lg sm:text-xl font-bold text-red-600 mt-2">
-                    Faltam: {formatCurrency((cashflowData?.pontoEquilibrioCaixa || 0) - (cashflowData?.totalEntradas || 0))}
+                  <p className="text-sm sm:text-lg font-bold text-red-600 mt-1 truncate">
+                    -{formatCurrency((cashflowData?.pontoEquilibrioCaixa || 0) - (cashflowData?.totalEntradas || 0))}
                   </p>
                 </>
               )}
