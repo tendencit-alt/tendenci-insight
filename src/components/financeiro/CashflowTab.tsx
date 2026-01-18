@@ -469,41 +469,42 @@ export function CashflowTab({ filters }: CashflowTabProps) {
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-2">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <TrendingUp className="h-5 w-5" />
+          <h2 className="text-base sm:text-lg font-semibold flex items-center gap-2">
+            <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5" />
             Fluxo de Caixa <span className="text-primary">(Realizado)</span>
           </h2>
-          <p className="text-sm text-muted-foreground">
-            Regime de Caixa - Clique para expandir e ver lançamentos
+          <p className="text-xs sm:text-sm text-muted-foreground">
+            Regime de Caixa - Clique para expandir
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={expandAll}>
-            Expandir Tudo
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button variant="outline" size="sm" onClick={expandAll} className="text-xs h-8">
+            Expandir
           </Button>
-          <Button variant="outline" size="sm" onClick={collapseAll}>
-            Recolher Tudo
+          <Button variant="outline" size="sm" onClick={collapseAll} className="text-xs h-8">
+            Recolher
           </Button>
-          <Button variant="outline" className="gap-2">
-            <Download className="h-4 w-4" />
-            Exportar PDF
+          <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8">
+            <Download className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Exportar</span> PDF
           </Button>
         </div>
       </div>
 
       {/* Table */}
       <Card>
-        <CardContent className="pt-6">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[50%]">Conta</TableHead>
-                <TableHead className="text-right">Orçamento de Caixa</TableHead>
-                <TableHead className="text-right">Realizado</TableHead>
-              </TableRow>
-            </TableHeader>
+        <CardContent className="p-2 sm:pt-6 sm:px-6">
+          <div className="overflow-x-auto -mx-2 sm:mx-0">
+            <Table className="min-w-[500px]">
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[50%] text-xs sm:text-sm">Conta</TableHead>
+                  <TableHead className="text-right text-xs sm:text-sm hidden md:table-cell">Orçamento</TableHead>
+                  <TableHead className="text-right text-xs sm:text-sm">Realizado</TableHead>
+                </TableRow>
+              </TableHeader>
             <TableBody>
               {visibleLines.map(line => renderLine(line))}
               
@@ -560,41 +561,42 @@ export function CashflowTab({ filters }: CashflowTabProps) {
               </TableRow>
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
 
       {/* KPI Cards - After table */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
         <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground">Saldo Inicial</p>
-                <p className="text-xl font-bold font-mono">{formatCurrency(cashflowData?.openingBalance || 0)}</p>
+          <CardContent className="p-3 sm:pt-4 sm:px-4">
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] sm:text-xs text-muted-foreground">Saldo Inicial</p>
+                <p className="text-sm sm:text-xl font-bold font-mono truncate">{formatCurrency(cashflowData?.openingBalance || 0)}</p>
               </div>
-              <Wallet className="h-8 w-8 text-muted-foreground opacity-50" />
+              <Wallet className="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground opacity-50 flex-shrink-0 hidden sm:block" />
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground">Entradas</p>
-                <p className="text-xl font-bold text-green-600 font-mono">{formatCurrency(cashflowData?.totalEntradas || 0)}</p>
+          <CardContent className="p-3 sm:pt-4 sm:px-4">
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] sm:text-xs text-muted-foreground">Entradas</p>
+                <p className="text-sm sm:text-xl font-bold text-green-600 font-mono truncate">{formatCurrency(cashflowData?.totalEntradas || 0)}</p>
               </div>
-              <ArrowUpCircle className="h-8 w-8 text-green-600 opacity-50" />
+              <ArrowUpCircle className="h-6 w-6 sm:h-8 sm:w-8 text-green-600 opacity-50 flex-shrink-0 hidden sm:block" />
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground">Saídas</p>
-                <p className="text-xl font-bold text-red-600 font-mono">{formatCurrency(cashflowData?.totalSaidas || 0)}</p>
+          <CardContent className="p-3 sm:pt-4 sm:px-4">
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] sm:text-xs text-muted-foreground">Saídas</p>
+                <p className="text-sm sm:text-xl font-bold text-red-600 font-mono truncate">{formatCurrency(cashflowData?.totalSaidas || 0)}</p>
               </div>
-              <ArrowDownCircle className="h-8 w-8 text-red-600 opacity-50" />
+              <ArrowDownCircle className="h-6 w-6 sm:h-8 sm:w-8 text-red-600 opacity-50 flex-shrink-0 hidden sm:block" />
             </div>
           </CardContent>
         </Card>
@@ -604,19 +606,19 @@ export function CashflowTab({ filters }: CashflowTabProps) {
             ? "border-green-300 dark:border-green-700" 
             : "border-red-300 dark:border-red-700"
         )}>
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground">Saldo Final</p>
+          <CardContent className="p-3 sm:pt-4 sm:px-4">
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] sm:text-xs text-muted-foreground">Saldo Final</p>
                 <p className={cn(
-                  "text-xl font-bold font-mono",
+                  "text-sm sm:text-xl font-bold font-mono truncate",
                   (cashflowData?.closingBalance || 0) >= 0 ? "text-green-600" : "text-red-600"
                 )}>
                   {(cashflowData?.closingBalance || 0) >= 0 ? "▲ " : "▼ "}
                   {formatCurrency(cashflowData?.closingBalance || 0)}
                 </p>
               </div>
-              <TrendingUp className="h-8 w-8 text-primary opacity-50" />
+              <TrendingUp className="h-6 w-6 sm:h-8 sm:w-8 text-primary opacity-50 flex-shrink-0 hidden sm:block" />
             </div>
           </CardContent>
         </Card>
