@@ -138,7 +138,7 @@ export function ReceivablesTab({ filters }: ReceivablesTabProps) {
       if (columnFilters.customer && !(r.customer?.name || "").toLowerCase().includes(columnFilters.customer.toLowerCase())) return false;
       if (columnFilters.description && !(r.description || "").toLowerCase().includes(columnFilters.description.toLowerCase())) return false;
       if (columnFilters.category) {
-        const catText = r.chart_account ? `${r.chart_account.code} - ${r.chart_account.name}` : "";
+        const catText = r.chart_account?.name || "";
         if (!catText.toLowerCase().includes(columnFilters.category.toLowerCase())) return false;
       }
       if (columnFilters.amount && !String(r.amount).includes(columnFilters.amount)) return false;
@@ -560,7 +560,7 @@ export function ReceivablesTab({ filters }: ReceivablesTabProps) {
                         <TableCell>{receivable.customer?.name || "-"}</TableCell>
                         <TableCell className="max-w-[200px] truncate">{receivable.description || "-"}</TableCell>
                         <TableCell className="text-xs">
-                          {receivable.chart_account ? `${receivable.chart_account.code} - ${receivable.chart_account.name}` : "-"}
+                          {receivable.chart_account?.name || "-"}
                         </TableCell>
                         <TableCell className="text-right font-medium">
                           {formatCurrency(Number(receivable.amount))}

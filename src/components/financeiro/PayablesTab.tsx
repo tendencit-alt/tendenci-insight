@@ -138,7 +138,7 @@ export function PayablesTab({ filters }: PayablesTabProps) {
       if (columnFilters.supplier && !(p.supplier?.name || "").toLowerCase().includes(columnFilters.supplier.toLowerCase())) return false;
       if (columnFilters.description && !(p.description || "").toLowerCase().includes(columnFilters.description.toLowerCase())) return false;
       if (columnFilters.category) {
-        const catText = p.chart_account ? `${p.chart_account.code} - ${p.chart_account.name}` : "";
+        const catText = p.chart_account?.name || "";
         if (!catText.toLowerCase().includes(columnFilters.category.toLowerCase())) return false;
       }
       if (columnFilters.amount && !String(p.amount).includes(columnFilters.amount)) return false;
@@ -560,7 +560,7 @@ export function PayablesTab({ filters }: PayablesTabProps) {
                         <TableCell>{payable.supplier?.name || "-"}</TableCell>
                         <TableCell className="max-w-[200px] truncate">{payable.description || "-"}</TableCell>
                         <TableCell className="text-xs">
-                          {payable.chart_account ? `${payable.chart_account.code} - ${payable.chart_account.name}` : "-"}
+                          {payable.chart_account?.name || "-"}
                         </TableCell>
                         <TableCell className="text-right font-medium">
                           {formatCurrency(Number(payable.amount))}
