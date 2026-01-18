@@ -128,7 +128,10 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
       if (filters.projectId) {
         query = query.eq("project_id", filters.projectId);
       }
-      if (filters.categoryId) {
+      // Subcategoria tem prioridade sobre categoria
+      if (filters.subcategoryId) {
+        query = query.eq("chart_account_id", filters.subcategoryId);
+      } else if (filters.categoryId) {
         query = query.eq("chart_account_id", filters.categoryId);
       }
       if (filters.search) {
@@ -173,7 +176,10 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
       if (filters.projectId) {
         query = query.eq("project_id", filters.projectId);
       }
-      if (filters.categoryId) {
+      // Subcategoria tem prioridade sobre categoria
+      if (filters.subcategoryId) {
+        query = query.eq("chart_account_id", filters.subcategoryId);
+      } else if (filters.categoryId) {
         query = query.eq("chart_account_id", filters.categoryId);
       }
       if (filters.search) {

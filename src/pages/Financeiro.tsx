@@ -34,6 +34,7 @@ export default function Financeiro() {
     projectId: null,
     search: "",
     categoryId: null,
+    subcategoryId: null,
     sortField: null,
     sortDirection: null,
   });

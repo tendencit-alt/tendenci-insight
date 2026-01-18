@@ -100,7 +100,10 @@ export function DashboardBI({ filters }: DashboardBIProps) {
       if (filters.projectId) {
         entriesQuery = entriesQuery.eq("project_id", filters.projectId);
       }
-      if (filters.categoryId) {
+      // Subcategoria tem prioridade sobre categoria
+      if (filters.subcategoryId) {
+        entriesQuery = entriesQuery.eq("chart_account_id", filters.subcategoryId);
+      } else if (filters.categoryId) {
         entriesQuery = entriesQuery.eq("chart_account_id", filters.categoryId);
       }
 

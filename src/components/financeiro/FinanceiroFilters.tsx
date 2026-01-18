@@ -23,6 +23,7 @@ export interface FinanceiroFiltersState {
   projectId: string | null;
   search: string;
   categoryId: string | null;
+  subcategoryId: string | null;
   sortField: SortField;
   sortDirection: SortDirection;
 }
@@ -71,16 +72,34 @@ export function FinanceiroFilters({ filters, onChange }: FinanceiroFiltersProps)
     },
   });
 
+  // Busca apenas categorias pai (parent_id = null)
   const { data: categories } = useQuery({
-    queryKey: ["fin-chart-accounts-filter"],
+    queryKey: ["fin-chart-accounts-categories"],
     queryFn: async () => {
       const { data } = await supabase
         .from("fin_chart_accounts")
         .select("id, code, name")
         .eq("active", true)
+        .is("parent_id", null)
         .order("code");
       return data || [];
     },
+  });
+
+  // Busca subcategorias baseado na categoria selecionada
+  const { data: subcategories } = useQuery({
+    queryKey: ["fin-chart-accounts-subcategories", filters.categoryId],
+    queryFn: async () => {
+      if (!filters.categoryId) return [];
+      const { data } = await supabase
+        .from("fin_chart_accounts")
+        .select("id, code, name")
+        .eq("active", true)
+        .eq("parent_id", filters.categoryId)
+        .order("code");
+      return data || [];
+    },
+    enabled: !!filters.categoryId,
   });
 
   const activeFiltersCount = [
@@ -89,6 +108,7 @@ export function FinanceiroFilters({ filters, onChange }: FinanceiroFiltersProps)
     filters.projectId,
     filters.search,
     filters.categoryId,
+    filters.subcategoryId,
   ].filter(Boolean).length;
 
   const handlePresetPeriod = (preset: string) => {
@@ -130,6 +150,7 @@ export function FinanceiroFilters({ filters, onChange }: FinanceiroFiltersProps)
       projectId: null,
       search: "",
       categoryId: null,
+      subcategoryId: null,
       sortField: null,
       sortDirection: null,
     });
@@ -249,10 +270,14 @@ export function FinanceiroFilters({ filters, onChange }: FinanceiroFiltersProps)
                 />
               </div>
 
-              {/* Category Filter */}
+              {/* Categoria Filter */}
               <Select
                 value={filters.categoryId || "all"}
-                onValueChange={(value) => onChange({ ...filters, categoryId: value === "all" ? null : value })}
+                onValueChange={(value) => onChange({ 
+                  ...filters, 
+                  categoryId: value === "all" ? null : value,
+                  subcategoryId: null // Limpa subcategoria ao mudar categoria
+                })}
               >
                 <SelectTrigger className="h-9">
                   <SelectValue placeholder="Categoria" />
@@ -262,6 +287,25 @@ export function FinanceiroFilters({ filters, onChange }: FinanceiroFiltersProps)
                   {categories?.map((cat) => (
                     <SelectItem key={cat.id} value={cat.id}>
                       {cat.code} - {cat.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Subcategoria Filter */}
+              <Select
+                value={filters.subcategoryId || "all"}
+                onValueChange={(value) => onChange({ ...filters, subcategoryId: value === "all" ? null : value })}
+                disabled={!filters.categoryId || !subcategories?.length}
+              >
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Subcategoria" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas subcategorias</SelectItem>
+                  {subcategories?.map((subcat) => (
+                    <SelectItem key={subcat.id} value={subcat.id}>
+                      {subcat.code} - {subcat.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
