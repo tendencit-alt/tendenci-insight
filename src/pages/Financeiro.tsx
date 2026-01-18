@@ -76,7 +76,7 @@ export default function Financeiro() {
           </TabsContent>
 
           <TabsContent value="dre-cashflow" className="space-y-4">
-            <DRECashflowView filters={filters} />
+            <DRECashflowView filters={filters} onFiltersChange={setFilters} />
           </TabsContent>
 
           <TabsContent value="payables-receivables" className="space-y-4">
