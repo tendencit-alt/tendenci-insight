@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { streamChat, Message } from "@/utils/aiChat";
 import { useAIChat } from "@/hooks/useAIChat";
 import { ConversationsList } from "./ConversationsList";
+import DOMPurify from "dompurify";
 
 const quickQuestions = [
   { icon: BarChart3, text: "Como está meu pipeline?", color: "text-blue-500" },
@@ -16,11 +17,28 @@ const quickQuestions = [
   { icon: TrendingUp, text: "Previsão de fechamento do mês", color: "text-purple-500" },
 ];
 
+// Helper function to escape HTML entities before markdown formatting
+function escapeHtml(text: string): string {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// Helper function to sanitize formatted HTML
+function sanitizeHtml(html: string): string {
+  return DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: ['strong', 'em', 'code'],
+    ALLOWED_ATTR: ['class'],
+  });
+}
+
 // Componente para renderizar markdown básico
 function MarkdownContent({ content }: { content: string }) {
   const renderLine = (line: string, index: number) => {
-    // Negrito: **texto**
-    let formatted = line.replace(/\*\*([^*]+)\*\*/g, '<strong class="font-semibold">$1</strong>');
+    // First escape any HTML in the content
+    let escaped = escapeHtml(line);
+    // Then apply markdown formatting
+    let formatted = escaped.replace(/\*\*([^*]+)\*\*/g, '<strong class="font-semibold">$1</strong>');
     // Itálico: *texto* (mas não confundir com negrito)
     formatted = formatted.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>');
     // Código inline: `código`
@@ -39,21 +57,23 @@ function MarkdownContent({ content }: { content: string }) {
     
     // Bullet points
     if (line.startsWith('- ') || line.startsWith('• ')) {
+      const bulletContent = formatted.slice(2);
       return (
         <div key={index} className="flex gap-2 ml-2">
           <span className="text-muted-foreground">•</span>
-          <span dangerouslySetInnerHTML={{ __html: formatted.slice(2) }} />
+          <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(bulletContent) }} />
         </div>
       );
     }
     
     // Numbered lists
-    const numberedMatch = line.match(/^(\d+)\.\s/);
+    const numberedMatch = escaped.match(/^(\d+)\.\s/);
     if (numberedMatch) {
+      const numberedContent = formatted.slice(numberedMatch[0].length);
       return (
         <div key={index} className="flex gap-2 ml-2">
           <span className="text-muted-foreground min-w-[1.5rem]">{numberedMatch[1]}.</span>
-          <span dangerouslySetInnerHTML={{ __html: formatted.slice(numberedMatch[0].length) }} />
+          <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(numberedContent) }} />
         </div>
       );
     }
@@ -63,7 +83,7 @@ function MarkdownContent({ content }: { content: string }) {
       return <div key={index} className="h-2" />;
     }
     
-    return <p key={index} dangerouslySetInnerHTML={{ __html: formatted }} />;
+    return <p key={index} dangerouslySetInnerHTML={{ __html: sanitizeHtml(formatted) }} />;
   };
 
   return (
