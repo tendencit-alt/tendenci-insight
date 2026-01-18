@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, CreditCard, Receipt, AlertTriangle, Clock, CheckCircle, ArrowDownCircle, ArrowUpCircle } from "lucide-react";
+import { Plus, CreditCard, Receipt, AlertTriangle, Clock, CheckCircle, ArrowDownCircle, ArrowUpCircle, Landmark, TrendingUp, TrendingDown } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { CreatePayableDialog } from "./CreatePayableDialog";
@@ -157,6 +157,53 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
     },
   });
 
+  // Fetch Unified Bank Balance
+  const { data: bankBalance, isLoading: bankBalanceLoading } = useQuery({
+    queryKey: ["fin-bank-balance-unified"],
+    queryFn: async () => {
+      // Get all active bank accounts
+      const { data: accounts } = await supabase
+        .from("fin_bank_accounts")
+        .select("id, nickname, opening_balance, opening_balance_date")
+        .eq("active", true);
+
+      // Get all ledger entries
+      const { data: entries } = await supabase
+        .from("fin_ledger_entries")
+        .select("bank_account_id, type, amount, status, cash_date")
+        .neq("status", "CANCELADO")
+        .not("cash_date", "is", null);
+
+      // Calculate balance per account
+      let totalSaldoInicial = 0;
+      let totalEntradas = 0;
+      let totalSaidas = 0;
+
+      accounts?.forEach(account => {
+        totalSaldoInicial += Number(account.opening_balance || 0);
+        
+        const accountEntries = entries?.filter(e => e.bank_account_id === account.id) || [];
+        accountEntries.forEach(entry => {
+          if (entry.type === "RECEITA") {
+            totalEntradas += Number(entry.amount);
+          } else if (entry.type === "DESPESA") {
+            totalSaidas += Number(entry.amount);
+          }
+        });
+      });
+
+      const saldoAtual = totalSaldoInicial + totalEntradas - totalSaidas;
+
+      return {
+        saldoInicial: totalSaldoInicial,
+        entradas: totalEntradas,
+        saidas: totalSaidas,
+        saldoAtual,
+        contasAtivas: accounts?.length || 0,
+      };
+    },
+  });
+
   const formatCurrency = (value: number) => {
     return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   };
@@ -232,6 +279,52 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
           </Button>
         </div>
       </div>
+
+      {/* Bank Balance Card */}
+      <Card className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
+        <CardContent className="py-4">
+          {bankBalanceLoading ? (
+            <div className="flex items-center justify-between">
+              <Skeleton className="h-10 w-48" />
+              <Skeleton className="h-8 w-32" />
+            </div>
+          ) : (
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="p-3 rounded-full bg-primary/10">
+                  <Landmark className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Saldo Consolidado ({bankBalance?.contasAtivas || 0} contas)</p>
+                  <p className={`text-2xl font-bold ${(bankBalance?.saldoAtual || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {formatCurrency(bankBalance?.saldoAtual || 0)}
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-6 text-sm">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-green-500" />
+                  <div>
+                    <p className="text-muted-foreground text-xs">Total Entradas</p>
+                    <p className="font-semibold text-green-600">{formatCurrency(bankBalance?.entradas || 0)}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <TrendingDown className="h-4 w-4 text-red-500" />
+                  <div>
+                    <p className="text-muted-foreground text-xs">Total Saídas</p>
+                    <p className="font-semibold text-red-600">{formatCurrency(bankBalance?.saidas || 0)}</p>
+                  </div>
+                </div>
+                <div className="border-l pl-6">
+                  <p className="text-muted-foreground text-xs">Saldo Inicial</p>
+                  <p className="font-semibold">{formatCurrency(bankBalance?.saldoInicial || 0)}</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Summary Cards */}
       <div className="grid gap-4 md:grid-cols-2">
