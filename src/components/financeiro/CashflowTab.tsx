@@ -260,8 +260,10 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
       });
 
       // Calculate breakeven for cashflow
-      // Ponto de Equilíbrio de Caixa = Saídas Fixas quando Entradas = Saídas
-      const pontoEquilibrioCaixa = totalSaidas;
+      // Ponto de Equilíbrio de Caixa = Total de Saídas (valor mínimo de entradas para equilibrar)
+      // O ponto de equilíbrio é o valor de ENTRADAS necessário para cobrir as SAÍDAS
+      const saidasAbsoluto = Math.abs(totalSaidas);
+      const pontoEquilibrioCaixa = saidasAbsoluto;
       
       // Fetch goals for meta
       const month = new Date().getMonth() + 1;
@@ -276,15 +278,16 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
         .is("project_id", null);
 
       const metaEntradas = goalsData?.find(g => g.metric_key === "receitas")?.target_amount || 0;
-      const metaSaidas = goalsData?.find(g => g.metric_key === "despesas")?.target_amount || totalSaidas;
-      const pontoEquilibrioMeta = metaSaidas;
+      const metaSaidas = goalsData?.find(g => g.metric_key === "despesas")?.target_amount || saidasAbsoluto;
+      // Ponto de equilíbrio meta = meta de saídas (o quanto precisa entrar para cobrir)
+      const pontoEquilibrioMeta = Math.abs(metaSaidas);
 
       return {
         lines,
         openingBalance,
         totalEntradas,
-        totalSaidas,
-        closingBalance: openingBalance + totalEntradas - totalSaidas,
+        totalSaidas: saidasAbsoluto,
+        closingBalance: openingBalance + totalEntradas - saidasAbsoluto,
         pontoEquilibrioCaixa,
         pontoEquilibrioMeta,
         metaEntradas,

@@ -305,16 +305,25 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
       const resultadoAntesCapital = resultadoOperacional - totalResultadoFinanceiro;
       const variacaoLiquidaCaixa = resultadoAntesCapital + totalCapitalEntrada - totalCapitalSaida;
 
-      // Calculate breakeven point
-      // Ponto de Equilíbrio = Custos Fixos / Margem de Contribuição %
-      const custosVariaveis = totalDespesasSobreVenda + totalCMV;
-      const custosFixos = totalDespesasOp;
+      // Calculate breakeven point correctly
+      // Ponto de Equilíbrio = Custos Fixos / (Margem de Contribuição / Receitas)
+      // Onde Margem de Contribuição % = (Receitas - Custos Variáveis) / Receitas
+      const custosVariaveis = Math.abs(totalDespesasSobreVenda) + Math.abs(totalCMV);
+      const custosFixos = Math.abs(totalDespesasOp);
+      
+      // Margem de contribuição em valor absoluto
+      const margemContribuicaoValor = totalReceitas - custosVariaveis;
+      
+      // Margem de contribuição em percentual
       const margemContribuicaoPercent = totalReceitas > 0 
-        ? ((totalReceitas - custosVariaveis) / totalReceitas) * 100 
+        ? (margemContribuicaoValor / totalReceitas) * 100 
         : 0;
+      
+      // Ponto de Equilíbrio Realizado = Custos Fixos / Margem de Contribuição %
+      // Fórmula: PE = CF / MC%  onde MC% está em decimal (ex: 0.40 para 40%)
       const pontoEquilibrioRealizado = margemContribuicaoPercent > 0 
-        ? custosFixos / (margemContribuicaoPercent / 100) 
-        : 0;
+        ? custosFixos / (margemContribuicaoPercent / 100)
+        : custosFixos > 0 ? Infinity : 0;
 
       const calculatedValues = new Map<string, number>();
       calculatedValues.set("4", margemContribuicao);
@@ -339,15 +348,19 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
         .is("project_id", null);
 
       const metaReceitas = goalsData?.find(g => g.metric_key === "receitas")?.target_amount || 0;
+      const metaCustosVariaveis = goalsData?.find(g => g.metric_key === "custos_variaveis")?.target_amount || custosVariaveis;
       const metaDespesasFixas = goalsData?.find(g => g.metric_key === "despesas_fixas")?.target_amount || custosFixos;
       
       // Meta breakeven calculation using same formula
-      const metaMargemPercent = metaReceitas > 0 && custosVariaveis > 0
-        ? ((metaReceitas - custosVariaveis) / metaReceitas) * 100
+      // Se não houver meta de receitas, usar a mesma margem % realizada
+      const metaMargemValor = metaReceitas > 0 ? metaReceitas - metaCustosVariaveis : margemContribuicaoValor;
+      const metaMargemPercent = metaReceitas > 0 
+        ? (metaMargemValor / metaReceitas) * 100
         : margemContribuicaoPercent;
+      
       const pontoEquilibrioMeta = metaMargemPercent > 0 
         ? metaDespesasFixas / (metaMargemPercent / 100)
-        : 0;
+        : metaDespesasFixas > 0 ? Infinity : 0;
 
       return {
         lines,
