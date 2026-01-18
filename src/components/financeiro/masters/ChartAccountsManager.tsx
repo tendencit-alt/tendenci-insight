@@ -362,9 +362,18 @@ export function ChartAccountsManager() {
       }
     });
 
-    // Sort children by code
+    // Sort children by code numerically
     const sortChildren = (nodes: any[]) => {
-      nodes.sort((a, b) => a.code.localeCompare(b.code));
+      nodes.sort((a, b) => {
+        const aParts = a.code.split('.').map((p: string) => parseFloat(p) || 0);
+        const bParts = b.code.split('.').map((p: string) => parseFloat(p) || 0);
+        for (let i = 0; i < Math.max(aParts.length, bParts.length); i++) {
+          const aVal = aParts[i] || 0;
+          const bVal = bParts[i] || 0;
+          if (aVal !== bVal) return aVal - bVal;
+        }
+        return 0;
+      });
       nodes.forEach(node => {
         if (node.children && node.children.length > 0) {
           sortChildren(node.children);
