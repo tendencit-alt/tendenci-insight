@@ -254,28 +254,30 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
   return (
     <div className="space-y-4">
       {/* View Filter */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <Tabs value={viewType} onValueChange={(v) => setViewType(v as ViewType)}>
-          <TabsList>
-            <TabsTrigger value="all">Todas</TabsTrigger>
-            <TabsTrigger value="payables" className="gap-2">
-              <ArrowDownCircle className="h-4 w-4 text-red-500" />
-              A Pagar
+          <TabsList className="h-auto flex-wrap">
+            <TabsTrigger value="all" className="text-xs sm:text-sm px-2 sm:px-3">Todas</TabsTrigger>
+            <TabsTrigger value="payables" className="gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
+              <ArrowDownCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-red-500" />
+              <span className="hidden xs:inline">A Pagar</span>
+              <span className="xs:hidden">Pagar</span>
             </TabsTrigger>
-            <TabsTrigger value="receivables" className="gap-2">
-              <ArrowUpCircle className="h-4 w-4 text-green-500" />
-              A Receber
+            <TabsTrigger value="receivables" className="gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
+              <ArrowUpCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-500" />
+              <span className="hidden xs:inline">A Receber</span>
+              <span className="xs:hidden">Receber</span>
             </TabsTrigger>
           </TabsList>
         </Tabs>
-        <div className="flex gap-2">
-          <Button onClick={() => setCreatePayableOpen(true)} variant="outline" className="gap-2">
-            <Plus className="h-4 w-4" />
-            Conta a Pagar
+        <div className="flex gap-2 w-full sm:w-auto">
+          <Button onClick={() => setCreatePayableOpen(true)} variant="outline" size="sm" className="gap-1.5 flex-1 sm:flex-none text-xs sm:text-sm">
+            <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">Conta a</span> Pagar
           </Button>
-          <Button onClick={() => setCreateReceivableOpen(true)} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Conta a Receber
+          <Button onClick={() => setCreateReceivableOpen(true)} size="sm" className="gap-1.5 flex-1 sm:flex-none text-xs sm:text-sm">
+            <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">Conta a</span> Receber
           </Button>
         </div>
       </div>
@@ -428,61 +430,64 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
                 ))}
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Vencimento</TableHead>
-                    <TableHead>Fornecedor</TableHead>
-                    <TableHead>Descrição</TableHead>
-                    <TableHead>Categoria</TableHead>
-                    <TableHead className="text-right">Valor</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {payables?.length === 0 ? (
+              <div className="overflow-x-auto -mx-4 sm:mx-0">
+                <Table className="min-w-[600px]">
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                        Nenhuma conta a pagar encontrada no período
-                      </TableCell>
+                      <TableHead className="text-xs sm:text-sm whitespace-nowrap">Vencimento</TableHead>
+                      <TableHead className="text-xs sm:text-sm">Fornecedor</TableHead>
+                      <TableHead className="text-xs sm:text-sm hidden md:table-cell">Descrição</TableHead>
+                      <TableHead className="text-xs sm:text-sm hidden lg:table-cell">Categoria</TableHead>
+                      <TableHead className="text-xs sm:text-sm text-right whitespace-nowrap">Valor</TableHead>
+                      <TableHead className="text-xs sm:text-sm">Status</TableHead>
+                      <TableHead className="text-xs sm:text-sm">Ações</TableHead>
                     </TableRow>
-                  ) : (
-                    payables?.map((payable) => (
-                      <TableRow key={payable.id}>
-                        <TableCell className="font-medium">
-                          {format(new Date(payable.due_date), "dd/MM/yyyy", { locale: ptBR })}
-                        </TableCell>
-                        <TableCell>{payable.supplier?.name || "-"}</TableCell>
-                        <TableCell className="max-w-[200px] truncate">{payable.description || "-"}</TableCell>
-                        <TableCell className="text-xs">
-                          {payable.chart_account ? `${payable.chart_account.code} - ${payable.chart_account.name}` : "-"}
-                        </TableCell>
-                        <TableCell className="text-right font-medium">
-                          {formatCurrency(Number(payable.amount))}
-                          {payable.paid_amount > 0 && (
-                            <div className="text-xs text-muted-foreground">
-                              Pago: {formatCurrency(Number(payable.paid_amount))}
-                            </div>
-                          )}
-                        </TableCell>
-                        <TableCell>{getPayableStatusBadge(payable.status)}</TableCell>
-                        <TableCell>
-                          {payable.status !== "PAGO" && (
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => handlePay(payable)}
-                            >
-                              Pagar
-                            </Button>
-                          )}
+                  </TableHeader>
+                  <TableBody>
+                    {payables?.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center text-muted-foreground py-8 text-sm">
+                          Nenhuma conta a pagar encontrada no período
                         </TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+                    ) : (
+                      payables?.map((payable) => (
+                        <TableRow key={payable.id}>
+                          <TableCell className="font-medium text-xs sm:text-sm whitespace-nowrap">
+                            {format(new Date(payable.due_date), "dd/MM/yy", { locale: ptBR })}
+                          </TableCell>
+                          <TableCell className="text-xs sm:text-sm max-w-[120px] sm:max-w-none truncate">{payable.supplier?.name || "-"}</TableCell>
+                          <TableCell className="text-xs sm:text-sm max-w-[150px] truncate hidden md:table-cell">{payable.description || "-"}</TableCell>
+                          <TableCell className="text-xs hidden lg:table-cell">
+                            {payable.chart_account ? `${payable.chart_account.code}` : "-"}
+                          </TableCell>
+                          <TableCell className="text-right font-medium text-xs sm:text-sm whitespace-nowrap">
+                            {formatCurrency(Number(payable.amount))}
+                            {payable.paid_amount > 0 && (
+                              <div className="text-xs text-muted-foreground">
+                                Pago: {formatCurrency(Number(payable.paid_amount))}
+                              </div>
+                            )}
+                          </TableCell>
+                          <TableCell>{getPayableStatusBadge(payable.status)}</TableCell>
+                          <TableCell>
+                            {payable.status !== "PAGO" && (
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                className="text-xs h-7 px-2"
+                                onClick={() => handlePay(payable)}
+                              >
+                                Pagar
+                              </Button>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -505,61 +510,64 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
                 ))}
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Vencimento</TableHead>
-                    <TableHead>Cliente</TableHead>
-                    <TableHead>Descrição</TableHead>
-                    <TableHead>Categoria</TableHead>
-                    <TableHead className="text-right">Valor</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {receivables?.length === 0 ? (
+              <div className="overflow-x-auto -mx-4 sm:mx-0">
+                <Table className="min-w-[600px]">
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                        Nenhuma conta a receber encontrada no período
-                      </TableCell>
+                      <TableHead className="text-xs sm:text-sm whitespace-nowrap">Vencimento</TableHead>
+                      <TableHead className="text-xs sm:text-sm">Cliente</TableHead>
+                      <TableHead className="text-xs sm:text-sm hidden md:table-cell">Descrição</TableHead>
+                      <TableHead className="text-xs sm:text-sm hidden lg:table-cell">Categoria</TableHead>
+                      <TableHead className="text-xs sm:text-sm text-right whitespace-nowrap">Valor</TableHead>
+                      <TableHead className="text-xs sm:text-sm">Status</TableHead>
+                      <TableHead className="text-xs sm:text-sm">Ações</TableHead>
                     </TableRow>
-                  ) : (
-                    receivables?.map((receivable) => (
-                      <TableRow key={receivable.id}>
-                        <TableCell className="font-medium">
-                          {format(new Date(receivable.due_date), "dd/MM/yyyy", { locale: ptBR })}
-                        </TableCell>
-                        <TableCell>{receivable.customer?.name || "-"}</TableCell>
-                        <TableCell className="max-w-[200px] truncate">{receivable.description || "-"}</TableCell>
-                        <TableCell className="text-xs">
-                          {receivable.chart_account ? `${receivable.chart_account.code} - ${receivable.chart_account.name}` : "-"}
-                        </TableCell>
-                        <TableCell className="text-right font-medium">
-                          {formatCurrency(Number(receivable.amount))}
-                          {receivable.received_amount > 0 && (
-                            <div className="text-xs text-muted-foreground">
-                              Recebido: {formatCurrency(Number(receivable.received_amount))}
-                            </div>
-                          )}
-                        </TableCell>
-                        <TableCell>{getReceivableStatusBadge(receivable.status)}</TableCell>
-                        <TableCell>
-                          {receivable.status !== "RECEBIDO" && (
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => handleReceive(receivable)}
-                            >
-                              Receber
-                            </Button>
-                          )}
+                  </TableHeader>
+                  <TableBody>
+                    {receivables?.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center text-muted-foreground py-8 text-sm">
+                          Nenhuma conta a receber encontrada no período
                         </TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+                    ) : (
+                      receivables?.map((receivable) => (
+                        <TableRow key={receivable.id}>
+                          <TableCell className="font-medium text-xs sm:text-sm whitespace-nowrap">
+                            {format(new Date(receivable.due_date), "dd/MM/yy", { locale: ptBR })}
+                          </TableCell>
+                          <TableCell className="text-xs sm:text-sm max-w-[120px] sm:max-w-none truncate">{receivable.customer?.name || "-"}</TableCell>
+                          <TableCell className="text-xs sm:text-sm max-w-[150px] truncate hidden md:table-cell">{receivable.description || "-"}</TableCell>
+                          <TableCell className="text-xs hidden lg:table-cell">
+                            {receivable.chart_account ? `${receivable.chart_account.code}` : "-"}
+                          </TableCell>
+                          <TableCell className="text-right font-medium text-xs sm:text-sm whitespace-nowrap">
+                            {formatCurrency(Number(receivable.amount))}
+                            {receivable.received_amount > 0 && (
+                              <div className="text-xs text-muted-foreground">
+                                Recebido: {formatCurrency(Number(receivable.received_amount))}
+                              </div>
+                            )}
+                          </TableCell>
+                          <TableCell>{getReceivableStatusBadge(receivable.status)}</TableCell>
+                          <TableCell>
+                            {receivable.status !== "RECEBIDO" && (
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                className="text-xs h-7 px-2"
+                                onClick={() => handleReceive(receivable)}
+                              >
+                                Receber
+                              </Button>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>
