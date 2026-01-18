@@ -69,7 +69,7 @@ export function FinanceiroCharts({ filters }: FinanceiroChartsProps) {
   });
 
   const formatCurrency = (value: number) => {
-    return `R$ ${value.toLocaleString("pt-BR", { minimumFractionDigits: 0 })}`;
+    return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
   if (isLoading) {

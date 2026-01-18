@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SearchableSelect } from "./SearchableSelect";
+import { CurrencyInput, parseCurrencyToNumber } from "@/components/ui/currency-input";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { Loader2 } from "lucide-react";
@@ -106,7 +107,7 @@ export function CreateLedgerEntryDialog({ open, onOpenChange, onSuccess }: Creat
       const { error } = await supabase.from("fin_ledger_entries").insert({
         type: form.type,
         description: form.description,
-        amount: parseFloat(form.amount.replace(",", ".")),
+        amount: parseCurrencyToNumber(form.amount),
         competence_date: form.competence_date,
         cash_date: form.cash_date || null,
         bank_account_id: form.bank_account_id || null,
@@ -171,11 +172,9 @@ export function CreateLedgerEntryDialog({ open, onOpenChange, onSuccess }: Creat
 
             <div className="space-y-2">
               <Label>Valor *</Label>
-              <Input
-                type="text"
-                placeholder="0,00"
+              <CurrencyInput
                 value={form.amount}
-                onChange={(e) => setForm({ ...form, amount: e.target.value })}
+                onChange={(v) => setForm({ ...form, amount: v })}
               />
             </div>
           </div>
