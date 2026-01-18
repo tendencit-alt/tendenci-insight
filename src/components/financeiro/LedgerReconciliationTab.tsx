@@ -656,6 +656,18 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
                                     Histórico
                                   </DropdownMenuItem>
                                   <DropdownMenuItem 
+                                    onClick={() => {
+                                      setSelectedForReconcile(new Set([entry.id]));
+                                      setReconcileDialogOpen(true);
+                                    }} 
+                                    className="gap-2"
+                                    disabled={entry.reconciled}
+                                  >
+                                    <Link2 className="h-4 w-4" />
+                                    Conciliar
+                                    {entry.reconciled && <Badge variant="secondary" className="ml-auto text-[10px]">Conciliado</Badge>}
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem 
                                     onClick={() => handleOpenSplit(entry)} 
                                     className="gap-2"
                                     disabled={entry.has_splits || entry.reconciled}
