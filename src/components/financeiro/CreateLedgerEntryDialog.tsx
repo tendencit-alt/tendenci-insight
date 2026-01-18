@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "./SearchableSelect";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { Loader2 } from "lucide-react";
@@ -238,16 +239,14 @@ export function CreateLedgerEntryDialog({ open, onOpenChange, onSuccess }: Creat
 
           <div className="space-y-2">
             <Label>Categoria (Plano de Contas)</Label>
-            <Select value={form.chart_account_id} onValueChange={(v) => setForm({ ...form, chart_account_id: v })}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione a categoria..." />
-              </SelectTrigger>
-              <SelectContent>
-                {filteredChartAccounts?.map((a) => (
-                  <SelectItem key={a.id} value={a.id}>{a.code} - {a.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SearchableSelect
+              options={(filteredChartAccounts || []).map(a => ({ value: a.id, label: a.name, code: a.code }))}
+              value={form.chart_account_id}
+              onChange={(v) => setForm({ ...form, chart_account_id: v })}
+              placeholder="Selecione a categoria..."
+              searchPlaceholder="Buscar categoria..."
+              emptyMessage="Nenhuma categoria encontrada."
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
