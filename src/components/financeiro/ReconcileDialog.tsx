@@ -355,33 +355,71 @@ export function ReconcileDialog({
               </div>
             )}
 
-            <Separator />
+            {/* Manual reconciliation fields - always visible */}
+            {reconcileMethod === "manual" && (
+              <>
+                <Separator />
+                <div className="space-y-4 rounded-lg border bg-muted/30 p-4">
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">
+                    Informações da Conciliação Manual
+                  </Label>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="documentNumber">
+                      Número do Documento / Referência
+                    </Label>
+                    <Input
+                      id="documentNumber"
+                      placeholder="Ex: NF 12345, TED 98765, PIX..."
+                      value={documentNumber}
+                      onChange={(e) => setDocumentNumber(e.target.value)}
+                    />
+                  </div>
 
-            {/* Additional info */}
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="documentNumber">
-                  Número do Documento / Referência
-                </Label>
-                <Input
-                  id="documentNumber"
-                  placeholder="Ex: NF 12345, TED 98765, PIX..."
-                  value={documentNumber}
-                  onChange={(e) => setDocumentNumber(e.target.value)}
-                />
-              </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="notes">Observações da Conciliação</Label>
+                    <Textarea
+                      id="notes"
+                      placeholder="Adicione observações sobre esta conciliação..."
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      rows={3}
+                    />
+                  </div>
+                </div>
+              </>
+            )}
 
-              <div className="space-y-2">
-                <Label htmlFor="notes">Observações da Conciliação</Label>
-                <Textarea
-                  id="notes"
-                  placeholder="Adicione observações sobre esta conciliação..."
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  rows={3}
-                />
-              </div>
-            </div>
+            {/* Bank reconciliation - additional fields */}
+            {reconcileMethod === "bank" && selectedBankTransactionId && (
+              <>
+                <Separator />
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="documentNumber">
+                      Número do Documento / Referência (opcional)
+                    </Label>
+                    <Input
+                      id="documentNumber"
+                      placeholder="Ex: NF 12345, TED 98765, PIX..."
+                      value={documentNumber}
+                      onChange={(e) => setDocumentNumber(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="notes">Observações (opcional)</Label>
+                    <Textarea
+                      id="notes"
+                      placeholder="Adicione observações sobre esta conciliação..."
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      rows={2}
+                    />
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </ScrollArea>
 
