@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -11,16 +11,33 @@ import { SearchableSelect } from "./SearchableSelect";
 import { CurrencyInput, parseCurrencyToNumber } from "@/components/ui/currency-input";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface CreateReceivableDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
+  initialData?: {
+    amount?: string;
+    description?: string;
+    due_date?: string;
+    competence_date?: string;
+  };
 }
 
-export function CreateReceivableDialog({ open, onOpenChange, onSuccess }: CreateReceivableDialogProps) {
+interface FormErrors {
+  customer_id?: string;
+  amount?: string;
+  due_date?: string;
+  competence_date?: string;
+  chart_account_id?: string;
+  description?: string;
+}
+
+export function CreateReceivableDialog({ open, onOpenChange, onSuccess, initialData }: CreateReceivableDialogProps) {
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<FormErrors>({});
   const [form, setForm] = useState({
     customer_id: "",
     amount: "",
@@ -35,6 +52,19 @@ export function CreateReceivableDialog({ open, onOpenChange, onSuccess }: Create
     total_installments: "1",
     notes: "",
   });
+
+  // Apply initial data when dialog opens with prefilled data (e.g., from OFX import)
+  useEffect(() => {
+    if (open && initialData) {
+      setForm(prev => ({
+        ...prev,
+        amount: initialData.amount || prev.amount,
+        description: initialData.description || prev.description,
+        due_date: initialData.due_date || prev.due_date,
+        competence_date: initialData.competence_date || prev.competence_date,
+      }));
+    }
+  }, [open, initialData]);
 
   const { data: clients } = useQuery({
     queryKey: ["clients-list"],
@@ -81,23 +111,56 @@ export function CreateReceivableDialog({ open, onOpenChange, onSuccess }: Create
     },
   });
 
+  const validateForm = (): boolean => {
+    const newErrors: FormErrors = {};
+    
+    if (!form.customer_id) {
+      newErrors.customer_id = "Cliente é obrigatório";
+    }
+    if (!form.amount || parseCurrencyToNumber(form.amount) <= 0) {
+      newErrors.amount = "Valor é obrigatório e deve ser maior que zero";
+    }
+    if (!form.due_date) {
+      newErrors.due_date = "Data de vencimento é obrigatória";
+    }
+    if (!form.competence_date) {
+      newErrors.competence_date = "Data de competência é obrigatória";
+    }
+    if (!form.chart_account_id) {
+      newErrors.chart_account_id = "Categoria é obrigatória";
+    }
+    if (!form.description?.trim()) {
+      newErrors.description = "Descrição é obrigatória";
+    }
+
+    setErrors(newErrors);
+    
+    if (Object.keys(newErrors).length > 0) {
+      toast.error("Preencha todos os campos obrigatórios", {
+        description: "Os campos marcados com * são obrigatórios",
+      });
+      return false;
+    }
+    
+    return true;
+  };
+
   const handleSubmit = async () => {
-    if (!form.amount || !form.due_date) {
-      toast.error("Preencha os campos obrigatórios");
+    if (!validateForm()) {
       return;
     }
 
     setLoading(true);
     try {
       const { error } = await supabase.from("fin_receivables").insert({
-        customer_id: form.customer_id || null,
+        customer_id: form.customer_id,
         amount: parseCurrencyToNumber(form.amount),
         due_date: form.due_date,
-        competence_date: form.competence_date || null,
-        chart_account_id: form.chart_account_id || null,
+        competence_date: form.competence_date,
+        chart_account_id: form.chart_account_id,
         cost_center_id: form.cost_center_id || null,
         project_id: form.project_id || null,
-        description: form.description || null,
+        description: form.description,
         document_number: form.document_number || null,
         installment: parseInt(form.installment) || 1,
         total_installments: parseInt(form.total_installments) || 1,
@@ -109,20 +172,7 @@ export function CreateReceivableDialog({ open, onOpenChange, onSuccess }: Create
       toast.success("Conta a receber criada com sucesso!");
       onSuccess();
       onOpenChange(false);
-      setForm({
-        customer_id: "",
-        amount: "",
-        due_date: format(new Date(), "yyyy-MM-dd"),
-        competence_date: format(new Date(), "yyyy-MM-dd"),
-        chart_account_id: "",
-        cost_center_id: "",
-        project_id: "",
-        description: "",
-        document_number: "",
-        installment: "1",
-        total_installments: "1",
-        notes: "",
-      });
+      resetForm();
     } catch (error: any) {
       toast.error("Erro ao criar conta a receber: " + error.message);
     } finally {
@@ -130,8 +180,33 @@ export function CreateReceivableDialog({ open, onOpenChange, onSuccess }: Create
     }
   };
 
+  const resetForm = () => {
+    setForm({
+      customer_id: "",
+      amount: "",
+      due_date: format(new Date(), "yyyy-MM-dd"),
+      competence_date: format(new Date(), "yyyy-MM-dd"),
+      chart_account_id: "",
+      cost_center_id: "",
+      project_id: "",
+      description: "",
+      document_number: "",
+      installment: "1",
+      total_installments: "1",
+      notes: "",
+    });
+    setErrors({});
+  };
+
+  const handleOpenChange = (newOpen: boolean) => {
+    if (!newOpen) {
+      resetForm();
+    }
+    onOpenChange(newOpen);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Nova Conta a Receber</DialogTitle>
@@ -140,9 +215,17 @@ export function CreateReceivableDialog({ open, onOpenChange, onSuccess }: Create
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Cliente</Label>
-              <Select value={form.customer_id} onValueChange={(v) => setForm({ ...form, customer_id: v })}>
-                <SelectTrigger>
+              <Label className="flex items-center gap-1">
+                Cliente <span className="text-destructive">*</span>
+              </Label>
+              <Select 
+                value={form.customer_id} 
+                onValueChange={(v) => {
+                  setForm({ ...form, customer_id: v });
+                  if (errors.customer_id) setErrors({ ...errors, customer_id: undefined });
+                }}
+              >
+                <SelectTrigger className={cn(errors.customer_id && "border-destructive")}>
                   <SelectValue placeholder="Selecione..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -151,47 +234,101 @@ export function CreateReceivableDialog({ open, onOpenChange, onSuccess }: Create
                   ))}
                 </SelectContent>
               </Select>
+              {errors.customer_id && (
+                <p className="text-xs text-destructive flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />
+                  {errors.customer_id}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
-              <Label>Valor *</Label>
+              <Label className="flex items-center gap-1">
+                Valor <span className="text-destructive">*</span>
+              </Label>
               <CurrencyInput
                 value={form.amount}
-                onChange={(v) => setForm({ ...form, amount: v })}
+                onChange={(v) => {
+                  setForm({ ...form, amount: v });
+                  if (errors.amount) setErrors({ ...errors, amount: undefined });
+                }}
+                className={cn(errors.amount && "border-destructive")}
               />
+              {errors.amount && (
+                <p className="text-xs text-destructive flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />
+                  {errors.amount}
+                </p>
+              )}
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Data de Vencimento *</Label>
+              <Label className="flex items-center gap-1">
+                Data de Vencimento <span className="text-destructive">*</span>
+              </Label>
               <Input
                 type="date"
                 value={form.due_date}
-                onChange={(e) => setForm({ ...form, due_date: e.target.value })}
+                onChange={(e) => {
+                  setForm({ ...form, due_date: e.target.value });
+                  if (errors.due_date) setErrors({ ...errors, due_date: undefined });
+                }}
+                className={cn(errors.due_date && "border-destructive")}
               />
+              {errors.due_date && (
+                <p className="text-xs text-destructive flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />
+                  {errors.due_date}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
-              <Label>Data de Competência</Label>
+              <Label className="flex items-center gap-1">
+                Data de Competência <span className="text-destructive">*</span>
+              </Label>
               <Input
                 type="date"
                 value={form.competence_date}
-                onChange={(e) => setForm({ ...form, competence_date: e.target.value })}
+                onChange={(e) => {
+                  setForm({ ...form, competence_date: e.target.value });
+                  if (errors.competence_date) setErrors({ ...errors, competence_date: undefined });
+                }}
+                className={cn(errors.competence_date && "border-destructive")}
               />
+              {errors.competence_date && (
+                <p className="text-xs text-destructive flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />
+                  {errors.competence_date}
+                </p>
+              )}
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label>Categoria (Plano de Contas)</Label>
+            <Label className="flex items-center gap-1">
+              Categoria (Plano de Contas) <span className="text-destructive">*</span>
+            </Label>
             <SearchableSelect
               options={(chartAccounts || []).map(a => ({ value: a.id, label: a.name, code: a.code }))}
               value={form.chart_account_id}
-              onChange={(v) => setForm({ ...form, chart_account_id: v })}
+              onChange={(v) => {
+                setForm({ ...form, chart_account_id: v });
+                if (errors.chart_account_id) setErrors({ ...errors, chart_account_id: undefined });
+              }}
               placeholder="Selecione a categoria..."
               searchPlaceholder="Buscar categoria..."
               emptyMessage="Nenhuma categoria encontrada."
+              className={cn(errors.chart_account_id && "border-destructive")}
             />
+            {errors.chart_account_id && (
+              <p className="text-xs text-destructive flex items-center gap-1">
+                <AlertCircle className="h-3 w-3" />
+                {errors.chart_account_id}
+              </p>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -225,12 +362,24 @@ export function CreateReceivableDialog({ open, onOpenChange, onSuccess }: Create
           </div>
 
           <div className="space-y-2">
-            <Label>Descrição</Label>
+            <Label className="flex items-center gap-1">
+              Descrição <span className="text-destructive">*</span>
+            </Label>
             <Input
               placeholder="Descrição do recebimento..."
               value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              onChange={(e) => {
+                setForm({ ...form, description: e.target.value });
+                if (errors.description) setErrors({ ...errors, description: undefined });
+              }}
+              className={cn(errors.description && "border-destructive")}
             />
+            {errors.description && (
+              <p className="text-xs text-destructive flex items-center gap-1">
+                <AlertCircle className="h-3 w-3" />
+                {errors.description}
+              </p>
+            )}
           </div>
 
           <div className="grid grid-cols-3 gap-4">
@@ -275,7 +424,7 @@ export function CreateReceivableDialog({ open, onOpenChange, onSuccess }: Create
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button variant="outline" onClick={() => handleOpenChange(false)}>Cancelar</Button>
           <Button onClick={handleSubmit} disabled={loading}>
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Criar Conta a Receber

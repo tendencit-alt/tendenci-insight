@@ -32,11 +32,15 @@ import {
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { CreateLedgerEntryDialog } from "./CreateLedgerEntryDialog";
+import { CreatePayableDialog } from "./CreatePayableDialog";
+import { CreateReceivableDialog } from "./CreateReceivableDialog";
 import { LedgerAuditSheet } from "./LedgerAuditSheet";
 import { ReconcileDialog } from "./ReconcileDialog";
 import { SplitEntryDialog } from "./SplitEntryDialog";
+import { OFXImportDialog } from "./OFXImportDialog";
 import { FinanceiroAlerts } from "./FinanceiroAlerts";
 import { toast } from "sonner";
+import { parseOFX, OFXTransaction } from "@/lib/ofx-parser";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -59,6 +63,18 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
   const [splitDialogOpen, setSplitDialogOpen] = useState(false);
   const [selectedForSplit, setSelectedForSplit] = useState<any>(null);
   const [importing, setImporting] = useState(false);
+  
+  // OFX Import states
+  const [ofxDialogOpen, setOfxDialogOpen] = useState(false);
+  const [ofxTransactions, setOfxTransactions] = useState<OFXTransaction[]>([]);
+  const [createPayableOpen, setCreatePayableOpen] = useState(false);
+  const [createReceivableOpen, setCreateReceivableOpen] = useState(false);
+  const [importedData, setImportedData] = useState<{
+    amount?: string;
+    description?: string;
+    due_date?: string;
+    competence_date?: string;
+  } | undefined>(undefined);
 
   const dateField = "cash_date";
 
@@ -313,12 +329,38 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
 
     setImporting(true);
     try {
-      toast.info("Funcionalidade de importação OFX em desenvolvimento");
+      const content = await file.text();
+      const result = parseOFX(content);
+      
+      if (result.transactions.length === 0) {
+        toast.warning("Nenhuma transação encontrada no arquivo OFX");
+      } else {
+        setOfxTransactions(result.transactions);
+        setOfxDialogOpen(true);
+        toast.success(`${result.transactions.length} transações importadas`);
+      }
     } catch (error: any) {
       toast.error("Erro ao importar arquivo: " + error.message);
     } finally {
       setImporting(false);
       event.target.value = "";
+    }
+  };
+
+  const handleOFXTransactionSelect = (tx: OFXTransaction) => {
+    const formData = {
+      amount: tx.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+      description: tx.description,
+      due_date: tx.date,
+      competence_date: tx.date,
+    };
+    setImportedData(formData);
+    setOfxDialogOpen(false);
+    
+    if (tx.type === 'DEBIT') {
+      setCreatePayableOpen(true);
+    } else {
+      setCreateReceivableOpen(true);
     }
   };
 
@@ -750,6 +792,24 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
         onOpenChange={setSplitDialogOpen}
         entry={selectedForSplit}
         onSuccess={handleSplitSuccess}
+      />
+      <OFXImportDialog
+        open={ofxDialogOpen}
+        onOpenChange={setOfxDialogOpen}
+        transactions={ofxTransactions}
+        onSelectTransaction={handleOFXTransactionSelect}
+      />
+      <CreatePayableDialog
+        open={createPayableOpen}
+        onOpenChange={setCreatePayableOpen}
+        onSuccess={() => { refetchEntries(); setImportedData(undefined); }}
+        initialData={importedData}
+      />
+      <CreateReceivableDialog
+        open={createReceivableOpen}
+        onOpenChange={setCreateReceivableOpen}
+        onSuccess={() => { refetchEntries(); setImportedData(undefined); }}
+        initialData={importedData}
       />
     </div>
   );
