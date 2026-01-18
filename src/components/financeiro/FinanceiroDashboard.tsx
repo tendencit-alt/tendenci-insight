@@ -10,7 +10,7 @@ interface FinanceiroDashboardProps {
 }
 
 export function FinanceiroDashboard({ filters }: FinanceiroDashboardProps) {
-  const dateField = filters.regime === "CAIXA" ? "cash_date" : "competence_date";
+  const dateField = "cash_date";
 
   // Fetch dashboard metrics
   const { data: metrics, isLoading } = useQuery({

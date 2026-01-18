@@ -12,7 +12,7 @@ interface FinanceiroChartsProps {
 }
 
 export function FinanceiroCharts({ filters }: FinanceiroChartsProps) {
-  const dateField = filters.regime === "CAIXA" ? "cash_date" : "competence_date";
+  const dateField = "cash_date";
 
   // Fetch monthly data for charts
   const { data: monthlyData, isLoading } = useQuery({
