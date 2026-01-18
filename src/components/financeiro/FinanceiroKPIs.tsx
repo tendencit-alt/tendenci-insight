@@ -1,7 +1,13 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { TrendingUp, TrendingDown, Wallet, PiggyBank, Flame } from "lucide-react";
+import { TrendingUp, TrendingDown, Wallet, PiggyBank, Flame, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface FinanceiroKPIsProps {
   metrics?: {
@@ -33,6 +39,7 @@ export function FinanceiroKPIs({ metrics, isLoading }: FinanceiroKPIsProps) {
       icon: Wallet,
       color: "text-blue-600",
       bgColor: "bg-blue-50",
+      info: "Soma de todos os saldos das contas bancárias. Use para avaliar a liquidez imediata da empresa e capacidade de honrar compromissos de curto prazo.",
     },
     {
       title: "Entradas",
@@ -40,6 +47,7 @@ export function FinanceiroKPIs({ metrics, isLoading }: FinanceiroKPIsProps) {
       icon: TrendingUp,
       color: "text-green-600",
       bgColor: "bg-green-50",
+      info: "Total de receitas recebidas no período. Analise tendências de crescimento e sazonalidade. Quedas consecutivas indicam necessidade de ação comercial.",
     },
     {
       title: "Saídas",
@@ -47,6 +55,7 @@ export function FinanceiroKPIs({ metrics, isLoading }: FinanceiroKPIsProps) {
       icon: TrendingDown,
       color: "text-red-600",
       bgColor: "bg-red-50",
+      info: "Total de despesas pagas no período. Monitore para identificar gastos excessivos ou oportunidades de redução de custos.",
     },
     {
       title: "Resultado",
@@ -54,6 +63,7 @@ export function FinanceiroKPIs({ metrics, isLoading }: FinanceiroKPIsProps) {
       icon: PiggyBank,
       color: (metrics?.resultado || 0) >= 0 ? "text-green-600" : "text-red-600",
       bgColor: (metrics?.resultado || 0) >= 0 ? "bg-green-50" : "bg-red-50",
+      info: "Diferença entre entradas e saídas. Resultado negativo recorrente indica que a operação não é sustentável. Avalie corte de custos ou aumento de receita.",
     },
     {
       title: "Consumo / Fôlego",
@@ -63,6 +73,7 @@ export function FinanceiroKPIs({ metrics, isLoading }: FinanceiroKPIsProps) {
       color: runway > 6 ? "text-green-600" : runway > 3 ? "text-yellow-600" : "text-red-600",
       bgColor: runway > 6 ? "bg-green-50" : runway > 3 ? "bg-yellow-50" : "bg-red-50",
       isCombo: true,
+      info: "Consumo mensal médio e quantos meses a empresa pode operar com o saldo atual. Menos de 3 meses = urgente buscar capital ou cortar custos. 3-6 meses = atenção.",
     },
   ];
 
@@ -82,35 +93,47 @@ export function FinanceiroKPIs({ metrics, isLoading }: FinanceiroKPIsProps) {
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-5">
-      {kpis.map((kpi, index) => (
-        <Card key={index} className="relative overflow-hidden">
-          <CardContent className="pt-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground font-medium">{kpi.title}</p>
-                {kpi.isCombo ? (
-                  <div>
-                    <p className="text-sm text-muted-foreground">
-                      {formatCurrency(kpi.value)}/mês
-                    </p>
-                    <p className={cn("text-xl font-bold", kpi.color)}>
-                      {kpi.secondaryValue} meses
-                    </p>
+    <TooltipProvider>
+      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-5">
+        {kpis.map((kpi, index) => (
+          <Card key={index} className="relative overflow-hidden">
+            <CardContent className="pt-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1">
+                    <p className="text-xs text-muted-foreground font-medium">{kpi.title}</p>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="h-3 w-3 text-muted-foreground/60 cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-[250px] text-xs">
+                        <p>{kpi.info}</p>
+                      </TooltipContent>
+                    </Tooltip>
                   </div>
-                ) : (
-                  <p className={cn("text-xl font-bold", kpi.color)}>
-                    {formatCurrency(kpi.value)}
-                  </p>
-                )}
+                  {kpi.isCombo ? (
+                    <div>
+                      <p className="text-sm text-muted-foreground">
+                        {formatCurrency(kpi.value)}/mês
+                      </p>
+                      <p className={cn("text-xl font-bold", kpi.color)}>
+                        {kpi.secondaryValue} meses
+                      </p>
+                    </div>
+                  ) : (
+                    <p className={cn("text-xl font-bold", kpi.color)}>
+                      {formatCurrency(kpi.value)}
+                    </p>
+                  )}
+                </div>
+                <div className={cn("p-2 rounded-full", kpi.bgColor)}>
+                  <kpi.icon className={cn("h-5 w-5", kpi.color)} />
+                </div>
               </div>
-              <div className={cn("p-2 rounded-full", kpi.bgColor)}>
-                <kpi.icon className={cn("h-5 w-5", kpi.color)} />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </TooltipProvider>
   );
 }
