@@ -133,26 +133,45 @@ export function ViewEditReceivableDialog({ open, onOpenChange, receivable, onSuc
 
     setLoading(true);
     try {
+      const updateData = {
+        customer_id: form.customer_id,
+        amount: parseCurrencyToNumber(form.amount),
+        due_date: form.due_date,
+        competence_date: form.competence_date || form.due_date,
+        chart_account_id: form.chart_account_id || null,
+        cost_center_id: form.cost_center_id || null,
+        project_id: form.project_id || null,
+        description: form.description,
+        document_number: form.document_number || null,
+        installment: parseInt(form.installment) || 1,
+        total_installments: parseInt(form.total_installments) || 1,
+        notes: form.notes || null,
+        status: form.status,
+      };
+
       const { error } = await supabase
         .from("fin_receivables")
-        .update({
-          customer_id: form.customer_id,
-          amount: parseCurrencyToNumber(form.amount),
-          due_date: form.due_date,
-          competence_date: form.competence_date || form.due_date,
-          chart_account_id: form.chart_account_id || null,
-          cost_center_id: form.cost_center_id || null,
-          project_id: form.project_id || null,
-          description: form.description,
-          document_number: form.document_number || null,
-          installment: parseInt(form.installment) || 1,
-          total_installments: parseInt(form.total_installments) || 1,
-          notes: form.notes || null,
-          status: form.status,
-        })
+        .update(updateData)
         .eq("id", receivable.id);
 
       if (error) throw error;
+
+      // Sync linked ledger entry with key fields (project, cost center, chart account, amount, description)
+      if (receivable.ledger_entry_id) {
+        await supabase
+          .from("fin_ledger_entries")
+          .update({
+            project_id: form.project_id || null,
+            cost_center_id: form.cost_center_id || null,
+            chart_account_id: form.chart_account_id || null,
+            amount: parseCurrencyToNumber(form.amount),
+            description: form.description,
+            competence_date: form.competence_date || form.due_date,
+            document_number: form.document_number || null,
+            notes: form.notes || null,
+          })
+          .eq("id", receivable.ledger_entry_id);
+      }
 
       toast.success("Conta a receber atualizada com sucesso!");
       invalidateReceivables();
