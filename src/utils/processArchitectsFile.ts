@@ -1,12 +1,8 @@
-import * as XLSX from 'xlsx';
+import { readExcelFromUrl } from './excelReader';
 
 export async function processArchitectsFromFile(filePath: string) {
   try {
-    const response = await fetch(filePath);
-    const arrayBuffer = await response.arrayBuffer();
-    const workbook = XLSX.read(arrayBuffer);
-    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-    const data = XLSX.utils.sheet_to_json(firstSheet);
+    const data = await readExcelFromUrl(filePath);
     
     const architects = data.map((row: any) => {
       // Processar data de nascimento
@@ -16,6 +12,9 @@ export async function processArchitectsFromFile(filePath: string) {
         if (dateStr.includes('/')) {
           const [day, month, year] = dateStr.split('/');
           birthday = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        } else if (dateStr.includes('-') || dateStr.includes('T')) {
+          // ISO format from Date object
+          birthday = dateStr.split('T')[0];
         }
       }
 

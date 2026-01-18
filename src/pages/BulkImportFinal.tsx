@@ -3,7 +3,7 @@ import { Card } from '@/components/ui/card';
 import { Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import * as XLSX from 'xlsx';
+import { readExcelFromUrl } from '@/utils/excelReader';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -21,16 +21,12 @@ export default function BulkImportFinal() {
       console.log('Iniciando importação massiva...');
       
       // Carregar a planilha
-      const response = await fetch('/data/Metropolitano_01.xlsx');
-      const arrayBuffer = await response.arrayBuffer();
-      const workbook = XLSX.read(arrayBuffer);
-      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-      const data: any[] = XLSX.utils.sheet_to_json(firstSheet);
+      const data = await readExcelFromUrl('/data/Metropolitano_01.xlsx');
       
       console.log(`Total de registros na planilha: ${data.length}`);
       
       // Processar todos os registros
-      const architects = data.map((row) => {
+      const architects = data.map((row: any) => {
         // Determinar o nome (prioridade: Nome do Profissional > Empresa)
         let name = '';
         if (row['Nome do Profissional'] && row['Nome do Profissional'] !== '—' && row['Nome do Profissional'] !== '') {
@@ -58,7 +54,7 @@ export default function BulkImportFinal() {
           categoria: 'metropolitano',
           status_funil: 'novo_arquiteto',
         };
-      }).filter(a => {
+      }).filter((a: any) => {
         // Filtrar apenas se tiver nome E telefone válido
         return a.name && a.phone && a.phone.length >= 8;
       });
@@ -69,13 +65,13 @@ export default function BulkImportFinal() {
       const { data: existingArchitects } = await supabase
         .from('architects')
         .select('phone')
-        .in('phone', architects.map(a => a.phone));
+        .in('phone', architects.map((a: any) => a.phone));
       
       const existingPhones = new Set(existingArchitects?.map(a => a.phone) || []);
       console.log(`Telefones já existentes no banco: ${existingPhones.size}`);
       
       // Filtrar arquitetos que ainda não existem
-      const newArchitects = architects.filter(a => !existingPhones.has(a.phone));
+      const newArchitects = architects.filter((a: any) => !existingPhones.has(a.phone));
       console.log(`Novos arquitetos a inserir: ${newArchitects.length}`);
       
       if (newArchitects.length === 0) {

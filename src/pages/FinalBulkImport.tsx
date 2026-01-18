@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import * as XLSX from 'xlsx';
+import { readExcelFromUrl } from '@/utils/excelReader';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, CheckCircle, AlertCircle } from "lucide-react";
@@ -21,11 +21,7 @@ export default function FinalBulkImport() {
       setStatus('processing');
       console.log('Fetching Excel file...');
       
-      const response = await fetch('/data/aniversariantes-2.xlsx');
-      const arrayBuffer = await response.arrayBuffer();
-      const workbook = XLSX.read(arrayBuffer);
-      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-      const data = XLSX.utils.sheet_to_json(firstSheet);
+      const data = await readExcelFromUrl('/data/aniversariantes-2.xlsx');
 
       console.log(`Excel loaded: ${data.length} rows`);
       setProgress(prev => ({ ...prev, total: data.length }));
@@ -51,6 +47,9 @@ export default function FinalBulkImport() {
             if (year && parseInt(year) > 1900 && parseInt(year) < 2025) {
               birthday = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
             }
+          } else if (dateStr.includes('-') || dateStr.includes('T')) {
+            // ISO format from Date object
+            birthday = dateStr.split('T')[0];
           }
         }
 

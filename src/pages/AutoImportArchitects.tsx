@@ -3,7 +3,7 @@ import { Card } from '@/components/ui/card';
 import { Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import * as XLSX from 'xlsx';
+import { readExcelFromUrl } from '@/utils/excelReader';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -21,16 +21,12 @@ export default function AutoImportArchitects() {
       setStatus('processing');
       
       // Carregar a planilha
-      const response = await fetch('/data/Metropolitano_01.xlsx');
-      const arrayBuffer = await response.arrayBuffer();
-      const workbook = XLSX.read(arrayBuffer);
-      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-      const data: any[] = XLSX.utils.sheet_to_json(firstSheet);
+      const data = await readExcelFromUrl('/data/Metropolitano_01.xlsx');
       
       console.log(`Total de registros na planilha: ${data.length}`);
       
       // Processar cada linha com validação mais robusta
-      const architects = data.map((row, index) => {
+      const architects = data.map((row: any, index: number) => {
         // Processar data de nascimento
         let birthday = null;
         if (row['Data de Nascimento']) {
@@ -45,6 +41,9 @@ export default function AutoImportArchitects() {
               if (year.length === 4) fullYear = year;
               
               birthday = `${fullYear}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+            } else if (dateStr.includes('-') || dateStr.includes('T')) {
+              // ISO format from Date object
+              birthday = dateStr.split('T')[0];
             }
           } catch (e) {
             console.log(`Erro ao processar data na linha ${index + 1}:`, row['Data de Nascimento']);
@@ -79,7 +78,7 @@ export default function AutoImportArchitects() {
           birthday,
           categoria: 'metropolitano',
         };
-      }).filter(a => {
+      }).filter((a: any) => {
         // Filtrar apenas se tiver nome E telefone com pelo menos 8 dígitos
         const isValid = a.name && a.phone && a.phone.length >= 8;
         if (!isValid) {

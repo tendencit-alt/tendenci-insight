@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Upload, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import * as XLSX from "xlsx";
+import { readExcelFile } from "@/utils/excelReader";
 import { useAuth } from "@/contexts/AuthContext";
 
 export const ImportArchitectsData = () => {
@@ -33,16 +33,7 @@ export const ImportArchitectsData = () => {
     setResults(null);
 
     try {
-      const data = await file.arrayBuffer();
-      const workbook = XLSX.read(data, { 
-        type: "array",
-        cellDates: true,
-        cellNF: false,
-        cellText: false
-      });
-      const sheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[sheetName];
-      const jsonData = XLSX.utils.sheet_to_json(worksheet) as any[];
+      const jsonData = await readExcelFile(file);
 
       console.log("Dados extraídos da planilha:", jsonData.length, "linhas");
 
