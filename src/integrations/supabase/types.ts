@@ -8268,41 +8268,70 @@ export type Database = {
           valor_total: number
         }[]
       }
-      get_prospeccao_architects_optimized: {
-        Args: {
-          p_cidade?: string
-          p_phone_search?: string
-          p_search?: string
-          p_show_nao_contactados?: boolean
-          p_status_funil?: string
-          p_tier?: string
-          p_vendedor_id?: string
-        }
-        Returns: {
-          city: string
-          company: string
-          data_primeiro_contato: string
-          data_ultimo_contato: string
-          email: string
-          id: string
-          name: string
-          phone: string
-          produtos_indicados: string[]
-          status_funil: string
-          tag_prospeccao: string
-          tier: string
-          total_indicacoes: number
-          total_projects: number
-          ultimo_projeto_data: string
-          ultimo_vendedor_full_name: string
-          ultimo_vendedor_username: string
-          vendedor_email: string
-          vendedor_full_name: string
-          vendedor_responsavel: string
-          vendedor_username: string
-          whatsapp_valido: boolean
-        }[]
-      }
+      get_prospeccao_architects_optimized:
+        | {
+            Args: {
+              p_cidade?: string
+              p_nao_contactados?: boolean
+              p_phone?: string
+              p_search?: string
+              p_status?: string
+              p_tier?: string
+              p_vendedor?: string
+            }
+            Returns: {
+              active: boolean
+              city: string
+              company: string
+              created_at: string
+              data_primeiro_contato: string
+              data_ultimo_contato: string
+              email: string
+              id: string
+              instagram: string
+              name: string
+              phone: string
+              status_funil: string
+              tier: string
+              vendedor_nome: string
+              vendedor_responsavel: string
+            }[]
+          }
+        | {
+            Args: {
+              p_cidade?: string
+              p_phone_search?: string
+              p_search?: string
+              p_show_nao_contactados?: boolean
+              p_status_funil?: string
+              p_tier?: string
+              p_vendedor_id?: string
+            }
+            Returns: {
+              city: string
+              company: string
+              data_primeiro_contato: string
+              data_ultimo_contato: string
+              email: string
+              id: string
+              name: string
+              phone: string
+              produtos_indicados: string[]
+              status_funil: string
+              tag_prospeccao: string
+              tier: string
+              total_indicacoes: number
+              total_projects: number
+              ultimo_projeto_data: string
+              ultimo_vendedor_full_name: string
+              ultimo_vendedor_username: string
+              vendedor_email: string
+              vendedor_full_name: string
+              vendedor_responsavel: string
+              vendedor_username: string
+              whatsapp_valido: boolean
+            }[]
+          }
       get_seller_goal_stats: { Args: { p_vendedor_id: string }; Returns: Json }
       get_seller_performance_by_goal: {
         Args: { p_seller_goal_id: string }
@@ -8410,19 +8439,31 @@ export type Database = {
             }
             Returns: Json
           }
-      production_sla_alerts: {
-        Args: { p_type_id?: string }
-        Returns: {
-          alert_type: string
-          hours_overdue: number
-          order_id: string
-          order_number: number
-          phase_name: string
-          planned_end_date: string
-          priority: string
-          title: string
-        }[]
-      }
+      production_sla_alerts:
+        | {
+            Args: never
+            Returns: {
+              hours_in_phase: number
+              is_overdue: boolean
+              order_id: string
+              order_number: string
+              phase_name: string
+              sla_hours: number
+            }[]
+          }
+        | {
+            Args: { p_type_id?: string }
+            Returns: {
+              alert_type: string
+              hours_overdue: number
+              order_id: string
+              order_number: number
+              phase_name: string
+              planned_end_date: string
+              priority: string
+              title: string
+            }[]
+          }
       production_sla_metrics: {
         Args: { p_type_id?: string }
         Returns: {
