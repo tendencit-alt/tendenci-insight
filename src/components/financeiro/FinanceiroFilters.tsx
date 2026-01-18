@@ -195,7 +195,7 @@ export function FinanceiroFilters({ filters, onChange }: FinanceiroFiltersProps)
           </div>
         </div>
 
-        <CollapsibleContent>
+        <CollapsibleContent forceMount className={isExpanded ? "animate-in fade-in-0" : "hidden"}>
           <div className="p-3 space-y-3">
             {/* First Row: Period & Search */}
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
