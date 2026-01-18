@@ -74,7 +74,21 @@ export function LedgerTab({ filters }: LedgerTabProps) {
     }
   };
 
-  const getTypeBadge = (type: string) => {
+  const getTypeBadge = (type: string, compact?: boolean) => {
+    if (compact) {
+      switch (type) {
+        case "RECEITA":
+          return <Badge className="bg-green-600 px-1.5">{getTypeIcon(type)}</Badge>;
+        case "DESPESA":
+          return <Badge variant="destructive" className="px-1.5">{getTypeIcon(type)}</Badge>;
+        case "TRANSFERENCIA":
+          return <Badge variant="secondary" className="px-1.5">{getTypeIcon(type)}</Badge>;
+        case "AJUSTE":
+          return <Badge variant="outline" className="px-1.5 text-[10px]">AJ</Badge>;
+        default:
+          return <Badge variant="outline" className="px-1.5 text-[10px]">{type?.slice(0, 2)}</Badge>;
+      }
+    }
     switch (type) {
       case "RECEITA":
         return <Badge className="bg-green-600 gap-1">{getTypeIcon(type)} Receita</Badge>;
@@ -161,7 +175,7 @@ export function LedgerTab({ filters }: LedgerTabProps) {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="text-xs w-[70px] sm:w-[85px]">Data</TableHead>
-                    <TableHead className="text-xs w-[60px] sm:w-[80px]">Tipo</TableHead>
+                    <TableHead className="text-xs w-[35px] sm:w-[100px]">Tipo</TableHead>
                     <TableHead className="text-xs">Descrição</TableHead>
                     <TableHead className="text-xs hidden md:table-cell w-[100px]">Conta</TableHead>
                     <TableHead className="text-xs hidden lg:table-cell w-[120px]">Categoria</TableHead>
@@ -183,7 +197,10 @@ export function LedgerTab({ filters }: LedgerTabProps) {
                         <TableCell className="font-medium text-xs truncate">
                           {entry[dateField] && format(new Date(entry[dateField]), "dd/MM/yy", { locale: ptBR })}
                         </TableCell>
-                        <TableCell className="text-xs">{getTypeBadge(entry.type)}</TableCell>
+                        <TableCell className="text-xs">
+                          <span className="sm:hidden">{getTypeBadge(entry.type, true)}</span>
+                          <span className="hidden sm:inline">{getTypeBadge(entry.type)}</span>
+                        </TableCell>
                         <TableCell className="text-xs truncate">
                           {entry.description}
                           {entry.reversal_of_id && (
