@@ -668,32 +668,27 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
         {/* Ponto de Equilíbrio Meta */}
         <Card className="border-primary/20 bg-primary/5">
           <CardContent className="p-3 sm:p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Target className="h-3 w-3" />
-                  Ponto Equilíbrio Meta
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <Info className="h-3 w-3 text-muted-foreground/50" />
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-xs">
-                      <p className="text-xs">Calculado automaticamente: Custos Fixos ÷ Margem de Contribuição %</p>
-                      <p className="text-xs text-muted-foreground mt-1">Baseado na meta de receitas cadastrada</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </p>
-                <p className="text-lg sm:text-xl font-bold text-primary">
-                  {(dreData?.summary.pontoEquilibrioMeta || 0) >= Number.MAX_SAFE_INTEGER 
-                    ? "∞ (Impossível)" 
-                    : (dreData?.summary.custosFixos || 0) === 0 
-                      ? "Sem custos fixos"
-                      : formatCurrency(dreData?.summary.pontoEquilibrioMeta || 0)}
-                </p>
-              </div>
-              <div className="hidden sm:block p-2 rounded-full bg-primary/10">
-                <Target className="h-5 w-5 text-primary" />
-              </div>
+            <div>
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <Target className="h-3 w-3" />
+                Ponto Equilíbrio Meta
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Info className="h-3 w-3 text-muted-foreground/50" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p className="text-xs">Calculado automaticamente: Custos Fixos ÷ Margem de Contribuição %</p>
+                    <p className="text-xs text-muted-foreground mt-1">Baseado na meta de receitas cadastrada</p>
+                  </TooltipContent>
+                </Tooltip>
+              </p>
+              <p className="text-base sm:text-lg font-bold text-primary">
+                {(dreData?.summary.pontoEquilibrioMeta || 0) >= Number.MAX_SAFE_INTEGER 
+                  ? "∞ (Impossível)" 
+                  : (dreData?.summary.custosFixos || 0) === 0 
+                    ? "Sem custos fixos"
+                    : formatCurrency(dreData?.summary.pontoEquilibrioMeta || 0)}
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -706,54 +701,39 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
             : "border-red-500/30 bg-red-500/5"
         )}>
           <CardContent className="p-3 sm:p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground flex items-center gap-1">
-                  <TrendingUp className="h-3 w-3" />
-                  Ponto Equilíbrio Realizado
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <Info className="h-3 w-3 text-muted-foreground/50" />
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-xs text-left">
-                      <p className="text-xs font-semibold mb-1">Fórmula: Custos Fixos ÷ MC%</p>
-                      <div className="text-xs space-y-0.5">
-                        <p>📊 <span className="text-green-500">Receitas (1.x):</span> {formatCurrency(dreData?.summary.totalReceitas || 0)}</p>
-                        <p>📦 <span className="text-orange-500">Custos Variáveis (2.x + 3.x):</span> {formatCurrency(dreData?.summary.custosVariaveis || 0)}</p>
-                        <p>🏢 <span className="text-red-500">Custos Fixos (5.x):</span> {formatCurrency(dreData?.summary.custosFixos || 0)}</p>
-                        <p>📈 <span className="text-blue-500">Margem Contribuição:</span> {(dreData?.summary.margemContribuicaoPercent || 0).toFixed(1)}%</p>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-2 border-t pt-1">Contas identificadas automaticamente pelo código</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </p>
-                <p className={cn(
-                  "text-lg sm:text-xl font-bold",
-                  (dreData?.summary.pontoEquilibrioRealizado || 0) >= Number.MAX_SAFE_INTEGER 
-                    ? "text-red-600"
-                    : (dreData?.summary.totalReceitas || 0) >= (dreData?.summary.pontoEquilibrioRealizado || 0)
-                      ? "text-green-600"
-                      : "text-red-600"
-                )}>
-                  {(dreData?.summary.pontoEquilibrioRealizado || 0) >= Number.MAX_SAFE_INTEGER 
-                    ? "∞ (Impossível)" 
-                    : (dreData?.summary.custosFixos || 0) === 0 
-                      ? "Sem custos fixos"
-                      : formatCurrency(dreData?.summary.pontoEquilibrioRealizado || 0)}
-                </p>
-              </div>
-              <div className={cn(
-                "hidden sm:block p-2 rounded-full",
-                (dreData?.summary.totalReceitas || 0) >= (dreData?.summary.pontoEquilibrioRealizado || 0)
-                  ? "bg-green-500/10"
-                  : "bg-red-500/10"
+            <div>
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <TrendingUp className="h-3 w-3" />
+                Ponto Equilíbrio Realizado
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Info className="h-3 w-3 text-muted-foreground/50" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs text-left">
+                    <p className="text-xs font-semibold mb-1">Fórmula: Custos Fixos ÷ MC%</p>
+                    <div className="text-xs space-y-0.5">
+                      <p>📊 <span className="text-green-500">Receitas (1.x):</span> {formatCurrency(dreData?.summary.totalReceitas || 0)}</p>
+                      <p>📦 <span className="text-orange-500">Custos Variáveis (2.x + 3.x):</span> {formatCurrency(dreData?.summary.custosVariaveis || 0)}</p>
+                      <p>🏢 <span className="text-red-500">Custos Fixos (5.x):</span> {formatCurrency(dreData?.summary.custosFixos || 0)}</p>
+                      <p>📈 <span className="text-blue-500">Margem Contribuição:</span> {(dreData?.summary.margemContribuicaoPercent || 0).toFixed(1)}%</p>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              </p>
+              <p className={cn(
+                "text-base sm:text-lg font-bold",
+                (dreData?.summary.pontoEquilibrioRealizado || 0) >= Number.MAX_SAFE_INTEGER 
+                  ? "text-red-600"
+                  : (dreData?.summary.totalReceitas || 0) >= (dreData?.summary.pontoEquilibrioRealizado || 0)
+                    ? "text-green-600"
+                    : "text-red-600"
               )}>
-                {(dreData?.summary.totalReceitas || 0) >= (dreData?.summary.pontoEquilibrioRealizado || 0) ? (
-                  <CheckCircle className="h-5 w-5 text-green-600" />
-                ) : (
-                  <AlertTriangle className="h-5 w-5 text-red-600" />
-                )}
-              </div>
+                {(dreData?.summary.pontoEquilibrioRealizado || 0) >= Number.MAX_SAFE_INTEGER 
+                  ? "∞ (Impossível)" 
+                  : (dreData?.summary.custosFixos || 0) === 0 
+                    ? "Sem custos fixos"
+                    : formatCurrency(dreData?.summary.pontoEquilibrioRealizado || 0)}
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -761,55 +741,60 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
         {/* Margem de Contribuição */}
         <Card>
           <CardContent className="p-3 sm:p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground flex items-center gap-1">
-                  Margem Contribuição
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <Info className="h-3 w-3 text-muted-foreground/50" />
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-xs">
-                      <p className="text-xs">MC = Receitas - Custos Variáveis</p>
-                      <p className="text-xs text-muted-foreground mt-1">MC% = (MC ÷ Receitas) × 100</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </p>
-                <p className="text-lg sm:text-xl font-bold">
-                  {(dreData?.summary.margemContribuicaoPercent || 0).toFixed(1)}%
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {formatCurrency(dreData?.summary.margemContribuicao || 0)}
-                </p>
-              </div>
+            <div>
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                Margem Contribuição
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Info className="h-3 w-3 text-muted-foreground/50" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p className="text-xs">MC = Receitas - Custos Variáveis</p>
+                    <p className="text-xs text-muted-foreground mt-1">MC% = (MC ÷ Receitas) × 100</p>
+                  </TooltipContent>
+                </Tooltip>
+              </p>
+              <p className="text-base sm:text-lg font-bold">
+                {(dreData?.summary.margemContribuicaoPercent || 0).toFixed(1)}%
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {formatCurrency(dreData?.summary.margemContribuicao || 0)}
+              </p>
             </div>
           </CardContent>
         </Card>
 
-        {/* Status */}
-        <Card>
+        {/* Status - Valor Faltante em Destaque */}
+        <Card className={cn(
+          "border-2",
+          (dreData?.summary.totalReceitas || 0) >= (dreData?.summary.pontoEquilibrioRealizado || 0)
+            ? "border-green-500/50 bg-green-500/10"
+            : "border-red-500/50 bg-red-500/10"
+        )}>
           <CardContent className="p-3 sm:p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground">Status</p>
-                {(dreData?.summary.totalReceitas || 0) >= (dreData?.summary.pontoEquilibrioRealizado || 0) ? (
+            <div>
+              <p className="text-xs text-muted-foreground">Status</p>
+              {(dreData?.summary.totalReceitas || 0) >= (dreData?.summary.pontoEquilibrioRealizado || 0) ? (
+                <>
                   <Badge className="bg-green-600 mt-1 gap-1">
                     <CheckCircle className="h-3 w-3" />
                     Acima do Equilíbrio
                   </Badge>
-                ) : (
+                  <p className="text-sm text-green-600 font-medium mt-2">
+                    Excedente: {formatCurrency((dreData?.summary.totalReceitas || 0) - (dreData?.summary.pontoEquilibrioRealizado || 0))}
+                  </p>
+                </>
+              ) : (
+                <>
                   <Badge variant="destructive" className="mt-1 gap-1">
                     <AlertTriangle className="h-3 w-3" />
                     Abaixo do Equilíbrio
                   </Badge>
-                )}
-                <p className="text-xs text-muted-foreground mt-1">
-                  {(dreData?.summary.totalReceitas || 0) >= (dreData?.summary.pontoEquilibrioRealizado || 0) 
-                    ? `Excedente: ${formatCurrency((dreData?.summary.totalReceitas || 0) - (dreData?.summary.pontoEquilibrioRealizado || 0))}`
-                    : `Faltam: ${formatCurrency((dreData?.summary.pontoEquilibrioRealizado || 0) - (dreData?.summary.totalReceitas || 0))}`
-                  }
-                </p>
-              </div>
+                  <p className="text-lg sm:text-xl font-bold text-red-600 mt-2">
+                    Faltam: {formatCurrency((dreData?.summary.pontoEquilibrioRealizado || 0) - (dreData?.summary.totalReceitas || 0))}
+                  </p>
+                </>
+              )}
             </div>
           </CardContent>
         </Card>
