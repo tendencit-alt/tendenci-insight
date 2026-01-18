@@ -36,7 +36,7 @@ export function CreateLedgerEntryDialog({ open, onOpenChange, onSuccess }: Creat
     description: "",
     amount: "",
     competence_date: format(new Date(), "yyyy-MM-dd"),
-    cash_date: format(new Date(), "yyyy-MM-dd"),
+    cash_date: "",
     bank_account_id: "",
     chart_account_id: "",
     cost_center_id: "",
@@ -48,10 +48,9 @@ export function CreateLedgerEntryDialog({ open, onOpenChange, onSuccess }: Creat
     is_recurring: false,
     recurrence_type: "monthly" as "daily" | "weekly" | "monthly" | "yearly",
     recurrence_count: 12,
-    // Integration fields
-    create_linked_record: false,
+    // Integration fields - always create linked record
     party_id: "",
-    party_type: "" as "" | "supplier" | "client",
+    party_type: "supplier" as "" | "supplier" | "client",
     due_date: format(new Date(), "yyyy-MM-dd"),
   });
 
@@ -187,8 +186,8 @@ export function CreateLedgerEntryDialog({ open, onOpenChange, onSuccess }: Creat
       return;
     }
 
-    // Validate linked record fields
-    if (form.create_linked_record) {
+    // Validate linked record fields - MANDATORY for DESPESA/RECEITA
+    if (form.type === "DESPESA" || form.type === "RECEITA") {
       if (!form.party_id) {
         toast.error(form.type === "DESPESA" ? "Selecione um Fornecedor" : "Selecione um Cliente");
         return;
@@ -201,12 +200,15 @@ export function CreateLedgerEntryDialog({ open, onOpenChange, onSuccess }: Creat
 
     setLoading(true);
     try {
+      // Always create linked record for DESPESA/RECEITA
+      const shouldCreateLinked = form.type === "DESPESA" || form.type === "RECEITA";
+      
       if (form.is_recurring && form.recurrence_count > 1) {
         // Create recurring entries with integration
         for (let i = 0; i < form.recurrence_count; i++) {
           const nextCompetenceDate = calculateNextDate(form.competence_date, form.recurrence_type, i);
           const nextCashDate = form.cash_date ? calculateNextDate(form.cash_date, form.recurrence_type, i) : null;
-          const nextDueDate = form.create_linked_record ? calculateNextDate(form.due_date, form.recurrence_type, i) : undefined;
+          const nextDueDate = shouldCreateLinked ? calculateNextDate(form.due_date, form.recurrence_type, i) : undefined;
 
           await createLedgerEntryWithIntegration(
             {
@@ -222,14 +224,15 @@ export function CreateLedgerEntryDialog({ open, onOpenChange, onSuccess }: Creat
               payment_method: form.payment_method || null,
               document_number: form.document_number ? `${form.document_number} (${i + 1}/${form.recurrence_count})` : null,
               notes: form.notes || null,
-              party_id: form.create_linked_record ? form.party_id : null,
-              party_type: form.create_linked_record ? form.party_type : null,
+              party_id: shouldCreateLinked ? form.party_id : null,
+              party_type: shouldCreateLinked ? form.party_type : null,
             },
-            form.create_linked_record,
+            shouldCreateLinked,
             nextDueDate
           );
         }
-        toast.success(`${form.recurrence_count} lançamentos criados com sucesso!`);
+        const linkedType = form.type === "DESPESA" ? "Contas a Pagar" : "Contas a Receber";
+        toast.success(`${form.recurrence_count} lançamentos e ${linkedType} criados com sucesso!`);
       } else {
         // Single entry with integration
         await createLedgerEntryWithIntegration(
@@ -246,14 +249,14 @@ export function CreateLedgerEntryDialog({ open, onOpenChange, onSuccess }: Creat
             payment_method: form.payment_method || null,
             document_number: form.document_number || null,
             notes: form.notes || null,
-            party_id: form.create_linked_record ? form.party_id : null,
-            party_type: form.create_linked_record ? form.party_type : null,
+            party_id: shouldCreateLinked ? form.party_id : null,
+            party_type: shouldCreateLinked ? form.party_type : null,
           },
-          form.create_linked_record,
+          shouldCreateLinked,
           form.due_date
         );
         
-        if (form.create_linked_record) {
+        if (shouldCreateLinked) {
           const linkedType = form.type === "DESPESA" ? "Conta a Pagar" : "Conta a Receber";
           toast.success(`Lançamento e ${linkedType} criados com sucesso!`);
         } else {
@@ -269,7 +272,7 @@ export function CreateLedgerEntryDialog({ open, onOpenChange, onSuccess }: Creat
         description: "",
         amount: "",
         competence_date: format(new Date(), "yyyy-MM-dd"),
-        cash_date: format(new Date(), "yyyy-MM-dd"),
+        cash_date: "",
         bank_account_id: "",
         chart_account_id: "",
         cost_center_id: "",
@@ -280,9 +283,8 @@ export function CreateLedgerEntryDialog({ open, onOpenChange, onSuccess }: Creat
         is_recurring: false,
         recurrence_type: "monthly",
         recurrence_count: 12,
-        create_linked_record: false,
         party_id: "",
-        party_type: "",
+        party_type: "supplier",
         due_date: format(new Date(), "yyyy-MM-dd"),
       });
     } catch (error: any) {
@@ -439,71 +441,58 @@ export function CreateLedgerEntryDialog({ open, onOpenChange, onSuccess }: Creat
             )}
           </div>
 
-          {/* Integration Section - Create linked Payable/Receivable */}
+          {/* Integration Section - MANDATORY Payable/Receivable for DESPESA/RECEITA */}
           {(form.type === "DESPESA" || form.type === "RECEITA") && (
-            <div className="border rounded-lg p-4 space-y-4 bg-muted/30">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Link2 className="h-4 w-4 text-muted-foreground" />
-                  <Label htmlFor="create_linked_record" className="font-medium">
-                    Criar {form.type === "DESPESA" ? "Conta a Pagar" : "Conta a Receber"}
-                  </Label>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="max-w-[250px] text-xs">
-                        <p>Ao ativar, será criada automaticamente uma {form.type === "DESPESA" ? "conta a pagar" : "conta a receber"} vinculada a este lançamento.</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-                <Switch
-                  id="create_linked_record"
-                  checked={form.create_linked_record}
-                  onCheckedChange={(checked) => setForm({ 
-                    ...form, 
-                    create_linked_record: checked,
-                    party_type: checked ? (form.type === "DESPESA" ? "supplier" : "client") : ""
-                  })}
-                />
+            <div className="border rounded-lg p-4 space-y-4 bg-primary/5 border-primary/20">
+              <div className="flex items-center gap-2">
+                <Link2 className="h-4 w-4 text-primary" />
+                <Label className="font-medium text-primary">
+                  {form.type === "DESPESA" ? "Conta a Pagar (Obrigatório)" : "Conta a Receber (Obrigatório)"}
+                </Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-[250px] text-xs">
+                      <p>Todo lançamento de {form.type === "DESPESA" ? "despesa" : "receita"} gera automaticamente uma {form.type === "DESPESA" ? "conta a pagar" : "conta a receber"} vinculada.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
 
-              {form.create_linked_record && (
-                <div className="grid grid-cols-2 gap-4 pt-2">
-                  <div className="space-y-2">
-                    <Label>{form.type === "DESPESA" ? "Fornecedor *" : "Cliente *"}</Label>
-                    <Select 
-                      value={form.party_id} 
-                      onValueChange={(v) => setForm({ ...form, party_id: v })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {form.type === "DESPESA" 
-                          ? suppliers?.map((s) => (
-                              <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                            ))
-                          : clients?.map((c) => (
-                              <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                            ))
-                        }
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Data de Vencimento *</Label>
-                    <Input
-                      type="date"
-                      value={form.due_date}
-                      onChange={(e) => setForm({ ...form, due_date: e.target.value })}
-                    />
-                  </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>{form.type === "DESPESA" ? "Fornecedor *" : "Cliente *"}</Label>
+                  <Select 
+                    value={form.party_id} 
+                    onValueChange={(v) => setForm({ ...form, party_id: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {form.type === "DESPESA" 
+                        ? suppliers?.map((s) => (
+                            <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                          ))
+                        : clients?.map((c) => (
+                            <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                          ))
+                      }
+                    </SelectContent>
+                  </Select>
                 </div>
-              )}
+
+                <div className="space-y-2">
+                  <Label>Data de Vencimento *</Label>
+                  <Input
+                    type="date"
+                    value={form.due_date}
+                    onChange={(e) => setForm({ ...form, due_date: e.target.value })}
+                  />
+                </div>
+              </div>
             </div>
           )}
 

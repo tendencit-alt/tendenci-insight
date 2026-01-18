@@ -535,7 +535,7 @@ export async function bulkUpdatePayablesWithSync(
 }
 
 /**
- * Bulk delete payables and their linked ledger entries
+ * Bulk delete payables (keeps linked ledger entries)
  */
 export async function bulkDeletePayablesWithSync(payableIds: string[]) {
   // First, get the payables with their ledger_entry_ids
@@ -551,21 +551,21 @@ export async function bulkDeletePayablesWithSync(payableIds: string[]) {
     ?.map(p => p.ledger_entry_id)
     .filter((id): id is string => id !== null) || [];
 
-  // Delete payables first (due to foreign key)
+  // Remove link from ledger entries before deleting payables
+  if (ledgerEntryIds.length > 0) {
+    await supabase
+      .from("fin_ledger_entries")
+      .update({ status: "CANCELADO" })
+      .in("id", ledgerEntryIds);
+  }
+
+  // Delete payables only (keep ledger entries)
   const { error: deletePayablesError } = await supabase
     .from("fin_payables")
     .delete()
     .in("id", payableIds);
 
   if (deletePayablesError) throw deletePayablesError;
-
-  // Delete linked ledger entries
-  if (ledgerEntryIds.length > 0) {
-    await supabase
-      .from("fin_ledger_entries")
-      .delete()
-      .in("id", ledgerEntryIds);
-  }
 
   return { success: true, deletedCount: payableIds.length };
 }
@@ -614,7 +614,7 @@ export async function bulkUpdateReceivablesWithSync(
 }
 
 /**
- * Bulk delete receivables and their linked ledger entries
+ * Bulk delete receivables (keeps linked ledger entries)
  */
 export async function bulkDeleteReceivablesWithSync(receivableIds: string[]) {
   // First, get the receivables with their ledger_entry_ids
@@ -630,21 +630,21 @@ export async function bulkDeleteReceivablesWithSync(receivableIds: string[]) {
     ?.map(r => r.ledger_entry_id)
     .filter((id): id is string => id !== null) || [];
 
-  // Delete receivables first (due to foreign key)
+  // Update linked ledger entries to cancelled status (keep them)
+  if (ledgerEntryIds.length > 0) {
+    await supabase
+      .from("fin_ledger_entries")
+      .update({ status: "CANCELADO" })
+      .in("id", ledgerEntryIds);
+  }
+
+  // Delete receivables only (keep ledger entries)
   const { error: deleteReceivablesError } = await supabase
     .from("fin_receivables")
     .delete()
     .in("id", receivableIds);
 
   if (deleteReceivablesError) throw deleteReceivablesError;
-
-  // Delete linked ledger entries
-  if (ledgerEntryIds.length > 0) {
-    await supabase
-      .from("fin_ledger_entries")
-      .delete()
-      .in("id", ledgerEntryIds);
-  }
 
   return { success: true, deletedCount: receivableIds.length };
 }
