@@ -33,6 +33,9 @@ export default function Financeiro() {
     costCenterId: null,
     projectId: null,
     search: "",
+    categoryId: null,
+    sortField: null,
+    sortDirection: null,
   });
 
   return (
