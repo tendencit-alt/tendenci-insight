@@ -4376,6 +4376,27 @@ export type Database = {
           },
         ]
       }
+      product_subcategories: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       product_suppliers: {
         Row: {
           cost_price: number | null
@@ -6859,6 +6880,7 @@ export type Database = {
           preco_base: number | null
           preco_original: number | null
           quando_oferecer: string | null
+          sub_categoria: string | null
           template_ficha_id: string | null
           unidade_medida: string | null
           updated_at: string | null
@@ -6889,6 +6911,7 @@ export type Database = {
           preco_base?: number | null
           preco_original?: number | null
           quando_oferecer?: string | null
+          sub_categoria?: string | null
           template_ficha_id?: string | null
           unidade_medida?: string | null
           updated_at?: string | null
@@ -6919,6 +6942,7 @@ export type Database = {
           preco_base?: number | null
           preco_original?: number | null
           quando_oferecer?: string | null
+          sub_categoria?: string | null
           template_ficha_id?: string | null
           unidade_medida?: string | null
           updated_at?: string | null
