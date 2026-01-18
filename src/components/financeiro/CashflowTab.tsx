@@ -547,27 +547,22 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
         {/* Ponto de Equilíbrio Meta */}
         <Card className="border-primary/20 bg-primary/5">
           <CardContent className="p-3 sm:p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Target className="h-3 w-3" />
-                  Ponto Equilíbrio Meta
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <Info className="h-3 w-3 text-muted-foreground/50" />
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-xs">
-                      <p className="text-xs">Baseado na meta de saídas cadastrada para o período</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </p>
-                <p className="text-lg sm:text-xl font-bold text-primary">
-                  {formatCurrency(cashflowData?.pontoEquilibrioMeta || 0)}
-                </p>
-              </div>
-              <div className="hidden sm:block p-2 rounded-full bg-primary/10">
-                <Target className="h-5 w-5 text-primary" />
-              </div>
+            <div>
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <Target className="h-3 w-3" />
+                Ponto Equilíbrio Meta
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Info className="h-3 w-3 text-muted-foreground/50" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p className="text-xs">Baseado na meta de saídas cadastrada para o período</p>
+                  </TooltipContent>
+                </Tooltip>
+              </p>
+              <p className="text-base sm:text-lg font-bold text-primary">
+                {formatCurrency(cashflowData?.pontoEquilibrioMeta || 0)}
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -580,46 +575,31 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
             : "border-red-500/30 bg-red-500/5"
         )}>
           <CardContent className="p-3 sm:p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground flex items-center gap-1">
-                  <TrendingUp className="h-3 w-3" />
-                  Ponto Equilíbrio Realizado
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <Info className="h-3 w-3 text-muted-foreground/50" />
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-xs text-left">
-                      <p className="text-xs font-semibold mb-1">Equilíbrio = Total de Saídas</p>
-                      <div className="text-xs space-y-0.5">
-                        <p>📈 <span className="text-green-500">Entradas (RECEITA):</span> {formatCurrency(cashflowData?.totalEntradas || 0)}</p>
-                        <p>📉 <span className="text-red-500">Saídas (DESPESA):</span> {formatCurrency(cashflowData?.totalSaidas || 0)}</p>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-2 border-t pt-1">Contas identificadas pela natureza no plano de contas</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </p>
-                <p className={cn(
-                  "text-lg sm:text-xl font-bold",
-                  (cashflowData?.totalEntradas || 0) >= (cashflowData?.pontoEquilibrioCaixa || 0)
-                    ? "text-green-600"
-                    : "text-red-600"
-                )}>
-                  {formatCurrency(cashflowData?.pontoEquilibrioCaixa || 0)}
-                </p>
-              </div>
-              <div className={cn(
-                "hidden sm:block p-2 rounded-full",
+            <div>
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <TrendingUp className="h-3 w-3" />
+                Ponto Equilíbrio Realizado
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Info className="h-3 w-3 text-muted-foreground/50" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs text-left">
+                    <p className="text-xs font-semibold mb-1">Equilíbrio = Total de Saídas</p>
+                    <div className="text-xs space-y-0.5">
+                      <p>📈 <span className="text-green-500">Entradas (RECEITA):</span> {formatCurrency(cashflowData?.totalEntradas || 0)}</p>
+                      <p>📉 <span className="text-red-500">Saídas (DESPESA):</span> {formatCurrency(cashflowData?.totalSaidas || 0)}</p>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              </p>
+              <p className={cn(
+                "text-base sm:text-lg font-bold",
                 (cashflowData?.totalEntradas || 0) >= (cashflowData?.pontoEquilibrioCaixa || 0)
-                  ? "bg-green-500/10"
-                  : "bg-red-500/10"
+                  ? "text-green-600"
+                  : "text-red-600"
               )}>
-                {(cashflowData?.totalEntradas || 0) >= (cashflowData?.pontoEquilibrioCaixa || 0) ? (
-                  <CheckCircle className="h-5 w-5 text-green-600" />
-                ) : (
-                  <AlertTriangle className="h-5 w-5 text-red-600" />
-                )}
-              </div>
+                {formatCurrency(cashflowData?.pontoEquilibrioCaixa || 0)}
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -627,47 +607,52 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
         {/* Saldo de Caixa */}
         <Card>
           <CardContent className="p-3 sm:p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground">Saldo de Caixa</p>
-                <p className={cn(
-                  "text-lg sm:text-xl font-bold",
-                  (cashflowData?.closingBalance || 0) >= 0 ? "text-green-600" : "text-red-600"
-                )}>
-                  {formatCurrency(cashflowData?.closingBalance || 0)}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Inicial: {formatCurrency(cashflowData?.openingBalance || 0)}
-                </p>
-              </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Saldo de Caixa</p>
+              <p className={cn(
+                "text-base sm:text-lg font-bold",
+                (cashflowData?.closingBalance || 0) >= 0 ? "text-green-600" : "text-red-600"
+              )}>
+                {formatCurrency(cashflowData?.closingBalance || 0)}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Inicial: {formatCurrency(cashflowData?.openingBalance || 0)}
+              </p>
             </div>
           </CardContent>
         </Card>
 
-        {/* Status */}
-        <Card>
+        {/* Status - Valor Faltante em Destaque */}
+        <Card className={cn(
+          "border-2",
+          (cashflowData?.totalEntradas || 0) >= (cashflowData?.pontoEquilibrioCaixa || 0)
+            ? "border-green-500/50 bg-green-500/10"
+            : "border-red-500/50 bg-red-500/10"
+        )}>
           <CardContent className="p-3 sm:p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-muted-foreground">Status</p>
-                {(cashflowData?.totalEntradas || 0) >= (cashflowData?.pontoEquilibrioCaixa || 0) ? (
+            <div>
+              <p className="text-xs text-muted-foreground">Status</p>
+              {(cashflowData?.totalEntradas || 0) >= (cashflowData?.pontoEquilibrioCaixa || 0) ? (
+                <>
                   <Badge className="bg-green-600 mt-1 gap-1">
                     <CheckCircle className="h-3 w-3" />
                     Caixa Positivo
                   </Badge>
-                ) : (
+                  <p className="text-sm text-green-600 font-medium mt-2">
+                    Excedente: {formatCurrency((cashflowData?.totalEntradas || 0) - (cashflowData?.pontoEquilibrioCaixa || 0))}
+                  </p>
+                </>
+              ) : (
+                <>
                   <Badge variant="destructive" className="mt-1 gap-1">
                     <AlertTriangle className="h-3 w-3" />
                     Caixa Negativo
                   </Badge>
-                )}
-                <p className="text-xs text-muted-foreground mt-1">
-                  {(cashflowData?.totalEntradas || 0) >= (cashflowData?.pontoEquilibrioCaixa || 0) 
-                    ? `Excedente: ${formatCurrency((cashflowData?.totalEntradas || 0) - (cashflowData?.pontoEquilibrioCaixa || 0))}`
-                    : `Faltam: ${formatCurrency((cashflowData?.pontoEquilibrioCaixa || 0) - (cashflowData?.totalEntradas || 0))}`
-                  }
-                </p>
-              </div>
+                  <p className="text-lg sm:text-xl font-bold text-red-600 mt-2">
+                    Faltam: {formatCurrency((cashflowData?.pontoEquilibrioCaixa || 0) - (cashflowData?.totalEntradas || 0))}
+                  </p>
+                </>
+              )}
             </div>
           </CardContent>
         </Card>
