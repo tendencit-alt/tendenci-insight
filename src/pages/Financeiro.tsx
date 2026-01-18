@@ -3,16 +3,14 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FinanceiroFilters, FinanceiroFiltersState } from "@/components/financeiro/FinanceiroFilters";
 import { FinanceiroDashboard } from "@/components/financeiro/FinanceiroDashboard";
-import { PayablesTab } from "@/components/financeiro/PayablesTab";
-import { ReceivablesTab } from "@/components/financeiro/ReceivablesTab";
+import { PayablesReceivablesTab } from "@/components/financeiro/PayablesReceivablesTab";
 import { LedgerTab } from "@/components/financeiro/LedgerTab";
 import { DRECashflowView } from "@/components/financeiro/DRECashflowView";
 import { ReconciliationTab } from "@/components/financeiro/ReconciliationTab";
 import { MastersTab } from "@/components/financeiro/MastersTab";
 import { 
   LayoutDashboard, 
-  CreditCard, 
-  Receipt, 
+  Wallet, 
   BookOpen, 
   BarChart3, 
   RefreshCw, 
@@ -54,13 +52,9 @@ export default function Financeiro() {
               <BarChart3 className="h-4 w-4" />
               <span className="hidden sm:inline">DRE / Fluxo de Caixa</span>
             </TabsTrigger>
-            <TabsTrigger value="payables" className="flex items-center gap-2">
-              <CreditCard className="h-4 w-4" />
-              <span className="hidden sm:inline">Contas a Pagar</span>
-            </TabsTrigger>
-            <TabsTrigger value="receivables" className="flex items-center gap-2">
-              <Receipt className="h-4 w-4" />
-              <span className="hidden sm:inline">Contas a Receber</span>
+            <TabsTrigger value="payables-receivables" className="flex items-center gap-2">
+              <Wallet className="h-4 w-4" />
+              <span className="hidden sm:inline">Contas a Pagar/Receber</span>
             </TabsTrigger>
             <TabsTrigger value="ledger" className="flex items-center gap-2">
               <BookOpen className="h-4 w-4" />
@@ -84,12 +78,8 @@ export default function Financeiro() {
             <DRECashflowView filters={filters} />
           </TabsContent>
 
-          <TabsContent value="payables" className="space-y-4">
-            <PayablesTab filters={filters} />
-          </TabsContent>
-
-          <TabsContent value="receivables" className="space-y-4">
-            <ReceivablesTab filters={filters} />
+          <TabsContent value="payables-receivables" className="space-y-4">
+            <PayablesReceivablesTab filters={filters} />
           </TabsContent>
 
           <TabsContent value="ledger" className="space-y-4">
