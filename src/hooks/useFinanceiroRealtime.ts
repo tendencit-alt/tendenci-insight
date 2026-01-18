@@ -98,18 +98,16 @@ export function useFinanceiroRealtime() {
       });
 
     function invalidateFinanceiroQueries() {
-      // Invalidate all financial queries
-      queryClient.invalidateQueries({ queryKey: ["fin-dashboard-bi"] });
-      queryClient.invalidateQueries({ queryKey: ["fin-cost-center-kpis"] });
-      queryClient.invalidateQueries({ queryKey: ["fin-projects-active-kpis"] });
-      queryClient.invalidateQueries({ queryKey: ["fin-ledger-entries-projects-kpis"] });
-      queryClient.invalidateQueries({ queryKey: ["fin-ledger-entries"] });
-      queryClient.invalidateQueries({ queryKey: ["fin-payables"] });
-      queryClient.invalidateQueries({ queryKey: ["fin-receivables"] });
-      queryClient.invalidateQueries({ queryKey: ["fin-bank-accounts"] });
-      queryClient.invalidateQueries({ queryKey: ["fin-dre"] });
-      queryClient.invalidateQueries({ queryKey: ["fin-cashflow"] });
-      queryClient.invalidateQueries({ queryKey: ["financeiro-summary"] });
+      // Invalidate all financial queries (using predicate to match any query starting with these keys)
+      queryClient.invalidateQueries({ predicate: (query) => {
+        const key = query.queryKey[0];
+        return typeof key === 'string' && (
+          key.startsWith('fin-') ||
+          key === 'financeiro-summary' ||
+          key === 'suppliers-list' ||
+          key === 'clients-list'
+        );
+      }});
     }
 
     return () => {
