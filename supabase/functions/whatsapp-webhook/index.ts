@@ -32,20 +32,26 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // ========== VALIDAÇÃO DE SEGURANÇA (OPCIONAL) ==========
-    // Se EVOLUTION_WEBHOOK_SECRET estiver configurado, valida o token
+    // ========== VALIDAÇÃO DE SEGURANÇA (OBRIGATÓRIA) ==========
+    // EVOLUTION_WEBHOOK_SECRET é OBRIGATÓRIO para segurança
     const webhookSecret = Deno.env.get('EVOLUTION_WEBHOOK_SECRET')
-    if (webhookSecret) {
-      const requestToken = req.headers.get('x-webhook-token') || req.headers.get('authorization')?.replace('Bearer ', '')
-      if (requestToken !== webhookSecret) {
-        console.warn('⚠️ Webhook token inválido ou ausente')
-        return new Response(JSON.stringify({ error: 'Unauthorized' }), { 
-          status: 401, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        })
-      }
-      console.log('✅ Webhook token validado com sucesso')
+    if (!webhookSecret) {
+      console.error('❌ EVOLUTION_WEBHOOK_SECRET não configurado - webhook bloqueado por segurança')
+      return new Response(JSON.stringify({ error: 'Webhook not configured' }), { 
+        status: 500, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
     }
+    
+    const requestToken = req.headers.get('x-webhook-token') || req.headers.get('authorization')?.replace('Bearer ', '')
+    if (requestToken !== webhookSecret) {
+      console.warn('⚠️ Webhook token inválido ou ausente')
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { 
+        status: 401, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+    console.log('✅ Webhook token validado com sucesso')
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
