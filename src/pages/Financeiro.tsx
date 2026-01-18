@@ -4,16 +4,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FinanceiroFilters, FinanceiroFiltersState } from "@/components/financeiro/FinanceiroFilters";
 import { FinanceiroDashboard } from "@/components/financeiro/FinanceiroDashboard";
 import { PayablesReceivablesTab } from "@/components/financeiro/PayablesReceivablesTab";
-import { LedgerTab } from "@/components/financeiro/LedgerTab";
+import { LedgerReconciliationTab } from "@/components/financeiro/LedgerReconciliationTab";
 import { DRECashflowView } from "@/components/financeiro/DRECashflowView";
-import { ReconciliationTab } from "@/components/financeiro/ReconciliationTab";
 import { MastersTab } from "@/components/financeiro/MastersTab";
 import { 
   LayoutDashboard, 
   Wallet, 
   BookOpen, 
   BarChart3, 
-  RefreshCw, 
   Settings2 
 } from "lucide-react";
 
@@ -56,13 +54,9 @@ export default function Financeiro() {
                 <Wallet className="h-4 w-4 flex-shrink-0" />
                 <span>Contas a Pagar/Receber</span>
               </TabsTrigger>
-              <TabsTrigger value="ledger" className="flex items-center gap-1.5 px-3 py-2 text-sm">
+              <TabsTrigger value="ledger-reconciliation" className="flex items-center gap-1.5 px-3 py-2 text-sm">
                 <BookOpen className="h-4 w-4 flex-shrink-0" />
-                <span>Lançamentos</span>
-              </TabsTrigger>
-              <TabsTrigger value="reconciliation" className="flex items-center gap-1.5 px-3 py-2 text-sm">
-                <RefreshCw className="h-4 w-4 flex-shrink-0" />
-                <span>Conciliação</span>
+                <span>Lançamentos & Conciliação</span>
               </TabsTrigger>
               <TabsTrigger value="masters" className="flex items-center gap-1.5 px-3 py-2 text-sm">
                 <Settings2 className="h-4 w-4 flex-shrink-0" />
@@ -83,12 +77,8 @@ export default function Financeiro() {
             <PayablesReceivablesTab filters={filters} />
           </TabsContent>
 
-          <TabsContent value="ledger" className="space-y-4">
-            <LedgerTab filters={filters} />
-          </TabsContent>
-
-          <TabsContent value="reconciliation" className="space-y-4">
-            <ReconciliationTab filters={filters} />
+          <TabsContent value="ledger-reconciliation" className="space-y-4">
+            <LedgerReconciliationTab filters={filters} />
           </TabsContent>
 
           <TabsContent value="masters" className="space-y-4">
