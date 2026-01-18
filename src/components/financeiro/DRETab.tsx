@@ -815,19 +815,6 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
         </Card>
       </div>
 
-      {/* Account Mapping Info */}
-      <div className="text-xs text-muted-foreground bg-muted/30 rounded-lg p-3 flex items-start gap-2">
-        <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
-        <div>
-          <p className="font-medium">Contas identificadas automaticamente:</p>
-          <p className="mt-1">
-            <span className="text-green-600">1.x = Receitas</span> • 
-            <span className="text-orange-500 ml-1">2.x = CMV</span> • 
-            <span className="text-orange-500 ml-1">3.x = Desp. s/ Venda (variáveis)</span> • 
-            <span className="text-red-500 ml-1">5.x = Desp. Operacionais (fixos)</span>
-          </p>
-        </div>
-      </div>
       <Card>
         <CardContent className="p-2 sm:pt-6 sm:px-6">
           <div className="overflow-x-auto -mx-2 sm:mx-0">

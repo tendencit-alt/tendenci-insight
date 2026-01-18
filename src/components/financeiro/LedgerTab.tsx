@@ -157,17 +157,17 @@ export function LedgerTab({ filters }: LedgerTabProps) {
             </div>
           ) : (
             <div className="overflow-x-auto -mx-4 sm:mx-0">
-              <Table className="min-w-[700px]">
+              <Table className="w-full table-fixed">
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="text-xs sm:text-sm whitespace-nowrap">Data</TableHead>
-                    <TableHead className="text-xs sm:text-sm">Tipo</TableHead>
-                    <TableHead className="text-xs sm:text-sm">Descrição</TableHead>
-                    <TableHead className="text-xs sm:text-sm hidden md:table-cell">Conta</TableHead>
-                    <TableHead className="text-xs sm:text-sm hidden lg:table-cell">Categoria</TableHead>
-                    <TableHead className="text-xs sm:text-sm text-right whitespace-nowrap">Valor</TableHead>
-                    <TableHead className="text-xs sm:text-sm hidden sm:table-cell">Status</TableHead>
-                    <TableHead className="text-xs sm:text-sm">Ações</TableHead>
+                    <TableHead className="text-xs w-[70px] sm:w-[85px]">Data</TableHead>
+                    <TableHead className="text-xs w-[60px] sm:w-[80px]">Tipo</TableHead>
+                    <TableHead className="text-xs">Descrição</TableHead>
+                    <TableHead className="text-xs hidden md:table-cell w-[100px]">Conta</TableHead>
+                    <TableHead className="text-xs hidden lg:table-cell w-[120px]">Categoria</TableHead>
+                    <TableHead className="text-xs text-right w-[90px] sm:w-[100px]">Valor</TableHead>
+                    <TableHead className="text-xs hidden sm:table-cell w-[70px]">Status</TableHead>
+                    <TableHead className="text-xs w-[45px]">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -180,21 +180,21 @@ export function LedgerTab({ filters }: LedgerTabProps) {
                   ) : (
                     entries?.map((entry) => (
                       <TableRow key={entry.id} className={entry.status === "CANCELADO" ? "opacity-50" : ""}>
-                        <TableCell className="font-medium text-xs sm:text-sm whitespace-nowrap">
+                        <TableCell className="font-medium text-xs truncate">
                           {entry[dateField] && format(new Date(entry[dateField]), "dd/MM/yy", { locale: ptBR })}
                         </TableCell>
-                        <TableCell>{getTypeBadge(entry.type)}</TableCell>
-                        <TableCell className="text-xs sm:text-sm max-w-[120px] sm:max-w-[200px] truncate">
+                        <TableCell className="text-xs">{getTypeBadge(entry.type)}</TableCell>
+                        <TableCell className="text-xs truncate">
                           {entry.description}
                           {entry.reversal_of_id && (
                             <span className="text-xs text-muted-foreground ml-1">(Estorno)</span>
                           )}
                         </TableCell>
-                        <TableCell className="text-xs sm:text-sm hidden md:table-cell">{entry.bank_account?.nickname || "-"}</TableCell>
-                        <TableCell className="text-xs hidden lg:table-cell">
+                        <TableCell className="text-xs hidden md:table-cell truncate">{entry.bank_account?.nickname || "-"}</TableCell>
+                        <TableCell className="text-xs hidden lg:table-cell truncate">
                           {entry.chart_account ? entry.chart_account.name : "-"}
                         </TableCell>
-                        <TableCell className="text-right font-medium text-xs sm:text-sm whitespace-nowrap">
+                        <TableCell className="text-right font-medium text-xs">
                           {formatCurrency(Number(entry.amount), entry.type)}
                         </TableCell>
                         <TableCell className="hidden sm:table-cell">{getStatusBadge(entry.status)}</TableCell>
@@ -205,7 +205,7 @@ export function LedgerTab({ filters }: LedgerTabProps) {
                             className="h-7 w-7 p-0"
                             onClick={() => handleViewAudit(entry)}
                           >
-                            <History className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                            <History className="h-3.5 w-3.5" />
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -215,8 +215,8 @@ export function LedgerTab({ filters }: LedgerTabProps) {
                 {entries && entries.length > 0 && (
                   <tfoot>
                     <TableRow className="bg-muted/50 font-medium">
-                      <TableCell colSpan={5} className="text-right text-xs sm:text-sm">Totais:</TableCell>
-                      <TableCell className="text-right text-xs sm:text-sm">
+                      <TableCell colSpan={5} className="text-right text-xs">Totais:</TableCell>
+                      <TableCell className="text-right text-xs">
                         <div className="text-green-600">+{totals.entradas.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</div>
                         <div className="text-red-600">-{totals.saidas.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</div>
                         <div className={totals.entradas - totals.saidas >= 0 ? "text-green-600" : "text-red-600"}>
