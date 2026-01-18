@@ -57,7 +57,7 @@ const App = () => (
               <Routes>
               <Route path="/auth" element={<Auth />} />
               <Route path="/catalogo" element={<Catalogo />} />
-              <Route path="/" element={<Navigate to="/crm" replace />} />
+              <Route path="/" element={<Navigate to="/financeiro" replace />} />
               <Route path="/leads" element={<ProtectedRoute><PermissionGuard module="leads"><Leads /></PermissionGuard></ProtectedRoute>} />
               <Route path="/kanban" element={<ProtectedRoute><PermissionGuard module="crm"><CRM /></PermissionGuard></ProtectedRoute>} />
               <Route path="/crm" element={<ProtectedRoute><PermissionGuard module="crm"><CRM /></PermissionGuard></ProtectedRoute>} />

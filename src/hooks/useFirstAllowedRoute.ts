@@ -46,9 +46,9 @@ export function useFirstAllowedRoute() {
     return { route: null, loading: true };
   }
   
-  // Masters/admins vão para dashboard
+  // Masters/admins vão para financeiro BI/Dashboard
   if (isMaster) {
-    return { route: '/', loading: false };
+    return { route: '/financeiro', loading: false };
   }
   
   // Encontrar primeiro módulo permitido na ordem de prioridade
@@ -68,7 +68,7 @@ export function getFirstAllowedRoute(
   userPermissions: Array<{ module: string; can_view: boolean }> | null | undefined,
   isMaster: boolean
 ): string {
-  if (isMaster) return '/';
+  if (isMaster) return '/financeiro';
   
   if (!userPermissions || userPermissions.length === 0) {
     return '/auth';
