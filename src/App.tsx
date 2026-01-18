@@ -2,14 +2,13 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { PermissionsProvider } from "@/contexts/PermissionsContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { PermissionGuard } from "@/components/auth/PermissionGuard";
 import { DynamicRouteHandler } from "@/components/routing/DynamicRouteHandler";
 import ErrorBoundary from "@/components/ErrorBoundary";
-import Index from "./pages/Index";
 import Leads from "./pages/Leads";
 import Projects from "./pages/Projects";
 import ProjectSettings from "./pages/ProjectSettings";
@@ -32,7 +31,6 @@ import N8nFollowupGuide from "./pages/N8nFollowupGuide";
 import N8nConversationGuide from "./pages/N8nConversationGuide";
 import IAWhatsAppSetup from "./pages/IAWhatsAppSetup";
 import Production from "./pages/Production";
-// FichasTecnicas removido - funcionalidade integrada ao módulo de estoque
 import Orders from "./pages/Orders";
 import Suppliers from "./pages/Suppliers";
 import Inventory from "./pages/Inventory";
@@ -59,7 +57,7 @@ const App = () => (
               <Routes>
               <Route path="/auth" element={<Auth />} />
               <Route path="/catalogo" element={<Catalogo />} />
-              <Route path="/" element={<ProtectedRoute><PermissionGuard module="dashboard"><Index /></PermissionGuard></ProtectedRoute>} />
+              <Route path="/" element={<Navigate to="/crm" replace />} />
               <Route path="/leads" element={<ProtectedRoute><PermissionGuard module="leads"><Leads /></PermissionGuard></ProtectedRoute>} />
               <Route path="/kanban" element={<ProtectedRoute><PermissionGuard module="crm"><CRM /></PermissionGuard></ProtectedRoute>} />
               <Route path="/crm" element={<ProtectedRoute><PermissionGuard module="crm"><CRM /></PermissionGuard></ProtectedRoute>} />
