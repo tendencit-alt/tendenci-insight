@@ -24,6 +24,11 @@ interface Categoria {
   name: string;
 }
 
+interface Subcategoria {
+  id: string;
+  name: string;
+}
+
 const CENTROS_CUSTO = [
   { value: 'moveis_planejados', label: 'Móveis Planejados' },
   { value: 'producao_tendenci', label: 'Produção Tendenci' },
@@ -80,6 +85,7 @@ interface Produto {
   descricao: string | null;
   preco_base: number;
   categoria: string | null;
+  sub_categoria: string | null;
   centro_custo: string | null;
   diferenciais: string[];
   quando_oferecer: string | null;
@@ -142,6 +148,7 @@ export default function IAConfigProdutos() {
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [locations, setLocations] = useState<StockLocation[]>([]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
+  const [subcategorias, setSubcategorias] = useState<Subcategoria[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -154,9 +161,13 @@ export default function IAConfigProdutos() {
   const [gerarFichaTecnica, setGerarFichaTecnica] = useState(false);
   const [fichaTecnicaMode, setFichaTecnicaMode] = useState<"criar" | "vincular">("criar");
   const [categoriaFiltro, setCategoriaFiltro] = useState<string>("todas");
+  const [subcategoriaFiltro, setSubcategoriaFiltro] = useState<string>("todas");
   const [showNewCategoriaDialog, setShowNewCategoriaDialog] = useState(false);
+  const [showNewSubcategoriaDialog, setShowNewSubcategoriaDialog] = useState(false);
   const [novaCategoria, setNovaCategoria] = useState("");
+  const [novaSubcategoria, setNovaSubcategoria] = useState("");
   const [savingCategoria, setSavingCategoria] = useState(false);
+  const [savingSubcategoria, setSavingSubcategoria] = useState(false);
   
   // Ficha Técnica Sheet
   const [fichaTecnicaSheetOpen, setFichaTecnicaSheetOpen] = useState(false);
@@ -176,6 +187,7 @@ export default function IAConfigProdutos() {
     preco_base: 0,
     preco_original: null as number | null,
     categoria: "",
+    sub_categoria: "",
     centro_custo: "",
     diferenciais: "",
     quando_oferecer: "",
@@ -198,11 +210,17 @@ export default function IAConfigProdutos() {
     template_ficha_id: null as string | null,
   });
 
-  // Filtrar produtos por categoria
+  // Filtrar produtos por categoria e subcategoria
   const produtosFiltrados = useMemo(() => {
-    if (categoriaFiltro === "todas") return produtos;
-    return produtos.filter(p => p.categoria === categoriaFiltro);
-  }, [produtos, categoriaFiltro]);
+    let filtered = produtos;
+    if (categoriaFiltro !== "todas") {
+      filtered = filtered.filter(p => p.categoria === categoriaFiltro);
+    }
+    if (subcategoriaFiltro !== "todas") {
+      filtered = filtered.filter(p => p.sub_categoria === subcategoriaFiltro);
+    }
+    return filtered;
+  }, [produtos, categoriaFiltro, subcategoriaFiltro]);
 
   // Contadores por categoria
   const contadorPorCategoria = useMemo(() => {
@@ -214,17 +232,28 @@ export default function IAConfigProdutos() {
     return contador;
   }, [produtos]);
 
+  // Contadores por subcategoria
+  const contadorPorSubcategoria = useMemo(() => {
+    const contador: Record<string, number> = {};
+    produtos.forEach(p => {
+      const subcat = p.sub_categoria || "Sem subcategoria";
+      contador[subcat] = (contador[subcat] || 0) + 1;
+    });
+    return contador;
+  }, [produtos]);
+
   useEffect(() => {
     loadData();
   }, []);
 
   const loadData = async () => {
     try {
-      // Carregar locais, produtos, categorias, produtos do inventário e fichas técnicas em paralelo
-      const [locationsRes, produtosRes, categoriasRes, inventoryRes, fichasRes] = await Promise.all([
+      // Carregar locais, produtos, categorias, subcategorias, produtos do inventário e fichas técnicas em paralelo
+      const [locationsRes, produtosRes, categoriasRes, subcategoriasRes, inventoryRes, fichasRes] = await Promise.all([
         supabase.from("stock_locations").select("*").eq("active", true).order("name"),
         supabase.from("tendenci_ia_produtos").select("*").order("nome"),
         supabase.from("product_categories").select("id, name").eq("active", true).order("name"),
+        supabase.from("product_subcategories").select("id, name").eq("active", true).order("name"),
         supabase.from("products").select("id, name, code, current_stock, location_id").eq("active", true).order("name"),
         supabase.from("production_products").select("id, ia_produto_id, status").not("ia_produto_id", "is", null)
       ]);
@@ -234,6 +263,7 @@ export default function IAConfigProdutos() {
 
       setLocations(locationsRes.data || []);
       setCategorias(categoriasRes.data || []);
+      setSubcategorias(subcategoriasRes.data || []);
       
       // Mapear fichas técnicas por produto
       const fichasMap = new Map<string, FichaTecnica>();
@@ -276,6 +306,7 @@ export default function IAConfigProdutos() {
           permite_venda_sem_estoque: p.permite_venda_sem_estoque ?? false,
           prazo_entrega_dias: p.prazo_entrega_dias ?? null,
           centro_custo: p.centro_custo ?? null,
+          sub_categoria: p.sub_categoria ?? null,
           estoques: estoquesFormatados,
           estoqueTotal,
           largura: p.largura ?? null,
@@ -313,6 +344,7 @@ export default function IAConfigProdutos() {
       preco_base: 0,
       preco_original: null,
       categoria: categoriaFiltro !== "todas" ? categoriaFiltro : "",
+      sub_categoria: subcategoriaFiltro !== "todas" ? subcategoriaFiltro : "",
       centro_custo: "",
       diferenciais: "",
       quando_oferecer: "",
@@ -372,6 +404,7 @@ export default function IAConfigProdutos() {
       preco_base: produto.preco_base,
       preco_original: (produto as any).preco_original ?? null,
       categoria: produto.categoria || "",
+      sub_categoria: produto.sub_categoria || "",
       centro_custo: produto.centro_custo || "",
       diferenciais: produto.diferenciais?.join("\n") || "",
       quando_oferecer: produto.quando_oferecer || "",
@@ -443,6 +476,35 @@ export default function IAConfigProdutos() {
       toast.error("Erro ao criar categoria");
     } finally {
       setSavingCategoria(false);
+    }
+  };
+
+  const createSubcategoria = async () => {
+    if (!novaSubcategoria.trim()) {
+      toast.error("Informe o nome da subcategoria");
+      return;
+    }
+    
+    setSavingSubcategoria(true);
+    try {
+      const { data, error } = await supabase
+        .from("product_subcategories")
+        .insert({ name: novaSubcategoria.trim(), active: true })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      setSubcategorias(prev => [...prev, { id: data.id, name: data.name }]);
+      setForm(prev => ({ ...prev, sub_categoria: data.name }));
+      setNovaSubcategoria("");
+      setShowNewSubcategoriaDialog(false);
+      toast.success("Subcategoria criada!");
+    } catch (error) {
+      console.error("Erro ao criar subcategoria:", error);
+      toast.error("Erro ao criar subcategoria");
+    } finally {
+      setSavingSubcategoria(false);
     }
   };
 
@@ -613,6 +675,7 @@ export default function IAConfigProdutos() {
         preco_base: form.preco_base,
         preco_original: form.preco_original || null,
         categoria: form.categoria || null,
+        sub_categoria: form.sub_categoria || null,
         centro_custo: form.centro_custo || null,
         diferenciais: form.diferenciais.split("\n").filter(d => d.trim()),
         quando_oferecer: form.quando_oferecer || null,
@@ -827,7 +890,7 @@ export default function IAConfigProdutos() {
         <div className="flex items-center gap-3 flex-wrap">
           <div className="flex items-center gap-2">
             <Filter className="h-4 w-4 text-muted-foreground" />
-            <Select value={categoriaFiltro} onValueChange={setCategoriaFiltro}>
+            <Select value={categoriaFiltro} onValueChange={(v) => { setCategoriaFiltro(v); setSubcategoriaFiltro("todas"); }}>
               <SelectTrigger className="w-[200px]">
                 <SelectValue placeholder="Filtrar por categoria" />
               </SelectTrigger>
@@ -843,14 +906,44 @@ export default function IAConfigProdutos() {
               </SelectContent>
             </Select>
           </div>
-          {categoriaFiltro !== "todas" && (
-            <Badge variant="secondary" className="gap-1">
-              {categoriaFiltro}
-              <X 
-                className="h-3 w-3 cursor-pointer hover:text-destructive" 
-                onClick={() => setCategoriaFiltro("todas")}
-              />
-            </Badge>
+          <div className="flex items-center gap-2">
+            <Select value={subcategoriaFiltro} onValueChange={setSubcategoriaFiltro}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Subcategoria" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todas">
+                  Todas subcategorias
+                </SelectItem>
+                {subcategorias.map(subcat => (
+                  <SelectItem key={subcat.id} value={subcat.name}>
+                    {subcat.name} ({contadorPorSubcategoria[subcat.name] || 0})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {(categoriaFiltro !== "todas" || subcategoriaFiltro !== "todas") && (
+            <div className="flex items-center gap-1">
+              {categoriaFiltro !== "todas" && (
+                <Badge variant="secondary" className="gap-1">
+                  {categoriaFiltro}
+                  <X 
+                    className="h-3 w-3 cursor-pointer hover:text-destructive" 
+                    onClick={() => setCategoriaFiltro("todas")}
+                  />
+                </Badge>
+              )}
+              {subcategoriaFiltro !== "todas" && (
+                <Badge variant="outline" className="gap-1">
+                  {subcategoriaFiltro}
+                  <X 
+                    className="h-3 w-3 cursor-pointer hover:text-destructive" 
+                    onClick={() => setSubcategoriaFiltro("todas")}
+                  />
+                </Badge>
+              )}
+            </div>
           )}
         </div>
         
@@ -926,6 +1019,36 @@ export default function IAConfigProdutos() {
                       size="icon"
                       onClick={() => setShowNewCategoriaDialog(true)}
                       title="Criar nova categoria"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="sub_categoria">Subcategoria</Label>
+                  <div className="flex gap-2">
+                    <Select 
+                      value={form.sub_categoria} 
+                      onValueChange={(v) => setForm({ ...form, sub_categoria: v })}
+                    >
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder="Selecione a subcategoria" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Nenhuma</SelectItem>
+                        {subcategorias.map(subcat => (
+                          <SelectItem key={subcat.id} value={subcat.name}>
+                            {subcat.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="icon"
+                      onClick={() => setShowNewSubcategoriaDialog(true)}
+                      title="Criar nova subcategoria"
                     >
                       <Plus className="h-4 w-4" />
                     </Button>
@@ -1701,9 +1824,16 @@ export default function IAConfigProdutos() {
                   </div>
                 </TableCell>
                 <TableCell>
-                  {produto.categoria ? (
-                    <Badge variant="outline">{produto.categoria}</Badge>
-                  ) : "-"}
+                  <div className="space-y-1">
+                    {produto.categoria ? (
+                      <Badge variant="outline">{produto.categoria}</Badge>
+                    ) : <span className="text-muted-foreground text-sm">-</span>}
+                    {produto.sub_categoria && (
+                      <Badge variant="secondary" className="text-xs">
+                        {produto.sub_categoria}
+                      </Badge>
+                    )}
+                  </div>
                 </TableCell>
                 {/* Dimensões na ordem C × L × A */}
                 <TableCell>
@@ -1847,6 +1977,48 @@ export default function IAConfigProdutos() {
               </Button>
               <Button onClick={createCategoria} disabled={savingCategoria}>
                 {savingCategoria && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                Criar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog para criar nova subcategoria */}
+      <Dialog open={showNewSubcategoriaDialog} onOpenChange={setShowNewSubcategoriaDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Nova Subcategoria</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="nova-subcategoria">Nome da subcategoria</Label>
+              <Input
+                id="nova-subcategoria"
+                placeholder="Ex: Mesa, Cadeiras, Tapete..."
+                value={novaSubcategoria}
+                onChange={(e) => setNovaSubcategoria(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    createSubcategoria();
+                  }
+                }}
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => {
+                  setShowNewSubcategoriaDialog(false);
+                  setNovaSubcategoria("");
+                }}
+              >
+                Cancelar
+              </Button>
+              <Button onClick={createSubcategoria} disabled={savingSubcategoria}>
+                {savingSubcategoria && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                 Criar
               </Button>
             </div>
