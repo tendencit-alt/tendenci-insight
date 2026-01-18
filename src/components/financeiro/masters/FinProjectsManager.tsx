@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,7 +14,7 @@ import { Plus, Pencil, FolderKanban, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-
+import { numericCodeSort } from "@/lib/numericCodeSort";
 export function FinProjectsManager() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
@@ -157,7 +157,7 @@ export function FinProjectsManager() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {projects?.map((project) => (
+              {useMemo(() => numericCodeSort(projects || [], 'code'), [projects]).map((project) => (
                 <TableRow key={project.id}>
                   <TableCell className="font-medium">{project.code || "-"}</TableCell>
                   <TableCell>{project.name}</TableCell>
