@@ -10,6 +10,7 @@ import { MastersTab } from "@/components/financeiro/MastersTab";
 import { PendingAlertsCard } from "@/components/financeiro/PendingAlertsCard";
 import { OrphanEntriesAlert } from "@/components/financeiro/OrphanEntriesAlert";
 import { PurchasesTab } from "@/components/financeiro/PurchasesTab";
+import { ProjectKPIs } from "@/components/financeiro/ProjectKPIs";
 import {
   LayoutDashboard, 
   Wallet, 
@@ -80,6 +81,7 @@ export default function Financeiro() {
           </div>
 
           <TabsContent value="dashboard" className="space-y-4">
+            <ProjectKPIs />
             <FinanceiroDashboard filters={filters} />
           </TabsContent>
 
