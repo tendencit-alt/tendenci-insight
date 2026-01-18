@@ -673,18 +673,6 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
         </Card>
       </div>
 
-      {/* Account Mapping Info */}
-      <div className="text-xs text-muted-foreground bg-muted/30 rounded-lg p-3 flex items-start gap-2">
-        <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
-        <div>
-          <p className="font-medium">Contas identificadas automaticamente:</p>
-          <p className="mt-1">
-            <span className="text-green-600">Natureza RECEITA = Entradas</span> • 
-            <span className="text-red-500 ml-1">Natureza DESPESA = Saídas</span> • 
-            <span className="text-muted-foreground ml-1">Contas com in_cashflow = true</span>
-          </p>
-        </div>
-      </div>
       <Card>
         <CardContent className="p-2 sm:pt-6 sm:px-6">
           <div className="overflow-x-auto -mx-2 sm:mx-0">
