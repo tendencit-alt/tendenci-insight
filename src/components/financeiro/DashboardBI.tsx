@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { CostCenterKPIs } from "./CostCenterKPIs";
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -635,6 +636,9 @@ export function DashboardBI({ filters }: DashboardBIProps) {
           {renderBIContent()}
         </CardContent>
       </Card>
+
+      {/* Cost Center KPIs */}
+      <CostCenterKPIs filters={filters} />
     </div>
   );
 }
