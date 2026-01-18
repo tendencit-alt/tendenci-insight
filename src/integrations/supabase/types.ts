@@ -2195,14 +2195,19 @@ export type Database = {
           has_splits: boolean | null
           id: string
           installment_number: number | null
+          is_recurring: boolean | null
           juros_atraso: number | null
           loan_contract_id: string | null
           notes: string | null
+          parent_entry_id: string | null
           party_id: string | null
           party_type: string | null
           payment_method: string | null
           project_id: string | null
           reconciled: boolean | null
+          recurrence_count: number | null
+          recurrence_end_date: string | null
+          recurrence_type: string | null
           reversal_of_id: string | null
           status: string | null
           tags: string[] | null
@@ -2224,14 +2229,19 @@ export type Database = {
           has_splits?: boolean | null
           id?: string
           installment_number?: number | null
+          is_recurring?: boolean | null
           juros_atraso?: number | null
           loan_contract_id?: string | null
           notes?: string | null
+          parent_entry_id?: string | null
           party_id?: string | null
           party_type?: string | null
           payment_method?: string | null
           project_id?: string | null
           reconciled?: boolean | null
+          recurrence_count?: number | null
+          recurrence_end_date?: string | null
+          recurrence_type?: string | null
           reversal_of_id?: string | null
           status?: string | null
           tags?: string[] | null
@@ -2253,14 +2263,19 @@ export type Database = {
           has_splits?: boolean | null
           id?: string
           installment_number?: number | null
+          is_recurring?: boolean | null
           juros_atraso?: number | null
           loan_contract_id?: string | null
           notes?: string | null
+          parent_entry_id?: string | null
           party_id?: string | null
           party_type?: string | null
           payment_method?: string | null
           project_id?: string | null
           reconciled?: boolean | null
+          recurrence_count?: number | null
+          recurrence_end_date?: string | null
+          recurrence_type?: string | null
           reversal_of_id?: string | null
           status?: string | null
           tags?: string[] | null
@@ -2302,6 +2317,13 @@ export type Database = {
             columns: ["loan_contract_id"]
             isOneToOne: false
             referencedRelation: "fin_loan_contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_ledger_entries_parent_entry_id_fkey"
+            columns: ["parent_entry_id"]
+            isOneToOne: false
+            referencedRelation: "fin_ledger_entries"
             referencedColumns: ["id"]
           },
           {
