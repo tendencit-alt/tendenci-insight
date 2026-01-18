@@ -1028,14 +1028,14 @@ export default function IAConfigProdutos() {
                   <Label htmlFor="sub_categoria">Subcategoria</Label>
                   <div className="flex gap-2">
                     <Select 
-                      value={form.sub_categoria} 
-                      onValueChange={(v) => setForm({ ...form, sub_categoria: v })}
+                      value={form.sub_categoria || "_none"} 
+                      onValueChange={(v) => setForm({ ...form, sub_categoria: v === "_none" ? "" : v })}
                     >
                       <SelectTrigger className="flex-1">
                         <SelectValue placeholder="Selecione a subcategoria" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Nenhuma</SelectItem>
+                        <SelectItem value="_none">Nenhuma</SelectItem>
                         {subcategorias.map(subcat => (
                           <SelectItem key={subcat.id} value={subcat.name}>
                             {subcat.name}
