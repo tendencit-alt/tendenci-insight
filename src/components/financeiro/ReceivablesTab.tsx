@@ -18,6 +18,8 @@ import { ptBR } from "date-fns/locale";
 import { CreateReceivableDialog } from "./CreateReceivableDialog";
 import { ReceivePaymentDialog } from "./ReceivePaymentDialog";
 import { toast } from "sonner";
+import { useFinanceiroSync } from "@/hooks/useFinanceiroSync";
+import { bulkUpdateReceivablesWithSync, bulkDeleteReceivablesWithSync } from "@/lib/financeiroIntegration";
 
 interface ReceivablesTabProps {
   filters: FinanceiroFiltersState;
@@ -34,6 +36,7 @@ export function ReceivablesTab({ filters }: ReceivablesTabProps) {
   const [bulkEditForm, setBulkEditForm] = useState({
     status: "",
   });
+  const { invalidateReceivables } = useFinanceiroSync();
 
   const { data: receivables, isLoading, refetch } = useQuery({
     queryKey: ["fin-receivables", filters],
@@ -168,18 +171,16 @@ export function ReceivablesTab({ filters }: ReceivablesTabProps) {
 
     setBulkLoading(true);
     try {
-      const { error } = await supabase
-        .from("fin_receivables")
-        .update({ status: bulkEditForm.status })
-        .in("id", Array.from(selectedIds));
-
-      if (error) throw error;
+      await bulkUpdateReceivablesWithSync(
+        Array.from(selectedIds),
+        bulkEditForm.status
+      );
 
       toast.success(`${selectedIds.size} contas atualizadas com sucesso`);
       setSelectedIds(new Set());
       setBulkEditOpen(false);
       setBulkEditForm({ status: "" });
-      refetch();
+      invalidateReceivables();
     } catch (error: any) {
       toast.error("Erro ao atualizar: " + error.message);
     } finally {
@@ -190,17 +191,12 @@ export function ReceivablesTab({ filters }: ReceivablesTabProps) {
   const handleBulkDelete = async () => {
     setBulkLoading(true);
     try {
-      const { error } = await supabase
-        .from("fin_receivables")
-        .delete()
-        .in("id", Array.from(selectedIds));
-
-      if (error) throw error;
+      await bulkDeleteReceivablesWithSync(Array.from(selectedIds));
 
       toast.success(`${selectedIds.size} contas excluídas com sucesso`);
       setSelectedIds(new Set());
       setBulkDeleteOpen(false);
-      refetch();
+      invalidateReceivables();
     } catch (error: any) {
       toast.error("Erro ao excluir: " + error.message);
     } finally {

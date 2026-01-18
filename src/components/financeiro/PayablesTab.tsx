@@ -18,6 +18,8 @@ import { ptBR } from "date-fns/locale";
 import { CreatePayableDialog } from "./CreatePayableDialog";
 import { PayPayableDialog } from "./PayPayableDialog";
 import { toast } from "sonner";
+import { useFinanceiroSync } from "@/hooks/useFinanceiroSync";
+import { bulkUpdatePayablesWithSync, bulkDeletePayablesWithSync } from "@/lib/financeiroIntegration";
 
 interface PayablesTabProps {
   filters: FinanceiroFiltersState;
@@ -34,6 +36,7 @@ export function PayablesTab({ filters }: PayablesTabProps) {
   const [bulkEditForm, setBulkEditForm] = useState({
     status: "",
   });
+  const { invalidatePayables } = useFinanceiroSync();
 
   const { data: payables, isLoading, refetch } = useQuery({
     queryKey: ["fin-payables", filters],
@@ -168,18 +171,16 @@ export function PayablesTab({ filters }: PayablesTabProps) {
 
     setBulkLoading(true);
     try {
-      const { error } = await supabase
-        .from("fin_payables")
-        .update({ status: bulkEditForm.status })
-        .in("id", Array.from(selectedIds));
-
-      if (error) throw error;
+      await bulkUpdatePayablesWithSync(
+        Array.from(selectedIds),
+        bulkEditForm.status
+      );
 
       toast.success(`${selectedIds.size} contas atualizadas com sucesso`);
       setSelectedIds(new Set());
       setBulkEditOpen(false);
       setBulkEditForm({ status: "" });
-      refetch();
+      invalidatePayables();
     } catch (error: any) {
       toast.error("Erro ao atualizar: " + error.message);
     } finally {
@@ -190,17 +191,12 @@ export function PayablesTab({ filters }: PayablesTabProps) {
   const handleBulkDelete = async () => {
     setBulkLoading(true);
     try {
-      const { error } = await supabase
-        .from("fin_payables")
-        .delete()
-        .in("id", Array.from(selectedIds));
-
-      if (error) throw error;
+      await bulkDeletePayablesWithSync(Array.from(selectedIds));
 
       toast.success(`${selectedIds.size} contas excluídas com sucesso`);
       setSelectedIds(new Set());
       setBulkDeleteOpen(false);
-      refetch();
+      invalidatePayables();
     } catch (error: any) {
       toast.error("Erro ao excluir: " + error.message);
     } finally {

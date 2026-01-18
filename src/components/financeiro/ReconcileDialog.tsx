@@ -39,6 +39,8 @@ import {
   AlertTriangle,
   Lock
 } from "lucide-react";
+import { useFinanceiroSync } from "@/hooks/useFinanceiroSync";
+import { reconcileWithSync } from "@/lib/financeiroIntegration";
 
 interface LedgerEntry {
   id: string;
@@ -64,6 +66,7 @@ export function ReconcileDialog({
   entries,
   onSuccess,
 }: ReconcileDialogProps) {
+  const { invalidateReconciliation } = useFinanceiroSync();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [reconcileMethod, setReconcileMethod] = useState<"manual" | "bank">("manual");
   const [documentNumber, setDocumentNumber] = useState("");
@@ -260,6 +263,7 @@ export function ReconcileDialog({
       toast.success(
         `${entries.length} lançamento(s) conciliado(s) com sucesso!`
       );
+      invalidateReconciliation();
       onSuccess();
       onOpenChange(false);
     } catch (error: any) {
