@@ -107,15 +107,7 @@ export function EditProjectDialog({ project, open, onOpenChange, onSuccess }: Ed
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent 
-        className="max-w-2xl"
-        onPointerDownOutside={(e) => e.preventDefault()}
-        onInteractOutside={(e) => {
-          if (e.target instanceof Element && e.target.closest('[role="listbox"]')) {
-            e.preventDefault();
-          }
-        }}
-      >
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle className="text-2xl">Editar Projeto</DialogTitle>
         </DialogHeader>

@@ -136,11 +136,7 @@ export function AudioRecorder({ isOpen, onClose, onSave }: AudioRecorderProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent 
-        className="sm:max-w-md"
-        onPointerDownOutside={(e) => e.preventDefault()}
-        onInteractOutside={(e) => e.preventDefault()}
-      >
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>🎤 Gravar Áudio</DialogTitle>
         </DialogHeader>

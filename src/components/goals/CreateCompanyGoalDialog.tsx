@@ -97,18 +97,7 @@ export function CreateCompanyGoalDialog({ open, onOpenChange, onSuccess }: Creat
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent 
-        className="max-w-lg"
-        onPointerDownOutside={(e) => e.preventDefault()}
-        onInteractOutside={(e) => {
-          if (e.target instanceof Element && (
-            e.target.closest('[role="listbox"]') ||
-            e.target.closest('.react-day-picker')
-          )) {
-            e.preventDefault();
-          }
-        }}
-      >
+      <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>Criar Meta da Empresa</DialogTitle>
           <DialogDescription>Defina a meta consolidada para toda a equipe</DialogDescription>

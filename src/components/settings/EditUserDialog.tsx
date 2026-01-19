@@ -184,15 +184,7 @@ export function EditUserDialog({ open, onOpenChange, user, onSuccess }: EditUser
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent 
-        className="max-w-md"
-        onPointerDownOutside={(e) => e.preventDefault()}
-        onInteractOutside={(e) => {
-          if (e.target instanceof Element && e.target.closest('[role="listbox"]')) {
-            e.preventDefault();
-          }
-        }}
-      >
+      <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <User className="w-5 h-5 text-primary" />
