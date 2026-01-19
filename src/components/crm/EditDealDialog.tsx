@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { SearchableCombobox, ComboboxOption } from "@/components/ui/searchable-combobox";
 import {
   Popover,
   PopoverContent,
@@ -260,6 +261,24 @@ export function EditDealDialog({
     setOwners(ownersData || []);
     setLoadingClients(false);
   };
+
+  // Opções memoizadas para os comboboxes com busca
+  const clientOptions: ComboboxOption[] = useMemo(() => [
+    { value: "none", label: "Nenhum" },
+    ...clients.map((lead: any) => ({
+      value: lead.id,
+      label: lead.client?.name || "Sem nome",
+      sublabel: lead.client?.phone || undefined,
+    }))
+  ], [clients]);
+
+  const architectOptions: ComboboxOption[] = useMemo(() => [
+    { value: "none", label: "Nenhum" },
+    ...architects.map((arch) => ({
+      value: arch.id,
+      label: arch.name,
+    }))
+  ], [architects]);
 
   const handleArchitectCreated = async (architectId: string) => {
     await fetchOptions();
@@ -819,30 +838,22 @@ export function EditDealDialog({
                     + Novo Cliente
                   </Button>
                 </div>
-                <Select
+                <SearchableCombobox
+                  options={clientOptions}
                   value={formData.lead_id || "none"}
-                  disabled={loadingClients && !!deal?.lead_id}
                   onValueChange={(value) => {
                     const newLeadId = value === "none" ? "" : value;
                     setFormData({ ...formData, lead_id: newLeadId });
                   }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={
-                      loadingClients && deal?.lead_id 
-                        ? "Carregando cliente..." 
-                        : "Selecione o cliente"
-                    } />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Nenhum</SelectItem>
-                    {clients.map((lead: any) => (
-                      <SelectItem key={lead.id} value={lead.id}>
-                        {lead.client?.name || "Sem nome"} {lead.client?.phone && `- ${lead.client.phone}`}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  placeholder={
+                    loadingClients && deal?.lead_id 
+                      ? "Carregando cliente..." 
+                      : "Selecione o cliente"
+                  }
+                  searchPlaceholder="Buscar por nome ou telefone..."
+                  emptyMessage="Nenhum cliente encontrado."
+                  disabled={loadingClients && !!deal?.lead_id}
+                />
               </div>
 
               <div className="space-y-2">
@@ -902,24 +913,16 @@ export function EditDealDialog({
                     Novo Arquiteto
                   </Button>
                 </div>
-                <Select
+                <SearchableCombobox
+                  options={architectOptions}
                   value={formData.architect_id || "none"}
                   onValueChange={(value) =>
                     setFormData({ ...formData, architect_id: value === "none" ? "" : value })
                   }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o arquiteto" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Nenhum</SelectItem>
-                    {architects.map((arch) => (
-                      <SelectItem key={arch.id} value={arch.id}>
-                        {arch.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  placeholder="Selecione o arquiteto"
+                  searchPlaceholder="Buscar arquiteto..."
+                  emptyMessage="Nenhum arquiteto encontrado."
+                />
               </div>
 
               <div className="space-y-2">

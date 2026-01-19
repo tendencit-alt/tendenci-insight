@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -16,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { SearchableCombobox, ComboboxOption } from "@/components/ui/searchable-combobox";
 import {
   Popover,
   PopoverContent,
@@ -186,6 +187,31 @@ export function CreateDealDialog({
       setFormData((prev) => ({ ...prev, stage_id: stagesData[0].id }));
     }
   };
+
+  // Opções memoizadas para os comboboxes com busca
+  const leadOptions: ComboboxOption[] = useMemo(() => 
+    leads.map((lead) => ({
+      value: lead.id,
+      label: lead.client?.name || "Sem nome",
+      sublabel: lead.client?.phone || undefined,
+    })), [leads]);
+
+  const architectOptions: ComboboxOption[] = useMemo(() => [
+    { value: "sem-arquiteto", label: "Cliente sem arquiteto" },
+    ...architects.map((arch) => ({
+      value: arch.id,
+      label: arch.name,
+    }))
+  ], [architects]);
+
+  const projectOptions: ComboboxOption[] = useMemo(() => [
+    { value: "sem-projeto", label: "Sem projeto vinculado" },
+    ...projects.map((project) => ({
+      value: project.id,
+      label: project.name,
+      sublabel: project.client?.name || undefined,
+    }))
+  ], [projects]);
 
   const handleClientCreated = async (clientId: string) => {
     // Create a lead for the new client with temperature
@@ -616,24 +642,16 @@ export function CreateDealDialog({
                     Novo Cliente
                   </Button>
                 </div>
-                <Select
+                <SearchableCombobox
+                  options={leadOptions}
                   value={formData.lead_id}
                   onValueChange={(value) =>
                     setFormData({ ...formData, lead_id: value })
                   }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o lead" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {leads.map((lead) => (
-                      <SelectItem key={lead.id} value={lead.id}>
-                        {lead.client?.name || "Sem nome"}
-                        {lead.client?.phone && ` - ${lead.client.phone}`}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  placeholder="Selecione o lead"
+                  searchPlaceholder="Buscar por nome ou telefone..."
+                  emptyMessage="Nenhum lead encontrado."
+                />
               </div>
 
               <div className="space-y-2">
@@ -691,25 +709,16 @@ export function CreateDealDialog({
                     Novo Arquiteto
                   </Button>
                 </div>
-                <Select
+                <SearchableCombobox
+                  options={architectOptions}
                   value={formData.architect_id}
                   onValueChange={(value) =>
                     setFormData({ ...formData, architect_id: value })
                   }
-                  required
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o arquiteto" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="sem-arquiteto">Cliente sem arquiteto</SelectItem>
-                    {architects.map((arch) => (
-                      <SelectItem key={arch.id} value={arch.id}>
-                        {arch.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  placeholder="Selecione o arquiteto"
+                  searchPlaceholder="Buscar arquiteto..."
+                  emptyMessage="Nenhum arquiteto encontrado."
+                />
               </div>
             </div>
           </div>
@@ -731,25 +740,16 @@ export function CreateDealDialog({
                   Criar Projeto
                 </Button>
               </div>
-              <Select
+              <SearchableCombobox
+                options={projectOptions}
                 value={formData.project_id || "sem-projeto"}
                 onValueChange={(value) =>
                   setFormData({ ...formData, project_id: value === "sem-projeto" ? "" : value })
                 }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione um projeto" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="sem-projeto">Sem projeto vinculado</SelectItem>
-                  {projects.map((project) => (
-                    <SelectItem key={project.id} value={project.id}>
-                      {project.name}
-                      {project.client?.name && ` - ${project.client.name}`}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                placeholder="Selecione um projeto"
+                searchPlaceholder="Buscar projeto..."
+                emptyMessage="Nenhum projeto encontrado."
+              />
             </div>
           </div>
 
