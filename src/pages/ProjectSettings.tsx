@@ -1,11 +1,12 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Shield } from "lucide-react";
+import { ArrowLeft, Shield, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { WebhookSettings } from "@/components/projects/WebhookSettings";
 import { N8nIntegrationGuide } from "@/components/settings/N8nIntegrationGuide";
 import { ImportDataGuide } from "@/components/settings/ImportDataGuide";
 import { ImportArchitectsData } from "@/components/settings/ImportArchitectsData";
+import { DeletedRecordsTab } from "@/components/settings/DeletedRecordsTab";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,13 +36,17 @@ const ProjectSettings = () => {
 
         {/* Settings Sections */}
         <Tabs defaultValue="architects" className="w-full">
-          <TabsList className={`grid w-full ${isMaster ? 'grid-cols-6' : 'grid-cols-5'}`}>
+          <TabsList className={`grid w-full ${isMaster ? 'grid-cols-7' : 'grid-cols-5'}`}>
             <TabsTrigger value="architects">👥 Arquitetos</TabsTrigger>
             <TabsTrigger value="import">📥 Importar Dados</TabsTrigger>
             <TabsTrigger value="n8n">🤖 Integração n8n</TabsTrigger>
             <TabsTrigger value="n8n-tasks">⚡ n8n Tarefas</TabsTrigger>
             <TabsTrigger value="webhooks">🔗 Webhooks</TabsTrigger>
             {isMaster && <TabsTrigger value="users">🔐 Acessos</TabsTrigger>}
+            {isMaster && <TabsTrigger value="deleted" className="flex items-center gap-1.5">
+              <Trash2 className="h-4 w-4" />
+              Excluídos
+            </TabsTrigger>}
           </TabsList>
 
           <TabsContent value="architects" className="space-y-6 pt-6">
@@ -114,6 +119,12 @@ const ProjectSettings = () => {
                   </Button>
                 </CardContent>
               </Card>
+            </TabsContent>
+          )}
+
+          {isMaster && (
+            <TabsContent value="deleted" className="space-y-6 pt-6">
+              <DeletedRecordsTab />
             </TabsContent>
           )}
         </Tabs>

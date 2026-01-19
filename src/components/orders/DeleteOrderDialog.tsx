@@ -12,6 +12,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Loader2, Trash2 } from 'lucide-react';
+import { useDeleteWithTracking } from '@/hooks/useDeleteWithTracking';
 
 interface DeleteOrderDialogProps {
   orderId: string;
@@ -29,10 +30,29 @@ export function DeleteOrderDialog({
   onSuccess,
 }: DeleteOrderDialogProps) {
   const [loading, setLoading] = useState(false);
+  const { logDeletion } = useDeleteWithTracking();
 
   const handleDelete = async () => {
     setLoading(true);
     try {
+      // Fetch order data before deletion for tracking
+      const { data: orderData } = await supabase
+        .from('orders')
+        .select('*, order_items(*)')
+        .eq('id', orderId)
+        .single();
+
+      // Log the deletion for traceability
+      if (orderData) {
+        await logDeletion({
+          table: 'orders',
+          id: orderId,
+          data: orderData,
+          type: 'order',
+          identifier: `#PED-${String(orderNumber).padStart(4, '0')}`,
+        });
+      }
+
       // Delete order items first
       const { error: itemsError } = await supabase
         .from('order_items')
