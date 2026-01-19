@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { LogOut, User, Menu, Edit2, ChevronDown, Factory, DollarSign, Database, Settings, Briefcase } from "lucide-react";
+import { LogOut, User, Menu, Edit2, ChevronDown, Factory, DollarSign, Database, Settings, Briefcase, Sun, Moon } from "lucide-react";
+import { useTheme } from "next-themes";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,6 +45,27 @@ const CATEGORY_CONFIG: Record<string, { label: string; icon: React.ElementType }
   cadastros: { label: 'Cadastros', icon: Database },
   master: { label: 'Configurações', icon: Settings },
 };
+
+// Componente de toggle de tema
+function ThemeToggle() {
+  const { theme, setTheme } = useTheme();
+  
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+      className="h-8 w-8 hover:bg-muted/50"
+      title={theme === "dark" ? "Modo Claro" : "Modo Escuro"}
+    >
+      {theme === "dark" ? (
+        <Sun className="h-4 w-4" />
+      ) : (
+        <Moon className="h-4 w-4" />
+      )}
+    </Button>
+  );
+}
 
 export function AppNavbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -313,8 +335,9 @@ export function AppNavbar() {
         {/* Spacer */}
         <div className="flex-1 xl:flex-none" />
         
-        {/* Notifications + User Dropdown */}
+        {/* Theme Toggle + Notifications + User Dropdown */}
         <div className="flex items-center gap-1.5">
+          <ThemeToggle />
           <NotificationBell />
           
           <DropdownMenu>
