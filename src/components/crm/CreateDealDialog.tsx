@@ -36,6 +36,8 @@ import { cn } from "@/lib/utils";
 import { useFormPersistence } from "@/hooks/useFormPersistence";
 import { FormSaveIndicator } from "@/components/ui/FormSaveIndicator";
 import { formatBrasil } from "@/utils/taskTimezone";
+import { validateAndShowErrors, formatDatabaseError, ValidationRule } from "@/lib/formValidation";
+import { toast as sonnerToast } from "sonner";
 
 interface CreateDealDialogProps {
   open: boolean;
@@ -403,28 +405,36 @@ export function CreateDealDialog({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validação com mensagens detalhadas
+    const validationRules: ValidationRule[] = [
+      { field: "stage_id", label: "Etapa", required: true },
+      { field: "lead_id", label: "Cliente/Lead", required: true },
+    ];
+
+    // Validação adicional se etapa requer valor
+    const selectedStage = stages.find(s => s.id === formData.stage_id);
+    if (selectedStage) {
+      const stageName = selectedStage.name.toLowerCase();
+      if (stageName.includes("negociação") && (!formData.value || Number(formData.value) <= 0)) {
+        sonnerToast.error("Valor obrigatório", {
+          description: `Para a etapa "${selectedStage.name}", é obrigatório informar o valor (R$) do negócio.`,
+        });
+        return;
+      }
+    }
+
+    if (!validateAndShowErrors(formData, validationRules)) {
+      return;
+    }
+
     setLoading(true);
 
     try {
-      // Validação: Verificar se a etapa é "Qualificação" ou "Em Negociação" e se há valor
-      const selectedStage = stages.find(s => s.id === formData.stage_id);
       let dealStatus = "aberto";
       
       if (selectedStage) {
         const stageName = selectedStage.name.toLowerCase();
-        const requiresValue = stageName.includes("negociação");
-        
-        if (requiresValue && (!formData.value || Number(formData.value) <= 0)) {
-          setLoading(false);
-          toast({
-            title: "Valor obrigatório",
-            description: "Para a etapa 'Negociação', é obrigatório informar o valor (R$) do negócio.",
-            variant: "destructive",
-          });
-          return;
-        }
-        
-        // Detectar status baseado na etapa selecionada
         if (stageName.includes("ganho") || stageName.includes("won") || stageName.startsWith("✅")) {
           dealStatus = "won";
         } else if (stageName.includes("perdido") || stageName.includes("lost") || stageName.startsWith("❌")) {
@@ -467,10 +477,9 @@ export function CreateDealDialog({
 
       if (error) {
         setLoading(false);
-        toast({
-          title: "Erro ao criar negócio",
-          description: error.message,
-          variant: "destructive",
+        const errorMsg = formatDatabaseError(error);
+        sonnerToast.error("Erro ao criar negócio", {
+          description: errorMsg,
         });
         return;
       }

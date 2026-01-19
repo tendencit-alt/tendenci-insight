@@ -15,6 +15,7 @@ import { CreateArchitectDialog } from "@/components/architects/CreateArchitectDi
 import { useFormPersistence } from "@/hooks/useFormPersistence";
 import { FormSaveIndicator } from "@/components/ui/FormSaveIndicator";
 import { validateFileType, validateFileSize, ALLOWED_FILE_TYPES_ACCEPT, MAX_FILE_SIZE_MB, formatFileSize } from "@/lib/utils";
+import { validateAndShowErrors, formatDatabaseError, ValidationRule } from "@/lib/formValidation";
 
 interface CreateProjectDialogProps {
   open: boolean;
@@ -184,18 +185,20 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess, preSelected
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name) {
-      toast.error("Nome do projeto é obrigatório");
-      return;
-    }
+    // Validação com mensagens detalhadas
+    const validationRules: ValidationRule[] = [
+      { field: "name", label: "Nome do Projeto", required: true, minLength: 2 },
+      { field: "client_id", label: "Cliente", required: true },
+    ];
 
-    if (!formData.client_id) {
-      toast.error("Cliente é obrigatório");
+    if (!validateAndShowErrors(formData, validationRules)) {
       return;
     }
 
     if (files.length === 0) {
-      toast.error("É obrigatório anexar pelo menos um arquivo");
+      toast.error("Arquivo obrigatório", {
+        description: "É obrigatório anexar pelo menos um arquivo para criar o projeto.",
+      });
       return;
     }
 
@@ -282,7 +285,10 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess, preSelected
       setFiles([]);
       
     } catch (error: any) {
-      toast.error(error.message || "Erro ao criar projeto");
+      const errorMsg = formatDatabaseError(error);
+      toast.error("Erro ao criar projeto", {
+        description: errorMsg,
+      });
     } finally {
       setLoading(false);
     }

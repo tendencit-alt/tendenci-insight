@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useFinanceiroSync } from "@/hooks/useFinanceiroSync";
 import { createLedgerEntryWithIntegration } from "@/lib/financeiroIntegration";
+import { validateAndShowErrors, ValidationRule } from "@/lib/formValidation";
 
 interface CreateLedgerEntryDialogProps {
   open: boolean;
@@ -161,41 +162,41 @@ export function CreateLedgerEntryDialog({ open, onOpenChange, onSuccess }: Creat
   };
 
   const handleSubmit = async () => {
-    if (!form.type || !form.description || !form.amount || !form.competence_date) {
-      toast.error("Preencha os campos obrigatórios");
-      return;
+    // Validação com mensagens detalhadas
+    const validationRules: ValidationRule[] = [
+      { field: "type", label: "Tipo", required: true },
+      { field: "description", label: "Descrição", required: true, minLength: 3 },
+      { field: "amount", label: "Valor", required: true },
+      { field: "competence_date", label: "Data de Competência", required: true },
+      { field: "chart_account_id", label: "Categoria (Plano de Contas)", required: true },
+      { field: "cost_center_id", label: "Centro de Custo", required: true },
+      { field: "project_id", label: "Projeto", required: true },
+    ];
+
+    // Validar campos de recorrência
+    if (form.is_recurring) {
+      validationRules.push({
+        field: "recurrence_count",
+        label: "Quantidade de Repetições",
+        required: true,
+        min: 1,
+      });
     }
 
-    if (!form.chart_account_id) {
-      toast.error("Selecione uma categoria (Plano de Contas) para que o lançamento apareça no DRE e Fluxo de Caixa");
-      return;
-    }
-
-    if (!form.cost_center_id) {
-      toast.error("Selecione um Centro de Custo");
-      return;
-    }
-
-    if (!form.project_id) {
-      toast.error("Selecione um Projeto");
-      return;
-    }
-
-    if (form.is_recurring && (!form.recurrence_count || form.recurrence_count < 1)) {
-      toast.error("Informe a quantidade de repetições");
-      return;
-    }
-
-    // Validate linked record fields - MANDATORY for DESPESA/RECEITA
+    // Validar campos de vínculo para DESPESA/RECEITA
     if (form.type === "DESPESA" || form.type === "RECEITA") {
-      if (!form.party_id) {
-        toast.error(form.type === "DESPESA" ? "Selecione um Fornecedor" : "Selecione um Cliente");
-        return;
-      }
-      if (!form.due_date) {
-        toast.error("Informe a Data de Vencimento");
-        return;
-      }
+      validationRules.push(
+        { 
+          field: "party_id", 
+          label: form.type === "DESPESA" ? "Fornecedor" : "Cliente", 
+          required: true 
+        },
+        { field: "due_date", label: "Data de Vencimento", required: true }
+      );
+    }
+
+    if (!validateAndShowErrors(form, validationRules)) {
+      return;
     }
 
     setLoading(true);
