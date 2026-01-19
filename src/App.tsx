@@ -44,6 +44,7 @@ import Catalogo from "./pages/Catalogo";
 import Financeiro from "./pages/Financeiro";
 import DashboardBI from "./pages/DashboardBI";
 import CadastrosFinanceiros from "./pages/CadastrosFinanceiros";
+import Excluidos from "./pages/Excluidos";
 
 const queryClient = new QueryClient();
 
@@ -96,6 +97,7 @@ const App = () => (
               <Route path="/automacoes" element={<ProtectedRoute><AutomacoesDocumentacao /></ProtectedRoute>} />
               <Route path="/ia-configuracao" element={<ProtectedRoute><PermissionGuard module="ia_configuracao"><IAConfiguracao /></PermissionGuard></ProtectedRoute>} />
               <Route path="/ia-conversas" element={<ProtectedRoute><PermissionGuard module="ia_configuracao"><IAConversations /></PermissionGuard></ProtectedRoute>} />
+              <Route path="/excluidos" element={<ProtectedRoute><PermissionGuard module="configuracoes"><Excluidos /></PermissionGuard></ProtectedRoute>} />
               {/* Rotas dinâmicas - verificar se é uma rota editada antes de mostrar 404 */}
               <Route path="*" element={
                 <ProtectedRoute>
