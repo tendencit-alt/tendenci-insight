@@ -1676,6 +1676,56 @@ export type Database = {
           },
         ]
       }
+      deleted_records: {
+        Row: {
+          created_at: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          deleted_by_name: string | null
+          deletion_reason: string | null
+          id: string
+          original_data: Json
+          original_id: string
+          original_table: string
+          record_identifier: string | null
+          record_type: string
+        }
+        Insert: {
+          created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_by_name?: string | null
+          deletion_reason?: string | null
+          id?: string
+          original_data: Json
+          original_id: string
+          original_table: string
+          record_identifier?: string | null
+          record_type: string
+        }
+        Update: {
+          created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deleted_by_name?: string | null
+          deletion_reason?: string | null
+          id?: string
+          original_data?: Json
+          original_id?: string
+          original_table?: string
+          record_identifier?: string | null
+          record_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deleted_records_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dispatch_session_items: {
         Row: {
           client_name: string
@@ -8409,6 +8459,17 @@ export type Database = {
       is_user_admin: { Args: { _user_id: string }; Returns: boolean }
       is_user_master: { Args: { _user_id: string }; Returns: boolean }
       leads_aggregates: { Args: never; Returns: Json }
+      log_deletion: {
+        Args: {
+          p_data: Json
+          p_id: string
+          p_identifier: string
+          p_reason?: string
+          p_table: string
+          p_type: string
+        }
+        Returns: string
+      }
       low_stock_products: {
         Args: never
         Returns: {
