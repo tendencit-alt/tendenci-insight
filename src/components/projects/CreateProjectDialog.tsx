@@ -289,208 +289,210 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess, preSelected
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent 
-        className="max-w-2xl max-h-[90vh] overflow-y-auto"
-        onPointerDownOutside={(e) => e.preventDefault()}
-        onInteractOutside={(e) => {
-          if (e.target instanceof Element && (
-            e.target.closest('[role="dialog"]') || 
-            e.target.closest('[role="listbox"]') ||
-            e.target.closest('.react-day-picker')
-          )) {
-            e.preventDefault();
-          }
-        }}
-      >
-        <DialogHeader>
-          <DialogTitle className="text-2xl">Novo Projeto</DialogTitle>
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent 
+          className="max-w-2xl max-h-[90vh] overflow-y-auto"
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onInteractOutside={(e) => {
+            if (e.target instanceof Element && (
+              e.target.closest('[role="dialog"]') || 
+              e.target.closest('[role="listbox"]') ||
+              e.target.closest('.react-day-picker')
+            )) {
+              e.preventDefault();
+            }
+          }}
+        >
+          <DialogHeader>
+            <DialogTitle className="text-2xl">Novo Projeto</DialogTitle>
+          </DialogHeader>
 
-        <FormSaveIndicator hasRestoredData={hasRestoredData} className="mb-4" />
+          <FormSaveIndicator hasRestoredData={hasRestoredData} className="mb-4" />
 
-        <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2 col-span-2">
-              <Label htmlFor="name">Nome do Projeto *</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                required
-                placeholder="Ex: Mesa Maciça Família Silva"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="client">Cliente *</Label>
-              <div className="flex gap-2">
-                <Select value={formData.client_id} onValueChange={(v) => setFormData({ ...formData, client_id: v })}>
-                  <SelectTrigger className="bg-background">
-                    <SelectValue placeholder="Selecione o cliente" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover z-50">
-                    {leads.map((lead) => (
-                      <SelectItem key={lead.id} value={lead.id}>
-                        {lead.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setIsCreateClientOpen(true)}
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
+          <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2 col-span-2">
+                <Label htmlFor="name">Nome do Projeto *</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  required
+                  placeholder="Ex: Mesa Maciça Família Silva"
+                />
               </div>
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="architect">Arquiteto</Label>
-              <div className="flex gap-2">
-                <Select value={formData.architect_id} onValueChange={(v) => setFormData({ ...formData, architect_id: v })}>
-                  <SelectTrigger className="bg-background">
-                    <SelectValue placeholder="Selecione o arquiteto" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover z-50">
-                    <SelectItem value="sem-arquiteto">Cliente sem arquiteto</SelectItem>
-                    {architects.map((arch) => (
-                      <SelectItem key={arch.id} value={arch.id}>
-                        {arch.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setIsCreateArchitectOpen(true)}
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="stage">Estágio *</Label>
-              <Select value={formData.stage} onValueChange={(v) => setFormData({ ...formData, stage: v })}>
-                <SelectTrigger className="bg-background">
-                  <SelectValue placeholder="Selecione o estágio" />
-                </SelectTrigger>
-                <SelectContent className="bg-popover z-50">
-                  <SelectItem value="recebido">Recebido</SelectItem>
-                  <SelectItem value="em_orcamento">Em Orçamento</SelectItem>
-                  <SelectItem value="orcado">Orçado</SelectItem>
-                  <SelectItem value="apresentado">Apresentado</SelectItem>
-                  <SelectItem value="em_negociacao">Em Negociação</SelectItem>
-                  <SelectItem value="aprovado">Aprovado</SelectItem>
-                  <SelectItem value="perdido">Perdido</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="value">Valor (R$)</Label>
-              <Input
-                id="value"
-                type="number"
-                step="0.01"
-                value={formData.value}
-                onChange={(e) => setFormData({ ...formData, value: e.target.value })}
-                placeholder="0.00"
-              />
-            </div>
-
-            <div className="space-y-2 col-span-2">
-              <Label htmlFor="deadline">Prazo de Entrega</Label>
-              <Input
-                id="deadline"
-                type="date"
-                value={formData.deadline}
-                onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
-              />
-            </div>
-
-            <div className="space-y-2 col-span-2">
-              <Label htmlFor="notes">Observações</Label>
-              <Textarea
-                id="notes"
-                value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                placeholder="Anotações sobre o projeto..."
-                rows={3}
-              />
-            </div>
-
-            <div className="space-y-2 col-span-2">
-              <Label>Anexar Arquivos *</Label>
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
+              <div className="space-y-2">
+                <Label htmlFor="client">Cliente *</Label>
+                <div className="flex gap-2">
+                  <Select value={formData.client_id} onValueChange={(v) => setFormData({ ...formData, client_id: v })}>
+                    <SelectTrigger className="bg-background">
+                      <SelectValue placeholder="Selecione o cliente" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover z-50">
+                      {leads.map((lead) => (
+                        <SelectItem key={lead.id} value={lead.id}>
+                          {lead.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => document.getElementById('file-upload')?.click()}
-                    className="gap-2"
+                    size="icon"
+                    onClick={() => setIsCreateClientOpen(true)}
                   >
-                    <Upload className="w-4 h-4" />
-                    Escolher Arquivos
+                    <Plus className="h-4 w-4" />
                   </Button>
-                  <input
-                    id="file-upload"
-                    type="file"
-                    multiple
-                    accept={ALLOWED_FILE_TYPES_ACCEPT}
-                    onChange={handleFileSelect}
-                    className="hidden"
-                  />
-                  <span className="text-sm text-muted-foreground">
-                    Máx. {MAX_FILE_SIZE_MB}MB - PDF, DOC, Excel, DWG, Imagens, Áudio
-                  </span>
                 </div>
+              </div>
 
-                {files.length > 0 && (
-                  <div className="space-y-2">
-                    {files.map((file, index) => (
-                      <Card key={index} className="p-3 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <FileText className="w-5 h-5 text-primary" />
-                          <div>
-                            <p className="text-sm font-medium">{file.name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {(file.size / 1024).toFixed(1)} KB
-                            </p>
-                          </div>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleFileRemove(index)}
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      </Card>
-                    ))}
+              <div className="space-y-2">
+                <Label htmlFor="architect">Arquiteto</Label>
+                <div className="flex gap-2">
+                  <Select value={formData.architect_id} onValueChange={(v) => setFormData({ ...formData, architect_id: v })}>
+                    <SelectTrigger className="bg-background">
+                      <SelectValue placeholder="Selecione o arquiteto" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover z-50">
+                      <SelectItem value="sem-arquiteto">Cliente sem arquiteto</SelectItem>
+                      {architects.map((arch) => (
+                        <SelectItem key={arch.id} value={arch.id}>
+                          {arch.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setIsCreateArchitectOpen(true)}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="stage">Estágio *</Label>
+                <Select value={formData.stage} onValueChange={(v) => setFormData({ ...formData, stage: v })}>
+                  <SelectTrigger className="bg-background">
+                    <SelectValue placeholder="Selecione o estágio" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover z-50">
+                    <SelectItem value="recebido">Recebido</SelectItem>
+                    <SelectItem value="em_orcamento">Em Orçamento</SelectItem>
+                    <SelectItem value="orcado">Orçado</SelectItem>
+                    <SelectItem value="apresentado">Apresentado</SelectItem>
+                    <SelectItem value="em_negociacao">Em Negociação</SelectItem>
+                    <SelectItem value="aprovado">Aprovado</SelectItem>
+                    <SelectItem value="perdido">Perdido</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="value">Valor (R$)</Label>
+                <Input
+                  id="value"
+                  type="number"
+                  step="0.01"
+                  value={formData.value}
+                  onChange={(e) => setFormData({ ...formData, value: e.target.value })}
+                  placeholder="0.00"
+                />
+              </div>
+
+              <div className="space-y-2 col-span-2">
+                <Label htmlFor="deadline">Prazo de Entrega</Label>
+                <Input
+                  id="deadline"
+                  type="date"
+                  value={formData.deadline}
+                  onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
+                />
+              </div>
+
+              <div className="space-y-2 col-span-2">
+                <Label htmlFor="notes">Observações</Label>
+                <Textarea
+                  id="notes"
+                  value={formData.notes}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  placeholder="Anotações sobre o projeto..."
+                  rows={3}
+                />
+              </div>
+
+              <div className="space-y-2 col-span-2">
+                <Label>Anexar Arquivos *</Label>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => document.getElementById('file-upload')?.click()}
+                      className="gap-2"
+                    >
+                      <Upload className="w-4 h-4" />
+                      Escolher Arquivos
+                    </Button>
+                    <input
+                      id="file-upload"
+                      type="file"
+                      multiple
+                      accept={ALLOWED_FILE_TYPES_ACCEPT}
+                      onChange={handleFileSelect}
+                      className="hidden"
+                    />
+                    <span className="text-sm text-muted-foreground">
+                      Máx. {MAX_FILE_SIZE_MB}MB - PDF, DOC, Excel, DWG, Imagens, Áudio
+                    </span>
                   </div>
-                )}
+
+                  {files.length > 0 && (
+                    <div className="space-y-2">
+                      {files.map((file, index) => (
+                        <Card key={index} className="p-3 flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <FileText className="w-5 h-5 text-primary" />
+                            <div>
+                              <p className="text-sm font-medium">{file.name}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {(file.size / 1024).toFixed(1)} KB
+                              </p>
+                            </div>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleFileRemove(index)}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="flex gap-3 pt-4">
-            <Button type="submit" className="flex-1" disabled={loading || uploading}>
-              {uploading ? "Enviando arquivos..." : loading ? "Salvando..." : "Salvar"}
-            </Button>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={loading || uploading}>
-              Cancelar
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
+            <div className="flex gap-3 pt-4">
+              <Button type="submit" className="flex-1" disabled={loading || uploading}>
+                {uploading ? "Enviando arquivos..." : loading ? "Salvando..." : "Salvar"}
+              </Button>
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={loading || uploading}>
+                Cancelar
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <CreateClientDialog
         open={isCreateClientOpen}
@@ -503,6 +505,6 @@ export function CreateProjectDialog({ open, onOpenChange, onSuccess, preSelected
         onOpenChange={setIsCreateArchitectOpen}
         onSuccess={handleArchitectCreated}
       />
-    </Dialog>
+    </>
   );
 }
