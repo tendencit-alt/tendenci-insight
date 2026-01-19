@@ -8370,16 +8370,7 @@ export type Database = {
               whatsapp_valido: boolean
             }[]
           }
-      get_seller_goal_stats:
-        | {
-            Args: { p_month: number; p_user_id: string; p_year: number }
-            Returns: {
-              current_amount: number
-              goal_amount: number
-              percentage: number
-            }[]
-          }
-        | { Args: { p_vendedor_id: string }; Returns: Json }
+      get_seller_goal_stats: { Args: { p_vendedor_id: string }; Returns: Json }
       get_seller_performance_by_goal: {
         Args: { p_seller_goal_id: string }
         Returns: Json
