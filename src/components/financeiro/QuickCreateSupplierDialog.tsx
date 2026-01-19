@@ -78,7 +78,7 @@ export function QuickCreateSupplierDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md z-[100]">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Criar Novo Fornecedor</DialogTitle>
         </DialogHeader>
