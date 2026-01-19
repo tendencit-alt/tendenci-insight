@@ -26,7 +26,18 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Calendar as CalendarIcon, Mic, Square, Paperclip, Loader2, Plus, Target, X } from "lucide-react";
+import { Calendar as CalendarIcon, Mic, Square, Paperclip, Loader2, Plus, Target, X, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useDeleteWithTracking } from "@/hooks/useDeleteWithTracking";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -70,6 +81,10 @@ export function EditDealDialog({
   const [isUploading, setIsUploading] = useState(false);
   const [showCreateLead, setShowCreateLead] = useState(false);
   const [isArchitectDialogOpen, setIsArchitectDialogOpen] = useState(false);
+  const [deleteDialog, setDeleteDialog] = useState(false);
+  const [deleteReason, setDeleteReason] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+  const { logDeletion } = useDeleteWithTracking();
   
   // Estados para indicações
   const [existingIndications, setExistingIndications] = useState<any[]>([]);
@@ -441,6 +456,70 @@ export function EditDealDialog({
       });
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteReason.trim()) {
+      toast({
+        title: "Motivo obrigatório",
+        description: "Por favor, informe o motivo da exclusão.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      // Buscar dados completos do deal para log
+      const { data: dealData } = await supabase
+        .from("crm_deals")
+        .select("*")
+        .eq("id", deal.id)
+        .single();
+
+      if (dealData) {
+        // Registrar a exclusão antes de deletar
+        await logDeletion({
+          table: "crm_deals",
+          id: deal.id,
+          data: dealData,
+          type: "Negócio CRM",
+          identifier: `${deal.title} - ${deal.lead?.name || 'Sem cliente'}`,
+          reason: deleteReason,
+        });
+      }
+
+      const { error } = await supabase
+        .from("crm_deals")
+        .delete()
+        .eq("id", deal.id);
+
+      if (error) {
+        toast({
+          title: "Erro ao excluir",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Negócio excluído",
+          description: "O negócio foi excluído com sucesso.",
+        });
+        setDeleteDialog(false);
+        setDeleteReason("");
+        onSuccess();
+        onOpenChange(false);
+      }
+    } catch (error) {
+      console.error("Erro ao excluir negócio:", error);
+      toast({
+        title: "Erro ao excluir",
+        description: "Ocorreu um erro ao excluir o negócio.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -1203,17 +1282,28 @@ export function EditDealDialog({
             </Button>
           </div>
 
-          <div className="flex justify-end gap-2 pt-4">
+          <div className="flex justify-between items-center gap-2 pt-4 border-t">
             <Button
               type="button"
               variant="outline"
-              onClick={() => onOpenChange(false)}
+              className="gap-2 text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/50"
+              onClick={() => setDeleteDialog(true)}
             >
-              Cancelar
+              <Trash2 className="h-4 w-4" />
+              Excluir
             </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? "Salvando..." : "Salvar"}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+              >
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={loading}>
+                {loading ? "Salvando..." : "Salvar"}
+              </Button>
+            </div>
           </div>
         </form>
       </DialogContent>
@@ -1233,6 +1323,41 @@ export function EditDealDialog({
         onOpenChange={setIsArchitectDialogOpen}
         onSuccess={handleArchitectCreated}
       />
+
+      <AlertDialog open={deleteDialog} onOpenChange={(open) => {
+        setDeleteDialog(open);
+        if (!open) setDeleteReason("");
+      }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir negócio</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir este negócio? Esta ação não pode ser desfeita.
+              Por favor, informe o motivo da exclusão.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4">
+            <Label htmlFor="delete-reason">Motivo da Exclusão *</Label>
+            <Textarea
+              id="delete-reason"
+              value={deleteReason}
+              onChange={(e) => setDeleteReason(e.target.value)}
+              placeholder="Informe o motivo da exclusão..."
+              className="mt-2"
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDelete} 
+              disabled={isDeleting || !deleteReason.trim()}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? "Excluindo..." : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }
