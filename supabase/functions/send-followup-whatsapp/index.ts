@@ -286,56 +286,68 @@ Deno.serve(async (req) => {
     }
     
     // ═══════════════════════════════════════════════════════════
-    // BUSCAR INSTÂNCIA WHATSAPP DINAMICAMENTE DO BANCO
+    // BUSCAR INSTÂNCIA IA AUTORIZADA - SEM FALLBACK
+    // Apenas a instância marcada como is_ia_instance pode enviar follow-ups
     // ═══════════════════════════════════════════════════════════
-    console.log('🔍 Buscando instância WhatsApp conectada...')
+    console.log('🔍 Buscando instância IA autorizada para follow-up...')
     
-    // Primeiro: tentar instância marcada como IA
-    let { data: iaConnection, error: iaError } = await supabase
+    // IMPORTANTE: Apenas instância IA pode enviar follow-ups (34 99155-6019)
+    const { data: iaConnection, error: iaError } = await supabase
       .from('tendenci_whatsapp_connections')
       .select('instance_name, status, phone_number')
       .eq('is_ia_instance', true)
-      .eq('status', 'connected')
-      .limit(1)
       .maybeSingle()
     
-    let instanceName: string
-    
-    if (iaConnection) {
-      instanceName = iaConnection.instance_name
-      console.log(`✅ Usando instância IA: ${instanceName} (${iaConnection.phone_number})`)
-    } else {
-      // Fallback: qualquer instância conectada
-      const { data: anyConnection } = await supabase
-        .from('tendenci_whatsapp_connections')
-        .select('instance_name, status, phone_number')
-        .eq('status', 'connected')
-        .limit(1)
-        .maybeSingle()
+    // Verificar se existe instância IA configurada
+    if (!iaConnection) {
+      console.error('❌ Nenhuma instância IA configurada no sistema!')
       
-      if (!anyConnection) {
-        console.error('❌ Nenhuma instância WhatsApp conectada!')
-        
-        await supabase.from('system_errors').insert({
-          title: 'Nenhum WhatsApp conectado',
-          module: 'followup',
-          description: 'Não há instâncias WhatsApp conectadas para enviar follow-up',
-          severity: 'critical',
-          source: 'send-followup-whatsapp'
-        })
-        
-        return new Response(
-          JSON.stringify({
-            success: false,
-            error: 'Nenhuma instância WhatsApp conectada. Reconecte pelo menos uma instância.'
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 503 }
-        )
-      }
+      await supabase.from('system_errors').insert({
+        title: 'Instância IA não configurada',
+        module: 'followup',
+        description: 'Nenhuma instância está marcada como is_ia_instance=true. Configure a instância IA no banco de dados.',
+        severity: 'critical',
+        source: 'send-followup-whatsapp'
+      })
       
-      instanceName = anyConnection.instance_name
-      console.log(`⚠️ Usando instância alternativa: ${instanceName} (${anyConnection.phone_number})`)
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Instância IA não configurada. Configure a instância de WhatsApp da IA.'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 503 }
+      )
     }
+    
+    // Verificar se instância IA está conectada
+    if (iaConnection.status !== 'connected') {
+      console.error(`❌ Instância IA (${iaConnection.instance_name}) está ${iaConnection.status}!`)
+      console.log('⛔ NÃO SERÁ FEITO FALLBACK para outras instâncias - apenas a IA pode enviar follow-ups')
+      
+      await supabase.from('system_errors').insert({
+        title: 'Instância IA desconectada - Follow-ups pausados',
+        module: 'followup',
+        description: `A instância de WhatsApp da IA (${iaConnection.phone_number || iaConnection.instance_name}) não está conectada. Follow-ups estão PAUSADOS. Reconecte via QR Code na página de Configuração IA.`,
+        severity: 'critical',
+        source: 'send-followup-whatsapp',
+        metadata: {
+          instance_name: iaConnection.instance_name,
+          phone_number: iaConnection.phone_number,
+          current_status: iaConnection.status
+        }
+      })
+      
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: `Instância IA (${iaConnection.phone_number || iaConnection.instance_name}) desconectada. Reconecte o WhatsApp da IA para retomar os follow-ups.`
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 503 }
+      )
+    }
+    
+    const instanceName = iaConnection.instance_name
+    console.log(`✅ Usando instância IA autorizada: ${instanceName} (${iaConnection.phone_number})`)
     
     // Parsear request
     const body: SendFollowupRequest = await req.json()
