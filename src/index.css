@@ -95,33 +95,33 @@ All colors MUST be HSL.
   }
 
   .dark {
-    /* Dark Mode - Premium */
-    --background: 0 0% 7%;
-    --foreground: 0 0% 90%;
+    /* Dark Mode - Premium Vibrant */
+    --background: 220 15% 8%;
+    --foreground: 0 0% 98%;
 
-    --card: 0 0% 12%;
-    --card-foreground: 0 0% 90%;
+    --card: 220 15% 12%;
+    --card-foreground: 0 0% 98%;
 
-    --popover: 0 0% 12%;
-    --popover-foreground: 0 0% 90%;
+    --popover: 220 15% 12%;
+    --popover-foreground: 0 0% 98%;
 
     /* Primary - Neutral Gray */
-    --primary: 220 13% 52%;
-    --primary-foreground: 0 0% 100%;
-    --primary-light: 220 13% 62%;
-    --primary-dark: 220 13% 42%;
+    --primary: 220 13% 65%;
+    --primary-foreground: 220 15% 8%;
+    --primary-light: 220 13% 75%;
+    --primary-dark: 220 13% 55%;
 
     /* Accent - Light Gray */
-    --accent: 220 13% 75%;
-    --accent-foreground: 0 0% 10%;
+    --accent: 220 13% 80%;
+    --accent-foreground: 220 15% 10%;
 
     /* Secondary */
-    --secondary: 0 0% 20%;
-    --secondary-foreground: 0 0% 90%;
+    --secondary: 220 12% 22%;
+    --secondary-foreground: 0 0% 98%;
 
     /* Muted */
-    --muted: 0 0% 15%;
-    --muted-foreground: 0 0% 62%;
+    --muted: 220 12% 18%;
+    --muted-foreground: 220 10% 70%;
 
     /* Success */
     --success: 142 71% 45%;
@@ -135,25 +135,25 @@ All colors MUST be HSL.
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    /* Borders */
-    --border: 0 0% 20%;
-    --input: 0 0% 20%;
-    --ring: 220 13% 52%;
+    /* Borders - more visible */
+    --border: 220 12% 25%;
+    --input: 220 12% 25%;
+    --ring: 220 13% 65%;
 
     /* Sidebar Dark */
-    --sidebar-background: 0 0% 7%;
-    --sidebar-foreground: 0 0% 90%;
-    --sidebar-primary: 220 13% 52%;
+    --sidebar-background: 220 15% 6%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 220 13% 65%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 12%;
-    --sidebar-accent-foreground: 0 0% 90%;
-    --sidebar-border: 0 0% 15%;
-    --sidebar-ring: 220 13% 52%;
+    --sidebar-accent: 220 15% 14%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 220 12% 20%;
+    --sidebar-ring: 220 13% 65%;
 
     /* Dark Shadows */
-    --shadow-card: 0 6px 18px hsl(0 0% 0% / 0.4);
-    --shadow-hover: 0 12px 28px hsl(220 13% 52% / 0.25), 0 8px 12px hsl(220 13% 52% / 0.15);
-    --shadow-glow: 0 0 32px hsl(220 13% 52% / 0.5);
+    --shadow-card: 0 6px 18px hsl(0 0% 0% / 0.5);
+    --shadow-hover: 0 12px 28px hsl(220 13% 65% / 0.2), 0 8px 12px hsl(220 13% 65% / 0.1);
+    --shadow-glow: 0 0 32px hsl(220 13% 65% / 0.4);
   }
 }
 
