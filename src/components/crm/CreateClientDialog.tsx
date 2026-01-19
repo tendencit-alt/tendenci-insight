@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Search, Phone } from "lucide-react";
 import { toast as sonnerToast } from "sonner";
 import { validateBrazilianPhone, formatPhoneForDisplay, formatPhoneForWhatsApp } from "@/utils/whatsappValidation";
+import { validateAndShowErrors, formatDatabaseError, ValidationRule, ValidationPatterns, ValidationMessages } from "@/lib/formValidation";
 
 const ESTADOS = [
   'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG',
@@ -110,32 +111,31 @@ export function CreateClientDialog({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validação básica
-    if (!formData.name.trim()) {
-      toast({
-        title: "Campo obrigatório",
-        description: "Nome é obrigatório",
-        variant: "destructive",
+    // Validação com mensagens detalhadas
+    const validationRules: ValidationRule[] = [
+      { field: "name", label: "Nome", required: true, minLength: 2 },
+      { field: "phone", label: "Telefone/WhatsApp", required: true },
+    ];
+
+    // Validar email se preenchido
+    if (formData.email) {
+      validationRules.push({
+        field: "email",
+        label: "E-mail",
+        pattern: ValidationPatterns.email,
+        patternMessage: ValidationMessages.email,
       });
-      return;
     }
 
-    if (!formData.phone.trim()) {
-      toast({
-        title: "Campo obrigatório",
-        description: "Telefone/WhatsApp é obrigatório",
-        variant: "destructive",
-      });
+    if (!validateAndShowErrors(formData, validationRules)) {
       return;
     }
 
     // Validar formato do telefone brasileiro
     const phoneValidation = validateBrazilianPhone(formData.phone);
     if (!phoneValidation.valid) {
-      toast({
-        title: "Telefone inválido",
+      sonnerToast.error("Telefone inválido", {
         description: phoneValidation.error || "Formato de telefone inválido. Use: (DDD) 9XXXX-XXXX",
-        variant: "destructive",
       });
       return;
     }
@@ -166,9 +166,10 @@ export function CreateClientDialog({
       setLoading(false);
 
       if (error) {
+        const errorMsg = formatDatabaseError(error);
         toast({
           title: "Erro ao criar cliente",
-          description: error.message,
+          description: errorMsg,
           variant: "destructive",
         });
         return;

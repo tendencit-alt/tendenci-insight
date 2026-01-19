@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { useFormPersistence } from "@/hooks/useFormPersistence";
 import { FormSaveIndicator } from "@/components/ui/FormSaveIndicator";
 import { Target } from "lucide-react";
+import { validateAndShowErrors, formatDatabaseError, ValidationRule, ValidationPatterns, ValidationMessages } from "@/lib/formValidation";
 
 interface CreateArchitectDialogProps {
   open: boolean;
@@ -64,19 +65,31 @@ export function CreateArchitectDialog({ open, onOpenChange, onSuccess }: CreateA
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name) {
-      toast.error("Nome é obrigatório");
-      return;
+    // Validação com mensagens detalhadas
+    const validationRules: ValidationRule[] = [
+      { field: "name", label: "Nome do Arquiteto", required: true, minLength: 2 },
+      { field: "phone", label: "WhatsApp", required: true, pattern: ValidationPatterns.phone, patternMessage: ValidationMessages.phone },
+    ];
+
+    // Validar email se preenchido
+    if (formData.email) {
+      validationRules.push({
+        field: "email",
+        label: "E-mail",
+        pattern: ValidationPatterns.email,
+        patternMessage: ValidationMessages.email,
+      });
     }
 
-    if (!formData.phone) {
-      toast.error("WhatsApp é obrigatório");
+    if (!validateAndShowErrors(formData, validationRules)) {
       return;
     }
 
     // Validar indicação se ativada
     if (hasIndication && (!indication.deal_id || !indication.product_type)) {
-      toast.error("Para adicionar indicação, selecione a oportunidade e o tipo de produto");
+      toast.error("Para adicionar indicação, selecione a oportunidade e o tipo de produto", {
+        description: "Os campos 'Oportunidade' e 'Tipo de Produto' são obrigatórios para indicações.",
+      });
       return;
     }
 
@@ -142,7 +155,10 @@ export function CreateArchitectDialog({ open, onOpenChange, onSuccess }: CreateA
       setIndication({ deal_id: "", product_type: "", value: "", notes: "" });
       
     } catch (error: any) {
-      toast.error(error.message || "Erro ao criar arquiteto");
+      const errorMsg = formatDatabaseError(error);
+      toast.error("Erro ao criar arquiteto", {
+        description: errorMsg,
+      });
     } finally {
       setLoading(false);
     }

@@ -11,6 +11,7 @@ import { Upload, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useFormPersistence } from "@/hooks/useFormPersistence";
 import { FormSaveIndicator } from "@/components/ui/FormSaveIndicator";
+import { validateAndShowErrors, formatDatabaseError, ValidationRule, ValidationPatterns, ValidationMessages } from "@/lib/formValidation";
 
 interface CreateLeadDialogProps {
   open: boolean;
@@ -89,9 +90,23 @@ export function CreateLeadDialog({ open, onOpenChange, onSuccess }: CreateLeadDi
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validação básica
-    if (!formData.name || !formData.phone) {
-      toast.error("Nome e telefone são obrigatórios");
+    // Validação com mensagens detalhadas
+    const validationRules: ValidationRule[] = [
+      { field: "name", label: "Nome", required: true, minLength: 2 },
+      { field: "phone", label: "Telefone/WhatsApp", required: true, pattern: ValidationPatterns.phone, patternMessage: ValidationMessages.phone },
+    ];
+
+    // Validar email se preenchido
+    if (formData.email) {
+      validationRules.push({
+        field: "email",
+        label: "E-mail",
+        pattern: ValidationPatterns.email,
+        patternMessage: ValidationMessages.email,
+      });
+    }
+
+    if (!validateAndShowErrors(formData, validationRules)) {
       return;
     }
 
@@ -115,7 +130,8 @@ export function CreateLeadDialog({ open, onOpenChange, onSuccess }: CreateLeadDi
 
       if (clientError) {
         console.error('❌ Erro ao criar cliente:', clientError);
-        throw new Error(`Erro ao criar cliente: ${clientError.message}`);
+        const errorMsg = formatDatabaseError(clientError);
+        throw new Error(errorMsg);
       }
 
       console.log('✅ Cliente criado com sucesso:', clientData.id);
