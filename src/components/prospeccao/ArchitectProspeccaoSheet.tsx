@@ -191,19 +191,7 @@ export function ArchitectProspeccaoSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent 
-        className="sm:max-w-2xl overflow-y-auto"
-        onPointerDownOutside={(e) => e.preventDefault()}
-        onInteractOutside={(e) => {
-          if (e.target instanceof Element && (
-            e.target.closest('[role="dialog"]') ||
-            e.target.closest('[role="listbox"]') ||
-            e.target.closest('.react-day-picker')
-          )) {
-            e.preventDefault();
-          }
-        }}
-      >
+      <SheetContent className="sm:max-w-2xl overflow-y-auto">
         <SheetHeader>
           <div className="flex items-center justify-between">
             <SheetTitle className="flex items-center gap-3">

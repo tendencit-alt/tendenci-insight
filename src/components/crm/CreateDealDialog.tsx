@@ -581,20 +581,7 @@ export function CreateDealDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent 
-        className="max-w-2xl max-h-[90vh] overflow-y-auto"
-        onPointerDownOutside={(e) => e.preventDefault()}
-        onInteractOutside={(e) => {
-          // Permite interação com selects, popovers e calendários
-          if (e.target instanceof Element && (
-            e.target.closest('[role="dialog"]') || 
-            e.target.closest('[role="listbox"]') ||
-            e.target.closest('.react-day-picker')
-          )) {
-            e.preventDefault();
-          }
-        }}
-      >
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Novo Negócio</DialogTitle>
         </DialogHeader>
