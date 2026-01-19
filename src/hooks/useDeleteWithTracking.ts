@@ -23,21 +23,43 @@ export const useDeleteWithTracking = () => {
     reason
   }: DeleteTrackingParams): Promise<string | null> => {
     try {
-      const { data: result, error } = await supabase.rpc('log_deletion', {
-        p_table: table,
-        p_id: id,
-        p_data: data,
-        p_type: type,
-        p_identifier: identifier,
-        p_reason: reason || null
-      });
+      // Get current user info
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData?.user?.id;
+      
+      let userName: string | null = null;
+      if (userId) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name, username, email')
+          .eq('id', userId)
+          .single();
+        
+        userName = profile?.full_name || profile?.username || profile?.email || null;
+      }
+
+      // Insert directly into deleted_records table
+      const { data: result, error } = await supabase
+        .from('deleted_records')
+        .insert({
+          original_table: table,
+          original_id: id,
+          original_data: data,
+          deleted_by: userId || null,
+          deleted_by_name: userName,
+          deletion_reason: reason || null,
+          record_type: type,
+          record_identifier: identifier
+        })
+        .select('id')
+        .single();
 
       if (error) {
         console.error('Error logging deletion:', error);
         return null;
       }
 
-      return result as string;
+      return result?.id || null;
     } catch (error) {
       console.error('Error in logDeletion:', error);
       return null;
