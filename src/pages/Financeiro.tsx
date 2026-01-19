@@ -6,7 +6,6 @@ import { FinanceiroDashboard } from "@/components/financeiro/FinanceiroDashboard
 import { PayablesReceivablesTab } from "@/components/financeiro/PayablesReceivablesTab";
 import { LedgerReconciliationTab } from "@/components/financeiro/LedgerReconciliationTab";
 import { DRECashflowView } from "@/components/financeiro/DRECashflowView";
-import { MastersTab } from "@/components/financeiro/MastersTab";
 import { PendingAlertsCard } from "@/components/financeiro/PendingAlertsCard";
 import { OrphanEntriesAlert } from "@/components/financeiro/OrphanEntriesAlert";
 import { PurchasesTab } from "@/components/financeiro/PurchasesTab";
@@ -17,7 +16,6 @@ import {
   Wallet, 
   BookOpen, 
   BarChart3, 
-  Settings2,
   ShoppingCart
 } from "lucide-react";
 
@@ -83,10 +81,6 @@ export default function Financeiro() {
                 <ShoppingCart className="h-4 w-4 flex-shrink-0" />
                 <span>Compras</span>
               </TabsTrigger>
-              <TabsTrigger value="masters" className="flex items-center gap-1.5 px-3 py-2 text-sm">
-                <Settings2 className="h-4 w-4 flex-shrink-0" />
-                <span>Cadastros</span>
-              </TabsTrigger>
             </TabsList>
           </div>
 
@@ -108,10 +102,6 @@ export default function Financeiro() {
 
           <TabsContent value="purchases" className="space-y-4">
             <PurchasesTab />
-          </TabsContent>
-
-          <TabsContent value="masters" className="space-y-4">
-            <MastersTab />
           </TabsContent>
         </Tabs>
       </div>

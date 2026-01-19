@@ -43,6 +43,7 @@ import IAConversations from "./pages/IAConversations";
 import Catalogo from "./pages/Catalogo";
 import Financeiro from "./pages/Financeiro";
 import DashboardBI from "./pages/DashboardBI";
+import CadastrosFinanceiros from "./pages/CadastrosFinanceiros";
 
 const queryClient = new QueryClient();
 
@@ -75,6 +76,7 @@ const App = () => (
               <Route path="/estoque" element={<ProtectedRoute><PermissionGuard module="estoque"><Inventory /></PermissionGuard></ProtectedRoute>} />
               <Route path="/compras" element={<Navigate to="/financeiro" replace />} />
               <Route path="/financeiro" element={<ProtectedRoute><PermissionGuard module="financeiro"><Financeiro /></PermissionGuard></ProtectedRoute>} />
+              <Route path="/cadastros-financeiros" element={<ProtectedRoute><PermissionGuard module="cadastros_financeiros"><CadastrosFinanceiros /></PermissionGuard></ProtectedRoute>} />
               <Route path="/metas" element={<ProtectedRoute><PermissionGuard module="metas"><Goals /></PermissionGuard></ProtectedRoute>} />
               <Route path="/metas/gestao" element={<ProtectedRoute><PermissionGuard module="metas"><GoalsManagement /></PermissionGuard></ProtectedRoute>} />
               <Route path="/metas/desempenho/:goalId" element={<ProtectedRoute><PermissionGuard module="metas"><SellerPerformance /></PermissionGuard></ProtectedRoute>} />
