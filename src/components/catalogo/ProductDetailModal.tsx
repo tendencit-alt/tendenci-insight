@@ -1,5 +1,6 @@
 import { X, MessageCircle, Check, Ruler } from "lucide-react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -52,6 +53,9 @@ export function ProductDetailModal({ product, open, onOpenChange, onBuyNow }: Pr
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0 bg-white">
+        <VisuallyHidden>
+          <DialogTitle>{product.nome}</DialogTitle>
+        </VisuallyHidden>
         {/* Close button */}
         <button
           onClick={() => onOpenChange(false)}
