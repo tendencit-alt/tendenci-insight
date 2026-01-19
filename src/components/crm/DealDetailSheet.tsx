@@ -552,20 +552,6 @@ export function DealDetailSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent 
         className="w-full sm:max-w-3xl overflow-y-auto"
-        onPointerDownOutside={(e) => e.preventDefault()}
-        onInteractOutside={(e) => {
-          // Permite interação com selects, popovers, date pickers e datetime-local
-          if (e.target instanceof Element && (
-            e.target.closest('[role="dialog"]') ||
-            e.target.closest('[role="listbox"]') ||
-            e.target.closest('.react-day-picker') ||
-            e.target.closest('input[type="datetime-local"]') ||
-            e.target.closest('input[type="date"]') ||
-            e.target.closest('input[type="time"]')
-          )) {
-            e.preventDefault();
-          }
-        }}
       >
         <SheetHeader>
           <div className="flex items-start justify-between">
