@@ -275,8 +275,6 @@ export function TendenciAssistant() {
       </SheetTrigger>
       <SheetContent
         className="w-full sm:max-w-xl flex flex-col h-full"
-        onPointerDownOutside={(e) => e.preventDefault()}
-        onInteractOutside={(e) => e.preventDefault()}
       >
         <SheetHeader className="border-b pb-4">
           <SheetTitle className="flex items-center gap-3">
