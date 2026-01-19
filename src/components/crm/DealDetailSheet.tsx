@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Edit, CheckCircle, XCircle, FileText, User, Users, Phone, Mail, MapPin, Package, TrendingUp, DollarSign, ExternalLink, Calendar, Tag as TagIcon, History, FolderOpen, Plus, Unlink, Building, Repeat, ShoppingCart } from "lucide-react";
+import { Edit, CheckCircle, XCircle, FileText, User, Users, Phone, Mail, MapPin, Package, TrendingUp, DollarSign, ExternalLink, Calendar, Tag as TagIcon, History, FolderOpen, Plus, Unlink, Building, Repeat, ShoppingCart, Trash2 } from "lucide-react";
+import { useDeleteWithTracking } from "@/hooks/useDeleteWithTracking";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -85,6 +86,9 @@ export function DealDetailSheet({
   const [followupEnabled, setFollowupEnabled] = useState(deal?.followup_enabled ?? true);
   const [isUpdatingFollowup, setIsUpdatingFollowup] = useState(false);
   const [isEditClientOpen, setIsEditClientOpen] = useState(false);
+  const [deleteReason, setDeleteReason] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+  const { logDeletion } = useDeleteWithTracking();
 
   const fetchProject = async () => {
     if (!deal?.id) return;
@@ -439,25 +443,66 @@ export function DealDetailSheet({
   };
 
   const handleDelete = async () => {
-    const { error } = await supabase
-      .from("crm_deals")
-      .delete()
-      .eq("id", deal.id);
-
-    if (error) {
+    if (!deleteReason.trim()) {
       toast({
-        title: "Erro ao excluir",
-        description: error.message,
+        title: "Motivo obrigatório",
+        description: "Por favor, informe o motivo da exclusão.",
         variant: "destructive",
       });
-    } else {
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      // Buscar dados completos do deal para log
+      const { data: dealData } = await supabase
+        .from("crm_deals")
+        .select("*")
+        .eq("id", deal.id)
+        .single();
+
+      if (dealData) {
+        // Registrar a exclusão antes de deletar
+        await logDeletion({
+          table: "crm_deals",
+          id: deal.id,
+          data: dealData,
+          type: "Negócio CRM",
+          identifier: `${deal.title} - ${deal.lead?.name || 'Sem cliente'}`,
+          reason: deleteReason,
+        });
+      }
+
+      const { error } = await supabase
+        .from("crm_deals")
+        .delete()
+        .eq("id", deal.id);
+
+      if (error) {
+        toast({
+          title: "Erro ao excluir",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Negócio excluído",
+          description: "O negócio foi excluído com sucesso.",
+        });
+        setDeleteDialog(false);
+        setDeleteReason("");
+        onSuccess();
+        onOpenChange(false);
+      }
+    } catch (error) {
+      console.error("Erro ao excluir negócio:", error);
       toast({
-        title: "Negócio excluído",
-        description: "O negócio foi excluído com sucesso.",
+        title: "Erro ao excluir",
+        description: "Ocorreu um erro ao excluir o negócio.",
+        variant: "destructive",
       });
-      setDeleteDialog(false);
-      onSuccess();
-      onOpenChange(false);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -1067,8 +1112,10 @@ export function DealDetailSheet({
                 </Button>
                 <Button
                   variant="outline"
+                  className="gap-2 text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/50"
                   onClick={() => setDeleteDialog(true)}
                 >
+                  <Trash2 className="h-4 w-4" />
                   Excluir
                 </Button>
               </div>
@@ -1138,18 +1185,36 @@ export function DealDetailSheet({
           </AlertDialogContent>
         </AlertDialog>
 
-        <AlertDialog open={deleteDialog} onOpenChange={setDeleteDialog}>
+        <AlertDialog open={deleteDialog} onOpenChange={(open) => {
+          setDeleteDialog(open);
+          if (!open) setDeleteReason("");
+        }}>
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Excluir negócio</AlertDialogTitle>
               <AlertDialogDescription>
                 Tem certeza que deseja excluir este negócio? Esta ação não pode ser desfeita.
+                Por favor, informe o motivo da exclusão.
               </AlertDialogDescription>
             </AlertDialogHeader>
+            <div className="py-4">
+              <Label htmlFor="delete-reason">Motivo da Exclusão *</Label>
+              <Textarea
+                id="delete-reason"
+                value={deleteReason}
+                onChange={(e) => setDeleteReason(e.target.value)}
+                placeholder="Informe o motivo da exclusão..."
+                className="mt-2"
+              />
+            </div>
             <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                Excluir
+              <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={handleDelete} 
+                disabled={isDeleting || !deleteReason.trim()}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {isDeleting ? "Excluindo..." : "Excluir"}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
