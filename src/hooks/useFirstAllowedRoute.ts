@@ -2,7 +2,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 
 // Mapeamento completo de módulos para rotas
 export const routeMap: Record<string, string> = {
-  'dashboard': '/',
+  'dashboard': '/bi-dashboard',
   'leads': '/leads',
   'crm': '/kanban',
   'projetos': '/projects',
