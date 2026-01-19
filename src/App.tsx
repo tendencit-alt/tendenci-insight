@@ -42,6 +42,7 @@ import IAConfiguracao from "./pages/IAConfiguracao";
 import IAConversations from "./pages/IAConversations";
 import Catalogo from "./pages/Catalogo";
 import Financeiro from "./pages/Financeiro";
+import DashboardBI from "./pages/DashboardBI";
 
 const queryClient = new QueryClient();
 
@@ -57,7 +58,8 @@ const App = () => (
               <Routes>
               <Route path="/auth" element={<Auth />} />
               <Route path="/catalogo" element={<Catalogo />} />
-              <Route path="/" element={<Navigate to="/financeiro" replace />} />
+              <Route path="/" element={<Navigate to="/bi-dashboard" replace />} />
+              <Route path="/bi-dashboard" element={<ProtectedRoute><PermissionGuard module="dashboard"><DashboardBI /></PermissionGuard></ProtectedRoute>} />
               <Route path="/leads" element={<ProtectedRoute><PermissionGuard module="leads"><Leads /></PermissionGuard></ProtectedRoute>} />
               <Route path="/kanban" element={<ProtectedRoute><PermissionGuard module="crm"><CRM /></PermissionGuard></ProtectedRoute>} />
               <Route path="/crm" element={<ProtectedRoute><PermissionGuard module="crm"><CRM /></PermissionGuard></ProtectedRoute>} />
