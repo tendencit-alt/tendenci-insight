@@ -20,7 +20,8 @@ export type AppModule =
   | 'pedidos'
   | 'fichas_tecnicas'
   | 'ia_configuracao'
-  | 'financeiro';
+  | 'financeiro'
+  | 'cadastros_financeiros';
 
 export interface ModulePermission {
   module: AppModule;
@@ -63,7 +64,8 @@ const ALL_MODULES: AppModule[] = [
   'compras',
   'pedidos',
   'fichas_tecnicas',
-  'ia_configuracao'
+  'ia_configuracao',
+  'cadastros_financeiros'
 ];
 
 export function PermissionsProvider({ children }: { children: ReactNode }) {
