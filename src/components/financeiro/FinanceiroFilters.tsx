@@ -217,28 +217,27 @@ export function FinanceiroFilters({ filters, onChange }: FinanceiroFiltersProps)
         </div>
 
         <CollapsibleContent forceMount className={isExpanded ? "animate-in fade-in-0" : "hidden"}>
-          <div className="p-3 space-y-3">
-            {/* First Row: Period & Search */}
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+          <div className="p-3">
+            <div className="flex flex-wrap items-center gap-2">
               {/* Period Presets */}
               <Select onValueChange={handlePresetPeriod}>
-                <SelectTrigger className="h-9">
-                  <SelectValue placeholder="Período rápido" />
+                <SelectTrigger className="h-8 w-[120px]">
+                  <SelectValue placeholder="Período" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="today">Hoje</SelectItem>
-                  <SelectItem value="this_week">Esta Semana</SelectItem>
-                  <SelectItem value="this_month">Este Mês</SelectItem>
-                  <SelectItem value="last_month">Mês Passado</SelectItem>
-                  <SelectItem value="this_year">Este Ano</SelectItem>
+                  <SelectItem value="this_week">Semana</SelectItem>
+                  <SelectItem value="this_month">Mês</SelectItem>
+                  <SelectItem value="last_month">Mês Ant.</SelectItem>
+                  <SelectItem value="this_year">Ano</SelectItem>
                 </SelectContent>
               </Select>
 
               {/* Date Range */}
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" className="h-9 justify-start gap-2 text-sm font-normal">
-                    <CalendarIcon className="h-4 w-4" />
+                  <Button variant="outline" className="h-8 w-[130px] justify-start gap-1.5 text-xs font-normal px-2">
+                    <CalendarIcon className="h-3.5 w-3.5" />
                     <span className="truncate">
                       {format(filters.dateFrom, "dd/MM", { locale: ptBR })} - {format(filters.dateTo, "dd/MM", { locale: ptBR })}
                     </span>
@@ -261,12 +260,12 @@ export function FinanceiroFilters({ filters, onChange }: FinanceiroFiltersProps)
 
               {/* Search */}
               <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-2 top-2 h-3.5 w-3.5 text-muted-foreground" />
                 <Input
                   placeholder="Buscar..."
                   value={filters.search}
                   onChange={(e) => onChange({ ...filters, search: e.target.value })}
-                  className="h-9 pl-8"
+                  className="h-8 w-[140px] pl-7 text-xs"
                 />
               </div>
 
@@ -276,14 +275,14 @@ export function FinanceiroFilters({ filters, onChange }: FinanceiroFiltersProps)
                 onValueChange={(value) => onChange({ 
                   ...filters, 
                   categoryId: value === "all" ? null : value,
-                  subcategoryId: null // Limpa subcategoria ao mudar categoria
+                  subcategoryId: null
                 })}
               >
-                <SelectTrigger className="h-9">
+                <SelectTrigger className="h-8 w-[130px]">
                   <SelectValue placeholder="Categoria" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Todas categorias</SelectItem>
+                  <SelectItem value="all">Categorias</SelectItem>
                   {categories?.map((cat) => (
                     <SelectItem key={cat.id} value={cat.id}>
                       {cat.code} - {cat.name}
@@ -298,11 +297,11 @@ export function FinanceiroFilters({ filters, onChange }: FinanceiroFiltersProps)
                 onValueChange={(value) => onChange({ ...filters, subcategoryId: value === "all" ? null : value })}
                 disabled={!filters.categoryId || !subcategories?.length}
               >
-                <SelectTrigger className="h-9">
+                <SelectTrigger className="h-8 w-[130px]">
                   <SelectValue placeholder="Subcategoria" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Todas subcategorias</SelectItem>
+                  <SelectItem value="all">Subcategorias</SelectItem>
                   {subcategories?.map((subcat) => (
                     <SelectItem key={subcat.id} value={subcat.id}>
                       {subcat.code} - {subcat.name}
@@ -316,11 +315,11 @@ export function FinanceiroFilters({ filters, onChange }: FinanceiroFiltersProps)
                 value={filters.bankAccountId || "all"}
                 onValueChange={(value) => onChange({ ...filters, bankAccountId: value === "all" ? null : value })}
               >
-                <SelectTrigger className="h-9">
-                  <SelectValue placeholder="Conta Bancária" />
+                <SelectTrigger className="h-8 w-[120px]">
+                  <SelectValue placeholder="Conta" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Todas as contas</SelectItem>
+                  <SelectItem value="all">Contas</SelectItem>
                   {bankAccounts?.map((account) => (
                     <SelectItem key={account.id} value={account.id}>
                       {account.nickname}
@@ -334,11 +333,11 @@ export function FinanceiroFilters({ filters, onChange }: FinanceiroFiltersProps)
                 value={filters.costCenterId || "all"}
                 onValueChange={(value) => onChange({ ...filters, costCenterId: value === "all" ? null : value })}
               >
-                <SelectTrigger className="h-9">
-                  <SelectValue placeholder="Centro de Custo" />
+                <SelectTrigger className="h-8 w-[120px]">
+                  <SelectValue placeholder="Centro" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Todos os centros</SelectItem>
+                  <SelectItem value="all">Centros</SelectItem>
                   {costCenters?.map((center) => (
                     <SelectItem key={center.id} value={center.id}>
                       {center.name}
@@ -346,43 +345,17 @@ export function FinanceiroFilters({ filters, onChange }: FinanceiroFiltersProps)
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-
-            {/* Second Row: Sort & Project */}
-            <div className="flex flex-wrap items-center gap-3">
-              {/* Sort Buttons */}
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">Ordenar:</span>
-                <Button
-                  variant={filters.sortField === "date" ? "default" : "outline"}
-                  size="sm"
-                  className="h-8 gap-1.5 text-xs"
-                  onClick={() => handleSortToggle("date")}
-                >
-                  {getSortIcon("date")}
-                  Data
-                </Button>
-                <Button
-                  variant={filters.sortField === "value" ? "default" : "outline"}
-                  size="sm"
-                  className="h-8 gap-1.5 text-xs"
-                  onClick={() => handleSortToggle("value")}
-                >
-                  {getSortIcon("value")}
-                  Valor
-                </Button>
-              </div>
 
               {/* Project */}
               <Select
                 value={filters.projectId || "all"}
                 onValueChange={(value) => onChange({ ...filters, projectId: value === "all" ? null : value })}
               >
-                <SelectTrigger className="h-8 w-[180px]">
+                <SelectTrigger className="h-8 w-[120px]">
                   <SelectValue placeholder="Projeto" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Todos os projetos</SelectItem>
+                  <SelectItem value="all">Projetos</SelectItem>
                   {projects?.map((project) => (
                     <SelectItem key={project.id} value={project.id}>
                       {project.name}
@@ -390,6 +363,28 @@ export function FinanceiroFilters({ filters, onChange }: FinanceiroFiltersProps)
                   ))}
                 </SelectContent>
               </Select>
+
+              {/* Sort Buttons */}
+              <div className="flex items-center gap-1 ml-auto">
+                <Button
+                  variant={filters.sortField === "date" ? "default" : "ghost"}
+                  size="sm"
+                  className="h-7 gap-1 text-xs px-2"
+                  onClick={() => handleSortToggle("date")}
+                >
+                  {getSortIcon("date")}
+                  Data
+                </Button>
+                <Button
+                  variant={filters.sortField === "value" ? "default" : "ghost"}
+                  size="sm"
+                  className="h-7 gap-1 text-xs px-2"
+                  onClick={() => handleSortToggle("value")}
+                >
+                  {getSortIcon("value")}
+                  Valor
+                </Button>
+              </div>
             </div>
           </div>
         </CollapsibleContent>
