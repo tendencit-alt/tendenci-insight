@@ -71,10 +71,9 @@ export function SearchableSelect({
         </Button>
       </PopoverTrigger>
       <PopoverContent 
-        className="w-[--radix-popover-trigger-width] p-0 z-[9999] bg-popover border shadow-lg" 
+        className="w-[--radix-popover-trigger-width] p-0 bg-popover border shadow-lg" 
         align="start"
         sideOffset={4}
-        style={{ pointerEvents: 'auto' }}
       >
         <Command>
           <CommandInput placeholder={searchPlaceholder} />
