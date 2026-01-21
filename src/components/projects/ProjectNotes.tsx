@@ -315,9 +315,37 @@ export function ProjectNotes({ projectId }: ProjectNotesProps) {
     if (!files || files.length === 0) return;
 
     setIsUploading(true);
+    
+    // Mapeamento de MIME types para extensões problemáticas
+    const mimeTypeMap: Record<string, string> = {
+      'skp': 'application/vnd.sketchup.skp',
+      'dwg': 'application/x-dwg',
+      'xlsm': 'application/vnd.ms-excel.sheet.macroenabled.12',
+      'doc': 'application/msword',
+      'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'xls': 'application/vnd.ms-excel',
+      'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'txt': 'text/plain',
+      'pdf': 'application/pdf',
+      'png': 'image/png',
+      'jpg': 'image/jpeg',
+      'jpeg': 'image/jpeg',
+      'gif': 'image/gif',
+      'webp': 'image/webp',
+      'mp4': 'video/mp4',
+      'mov': 'video/quicktime',
+      'avi': 'video/x-msvideo',
+      'mkv': 'video/x-matroska',
+      'wmv': 'video/x-ms-wmv',
+      'webm': 'video/webm',
+    };
+
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
+
+      let successCount = 0;
+      const maxRetries = 3;
 
       for (const file of Array.from(files)) {
         if (!validateFileType(file.name)) {
@@ -338,38 +366,84 @@ export function ProjectNotes({ projectId }: ProjectNotesProps) {
           continue;
         }
 
-        const fileName = `${Date.now()}_${file.name}`;
+        const fileExt = file.name.split(".").pop()?.toLowerCase();
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
         const filePath = `${projectId}/${fileName}`;
 
-        const { error: uploadError } = await supabase.storage
-          .from("project-files")
-          .upload(filePath, file);
+        // Determinar contentType correto
+        let contentType = file.type;
+        if (!contentType || contentType === 'application/octet-stream') {
+          contentType = mimeTypeMap[fileExt || ''] || 'application/octet-stream';
+        }
 
-        if (uploadError) throw uploadError;
+        console.log(`[ProjectNotes] Uploading ${file.name} (${fileExt}) with type: ${contentType}, size: ${file.size}`);
 
-        const { error: dbError } = await supabase.from("project_files").insert({
-          project_id: projectId,
-          file_name: file.name,
-          file_path: filePath,
-          file_type: file.type,
-          file_size: file.size,
-          uploaded_by: user.id,
-        });
+        let uploaded = false;
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+          try {
+            const { error: uploadError, data: uploadData } = await supabase.storage
+              .from("project-files")
+              .upload(filePath, file, {
+                contentType,
+                upsert: false,
+              });
 
-        if (dbError) throw dbError;
+            if (uploadError) {
+              console.error(`[ProjectNotes] Upload attempt ${attempt} failed:`, uploadError);
+              throw uploadError;
+            }
+
+            console.log(`[ProjectNotes] Upload successful:`, uploadData);
+
+            const { error: dbError } = await supabase.from("project_files").insert({
+              project_id: projectId,
+              file_name: file.name,
+              file_path: filePath,
+              file_type: contentType,
+              file_size: file.size,
+              uploaded_by: user.id,
+            });
+
+            if (dbError) {
+              console.error(`[ProjectNotes] DB insert failed:`, dbError);
+              await supabase.storage.from("project-files").remove([filePath]);
+              throw dbError;
+            }
+
+            uploaded = true;
+            successCount++;
+            break;
+          } catch (error: any) {
+            console.error(`[ProjectNotes] Attempt ${attempt}/${maxRetries} error:`, error?.message || error);
+            if (attempt < maxRetries) {
+              await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, attempt - 1)));
+            }
+          }
+        }
+
+        if (!uploaded) {
+          toast({
+            title: "Erro no upload",
+            description: `Falha ao enviar ${file.name} após ${maxRetries} tentativas.`,
+            variant: "destructive",
+          });
+        }
       }
 
-      toast({
-        title: "Arquivos enviados",
-        description: "Os arquivos foram enviados com sucesso.",
-      });
+      if (successCount > 0) {
+        toast({
+          title: "Arquivos enviados",
+          description: `${successCount} arquivo(s) enviado(s) com sucesso.`,
+        });
+        fetchAttachments();
+      }
       
-      fetchAttachments();
       e.target.value = "";
     } catch (error: any) {
+      console.error("[ProjectNotes] Error:", error);
       toast({
         title: "Erro ao enviar arquivos",
-        description: error.message,
+        description: error.message || "Ocorreu um erro inesperado.",
         variant: "destructive",
       });
     } finally {

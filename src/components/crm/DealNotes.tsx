@@ -254,62 +254,102 @@ export function DealNotes({ dealId, currentNote, onNoteUpdate }: DealNotesProps)
     }
 
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("Usuário não autenticado");
+    if (!user) {
+      toast({
+        title: "Erro de autenticação",
+        description: "Usuário não autenticado. Faça login novamente.",
+        variant: "destructive",
+      });
+      return false;
+    }
 
-    const fileName = `${Date.now()}_${file.name}`;
+    const fileExt = file.name.split(".").pop()?.toLowerCase();
+    const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
     const filePath = `${dealId}/${fileName}`;
+
+    // Mapeamento de MIME types para extensões problemáticas
+    const mimeTypeMap: Record<string, string> = {
+      'skp': 'application/vnd.sketchup.skp',
+      'dwg': 'application/x-dwg',
+      'xlsm': 'application/vnd.ms-excel.sheet.macroenabled.12',
+      'doc': 'application/msword',
+      'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'xls': 'application/vnd.ms-excel',
+      'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'txt': 'text/plain',
+      'pdf': 'application/pdf',
+      'png': 'image/png',
+      'jpg': 'image/jpeg',
+      'jpeg': 'image/jpeg',
+      'gif': 'image/gif',
+      'webp': 'image/webp',
+      'mp4': 'video/mp4',
+      'mov': 'video/quicktime',
+      'avi': 'video/x-msvideo',
+      'mkv': 'video/x-matroska',
+      'wmv': 'video/x-ms-wmv',
+      'webm': 'video/webm',
+    };
+
+    // Determinar contentType correto
+    let contentType = file.type;
+    if (!contentType || contentType === 'application/octet-stream') {
+      contentType = mimeTypeMap[fileExt || ''] || 'application/octet-stream';
+    }
+
+    console.log(`[DealNotes] Uploading ${file.name} (${fileExt}) with type: ${contentType}, size: ${file.size}`);
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        setUploadProgress(0);
+        setUploadProgress(Math.min(attempt * 25, 90));
 
-        // Simular progresso para arquivos grandes
-        if (file.size > 5 * 1024 * 1024) {
-          const progressInterval = setInterval(() => {
-            setUploadProgress(prev => Math.min(prev + 10, 90));
-          }, 200);
+        const { error: uploadError, data: uploadData } = await supabase.storage
+          .from("crm-files")
+          .upload(filePath, file, {
+            contentType,
+            upsert: false,
+          });
 
-          const { error: uploadError } = await supabase.storage
-            .from("crm-files")
-            .upload(filePath, file);
-
-          clearInterval(progressInterval);
-          setUploadProgress(100);
-
-          if (uploadError) throw uploadError;
-        } else {
-          const { error: uploadError } = await supabase.storage
-            .from("crm-files")
-            .upload(filePath, file);
-
-          if (uploadError) throw uploadError;
-          setUploadProgress(100);
+        if (uploadError) {
+          console.error(`[DealNotes] Upload attempt ${attempt} failed:`, uploadError);
+          throw uploadError;
         }
+
+        console.log(`[DealNotes] Upload successful:`, uploadData);
+        setUploadProgress(100);
 
         const { error: dbError } = await supabase.from("crm_deal_files").insert({
           deal_id: dealId,
           file_name: file.name,
           file_path: filePath,
-          file_type: file.type,
+          file_type: contentType,
           file_size: file.size,
           uploaded_by: user.id,
         });
 
-        if (dbError) throw dbError;
+        if (dbError) {
+          console.error(`[DealNotes] DB insert failed:`, dbError);
+          // Tentar remover arquivo do storage se falhou inserir no DB
+          await supabase.storage.from("crm-files").remove([filePath]);
+          throw dbError;
+        }
 
         setTimeout(() => setUploadProgress(0), 2000);
         return true;
-      } catch (error) {
+      } catch (error: any) {
+        console.error(`[DealNotes] Attempt ${attempt}/${maxRetries} error:`, error?.message || error);
+        
         if (attempt === maxRetries) {
           toast({
             title: "Erro no upload",
-            description: `Falha após ${maxRetries} tentativas. Tente novamente.`,
+            description: error?.message || `Falha após ${maxRetries} tentativas. Tente novamente.`,
             variant: "destructive",
           });
+          setUploadProgress(0);
           return false;
         }
-        // Aguardar antes de tentar novamente
-        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+        // Exponential backoff antes de tentar novamente
+        await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, attempt - 1)));
       }
     }
     return false;
