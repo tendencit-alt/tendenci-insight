@@ -265,8 +265,14 @@ export function ProjectDetailSheet({ project, open, onOpenChange, onSuccess }: P
         return;
       }
 
+      // Constrói a URL completa (signedUrl pode ser relativa)
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const fullUrl = signedUrlData.signedUrl.startsWith('http') 
+        ? signedUrlData.signedUrl 
+        : `${supabaseUrl}/storage/v1${signedUrlData.signedUrl}`;
+
       // Usa a URL assinada para download
-      const response = await fetch(signedUrlData.signedUrl);
+      const response = await fetch(fullUrl);
       if (!response.ok) throw new Error('Falha no download');
       
       const blob = await response.blob();
