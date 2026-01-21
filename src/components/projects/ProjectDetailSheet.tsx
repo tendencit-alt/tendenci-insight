@@ -243,19 +243,41 @@ export function ProjectDetailSheet({ project, open, onOpenChange, onSuccess }: P
 
   const downloadFile = async (file: any) => {
     try {
-      const { data, error } = await supabase.storage
+      // Primeiro tenta criar URL assinada (funciona com RLS)
+      const { data: signedUrlData, error: signedUrlError } = await supabase.storage
         .from('project-files')
-        .download(file.file_path);
+        .createSignedUrl(file.file_path, 60);
 
-      if (error) throw error;
+      if (signedUrlError) {
+        // Fallback para download direto
+        const { data, error } = await supabase.storage
+          .from('project-files')
+          .download(file.file_path);
 
-      const url = URL.createObjectURL(data);
+        if (error) throw error;
+
+        const url = URL.createObjectURL(data);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = file.file_name;
+        a.click();
+        URL.revokeObjectURL(url);
+        return;
+      }
+
+      // Usa a URL assinada para download
+      const response = await fetch(signedUrlData.signedUrl);
+      if (!response.ok) throw new Error('Falha no download');
+      
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = file.file_name;
       a.click();
       URL.revokeObjectURL(url);
     } catch (error: any) {
+      console.error('Erro ao baixar arquivo:', error);
       toast.error('Erro ao baixar arquivo');
     }
   };
