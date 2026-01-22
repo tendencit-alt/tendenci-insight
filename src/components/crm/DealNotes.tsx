@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { validateFileType, validateFileSize, ALLOWED_FILE_TYPES_ACCEPT, MAX_FILE_SIZE_MB, formatFileSize } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
-import { Mic, Square, FileText, Paperclip, Trash2, Download, Loader2, Play, Pause, AtSign, Edit2 } from "lucide-react";
+import { Mic, Square, FileText, Paperclip, Trash2, Download, Loader2, Play, Pause, AtSign, Edit2, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
@@ -12,6 +12,7 @@ import { ptBR } from "date-fns/locale";
 import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
 import { AudioRecorder } from "@/components/prospeccao/AudioRecorder";
 import { Progress } from "@/components/ui/progress";
+import { FilePreviewDialog, isPreviewable } from "@/components/shared/FilePreviewDialog";
 
 interface DealNotesProps {
   dealId: string;
@@ -36,6 +37,8 @@ export function DealNotes({ dealId, currentNote, onNoteUpdate }: DealNotesProps)
   const [selectedUserIndex, setSelectedUserIndex] = useState(0);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editingNoteText, setEditingNoteText] = useState("");
+  const [previewFile, setPreviewFile] = useState<any>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const audioRefs = useRef<Map<string, HTMLAudioElement>>(new Map());
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -864,6 +867,7 @@ export function DealNotes({ dealId, currentNote, onNoteUpdate }: DealNotesProps)
                         variant="ghost"
                         size="sm"
                         onClick={() => togglePlayAudio(file)}
+                        title={playingAudio === file.id ? "Pausar" : "Reproduzir"}
                       >
                         {playingAudio === file.id ? (
                           <Pause className="h-4 w-4" />
@@ -872,11 +876,26 @@ export function DealNotes({ dealId, currentNote, onNoteUpdate }: DealNotesProps)
                         )}
                       </Button>
                     )}
+                    {!isAudio && isPreviewable(file.file_name, file.file_type) && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setPreviewFile(file);
+                          setPreviewOpen(true);
+                        }}
+                        title="Visualizar"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    )}
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
                       onClick={() => handleDownloadAttachment(file)}
+                      title="Baixar"
                     >
                       <Download className="h-4 w-4" />
                     </Button>
@@ -885,6 +904,7 @@ export function DealNotes({ dealId, currentNote, onNoteUpdate }: DealNotesProps)
                       variant="ghost"
                       size="sm"
                       onClick={() => handleDeleteAttachment(file.id, file.file_path)}
+                      title="Excluir"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -900,6 +920,14 @@ export function DealNotes({ dealId, currentNote, onNoteUpdate }: DealNotesProps)
         isOpen={showAudioRecorder}
         onClose={() => setShowAudioRecorder(false)}
         onSave={handleSaveAudio}
+      />
+
+      <FilePreviewDialog
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+        file={previewFile}
+        bucket="crm-files"
+        onDownload={() => previewFile && handleDownloadAttachment(previewFile)}
       />
     </Card>
   );
