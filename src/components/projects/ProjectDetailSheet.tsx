@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, Image as ImageIcon, Download, Upload, X, Loader2, Edit, Calculator, Info, History } from "lucide-react";
+import { FileText, Image as ImageIcon, Download, Upload, X, Loader2, Edit, Calculator, Info, History, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
@@ -18,6 +18,7 @@ import { EditProjectDialog } from "./EditProjectDialog";
 import { ProjectNotes } from "./ProjectNotes";
 import { usePermissions } from "@/hooks/usePermissions";
 import { ProjectBudgetTab } from "@/components/budgets/ProjectBudgetTab";
+import { FilePreviewDialog, isPreviewable } from "@/components/shared/FilePreviewDialog";
 import { 
   validateFileType, 
   validateFileSize, 
@@ -43,6 +44,8 @@ export function ProjectDetailSheet({ project, open, onOpenChange, onSuccess }: P
   const [originalStage, setOriginalStage] = useState(project?.stage || "recebido");
   const [savingStage, setSavingStage] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [previewFile, setPreviewFile] = useState<any>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { notifyFileUploaded, notifyStageChanged } = useWebhookSync();
   const { hasModuleAccess } = usePermissions();
@@ -519,10 +522,24 @@ export function ProjectDetailSheet({ project, open, onOpenChange, onSuccess }: P
                           </div>
                         </div>
                         <div className="flex gap-2">
+                          {isPreviewable(file.file_name, file.file_type) && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                setPreviewFile(file);
+                                setPreviewOpen(true);
+                              }}
+                              title="Visualizar"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                          )}
                           <Button
                             size="sm"
                             variant="ghost"
                             onClick={() => downloadFile(file)}
+                            title="Baixar"
                           >
                             <Download className="w-4 h-4" />
                           </Button>
@@ -531,6 +548,7 @@ export function ProjectDetailSheet({ project, open, onOpenChange, onSuccess }: P
                             variant="ghost"
                             onClick={() => deleteFile(file)}
                             className="text-destructive hover:text-destructive"
+                            title="Excluir"
                           >
                             <X className="w-4 h-4" />
                           </Button>
@@ -598,6 +616,15 @@ export function ProjectDetailSheet({ project, open, onOpenChange, onSuccess }: P
           fetchProjectData();
           onSuccess?.();
         }}
+      />
+
+      {/* File Preview Dialog */}
+      <FilePreviewDialog
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+        file={previewFile}
+        bucket="project-files"
+        onDownload={() => previewFile && downloadFile(previewFile)}
       />
     </Sheet>
   );
