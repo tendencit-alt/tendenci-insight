@@ -423,26 +423,66 @@ export function DealNotes({ dealId, currentNote, onNoteUpdate }: DealNotesProps)
 
   const handleDownloadAttachment = async (file: any) => {
     try {
+      console.log('📥 Iniciando download CRM:', file.file_name, file.file_path);
+      
+      // Criar URL assinada - Supabase retorna URL completa
       const { data, error } = await supabase.storage
         .from("crm-files")
-        .download(file.file_path);
+        .createSignedUrl(file.file_path, 60);
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Erro ao criar URL assinada:', error);
+        throw error;
+      }
 
-      const url = URL.createObjectURL(data);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = file.file_name;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch (error: any) {
+      console.log('✅ URL assinada criada com sucesso');
+
+      // A URL já vem completa do Supabase, usar diretamente com tag <a>
+      const link = document.createElement("a");
+      link.href = data.signedUrl;
+      link.download = file.file_name;
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
       toast({
-        title: "Erro ao baixar arquivo",
-        description: error.message,
-        variant: "destructive",
+        title: "Download iniciado",
+        description: "O arquivo está sendo baixado.",
       });
+    } catch (error: any) {
+      console.error('❌ Erro ao baixar arquivo:', error);
+      
+      // Fallback com download direto
+      try {
+        console.log('🔄 Tentando download direto como fallback...');
+        const { data, error: downloadError } = await supabase.storage
+          .from("crm-files")
+          .download(file.file_path);
+
+        if (downloadError) throw downloadError;
+
+        const url = URL.createObjectURL(data);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = file.file_name;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        toast({
+          title: "Download concluído",
+          description: "O arquivo foi baixado com sucesso.",
+        });
+      } catch (fallbackError: any) {
+        console.error('❌ Fallback também falhou:', fallbackError);
+        toast({
+          title: "Erro ao baixar arquivo",
+          description: "Verifique suas permissões de acesso.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
