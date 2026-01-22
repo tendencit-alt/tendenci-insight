@@ -243,18 +243,42 @@ export function ProjectDetailSheet({ project, open, onOpenChange, onSuccess }: P
 
   const downloadFile = async (file: any) => {
     try {
-      // Primeiro tenta criar URL assinada (funciona com RLS)
-      const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+      console.log('📥 Iniciando download:', file.file_name, file.file_path);
+      
+      // Criar URL assinada - Supabase retorna URL completa
+      const { data, error } = await supabase.storage
         .from('project-files')
         .createSignedUrl(file.file_path, 60);
 
-      if (signedUrlError) {
-        // Fallback para download direto
-        const { data, error } = await supabase.storage
+      if (error) {
+        console.error('❌ Erro ao criar URL assinada:', error);
+        throw error;
+      }
+
+      console.log('✅ URL assinada criada com sucesso');
+
+      // A URL já vem completa do Supabase, usar diretamente com tag <a>
+      // Isso evita problemas de CORS que podem ocorrer com fetch()
+      const link = document.createElement('a');
+      link.href = data.signedUrl;
+      link.download = file.file_name;
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast.success('Download iniciado!');
+    } catch (error: any) {
+      console.error('❌ Erro ao baixar arquivo:', error);
+      
+      // Tentar fallback com download direto (método alternativo)
+      try {
+        console.log('🔄 Tentando download direto como fallback...');
+        const { data, error: downloadError } = await supabase.storage
           .from('project-files')
           .download(file.file_path);
 
-        if (error) throw error;
+        if (downloadError) throw downloadError;
 
         const url = URL.createObjectURL(data);
         const a = document.createElement('a');
@@ -262,29 +286,11 @@ export function ProjectDetailSheet({ project, open, onOpenChange, onSuccess }: P
         a.download = file.file_name;
         a.click();
         URL.revokeObjectURL(url);
-        return;
+        toast.success('Download concluído!');
+      } catch (fallbackError) {
+        console.error('❌ Fallback também falhou:', fallbackError);
+        toast.error('Erro ao baixar arquivo. Verifique suas permissões.');
       }
-
-      // Constrói a URL completa (signedUrl pode ser relativa)
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const fullUrl = signedUrlData.signedUrl.startsWith('http') 
-        ? signedUrlData.signedUrl 
-        : `${supabaseUrl}/storage/v1${signedUrlData.signedUrl}`;
-
-      // Usa a URL assinada para download
-      const response = await fetch(fullUrl);
-      if (!response.ok) throw new Error('Falha no download');
-      
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = file.file_name;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch (error: any) {
-      console.error('Erro ao baixar arquivo:', error);
-      toast.error('Erro ao baixar arquivo');
     }
   };
 
