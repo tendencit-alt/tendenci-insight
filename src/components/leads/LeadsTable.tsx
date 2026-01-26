@@ -33,30 +33,47 @@ export function LeadsTable({ filters }: LeadsTableProps) {
 
   const fetchLeads = async () => {
     setLoading(true);
-    let query = supabase
-      .from("leads")
-      .select(`
-        *,
-        client:clients(name, phone, email, notes),
-        architect:architects(name),
-        source:lead_sources(name)
-      `)
-      .order("created_at", { ascending: false });
+    try {
+      let query = supabase
+        .from("leads")
+        .select(`
+          *,
+          client:clients(name, phone, email, notes),
+          architect:architects(name),
+          source:lead_sources(name)
+        `)
+        .order("created_at", { ascending: false });
 
-    if (filters.status !== "Todos") {
-      query = query.eq("status", filters.status);
-    }
+      if (filters.status && filters.status !== "Todos") {
+        query = query.eq("status", filters.status);
+      }
 
-    if (filters.search) {
-      query = query.or(`client.name.ilike.%${filters.search}%,client.phone.ilike.%${filters.search}%`);
+      const { data, error } = await query;
+      
+      if (error) {
+        console.error('Erro ao buscar leads:', error);
+        setLeads([]);
+        return;
+      }
+      
+      // Aplicar filtro de busca no cliente-side para evitar problemas com campos relacionados
+      let filteredData = data || [];
+      if (filters.search && filters.search.trim()) {
+        const searchLower = filters.search.toLowerCase().trim();
+        filteredData = filteredData.filter(lead => 
+          lead.client?.name?.toLowerCase().includes(searchLower) ||
+          lead.client?.phone?.includes(searchLower) ||
+          lead.client?.email?.toLowerCase().includes(searchLower)
+        );
+      }
+      
+      setLeads(filteredData);
+    } catch (err) {
+      console.error('Erro ao buscar leads:', err);
+      setLeads([]);
+    } finally {
+      setLoading(false);
     }
-
-    const { data, error } = await query;
-    
-    if (!error && data) {
-      setLeads(data);
-    }
-    setLoading(false);
   };
 
   const getStatusBadge = (status: string) => {
