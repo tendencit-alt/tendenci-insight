@@ -4,10 +4,12 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Download, X, Loader2, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
 
 interface FilePreviewDialogProps {
   open: boolean;
@@ -79,7 +81,7 @@ export const FilePreviewDialog = ({
       <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center justify-between pr-8">
-            <span className="truncate max-w-md">{file?.file_name}</span>
+            <span className="truncate max-w-md">{file?.file_name || "Pré-visualização"}</span>
             <div className="flex gap-2">
               {previewUrl && (
                 <Button
@@ -99,6 +101,11 @@ export const FilePreviewDialog = ({
               )}
             </div>
           </DialogTitle>
+          <VisuallyHidden.Root>
+            <DialogDescription>
+              Pré-visualização do arquivo {file?.file_name}
+            </DialogDescription>
+          </VisuallyHidden.Root>
         </DialogHeader>
 
         <div className="flex-1 min-h-0 overflow-auto bg-muted/30 rounded-lg flex items-center justify-center">
