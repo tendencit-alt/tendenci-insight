@@ -163,7 +163,7 @@ const Auth = () => {
           </div>
           <div className="text-center space-y-2">
             
-            <CardDescription className="text-neutral-50">
+            <CardDescription className="text-muted-foreground">
               Sistema de Gestão 
  
             </CardDescription>
