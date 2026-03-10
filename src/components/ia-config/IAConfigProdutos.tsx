@@ -141,9 +141,9 @@ const formatMeasure = (value: string): string => {
 
 export default function IAConfigProdutos() {
   const { hasModuleAccess, isMaster } = usePermissions();
-  const canDelete = isMaster || hasModuleAccess('ia_configuracao', 'delete');
-  const canCreate = isMaster || hasModuleAccess('ia_configuracao', 'create');
-  const canEdit = isMaster || hasModuleAccess('ia_configuracao', 'edit');
+  const canDelete = isMaster || hasModuleAccess('configuracoes' as any, 'delete');
+  const canCreate = isMaster || hasModuleAccess('configuracoes' as any, 'create');
+  const canEdit = isMaster || hasModuleAccess('configuracoes' as any, 'edit');
   
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [locations, setLocations] = useState<StockLocation[]>([]);

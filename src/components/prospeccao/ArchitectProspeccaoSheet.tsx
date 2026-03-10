@@ -63,7 +63,7 @@ export function ArchitectProspeccaoSheet({
   const queryClient = useQueryClient();
 
   // Verificar permissão de exclusão
-  const canDeleteArchitects = hasModuleAccess("arquitetos", "delete");
+  const canDeleteArchitects = hasModuleAccess("configuracoes" as any, "delete");
 
   // Função para excluir arquiteto permanentemente
   const handleDeleteArchitect = async () => {

@@ -118,7 +118,7 @@ export function UserPermissionsDialog({
           };
         });
 
-        setPermissions(allPermissions);
+        setPermissions(allPermissions as ModulePermissions[]);
       } catch (error: any) {
         console.error('Erro ao buscar permissões:', error);
         toast({
