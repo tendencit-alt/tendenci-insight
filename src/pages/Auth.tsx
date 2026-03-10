@@ -74,12 +74,12 @@ const Auth = () => {
     
     if (error) {
       console.error('Login error:', error);
-      if (error.message.includes('Invalid login credentials')) {
-        toast.error('Email ou senha incorretos');
-      } else {
-        toast.error(error.message || 'Erro ao fazer login');
-      }
+      const message = error.message?.includes('Invalid login credentials')
+        ? 'Email ou senha incorretos'
+        : error.message || 'Erro ao fazer login';
+
       setLoading(false);
+      window.requestAnimationFrame(() => toast.error(message));
       return;
     }
     
