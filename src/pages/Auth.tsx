@@ -269,6 +269,11 @@ const Auth = () => {
           </div>
         </CardContent>
       </Card>
+
+      <ForgotPasswordDialog
+        open={forgotPasswordOpen}
+        onOpenChange={setForgotPasswordOpen}
+      />
     </div>;
 };
 export default Auth;

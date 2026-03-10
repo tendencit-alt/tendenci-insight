@@ -38,6 +38,7 @@ const App = () => (
             <PermissionsProvider>
                <Routes>
               <Route path="/auth" element={<Auth />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/catalogo" element={<Catalogo />} />
               <Route path="/" element={<Navigate to="/bi-dashboard" replace />} />
               <Route path="/bi-dashboard" element={<ProtectedRoute><PermissionGuard module="dashboard"><DashboardBI /></PermissionGuard></ProtectedRoute>} />
