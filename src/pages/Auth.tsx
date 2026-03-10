@@ -10,12 +10,13 @@ import { toast } from 'sonner';
 import { Loader2, Lock } from 'lucide-react';
 import tendenciLogo from '@/assets/tendenci-logo-new.png';
 import { supabase } from '@/integrations/supabase/client';
-import { getFirstAllowedRoute, routeMap } from '@/hooks/useFirstAllowedRoute';
+import { getFirstAllowedRoute } from '@/hooks/useFirstAllowedRoute';
 import { ForgotPasswordDialog } from '@/components/auth/ForgotPasswordDialog';
 
 const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
   const [loginData, setLoginData] = useState({
     email: '',
     password: ''
@@ -73,12 +74,12 @@ const Auth = () => {
     
     if (error) {
       console.error('Login error:', error);
-      if (error.message.includes('Invalid login credentials')) {
-        toast.error('Email ou senha incorretos');
-      } else {
-        toast.error(error.message || 'Erro ao fazer login');
-      }
+      const message = error.message?.includes('Invalid login credentials')
+        ? 'Email ou senha incorretos'
+        : error.message || 'Erro ao fazer login';
+
       setLoading(false);
+      window.requestAnimationFrame(() => toast.error(message));
       return;
     }
     
@@ -154,7 +155,7 @@ const Auth = () => {
     }
     setLoading(false);
   };
-  return <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/20 to-muted/30 p-4">
+  return <div translate="no" className="notranslate min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/20 to-muted/30 p-4">
       <Card className="w-full max-w-md shadow-2xl animate-fade-in animate-scale-in">
         <CardHeader className="space-y-4 border-0 bg-popover">
           <div className="flex justify-center">
@@ -162,7 +163,7 @@ const Auth = () => {
           </div>
           <div className="text-center space-y-2">
             
-            <CardDescription className="text-neutral-50">
+            <CardDescription className="text-muted-foreground">
               Sistema de Gestão 
  
             </CardDescription>
@@ -170,13 +171,13 @@ const Auth = () => {
         </CardHeader>
         
         <CardContent>
-          <Tabs defaultValue="login" className="w-full">
+          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'login' | 'signup')} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="login">Login</TabsTrigger>
               <TabsTrigger value="signup">Cadastro</TabsTrigger>
             </TabsList>
             
-            <TabsContent value="login">
+            <TabsContent value="login" forceMount className="data-[state=inactive]:hidden">
               <form onSubmit={handleLogin} className="space-y-4 mt-4">
                 <div className="space-y-2">
                   <Label htmlFor="login-email">Email</Label>
@@ -217,7 +218,7 @@ const Auth = () => {
               </form>
             </TabsContent>
             
-            <TabsContent value="signup">
+            <TabsContent value="signup" forceMount className="data-[state=inactive]:hidden">
               <form onSubmit={handleSignup} className="space-y-4 mt-4">
                 <div className="space-y-2">
                   <Label htmlFor="signup-name">Nome Completo</Label>

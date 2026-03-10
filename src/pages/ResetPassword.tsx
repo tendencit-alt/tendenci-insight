@@ -66,7 +66,7 @@ const ResetPassword = () => {
 
   if (!isRecovery && !success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/20 to-muted/30 p-4">
+      <div translate="no" className="notranslate min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/20 to-muted/30 p-4">
         <Card className="w-full max-w-md shadow-2xl">
           <CardHeader className="space-y-4 bg-popover">
             <div className="flex justify-center">
@@ -90,7 +90,7 @@ const ResetPassword = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/20 to-muted/30 p-4">
+    <div translate="no" className="notranslate min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/20 to-muted/30 p-4">
       <Card className="w-full max-w-md shadow-2xl animate-fade-in">
         <CardHeader className="space-y-4 bg-popover">
           <div className="flex justify-center">
@@ -101,7 +101,7 @@ const ResetPassword = () => {
               <KeyRound className="w-5 h-5" />
               Redefinir Senha
             </CardTitle>
-            <CardDescription className="text-neutral-50">
+            <CardDescription className="text-muted-foreground">
               Digite sua nova senha abaixo
             </CardDescription>
           </div>
@@ -110,7 +110,7 @@ const ResetPassword = () => {
         <CardContent className="pt-6">
           {success ? (
             <div className="text-center space-y-4">
-              <CheckCircle className="w-12 h-12 text-emerald-500 mx-auto" />
+              <CheckCircle className="w-12 h-12 text-primary mx-auto" />
               <p className="text-sm text-muted-foreground">
                 Senha redefinida com sucesso! Redirecionando para o login...
               </p>

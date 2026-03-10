@@ -15,6 +15,22 @@ interface State {
   errorInfo: ErrorInfo | null;
 }
 
+const isRecoverableDomNotFoundError = (error: Error): boolean => {
+  if (typeof window === 'undefined') return false;
+
+  const message = (error.message || '').toLowerCase();
+  const isAuthFlow = window.location.pathname === '/auth' || window.location.pathname === '/reset-password';
+
+  return (
+    isAuthFlow &&
+    error.name === 'NotFoundError' &&
+    (message.includes('insertbefore') ||
+      message.includes('removechild') ||
+      message.includes('not a child of this node') ||
+      message.includes('object can not be found here'))
+  );
+};
+
 class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
@@ -22,10 +38,20 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   static getDerivedStateFromError(error: Error): Partial<State> {
+    if (isRecoverableDomNotFoundError(error)) {
+      return { hasError: false, error: null, errorInfo: null };
+    }
+
     return { hasError: true, error };
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    if (isRecoverableDomNotFoundError(error)) {
+      console.warn('Recoverable DOM error on auth flow:', error.message);
+      this.setState({ hasError: false, error: null, errorInfo: null });
+      return;
+    }
+
     this.setState({ errorInfo });
     
     // Log error to system_errors table
