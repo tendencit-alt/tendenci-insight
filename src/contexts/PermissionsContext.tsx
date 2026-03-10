@@ -4,24 +4,15 @@ import { useAuth } from '@/contexts/AuthContext';
 
 export type AppModule = 
   | 'dashboard'
-  | 'prospeccao'
-  | 'arquitetos'
-  | 'crm'
-  | 'projetos'
-  | 'metas'
-  | 'leads'
-  | 'dashboards_personalizados'
   | 'configuracoes'
   | 'gestao_usuarios'
   | 'producao'
   | 'fornecedores'
   | 'estoque'
-  | 'compras'
   | 'pedidos'
-  | 'fichas_tecnicas'
-  | 'ia_configuracao'
   | 'financeiro'
-  | 'cadastros_financeiros';
+  | 'cadastros_financeiros'
+  | 'system_errors';
 
 export interface ModulePermission {
   module: AppModule;
@@ -49,23 +40,15 @@ const PermissionsContext = createContext<PermissionsContextType | undefined>(und
 
 const ALL_MODULES: AppModule[] = [
   'dashboard',
-  'prospeccao',
-  'arquitetos',
-  'crm',
-  'projetos',
-  'metas',
-  'leads',
-  'dashboards_personalizados',
   'configuracoes',
   'gestao_usuarios',
   'producao',
   'fornecedores',
   'estoque',
-  'compras',
   'pedidos',
-  'fichas_tecnicas',
-  'ia_configuracao',
-  'cadastros_financeiros'
+  'financeiro',
+  'cadastros_financeiros',
+  'system_errors'
 ];
 
 export function PermissionsProvider({ children }: { children: ReactNode }) {

@@ -333,7 +333,7 @@ export function ProjectDetailSheet({ project, open, onOpenChange, onSuccess }: P
         <SheetHeader>
           <div className="flex items-center justify-between">
             <SheetTitle className="text-2xl">Detalhes do Projeto</SheetTitle>
-            {hasModuleAccess('projetos', 'edit') && (
+            {hasModuleAccess('configuracoes' as any, 'edit') && (
               <Button 
                 variant="outline" 
                 size="sm" 

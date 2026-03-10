@@ -28,45 +28,28 @@ interface ModulePermissions {
 
 const MODULE_LABELS: Record<AppModule, string> = {
   'dashboard': 'Dashboard',
-  'prospeccao': 'Prospecção de Arquitetos',
-  'arquitetos': 'Arquitetos',
-  'crm': 'CRM',
-  'projetos': 'Projetos',
-  'metas': 'Metas',
-  'leads': 'Leads',
-  'dashboards_personalizados': 'Dashboards Personalizados',
   'configuracoes': 'Configurações',
   'gestao_usuarios': 'Gestão de Usuários',
   'producao': 'Produção',
   'fornecedores': 'Fornecedores',
   'estoque': 'Estoque',
-  'compras': 'Compras',
   'pedidos': 'Pedidos',
-  'fichas_tecnicas': 'Fichas Técnicas',
-  'ia_configuracao': 'Configuração da IA',
   'financeiro': 'Financeiro',
-  'cadastros_financeiros': 'Cadastros Financeiros'
+  'cadastros_financeiros': 'Cadastros Financeiros',
+  'system_errors': 'Erros do Sistema'
 };
 
 const ALL_MODULES: AppModule[] = [
   'dashboard',
-  'prospeccao',
-  'arquitetos',
-  'crm',
-  'projetos',
   'producao',
-  'metas',
-  'leads',
-  'dashboards_personalizados',
-  'configuracoes',
-  'gestao_usuarios',
-  'fornecedores',
-  'estoque',
-  'compras',
   'pedidos',
   'financeiro',
+  'fornecedores',
+  'estoque',
   'cadastros_financeiros',
-  'ia_configuracao'
+  'configuracoes',
+  'gestao_usuarios',
+  'system_errors'
 ];
 
 export function UserPermissionsDialog({
@@ -135,7 +118,7 @@ export function UserPermissionsDialog({
           };
         });
 
-        setPermissions(allPermissions);
+        setPermissions(allPermissions as ModulePermissions[]);
       } catch (error: any) {
         console.error('Erro ao buscar permissões:', error);
         toast({

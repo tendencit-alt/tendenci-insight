@@ -1,41 +1,28 @@
 import { usePermissions } from '@/hooks/usePermissions';
 
-// Mapeamento completo de módulos para rotas
+// Mapeamento de módulos ativos para rotas
 export const routeMap: Record<string, string> = {
   'dashboard': '/bi-dashboard',
-  'leads': '/leads',
-  'crm': '/kanban',
-  'projetos': '/projects',
-  'prospeccao': '/prospeccao',
-  'arquitetos': '/prospeccao',
-  'metas': '/metas',
-  'configuracoes': '/settings',
-  'ia_configuracao': '/ia-configuracao',
-  'producao': '/producao',
   'pedidos': '/pedidos',
-  'estoque': '/estoque',
-  'compras': '/compras',
+  'producao': '/producao',
+  'financeiro': '/financeiro',
   'fornecedores': '/fornecedores',
+  'estoque': '/estoque',
+  'cadastros_financeiros': '/cadastros-financeiros',
+  'configuracoes': '/settings',
   'gestao_usuarios': '/settings/users',
-  'dashboards_personalizados': '/dashboards',
 };
 
 // Ordem de prioridade para redirecionamento
 const routePriority = [
   'dashboard',
-  'crm',
-  'producao',
   'pedidos',
-  'estoque',
-  'prospeccao',
-  'projetos',
-  'leads',
-  'metas',
+  'producao',
+  'financeiro',
   'fornecedores',
-  'compras',
+  'estoque',
+  'cadastros_financeiros',
   'configuracoes',
-  'ia_configuracao',
-  'dashboards_personalizados',
   'gestao_usuarios',
 ];
 
