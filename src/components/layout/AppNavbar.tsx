@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { LogOut, User, Menu, Edit2, ChevronDown, Factory, DollarSign, Database, Settings, Briefcase, Sun, Moon } from "lucide-react";
+import { LogOut, User, Menu, Edit2, ChevronDown, Settings, Sun, Moon } from "lucide-react";
 import { useTheme } from "next-themes";
 import {
   DropdownMenu,
@@ -37,19 +37,8 @@ interface MenuItem {
   category: string;
 }
 
-// Configuração das categorias para dropdowns
-const CATEGORY_CONFIG: Record<string, { label: string; icon: React.ElementType }> = {
-  comercial: { label: 'Comercial', icon: Briefcase },
-  producao: { label: 'Produção', icon: Factory },
-  financeiro: { label: 'Financeiro', icon: DollarSign },
-  cadastros: { label: 'Cadastros', icon: Database },
-  master: { label: 'Configurações', icon: Settings },
-};
-
-// Componente de toggle de tema
 function ThemeToggle() {
   const { theme, setTheme } = useTheme();
-  
   return (
     <Button
       variant="ghost"
@@ -58,11 +47,7 @@ function ThemeToggle() {
       className="h-8 w-8 hover:bg-muted/50"
       title={theme === "dark" ? "Modo Claro" : "Modo Escuro"}
     >
-      {theme === "dark" ? (
-        <Sun className="h-4 w-4" />
-      ) : (
-        <Moon className="h-4 w-4" />
-      )}
+      {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
     </Button>
   );
 }
@@ -74,33 +59,14 @@ export function AppNavbar() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const { hasModuleAccess, loading, isMaster } = usePermissions();
   const { profile, user, signOut } = useAuth();
-  
-  // Debug: Log do estado de permissões
-  useEffect(() => {
-    console.log('[AppNavbar] Permissions state:', { loading, isMaster, menuItemsCount: menuItems.length });
-  }, [loading, isMaster, menuItems.length]);
 
   useEffect(() => {
     fetchMenuItems();
-
     const channel = supabase
       .channel('menu_items_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'menu_items'
-        },
-        () => {
-          fetchMenuItems();
-        }
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'menu_items' }, () => fetchMenuItems())
       .subscribe();
-
-    return () => {
-      channel.unsubscribe();
-    };
+    return () => { channel.unsubscribe(); };
   }, []);
 
   const fetchMenuItems = async () => {
@@ -109,10 +75,7 @@ export function AppNavbar() {
       .select('*')
       .eq('visible', true)
       .order('position', { ascending: true });
-
-    if (!error && data) {
-      setMenuItems(data as MenuItem[]);
-    }
+    if (!error && data) setMenuItems(data as MenuItem[]);
   };
 
   const handleEditMenuItem = (item: MenuItem, e: React.MouseEvent) => {
@@ -129,111 +92,78 @@ export function AppNavbar() {
   };
 
   const visibleMenuItems = useMemo(() => {
-    const filtered = menuItems.filter((item) => {
-      // Durante loading, mostrar todos temporariamente
+    return menuItems.filter((item) => {
       if (loading) return true;
-      
-      // Se o item tem um módulo associado, verificar permissão
-      if (item.module) {
-        const hasAccess = hasModuleAccess(item.module as any);
-        console.log('[AppNavbar] Menu item check:', item.label, item.module, 'hasAccess:', hasAccess);
-        return hasAccess;
-      }
-      
-      // Itens sem módulo na categoria master só aparecem para admins
+      if (item.module) return hasModuleAccess(item.module as any);
       if (item.category === 'master' && !isMaster) return false;
-      
       return true;
     });
-    
-    console.log('[AppNavbar] Visible items:', filtered.length, 'Master items:', filtered.filter(i => i.category === 'master').map(i => i.label));
-    return filtered;
   }, [menuItems, loading, isMaster, hasModuleAccess]);
 
-  // Agrupar itens por categoria
-  const itemsByCategory = useMemo(() => {
-    const grouped: Record<string, MenuItem[]> = {
-      comercial: [],
-      producao: [],
-      financeiro: [],
-      cadastros: [],
-      master: [],
-    };
-
-    visibleMenuItems.forEach(item => {
-      const category = item.category || 'comercial';
-      if (grouped[category]) {
-        grouped[category].push(item);
-      } else {
-        grouped.comercial.push(item);
-      }
-    });
-
-    return grouped;
-  }, [visibleMenuItems]);
+  // Split items by type
+  const directItems = useMemo(() => visibleMenuItems.filter(i => i.category === 'direct'), [visibleMenuItems]);
+  const financeiroItems = useMemo(() => visibleMenuItems.filter(i => i.category === 'financeiro'), [visibleMenuItems]);
+  const cadastrosItems = useMemo(() => visibleMenuItems.filter(i => i.category === 'cadastros'), [visibleMenuItems]);
+  const masterItems = useMemo(() => visibleMenuItems.filter(i => i.category === 'master'), [visibleMenuItems]);
 
   const getRoleColor = (role: string) => {
-    const colors: Record<string, string> = {
-      admin: 'bg-red-500',
-      vendedor: 'bg-blue-500',
-      arquiteto: 'bg-green-500'
-    };
+    const colors: Record<string, string> = { admin: 'bg-red-500', vendedor: 'bg-blue-500', arquiteto: 'bg-green-500' };
     return colors[role] || 'bg-gray-500';
   };
 
   const getRoleLabel = (role: string) => {
-    const labels: Record<string, string> = {
-      admin: 'Admin',
-      vendedor: 'Vendedor',
-      arquiteto: 'Arquiteto'
-    };
+    const labels: Record<string, string> = { admin: 'Admin', vendedor: 'Vendedor', arquiteto: 'Arquiteto' };
     return labels[role] || role;
   };
 
-  // Renderizar dropdown de categoria
-  const renderCategoryDropdown = (category: string) => {
-    const items = itemsByCategory[category];
-    if (!items || items.length === 0) return null;
-
-    const config = CATEGORY_CONFIG[category];
-    if (!config) return null;
-
-    const CategoryIcon = config.icon;
-
+  const renderDirectLink = (item: MenuItem) => {
+    const IconComponent = getIconComponent(item.icon);
     return (
-      <DropdownMenu key={category}>
-        <DropdownMenuTrigger asChild>
-          <Button 
-            variant="ghost" 
-            className="flex items-center gap-1.5 px-3 py-1.5 h-auto text-xs rounded-md hover:bg-muted/50"
+      <div key={item.id} className="relative group flex items-center">
+        <NavLink
+          to={item.route}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md hover:bg-muted/50 font-medium transition-colors"
+          activeClassName="bg-primary/10 text-primary font-semibold"
+        >
+          <IconComponent className="h-4 w-4 flex-shrink-0" />
+          <span className="whitespace-nowrap">{item.label}</span>
+        </NavLink>
+        {isMaster && (
+          <button
+            onClick={(e) => handleEditMenuItem(item, e)}
+            className="absolute -right-1 -top-1 opacity-0 group-hover:opacity-100 transition-opacity bg-card rounded-full p-0.5 shadow-sm border border-border"
+            title="Editar"
           >
-            <CategoryIcon className="h-4 w-4 flex-shrink-0" />
-            <span className="whitespace-nowrap font-medium">{config.label}</span>
+            <Edit2 className="h-2.5 w-2.5" />
+          </button>
+        )}
+      </div>
+    );
+  };
+
+  const renderDropdown = (items: MenuItem[], label: string, DropdownIcon: React.ElementType) => {
+    if (!items || items.length === 0) return null;
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" className="flex items-center gap-1.5 px-3 py-1.5 h-auto text-xs rounded-md hover:bg-muted/50">
+            <DropdownIcon className="h-4 w-4 flex-shrink-0" />
+            <span className="whitespace-nowrap font-medium">{label}</span>
             <ChevronDown className="h-3 w-3 opacity-60" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-52 bg-card border border-border shadow-lg">
-          <DropdownMenuLabel className="text-xs text-muted-foreground uppercase tracking-wider">
-            {config.label}
-          </DropdownMenuLabel>
+          <DropdownMenuLabel className="text-xs text-muted-foreground uppercase tracking-wider">{label}</DropdownMenuLabel>
           <DropdownMenuSeparator />
           {items.map((item) => {
             const IconComponent = getIconComponent(item.icon);
             return (
               <DropdownMenuItem key={item.id} asChild className="cursor-pointer">
-                <NavLink
-                  to={item.route}
-                  className="flex items-center gap-2 w-full px-2 py-2"
-                  activeClassName="bg-primary/10 text-primary font-medium"
-                >
+                <NavLink to={item.route} className="flex items-center gap-2 w-full px-2 py-2" activeClassName="bg-primary/10 text-primary font-medium">
                   <IconComponent className="h-4 w-4" />
                   <span>{item.label}</span>
                   {isMaster && (
-                    <button
-                      onClick={(e) => handleEditMenuItem(item, e)}
-                      className="ml-auto opacity-50 hover:opacity-100 transition-opacity"
-                      title="Editar"
-                    >
+                    <button onClick={(e) => handleEditMenuItem(item, e)} className="ml-auto opacity-50 hover:opacity-100 transition-opacity" title="Editar">
                       <Edit2 className="h-3 w-3" />
                     </button>
                   )}
@@ -246,39 +176,34 @@ export function AppNavbar() {
     );
   };
 
-  // Categorias para renderizar no mobile com separadores
-  const mobileCategories = useMemo(() => {
-    const baseCategories = [
-      { key: 'comercial', label: 'Comercial' },
-      { key: 'producao', label: 'Produção' },
-      { key: 'financeiro', label: 'Financeiro' },
-      { key: 'cadastros', label: 'Cadastros' },
-    ];
-    
-    // Mostrar "Configurações" se o usuário for admin OU se tiver itens visíveis nessa categoria
-    if (isMaster || itemsByCategory.master?.length > 0) {
-      baseCategories.push({ key: 'master', label: 'Configurações' });
-    }
-    
-    return baseCategories;
-  }, [isMaster, itemsByCategory]);
-
-  // Ordem das categorias no desktop
-  const desktopCategories = ['comercial', 'producao', 'financeiro', 'cadastros', 'master'];
+  // Mobile category sections
+  const mobileSections = useMemo(() => {
+    const sections: { label: string; items: MenuItem[] }[] = [];
+    if (directItems.length > 0) sections.push({ label: 'Principal', items: directItems });
+    if (financeiroItems.length > 0) sections.push({ label: 'Financeiro', items: financeiroItems });
+    if (cadastrosItems.length > 0) sections.push({ label: 'Cadastros', items: cadastrosItems });
+    if (masterItems.length > 0) sections.push({ label: 'Configurações', items: masterItems });
+    return sections;
+  }, [directItems, financeiroItems, cadastrosItems, masterItems]);
 
   return (
     <nav className="sticky top-0 z-50 h-14 border-b border-border/40 bg-card/95 backdrop-blur-[12px] supports-[backdrop-filter]:bg-card/95 shadow-sm">
       <div className="flex items-center h-full px-3 max-w-[1800px] mx-auto gap-2">
-        {/* Logo */}
         <img src={tendenciLogo} alt="Tendenci" className="h-7 w-auto flex-shrink-0" />
-        
-        {/* Desktop Menu Items */}
+
+        {/* Desktop Menu */}
         <div className="hidden xl:flex items-center gap-1 flex-1 ml-4">
-          {/* Dropdowns por categoria */}
-          {desktopCategories.map(cat => renderCategoryDropdown(cat))}
+          {/* Direct links: Dashboard, Pedidos, Produção */}
+          {directItems.map(renderDirectLink)}
+
+          {/* Financeiro dropdown (Financeiro + Cadastros Financeiros) */}
+          {renderDropdown(financeiroItems, 'Financeiro', LucideIcons.Wallet)}
+
+          {/* Cadastros dropdown (Fornecedores + Estoque) */}
+          {renderDropdown(cadastrosItems, 'Cadastros', LucideIcons.Database)}
         </div>
 
-        {/* Mobile Menu Button */}
+        {/* Mobile Menu */}
         <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
           <SheetTrigger asChild className="xl:hidden">
             <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
@@ -289,54 +214,71 @@ export function AppNavbar() {
             <div className="flex flex-col h-full">
               <div className="p-4 border-b border-border/50">
                 <img src={tendenciLogo} alt="Tendenci" className="h-12 w-auto" />
-                <p className="text-xs text-muted-foreground font-semibold tracking-wider uppercase mt-2">
-                  System
-                </p>
+                <p className="text-xs text-muted-foreground font-semibold tracking-wider uppercase mt-2">System</p>
               </div>
               <div className="flex-1 overflow-y-auto p-4">
-                {mobileCategories.map((cat) => {
-                  const items = itemsByCategory[cat.key];
-                  if (!items || items.length === 0) return null;
-
-                  return (
-                    <div key={cat.key} className="mb-4">
-                      <p className="text-xs text-muted-foreground font-semibold tracking-wider uppercase mb-2 px-3">
-                        {cat.label}
-                      </p>
-                      <div className="space-y-1">
-                        {items.map((item) => {
-                          const IconComponent = getIconComponent(item.icon);
-                          return (
-                            <NavLink
-                              key={item.id}
-                              to={item.route}
-                              end={item.route === "/"}
-                              onClick={() => setMobileMenuOpen(false)}
-                              className="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-300 hover:bg-muted"
-                              activeClassName="bg-primary text-primary-foreground font-semibold shadow-[0_0_12px_rgba(212,30,30,0.6)]"
-                            >
-                              <IconComponent className="h-5 w-5 flex-shrink-0" />
-                              <span>{item.label}</span>
-                            </NavLink>
-                          );
-                        })}
-                      </div>
+                {mobileSections.map((section) => (
+                  <div key={section.label} className="mb-4">
+                    <p className="text-xs text-muted-foreground font-semibold tracking-wider uppercase mb-2 px-3">{section.label}</p>
+                    <div className="space-y-1">
+                      {section.items.map((item) => {
+                        const IconComponent = getIconComponent(item.icon);
+                        return (
+                          <NavLink
+                            key={item.id}
+                            to={item.route}
+                            end={item.route === "/"}
+                            onClick={() => setMobileMenuOpen(false)}
+                            className="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-300 hover:bg-muted"
+                            activeClassName="bg-primary text-primary-foreground font-semibold shadow-[0_0_12px_rgba(212,30,30,0.6)]"
+                          >
+                            <IconComponent className="h-5 w-5 flex-shrink-0" />
+                            <span>{item.label}</span>
+                          </NavLink>
+                        );
+                      })}
                     </div>
-                  );
-                })}
+                  </div>
+                ))}
               </div>
             </div>
           </SheetContent>
         </Sheet>
 
-        {/* Spacer */}
         <div className="flex-1 xl:flex-none" />
-        
-        {/* Theme Toggle + Notifications + User Dropdown */}
+
+        {/* Right side: Theme + Notifications + Settings gear + User */}
         <div className="flex items-center gap-1.5">
           <ThemeToggle />
           <NotificationBell />
-          
+
+          {/* Settings gear icon (master only) */}
+          {masterItems.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-muted/50" title="Configurações">
+                  <Settings className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-52 bg-card border border-border shadow-lg">
+                <DropdownMenuLabel className="text-xs text-muted-foreground uppercase tracking-wider">Configurações</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {masterItems.map((item) => {
+                  const IconComponent = getIconComponent(item.icon);
+                  return (
+                    <DropdownMenuItem key={item.id} asChild className="cursor-pointer">
+                      <NavLink to={item.route} className="flex items-center gap-2 w-full px-2 py-2" activeClassName="bg-primary/10 text-primary font-medium">
+                        <IconComponent className="h-4 w-4" />
+                        <span>{item.label}</span>
+                      </NavLink>
+                    </DropdownMenuItem>
+                  );
+                })}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+
+          {/* User dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="gap-1.5 h-auto py-1 px-1.5">
@@ -347,9 +289,7 @@ export function AppNavbar() {
                 </Avatar>
                 <div className="hidden lg:flex flex-col items-start">
                   <span className="text-[11px] font-medium leading-tight">{profile?.full_name || user?.email}</span>
-                  <Badge variant="outline" className="text-[9px] h-3.5 px-1">
-                    {getRoleLabel(profile?.role)}
-                  </Badge>
+                  <Badge variant="outline" className="text-[9px] h-3.5 px-1">{getRoleLabel(profile?.role)}</Badge>
                 </div>
               </Button>
             </DropdownMenuTrigger>
@@ -370,13 +310,7 @@ export function AppNavbar() {
         </div>
       </div>
 
-      {/* Dialog de Edição */}
-      <EditMenuItemDialog
-        open={editDialogOpen}
-        onOpenChange={setEditDialogOpen}
-        menuItem={editingItem}
-        onSuccess={fetchMenuItems}
-      />
+      <EditMenuItemDialog open={editDialogOpen} onOpenChange={setEditDialogOpen} menuItem={editingItem} onSuccess={fetchMenuItems} />
     </nav>
   );
 }
