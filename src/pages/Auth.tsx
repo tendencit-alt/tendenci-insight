@@ -218,7 +218,7 @@ const Auth = () => {
               </form>
             </TabsContent>
             
-            <TabsContent value="signup" forceMount>
+            <TabsContent value="signup" forceMount className="data-[state=inactive]:hidden">
               <form onSubmit={handleSignup} className="space-y-4 mt-4">
                 <div className="space-y-2">
                   <Label htmlFor="signup-name">Nome Completo</Label>
