@@ -177,7 +177,7 @@ const Auth = () => {
               <TabsTrigger value="signup">Cadastro</TabsTrigger>
             </TabsList>
             
-            <TabsContent value="login" forceMount>
+            <TabsContent value="login" forceMount className="data-[state=inactive]:hidden">
               <form onSubmit={handleLogin} className="space-y-4 mt-4">
                 <div className="space-y-2">
                   <Label htmlFor="login-email">Email</Label>
