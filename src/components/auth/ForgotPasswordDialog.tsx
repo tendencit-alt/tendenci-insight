@@ -73,7 +73,7 @@ export function ForgotPasswordDialog({ open, onOpenChange }: ForgotPasswordDialo
 
         {sent ? (
           <div className="py-6 text-center space-y-4">
-            <CheckCircle className="w-12 h-12 text-green-500 mx-auto" />
+            <CheckCircle className="w-12 h-12 text-emerald-500 mx-auto" />
             <p className="text-sm text-muted-foreground">
               Se o email <strong>{email}</strong> estiver cadastrado, você receberá um link para redefinir sua senha.
               Verifique também a pasta de spam.

@@ -110,7 +110,7 @@ const ResetPassword = () => {
         <CardContent className="pt-6">
           {success ? (
             <div className="text-center space-y-4">
-              <CheckCircle className="w-12 h-12 text-green-500 mx-auto" />
+              <CheckCircle className="w-12 h-12 text-emerald-500 mx-auto" />
               <p className="text-sm text-muted-foreground">
                 Senha redefinida com sucesso! Redirecionando para o login...
               </p>

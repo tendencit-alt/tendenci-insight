@@ -11,6 +11,7 @@ import { Loader2, Lock } from 'lucide-react';
 import tendenciLogo from '@/assets/tendenci-logo-new.png';
 import { supabase } from '@/integrations/supabase/client';
 import { getFirstAllowedRoute, routeMap } from '@/hooks/useFirstAllowedRoute';
+import { ForgotPasswordDialog } from '@/components/auth/ForgotPasswordDialog';
 
 const Auth = () => {
   const [loading, setLoading] = useState(false);
