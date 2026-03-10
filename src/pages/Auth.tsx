@@ -15,6 +15,7 @@ import { ForgotPasswordDialog } from '@/components/auth/ForgotPasswordDialog';
 
 const Auth = () => {
   const [loading, setLoading] = useState(false);
+  const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
   const [loginData, setLoginData] = useState({
     email: '',
     password: ''
