@@ -23,6 +23,7 @@ import Financeiro from "./pages/Financeiro";
 import DashboardBI from "./pages/DashboardBI";
 import CadastrosFinanceiros from "./pages/CadastrosFinanceiros";
 import Excluidos from "./pages/Excluidos";
+import ResetPassword from "./pages/ResetPassword";
 
 const queryClient = new QueryClient();
 
