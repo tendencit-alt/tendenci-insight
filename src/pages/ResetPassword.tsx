@@ -101,7 +101,7 @@ const ResetPassword = () => {
               <KeyRound className="w-5 h-5" />
               Redefinir Senha
             </CardTitle>
-            <CardDescription className="text-neutral-50">
+            <CardDescription className="text-muted-foreground">
               Digite sua nova senha abaixo
             </CardDescription>
           </div>
