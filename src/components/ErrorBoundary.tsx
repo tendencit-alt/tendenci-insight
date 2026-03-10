@@ -38,6 +38,10 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   static getDerivedStateFromError(error: Error): Partial<State> {
+    if (isRecoverableDomNotFoundError(error)) {
+      return { hasError: false, error: null, errorInfo: null };
+    }
+
     return { hasError: true, error };
   }
 
