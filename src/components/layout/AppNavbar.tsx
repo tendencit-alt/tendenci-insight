@@ -276,9 +276,6 @@ export function AppNavbar() {
         <div className="hidden xl:flex items-center gap-1 flex-1 ml-4">
           {/* Dropdowns por categoria */}
           {desktopCategories.map(cat => renderCategoryDropdown(cat))}
-          
-          {/* Master/Configurações - mostrar se houver itens visíveis */}
-          {(isMaster || itemsByCategory.master?.length > 0) && renderCategoryDropdown('master')}
         </div>
 
         {/* Mobile Menu Button */}
