@@ -203,6 +203,17 @@ const Auth = () => {
                       Entrar
                     </>}
                 </Button>
+
+                <div className="text-center">
+                  <Button
+                    type="button"
+                    variant="link"
+                    className="text-sm text-muted-foreground"
+                    onClick={() => setForgotPasswordOpen(true)}
+                  >
+                    Esqueci minha senha
+                  </Button>
+                </div>
               </form>
             </TabsContent>
             
