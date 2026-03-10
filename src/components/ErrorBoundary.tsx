@@ -46,6 +46,12 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    if (isRecoverableDomNotFoundError(error)) {
+      console.warn('Recoverable DOM error on auth flow:', error.message);
+      this.setState({ hasError: false, error: null, errorInfo: null });
+      return;
+    }
+
     this.setState({ errorInfo });
     
     // Log error to system_errors table
