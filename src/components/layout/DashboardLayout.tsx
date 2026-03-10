@@ -1,12 +1,15 @@
 import { AppNavbar } from "./AppNavbar";
 import { TendenciAssistant } from "@/components/ai/TendenciAssistant";
 import { MasterIdeasNotepad } from "@/components/master/MasterIdeasNotepad";
+import { useGlobalRealtime } from "@/hooks/useGlobalRealtime";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
+  useGlobalRealtime();
+
   return (
     <div className="flex min-h-screen w-full flex-col">
       <AppNavbar />
