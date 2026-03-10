@@ -1,15 +1,18 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Shield, Trash2 } from "lucide-react";
+import { ArrowLeft, Trash2, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { WebhookSettings } from "@/components/projects/WebhookSettings";
 import { N8nIntegrationGuide } from "@/components/settings/N8nIntegrationGuide";
 import { ImportDataGuide } from "@/components/settings/ImportDataGuide";
 import { ImportArchitectsData } from "@/components/settings/ImportArchitectsData";
 import { DeletedRecordsTab } from "@/components/settings/DeletedRecordsTab";
+import { UsersTab } from "@/components/settings/UsersTab";
+import { ProfileTypesManager } from "@/components/settings/ProfileTypesManager";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tags } from "lucide-react";
 
 const ProjectSettings = () => {
   const navigate = useNavigate();
