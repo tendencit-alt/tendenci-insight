@@ -23,6 +23,7 @@ import Financeiro from "./pages/Financeiro";
 import DashboardBI from "./pages/DashboardBI";
 import CadastrosFinanceiros from "./pages/CadastrosFinanceiros";
 import Excluidos from "./pages/Excluidos";
+import ResetPassword from "./pages/ResetPassword";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +38,7 @@ const App = () => (
             <PermissionsProvider>
                <Routes>
               <Route path="/auth" element={<Auth />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/catalogo" element={<Catalogo />} />
               <Route path="/" element={<Navigate to="/bi-dashboard" replace />} />
               <Route path="/bi-dashboard" element={<ProtectedRoute><PermissionGuard module="dashboard"><DashboardBI /></PermissionGuard></ProtectedRoute>} />

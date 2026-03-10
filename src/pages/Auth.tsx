@@ -11,9 +11,11 @@ import { Loader2, Lock } from 'lucide-react';
 import tendenciLogo from '@/assets/tendenci-logo-new.png';
 import { supabase } from '@/integrations/supabase/client';
 import { getFirstAllowedRoute, routeMap } from '@/hooks/useFirstAllowedRoute';
+import { ForgotPasswordDialog } from '@/components/auth/ForgotPasswordDialog';
 
 const Auth = () => {
   const [loading, setLoading] = useState(false);
+  const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
   const [loginData, setLoginData] = useState({
     email: '',
     password: ''
@@ -201,6 +203,17 @@ const Auth = () => {
                       Entrar
                     </>}
                 </Button>
+
+                <div className="text-center">
+                  <Button
+                    type="button"
+                    variant="link"
+                    className="text-sm text-muted-foreground"
+                    onClick={() => setForgotPasswordOpen(true)}
+                  >
+                    Esqueci minha senha
+                  </Button>
+                </div>
               </form>
             </TabsContent>
             
@@ -256,6 +269,11 @@ const Auth = () => {
           </div>
         </CardContent>
       </Card>
+
+      <ForgotPasswordDialog
+        open={forgotPasswordOpen}
+        onOpenChange={setForgotPasswordOpen}
+      />
     </div>;
 };
 export default Auth;
