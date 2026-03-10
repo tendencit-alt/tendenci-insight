@@ -264,7 +264,7 @@ export function AppNavbar() {
   }, [isMaster, itemsByCategory]);
 
   // Ordem das categorias no desktop
-  const desktopCategories = ['comercial', 'producao', 'financeiro', 'cadastros'];
+  const desktopCategories = ['comercial', 'producao', 'financeiro', 'cadastros', 'master'];
 
   return (
     <nav className="sticky top-0 z-50 h-14 border-b border-border/40 bg-card/95 backdrop-blur-[12px] supports-[backdrop-filter]:bg-card/95 shadow-sm">

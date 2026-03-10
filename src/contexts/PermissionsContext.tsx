@@ -4,24 +4,15 @@ import { useAuth } from '@/contexts/AuthContext';
 
 export type AppModule = 
   | 'dashboard'
-  | 'prospeccao'
-  | 'arquitetos'
-  | 'crm'
-  | 'projetos'
-  | 'metas'
-  | 'leads'
-  | 'dashboards_personalizados'
   | 'configuracoes'
   | 'gestao_usuarios'
   | 'producao'
   | 'fornecedores'
   | 'estoque'
-  | 'compras'
   | 'pedidos'
-  | 'fichas_tecnicas'
-  | 'ia_configuracao'
   | 'financeiro'
-  | 'cadastros_financeiros';
+  | 'cadastros_financeiros'
+  | 'system_errors';
 
 export interface ModulePermission {
   module: AppModule;
