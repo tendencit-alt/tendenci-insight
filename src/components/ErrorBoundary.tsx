@@ -15,6 +15,22 @@ interface State {
   errorInfo: ErrorInfo | null;
 }
 
+const isRecoverableDomNotFoundError = (error: Error): boolean => {
+  if (typeof window === 'undefined') return false;
+
+  const message = (error.message || '').toLowerCase();
+  const isAuthFlow = window.location.pathname === '/auth' || window.location.pathname === '/reset-password';
+
+  return (
+    isAuthFlow &&
+    error.name === 'NotFoundError' &&
+    (message.includes('insertbefore') ||
+      message.includes('removechild') ||
+      message.includes('not a child of this node') ||
+      message.includes('object can not be found here'))
+  );
+};
+
 class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
