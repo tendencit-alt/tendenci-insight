@@ -834,6 +834,9 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
           comissao_projetista_percentual: comissoes.projetista.habilitado ? comissoes.projetista.percentual : 0,
           comissao_projetista_valor: comissoes.projetista.habilitado ? comissoes.projetista.valor : 0,
           comissao_projetista_responsavel_id: comissoes.projetista.responsavel_id || null,
+          comissao_montador_percentual: comissoes.montador.habilitado ? comissoes.montador.percentual : 0,
+          comissao_montador_valor: comissoes.montador.habilitado ? comissoes.montador.valor : 0,
+          comissao_montador_responsavel_id: comissoes.montador.responsavel_id || null,
           ...(isMaster && formData.data_emissao ? { data_emissao: new Date(formData.data_emissao).toISOString() } : {}),
           ...(isMaster && formData.vendedor_id ? { vendedor_id: formData.vendedor_id } : {}),
         })
