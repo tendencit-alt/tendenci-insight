@@ -123,6 +123,7 @@ export default function PurchaseOrderDetailSheet({ order, open, onOpenChange, on
 
       toast({ title: "Pedido duplicado!" });
       queryClient.invalidateQueries({ queryKey: ["purchase-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["fin-payables"] });
       onUpdate();
     } catch (error: any) {
       toast({ title: "Erro ao duplicar", description: error.message, variant: "destructive" });
