@@ -422,6 +422,26 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
               </div>
             )}
 
+            {requireCentroCusto && (
+              <div className="space-y-1">
+                <Label className="text-xs">Projeto *</Label>
+                <Select
+                  value={newItem.project_id || "_placeholder"}
+                  onValueChange={(v) => setNewItem({ ...newItem, project_id: v === "_placeholder" ? "" : v })}
+                >
+                  <SelectTrigger className={!newItem.project_id ? 'border-destructive/50' : ''}>
+                    <SelectValue placeholder="Selecione o projeto" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_placeholder" disabled>Selecione</SelectItem>
+                    {PROJETOS.map((p) => (
+                      <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
             <div className="space-y-1">
               <Label className="text-xs">Especificações / Observações</Label>
               <Textarea
