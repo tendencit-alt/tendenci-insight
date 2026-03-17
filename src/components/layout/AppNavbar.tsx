@@ -187,7 +187,7 @@ export function AppNavbar() {
   }, [directItems, financeiroItems, cadastrosItems, masterItems]);
 
   return (
-    <nav className="sticky top-0 z-50 h-14 border-b border-border/40 bg-card/95 backdrop-blur-[12px] supports-[backdrop-filter]:bg-card/95 shadow-sm">
+    <nav className="sticky top-0 z-50 h-14 border-b border-border/40 bg-card/95 text-card-foreground backdrop-blur-[12px] supports-[backdrop-filter]:bg-card/95 shadow-sm">
       <div className="flex items-center h-full px-3 max-w-[1800px] mx-auto gap-2">
         <img src={tendenciLogo} alt="Tendenci" className="h-7 w-auto flex-shrink-0" />
 
