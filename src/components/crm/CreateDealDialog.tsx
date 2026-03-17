@@ -940,20 +940,20 @@ export function CreateDealDialog({
               <div className="space-y-2">
                 <Label>Centro de Custo *</Label>
                 <div className="space-y-2 border rounded-md p-3 max-h-40 overflow-y-auto">
-                  {["Rústico", "Industrial", "Revenda", "Planejado", "Náutico"].map((cc) => (
-                    <div key={cc} className="flex items-center space-x-2">
+                  {CENTROS_CUSTO.map((cc) => (
+                    <div key={cc.value} className="flex items-center space-x-2">
                       <Checkbox
-                        id={`cc-${cc}`}
-                        checked={formData.centros_custo.includes(cc)}
+                        id={`cc-${cc.value}`}
+                        checked={formData.centros_custo.includes(cc.value)}
                         onCheckedChange={(checked) => {
                           if (checked) {
-                            setFormData({ ...formData, centros_custo: [...formData.centros_custo, cc] });
+                            setFormData({ ...formData, centros_custo: [...formData.centros_custo, cc.value] });
                           } else {
-                            setFormData({ ...formData, centros_custo: formData.centros_custo.filter(c => c !== cc) });
+                            setFormData({ ...formData, centros_custo: formData.centros_custo.filter(c => c !== cc.value) });
                           }
                         }}
                       />
-                      <label htmlFor={`cc-${cc}`} className="text-sm cursor-pointer">{cc}</label>
+                      <label htmlFor={`cc-${cc.value}`} className="text-sm cursor-pointer">{cc.label}</label>
                     </div>
                   ))}
                 </div>
