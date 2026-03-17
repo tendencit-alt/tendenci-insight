@@ -72,6 +72,27 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
   const { costCenters: CENTROS_CUSTO } = useCostCenters();
   const { projects: PROJETOS } = useProjects();
   const [creatingProject, setCreatingProject] = useState(false);
+  const queryClient = useQueryClient();
+
+  const handleCreateProjectForClient = async () => {
+    if (!clientName || creatingProject) return;
+    setCreatingProject(true);
+    try {
+      const { data, error } = await supabase
+        .from('fin_projects')
+        .insert({ name: clientName, status: 'ativo' })
+        .select('id')
+        .single();
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ['fin-projects-active'] });
+      toast.success(`Projeto "${clientName}" criado!`);
+      setNewItem(prev => ({ ...prev, project_id: data.id }));
+    } catch (err: any) {
+      toast.error('Erro ao criar projeto: ' + err.message);
+    } finally {
+      setCreatingProject(false);
+    }
+  };
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
