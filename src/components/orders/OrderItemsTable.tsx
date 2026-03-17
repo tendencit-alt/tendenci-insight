@@ -13,6 +13,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Plus, Trash2, Edit2, Check, ChevronDown, ChevronUp, Package, X, Search, Import } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useCostCenters } from '@/hooks/useCostCenters';
 
 export interface OrderItem {
   id: string;
