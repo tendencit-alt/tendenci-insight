@@ -246,7 +246,13 @@ export function FinProjectsManager() {
     }
   };
 
+  const [statusFilter, setStatusFilter] = useState<"ativo" | "concluido" | "todos">("ativo");
+
   const sortedProjects = useMemo(() => numericCodeSort(projects || [], 'code'), [projects]);
+  const filteredProjects = useMemo(() => {
+    if (statusFilter === "todos") return sortedProjects;
+    return sortedProjects.filter(p => p.status === statusFilter);
+  }, [sortedProjects, statusFilter]);
   const activeProjects = sortedProjects.filter(p => p.status === "ativo");
 
   const selectedProjectData = selectedProject 
