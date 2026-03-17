@@ -793,6 +793,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
           subtotal,
           valor_total: total,
           centro_custo: null, // centro_custo agora é por item
+          project_id: formData.project_id || null,
           status: newStatus,
           // Campos de taxa de cartão
           taxa_cartao_percentual: taxaCartao.percentual,
