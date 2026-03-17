@@ -426,7 +426,8 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     (comissoes.rt.habilitado ? comissoes.rt.valor : 0) +
     (comissoes.vendedor.habilitado ? comissoes.vendedor.valor : 0) +
     (comissoes.orcamentista.habilitado ? comissoes.orcamentista.valor : 0) +
-    (comissoes.projetista.habilitado ? comissoes.projetista.valor : 0);
+    (comissoes.projetista.habilitado ? comissoes.projetista.valor : 0) +
+    (comissoes.montador.habilitado ? comissoes.montador.valor : 0);
 
   // Valor líquido Tendenci (deduz as taxas absorvidas e comissões)
   const valorLiquidoTendenci = totalSemTaxa - taxaCartao.valor - taxaBoleto.valor - totalComissoes;
