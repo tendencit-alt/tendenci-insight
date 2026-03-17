@@ -51,39 +51,8 @@ interface ProdutoEstoque {
   } | null;
 }
 
-// Fallback hardcoded options (used if query fails)
-const CENTROS_CUSTO_FALLBACK = [
-  { value: 'moveis_planejados', label: 'Móveis Planejados' },
-  { value: 'producao_tendenci', label: 'Produção Tendenci' },
-  { value: 'revenda', label: 'Revenda' },
-];
-
-const emptyItem = {
-  descricao: '',
-  quantidade: 1,
-  valor_unitario: 0,
-  codigo_produto: '',
-  ncm: '',
-  cfop: '',
-  unidade: 'UN',
-  especificacoes: '',
-  centro_custo: '',
-};
-
 export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFiscalFields = false, requireCentroCusto = false }: OrderItemsTableProps) {
-  const { data: centrosCustoDB } = useQuery({
-    queryKey: ['fin-cost-centers-active'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('fin_cost_centers')
-        .select('id, name')
-        .eq('active', true)
-        .order('name');
-      if (error) throw error;
-      return data?.map(cc => ({ value: cc.id, label: cc.name })) || [];
-    },
-  });
-  const CENTROS_CUSTO = centrosCustoDB?.length ? centrosCustoDB : CENTROS_CUSTO_FALLBACK;
+  const { costCenters: CENTROS_CUSTO } = useCostCenters();
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
