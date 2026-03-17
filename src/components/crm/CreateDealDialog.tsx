@@ -57,6 +57,7 @@ export function CreateDealDialog({
   const { toast } = useToast();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
+  const { costCenters: CENTROS_CUSTO } = useCostCenters();
   const [stages, setStages] = useState<any[]>([]);
   const [leads, setLeads] = useState<any[]>([]);
   const [architects, setArchitects] = useState<any[]>([]);
