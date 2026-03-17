@@ -372,7 +372,7 @@ export function FinProjectsManager() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {activeProjects.map((project) => {
+                {filteredProjects.map((project) => {
                   const budget = Number(project.budget) || 0;
                   const realized = realizedByProject[project.id]?.despesas || 0;
                   const saldo = budget - realized;
