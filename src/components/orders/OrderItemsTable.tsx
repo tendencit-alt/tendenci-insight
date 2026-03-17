@@ -51,7 +51,8 @@ interface ProdutoEstoque {
   } | null;
 }
 
-const CENTROS_CUSTO = [
+// Fallback hardcoded options (used if query fails)
+const CENTROS_CUSTO_FALLBACK = [
   { value: 'moveis_planejados', label: 'Móveis Planejados' },
   { value: 'producao_tendenci', label: 'Produção Tendenci' },
   { value: 'revenda', label: 'Revenda' },
