@@ -52,11 +52,11 @@ All colors MUST be HSL.
     --destructive-light: 0 65% 93%;
 
     /* Chart colors */
-    --chart-1: 220 10% 28%;
-    --chart-2: 220 10% 45%;
-    --chart-3: 220 10% 62%;
-    --chart-4: 200 12% 52%;
-    --chart-5: 180 10% 42%;
+    --chart-1: 220 12% 24%;
+    --chart-2: 200 15% 42%;
+    --chart-3: 180 12% 55%;
+    --chart-4: 152 40% 45%;
+    --chart-5: 38 70% 50%;
 
     /* Borders and inputs */
     --border: 220 10% 88%;
