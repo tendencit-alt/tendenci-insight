@@ -41,6 +41,7 @@ interface OrderItem {
   cfop?: string;
   unidade?: string;
   centro_custo?: string;
+  project_id?: string;
 }
 
 const FORMAS_PAGAMENTO = [

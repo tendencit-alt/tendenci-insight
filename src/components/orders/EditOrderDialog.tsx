@@ -83,6 +83,7 @@ interface OrderItem {
   cfop?: string;
   unidade?: string;
   centro_custo?: string;
+  project_id?: string;
 }
 
 interface PagamentoParcela {
