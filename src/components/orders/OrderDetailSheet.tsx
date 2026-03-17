@@ -140,28 +140,19 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
 
     setLoading(true);
     try {
-      const centroCustoMap: Record<string, string> = {
-        'moveis_planejados': 'Móveis Planejados',
-        'producao_tendenci': 'Produção Tendenci',
-        'revenda': 'Revenda'
-      };
-
       let createdCount = 0;
 
       for (const item of items) {
         const itemCentroCusto = (item as any).centro_custo;
         if (!itemCentroCusto) continue;
 
-        const productionTypeName = centroCustoMap[itemCentroCusto];
-        if (!productionTypeName) continue;
-
-        // Buscar tipo de produção pelo nome
+        // Buscar tipo de produção pelo nome do centro de custo (match dinâmico)
         const { data: productionType } = await supabase
           .from('production_types')
           .select('id, name')
-          .eq('name', productionTypeName)
+          .ilike('name', `%${itemCentroCusto}%`)
           .eq('active', true)
-          .single();
+          .maybeSingle();
 
         if (!productionType) continue;
 

@@ -21,6 +21,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { Loader2, Plus } from "lucide-react";
+import { useCostCenters } from "@/hooks/useCostCenters";
 import { CreateClientDialog } from "@/components/crm/CreateClientDialog";
 import { CreateArchitectDialog } from "@/components/architects/CreateArchitectDialog";
 
@@ -37,11 +38,7 @@ const CATEGORIAS = [
   { value: "Móveis Soltos", label: "Móveis Soltos" },
 ];
 
-const CENTROS_CUSTO = [
-  { value: "moveis_planejados", label: "Móveis Planejados" },
-  { value: "producao_tendenci", label: "Produção Tendenci" },
-  { value: "revenda", label: "Revenda" },
-];
+// CENTROS_CUSTO now fetched dynamically via useCostCenters hook
 
 const TIPOS_PRODUTO = [
   { value: "Sofá", label: "Sofá" },
@@ -65,6 +62,7 @@ export function CreateWonDealDialog({
   prefilledArchitectId,
 }: CreateWonDealDialogProps) {
   const { user } = useAuth();
+  const { costCenters: CENTROS_CUSTO } = useCostCenters();
   const [loading, setLoading] = useState(false);
   const [showCreateClient, setShowCreateClient] = useState(false);
   const [showCreateArchitect, setShowCreateArchitect] = useState(false);

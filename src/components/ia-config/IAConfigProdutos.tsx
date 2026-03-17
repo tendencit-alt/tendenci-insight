@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useCostCenters } from "@/hooks/useCostCenters";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -29,11 +30,7 @@ interface Subcategoria {
   name: string;
 }
 
-const CENTROS_CUSTO = [
-  { value: 'moveis_planejados', label: 'Móveis Planejados' },
-  { value: 'producao_tendenci', label: 'Produção Tendenci' },
-  { value: 'revenda', label: 'Revenda' },
-];
+// CENTROS_CUSTO now fetched dynamically via useCostCenters hook
 
 const UNIDADES_MEDIDA = [
   { value: 'cm', label: 'cm' },
@@ -140,6 +137,7 @@ const formatMeasure = (value: string): string => {
 };
 
 export default function IAConfigProdutos() {
+  const { costCenters: CENTROS_CUSTO } = useCostCenters();
   const { hasModuleAccess, isMaster } = usePermissions();
   const canDelete = isMaster || hasModuleAccess('configuracoes' as any, 'delete');
   const canCreate = isMaster || hasModuleAccess('configuracoes' as any, 'create');
