@@ -89,6 +89,8 @@ export default function PurchaseOrderDetailSheet({ order, open, onOpenChange, on
       if (error) throw error;
       toast({ title: "Pedido excluído!" });
       queryClient.invalidateQueries({ queryKey: ["purchase-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["fin-payables"] });
+      queryClient.invalidateQueries({ queryKey: ["suppliers"] });
       onOpenChange(false);
       onUpdate();
     } catch (error: any) {
