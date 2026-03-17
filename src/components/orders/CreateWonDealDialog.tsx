@@ -62,6 +62,7 @@ export function CreateWonDealDialog({
   prefilledArchitectId,
 }: CreateWonDealDialogProps) {
   const { user } = useAuth();
+  const { costCenters: CENTROS_CUSTO } = useCostCenters();
   const [loading, setLoading] = useState(false);
   const [showCreateClient, setShowCreateClient] = useState(false);
   const [showCreateArchitect, setShowCreateArchitect] = useState(false);
