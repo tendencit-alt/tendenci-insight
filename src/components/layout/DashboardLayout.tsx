@@ -14,7 +14,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     <div className="flex min-h-screen w-full flex-col">
       <AppNavbar />
       
-      <main className="flex-1 p-4 lg:p-6 bg-gradient-to-br from-background via-muted/20 to-muted/30 min-h-screen max-w-[1800px] mx-auto w-full">
+      <main className="flex-1 p-4 lg:p-6 bg-background min-h-screen max-w-[1800px] mx-auto w-full">
         {children}
       </main>
       
