@@ -37,6 +37,7 @@ interface OrderItemsTableProps {
   readOnly?: boolean;
   showFiscalFields?: boolean;
   requireCentroCusto?: boolean;
+  clientName?: string;
 }
 
 interface ProdutoEstoque {
