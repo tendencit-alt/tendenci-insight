@@ -21,6 +21,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { Loader2, Plus } from "lucide-react";
+import { useCostCenters } from "@/hooks/useCostCenters";
 import { CreateClientDialog } from "@/components/crm/CreateClientDialog";
 import { CreateArchitectDialog } from "@/components/architects/CreateArchitectDialog";
 
