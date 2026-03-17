@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,7 @@ interface ReceivePurchaseDialogProps {
 export default function ReceivePurchaseDialog({ order, items, open, onOpenChange, onSuccess }: ReceivePurchaseDialogProps) {
   const { toast } = useToast();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
   const [receivedQuantities, setReceivedQuantities] = useState<Record<string, number>>({});
 
@@ -81,6 +83,13 @@ export default function ReceivePurchaseDialog({ order, items, open, onOpenChange
         .from("purchase_orders")
         .update(updates)
         .eq("id", order.id);
+
+      // Cross-module invalidation
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["inventory"] });
+      queryClient.invalidateQueries({ queryKey: ["stock-movements"] });
+      queryClient.invalidateQueries({ queryKey: ["fin-payables"] });
+      queryClient.invalidateQueries({ queryKey: ["purchase-orders"] });
 
       toast({ title: allReceived ? "Pedido totalmente recebido!" : "Recebimento parcial registrado" });
       onSuccess();

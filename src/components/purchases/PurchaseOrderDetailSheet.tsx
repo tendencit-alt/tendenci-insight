@@ -89,6 +89,8 @@ export default function PurchaseOrderDetailSheet({ order, open, onOpenChange, on
       if (error) throw error;
       toast({ title: "Pedido excluído!" });
       queryClient.invalidateQueries({ queryKey: ["purchase-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["fin-payables"] });
+      queryClient.invalidateQueries({ queryKey: ["suppliers"] });
       onOpenChange(false);
       onUpdate();
     } catch (error: any) {
@@ -121,6 +123,7 @@ export default function PurchaseOrderDetailSheet({ order, open, onOpenChange, on
 
       toast({ title: "Pedido duplicado!" });
       queryClient.invalidateQueries({ queryKey: ["purchase-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["fin-payables"] });
       onUpdate();
     } catch (error: any) {
       toast({ title: "Erro ao duplicar", description: error.message, variant: "destructive" });

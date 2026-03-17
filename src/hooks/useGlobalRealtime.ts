@@ -74,6 +74,17 @@ export function useGlobalRealtime() {
     ]);
   }, [invalidateByKeys]);
 
+  const onPurchasesChange = useCallback(() => {
+    console.log("[GlobalRT] Purchases changed → invalidating purchases, financeiro, inventory, suppliers");
+    invalidateByKeys([
+      "purchase-orders", "purchase-order-",
+      "fin-", "financeiro",
+      "products", "stock-", "inventory",
+      "suppliers",
+      "bi-", "dashboard",
+    ]);
+  }, [invalidateByKeys]);
+
   useEffect(() => {
     console.log("[GlobalRT] Setting up cross-module realtime subscriptions...");
 
@@ -90,11 +101,14 @@ export function useGlobalRealtime() {
       .on("postgres_changes", { event: "*", schema: "public", table: "stock_movements" }, onInventoryChange)
       // Suppliers
       .on("postgres_changes", { event: "*", schema: "public", table: "suppliers" }, onSuppliersChange)
-      // Financeiro (core tables - complements useFinanceiroRealtime for cross-module)
+      // Financeiro
       .on("postgres_changes", { event: "*", schema: "public", table: "fin_ledger_entries" }, onFinanceiroChange)
       .on("postgres_changes", { event: "*", schema: "public", table: "fin_payables" }, onFinanceiroChange)
       .on("postgres_changes", { event: "*", schema: "public", table: "fin_receivables" }, onFinanceiroChange)
       .on("postgres_changes", { event: "*", schema: "public", table: "fin_bank_accounts" }, onFinanceiroChange)
+      // Purchase Orders
+      .on("postgres_changes", { event: "*", schema: "public", table: "purchase_orders" }, onPurchasesChange)
+      .on("postgres_changes", { event: "*", schema: "public", table: "purchase_order_items" }, onPurchasesChange)
       .subscribe((status, err) => {
         console.log("[GlobalRT] Channel status:", status);
         if (err) console.error("[GlobalRT] Error:", err);
@@ -104,5 +118,5 @@ export function useGlobalRealtime() {
       console.log("[GlobalRT] Cleaning up cross-module realtime...");
       supabase.removeChannel(channel);
     };
-  }, [onOrdersChange, onProductionChange, onInventoryChange, onSuppliersChange, onFinanceiroChange]);
+  }, [onOrdersChange, onProductionChange, onInventoryChange, onSuppliersChange, onFinanceiroChange, onPurchasesChange]);
 }

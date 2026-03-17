@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,7 @@ interface OrderItem {
 export default function CreatePurchaseOrderDialog({ open, onOpenChange, onSuccess }: CreatePurchaseOrderDialogProps) {
   const { toast } = useToast();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     supplier_id: "",
@@ -143,6 +144,11 @@ export default function CreatePurchaseOrderDialog({ open, onOpenChange, onSucces
         .insert(itemsToInsert);
 
       if (itemsError) throw itemsError;
+
+      // Cross-module invalidation: purchase creates payable + ledger via trigger
+      queryClient.invalidateQueries({ queryKey: ["fin-payables"] });
+      queryClient.invalidateQueries({ queryKey: ["fin-ledger"] });
+      queryClient.invalidateQueries({ queryKey: ["purchase-orders"] });
 
       toast({ title: "Pedido de compra criado!" });
       onSuccess();
