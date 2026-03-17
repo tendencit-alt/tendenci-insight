@@ -59,9 +59,9 @@ All colors MUST be HSL.
     --chart-5: 38 70% 50%;
 
     /* Borders and inputs */
-    --border: 220 10% 88%;
-    --input: 220 10% 88%;
-    --ring: 220 10% 28%;
+    --border: 220 8% 85%;
+    --input: 220 8% 90%;
+    --ring: 220 12% 24%;
 
     --radius: 0.75rem;
 
