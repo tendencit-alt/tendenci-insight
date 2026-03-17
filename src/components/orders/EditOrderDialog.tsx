@@ -2077,6 +2077,12 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                   <span className="text-sm font-medium">- {formatCurrency(comissoes.projetista.valor)}</span>
                 </div>
               )}
+              {comissoes.montador.habilitado && comissoes.montador.valor > 0 && (
+                <div className="flex items-center justify-between text-orange-600">
+                  <span className="text-sm">Montador ({comissoes.montador.percentual.toFixed(2)}%):</span>
+                  <span className="text-sm font-medium">- {formatCurrency(comissoes.montador.valor)}</span>
+                </div>
+              )}
                 <div className="flex items-center justify-between border-t pt-2">
                   <span className="text-sm font-semibold">Total do Pedido:</span>
                   <span className="text-base font-bold text-primary">{formatCurrency(total)}</span>
