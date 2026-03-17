@@ -145,6 +145,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     vendedor: { habilitado: false, percentual: 3, valor: 0, responsavel_id: '' },
     orcamentista: { habilitado: false, percentual: 0.2, valor: 0, responsavel_id: '' },
     projetista: { habilitado: false, percentual: 0.2, valor: 0, responsavel_id: '' },
+    montador: { habilitado: false, percentual: 10, valor: 0, responsavel_id: '' },
   });
 
   // Adicionar nova forma de pagamento
