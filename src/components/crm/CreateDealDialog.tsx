@@ -37,6 +37,7 @@ import { cn } from "@/lib/utils";
 import { useFormPersistence } from "@/hooks/useFormPersistence";
 import { FormSaveIndicator } from "@/components/ui/FormSaveIndicator";
 import { formatBrasil } from "@/utils/taskTimezone";
+import { useCostCenters } from "@/hooks/useCostCenters";
 import { validateAndShowErrors, formatDatabaseError, ValidationRule } from "@/lib/formValidation";
 import { toast as sonnerToast } from "sonner";
 
