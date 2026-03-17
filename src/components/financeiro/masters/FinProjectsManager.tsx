@@ -460,61 +460,6 @@ export function FinProjectsManager() {
         </CardContent>
       </Card>
 
-      {/* All Projects Table */}
-      {sortedProjects.filter(p => p.status !== "ativo").length > 0 && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base font-medium">Outros Projetos</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Código</TableHead>
-                  <TableHead>Nome</TableHead>
-                  <TableHead className="text-right">Orçamento</TableHead>
-                  <TableHead className="text-right">Realizado</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {sortedProjects.filter(p => p.status !== "ativo").map((project) => {
-                  const realized = realizedByProject[project.id]?.despesas || 0;
-                  
-                  return (
-                    <TableRow key={project.id}>
-                      <TableCell className="font-medium">{project.code || "-"}</TableCell>
-                      <TableCell>{project.name}</TableCell>
-                      <TableCell className="text-right">
-                        {project.budget ? formatCurrency(Number(project.budget)) : "-"}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {realized > 0 ? formatCurrency(realized) : "-"}
-                      </TableCell>
-                      <TableCell>{getStatusBadge(project.status)}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={() => handleViewEntries(project)}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm" onClick={() => handleEdit(project)}>
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Edit/Create Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
