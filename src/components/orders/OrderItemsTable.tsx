@@ -98,6 +98,26 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [isAddingItem, setIsAddingItem] = useState(false);
   const [newItem, setNewItem] = useState<Partial<OrderItem>>(emptyItem);
+  const [autoProjectDone, setAutoProjectDone] = useState(false);
+
+  // Auto-preencher projeto com nome do cliente ao abrir novo item
+  useEffect(() => {
+    if (!isAddingItem || !clientName || autoProjectDone) return;
+
+    const existing = PROJETOS.find(p => p.label === clientName);
+    if (existing) {
+      setNewItem(prev => ({ ...prev, project_id: existing.value }));
+      setAutoProjectDone(true);
+    } else if (!creatingProject) {
+      setAutoProjectDone(true);
+      handleCreateProjectForClient();
+    }
+  }, [isAddingItem, clientName, PROJETOS, autoProjectDone, creatingProject]);
+
+  // Reset flag quando fecha o form
+  useEffect(() => {
+    if (!isAddingItem) setAutoProjectDone(false);
+  }, [isAddingItem]);
   
   // Estados para seletor de produtos
   const [showProductSelector, setShowProductSelector] = useState(false);
@@ -452,13 +472,7 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                 <Label className="text-xs">Projeto *</Label>
                 <Select
                   value={newItem.project_id || "_placeholder"}
-                  onValueChange={(v) => {
-                    if (v === "_create_new") {
-                      handleCreateProjectForClient();
-                    } else {
-                      setNewItem({ ...newItem, project_id: v === "_placeholder" ? "" : v });
-                    }
-                  }}
+                  onValueChange={(v) => setNewItem({ ...newItem, project_id: v === "_placeholder" ? "" : v })}
                   disabled={creatingProject}
                 >
                   <SelectTrigger className={!newItem.project_id ? 'border-destructive/50' : ''}>
@@ -466,11 +480,6 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="_placeholder" disabled>Selecione</SelectItem>
-                    {clientName && !PROJETOS.some(p => p.label === clientName) && (
-                      <SelectItem value="_create_new" className="text-primary font-medium">
-                        ➕ Criar: {clientName}
-                      </SelectItem>
-                    )}
                     {PROJETOS.map((p) => (
                       <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
                     ))}
