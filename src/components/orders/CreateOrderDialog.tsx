@@ -935,6 +935,9 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                                   if (!FORMAS_COM_PARCELAS.includes(v)) {
                                     newParcelas[index].numero_parcelas = 1;
                                   }
+                                  if (v === 'cartao_credito') {
+                                    newParcelas[index].data_vencimento = new Date().toISOString().split('T')[0];
+                                  }
                                   setParcelas(newParcelas);
                                 }}
                               >
