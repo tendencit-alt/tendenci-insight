@@ -433,7 +433,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
   const valorLiquidoTendenci = totalSemTaxa - taxaCartao.valor - taxaBoleto.valor - totalComissoes;
 
   // Função para atualizar comissão por percentual (recalcula valor)
-  const atualizarComissaoPercentual = (tipo: 'rt' | 'vendedor' | 'orcamentista' | 'projetista', novoPercentual: number) => {
+  const atualizarComissaoPercentual = (tipo: 'rt' | 'vendedor' | 'orcamentista' | 'projetista' | 'montador', novoPercentual: number) => {
     const percentualSeguro = isNaN(novoPercentual) ? 0 : Math.max(0, Math.min(100, novoPercentual));
     const novoValor = total * (percentualSeguro / 100);
     setComissoes(prev => ({
