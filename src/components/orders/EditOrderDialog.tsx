@@ -627,15 +627,19 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
   // Total final: taxas sempre absorvidas pela Tendenci, não adicionam ao total do cliente
   const total = totalSemTaxa;
 
-  // Calcular total de comissões (incluindo RT)
+  // Calcular total de comissões (incluindo RT e Montador)
   const totalComissoes = 
     (comissoes.rt.habilitado ? comissoes.rt.valor : 0) +
     (comissoes.vendedor.habilitado ? comissoes.vendedor.valor : 0) +
     (comissoes.orcamentista.habilitado ? comissoes.orcamentista.valor : 0) +
-    (comissoes.projetista.habilitado ? comissoes.projetista.valor : 0);
+    (comissoes.projetista.habilitado ? comissoes.projetista.valor : 0) +
+    ((comissoes as any).montador?.habilitado ? (comissoes as any).montador.valor : 0);
 
-  // Valor líquido Tendenci (deduz as taxas absorvidas e comissões)
-  const valorLiquidoTendenci = totalSemTaxa - taxaCartao.valor - taxaBoleto.valor - totalComissoes;
+  // Valor líquido Tendenci (deduz apenas as taxas de cartão e boleto)
+  const valorLiquidoTendenci = totalSemTaxa - taxaCartao.valor - taxaBoleto.valor;
+
+  // Valor líquido após recursos estratégicos (deduz taxas + comissões)
+  const valorLiquidoRecursos = valorLiquidoTendenci - totalComissoes;
 
   // Função para atualizar comissão por percentual (recalcula valor)
   const atualizarComissaoPercentual = (tipo: 'rt' | 'vendedor' | 'orcamentista' | 'projetista', novoPercentual: number) => {
@@ -2015,11 +2019,11 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                   </div>
                 )}
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Total Formas de Pagamento:</span>
-                  <span className={`text-sm font-medium ${isPagamentoValorCorreto ? 'text-green-600' : 'text-destructive'}`}>
-                    {formatCurrency(valorTotalPagamento)}
-                  </span>
-                </div>
+                   <span className="text-sm font-semibold text-blue-600">Valor Líquido - Recursos Estratégicos:</span>
+                   <span className={`text-base font-bold text-blue-600`}>
+                     {formatCurrency(valorLiquidoRecursos)}
+                   </span>
+                 </div>
               </div>
 
               {totalPercentual !== 100 && (
