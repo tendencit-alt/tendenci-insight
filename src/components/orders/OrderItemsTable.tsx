@@ -68,6 +68,7 @@ const emptyItem = {
 
 export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFiscalFields = false, requireCentroCusto = false }: OrderItemsTableProps) {
   const { costCenters: CENTROS_CUSTO } = useCostCenters();
+  const { projects: PROJETOS } = useProjects();
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
