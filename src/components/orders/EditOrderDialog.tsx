@@ -2019,11 +2019,11 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                   </div>
                 )}
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Total Formas de Pagamento:</span>
-                  <span className={`text-sm font-medium ${isPagamentoValorCorreto ? 'text-green-600' : 'text-destructive'}`}>
-                    {formatCurrency(valorTotalPagamento)}
-                  </span>
-                </div>
+                   <span className="text-sm font-semibold text-blue-600">Valor Líquido - Recursos Estratégicos:</span>
+                   <span className={`text-base font-bold text-blue-600`}>
+                     {formatCurrency(valorLiquidoRecursos)}
+                   </span>
+                 </div>
               </div>
 
               {totalPercentual !== 100 && (
