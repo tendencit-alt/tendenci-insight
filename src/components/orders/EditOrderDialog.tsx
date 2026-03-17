@@ -222,6 +222,20 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
     enabled: open,
   });
 
+  // Query para montadores
+  const { data: montadores } = useQuery({
+    queryKey: ['montadores-for-order'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('role', ['admin', 'montador'])
+        .order('full_name');
+      return data || [];
+    },
+    enabled: open,
+  });
+
   const [parcelas, setParcelas] = useState<PagamentoParcela[]>([
     { id: '1', forma_pagamento: '', percentual: 100, data_vencimento: '', numero_parcelas: 1 }
   ]);
