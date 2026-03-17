@@ -145,6 +145,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     vendedor: { habilitado: false, percentual: 3, valor: 0, responsavel_id: '' },
     orcamentista: { habilitado: false, percentual: 0.2, valor: 0, responsavel_id: '' },
     projetista: { habilitado: false, percentual: 0.2, valor: 0, responsavel_id: '' },
+    montador: { habilitado: false, percentual: 10, valor: 0, responsavel_id: '' },
   });
 
   // Adicionar nova forma de pagamento
@@ -425,13 +426,14 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     (comissoes.rt.habilitado ? comissoes.rt.valor : 0) +
     (comissoes.vendedor.habilitado ? comissoes.vendedor.valor : 0) +
     (comissoes.orcamentista.habilitado ? comissoes.orcamentista.valor : 0) +
-    (comissoes.projetista.habilitado ? comissoes.projetista.valor : 0);
+    (comissoes.projetista.habilitado ? comissoes.projetista.valor : 0) +
+    (comissoes.montador.habilitado ? comissoes.montador.valor : 0);
 
   // Valor líquido Tendenci (deduz as taxas absorvidas e comissões)
   const valorLiquidoTendenci = totalSemTaxa - taxaCartao.valor - taxaBoleto.valor - totalComissoes;
 
   // Função para atualizar comissão por percentual (recalcula valor)
-  const atualizarComissaoPercentual = (tipo: 'rt' | 'vendedor' | 'orcamentista' | 'projetista', novoPercentual: number) => {
+  const atualizarComissaoPercentual = (tipo: 'rt' | 'vendedor' | 'orcamentista' | 'projetista' | 'montador', novoPercentual: number) => {
     const percentualSeguro = isNaN(novoPercentual) ? 0 : Math.max(0, Math.min(100, novoPercentual));
     const novoValor = total * (percentualSeguro / 100);
     setComissoes(prev => ({
@@ -447,6 +449,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
       vendedor: { ...prev.vendedor, valor: total * (prev.vendedor.percentual / 100) },
       orcamentista: { ...prev.orcamentista, valor: total * (prev.orcamentista.percentual / 100) },
       projetista: { ...prev.projetista, valor: total * (prev.projetista.percentual / 100) },
+      montador: { ...prev.montador, valor: total * (prev.montador.percentual / 100) },
     }));
   }, [total]);
 
@@ -567,6 +570,9 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
           comissao_projetista_percentual: comissoes.projetista.habilitado ? comissoes.projetista.percentual : 0,
           comissao_projetista_valor: comissoes.projetista.habilitado ? comissoes.projetista.valor : 0,
           comissao_projetista_responsavel_id: comissoes.projetista.responsavel_id || null,
+          comissao_montador_percentual: comissoes.montador.habilitado ? comissoes.montador.percentual : 0,
+          comissao_montador_valor: comissoes.montador.habilitado ? comissoes.montador.valor : 0,
+          comissao_montador_responsavel_id: comissoes.montador.responsavel_id || null,
         })
         .select()
         .single();
@@ -1400,6 +1406,61 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                         </>
                       )}
                     </div>
+
+                    {/* Comissão Montador */}
+                    <div className="flex items-center gap-3">
+                      <Switch
+                        checked={comissoes.montador.habilitado}
+                        onCheckedChange={(checked) => setComissoes(prev => ({
+                          ...prev,
+                          montador: { ...prev.montador, habilitado: checked }
+                        }))}
+                      />
+                      <span className="text-sm font-medium w-28">Montador</span>
+                      {comissoes.montador.habilitado && (
+                        <>
+                          <div className="flex items-center gap-1">
+                            <Input
+                              type="number"
+                              className="h-8 w-20"
+                              value={comissoes.montador.percentual}
+                              onChange={(e) => atualizarComissaoPercentual('montador', Number(e.target.value))}
+                              min={0}
+                              max={100}
+                              step={0.1}
+                            />
+                            <Label className="text-xs text-muted-foreground">%</Label>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Label className="text-xs text-muted-foreground">R$</Label>
+                            <Input
+                              type="number"
+                              className="h-8 w-24 bg-muted"
+                              value={comissoes.montador.valor.toFixed(2)}
+                              readOnly
+                              disabled
+                            />
+                          </div>
+                          <Select
+                            value={comissoes.montador.responsavel_id || "_none"}
+                            onValueChange={(v) => setComissoes(prev => ({
+                              ...prev,
+                              montador: { ...prev.montador, responsavel_id: v === "_none" ? "" : v }
+                            }))}
+                          >
+                            <SelectTrigger className="h-8 w-40">
+                              <SelectValue placeholder="Responsável" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="_none">-</SelectItem>
+                              {vendedores?.map((v) => (
+                                <SelectItem key={v.id} value={v.id}>{v.full_name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </Card>
 
@@ -1449,6 +1510,12 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                     <div className="flex items-center justify-between text-orange-600">
                       <span className="text-sm">Projetista ({comissoes.projetista.percentual.toFixed(2)}%):</span>
                       <span className="text-sm font-medium">- {formatCurrency(comissoes.projetista.valor)}</span>
+                    </div>
+                  )}
+                  {comissoes.montador.habilitado && comissoes.montador.valor > 0 && (
+                    <div className="flex items-center justify-between text-orange-600">
+                      <span className="text-sm">Montador ({comissoes.montador.percentual.toFixed(2)}%):</span>
+                      <span className="text-sm font-medium">- {formatCurrency(comissoes.montador.valor)}</span>
                     </div>
                   )}
                   <div className="flex items-center justify-between border-t pt-2">
