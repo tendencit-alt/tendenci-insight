@@ -633,7 +633,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
     (comissoes.vendedor.habilitado ? comissoes.vendedor.valor : 0) +
     (comissoes.orcamentista.habilitado ? comissoes.orcamentista.valor : 0) +
     (comissoes.projetista.habilitado ? comissoes.projetista.valor : 0) +
-    (comissoes.montador?.habilitado ? comissoes.montador.valor : 0);
+    ((comissoes as any).montador?.habilitado ? (comissoes as any).montador.valor : 0);
 
   // Valor líquido Tendenci (deduz apenas as taxas de cartão e boleto)
   const valorLiquidoTendenci = totalSemTaxa - taxaCartao.valor - taxaBoleto.valor;
