@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -37,6 +38,7 @@ interface OrderItemsTableProps {
   readOnly?: boolean;
   showFiscalFields?: boolean;
   requireCentroCusto?: boolean;
+  clientName?: string;
 }
 
 interface ProdutoEstoque {
@@ -66,9 +68,31 @@ const emptyItem = {
   project_id: '',
 };
 
-export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFiscalFields = false, requireCentroCusto = false }: OrderItemsTableProps) {
+export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFiscalFields = false, requireCentroCusto = false, clientName }: OrderItemsTableProps) {
   const { costCenters: CENTROS_CUSTO } = useCostCenters();
   const { projects: PROJETOS } = useProjects();
+  const [creatingProject, setCreatingProject] = useState(false);
+  const queryClient = useQueryClient();
+
+  const handleCreateProjectForClient = async () => {
+    if (!clientName || creatingProject) return;
+    setCreatingProject(true);
+    try {
+      const { data, error } = await supabase
+        .from('fin_projects')
+        .insert({ name: clientName, status: 'ativo' })
+        .select('id')
+        .single();
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ['fin-projects-active'] });
+      toast.success(`Projeto "${clientName}" criado!`);
+      setNewItem(prev => ({ ...prev, project_id: data.id }));
+    } catch (err: any) {
+      toast.error('Erro ao criar projeto: ' + err.message);
+    } finally {
+      setCreatingProject(false);
+    }
+  };
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -428,13 +452,25 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                 <Label className="text-xs">Projeto *</Label>
                 <Select
                   value={newItem.project_id || "_placeholder"}
-                  onValueChange={(v) => setNewItem({ ...newItem, project_id: v === "_placeholder" ? "" : v })}
+                  onValueChange={(v) => {
+                    if (v === "_create_new") {
+                      handleCreateProjectForClient();
+                    } else {
+                      setNewItem({ ...newItem, project_id: v === "_placeholder" ? "" : v });
+                    }
+                  }}
+                  disabled={creatingProject}
                 >
                   <SelectTrigger className={!newItem.project_id ? 'border-destructive/50' : ''}>
                     <SelectValue placeholder="Selecione o projeto" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="_placeholder" disabled>Selecione</SelectItem>
+                    {clientName && !PROJETOS.some(p => p.label === clientName) && (
+                      <SelectItem value="_create_new" className="text-primary font-medium">
+                        ➕ Criar: {clientName}
+                      </SelectItem>
+                    )}
                     {PROJETOS.map((p) => (
                       <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
                     ))}
