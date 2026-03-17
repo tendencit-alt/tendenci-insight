@@ -137,6 +137,7 @@ const formatMeasure = (value: string): string => {
 };
 
 export default function IAConfigProdutos() {
+  const { costCenters: CENTROS_CUSTO } = useCostCenters();
   const { hasModuleAccess, isMaster } = usePermissions();
   const canDelete = isMaster || hasModuleAccess('configuracoes' as any, 'delete');
   const canCreate = isMaster || hasModuleAccess('configuracoes' as any, 'create');
