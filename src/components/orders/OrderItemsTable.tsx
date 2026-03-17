@@ -98,6 +98,26 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [isAddingItem, setIsAddingItem] = useState(false);
   const [newItem, setNewItem] = useState<Partial<OrderItem>>(emptyItem);
+  const [autoProjectDone, setAutoProjectDone] = useState(false);
+
+  // Auto-preencher projeto com nome do cliente ao abrir novo item
+  useEffect(() => {
+    if (!isAddingItem || !clientName || autoProjectDone) return;
+
+    const existing = PROJETOS.find(p => p.label === clientName);
+    if (existing) {
+      setNewItem(prev => ({ ...prev, project_id: existing.value }));
+      setAutoProjectDone(true);
+    } else if (!creatingProject) {
+      setAutoProjectDone(true);
+      handleCreateProjectForClient();
+    }
+  }, [isAddingItem, clientName, PROJETOS, autoProjectDone, creatingProject]);
+
+  // Reset flag quando fecha o form
+  useEffect(() => {
+    if (!isAddingItem) setAutoProjectDone(false);
+  }, [isAddingItem]);
   
   // Estados para seletor de produtos
   const [showProductSelector, setShowProductSelector] = useState(false);
