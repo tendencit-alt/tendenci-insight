@@ -182,7 +182,7 @@ export function CostCenterKPIs({ filters }: CostCenterKPIsProps) {
   };
 
   const getStatusBadge = (percentual: number, hasMeta: boolean) => {
-    if (!hasMeta) return <Badge variant="outline" className="gap-1"><Target className="h-3 w-3" /> Sem meta</Badge>;
+    if (!hasMeta) return <Badge variant="outline" className="gap-1 text-card-foreground border-card-foreground/30"><Target className="h-3 w-3" /> Sem meta</Badge>;
     if (percentual >= 100) return <Badge className="bg-green-600 gap-1"><CheckCircle className="h-3 w-3" /> Atingida</Badge>;
     if (percentual >= 75) return <Badge className="bg-yellow-600 gap-1"><AlertTriangle className="h-3 w-3" /> Próximo</Badge>;
     return <Badge variant="destructive" className="gap-1"><AlertTriangle className="h-3 w-3" /> Abaixo</Badge>;
