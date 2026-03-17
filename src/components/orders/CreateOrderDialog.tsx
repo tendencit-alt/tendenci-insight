@@ -96,10 +96,13 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     carencia_boleto?: 30 | 60;
   }
 
+  const { projects } = useProjects();
+
   const [formData, setFormData] = useState({
     client_id: clientId || '',
     deal_id: dealId || '',
     architect_id: '',
+    project_id: '',
     observacao_pagamento: '',
     data_entrega_prevista: '',
     tipo_entrega: '',
