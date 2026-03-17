@@ -195,18 +195,21 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
   });
 
   const addProdutoToOrder = (produto: ProdutoEstoque) => {
-    const newOrderItem: OrderItem = {
-      id: crypto.randomUUID(),
+    // Pré-preenche o formulário de novo item com os dados do produto importado
+    setNewItem({
       descricao: produto.name,
       quantidade: 1,
       valor_unitario: produto.cost_price || 0,
-      valor_total: produto.cost_price || 0,
       codigo_produto: produto.code || '',
       unidade: produto.unit || 'UN',
-    };
-    
-    onItemsChange([...items, newOrderItem]);
-    toast.success(`${produto.name} adicionado ao pedido`);
+      especificacoes: '',
+      centro_custo: '',
+      project_id: '',
+    });
+    setAutoProjectDone(false);
+    setShowProductSelector(false);
+    setIsAddingItem(true);
+    toast.success(`${produto.name} importado — preencha Centro de Custo e confirme`);
   };
 
   const handleAddItem = () => {
