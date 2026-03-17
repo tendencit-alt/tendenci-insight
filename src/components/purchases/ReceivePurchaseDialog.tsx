@@ -21,6 +21,7 @@ interface ReceivePurchaseDialogProps {
 export default function ReceivePurchaseDialog({ order, items, open, onOpenChange, onSuccess }: ReceivePurchaseDialogProps) {
   const { toast } = useToast();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
   const [receivedQuantities, setReceivedQuantities] = useState<Record<string, number>>({});
 
