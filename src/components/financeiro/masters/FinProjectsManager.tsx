@@ -246,7 +246,13 @@ export function FinProjectsManager() {
     }
   };
 
+  const [statusFilter, setStatusFilter] = useState<"ativo" | "concluido" | "todos">("ativo");
+
   const sortedProjects = useMemo(() => numericCodeSort(projects || [], 'code'), [projects]);
+  const filteredProjects = useMemo(() => {
+    if (statusFilter === "todos") return sortedProjects;
+    return sortedProjects.filter(p => p.status === statusFilter);
+  }, [sortedProjects, statusFilter]);
   const activeProjects = sortedProjects.filter(p => p.status === "ativo");
 
   const selectedProjectData = selectedProject 
@@ -322,10 +328,22 @@ export function FinProjectsManager() {
       {/* Projects Table */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-base font-medium flex items-center gap-2">
-            <FolderKanban className="h-5 w-5" />
-            Projetos Ativos - Orçamento vs Realizado
-          </CardTitle>
+          <div className="flex items-center gap-4">
+            <CardTitle className="text-base font-medium flex items-center gap-2">
+              <FolderKanban className="h-5 w-5" />
+              Projetos - Orçamento vs Realizado
+            </CardTitle>
+            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as "ativo" | "concluido" | "todos")}>
+              <SelectTrigger className="w-[160px] h-8">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ativo">Ativos</SelectItem>
+                <SelectItem value="concluido">Finalizados</SelectItem>
+                <SelectItem value="todos">Todos</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <Button onClick={handleNew} size="sm" className="gap-2">
             <Plus className="h-4 w-4" />
             Novo Projeto
@@ -354,7 +372,7 @@ export function FinProjectsManager() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {activeProjects.map((project) => {
+                {filteredProjects.map((project) => {
                   const budget = Number(project.budget) || 0;
                   const realized = realizedByProject[project.id]?.despesas || 0;
                   const saldo = budget - realized;
@@ -429,10 +447,10 @@ export function FinProjectsManager() {
                     </TableRow>
                   );
                 })}
-                {activeProjects.length === 0 && (
+                {filteredProjects.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
-                      Nenhum projeto ativo
+                      Nenhum projeto {statusFilter === "ativo" ? "ativo" : statusFilter === "concluido" ? "finalizado" : ""} encontrado
                     </TableCell>
                   </TableRow>
                 )}
@@ -442,61 +460,6 @@ export function FinProjectsManager() {
         </CardContent>
       </Card>
 
-      {/* All Projects Table */}
-      {sortedProjects.filter(p => p.status !== "ativo").length > 0 && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base font-medium">Outros Projetos</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Código</TableHead>
-                  <TableHead>Nome</TableHead>
-                  <TableHead className="text-right">Orçamento</TableHead>
-                  <TableHead className="text-right">Realizado</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {sortedProjects.filter(p => p.status !== "ativo").map((project) => {
-                  const realized = realizedByProject[project.id]?.despesas || 0;
-                  
-                  return (
-                    <TableRow key={project.id}>
-                      <TableCell className="font-medium">{project.code || "-"}</TableCell>
-                      <TableCell>{project.name}</TableCell>
-                      <TableCell className="text-right">
-                        {project.budget ? formatCurrency(Number(project.budget)) : "-"}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {realized > 0 ? formatCurrency(realized) : "-"}
-                      </TableCell>
-                      <TableCell>{getStatusBadge(project.status)}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={() => handleViewEntries(project)}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm" onClick={() => handleEdit(project)}>
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Edit/Create Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
