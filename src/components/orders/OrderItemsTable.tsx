@@ -452,13 +452,25 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                 <Label className="text-xs">Projeto *</Label>
                 <Select
                   value={newItem.project_id || "_placeholder"}
-                  onValueChange={(v) => setNewItem({ ...newItem, project_id: v === "_placeholder" ? "" : v })}
+                  onValueChange={(v) => {
+                    if (v === "_create_new") {
+                      handleCreateProjectForClient();
+                    } else {
+                      setNewItem({ ...newItem, project_id: v === "_placeholder" ? "" : v });
+                    }
+                  }}
+                  disabled={creatingProject}
                 >
                   <SelectTrigger className={!newItem.project_id ? 'border-destructive/50' : ''}>
                     <SelectValue placeholder="Selecione o projeto" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="_placeholder" disabled>Selecione</SelectItem>
+                    {clientName && !PROJETOS.some(p => p.label === clientName) && (
+                      <SelectItem value="_create_new" className="text-primary font-medium">
+                        ➕ Criar: {clientName}
+                      </SelectItem>
+                    )}
                     {PROJETOS.map((p) => (
                       <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
                     ))}
