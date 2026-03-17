@@ -1406,6 +1406,61 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                         </>
                       )}
                     </div>
+
+                    {/* Comissão Montador */}
+                    <div className="flex items-center gap-3">
+                      <Switch
+                        checked={comissoes.montador.habilitado}
+                        onCheckedChange={(checked) => setComissoes(prev => ({
+                          ...prev,
+                          montador: { ...prev.montador, habilitado: checked }
+                        }))}
+                      />
+                      <span className="text-sm font-medium w-28">Montador</span>
+                      {comissoes.montador.habilitado && (
+                        <>
+                          <div className="flex items-center gap-1">
+                            <Input
+                              type="number"
+                              className="h-8 w-20"
+                              value={comissoes.montador.percentual}
+                              onChange={(e) => atualizarComissaoPercentual('montador', Number(e.target.value))}
+                              min={0}
+                              max={100}
+                              step={0.1}
+                            />
+                            <Label className="text-xs text-muted-foreground">%</Label>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Label className="text-xs text-muted-foreground">R$</Label>
+                            <Input
+                              type="number"
+                              className="h-8 w-24 bg-muted"
+                              value={comissoes.montador.valor.toFixed(2)}
+                              readOnly
+                              disabled
+                            />
+                          </div>
+                          <Select
+                            value={comissoes.montador.responsavel_id || "_none"}
+                            onValueChange={(v) => setComissoes(prev => ({
+                              ...prev,
+                              montador: { ...prev.montador, responsavel_id: v === "_none" ? "" : v }
+                            }))}
+                          >
+                            <SelectTrigger className="h-8 w-40">
+                              <SelectValue placeholder="Responsável" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="_none">-</SelectItem>
+                              {vendedores?.map((v) => (
+                                <SelectItem key={v.id} value={v.id}>{v.full_name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </Card>
 
