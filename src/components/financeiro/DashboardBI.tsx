@@ -88,7 +88,7 @@ export function DashboardBI({ filters }: DashboardBIProps) {
 
       // Apply sorting from global filters
       if (filters.sortField === "date") {
-        entriesQuery = entriesQuery.order("cash_date", { ascending: filters.sortDirection === "asc" });
+        entriesQuery = entriesQuery.order("competence_date", { ascending: filters.sortDirection === "asc" });
       } else if (filters.sortField === "value") {
         entriesQuery = entriesQuery.order("amount", { ascending: filters.sortDirection === "asc" });
       }
