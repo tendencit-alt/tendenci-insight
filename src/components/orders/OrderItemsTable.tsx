@@ -181,6 +181,7 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
       cfop: newItem.cfop,
       unidade: newItem.unidade || 'UN',
       centro_custo: newItem.centro_custo,
+      project_id: newItem.project_id,
     };
 
     onItemsChange([...items, item]);
