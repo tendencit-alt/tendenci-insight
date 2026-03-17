@@ -496,6 +496,12 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
           valor: Number(orderAny.comissao_projetista_valor) || 0,
           responsavel_id: orderAny.comissao_projetista_responsavel_id || ''
         },
+        montador: {
+          habilitado: (orderAny.comissao_montador_valor || 0) > 0 || (orderAny.comissao_montador_percentual || 0) > 0,
+          percentual: Number(orderAny.comissao_montador_percentual) || 10,
+          valor: Number(orderAny.comissao_montador_valor) || 0,
+          responsavel_id: orderAny.comissao_montador_responsavel_id || ''
+        },
       });
     }
   }, [order]);
