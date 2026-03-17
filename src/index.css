@@ -83,12 +83,12 @@ All colors MUST be HSL.
     --gradient-glass: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04));
 
     /* Premium Shadows */
-    --shadow-sm: 0 1px 3px 0 hsl(220 10% 20% / 0.06);
-    --shadow-md: 0 4px 8px -1px hsl(220 10% 20% / 0.1), 0 2px 4px -2px hsl(220 10% 20% / 0.06);
-    --shadow-lg: 0 12px 24px -4px hsl(220 10% 20% / 0.12), 0 4px 8px -4px hsl(220 10% 20% / 0.08);
-    --shadow-card: 0 4px 16px hsl(220 10% 20% / 0.1);
-    --shadow-hover: 0 8px 24px hsl(220 10% 20% / 0.16), 0 4px 8px hsl(220 10% 20% / 0.08);
-    --shadow-glow: 0 0 20px hsl(220 10% 28% / 0.25);
+    --shadow-sm: 0 1px 3px 0 hsl(220 12% 15% / 0.08);
+    --shadow-md: 0 4px 10px -2px hsl(220 12% 15% / 0.12), 0 2px 4px -2px hsl(220 12% 15% / 0.08);
+    --shadow-lg: 0 14px 28px -6px hsl(220 12% 15% / 0.14), 0 6px 10px -4px hsl(220 12% 15% / 0.08);
+    --shadow-card: 0 6px 20px hsl(220 12% 15% / 0.12);
+    --shadow-hover: 0 10px 28px hsl(220 12% 15% / 0.18), 0 6px 10px hsl(220 12% 15% / 0.1);
+    --shadow-glow: 0 0 24px hsl(220 12% 24% / 0.3);
 
     /* Transitions */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
