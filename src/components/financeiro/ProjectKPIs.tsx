@@ -30,6 +30,7 @@ function ProjectEntriesDialog({ open, onOpenChange, projectId, projectName, filt
           cost_center:fin_cost_centers(name)
         `)
         .eq("project_id", projectId)
+        .neq("status", "CANCELADO")
         .order("competence_date", { ascending: false });
 
       if (filterType === "executed") {
