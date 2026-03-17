@@ -151,10 +151,13 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
   const [activeTab, setActiveTab] = useState('cliente');
   const [loadingCep, setLoadingCep] = useState(false);
   
+  const { projects } = useProjects();
+
   const [formData, setFormData] = useState({
     client_id: '',
     deal_id: '',
     architect_id: '',
+    project_id: '',
     observacao_pagamento: '',
     data_entrega_prevista: '',
     tipo_entrega: '',
