@@ -29,11 +29,7 @@ interface Subcategoria {
   name: string;
 }
 
-const CENTROS_CUSTO = [
-  { value: 'moveis_planejados', label: 'Móveis Planejados' },
-  { value: 'producao_tendenci', label: 'Produção Tendenci' },
-  { value: 'revenda', label: 'Revenda' },
-];
+// CENTROS_CUSTO now fetched dynamically via useCostCenters hook
 
 const UNIDADES_MEDIDA = [
   { value: 'cm', label: 'cm' },
