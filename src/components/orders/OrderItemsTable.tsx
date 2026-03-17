@@ -63,6 +63,7 @@ const emptyItem = {
   unidade: 'UN',
   especificacoes: '',
   centro_custo: '',
+  project_id: '',
 };
 
 export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFiscalFields = false, requireCentroCusto = false }: OrderItemsTableProps) {
