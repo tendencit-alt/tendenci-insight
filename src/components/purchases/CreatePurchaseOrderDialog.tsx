@@ -144,6 +144,11 @@ export default function CreatePurchaseOrderDialog({ open, onOpenChange, onSucces
 
       if (itemsError) throw itemsError;
 
+      // Cross-module invalidation: purchase creates payable + ledger via trigger
+      queryClient.invalidateQueries({ queryKey: ["fin-payables"] });
+      queryClient.invalidateQueries({ queryKey: ["fin-ledger"] });
+      queryClient.invalidateQueries({ queryKey: ["purchase-orders"] });
+
       toast({ title: "Pedido de compra criado!" });
       onSuccess();
       onOpenChange(false);

@@ -84,6 +84,13 @@ export default function ReceivePurchaseDialog({ order, items, open, onOpenChange
         .update(updates)
         .eq("id", order.id);
 
+      // Cross-module invalidation
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["inventory"] });
+      queryClient.invalidateQueries({ queryKey: ["stock-movements"] });
+      queryClient.invalidateQueries({ queryKey: ["fin-payables"] });
+      queryClient.invalidateQueries({ queryKey: ["purchase-orders"] });
+
       toast({ title: allReceived ? "Pedido totalmente recebido!" : "Recebimento parcial registrado" });
       onSuccess();
     } catch (error: any) {
