@@ -40,29 +40,31 @@ function ProjectEntriesDialog({ open, onOpenChange, projectId, projectName, filt
       const { data } = await query;
 
       return (data || []).sort((a: any, b: any) => {
-        const normalizeDescription = (value: string) =>
-          value.replace(/\s*\[[^\]]+\]\s*$/u, "").trim().toLocaleLowerCase("pt-BR");
+        const normalizeText = (value?: string | null) =>
+          (value || "").trim().toLocaleLowerCase("pt-BR");
 
-        const descriptionCompare = normalizeDescription(a.description || "").localeCompare(
-          normalizeDescription(b.description || ""),
-          "pt-BR"
-        );
-
-        if (descriptionCompare !== 0) return descriptionCompare;
-
-        const costCenterCompare = (a.cost_center?.name || "").localeCompare(
-          b.cost_center?.name || "",
+        const costCenterCompare = normalizeText(a.cost_center?.name).localeCompare(
+          normalizeText(b.cost_center?.name),
           "pt-BR"
         );
 
         if (costCenterCompare !== 0) return costCenterCompare;
 
+        const amountCompare = Math.abs(Number(b.amount || 0)) - Math.abs(Number(a.amount || 0));
+
+        if (amountCompare !== 0) return amountCompare;
+
+        const descriptionCompare = normalizeText(a.description).localeCompare(
+          normalizeText(b.description),
+          "pt-BR"
+        );
+
+        if (descriptionCompare !== 0) return descriptionCompare;
+
         const dateA = a.competence_date ? new Date(a.competence_date).getTime() : 0;
         const dateB = b.competence_date ? new Date(b.competence_date).getTime() : 0;
 
-        if (dateA !== dateB) return dateB - dateA;
-
-        return Math.abs(Number(b.amount || 0)) - Math.abs(Number(a.amount || 0));
+        return dateB - dateA;
       });
     },
     enabled: open,
