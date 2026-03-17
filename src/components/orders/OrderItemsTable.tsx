@@ -486,11 +486,6 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="_placeholder" disabled>Selecione</SelectItem>
-                    {clientName && !PROJETOS.some(p => p.label === clientName) && (
-                      <SelectItem value="_create_new" className="text-primary font-medium">
-                        ➕ Criar: {clientName}
-                      </SelectItem>
-                    )}
                     {PROJETOS.map((p) => (
                       <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
                     ))}
