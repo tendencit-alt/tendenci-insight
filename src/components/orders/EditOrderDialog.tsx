@@ -445,6 +445,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
         cfop: i.cfop || undefined,
         unidade: i.unidade || undefined,
         centro_custo: (i as any).centro_custo || undefined,
+        project_id: (i as any).project_id || undefined,
       })));
     }
   }, [orderItems]);
