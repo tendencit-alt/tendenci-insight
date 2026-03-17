@@ -570,6 +570,9 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
           comissao_projetista_percentual: comissoes.projetista.habilitado ? comissoes.projetista.percentual : 0,
           comissao_projetista_valor: comissoes.projetista.habilitado ? comissoes.projetista.valor : 0,
           comissao_projetista_responsavel_id: comissoes.projetista.responsavel_id || null,
+          comissao_montador_percentual: comissoes.montador.habilitado ? comissoes.montador.percentual : 0,
+          comissao_montador_valor: comissoes.montador.habilitado ? comissoes.montador.valor : 0,
+          comissao_montador_responsavel_id: comissoes.montador.responsavel_id || null,
         })
         .select()
         .single();
