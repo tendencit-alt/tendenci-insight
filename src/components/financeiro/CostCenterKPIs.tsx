@@ -64,14 +64,12 @@ export function CostCenterKPIs({ filters }: CostCenterKPIsProps) {
         .eq("active", true)
         .order("code");
 
-      // Get ledger entries grouped by cost center
+      // Get ledger entries grouped by cost center - include entries without cash_date using competence_date
       const { data: entries } = await supabase
         .from("fin_ledger_entries")
         .select("cost_center_id, type, amount")
         .neq("status", "CANCELADO")
-        .gte("cash_date", dateFrom)
-        .lte("cash_date", dateTo)
-        .not("cash_date", "is", null);
+        .or(`and(cash_date.gte.${dateFrom},cash_date.lte.${dateTo}),and(cash_date.is.null,competence_date.gte.${dateFrom},competence_date.lte.${dateTo})`);
 
       // Get financial goals for cost centers
       const { data: goals } = await supabase
