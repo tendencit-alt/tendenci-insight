@@ -320,6 +320,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
     vendedor: { habilitado: false, percentual: 3, valor: 0, responsavel_id: '' },
     orcamentista: { habilitado: false, percentual: 0.2, valor: 0, responsavel_id: '' },
     projetista: { habilitado: false, percentual: 0.2, valor: 0, responsavel_id: '' },
+    montador: { habilitado: false, percentual: 10, valor: 0, responsavel_id: '' },
   });
 
   const { data: order, refetch } = useQuery({
