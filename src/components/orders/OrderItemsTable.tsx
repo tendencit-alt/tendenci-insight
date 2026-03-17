@@ -472,13 +472,7 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                 <Label className="text-xs">Projeto *</Label>
                 <Select
                   value={newItem.project_id || "_placeholder"}
-                  onValueChange={(v) => {
-                    if (v === "_create_new") {
-                      handleCreateProjectForClient();
-                    } else {
-                      setNewItem({ ...newItem, project_id: v === "_placeholder" ? "" : v });
-                    }
-                  }}
+                  onValueChange={(v) => setNewItem({ ...newItem, project_id: v === "_placeholder" ? "" : v })}
                   disabled={creatingProject}
                 >
                   <SelectTrigger className={!newItem.project_id ? 'border-destructive/50' : ''}>
