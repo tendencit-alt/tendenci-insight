@@ -447,10 +447,10 @@ export function FinProjectsManager() {
                     </TableRow>
                   );
                 })}
-                {activeProjects.length === 0 && (
+                {filteredProjects.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
-                      Nenhum projeto ativo
+                      Nenhum projeto {statusFilter === "ativo" ? "ativo" : statusFilter === "concluido" ? "finalizado" : ""} encontrado
                     </TableCell>
                   </TableRow>
                 )}
