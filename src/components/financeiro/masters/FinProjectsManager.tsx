@@ -328,10 +328,22 @@ export function FinProjectsManager() {
       {/* Projects Table */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-base font-medium flex items-center gap-2">
-            <FolderKanban className="h-5 w-5" />
-            Projetos Ativos - Orçamento vs Realizado
-          </CardTitle>
+          <div className="flex items-center gap-4">
+            <CardTitle className="text-base font-medium flex items-center gap-2">
+              <FolderKanban className="h-5 w-5" />
+              Projetos - Orçamento vs Realizado
+            </CardTitle>
+            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as "ativo" | "concluido" | "todos")}>
+              <SelectTrigger className="w-[160px] h-8">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ativo">Ativos</SelectItem>
+                <SelectItem value="concluido">Finalizados</SelectItem>
+                <SelectItem value="todos">Todos</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <Button onClick={handleNew} size="sm" className="gap-2">
             <Plus className="h-4 w-4" />
             Novo Projeto
