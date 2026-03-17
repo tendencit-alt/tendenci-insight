@@ -3919,6 +3919,9 @@ export type Database = {
           carencia_boleto: number | null
           centro_custo: string | null
           client_id: string | null
+          comissao_montador_percentual: number | null
+          comissao_montador_responsavel_id: string | null
+          comissao_montador_valor: number | null
           comissao_orcamentista_percentual: number | null
           comissao_orcamentista_responsavel_id: string | null
           comissao_orcamentista_valor: number | null
@@ -3986,6 +3989,9 @@ export type Database = {
           carencia_boleto?: number | null
           centro_custo?: string | null
           client_id?: string | null
+          comissao_montador_percentual?: number | null
+          comissao_montador_responsavel_id?: string | null
+          comissao_montador_valor?: number | null
           comissao_orcamentista_percentual?: number | null
           comissao_orcamentista_responsavel_id?: string | null
           comissao_orcamentista_valor?: number | null
@@ -4053,6 +4059,9 @@ export type Database = {
           carencia_boleto?: number | null
           centro_custo?: string | null
           client_id?: string | null
+          comissao_montador_percentual?: number | null
+          comissao_montador_responsavel_id?: string | null
+          comissao_montador_valor?: number | null
           comissao_orcamentista_percentual?: number | null
           comissao_orcamentista_responsavel_id?: string | null
           comissao_orcamentista_valor?: number | null
@@ -4134,6 +4143,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_comissao_montador_responsavel_id_fkey"
+            columns: ["comissao_montador_responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
