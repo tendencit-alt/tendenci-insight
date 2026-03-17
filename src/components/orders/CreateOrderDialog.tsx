@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
 import { OrderItemsTable } from './OrderItemsTable';
+import { useProjects } from '@/hooks/useProjects';
 
 import { CreateClientDialog } from '@/components/crm/CreateClientDialog';
 import { CreateWonDealDialog } from './CreateWonDealDialog';
@@ -95,10 +96,13 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     carencia_boleto?: 30 | 60;
   }
 
+  const { projects } = useProjects();
+
   const [formData, setFormData] = useState({
     client_id: clientId || '',
     deal_id: dealId || '',
     architect_id: '',
+    project_id: '',
     observacao_pagamento: '',
     data_entrega_prevista: '',
     tipo_entrega: '',
@@ -456,7 +460,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
   // Validações por etapa
   const isClienteValid = !!formData.client_id;
   const allItemsHaveCentroCusto = items.length > 0 && items.every(item => !!item.centro_custo);
-  const isItensValid = items.length > 0 && allItemsHaveCentroCusto;
+  const isItensValid = items.length > 0 && allItemsHaveCentroCusto && !!formData.project_id;
   const totalPercentual = parcelas.reduce((sum, p) => sum + p.percentual, 0);
   
   // Validação rigorosa: valor das formas de pagamento deve ser igual ao total
@@ -483,6 +487,10 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
       }
       if (!allItemsHaveCentroCusto) {
         toast.error('Todos os itens precisam ter um centro de custo definido');
+        return;
+      }
+      if (!formData.project_id) {
+        toast.error('Selecione o projeto do pedido');
         return;
       }
       setActiveTab('pagamento');
@@ -544,6 +552,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
           subtotal,
           valor_total: total,
           centro_custo: null, // centro_custo agora é por item
+          project_id: formData.project_id || null,
           status: 'rascunho',
           // Campos de taxa de cartão
           taxa_cartao_percentual: taxaCartao.percentual,
@@ -815,6 +824,24 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
 
             <TabsContent value="itens" className="space-y-4">
               <OrderItemsTable items={items} onItemsChange={setItems} showFiscalFields={true} requireCentroCusto={true} />
+
+              <div className="space-y-1">
+                <Label className="text-xs font-medium">Projeto *</Label>
+                <Select
+                  value={formData.project_id || "_placeholder"}
+                  onValueChange={(v) => setFormData({ ...formData, project_id: v === "_placeholder" ? "" : v })}
+                >
+                  <SelectTrigger className={!formData.project_id ? 'border-destructive/50' : ''}>
+                    <SelectValue placeholder="Selecione o projeto" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_placeholder" disabled>Selecione o projeto</SelectItem>
+                    {projects.map((p) => (
+                      <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
               <div className="flex justify-end">
                 <div className="w-64 space-y-2 text-sm">

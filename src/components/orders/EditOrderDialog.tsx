@@ -16,6 +16,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
 import { OrderItemsTable } from './OrderItemsTable';
+import { useProjects } from '@/hooks/useProjects';
 import { AddressForm } from './AddressForm';
 import { User, Calendar, Trash2 } from 'lucide-react';
 import { Loader2, AlertTriangle, Plus, Search } from 'lucide-react';
@@ -150,10 +151,13 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
   const [activeTab, setActiveTab] = useState('cliente');
   const [loadingCep, setLoadingCep] = useState(false);
   
+  const { projects } = useProjects();
+
   const [formData, setFormData] = useState({
     client_id: '',
     deal_id: '',
     architect_id: '',
+    project_id: '',
     observacao_pagamento: '',
     data_entrega_prevista: '',
     tipo_entrega: '',
@@ -384,6 +388,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
         client_id: order.client_id || '',
         deal_id: order.deal_id || '',
         architect_id: order.architect_id || '',
+        project_id: (order as any).project_id || '',
         observacao_pagamento: typeof order.observacao_pagamento === 'string' && !order.observacao_pagamento.startsWith('[') 
           ? order.observacao_pagamento : '',
         data_entrega_prevista: order.data_entrega_prevista?.split('T')[0] || '',
@@ -788,6 +793,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
           subtotal,
           valor_total: total,
           centro_custo: null, // centro_custo agora é por item
+          project_id: formData.project_id || null,
           status: newStatus,
           // Campos de taxa de cartão
           taxa_cartao_percentual: taxaCartao.percentual,
@@ -1353,6 +1359,25 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
 
           <TabsContent value="itens" className="space-y-4">
             <OrderItemsTable items={items} onItemsChange={setItems} readOnly={!isEditable} showFiscalFields requireCentroCusto={true} />
+
+            <div className="space-y-1">
+              <Label className="text-xs font-medium">Projeto *</Label>
+              <Select
+                value={formData.project_id || "_placeholder"}
+                onValueChange={(v) => setFormData({ ...formData, project_id: v === "_placeholder" ? "" : v })}
+                disabled={!isEditable}
+              >
+                <SelectTrigger className={!formData.project_id ? 'border-destructive/50' : ''}>
+                  <SelectValue placeholder="Selecione o projeto" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_placeholder" disabled>Selecione o projeto</SelectItem>
+                  {projects.map((p) => (
+                    <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
             <div className="flex justify-end">
               <div className="w-80 space-y-2 text-sm">
