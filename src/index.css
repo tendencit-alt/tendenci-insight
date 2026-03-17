@@ -47,9 +47,9 @@ All colors MUST be HSL.
     --warning-light: 38 80% 92%;
 
     /* Destructive - Red */
-    --destructive: 0 72% 55%;
+    --destructive: 0 75% 52%;
     --destructive-foreground: 0 0% 100%;
-    --destructive-light: 0 60% 92%;
+    --destructive-light: 0 65% 93%;
 
     /* Chart colors */
     --chart-1: 220 10% 28%;
