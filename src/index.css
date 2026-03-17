@@ -18,10 +18,10 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 220 15% 20%;
 
-    /* Primary - Graphite */
-    --primary: 220 10% 28%;
+    /* Primary - Rich Graphite */
+    --primary: 220 12% 24%;
     --primary-foreground: 0 0% 100%;
-    --primary-light: 220 10% 38%;
+    --primary-light: 220 12% 34%;
     --primary-dark: 220 10% 18%;
 
     /* Accent - Soft Gray */
