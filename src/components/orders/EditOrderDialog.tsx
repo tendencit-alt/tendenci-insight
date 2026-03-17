@@ -649,7 +649,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
   const valorLiquidoRecursos = valorLiquidoTendenci - totalComissoes;
 
   // Função para atualizar comissão por percentual (recalcula valor)
-  const atualizarComissaoPercentual = (tipo: 'rt' | 'vendedor' | 'orcamentista' | 'projetista', novoPercentual: number) => {
+  const atualizarComissaoPercentual = (tipo: 'rt' | 'vendedor' | 'orcamentista' | 'projetista' | 'montador', novoPercentual: number) => {
     const percentualSeguro = isNaN(novoPercentual) ? 0 : Math.max(0, Math.min(100, novoPercentual));
     const novoValor = total * (percentualSeguro / 100);
     setComissoes(prev => ({
@@ -665,6 +665,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
       vendedor: { ...prev.vendedor, valor: total * (prev.vendedor.percentual / 100) },
       orcamentista: { ...prev.orcamentista, valor: total * (prev.orcamentista.percentual / 100) },
       projetista: { ...prev.projetista, valor: total * (prev.projetista.percentual / 100) },
+      montador: { ...prev.montador, valor: total * (prev.montador.percentual / 100) },
     }));
   }, [total]);
 
