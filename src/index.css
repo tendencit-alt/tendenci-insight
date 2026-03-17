@@ -9,35 +9,35 @@ All colors MUST be HSL.
 @layer base {
   :root {
     /* Light Mode - Clean White & Graphite */
-    --background: 0 0% 100%;
-    --foreground: 220 15% 20%;
+    --background: 0 0% 98%;
+    --foreground: 220 15% 15%;
 
-    --card: 220 10% 22%;
-    --card-foreground: 0 0% 96%;
+    --card: 220 8% 18%;
+    --card-foreground: 0 0% 98%;
 
     --popover: 0 0% 100%;
     --popover-foreground: 220 15% 20%;
 
-    /* Primary - Graphite */
-    --primary: 220 10% 28%;
+    /* Primary - Rich Graphite */
+    --primary: 220 12% 24%;
     --primary-foreground: 0 0% 100%;
-    --primary-light: 220 10% 38%;
-    --primary-dark: 220 10% 18%;
+    --primary-light: 220 12% 34%;
+    --primary-dark: 220 12% 14%;
 
     /* Accent - Soft Gray */
-    --accent: 220 8% 92%;
-    --accent-foreground: 220 10% 20%;
+    --accent: 220 6% 94%;
+    --accent-foreground: 220 12% 18%;
 
     /* Secondary - Mid Graphite */
-    --secondary: 220 8% 35%;
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 220 8% 30%;
+    --secondary-foreground: 0 0% 98%;
 
     /* Muted areas */
-    --muted: 220 10% 96%;
-    --muted-foreground: 220 8% 50%;
+    --muted: 220 8% 94%;
+    --muted-foreground: 220 8% 45%;
 
     /* Success - Green */
-    --success: 152 60% 42%;
+    --success: 152 65% 38%;
     --success-foreground: 0 0% 100%;
     --success-light: 152 50% 92%;
 
@@ -47,48 +47,48 @@ All colors MUST be HSL.
     --warning-light: 38 80% 92%;
 
     /* Destructive - Red */
-    --destructive: 0 72% 55%;
+    --destructive: 0 75% 52%;
     --destructive-foreground: 0 0% 100%;
-    --destructive-light: 0 60% 92%;
+    --destructive-light: 0 65% 93%;
 
     /* Chart colors */
-    --chart-1: 220 10% 28%;
-    --chart-2: 220 10% 45%;
-    --chart-3: 220 10% 62%;
-    --chart-4: 200 12% 52%;
-    --chart-5: 180 10% 42%;
+    --chart-1: 220 12% 24%;
+    --chart-2: 200 15% 42%;
+    --chart-3: 180 12% 55%;
+    --chart-4: 152 40% 45%;
+    --chart-5: 38 70% 50%;
 
     /* Borders and inputs */
-    --border: 220 10% 88%;
-    --input: 220 10% 88%;
-    --ring: 220 10% 28%;
+    --border: 220 8% 85%;
+    --input: 220 8% 90%;
+    --ring: 220 12% 24%;
 
     --radius: 0.75rem;
 
-    /* Sidebar - Dark Graphite */
-    --sidebar-background: 220 12% 12%;
-    --sidebar-foreground: 0 0% 96%;
-    --sidebar-primary: 220 10% 28%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 12% 18%;
-    --sidebar-accent-foreground: 0 0% 96%;
-    --sidebar-border: 220 12% 16%;
-    --sidebar-ring: 220 10% 28%;
+    /* Sidebar - Deep Graphite */
+    --sidebar-background: 220 12% 10%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 0 0% 98%;
+    --sidebar-primary-foreground: 220 12% 10%;
+    --sidebar-accent: 220 12% 16%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 220 10% 14%;
+    --sidebar-ring: 220 12% 24%;
 
     /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(220 10% 28%), hsl(220 10% 18%));
-    --gradient-success: linear-gradient(135deg, hsl(152 60% 42%), hsl(152 60% 52%));
+    --gradient-primary: linear-gradient(135deg, hsl(220 12% 24%), hsl(220 12% 14%));
+    --gradient-success: linear-gradient(135deg, hsl(152 65% 38%), hsl(152 65% 48%));
     --gradient-warning: linear-gradient(135deg, hsl(38 92% 50%), hsl(38 92% 60%));
-    --gradient-dark: linear-gradient(180deg, hsl(220 12% 12%), hsl(220 12% 8%));
-    --gradient-glass: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03));
+    --gradient-dark: linear-gradient(180deg, hsl(220 12% 10%), hsl(220 12% 6%));
+    --gradient-glass: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04));
 
     /* Premium Shadows */
-    --shadow-sm: 0 1px 3px 0 hsl(220 10% 20% / 0.06);
-    --shadow-md: 0 4px 8px -1px hsl(220 10% 20% / 0.1), 0 2px 4px -2px hsl(220 10% 20% / 0.06);
-    --shadow-lg: 0 12px 24px -4px hsl(220 10% 20% / 0.12), 0 4px 8px -4px hsl(220 10% 20% / 0.08);
-    --shadow-card: 0 4px 16px hsl(220 10% 20% / 0.1);
-    --shadow-hover: 0 8px 24px hsl(220 10% 20% / 0.16), 0 4px 8px hsl(220 10% 20% / 0.08);
-    --shadow-glow: 0 0 20px hsl(220 10% 28% / 0.25);
+    --shadow-sm: 0 1px 3px 0 hsl(220 12% 15% / 0.08);
+    --shadow-md: 0 4px 10px -2px hsl(220 12% 15% / 0.12), 0 2px 4px -2px hsl(220 12% 15% / 0.08);
+    --shadow-lg: 0 14px 28px -6px hsl(220 12% 15% / 0.14), 0 6px 10px -4px hsl(220 12% 15% / 0.08);
+    --shadow-card: 0 6px 20px hsl(220 12% 15% / 0.12);
+    --shadow-hover: 0 10px 28px hsl(220 12% 15% / 0.18), 0 6px 10px hsl(220 12% 15% / 0.1);
+    --shadow-glow: 0 0 24px hsl(220 12% 24% / 0.3);
 
     /* Transitions */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
