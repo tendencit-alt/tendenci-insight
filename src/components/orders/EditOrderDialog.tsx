@@ -1360,6 +1360,25 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
           <TabsContent value="itens" className="space-y-4">
             <OrderItemsTable items={items} onItemsChange={setItems} readOnly={!isEditable} showFiscalFields requireCentroCusto={true} />
 
+            <div className="space-y-1">
+              <Label className="text-xs font-medium">Projeto *</Label>
+              <Select
+                value={formData.project_id || "_placeholder"}
+                onValueChange={(v) => setFormData({ ...formData, project_id: v === "_placeholder" ? "" : v })}
+                disabled={!isEditable}
+              >
+                <SelectTrigger className={!formData.project_id ? 'border-destructive/50' : ''}>
+                  <SelectValue placeholder="Selecione o projeto" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_placeholder" disabled>Selecione o projeto</SelectItem>
+                  {projects.map((p) => (
+                    <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="flex justify-end">
               <div className="w-80 space-y-2 text-sm">
                 <div className="flex justify-between">
