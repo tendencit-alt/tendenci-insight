@@ -552,6 +552,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
           subtotal,
           valor_total: total,
           centro_custo: null, // centro_custo agora é por item
+          project_id: formData.project_id || null,
           status: 'rascunho',
           // Campos de taxa de cartão
           taxa_cartao_percentual: taxaCartao.percentual,
