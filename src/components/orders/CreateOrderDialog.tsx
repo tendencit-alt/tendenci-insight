@@ -449,6 +449,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
       vendedor: { ...prev.vendedor, valor: total * (prev.vendedor.percentual / 100) },
       orcamentista: { ...prev.orcamentista, valor: total * (prev.orcamentista.percentual / 100) },
       projetista: { ...prev.projetista, valor: total * (prev.projetista.percentual / 100) },
+      montador: { ...prev.montador, valor: total * (prev.montador.percentual / 100) },
     }));
   }, [total]);
 
