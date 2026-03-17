@@ -14,6 +14,7 @@ import { Plus, Trash2, Edit2, Check, ChevronDown, ChevronUp, Package, X, Search,
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useCostCenters } from '@/hooks/useCostCenters';
+import { useProjects } from '@/hooks/useProjects';
 
 export interface OrderItem {
   id: string;
@@ -27,6 +28,7 @@ export interface OrderItem {
   cfop?: string;
   unidade?: string;
   centro_custo?: string;
+  project_id?: string;
 }
 
 interface OrderItemsTableProps {
@@ -61,10 +63,12 @@ const emptyItem = {
   unidade: 'UN',
   especificacoes: '',
   centro_custo: '',
+  project_id: '',
 };
 
 export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFiscalFields = false, requireCentroCusto = false }: OrderItemsTableProps) {
   const { costCenters: CENTROS_CUSTO } = useCostCenters();
+  const { projects: PROJETOS } = useProjects();
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -164,6 +168,7 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
   const handleAddItem = () => {
     if (!newItem.descricao || !newItem.valor_unitario) return;
     if (requireCentroCusto && !newItem.centro_custo) return;
+    if (requireCentroCusto && !newItem.project_id) return;
 
     const item: OrderItem = {
       id: crypto.randomUUID(),
@@ -177,6 +182,7 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
       cfop: newItem.cfop,
       unidade: newItem.unidade || 'UN',
       centro_custo: newItem.centro_custo,
+      project_id: newItem.project_id,
     };
 
     onItemsChange([...items, item]);
@@ -417,6 +423,26 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
               </div>
             )}
 
+            {requireCentroCusto && (
+              <div className="space-y-1">
+                <Label className="text-xs">Projeto *</Label>
+                <Select
+                  value={newItem.project_id || "_placeholder"}
+                  onValueChange={(v) => setNewItem({ ...newItem, project_id: v === "_placeholder" ? "" : v })}
+                >
+                  <SelectTrigger className={!newItem.project_id ? 'border-destructive/50' : ''}>
+                    <SelectValue placeholder="Selecione o projeto" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_placeholder" disabled>Selecione</SelectItem>
+                    {PROJETOS.map((p) => (
+                      <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
             <div className="space-y-1">
               <Label className="text-xs">Especificações / Observações</Label>
               <Textarea
@@ -431,7 +457,7 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
               <Button variant="outline" onClick={() => { setIsAddingItem(false); setNewItem(emptyItem); }}>
                 Cancelar
               </Button>
-              <Button onClick={handleAddItem} disabled={!newItem.descricao || !newItem.valor_unitario || (requireCentroCusto && !newItem.centro_custo)}>
+              <Button onClick={handleAddItem} disabled={!newItem.descricao || !newItem.valor_unitario || (requireCentroCusto && !newItem.centro_custo) || (requireCentroCusto && !newItem.project_id)}>
                 <Plus className="h-4 w-4 mr-1" />
                 Adicionar Item
               </Button>

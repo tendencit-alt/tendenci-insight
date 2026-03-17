@@ -3850,6 +3850,7 @@ export type Database = {
           order_id: string | null
           position: number | null
           production_order_id: string | null
+          project_id: string | null
           quantidade: number
           unidade: string | null
           valor_total: number
@@ -3870,6 +3871,7 @@ export type Database = {
           order_id?: string | null
           position?: number | null
           production_order_id?: string | null
+          project_id?: string | null
           quantidade?: number
           unidade?: string | null
           valor_total?: number
@@ -3890,6 +3892,7 @@ export type Database = {
           order_id?: string | null
           position?: number | null
           production_order_id?: string | null
+          project_id?: string | null
           quantidade?: number
           unidade?: string | null
           valor_total?: number
@@ -3908,6 +3911,13 @@ export type Database = {
             columns: ["production_order_id"]
             isOneToOne: false
             referencedRelation: "production_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "fin_projects"
             referencedColumns: ["id"]
           },
         ]

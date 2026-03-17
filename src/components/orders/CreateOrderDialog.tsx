@@ -41,6 +41,7 @@ interface OrderItem {
   cfop?: string;
   unidade?: string;
   centro_custo?: string;
+  project_id?: string;
 }
 
 const FORMAS_PAGAMENTO = [
@@ -460,7 +461,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
   // Validações por etapa
   const isClienteValid = !!formData.client_id;
   const allItemsHaveCentroCusto = items.length > 0 && items.every(item => !!item.centro_custo);
-  const isItensValid = items.length > 0 && allItemsHaveCentroCusto && !!formData.project_id;
+  const isItensValid = items.length > 0 && allItemsHaveCentroCusto;
   const totalPercentual = parcelas.reduce((sum, p) => sum + p.percentual, 0);
   
   // Validação rigorosa: valor das formas de pagamento deve ser igual ao total
@@ -487,10 +488,6 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
       }
       if (!allItemsHaveCentroCusto) {
         toast.error('Todos os itens precisam ter um centro de custo definido');
-        return;
-      }
-      if (!formData.project_id) {
-        toast.error('Selecione o projeto do pedido');
         return;
       }
       setActiveTab('pagamento');
@@ -601,6 +598,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
         cfop: item.cfop || null,
         unidade: item.unidade || 'UN',
         centro_custo: item.centro_custo || null,
+        project_id: item.project_id || null,
         position: index,
       }));
 
@@ -825,23 +823,8 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
             <TabsContent value="itens" className="space-y-4">
               <OrderItemsTable items={items} onItemsChange={setItems} showFiscalFields={true} requireCentroCusto={true} />
 
-              <div className="space-y-1">
-                <Label className="text-xs font-medium">Projeto *</Label>
-                <Select
-                  value={formData.project_id || "_placeholder"}
-                  onValueChange={(v) => setFormData({ ...formData, project_id: v === "_placeholder" ? "" : v })}
-                >
-                  <SelectTrigger className={!formData.project_id ? 'border-destructive/50' : ''}>
-                    <SelectValue placeholder="Selecione o projeto" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="_placeholder" disabled>Selecione o projeto</SelectItem>
-                    {projects.map((p) => (
-                      <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+
+
 
               <div className="flex justify-end">
                 <div className="w-64 space-y-2 text-sm">
