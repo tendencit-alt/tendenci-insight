@@ -67,10 +67,11 @@ export function useGlobalRealtime() {
   }, [invalidateByKeys]);
 
   const onFinanceiroChange = useCallback(() => {
-    console.log("[GlobalRT] Financeiro changed → invalidating financeiro, BI");
+    console.log("[GlobalRT] Financeiro changed → invalidating financeiro, BI, cost-centers");
     invalidateByKeys([
       "fin-", "financeiro",
       "bi-", "dashboard",
+      "fin-cost-centers-active",
     ]);
   }, [invalidateByKeys]);
 
