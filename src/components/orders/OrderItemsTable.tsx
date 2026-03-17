@@ -51,6 +51,18 @@ interface ProdutoEstoque {
   } | null;
 }
 
+const emptyItem = {
+  descricao: '',
+  quantidade: 1,
+  valor_unitario: 0,
+  codigo_produto: '',
+  ncm: '',
+  cfop: '',
+  unidade: 'UN',
+  especificacoes: '',
+  centro_custo: '',
+};
+
 export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFiscalFields = false, requireCentroCusto = false }: OrderItemsTableProps) {
   const { costCenters: CENTROS_CUSTO } = useCostCenters();
 
