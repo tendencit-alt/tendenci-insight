@@ -1361,7 +1361,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
           </TabsContent>
 
           <TabsContent value="itens" className="space-y-4">
-            <OrderItemsTable items={items} onItemsChange={setItems} readOnly={!isEditable} showFiscalFields requireCentroCusto={true} />
+            <OrderItemsTable items={items} onItemsChange={setItems} readOnly={!isEditable} showFiscalFields requireCentroCusto={true} clientName={selectedClient?.name} />
 
 
 
