@@ -182,7 +182,7 @@ export function FinanceiroFilters({ filters, onChange }: FinanceiroFiltersProps)
   };
 
   return (
-    <Card className="bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 [&_button]:text-card-foreground [&_select]:text-card-foreground [&_.text-muted-foreground]:text-card-foreground/60 [&_input]:text-foreground [&_input]:bg-background [&_[role=combobox]]:bg-background [&_[role=combobox]]:text-foreground">
+    <Card className="bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
       <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
         <div className="flex items-center justify-between p-3 border-b">
           <div className="flex items-center gap-2">
