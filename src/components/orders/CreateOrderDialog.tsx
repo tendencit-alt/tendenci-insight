@@ -825,23 +825,8 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
             <TabsContent value="itens" className="space-y-4">
               <OrderItemsTable items={items} onItemsChange={setItems} showFiscalFields={true} requireCentroCusto={true} />
 
-              <div className="space-y-1">
-                <Label className="text-xs font-medium">Projeto *</Label>
-                <Select
-                  value={formData.project_id || "_placeholder"}
-                  onValueChange={(v) => setFormData({ ...formData, project_id: v === "_placeholder" ? "" : v })}
-                >
-                  <SelectTrigger className={!formData.project_id ? 'border-destructive/50' : ''}>
-                    <SelectValue placeholder="Selecione o projeto" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="_placeholder" disabled>Selecione o projeto</SelectItem>
-                    {projects.map((p) => (
-                      <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+
+
 
               <div className="flex justify-end">
                 <div className="w-64 space-y-2 text-sm">
