@@ -74,7 +74,8 @@ export function DashboardBI({ filters }: DashboardBIProps) {
       const dateFrom = format(filters.dateFrom, "yyyy-MM-dd");
       const dateTo = format(filters.dateTo, "yyyy-MM-dd");
 
-      // Build ledger entries query
+      // Build ledger entries query - use competence_date as fallback when cash_date is null
+      // This ensures entries from orders (which have no cash_date yet) still appear
       let entriesQuery = supabase
         .from("fin_ledger_entries")
         .select(`
@@ -83,13 +84,11 @@ export function DashboardBI({ filters }: DashboardBIProps) {
           chart_account:fin_chart_accounts(id, code, name, nature)
         `)
         .neq("status", "CANCELADO")
-        .gte("cash_date", dateFrom)
-        .lte("cash_date", dateTo)
-        .not("cash_date", "is", null);
+        .or(`and(cash_date.gte.${dateFrom},cash_date.lte.${dateTo}),and(cash_date.is.null,competence_date.gte.${dateFrom},competence_date.lte.${dateTo})`);
 
       // Apply sorting from global filters
       if (filters.sortField === "date") {
-        entriesQuery = entriesQuery.order("cash_date", { ascending: filters.sortDirection === "asc" });
+        entriesQuery = entriesQuery.order("competence_date", { ascending: filters.sortDirection === "asc" });
       } else if (filters.sortField === "value") {
         entriesQuery = entriesQuery.order("amount", { ascending: filters.sortDirection === "asc" });
       }
