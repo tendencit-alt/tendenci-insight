@@ -742,36 +742,6 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                 </div>
 
 
-                <div className="space-y-2">
-                  <Label>Negócio Vinculado</Label>
-                  <div className="flex gap-2">
-                    <Select
-                      value={formData.deal_id || "_none"}
-                      onValueChange={(v) => setFormData({ ...formData, deal_id: v === "_none" ? "" : v })}
-                    >
-                      <SelectTrigger className="flex-1">
-                        <SelectValue placeholder="-" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="_none">-</SelectItem>
-                        {deals?.map((deal) => (
-                          <SelectItem key={deal.id} value={deal.id}>
-                            {deal.title} {deal.value && `- ${formatCurrency(deal.value)}`}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      size="icon"
-                      onClick={() => setShowCreateDeal(true)}
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-
               </div>
 
               {selectedClient && (
