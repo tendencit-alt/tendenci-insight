@@ -598,6 +598,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
         cfop: item.cfop || null,
         unidade: item.unidade || 'UN',
         centro_custo: item.centro_custo || null,
+        project_id: item.project_id || null,
         position: index,
       }));
 

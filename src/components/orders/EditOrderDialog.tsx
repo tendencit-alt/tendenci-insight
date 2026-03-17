@@ -843,6 +843,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
         cfop: item.cfop,
         unidade: item.unidade,
         centro_custo: item.centro_custo || null,
+        project_id: item.project_id || null,
         position: index,
       }));
 
