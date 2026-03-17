@@ -147,7 +147,7 @@ export function ProjectKPIs() {
         .from("fin_ledger_entries")
         .select("project_id, amount, type, status")
         .not("project_id", "is", null)
-        .eq("status", "PAGO_RECEBIDO");
+        .neq("status", "CANCELADO");
       return data || [];
     },
   });
