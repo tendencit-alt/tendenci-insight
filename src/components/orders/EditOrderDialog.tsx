@@ -320,6 +320,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
     vendedor: { habilitado: false, percentual: 3, valor: 0, responsavel_id: '' },
     orcamentista: { habilitado: false, percentual: 0.2, valor: 0, responsavel_id: '' },
     projetista: { habilitado: false, percentual: 0.2, valor: 0, responsavel_id: '' },
+    montador: { habilitado: false, percentual: 10, valor: 0, responsavel_id: '' },
   });
 
   const { data: order, refetch } = useQuery({
@@ -495,6 +496,12 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
           valor: Number(orderAny.comissao_projetista_valor) || 0,
           responsavel_id: orderAny.comissao_projetista_responsavel_id || ''
         },
+        montador: {
+          habilitado: (orderAny.comissao_montador_valor || 0) > 0 || (orderAny.comissao_montador_percentual || 0) > 0,
+          percentual: Number(orderAny.comissao_montador_percentual) || 10,
+          valor: Number(orderAny.comissao_montador_valor) || 0,
+          responsavel_id: orderAny.comissao_montador_responsavel_id || ''
+        },
       });
     }
   }, [order]);
@@ -642,7 +649,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
   const valorLiquidoRecursos = valorLiquidoTendenci - totalComissoes;
 
   // Função para atualizar comissão por percentual (recalcula valor)
-  const atualizarComissaoPercentual = (tipo: 'rt' | 'vendedor' | 'orcamentista' | 'projetista', novoPercentual: number) => {
+  const atualizarComissaoPercentual = (tipo: 'rt' | 'vendedor' | 'orcamentista' | 'projetista' | 'montador', novoPercentual: number) => {
     const percentualSeguro = isNaN(novoPercentual) ? 0 : Math.max(0, Math.min(100, novoPercentual));
     const novoValor = total * (percentualSeguro / 100);
     setComissoes(prev => ({
@@ -658,6 +665,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
       vendedor: { ...prev.vendedor, valor: total * (prev.vendedor.percentual / 100) },
       orcamentista: { ...prev.orcamentista, valor: total * (prev.orcamentista.percentual / 100) },
       projetista: { ...prev.projetista, valor: total * (prev.projetista.percentual / 100) },
+      montador: { ...prev.montador, valor: total * (prev.montador.percentual / 100) },
     }));
   }, [total]);
 
@@ -826,6 +834,9 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
           comissao_projetista_percentual: comissoes.projetista.habilitado ? comissoes.projetista.percentual : 0,
           comissao_projetista_valor: comissoes.projetista.habilitado ? comissoes.projetista.valor : 0,
           comissao_projetista_responsavel_id: comissoes.projetista.responsavel_id || null,
+          comissao_montador_percentual: comissoes.montador.habilitado ? comissoes.montador.percentual : 0,
+          comissao_montador_valor: comissoes.montador.habilitado ? comissoes.montador.valor : 0,
+          comissao_montador_responsavel_id: comissoes.montador.responsavel_id || null,
           ...(isMaster && formData.data_emissao ? { data_emissao: new Date(formData.data_emissao).toISOString() } : {}),
           ...(isMaster && formData.vendedor_id ? { vendedor_id: formData.vendedor_id } : {}),
         })
@@ -1957,6 +1968,64 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                       </>
                     )}
                   </div>
+
+                  {/* Comissão Montador */}
+                  <div className="flex items-center gap-3">
+                    <Switch
+                      checked={comissoes.montador.habilitado}
+                      onCheckedChange={(checked) => setComissoes(prev => ({
+                        ...prev,
+                        montador: { ...prev.montador, habilitado: checked }
+                      }))}
+                      disabled={!isEditable}
+                    />
+                    <span className="text-sm font-medium w-28">Montador</span>
+                    {comissoes.montador.habilitado && (
+                      <>
+                        <div className="flex items-center gap-1">
+                          <Input
+                            type="number"
+                            className="h-8 w-20"
+                            value={comissoes.montador.percentual}
+                            onChange={(e) => atualizarComissaoPercentual('montador', Number(e.target.value))}
+                            min={0}
+                            max={100}
+                            step={0.1}
+                            disabled={!isEditable}
+                          />
+                          <Label className="text-xs text-muted-foreground">%</Label>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Label className="text-xs text-muted-foreground">R$</Label>
+                          <Input
+                            type="number"
+                            className="h-8 w-24 bg-muted"
+                            value={comissoes.montador.valor.toFixed(2)}
+                            readOnly
+                            disabled
+                          />
+                        </div>
+                        <Select
+                          value={comissoes.montador.responsavel_id || "_none"}
+                          onValueChange={(v) => setComissoes(prev => ({
+                            ...prev,
+                            montador: { ...prev.montador, responsavel_id: v === "_none" ? "" : v }
+                          }))}
+                          disabled={!isEditable}
+                        >
+                          <SelectTrigger className="h-8 w-40">
+                            <SelectValue placeholder="Responsável" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="_none">-</SelectItem>
+                            {vendedores?.map((v) => (
+                              <SelectItem key={v.id} value={v.id}>{v.full_name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </>
+                    )}
+                  </div>
                 </div>
               </Card>
 
@@ -2006,6 +2075,12 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                 <div className="flex items-center justify-between text-orange-600">
                   <span className="text-sm">Projetista ({comissoes.projetista.percentual.toFixed(2)}%):</span>
                   <span className="text-sm font-medium">- {formatCurrency(comissoes.projetista.valor)}</span>
+                </div>
+              )}
+              {comissoes.montador.habilitado && comissoes.montador.valor > 0 && (
+                <div className="flex items-center justify-between text-orange-600">
+                  <span className="text-sm">Montador ({comissoes.montador.percentual.toFixed(2)}%):</span>
+                  <span className="text-sm font-medium">- {formatCurrency(comissoes.montador.valor)}</span>
                 </div>
               )}
                 <div className="flex items-center justify-between border-t pt-2">
