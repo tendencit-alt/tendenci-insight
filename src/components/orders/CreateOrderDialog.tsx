@@ -434,8 +434,11 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     (comissoes.projetista.habilitado ? comissoes.projetista.valor : 0) +
     (comissoes.montador.habilitado ? comissoes.montador.valor : 0);
 
-  // Valor líquido Tendenci (deduz as taxas absorvidas e comissões)
-  const valorLiquidoTendenci = totalSemTaxa - taxaCartao.valor - taxaBoleto.valor - totalComissoes;
+  // Valor líquido Tendenci (deduz apenas as taxas de cartão e boleto)
+  const valorLiquidoTendenci = totalSemTaxa - taxaCartao.valor - taxaBoleto.valor;
+
+  // Valor líquido após recursos estratégicos (deduz taxas + comissões)
+  const valorLiquidoRecursos = valorLiquidoTendenci - totalComissoes;
 
   // Função para atualizar comissão por percentual (recalcula valor)
   const atualizarComissaoPercentual = (tipo: 'rt' | 'vendedor' | 'orcamentista' | 'projetista' | 'montador', novoPercentual: number) => {
