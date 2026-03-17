@@ -1,0 +1,1 @@
+ALTER TABLE public.orders ADD COLUMN project_id UUID REFERENCES public.fin_projects(id) ON DELETE SET NULL;

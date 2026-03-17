@@ -3964,6 +3964,7 @@ export type Database = {
           parcelas: number | null
           percentual_forma_1: number | null
           percentual_forma_2: number | null
+          project_id: string | null
           rt_habilitado: boolean | null
           rt_percentual: number | null
           rt_valor: number | null
@@ -4034,6 +4035,7 @@ export type Database = {
           parcelas?: number | null
           percentual_forma_1?: number | null
           percentual_forma_2?: number | null
+          project_id?: string | null
           rt_habilitado?: boolean | null
           rt_percentual?: number | null
           rt_valor?: number | null
@@ -4104,6 +4106,7 @@ export type Database = {
           parcelas?: number | null
           percentual_forma_1?: number | null
           percentual_forma_2?: number | null
+          project_id?: string | null
           rt_habilitado?: boolean | null
           rt_percentual?: number | null
           rt_valor?: number | null
@@ -4185,6 +4188,13 @@ export type Database = {
             columns: ["deal_id"]
             isOneToOne: false
             referencedRelation: "crm_deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "fin_projects"
             referencedColumns: ["id"]
           },
           {
