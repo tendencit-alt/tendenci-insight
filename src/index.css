@@ -29,8 +29,8 @@ All colors MUST be HSL.
     --accent-foreground: 220 12% 18%;
 
     /* Secondary - Mid Graphite */
-    --secondary: 220 8% 35%;
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 220 8% 30%;
+    --secondary-foreground: 0 0% 98%;
 
     /* Muted areas */
     --muted: 220 10% 96%;
