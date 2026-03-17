@@ -113,6 +113,8 @@ export function useGlobalRealtime() {
       .on("postgres_changes", { event: "*", schema: "public", table: "purchase_order_items" }, onPurchasesChange)
       // Cost Centers (propagate to all modules using cost centers)
       .on("postgres_changes", { event: "*", schema: "public", table: "fin_cost_centers" }, onFinanceiroChange)
+      // Financial Projects
+      .on("postgres_changes", { event: "*", schema: "public", table: "fin_projects" }, onFinanceiroChange)
       .subscribe((status, err) => {
         console.log("[GlobalRT] Channel status:", status);
         if (err) console.error("[GlobalRT] Error:", err);

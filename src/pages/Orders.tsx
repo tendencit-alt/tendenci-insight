@@ -39,7 +39,8 @@ export default function Orders() {
           client:clients(id, name, cpf_cnpj, phone),
           vendedor:profiles!orders_vendedor_id_fkey(id, full_name),
           architect:architects(id, name),
-          deal:crm_deals(id, title)
+          deal:crm_deals(id, title),
+          project:fin_projects(id, name)
         `)
         .order('created_at', { ascending: false });
 
