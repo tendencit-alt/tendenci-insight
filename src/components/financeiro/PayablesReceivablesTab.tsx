@@ -157,8 +157,7 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
           chart_account:fin_chart_accounts(name, code),
           bank_account:fin_bank_accounts(nickname)
         `)
-        .gte("due_date", dateFrom)
-        .lte("due_date", dateTo);
+        .or(`and(due_date.gte.${dateFrom},due_date.lte.${dateTo}),and(competence_date.gte.${dateFrom},competence_date.lte.${dateTo})`);
 
       // Apply sorting from global filters
       if (filters.sortField === "date") {
