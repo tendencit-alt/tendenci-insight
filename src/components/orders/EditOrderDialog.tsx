@@ -16,6 +16,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
 import { OrderItemsTable } from './OrderItemsTable';
+import { useProjects } from '@/hooks/useProjects';
 import { AddressForm } from './AddressForm';
 import { User, Calendar, Trash2 } from 'lucide-react';
 import { Loader2, AlertTriangle, Plus, Search } from 'lucide-react';
