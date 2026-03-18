@@ -267,7 +267,7 @@ export function ProjectKPIs() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {projects.map((project) => {
+                {visibleProjects.map((project) => {
                   const budget = Number(project.budget) || 0;
                   const executed = realizedByProject[project.id] || 0;
                   const available = budget - executed;
@@ -312,12 +312,12 @@ export function ProjectKPIs() {
                             onClick={() => handleCellClick(project.id, project.name, "available")}
                             className="flex items-center justify-end gap-2 hover:underline cursor-pointer transition-colors w-full"
                           >
-                            <span className={`font-medium ${isOverBudget ? 'text-red-600 hover:text-red-700' : 'text-green-600 hover:text-green-700'}`}>
+                            <span className={`font-medium ${isOverBudget ? 'text-destructive' : 'text-primary'}`}>
                               {formatCurrency(available)}
                             </span>
-                            {isOverBudget && <AlertTriangle className="h-4 w-4 text-red-600" />}
-                            {!isOverBudget && percent <= 80 && <CheckCircle2 className="h-4 w-4 text-green-600" />}
-                            {isNearLimit && <AlertTriangle className="h-4 w-4 text-yellow-600" />}
+                            {isOverBudget && <AlertTriangle className="h-4 w-4 text-destructive" />}
+                            {!isOverBudget && percent <= 80 && <CheckCircle2 className="h-4 w-4 text-primary" />}
+                            {isNearLimit && <AlertTriangle className="h-4 w-4 text-accent-foreground" />}
                           </button>
                         ) : "-"}
                       </TableCell>
@@ -342,16 +342,16 @@ export function ProjectKPIs() {
                               <div 
                                 className={`absolute inset-y-0 left-0 rounded-full transition-all ${
                                   isOverBudget 
-                                    ? 'bg-red-500' 
+                                    ? 'bg-destructive' 
                                     : isNearLimit 
-                                      ? 'bg-yellow-500' 
-                                      : 'bg-green-500'
+                                      ? 'bg-accent' 
+                                      : 'bg-primary'
                                 }`}
                                 style={{ width: `${Math.min(percent, 100)}%` }}
                               />
                               {isOverBudget && (
                                 <div 
-                                  className="absolute inset-y-0 right-0 bg-red-600/30 rounded-r-full"
+                                  className="absolute inset-y-0 right-0 bg-destructive/30 rounded-r-full"
                                   style={{ width: `${Math.min(percent - 100, 50)}%` }}
                                 />
                               )}
