@@ -200,12 +200,14 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
     orcamentistas: orcamentistasAll,
     projetistas: projetistasAll,
     montadores: montadoresAll,
+    producoes: producoesAll,
   } = useOrderResponsibles(open);
 
   const vendedores = vendedoresAll.filter((item) => item.is_active);
   const orcamentistas = orcamentistasAll.filter((item) => item.is_active);
   const projetistas = projetistasAll.filter((item) => item.is_active);
   const montadores = montadoresAll.filter((item) => item.is_active);
+  const producoes = producoesAll.filter((item) => item.is_active);
 
   const [parcelas, setParcelas] = useState<PagamentoParcela[]>([
     { id: '1', forma_pagamento: '', percentual: 100, data_vencimento: '', numero_parcelas: 1 }
@@ -306,6 +308,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
     orcamentista: { habilitado: false, percentual: 0.2, valor: 0, responsavel_id: '' },
     projetista: { habilitado: false, percentual: 0.2, valor: 0, responsavel_id: '' },
     montador: { habilitado: false, percentual: 10, valor: 0, responsavel_id: '' },
+    producao: { habilitado: false, percentual: 0.3, valor: 0, responsavel_id: '' },
   });
 
   const { data: order, refetch } = useQuery({
@@ -487,6 +490,12 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
           valor: Number(orderAny.comissao_montador_valor) || 0,
           responsavel_id: orderAny.comissao_montador_responsible_id || orderAny.comissao_montador_responsavel_id || orderAny.montador_responsible_id || ''
         },
+        producao: {
+          habilitado: (orderAny.comissao_producao_valor || 0) > 0 || (orderAny.comissao_producao_percentual || 0) > 0,
+          percentual: Number(orderAny.comissao_producao_percentual) || 0.3,
+          valor: Number(orderAny.comissao_producao_valor) || 0,
+          responsavel_id: orderAny.comissao_producao_responsible_id || orderAny.comissao_producao_responsavel_id || ''
+        },
       });
     }
   }, [order]);
@@ -625,7 +634,8 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
     (comissoes.vendedor.habilitado ? comissoes.vendedor.valor : 0) +
     (comissoes.orcamentista.habilitado ? comissoes.orcamentista.valor : 0) +
     (comissoes.projetista.habilitado ? comissoes.projetista.valor : 0) +
-    ((comissoes as any).montador?.habilitado ? (comissoes as any).montador.valor : 0);
+    (comissoes.montador.habilitado ? comissoes.montador.valor : 0) +
+    (comissoes.producao.habilitado ? comissoes.producao.valor : 0);
 
   // Valor líquido Tendenci (deduz apenas as taxas de cartão e boleto)
   const valorLiquidoTendenci = totalSemTaxa - taxaCartao.valor - taxaBoleto.valor;
@@ -634,7 +644,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
   const valorLiquidoRecursos = valorLiquidoTendenci - totalComissoes;
 
   // Função para atualizar comissão por percentual (recalcula valor)
-  const atualizarComissaoPercentual = (tipo: 'rt' | 'vendedor' | 'orcamentista' | 'projetista' | 'montador', novoPercentual: number) => {
+  const atualizarComissaoPercentual = (tipo: 'rt' | 'vendedor' | 'orcamentista' | 'projetista' | 'montador' | 'producao', novoPercentual: number) => {
     const percentualSeguro = isNaN(novoPercentual) ? 0 : Math.max(0, Math.min(100, novoPercentual));
     const novoValor = total * (percentualSeguro / 100);
     setComissoes(prev => ({
@@ -651,6 +661,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
       orcamentista: { ...prev.orcamentista, valor: total * (prev.orcamentista.percentual / 100) },
       projetista: { ...prev.projetista, valor: total * (prev.projetista.percentual / 100) },
       montador: { ...prev.montador, valor: total * (prev.montador.percentual / 100) },
+      producao: { ...prev.producao, valor: total * (prev.producao.percentual / 100) },
     }));
   }, [total]);
 
@@ -664,175 +675,6 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
   const isPagamentoValid = parcelas.length > 0 && parcelas.every(p => p.forma_pagamento) && totalPercentual === 100 && isPagamentoValorCorreto;
   
   const isEditable = order?.status === 'rascunho' || order?.status === 'ativo' || order?.status === 'aguardando_aprovacao';
-
-  // Busca automática de CEP
-  const handleCepSearch = async (cep: string) => {
-    const cleanCep = cep.replace(/\D/g, '');
-    if (cleanCep.length === 8) {
-      setLoadingCep(true);
-      try {
-        const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
-        const data = await response.json();
-        if (!data.erro) {
-          setClientData(prev => ({
-            ...prev,
-            logradouro: data.logradouro || prev.logradouro,
-            bairro: data.bairro || prev.bairro,
-            city: data.localidade || prev.city,
-            state: data.uf || prev.state
-          }));
-        }
-      } catch (error) {
-        console.error('Erro ao buscar CEP:', error);
-      } finally {
-        setLoadingCep(false);
-      }
-    }
-  };
-
-  const handleSubmit = async () => {
-    if (!isEditable) {
-      toast.error('Pedido não pode ser editado neste status');
-      return;
-    }
-
-    if (!clientData.name.trim()) {
-      toast.error('Nome do cliente é obrigatório');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      // 1. Salvar alterações do cliente primeiro
-      if (formData.client_id) {
-        const { error: clientError } = await supabase
-          .from('clients')
-          .update({
-            name: clientData.name,
-            phone: clientData.phone || null,
-            email: clientData.email || null,
-            cpf_cnpj: clientData.cpf_cnpj || null,
-            tipo_pessoa: clientData.tipo_pessoa || 'pf',
-            razao_social: clientData.razao_social || null,
-            nome_fantasia: clientData.nome_fantasia || null,
-            inscricao_estadual: clientData.inscricao_estadual || null,
-            inscricao_municipal: clientData.inscricao_municipal || null,
-            isento_ie: clientData.isento_ie,
-            contribuinte_icms: clientData.contribuinte_icms,
-            cep: clientData.cep || null,
-            logradouro: clientData.logradouro || null,
-            numero: clientData.numero || null,
-            complemento: clientData.complemento || null,
-            bairro: clientData.bairro || null,
-            city: clientData.city || null,
-            state: clientData.state || null,
-            telefone_fixo: clientData.telefone_fixo || null,
-            contato_financeiro: clientData.contato_financeiro || null,
-            email_financeiro: clientData.email_financeiro || null,
-            notes: clientData.notes || null
-          })
-          .eq('id', formData.client_id);
-
-        if (clientError) throw clientError;
-      }
-
-      // 2. Salvar pedido
-      const parcelasPrincipal = parcelas[0];
-      const parcelasSecundaria = parcelas.length > 1 ? parcelas[1] : null;
-
-      // Verificar se deve mudar status para 'ativo'
-      const allItemsHaveCentroCusto = items.length > 0 && items.every(i => i.centro_custo);
-      const hasPaymentMethod = !!parcelasPrincipal?.forma_pagamento;
-      const hasDeliveryType = !!formData.tipo_entrega;
-      const hasClient = !!formData.client_id;
-      
-      const shouldBeAtivo = order?.status === 'rascunho' && 
-        hasClient && 
-        items.length > 0 && 
-        allItemsHaveCentroCusto && 
-        hasPaymentMethod && 
-        hasDeliveryType;
-      
-      const newStatus = shouldBeAtivo ? 'ativo' : order?.status;
-
-      const { error: orderError } = await supabase
-        .from('orders')
-        .update({
-          client_id: formData.client_id,
-          deal_id: formData.deal_id || null,
-          architect_id: formData.architect_id || null,
-          forma_pagamento: parcelasPrincipal?.forma_pagamento || '',
-          forma_pagamento_2: parcelasSecundaria?.forma_pagamento || null,
-          percentual_forma_1: parcelasPrincipal?.percentual || 100,
-          percentual_forma_2: parcelasSecundaria?.percentual || 0,
-          data_primeiro_vencimento: parcelasPrincipal?.data_vencimento || null,
-          condicao_pagamento: null,
-          // Salvar parcelas em JSON se >2 formas OU se alguma tiver parcelamento
-          observacao_pagamento: (parcelas.length > 2 || parcelas.some(p => p.numero_parcelas > 1)) 
-            ? JSON.stringify(parcelas) 
-            : (formData.observacao_pagamento || null),
-          data_entrega_prevista: formData.data_entrega_prevista || null,
-          tipo_entrega: formData.tipo_entrega,
-          entrega_mesmo_endereco: formData.entrega_mesmo_endereco,
-          entrega_cep: formData.entrega_mesmo_endereco ? null : formData.entrega_cep,
-          entrega_logradouro: formData.entrega_mesmo_endereco ? null : formData.entrega_logradouro,
-          entrega_numero: formData.entrega_mesmo_endereco ? null : formData.entrega_numero,
-          entrega_complemento: formData.entrega_mesmo_endereco ? null : formData.entrega_complemento,
-          entrega_bairro: formData.entrega_mesmo_endereco ? null : formData.entrega_bairro,
-          entrega_cidade: formData.entrega_mesmo_endereco ? null : formData.entrega_cidade,
-          entrega_uf: formData.entrega_mesmo_endereco ? null : formData.entrega_uf,
-          entrega_observacoes: formData.observacoes,
-          observacoes_internas: formData.observacoes,
-          observacoes_nf: formData.observacoes,
-          desconto_percentual: formData.desconto_percentual,
-          desconto_valor: formData.desconto_valor,
-          valor_frete: formData.valor_frete,
-          transportadora_nome: formData.transportadora_nome,
-          transportadora_cnpj: formData.transportadora_cnpj,
-          subtotal,
-          valor_total: total,
-          centro_custo: null, // centro_custo agora é por item
-          project_id: formData.project_id || null,
-          status: newStatus,
-          // Campos de taxa de cartão
-          taxa_cartao_percentual: taxaCartao.percentual,
-          taxa_cartao_valor: taxaCartao.valor,
-          taxa_cartao_responsavel: taxaCartao.responsavel,
-          numero_parcelas_cartao: taxaCartao.numeroParcelas,
-          // Campos de taxa de boleto
-          taxa_boleto_percentual: taxaBoleto.percentual,
-          taxa_boleto_valor: taxaBoleto.valor,
-          taxa_boleto_responsavel: taxaBoleto.responsavel,
-          numero_parcelas_boleto: taxaBoleto.numeroParcelas,
-          carencia_boleto: taxaBoleto.carencia,
-          // Campos de RT (Repasse Técnico) - agora unificado com comissões
-          rt_habilitado: comissoes.rt.habilitado,
-          rt_percentual: comissoes.rt.habilitado ? comissoes.rt.percentual : 0,
-          rt_valor: comissoes.rt.habilitado ? comissoes.rt.valor : 0,
-          // Campos de Comissões
-          seller_responsible_id: comissoes.vendedor.responsavel_id || null,
-          comissao_vendedor_percentual: comissoes.vendedor.habilitado ? comissoes.vendedor.percentual : 0,
-          comissao_vendedor_valor: comissoes.vendedor.habilitado ? comissoes.vendedor.valor : 0,
-          comissao_vendedor_responsavel_id: comissoes.vendedor.responsavel_id || null,
-          comissao_vendedor_responsible_id: comissoes.vendedor.responsavel_id || null,
-          comissao_orcamentista_percentual: comissoes.orcamentista.habilitado ? comissoes.orcamentista.percentual : 0,
-          comissao_orcamentista_valor: comissoes.orcamentista.habilitado ? comissoes.orcamentista.valor : 0,
-          comissao_orcamentista_responsavel_id: comissoes.orcamentista.responsavel_id || null,
-          comissao_orcamentista_responsible_id: comissoes.orcamentista.responsavel_id || null,
-          comissao_projetista_percentual: comissoes.projetista.habilitado ? comissoes.projetista.percentual : 0,
-          comissao_projetista_valor: comissoes.projetista.habilitado ? comissoes.projetista.valor : 0,
-          comissao_projetista_responsavel_id: comissoes.projetista.responsavel_id || null,
-          comissao_projetista_responsible_id: comissoes.projetista.responsavel_id || null,
-          comissao_montador_percentual: comissoes.montador.habilitado ? comissoes.montador.percentual : 0,
-          comissao_montador_valor: comissoes.montador.habilitado ? comissoes.montador.valor : 0,
-          comissao_montador_responsavel_id: comissoes.montador.responsavel_id || null,
-          comissao_montador_responsible_id: comissoes.montador.responsavel_id || null,
-          ...(isMaster && formData.data_emissao ? { data_emissao: new Date(formData.data_emissao).toISOString() } : {}),
-          ...(isMaster && formData.vendedor_id ? { vendedor_id: formData.vendedor_id } : {}),
-        })
-        .eq('id', orderId);
-
-      if (orderError) throw orderError;
 
       // 3. Delete existing items and recreate
       await supabase.from('order_items').delete().eq('order_id', orderId);
@@ -2016,6 +1858,64 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                       </>
                     )}
                   </div>
+
+                  {/* Comissão Produção */}
+                  <div className="flex items-center gap-3">
+                    <Switch
+                      checked={comissoes.producao.habilitado}
+                      onCheckedChange={(checked) => setComissoes(prev => ({
+                        ...prev,
+                        producao: { ...prev.producao, habilitado: checked }
+                      }))}
+                      disabled={!isEditable}
+                    />
+                    <span className="text-sm font-medium w-28">Produção</span>
+                    {comissoes.producao.habilitado && (
+                      <>
+                        <div className="flex items-center gap-1">
+                          <Input
+                            type="number"
+                            className="h-8 w-20"
+                            value={comissoes.producao.percentual}
+                            onChange={(e) => atualizarComissaoPercentual('producao', Number(e.target.value))}
+                            min={0}
+                            max={100}
+                            step={0.1}
+                            disabled={!isEditable}
+                          />
+                          <Label className="text-xs text-muted-foreground">%</Label>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Label className="text-xs text-muted-foreground">R$</Label>
+                          <Input
+                            type="number"
+                            className="h-8 w-24 bg-muted"
+                            value={comissoes.producao.valor.toFixed(2)}
+                            readOnly
+                            disabled
+                          />
+                        </div>
+                        <Select
+                          value={comissoes.producao.responsavel_id || "_none"}
+                          onValueChange={(v) => setComissoes(prev => ({
+                            ...prev,
+                            producao: { ...prev.producao, responsavel_id: v === "_none" ? "" : v }
+                          }))}
+                          disabled={!isEditable}
+                        >
+                          <SelectTrigger className="h-8 w-40">
+                            <SelectValue placeholder="Responsável" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="_none">-</SelectItem>
+                            {producoes?.map((p) => (
+                              <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </>
+                    )}
+                  </div>
                 </div>
               </Card>
 
@@ -2027,52 +1927,19 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                     {totalPercentual}%
                   </span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Valor do Pedido (itens):</span>
-                  <span className="text-sm font-medium">{formatCurrency(totalSemTaxa)}</span>
-                </div>
-                {taxaCartao.valor > 0 && (
-                  <div className="flex items-center justify-between text-red-600">
-                    <span className="text-sm">Taxas Cartão Absorvidas ({taxaCartao.numeroParcelas}x - {taxaCartao.percentual}%):</span>
-                    <span className="text-sm font-medium">- {formatCurrency(taxaCartao.valor)}</span>
-                  </div>
-                )}
-                {taxaBoleto.valor > 0 && (
-                  <div className="flex items-center justify-between text-red-600">
-                    <span className="text-sm">Taxas Boleto Absorvidas ({taxaBoleto.carencia}d / {taxaBoleto.numeroParcelas}x - {taxaBoleto.percentual}%):</span>
-                    <span className="text-sm font-medium">- {formatCurrency(taxaBoleto.valor)}</span>
-                  </div>
-                )}
-                {comissoes.rt.habilitado && comissoes.rt.valor > 0 && (
+...
+                {comissoes.montador.habilitado && comissoes.montador.valor > 0 && (
                   <div className="flex items-center justify-between text-orange-600">
-                    <span className="text-sm">RT ({comissoes.rt.percentual.toFixed(2)}%):</span>
-                    <span className="text-sm font-medium">- {formatCurrency(comissoes.rt.valor)}</span>
+                    <span className="text-sm">Montador ({comissoes.montador.percentual.toFixed(2)}%):</span>
+                    <span className="text-sm font-medium">- {formatCurrency(comissoes.montador.valor)}</span>
                   </div>
                 )}
-              {comissoes.vendedor.habilitado && comissoes.vendedor.valor > 0 && (
-                <div className="flex items-center justify-between text-orange-600">
-                  <span className="text-sm">Vendedor ({comissoes.vendedor.percentual.toFixed(2)}%):</span>
-                  <span className="text-sm font-medium">- {formatCurrency(comissoes.vendedor.valor)}</span>
-                </div>
-              )}
-              {comissoes.orcamentista.habilitado && comissoes.orcamentista.valor > 0 && (
-                <div className="flex items-center justify-between text-orange-600">
-                  <span className="text-sm">Orçamentista ({comissoes.orcamentista.percentual.toFixed(2)}%):</span>
-                  <span className="text-sm font-medium">- {formatCurrency(comissoes.orcamentista.valor)}</span>
-                </div>
-              )}
-              {comissoes.projetista.habilitado && comissoes.projetista.valor > 0 && (
-                <div className="flex items-center justify-between text-orange-600">
-                  <span className="text-sm">Projetista ({comissoes.projetista.percentual.toFixed(2)}%):</span>
-                  <span className="text-sm font-medium">- {formatCurrency(comissoes.projetista.valor)}</span>
-                </div>
-              )}
-              {comissoes.montador.habilitado && comissoes.montador.valor > 0 && (
-                <div className="flex items-center justify-between text-orange-600">
-                  <span className="text-sm">Montador ({comissoes.montador.percentual.toFixed(2)}%):</span>
-                  <span className="text-sm font-medium">- {formatCurrency(comissoes.montador.valor)}</span>
-                </div>
-              )}
+                {comissoes.producao.habilitado && comissoes.producao.valor > 0 && (
+                  <div className="flex items-center justify-between text-orange-600">
+                    <span className="text-sm">Produção ({comissoes.producao.percentual.toFixed(2)}%):</span>
+                    <span className="text-sm font-medium">- {formatCurrency(comissoes.producao.valor)}</span>
+                  </div>
+                )}
                 <div className="flex items-center justify-between border-t pt-2">
                   <span className="text-sm font-semibold">Total do Pedido:</span>
                   <span className="text-base font-bold text-primary">{formatCurrency(total)}</span>

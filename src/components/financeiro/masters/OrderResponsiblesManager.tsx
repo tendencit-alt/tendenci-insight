@@ -33,6 +33,7 @@ const TYPE_OPTIONS: Array<{ value: OrderResponsibleType; label: string }> = [
   { value: "orcamentista", label: "Orçamentista" },
   { value: "projetista", label: "Projetista" },
   { value: "montador", label: "Montador" },
+  { value: "producao", label: "Produção" },
 ];
 
 const TYPE_LABELS: Record<OrderResponsibleType, string> = {
@@ -40,6 +41,7 @@ const TYPE_LABELS: Record<OrderResponsibleType, string> = {
   orcamentista: "Orçamentista",
   projetista: "Projetista",
   montador: "Montador",
+  producao: "Produção",
 };
 
 export function OrderResponsiblesManager() {
