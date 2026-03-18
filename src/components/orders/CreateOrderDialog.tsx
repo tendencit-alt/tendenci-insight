@@ -152,6 +152,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     orcamentista: { habilitado: false, percentual: 0.2, valor: 0, responsavel_id: '' },
     projetista: { habilitado: false, percentual: 0.2, valor: 0, responsavel_id: '' },
     montador: { habilitado: false, percentual: 10, valor: 0, responsavel_id: '' },
+    producao: { habilitado: false, percentual: 0.3, valor: 0, responsavel_id: '' },
   });
 
   // Adicionar nova forma de pagamento
@@ -337,12 +338,14 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     orcamentistas: orcamentistasAll,
     projetistas: projetistasAll,
     montadores: montadoresAll,
+    producoes: producoesAll,
   } = useOrderResponsibles(open);
 
   const vendedores = vendedoresAll.filter((item) => item.is_active);
   const orcamentistas = orcamentistasAll.filter((item) => item.is_active);
   const projetistas = projetistasAll.filter((item) => item.is_active);
   const montadores = montadoresAll.filter((item) => item.is_active);
+  const producoes = producoesAll.filter((item) => item.is_active);
 
   const selectedClient = clients?.find(c => c.id === formData.client_id);
   const selectedArchitect = architects?.find(arch => arch.id === formData.architect_id);
@@ -438,7 +441,8 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     (comissoes.vendedor.habilitado ? comissoes.vendedor.valor : 0) +
     (comissoes.orcamentista.habilitado ? comissoes.orcamentista.valor : 0) +
     (comissoes.projetista.habilitado ? comissoes.projetista.valor : 0) +
-    (comissoes.montador.habilitado ? comissoes.montador.valor : 0);
+    (comissoes.montador.habilitado ? comissoes.montador.valor : 0) +
+    (comissoes.producao.habilitado ? comissoes.producao.valor : 0);
 
   // Valor líquido Tendenci (deduz apenas as taxas de cartão e boleto)
   const valorLiquidoTendenci = totalSemTaxa - taxaCartao.valor - taxaBoleto.valor;
@@ -447,7 +451,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
   const valorLiquidoRecursos = valorLiquidoTendenci - totalComissoes;
 
   // Função para atualizar comissão por percentual (recalcula valor)
-  const atualizarComissaoPercentual = (tipo: 'rt' | 'vendedor' | 'orcamentista' | 'projetista' | 'montador', novoPercentual: number) => {
+  const atualizarComissaoPercentual = (tipo: 'rt' | 'vendedor' | 'orcamentista' | 'projetista' | 'montador' | 'producao', novoPercentual: number) => {
     const percentualSeguro = isNaN(novoPercentual) ? 0 : Math.max(0, Math.min(100, novoPercentual));
     const novoValor = total * (percentualSeguro / 100);
     setComissoes(prev => ({
@@ -464,6 +468,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
       orcamentista: { ...prev.orcamentista, valor: total * (prev.orcamentista.percentual / 100) },
       projetista: { ...prev.projetista, valor: total * (prev.projetista.percentual / 100) },
       montador: { ...prev.montador, valor: total * (prev.montador.percentual / 100) },
+      producao: { ...prev.producao, valor: total * (prev.producao.percentual / 100) },
     }));
   }, [total]);
 
@@ -658,6 +663,10 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
           comissao_montador_valor: comissoes.montador.habilitado ? comissoes.montador.valor : 0,
           comissao_montador_responsavel_id: comissoes.montador.responsavel_id || null,
           comissao_montador_responsible_id: comissoes.montador.responsavel_id || null,
+          comissao_producao_percentual: comissoes.producao.habilitado ? comissoes.producao.percentual : 0,
+          comissao_producao_valor: comissoes.producao.habilitado ? comissoes.producao.valor : 0,
+          comissao_producao_responsavel_id: comissoes.producao.responsavel_id || null,
+          comissao_producao_responsible_id: comissoes.producao.responsavel_id || null,
         })
         .select()
         .single();
@@ -1570,6 +1579,61 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                         </>
                       )}
                     </div>
+
+                    {/* Comissão Produção */}
+                    <div className="flex items-center gap-3">
+                      <Switch
+                        checked={comissoes.producao.habilitado}
+                        onCheckedChange={(checked) => setComissoes(prev => ({
+                          ...prev,
+                          producao: { ...prev.producao, habilitado: checked }
+                        }))}
+                      />
+                      <span className="text-sm font-medium w-28">Produção</span>
+                      {comissoes.producao.habilitado && (
+                        <>
+                          <div className="flex items-center gap-1">
+                            <Input
+                              type="number"
+                              className="h-8 w-20"
+                              value={comissoes.producao.percentual}
+                              onChange={(e) => atualizarComissaoPercentual('producao', Number(e.target.value))}
+                              min={0}
+                              max={100}
+                              step={0.1}
+                            />
+                            <Label className="text-xs text-muted-foreground">%</Label>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Label className="text-xs text-muted-foreground">R$</Label>
+                            <Input
+                              type="number"
+                              className="h-8 w-24 bg-muted"
+                              value={comissoes.producao.valor.toFixed(2)}
+                              readOnly
+                              disabled
+                            />
+                          </div>
+                          <Select
+                            value={comissoes.producao.responsavel_id || "_none"}
+                            onValueChange={(v) => setComissoes(prev => ({
+                              ...prev,
+                              producao: { ...prev.producao, responsavel_id: v === "_none" ? "" : v }
+                            }))}
+                          >
+                            <SelectTrigger className="h-8 w-40">
+                              <SelectValue placeholder="Responsável" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="_none">-</SelectItem>
+                              {producoes?.map((p) => (
+                                <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </Card>
 
@@ -1581,50 +1645,17 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                       {totalPercentual}%
                     </span>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Valor do Pedido (itens):</span>
-                    <span className="text-sm font-medium">{formatCurrency(totalSemTaxa)}</span>
-                  </div>
-                  {taxaCartao.valor > 0 && (
-                    <div className="flex items-center justify-between text-red-600">
-                      <span className="text-sm">Taxas Cartão Absorvidas ({taxaCartao.numeroParcelas}x - {taxaCartao.percentual}%):</span>
-                      <span className="text-sm font-medium">- {formatCurrency(taxaCartao.valor)}</span>
-                    </div>
-                  )}
-                  {taxaBoleto.valor > 0 && (
-                    <div className="flex items-center justify-between text-red-600">
-                      <span className="text-sm">Taxas Boleto Absorvidas ({taxaBoleto.carencia}d / {taxaBoleto.numeroParcelas}x - {taxaBoleto.percentual}%):</span>
-                      <span className="text-sm font-medium">- {formatCurrency(taxaBoleto.valor)}</span>
-                    </div>
-                  )}
-                  {comissoes.rt.habilitado && comissoes.rt.valor > 0 && (
-                    <div className="flex items-center justify-between text-orange-600">
-                      <span className="text-sm">RT ({comissoes.rt.percentual.toFixed(2)}%):</span>
-                      <span className="text-sm font-medium">- {formatCurrency(comissoes.rt.valor)}</span>
-                    </div>
-                  )}
-                  {comissoes.vendedor.habilitado && comissoes.vendedor.valor > 0 && (
-                    <div className="flex items-center justify-between text-orange-600">
-                      <span className="text-sm">Vendedor ({comissoes.vendedor.percentual.toFixed(2)}%):</span>
-                      <span className="text-sm font-medium">- {formatCurrency(comissoes.vendedor.valor)}</span>
-                    </div>
-                  )}
-                  {comissoes.orcamentista.habilitado && comissoes.orcamentista.valor > 0 && (
-                    <div className="flex items-center justify-between text-orange-600">
-                      <span className="text-sm">Orçamentista ({comissoes.orcamentista.percentual.toFixed(2)}%):</span>
-                      <span className="text-sm font-medium">- {formatCurrency(comissoes.orcamentista.valor)}</span>
-                    </div>
-                  )}
-                  {comissoes.projetista.habilitado && comissoes.projetista.valor > 0 && (
-                    <div className="flex items-center justify-between text-orange-600">
-                      <span className="text-sm">Projetista ({comissoes.projetista.percentual.toFixed(2)}%):</span>
-                      <span className="text-sm font-medium">- {formatCurrency(comissoes.projetista.valor)}</span>
-                    </div>
-                  )}
+...
                   {comissoes.montador.habilitado && comissoes.montador.valor > 0 && (
                     <div className="flex items-center justify-between text-orange-600">
                       <span className="text-sm">Montador ({comissoes.montador.percentual.toFixed(2)}%):</span>
                       <span className="text-sm font-medium">- {formatCurrency(comissoes.montador.valor)}</span>
+                    </div>
+                  )}
+                  {comissoes.producao.habilitado && comissoes.producao.valor > 0 && (
+                    <div className="flex items-center justify-between text-orange-600">
+                      <span className="text-sm">Produção ({comissoes.producao.percentual.toFixed(2)}%):</span>
+                      <span className="text-sm font-medium">- {formatCurrency(comissoes.producao.valor)}</span>
                     </div>
                   )}
                   <div className="flex items-center justify-between border-t pt-2">

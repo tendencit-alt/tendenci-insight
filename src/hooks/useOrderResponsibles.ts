@@ -31,6 +31,7 @@ export function useOrderResponsibles(enabled = true) {
       orcamentistas: responsibles.filter((item) => item.type === "orcamentista"),
       projetistas: responsibles.filter((item) => item.type === "projetista"),
       montadores: responsibles.filter((item) => item.type === "montador"),
+      producoes: responsibles.filter((item) => item.type === "producao"),
     }),
     [responsibles],
   );

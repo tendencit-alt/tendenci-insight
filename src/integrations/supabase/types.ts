@@ -3964,6 +3964,10 @@ export type Database = {
           comissao_orcamentista_responsavel_id: string | null
           comissao_orcamentista_responsible_id: string | null
           comissao_orcamentista_valor: number | null
+          comissao_producao_percentual: number
+          comissao_producao_responsavel_id: string | null
+          comissao_producao_responsible_id: string | null
+          comissao_producao_valor: number
           comissao_projetista_percentual: number | null
           comissao_projetista_responsavel_id: string | null
           comissao_projetista_responsible_id: string | null
@@ -4041,6 +4045,10 @@ export type Database = {
           comissao_orcamentista_responsavel_id?: string | null
           comissao_orcamentista_responsible_id?: string | null
           comissao_orcamentista_valor?: number | null
+          comissao_producao_percentual?: number
+          comissao_producao_responsavel_id?: string | null
+          comissao_producao_responsible_id?: string | null
+          comissao_producao_valor?: number
           comissao_projetista_percentual?: number | null
           comissao_projetista_responsavel_id?: string | null
           comissao_projetista_responsible_id?: string | null
@@ -4118,6 +4126,10 @@ export type Database = {
           comissao_orcamentista_responsavel_id?: string | null
           comissao_orcamentista_responsible_id?: string | null
           comissao_orcamentista_valor?: number | null
+          comissao_producao_percentual?: number
+          comissao_producao_responsavel_id?: string | null
+          comissao_producao_responsible_id?: string | null
+          comissao_producao_valor?: number
           comissao_projetista_percentual?: number | null
           comissao_projetista_responsavel_id?: string | null
           comissao_projetista_responsible_id?: string | null
@@ -4227,6 +4239,20 @@ export type Database = {
           {
             foreignKeyName: "orders_comissao_orcamentista_responsible_id_fkey"
             columns: ["comissao_orcamentista_responsible_id"]
+            isOneToOne: false
+            referencedRelation: "order_responsibles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_comissao_producao_responsavel_id_fkey"
+            columns: ["comissao_producao_responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_comissao_producao_responsible_id_fkey"
+            columns: ["comissao_producao_responsible_id"]
             isOneToOne: false
             referencedRelation: "order_responsibles"
             referencedColumns: ["id"]
@@ -8826,6 +8852,7 @@ export type Database = {
         | "orcamentista"
         | "projetista"
         | "montador"
+        | "producao"
       user_role: "admin" | "vendedor" | "arquiteto" | "projetista"
     }
     CompositeTypes: {
@@ -8977,6 +9004,7 @@ export const Constants = {
         "orcamentista",
         "projetista",
         "montador",
+        "producao",
       ],
       user_role: ["admin", "vendedor", "arquiteto", "projetista"],
     },
