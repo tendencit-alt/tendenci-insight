@@ -648,8 +648,14 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     }).format(value);
   };
 
-  const handleClientCreated = () => {
-    refetchClients();
+  const handleClientCreated = async (clientId: string) => {
+    const { data: refreshedClients } = await refetchClients();
+    const createdClient = refreshedClients?.find((client) => client.id === clientId);
+
+    setFormData(prev => ({
+      ...prev,
+      client_id: createdClient?.id || clientId,
+    }));
     setShowCreateClient(false);
   };
 
