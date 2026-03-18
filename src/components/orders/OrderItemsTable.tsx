@@ -767,7 +767,7 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                   {item.especificacoes && (
                     <CollapsibleContent asChild>
                       <TableRow className="bg-muted/30">
-                        <TableCell colSpan={showFiscalFields ? 9 : 5} className="py-2">
+                        <TableCell colSpan={showFiscalFields ? (requireCentroCusto && requireProject ? 11 : requireCentroCusto || requireProject ? 10 : 9) : (requireCentroCusto && requireProject ? 7 : requireCentroCusto || requireProject ? 6 : 5)} className="py-2">
                           <p className="text-xs text-muted-foreground"><strong>Especificações:</strong> {item.especificacoes}</p>
                         </TableCell>
                       </TableRow>
