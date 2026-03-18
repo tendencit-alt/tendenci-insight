@@ -5,7 +5,8 @@ import { ChartAccountsManager } from "./masters/ChartAccountsManager";
 import { CostCentersManager } from "./masters/CostCentersManager";
 import { FinProjectsManager } from "./masters/FinProjectsManager";
 import { OrderResponsiblesManager } from "./masters/OrderResponsiblesManager";
-import { BriefcaseBusiness, Building2, FileSpreadsheet, Landmark, FolderKanban } from "lucide-react";
+import { StrategicResourceCategoriesManager } from "./masters/StrategicResourceCategoriesManager";
+import { BriefcaseBusiness, Building2, FileSpreadsheet, Landmark, FolderCog, FolderKanban } from "lucide-react";
 
 export function MastersTab() {
   const [activeTab, setActiveTab] = useState("bank_accounts");
@@ -15,7 +16,7 @@ export function MastersTab() {
       <div>
         <h2 className="text-lg font-semibold">Cadastros do Financeiro</h2>
         <p className="text-sm text-muted-foreground">
-          Gerencie contas bancárias, plano de contas, centros de custo, projetos e responsáveis avulsos
+          Gerencie contas bancárias, plano de contas, centros de custo, projetos, responsáveis avulsos e categorias dos recursos estratégicos
         </p>
       </div>
 
@@ -37,6 +38,10 @@ export function MastersTab() {
             <FolderKanban className="h-4 w-4" />
             Projetos
           </TabsTrigger>
+          <TabsTrigger value="strategic_resource_categories" className="gap-2">
+            <FolderCog className="h-4 w-4" />
+            Recursos Estratégicos
+          </TabsTrigger>
           <TabsTrigger value="responsibles" className="gap-2">
             <BriefcaseBusiness className="h-4 w-4" />
             Responsáveis
@@ -57,6 +62,10 @@ export function MastersTab() {
 
         <TabsContent value="projects" className="mt-4">
           <FinProjectsManager />
+        </TabsContent>
+
+        <TabsContent value="strategic_resource_categories" className="mt-4">
+          <StrategicResourceCategoriesManager />
         </TabsContent>
 
         <TabsContent value="responsibles" className="mt-4">
