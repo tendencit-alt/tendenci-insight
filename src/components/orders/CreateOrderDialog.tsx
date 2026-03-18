@@ -496,7 +496,8 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
   // Validações por etapa
   const isClienteValid = !!formData.client_id;
   const allItemsHaveCentroCusto = items.length > 0 && items.every(item => !!item.centro_custo);
-  const isItensValid = items.length > 0 && allItemsHaveCentroCusto;
+  const allItemsHaveProject = items.length > 0 && items.every(item => !!item.project_id);
+  const isItensValid = items.length > 0 && allItemsHaveCentroCusto && allItemsHaveProject;
   const totalPercentual = parcelas.reduce((sum, p) => sum + p.percentual, 0);
   
   // Validação rigorosa: valor das formas de pagamento deve ser igual ao total

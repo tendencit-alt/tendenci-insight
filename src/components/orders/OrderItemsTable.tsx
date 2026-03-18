@@ -37,6 +37,7 @@ interface OrderItemsTableProps {
   readOnly?: boolean;
   showFiscalFields?: boolean;
   requireCentroCusto?: boolean;
+  requireProject?: boolean;
   clientName?: string;
 }
 
