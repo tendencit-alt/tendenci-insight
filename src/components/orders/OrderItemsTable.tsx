@@ -676,6 +676,24 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                             </Select>
                           </TableCell>
                         )}
+                        {requireProject && (
+                          <TableCell>
+                            <Select
+                              value={item.project_id || '_placeholder'}
+                              onValueChange={(v) => handleUpdateItem(item.id, { project_id: v === '_placeholder' ? '' : v })}
+                            >
+                              <SelectTrigger className="h-8">
+                                <SelectValue placeholder="Projeto" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="_placeholder" disabled>Selecione</SelectItem>
+                                {PROJETOS.map((project) => (
+                                  <SelectItem key={project.value} value={project.value}>{project.label}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                        )}
                         <TableCell>
                           <Input type="number" className="h-8 w-16" value={item.quantidade} onChange={(e) => handleUpdateItem(item.id, { quantidade: Number(e.target.value) })} min={1} />
                         </TableCell>
