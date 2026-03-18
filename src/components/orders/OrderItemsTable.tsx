@@ -624,6 +624,7 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                 </>
               )}
               {requireCentroCusto && <TableHead className="w-[130px]">Centro de Custo</TableHead>}
+              {requireProject && <TableHead className="w-[140px]">Projeto</TableHead>}
               <TableHead className="w-[60px] text-center">Qtd</TableHead>
               <TableHead className="w-[100px] text-right">V.Unit.</TableHead>
               <TableHead className="w-[100px] text-right">Total</TableHead>
