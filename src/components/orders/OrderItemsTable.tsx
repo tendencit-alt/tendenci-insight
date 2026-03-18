@@ -190,6 +190,7 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
   const handleAddItem = () => {
     if (!newItem.descricao || !newItem.valor_unitario) return;
     if (requireCentroCusto && !newItem.centro_custo) return;
+    if (requireProject && !newItem.project_id) return;
 
     const item: OrderItem = {
       id: crypto.randomUUID(),
