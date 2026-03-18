@@ -332,44 +332,17 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     },
   });
 
-  // Query para vendedores (para selecionar responsáveis de comissões)
-  const { data: vendedores } = useQuery({
-    queryKey: ['vendedores-for-order'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('profiles')
-        .select('id, full_name')
-        .in('role', ['admin', 'vendedor'])
-        .order('full_name');
-      return data || [];
-    },
-  });
+  const {
+    vendedores: vendedoresAll,
+    orcamentistas: orcamentistasAll,
+    projetistas: projetistasAll,
+    montadores: montadoresAll,
+  } = useOrderResponsibles(open);
 
-  // Query para orçamentistas (profile_type = 'Orçamentista')
-  const { data: orcamentistas } = useQuery({
-    queryKey: ['orcamentistas-for-order'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('profiles')
-        .select('id, full_name, profile_type:profile_types!inner(name)')
-        .eq('profile_types.name', 'Orçamentista')
-        .order('full_name');
-      return data || [];
-    },
-  });
-
-  // Query para projetistas (role = 'projetista')
-  const { data: projetistas } = useQuery({
-    queryKey: ['projetistas-for-order'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('profiles')
-        .select('id, full_name')
-        .eq('role', 'projetista')
-        .order('full_name');
-      return data || [];
-    },
-  });
+  const vendedores = vendedoresAll.filter((item) => item.is_active);
+  const orcamentistas = orcamentistasAll.filter((item) => item.is_active);
+  const projetistas = projetistasAll.filter((item) => item.is_active);
+  const montadores = montadoresAll.filter((item) => item.is_active);
 
   const selectedClient = clients?.find(c => c.id === formData.client_id);
   const selectedArchitect = architects?.find(arch => arch.id === formData.architect_id);
