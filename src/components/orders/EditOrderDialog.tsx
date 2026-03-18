@@ -664,35 +664,17 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
       producao: { ...prev.producao, valor: total * (prev.producao.percentual / 100) },
     }));
   }, [total]);
-...
-          // Campos de Comissões
-          seller_responsible_id: comissoes.vendedor.responsavel_id || null,
-          comissao_vendedor_percentual: comissoes.vendedor.habilitado ? comissoes.vendedor.percentual : 0,
-          comissao_vendedor_valor: comissoes.vendedor.habilitado ? comissoes.vendedor.valor : 0,
-          comissao_vendedor_responsavel_id: comissoes.vendedor.responsavel_id || null,
-          comissao_vendedor_responsible_id: comissoes.vendedor.responsavel_id || null,
-          comissao_orcamentista_percentual: comissoes.orcamentista.habilitado ? comissoes.orcamentista.percentual : 0,
-          comissao_orcamentista_valor: comissoes.orcamentista.habilitado ? comissoes.orcamentista.valor : 0,
-          comissao_orcamentista_responsavel_id: comissoes.orcamentista.responsavel_id || null,
-          comissao_orcamentista_responsible_id: comissoes.orcamentista.responsavel_id || null,
-          comissao_projetista_percentual: comissoes.projetista.habilitado ? comissoes.projetista.percentual : 0,
-          comissao_projetista_valor: comissoes.projetista.habilitado ? comissoes.projetista.valor : 0,
-          comissao_projetista_responsavel_id: comissoes.projetista.responsavel_id || null,
-          comissao_projetista_responsible_id: comissoes.projetista.responsavel_id || null,
-          comissao_montador_percentual: comissoes.montador.habilitado ? comissoes.montador.percentual : 0,
-          comissao_montador_valor: comissoes.montador.habilitado ? comissoes.montador.valor : 0,
-          comissao_montador_responsavel_id: comissoes.montador.responsavel_id || null,
-          comissao_montador_responsible_id: comissoes.montador.responsavel_id || null,
-          comissao_producao_percentual: comissoes.producao.habilitado ? comissoes.producao.percentual : 0,
-          comissao_producao_valor: comissoes.producao.habilitado ? comissoes.producao.valor : 0,
-          comissao_producao_responsavel_id: comissoes.producao.responsavel_id || null,
-          comissao_producao_responsible_id: comissoes.producao.responsavel_id || null,
-          ...(isMaster && formData.data_emissao ? { data_emissao: new Date(formData.data_emissao).toISOString() } : {}),
-          ...(isMaster && formData.vendedor_id ? { vendedor_id: formData.vendedor_id } : {}),
-        })
-        .eq('id', orderId);
 
-      if (orderError) throw orderError;
+  const totalPercentual = parcelas.reduce((sum, p) => sum + p.percentual, 0);
+  
+  // Validação rigorosa: valor das formas de pagamento deve ser igual ao total
+  const valorTotalPagamento = parcelas.reduce((sum, p) => sum + (total * (p.percentual / 100)), 0);
+  const diferencaPagamento = Math.abs(valorTotalPagamento - total);
+  // Se total é 0 ou negativo, não permite validar como correto
+  const isPagamentoValorCorreto = total > 0 ? diferencaPagamento < 0.01 : false;
+  const isPagamentoValid = parcelas.length > 0 && parcelas.every(p => p.forma_pagamento) && totalPercentual === 100 && isPagamentoValorCorreto;
+  
+  const isEditable = order?.status === 'rascunho' || order?.status === 'ativo' || order?.status === 'aguardando_aprovacao';
 
       // 3. Delete existing items and recreate
       await supabase.from('order_items').delete().eq('order_id', orderId);
