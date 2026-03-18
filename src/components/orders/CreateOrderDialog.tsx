@@ -527,6 +527,10 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
         toast.error('Todos os itens precisam ter um centro de custo definido');
         return;
       }
+      if (!allItemsHaveProject) {
+        toast.error('Todos os itens precisam ter um projeto definido');
+        return;
+      }
       setActiveTab('pagamento');
     } else if (activeTab === 'pagamento') {
       if (!isPagamentoValid) {
