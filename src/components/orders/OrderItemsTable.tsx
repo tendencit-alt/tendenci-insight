@@ -37,6 +37,7 @@ interface OrderItemsTableProps {
   readOnly?: boolean;
   showFiscalFields?: boolean;
   requireCentroCusto?: boolean;
+  requireProject?: boolean;
   clientName?: string;
 }
 
@@ -67,7 +68,7 @@ const emptyItem = {
   project_id: '',
 };
 
-export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFiscalFields = false, requireCentroCusto = false, clientName }: OrderItemsTableProps) {
+export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFiscalFields = false, requireCentroCusto = false, requireProject = false, clientName }: OrderItemsTableProps) {
   const { costCenters: CENTROS_CUSTO } = useCostCenters();
   const { projects: PROJETOS } = useProjects();
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -189,6 +190,7 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
   const handleAddItem = () => {
     if (!newItem.descricao || !newItem.valor_unitario) return;
     if (requireCentroCusto && !newItem.centro_custo) return;
+    if (requireProject && !newItem.project_id) return;
 
     const item: OrderItem = {
       id: crypto.randomUUID(),
@@ -443,16 +445,16 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                 </div>
 
                 <div className="space-y-1 min-w-0">
-                  <Label className="text-xs">Projeto</Label>
+                  <Label className="text-xs">Projeto {requireProject ? '*' : ''}</Label>
                   <Select
                     value={newItem.project_id || '_placeholder'}
                     onValueChange={(v) => setNewItem({ ...newItem, project_id: v === '_placeholder' ? '' : v })}
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecionar agora ou gerar no salvamento" />
+                    <SelectTrigger className={requireProject && !newItem.project_id ? 'border-destructive/50' : ''}>
+                      <SelectValue placeholder={requireProject ? 'Selecione o projeto' : 'Selecionar agora ou gerar no salvamento'} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="_placeholder">Gerar automaticamente ao salvar</SelectItem>
+                      <SelectItem value="_placeholder" disabled>{requireProject ? 'Selecione' : 'Gerar automaticamente ao salvar'}</SelectItem>
                       {PROJETOS.map((p) => (
                         <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
                       ))}
@@ -476,7 +478,7 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
               <Button variant="outline" onClick={() => { setIsAddingItem(false); setNewItem(emptyItem); }} className="w-full sm:w-auto">
                 Cancelar
               </Button>
-              <Button onClick={handleAddItem} disabled={!newItem.descricao || !newItem.valor_unitario || (requireCentroCusto && !newItem.centro_custo)} className="w-full sm:w-auto">
+              <Button onClick={handleAddItem} disabled={!newItem.descricao || !newItem.valor_unitario || (requireCentroCusto && !newItem.centro_custo) || (requireProject && !newItem.project_id)} className="w-full sm:w-auto">
                 <Plus className="mr-1 h-4 w-4" />
                 Adicionar Item
               </Button>
@@ -575,6 +577,12 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                           <p className="font-medium break-words">{getCentroCustoLabel(item.centro_custo)}</p>
                         </div>
                       )}
+                      {requireProject && (
+                        <div className="col-span-2">
+                          <p className="text-xs text-muted-foreground">Projeto</p>
+                          <p className="font-medium break-words">{PROJETOS.find((project) => project.value === item.project_id)?.label || '-'}</p>
+                        </div>
+                      )}
                       {showFiscalFields && (item.ncm || item.cfop) && (
                         <div className="col-span-2 grid grid-cols-2 gap-3">
                           <div>
@@ -616,6 +624,7 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                 </>
               )}
               {requireCentroCusto && <TableHead className="w-[130px]">Centro de Custo</TableHead>}
+              {requireProject && <TableHead className="w-[140px]">Projeto</TableHead>}
               <TableHead className="w-[60px] text-center">Qtd</TableHead>
               <TableHead className="w-[100px] text-right">V.Unit.</TableHead>
               <TableHead className="w-[100px] text-right">Total</TableHead>
@@ -668,6 +677,24 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                             </Select>
                           </TableCell>
                         )}
+                        {requireProject && (
+                          <TableCell>
+                            <Select
+                              value={item.project_id || '_placeholder'}
+                              onValueChange={(v) => handleUpdateItem(item.id, { project_id: v === '_placeholder' ? '' : v })}
+                            >
+                              <SelectTrigger className="h-8">
+                                <SelectValue placeholder="Projeto" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="_placeholder" disabled>Selecione</SelectItem>
+                                {PROJETOS.map((project) => (
+                                  <SelectItem key={project.value} value={project.value}>{project.label}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                        )}
                         <TableCell>
                           <Input type="number" className="h-8 w-16" value={item.quantidade} onChange={(e) => handleUpdateItem(item.id, { quantidade: Number(e.target.value) })} min={1} />
                         </TableCell>
@@ -712,6 +739,13 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                             </span>
                           </TableCell>
                         )}
+                        {requireProject && (
+                          <TableCell>
+                            <span className="text-xs">
+                              {PROJETOS.find((project) => project.value === item.project_id)?.label || '-'}
+                            </span>
+                          </TableCell>
+                        )}
                         <TableCell className="text-center">{item.quantidade}</TableCell>
                         <TableCell className="text-right">{formatCurrency(item.valor_unitario)}</TableCell>
                         <TableCell className="text-right font-medium">{formatCurrency(item.valor_total)}</TableCell>
@@ -733,7 +767,7 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                   {item.especificacoes && (
                     <CollapsibleContent asChild>
                       <TableRow className="bg-muted/30">
-                        <TableCell colSpan={showFiscalFields ? 9 : 5} className="py-2">
+                        <TableCell colSpan={showFiscalFields ? (requireCentroCusto && requireProject ? 11 : requireCentroCusto || requireProject ? 10 : 9) : (requireCentroCusto && requireProject ? 7 : requireCentroCusto || requireProject ? 6 : 5)} className="py-2">
                           <p className="text-xs text-muted-foreground"><strong>Especificações:</strong> {item.especificacoes}</p>
                         </TableCell>
                       </TableRow>
@@ -745,7 +779,7 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
 
             {items.length === 0 && (
               <TableRow>
-                <TableCell colSpan={showFiscalFields ? 9 : 5} className="py-8 text-center text-muted-foreground">
+                <TableCell colSpan={showFiscalFields ? (requireCentroCusto && requireProject ? 11 : requireCentroCusto || requireProject ? 10 : 9) : (requireCentroCusto && requireProject ? 7 : requireCentroCusto || requireProject ? 6 : 5)} className="py-8 text-center text-muted-foreground">
                   <Package className="mx-auto mb-2 h-8 w-8 opacity-50" />
                   <p>Nenhum item adicionado</p>
                   {!readOnly && <p className="mt-1 text-xs">Clique em "Adicionar Item" para começar</p>}

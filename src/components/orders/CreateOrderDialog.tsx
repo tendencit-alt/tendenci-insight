@@ -496,7 +496,8 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
   // Validações por etapa
   const isClienteValid = !!formData.client_id;
   const allItemsHaveCentroCusto = items.length > 0 && items.every(item => !!item.centro_custo);
-  const isItensValid = items.length > 0 && allItemsHaveCentroCusto;
+  const allItemsHaveProject = items.length > 0 && items.every(item => !!item.project_id);
+  const isItensValid = items.length > 0 && allItemsHaveCentroCusto && allItemsHaveProject;
   const totalPercentual = parcelas.reduce((sum, p) => sum + p.percentual, 0);
   
   // Validação rigorosa: valor das formas de pagamento deve ser igual ao total
@@ -524,6 +525,10 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
       }
       if (!allItemsHaveCentroCusto) {
         toast.error('Todos os itens precisam ter um centro de custo definido');
+        return;
+      }
+      if (!allItemsHaveProject) {
+        toast.error('Todos os itens precisam ter um projeto definido');
         return;
       }
       setActiveTab('pagamento');
@@ -926,7 +931,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
             </TabsContent>
 
             <TabsContent value="itens" className="space-y-4">
-              <OrderItemsTable items={items} onItemsChange={setItems} showFiscalFields={true} requireCentroCusto={true} clientName={selectedClient?.name} />
+              <OrderItemsTable items={items} onItemsChange={setItems} showFiscalFields={true} requireCentroCusto={true} requireProject={true} clientName={selectedClient?.name} />
 
 
 
