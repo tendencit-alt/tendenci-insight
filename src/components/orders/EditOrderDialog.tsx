@@ -2139,15 +2139,38 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                     {totalPercentual}%
                   </span>
                 </div>
-...
+                {comissoes.rt.habilitado && comissoes.rt.valor > 0 && (
+                  <div className="flex items-center justify-between text-foreground">
+                    <span className="text-sm">RT ({comissoes.rt.percentual.toFixed(2)}%):</span>
+                    <span className="text-sm font-medium">- {formatCurrency(comissoes.rt.valor)}</span>
+                  </div>
+                )}
+                {comissoes.vendedor.habilitado && comissoes.vendedor.valor > 0 && (
+                  <div className="flex items-center justify-between text-foreground">
+                    <span className="text-sm">Vendedor ({comissoes.vendedor.percentual.toFixed(2)}%):</span>
+                    <span className="text-sm font-medium">- {formatCurrency(comissoes.vendedor.valor)}</span>
+                  </div>
+                )}
+                {comissoes.orcamentista.habilitado && comissoes.orcamentista.valor > 0 && (
+                  <div className="flex items-center justify-between text-foreground">
+                    <span className="text-sm">Orçamentista ({comissoes.orcamentista.percentual.toFixed(2)}%):</span>
+                    <span className="text-sm font-medium">- {formatCurrency(comissoes.orcamentista.valor)}</span>
+                  </div>
+                )}
+                {comissoes.projetista.habilitado && comissoes.projetista.valor > 0 && (
+                  <div className="flex items-center justify-between text-foreground">
+                    <span className="text-sm">Projetista ({comissoes.projetista.percentual.toFixed(2)}%):</span>
+                    <span className="text-sm font-medium">- {formatCurrency(comissoes.projetista.valor)}</span>
+                  </div>
+                )}
                 {comissoes.montador.habilitado && comissoes.montador.valor > 0 && (
-                  <div className="flex items-center justify-between text-orange-600">
+                  <div className="flex items-center justify-between text-foreground">
                     <span className="text-sm">Montador ({comissoes.montador.percentual.toFixed(2)}%):</span>
                     <span className="text-sm font-medium">- {formatCurrency(comissoes.montador.valor)}</span>
                   </div>
                 )}
                 {comissoes.producao.habilitado && comissoes.producao.valor > 0 && (
-                  <div className="flex items-center justify-between text-orange-600">
+                  <div className="flex items-center justify-between text-foreground">
                     <span className="text-sm">Produção ({comissoes.producao.percentual.toFixed(2)}%):</span>
                     <span className="text-sm font-medium">- {formatCurrency(comissoes.producao.valor)}</span>
                   </div>
