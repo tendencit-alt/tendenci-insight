@@ -189,7 +189,6 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
   const handleAddItem = () => {
     if (!newItem.descricao || !newItem.valor_unitario) return;
     if (requireCentroCusto && !newItem.centro_custo) return;
-    if (requireCentroCusto && !newItem.project_id) return;
 
     const item: OrderItem = {
       id: crypto.randomUUID(),
@@ -446,17 +445,16 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
 
             {requireCentroCusto && (
               <div className="space-y-1">
-                <Label className="text-xs">Projeto *</Label>
+                <Label className="text-xs">Projeto</Label>
                 <Select
                   value={newItem.project_id || "_placeholder"}
                   onValueChange={(v) => setNewItem({ ...newItem, project_id: v === "_placeholder" ? "" : v })}
-                  disabled={creatingProject}
                 >
-                  <SelectTrigger className={!newItem.project_id ? 'border-destructive/50' : ''}>
-                    <SelectValue placeholder="Selecione o projeto" />
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecionar agora ou gerar no salvamento" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="_placeholder" disabled>Selecione</SelectItem>
+                    <SelectItem value="_placeholder">Gerar automaticamente ao salvar</SelectItem>
                     {PROJETOS.map((p) => (
                       <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
                     ))}
@@ -479,10 +477,11 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
               <Button variant="outline" onClick={() => { setIsAddingItem(false); setNewItem(emptyItem); }}>
                 Cancelar
               </Button>
-              <Button onClick={handleAddItem} disabled={!newItem.descricao || !newItem.valor_unitario || (requireCentroCusto && !newItem.centro_custo) || (requireCentroCusto && !newItem.project_id)}>
+              <Button onClick={handleAddItem} disabled={!newItem.descricao || !newItem.valor_unitario || (requireCentroCusto && !newItem.centro_custo)}>
                 <Plus className="h-4 w-4 mr-1" />
                 Adicionar Item
               </Button>
+            </div>
             </div>
           </CardContent>
         </Card>
