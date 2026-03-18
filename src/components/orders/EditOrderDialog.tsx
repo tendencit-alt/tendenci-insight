@@ -1037,7 +1037,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="_placeholder" disabled>Selecionar vendedor</SelectItem>
-                    {vendedores?.map((v) => (
+                    {systemVendedores?.map((v) => (
                       <SelectItem key={v.id} value={v.id}>
                         {v.full_name}
                       </SelectItem>
