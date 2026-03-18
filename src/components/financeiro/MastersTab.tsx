@@ -4,7 +4,8 @@ import { BankAccountsManager } from "./masters/BankAccountsManager";
 import { ChartAccountsManager } from "./masters/ChartAccountsManager";
 import { CostCentersManager } from "./masters/CostCentersManager";
 import { FinProjectsManager } from "./masters/FinProjectsManager";
-import { Building2, FileSpreadsheet, Landmark, FolderKanban } from "lucide-react";
+import { OrderResponsiblesManager } from "./masters/OrderResponsiblesManager";
+import { BriefcaseBusiness, Building2, FileSpreadsheet, Landmark, FolderKanban } from "lucide-react";
 
 export function MastersTab() {
   const [activeTab, setActiveTab] = useState("bank_accounts");
@@ -14,12 +15,12 @@ export function MastersTab() {
       <div>
         <h2 className="text-lg font-semibold">Cadastros do Financeiro</h2>
         <p className="text-sm text-muted-foreground">
-          Gerencie contas bancárias, plano de contas, centros de custo e projetos
+          Gerencie contas bancárias, plano de contas, centros de custo, projetos e responsáveis avulsos
         </p>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
+        <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1">
           <TabsTrigger value="bank_accounts" className="gap-2">
             <Landmark className="h-4 w-4" />
             Contas Bancárias
@@ -35,6 +36,10 @@ export function MastersTab() {
           <TabsTrigger value="projects" className="gap-2">
             <FolderKanban className="h-4 w-4" />
             Projetos
+          </TabsTrigger>
+          <TabsTrigger value="responsibles" className="gap-2">
+            <BriefcaseBusiness className="h-4 w-4" />
+            Responsáveis
           </TabsTrigger>
         </TabsList>
 
@@ -52,6 +57,10 @@ export function MastersTab() {
 
         <TabsContent value="projects" className="mt-4">
           <FinProjectsManager />
+        </TabsContent>
+
+        <TabsContent value="responsibles" className="mt-4">
+          <OrderResponsiblesManager />
         </TabsContent>
       </Tabs>
     </div>
