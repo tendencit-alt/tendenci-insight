@@ -562,7 +562,7 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                         <TableCell className="font-medium text-right">{formatCurrency(item.valor_total)}</TableCell>
                         <TableCell>
                           <Button size="icon" variant="ghost" onClick={() => setEditingId(null)}>
-                            <Check className="h-4 w-4 text-green-600" />
+                            <Check className="h-4 w-4 text-primary" />
                           </Button>
                         </TableCell>
                       </>
