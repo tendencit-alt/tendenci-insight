@@ -1253,16 +1253,24 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                   </div>
                   
                   <div className="space-y-3">
+                    {!hasSelectedArchitect && (
+                      <Alert>
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertDescription>
+                          Selecione um arquiteto na aba Cliente para habilitar o RT neste pedido.
+                        </AlertDescription>
+                      </Alert>
+                    )}
+
                     {/* RT - Repasse Técnico */}
                     <div className="flex items-center gap-3">
-                      <Switch
-                        checked={comissoes.rt.habilitado}
-                        onCheckedChange={(checked) => setComissoes(prev => ({
-                          ...prev,
-                          rt: { ...prev.rt, habilitado: checked }
-                        }))}
-                      />
-                      <span className="text-sm font-medium w-28">RT</span>
+                      <Switch checked={comissoes.rt.habilitado} disabled />
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium w-28">RT</span>
+                        <Badge variant={hasSelectedArchitect ? "secondary" : "outline"}>
+                          {hasSelectedArchitect ? "Obrigatório" : "Selecione arquiteto"}
+                        </Badge>
+                      </div>
                       {comissoes.rt.habilitado && (
                         <>
                           <div className="flex items-center gap-1">
@@ -1287,21 +1295,15 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                               disabled
                             />
                           </div>
-                          <Select
-                            value={comissoes.rt.responsavel_id || "_none"}
-                            onValueChange={(v) => setComissoes(prev => ({
-                              ...prev,
-                              rt: { ...prev.rt, responsavel_id: v === "_none" ? "" : v }
-                            }))}
-                          >
-                            <SelectTrigger className="h-8 w-40">
+                          <Select value={comissoes.rt.responsavel_id || "_none"} disabled>
+                            <SelectTrigger className="h-8 w-52">
                               <SelectValue placeholder="Responsável" />
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="_none">-</SelectItem>
-                              {architects?.map((a) => (
-                                <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
-                              ))}
+                              {selectedArchitect && (
+                                <SelectItem value={selectedArchitect.id}>{selectedArchitect.name}</SelectItem>
+                              )}
                             </SelectContent>
                           </Select>
                         </>
