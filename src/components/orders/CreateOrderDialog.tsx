@@ -936,64 +936,66 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
 
 
 
-              <div className="flex justify-end">
-                <div className="w-64 space-y-2 text-sm">
-                  <div className="flex justify-between">
+              <div className="flex justify-stretch xl:justify-end">
+                <div className="w-full max-w-full space-y-2 text-sm xl:w-64">
+                  <div className="flex justify-between gap-3">
                     <span>Subtotal:</span>
-                    <span>{formatCurrency(subtotal)}</span>
+                    <span className="text-right">{formatCurrency(subtotal)}</span>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <span className="text-xs">Desconto (%):</span>
-                    <Input
-                      type="number"
-                      className="w-16 h-8"
-                      value={formData.desconto_percentual}
-                      onChange={(e) => setFormData({ ...formData, desconto_percentual: Number(e.target.value) })}
-                      min={0}
-                      max={100}
-                    />
-                    <span className="text-muted-foreground text-xs">-{formatCurrency(descontoPercentual)}</span>
+                    <div className="flex items-center gap-2 sm:justify-end">
+                      <Input
+                        type="number"
+                        className="h-8 w-full sm:w-16"
+                        value={formData.desconto_percentual}
+                        onChange={(e) => setFormData({ ...formData, desconto_percentual: Number(e.target.value) })}
+                        min={0}
+                        max={100}
+                      />
+                      <span className="text-right text-xs text-muted-foreground">-{formatCurrency(descontoPercentual)}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <span className="text-xs">Desconto (R$):</span>
                     <Input
                       type="number"
-                      className="w-24 h-8"
+                      className="h-8 w-full sm:w-24"
                       value={formData.desconto_valor}
                       onChange={(e) => setFormData({ ...formData, desconto_valor: Number(e.target.value) })}
                       min={0}
                       step={0.01}
                     />
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <span className="text-xs">Frete:</span>
                     <Input
                       type="number"
-                      className="w-24 h-8"
+                      className="h-8 w-full sm:w-24"
                       value={formData.valor_frete}
                       onChange={(e) => setFormData({ ...formData, valor_frete: Number(e.target.value) })}
                       min={0}
                     />
                   </div>
                   {descontoTotal > 0 && (
-                    <div className="flex justify-between text-muted-foreground">
+                    <div className="flex justify-between gap-3 text-muted-foreground">
                       <span>Total Descontos:</span>
-                      <span>-{formatCurrency(descontoTotal)}</span>
+                      <span className="text-right">-{formatCurrency(descontoTotal)}</span>
                     </div>
                   )}
-                  <div className="flex justify-between font-bold text-lg border-t pt-2">
+                  <div className="flex justify-between gap-3 border-t pt-2 text-lg font-bold">
                     <span>Total:</span>
-                    <span>{formatCurrency(total)}</span>
+                    <span className="text-right break-words">{formatCurrency(total)}</span>
                   </div>
                 </div>
               </div>
 
-              <div className="flex justify-between pt-4">
-                <Button variant="outline" onClick={() => setActiveTab('cliente')}>
+              <div className="flex flex-col-reverse gap-2 pt-4 sm:flex-row sm:justify-between">
+                <Button variant="outline" onClick={() => setActiveTab('cliente')} className="w-full sm:w-auto">
                   Voltar
                 </Button>
-                <Button onClick={handleNext} disabled={!isItensValid}>
-                  Avançar <ChevronRight className="h-4 w-4 ml-1" />
+                <Button onClick={handleNext} disabled={!isItensValid} className="w-full sm:w-auto">
+                  Avançar <ChevronRight className="ml-1 h-4 w-4" />
                 </Button>
               </div>
             </TabsContent>

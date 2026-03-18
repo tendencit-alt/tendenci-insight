@@ -610,7 +610,7 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
         )}
       </div>
 
-      <div className="hidden overflow-hidden rounded-lg border md:block">
+      <div className="hidden overflow-hidden rounded-lg border xl:block">
         <Table>
           <TableHeader>
             <TableRow>
