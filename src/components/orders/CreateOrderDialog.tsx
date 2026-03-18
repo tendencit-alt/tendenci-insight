@@ -278,7 +278,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
 
   // RT fica obrigatório e vinculado ao arquiteto selecionado
   useEffect(() => {
-    const selectedArchitect = architects?.find((a) => a.id === formData.architect_id);
+    const architect = architects?.find((a) => a.id === formData.architect_id);
 
     setComissoes((prev) => {
       if (!formData.architect_id) {
@@ -295,16 +295,14 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
         };
       }
 
-      const nextPercentual = selectedArchitect?.commission_percent
-        ? Number(selectedArchitect.commission_percent)
+      const nextPercentual = architect?.commission_percent
+        ? Number(architect.commission_percent)
         : prev.rt.percentual;
-      const nextValor = total * (nextPercentual / 100);
 
       const shouldUpdate =
         !prev.rt.habilitado ||
         prev.rt.responsavel_id !== formData.architect_id ||
-        prev.rt.percentual !== nextPercentual ||
-        prev.rt.valor !== nextValor;
+        prev.rt.percentual !== nextPercentual;
 
       if (!shouldUpdate) return prev;
 
@@ -315,11 +313,10 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
           habilitado: true,
           responsavel_id: formData.architect_id,
           percentual: nextPercentual,
-          valor: nextValor,
         },
       };
     });
-  }, [formData.architect_id, architects, total]);
+  }, [formData.architect_id, architects]);
 
   const { data: deals, refetch: refetchDeals } = useQuery({
     queryKey: ['deals-for-order'],
