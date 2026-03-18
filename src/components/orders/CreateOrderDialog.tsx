@@ -602,6 +602,11 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
   };
 
   const handleSubmit = async () => {
+    if (missingStrategicResponsible) {
+      toast.error(`Selecione o responsável para ${strategicResourceLabels[missingStrategicResponsible]}`);
+      return;
+    }
+
     if (!isFormValid) {
       toast.error('Preencha todos os campos obrigatórios');
       return;

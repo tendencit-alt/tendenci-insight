@@ -789,6 +789,14 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
 
   const handleSubmit = async () => {
     if (!order) return;
+    if (missingStrategicResponsible) {
+      toast.error(`Selecione o responsável para ${strategicResourceLabels[missingStrategicResponsible]}`);
+      return;
+    }
+    if (!isRtValid) {
+      toast.error('O responsável de RT deve ser o arquiteto selecionado');
+      return;
+    }
 
     setLoading(true);
     try {
