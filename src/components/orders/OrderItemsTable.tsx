@@ -779,7 +779,7 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
 
             {items.length === 0 && (
               <TableRow>
-                <TableCell colSpan={showFiscalFields ? 9 : 5} className="py-8 text-center text-muted-foreground">
+                <TableCell colSpan={showFiscalFields ? (requireCentroCusto && requireProject ? 11 : requireCentroCusto || requireProject ? 10 : 9) : (requireCentroCusto && requireProject ? 7 : requireCentroCusto || requireProject ? 6 : 5)} className="py-8 text-center text-muted-foreground">
                   <Package className="mx-auto mb-2 h-8 w-8 opacity-50" />
                   <p>Nenhum item adicionado</p>
                   {!readOnly && <p className="mt-1 text-xs">Clique em "Adicionar Item" para começar</p>}
