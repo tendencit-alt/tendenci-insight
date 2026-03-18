@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FolderKanban, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { format } from "date-fns";
+import { isProjectVisibleInKpis } from "@/lib/projectKpiVisibility";
 
 interface ProjectEntriesDialogProps {
   open: boolean;
@@ -192,6 +193,14 @@ export function ProjectKPIs() {
     return result;
   }, [ledgerEntries]);
 
+  const visibleProjects = useMemo(
+    () =>
+      (projects || []).filter((project) =>
+        isProjectVisibleInKpis(project, realizedByProject[project.id] || 0),
+      ),
+    [projects, realizedByProject],
+  );
+
   const formatCurrency = (value: number) => {
     return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   };
@@ -242,9 +251,9 @@ export function ProjectKPIs() {
           </Select>
         </CardHeader>
         <CardContent>
-          {!projects || projects.length === 0 ? (
+          {!visibleProjects || visibleProjects.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">
-              Nenhum projeto {statusFilter === "ativo" ? "ativo" : "finalizado"} cadastrado
+              Nenhum projeto {statusFilter === "ativo" ? "ativo com orçamento ou movimentação" : "finalizado"} cadastrado
             </p>
           ) : (
             <Table>
