@@ -665,31 +665,248 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
     }));
   }, [total]);
 
+  const isClienteValid = !!formData.client_id;
+  const allItemsHaveCentroCusto = items.length > 0 && items.every((item) => !!item.centro_custo);
+  const allItemsHaveProject = items.length > 0 && items.every((item) => !!item.project_id);
+  const isItensValid = items.length > 0 && allItemsHaveCentroCusto && allItemsHaveProject;
   const totalPercentual = parcelas.reduce((sum, p) => sum + p.percentual, 0);
-  
+
   // Validação rigorosa: valor das formas de pagamento deve ser igual ao total
   const valorTotalPagamento = parcelas.reduce((sum, p) => sum + (total * (p.percentual / 100)), 0);
   const diferencaPagamento = Math.abs(valorTotalPagamento - total);
-  // Se total é 0 ou negativo, não permite validar como correto
   const isPagamentoValorCorreto = total > 0 ? diferencaPagamento < 0.01 : false;
-  const isPagamentoValid = parcelas.length > 0 && parcelas.every(p => p.forma_pagamento) && totalPercentual === 100 && isPagamentoValorCorreto;
-  
+  const hasSelectedArchitect = !!formData.architect_id;
+  const isRtValid = !hasSelectedArchitect || (comissoes.rt.habilitado && comissoes.rt.responsavel_id === formData.architect_id);
+  const isPagamentoValid = parcelas.length > 0 && parcelas.every((p) => p.forma_pagamento) && totalPercentual === 100 && isPagamentoValorCorreto && isRtValid;
+  const isEntregaValid = !!formData.tipo_entrega;
+  const isFormValid = isClienteValid && isItensValid && isPagamentoValid && isEntregaValid;
   const isEditable = order?.status === 'rascunho' || order?.status === 'ativo' || order?.status === 'aguardando_aprovacao';
 
-      // 3. Delete existing items and recreate
+  const handleCepSearch = async (cepValue: string) => {
+    const cep = cepValue.replace(/\D/g, '');
+    if (cep.length !== 8) {
+      toast.error('CEP inválido');
+      return;
+    }
+
+    setLoadingCep(true);
+    try {
+      const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+      const data = await response.json();
+
+      if (data.erro) {
+        toast.error('CEP não encontrado');
+        return;
+      }
+
+      setClientData((prev) => ({
+        ...prev,
+        logradouro: data.logradouro || '',
+        bairro: data.bairro || '',
+        city: data.localidade || '',
+        state: data.uf || '',
+      }));
+    } catch (error) {
+      console.error('Erro ao buscar CEP:', error);
+      toast.error('Erro ao buscar CEP');
+    } finally {
+      setLoadingCep(false);
+    }
+  };
+
+  const resolveProjectIdForItems = async () => {
+    const hasItemsWithoutProject = items.some((item) => !item.project_id);
+
+    if (!hasItemsWithoutProject) {
+      return null;
+    }
+
+    let clientName = selectedClient?.name?.trim() || '';
+
+    if (!clientName) {
+      const { data: clientRecord, error: clientError } = await supabase
+        .from('clients')
+        .select('name')
+        .eq('id', formData.client_id)
+        .single();
+
+      if (clientError) throw clientError;
+      clientName = clientRecord?.name?.trim() || '';
+    }
+
+    if (!clientName) {
+      throw new Error('Não foi possível identificar o nome do cliente para gerar o projeto do pedido');
+    }
+
+    const normalizedClientName = clientName.toLowerCase();
+    const projectFromCache = projects.find(
+      (project) => project.label.trim().toLowerCase() === normalizedClientName,
+    );
+
+    if (projectFromCache?.value) {
+      return projectFromCache.value;
+    }
+
+    const { data: existingProjects, error: existingProjectError } = await supabase
+      .from('fin_projects')
+      .select('id, name')
+      .ilike('name', clientName)
+      .limit(1);
+
+    if (existingProjectError) throw existingProjectError;
+
+    const existingProject = existingProjects?.find(
+      (project) => project.name.trim().toLowerCase() === normalizedClientName,
+    ) || existingProjects?.[0];
+
+    if (existingProject) {
+      return existingProject.id;
+    }
+
+    const { data: newProject, error: newProjectError } = await supabase
+      .from('fin_projects')
+      .insert({ name: clientName, status: 'ativo' })
+      .select('id')
+      .single();
+
+    if (newProjectError) throw newProjectError;
+
+    return newProject.id;
+  };
+
+  const handleSubmit = async () => {
+    if (!order) return;
+
+    setLoading(true);
+    try {
+      const shouldBeAtivo = order.status === 'rascunho' && isFormValid;
+      const parcelasPrincipal = parcelas[0];
+      const parcelasSecundaria = parcelas.length > 1 ? parcelas[1] : null;
+      const resolvedProjectId = await resolveProjectIdForItems();
+      const itemsWithResolvedProject = items.map((item) => ({
+        ...item,
+        project_id: item.project_id || resolvedProjectId || undefined,
+      }));
+
+      const { error: clientError } = await supabase
+        .from('clients')
+        .update({
+          name: clientData.name,
+          phone: clientData.phone || null,
+          email: clientData.email || null,
+          cpf_cnpj: clientData.cpf_cnpj || null,
+          tipo_pessoa: clientData.tipo_pessoa || null,
+          razao_social: clientData.razao_social || null,
+          nome_fantasia: clientData.nome_fantasia || null,
+          inscricao_estadual: clientData.inscricao_estadual || null,
+          inscricao_municipal: clientData.inscricao_municipal || null,
+          isento_ie: clientData.isento_ie,
+          contribuinte_icms: clientData.contribuinte_icms,
+          cep: clientData.cep || null,
+          logradouro: clientData.logradouro || null,
+          numero: clientData.numero || null,
+          complemento: clientData.complemento || null,
+          bairro: clientData.bairro || null,
+          city: clientData.city || null,
+          state: clientData.state || null,
+          telefone_fixo: clientData.telefone_fixo || null,
+          contato_financeiro: clientData.contato_financeiro || null,
+          email_financeiro: clientData.email_financeiro || null,
+          notes: clientData.notes || null,
+        })
+        .eq('id', formData.client_id);
+
+      if (clientError) throw clientError;
+
+      const { error: orderError } = await supabase
+        .from('orders')
+        .update({
+          client_id: formData.client_id,
+          deal_id: formData.deal_id || null,
+          architect_id: formData.architect_id || null,
+          vendedor_id: formData.vendedor_id || order.vendedor_id || null,
+          forma_pagamento: parcelasPrincipal?.forma_pagamento || '',
+          forma_pagamento_2: parcelasSecundaria?.forma_pagamento || null,
+          percentual_forma_1: parcelasPrincipal?.percentual || 100,
+          percentual_forma_2: parcelasSecundaria?.percentual || 0,
+          data_primeiro_vencimento: parcelasPrincipal?.data_vencimento || null,
+          condicao_pagamento: null,
+          observacao_pagamento: (parcelas.length > 2 || parcelas.some((p) => p.numero_parcelas > 1))
+            ? JSON.stringify(parcelas)
+            : (formData.observacao_pagamento || null),
+          data_entrega_prevista: formData.data_entrega_prevista || null,
+          tipo_entrega: formData.tipo_entrega || null,
+          entrega_mesmo_endereco: formData.entrega_mesmo_endereco,
+          entrega_cep: formData.entrega_mesmo_endereco ? null : formData.entrega_cep,
+          entrega_logradouro: formData.entrega_mesmo_endereco ? null : formData.entrega_logradouro,
+          entrega_numero: formData.entrega_mesmo_endereco ? null : formData.entrega_numero,
+          entrega_complemento: formData.entrega_mesmo_endereco ? null : formData.entrega_complemento,
+          entrega_bairro: formData.entrega_mesmo_endereco ? null : formData.entrega_bairro,
+          entrega_cidade: formData.entrega_mesmo_endereco ? null : formData.entrega_cidade,
+          entrega_uf: formData.entrega_mesmo_endereco ? null : formData.entrega_uf,
+          entrega_observacoes: formData.observacoes || null,
+          observacoes_internas: formData.observacoes || null,
+          observacoes_nf: formData.observacoes || null,
+          desconto_percentual: formData.desconto_percentual,
+          desconto_valor: formData.desconto_valor,
+          valor_frete: formData.valor_frete,
+          subtotal,
+          valor_total: total,
+          centro_custo: null,
+          project_id: formData.project_id || resolvedProjectId || null,
+          status: shouldBeAtivo ? 'ativo' : order.status,
+          taxa_cartao_percentual: taxaCartao.percentual,
+          taxa_cartao_valor: taxaCartao.valor,
+          taxa_cartao_responsavel: taxaCartao.responsavel,
+          numero_parcelas_cartao: taxaCartao.numeroParcelas,
+          taxa_boleto_percentual: taxaBoleto.percentual,
+          taxa_boleto_valor: taxaBoleto.valor,
+          taxa_boleto_responsavel: taxaBoleto.responsavel,
+          numero_parcelas_boleto: taxaBoleto.numeroParcelas,
+          carencia_boleto: taxaBoleto.carencia,
+          rt_habilitado: comissoes.rt.habilitado,
+          rt_percentual: comissoes.rt.habilitado ? comissoes.rt.percentual : 0,
+          rt_valor: comissoes.rt.habilitado ? comissoes.rt.valor : 0,
+          seller_responsible_id: comissoes.vendedor.responsavel_id || null,
+          comissao_vendedor_percentual: comissoes.vendedor.habilitado ? comissoes.vendedor.percentual : 0,
+          comissao_vendedor_valor: comissoes.vendedor.habilitado ? comissoes.vendedor.valor : 0,
+          comissao_vendedor_responsavel_id: comissoes.vendedor.responsavel_id || null,
+          comissao_vendedor_responsible_id: comissoes.vendedor.responsavel_id || null,
+          comissao_orcamentista_percentual: comissoes.orcamentista.habilitado ? comissoes.orcamentista.percentual : 0,
+          comissao_orcamentista_valor: comissoes.orcamentista.habilitado ? comissoes.orcamentista.valor : 0,
+          comissao_orcamentista_responsavel_id: comissoes.orcamentista.responsavel_id || null,
+          comissao_orcamentista_responsible_id: comissoes.orcamentista.responsavel_id || null,
+          comissao_projetista_percentual: comissoes.projetista.habilitado ? comissoes.projetista.percentual : 0,
+          comissao_projetista_valor: comissoes.projetista.habilitado ? comissoes.projetista.valor : 0,
+          comissao_projetista_responsavel_id: comissoes.projetista.responsavel_id || null,
+          comissao_projetista_responsible_id: comissoes.projetista.responsavel_id || null,
+          comissao_montador_percentual: comissoes.montador.habilitado ? comissoes.montador.percentual : 0,
+          comissao_montador_valor: comissoes.montador.habilitado ? comissoes.montador.valor : 0,
+          comissao_montador_responsavel_id: comissoes.montador.responsavel_id || null,
+          comissao_montador_responsible_id: comissoes.montador.responsavel_id || null,
+          comissao_producao_percentual: comissoes.producao.habilitado ? comissoes.producao.percentual : 0,
+          comissao_producao_valor: comissoes.producao.habilitado ? comissoes.producao.valor : 0,
+          comissao_producao_responsavel_id: comissoes.producao.responsavel_id || null,
+          comissao_producao_responsible_id: comissoes.producao.responsavel_id || null,
+          data_emissao: formData.data_emissao || null,
+        })
+        .eq('id', orderId);
+
+      if (orderError) throw orderError;
+
       await supabase.from('order_items').delete().eq('order_id', orderId);
 
-      const itemsToInsert = items.map((item, index) => ({
+      const itemsToInsert = itemsWithResolvedProject.map((item, index) => ({
         order_id: orderId,
         descricao: item.descricao,
         quantidade: item.quantidade,
         valor_unitario: item.valor_unitario,
         valor_total: item.valor_total,
         especificacoes: item.especificacoes,
-        codigo_produto: item.codigo_produto,
-        ncm: item.ncm,
-        cfop: item.cfop,
-        unidade: item.unidade,
+        codigo_produto: item.codigo_produto || null,
+        ncm: item.ncm || null,
+        cfop: item.cfop || null,
+        unidade: item.unidade || 'UN',
         centro_custo: item.centro_custo || null,
         project_id: item.project_id || null,
         position: index,
@@ -699,18 +916,17 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
         .from('order_items')
         .insert(itemsToInsert)
         .select('id, descricao, centro_custo, valor_total');
+
       if (itemsError) throw itemsError;
 
-      // 4. Se mudou para ativo, criar OPs automaticamente
       let opsCreated = 0;
       if (shouldBeAtivo && insertedItems) {
         const centroCustoMap: Record<string, string> = {
-          'moveis_planejados': 'Móveis Planejados',
-          'producao_tendenci': 'Produção Tendenci',
-          'revenda': 'Revenda'
+          moveis_planejados: 'Móveis Planejados',
+          producao_tendenci: 'Produção Tendenci',
+          revenda: 'Revenda',
         };
 
-        // Buscar tipos de produção ativos
         const { data: productionTypes } = await supabase
           .from('production_types')
           .select('id, name')
@@ -723,10 +939,9 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
             const productionTypeName = centroCustoMap[item.centro_custo];
             if (!productionTypeName) continue;
 
-            const productionType = productionTypes.find(pt => pt.name === productionTypeName);
+            const productionType = productionTypes.find((pt) => pt.name === productionTypeName);
             if (!productionType) continue;
 
-            // Buscar a primeira fase template do tipo de produção
             const { data: firstPhaseTemplate } = await supabase
               .from('production_phase_templates')
               .select('id')
@@ -736,7 +951,6 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
               .limit(1)
               .single();
 
-            // Criar a OP
             const { data: newOP, error: opError } = await supabase
               .from('production_orders')
               .insert({
@@ -756,7 +970,6 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
             if (!opError && newOP) {
               opsCreated++;
 
-              // Se tiver fase template, criar a fase inicial e vincular à OP
               if (firstPhaseTemplate) {
                 const { data: newPhase } = await supabase
                   .from('production_phases')
@@ -764,7 +977,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                     production_order_id: newOP.id,
                     phase_template_id: firstPhaseTemplate.id,
                     status: 'em_andamento',
-                    started_at: new Date().toISOString()
+                    started_at: new Date().toISOString(),
                   })
                   .select('id')
                   .single();
@@ -781,7 +994,6 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
         }
       }
 
-      // 5. SYNC: Se observações foram alteradas, registrar no order_history
       const originalObs = order.entrega_observacoes || order.observacoes_internas || order.observacoes_nf || '';
       if (formData.observacoes && formData.observacoes !== originalObs) {
         await supabase.from('order_history').insert({
@@ -791,11 +1003,10 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
           old_value: originalObs || null,
           new_value: formData.observacoes,
           description: 'Observação atualizada',
-          created_by: user?.id
+          created_by: user?.id,
         });
       }
 
-      // 6. SYNC: Atualizar valor do deal no CRM se vinculado
       if (formData.deal_id) {
         await supabase
           .from('crm_deals')
@@ -803,11 +1014,12 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
           .eq('id', formData.deal_id);
       }
 
-      if (shouldBeAtivo && order?.status === 'rascunho') {
+      if (shouldBeAtivo) {
         toast.success(`Pedido ativado! ${opsCreated > 0 ? `${opsCreated} ordem(ns) de produção criada(s).` : ''}`);
       } else {
         toast.success('Pedido e cliente atualizados com sucesso!');
       }
+
       onSuccess();
       onOpenChange(false);
     } catch (error: any) {
