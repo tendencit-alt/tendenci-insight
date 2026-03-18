@@ -670,6 +670,19 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
   const allItemsHaveProject = items.length > 0 && items.every((item) => !!item.project_id);
   const isItensValid = items.length > 0 && allItemsHaveCentroCusto && allItemsHaveProject;
   const totalPercentual = parcelas.reduce((sum, p) => sum + p.percentual, 0);
+  const strategicResourceLabels = {
+    rt: 'RT',
+    vendedor: 'Vendedor',
+    orcamentista: 'Orçamentista',
+    projetista: 'Projetista',
+    montador: 'Montador',
+    producao: 'Produção',
+  } as const;
+  const missingStrategicResponsible = (Object.entries(comissoes) as Array<[
+    keyof typeof comissoes,
+    (typeof comissoes)[keyof typeof comissoes]
+  ]>).find(([, recurso]) => recurso.habilitado && !recurso.responsavel_id)?.[0];
+  const hasAllStrategicResponsibles = !missingStrategicResponsible;
 
   // Validação rigorosa: valor das formas de pagamento deve ser igual ao total
   const valorTotalPagamento = parcelas.reduce((sum, p) => sum + (total * (p.percentual / 100)), 0);
@@ -677,7 +690,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
   const isPagamentoValorCorreto = total > 0 ? diferencaPagamento < 0.01 : false;
   const hasSelectedArchitect = !!formData.architect_id;
   const isRtValid = !hasSelectedArchitect || (comissoes.rt.habilitado && comissoes.rt.responsavel_id === formData.architect_id);
-  const isPagamentoValid = parcelas.length > 0 && parcelas.every((p) => p.forma_pagamento) && totalPercentual === 100 && isPagamentoValorCorreto && isRtValid;
+  const isPagamentoValid = parcelas.length > 0 && parcelas.every((p) => p.forma_pagamento) && totalPercentual === 100 && isPagamentoValorCorreto && isRtValid && hasAllStrategicResponsibles;
   const isEntregaValid = !!formData.tipo_entrega;
   const isFormValid = isClienteValid && isItensValid && isPagamentoValid && isEntregaValid;
   const isEditable = order?.status === 'rascunho' || order?.status === 'ativo' || order?.status === 'aguardando_aprovacao';
@@ -776,6 +789,14 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
 
   const handleSubmit = async () => {
     if (!order) return;
+    if (missingStrategicResponsible) {
+      toast.error(`Selecione o responsável para ${strategicResourceLabels[missingStrategicResponsible]}`);
+      return;
+    }
+    if (!isRtValid) {
+      toast.error('O responsável de RT deve ser o arquiteto selecionado');
+      return;
+    }
 
     setLoading(true);
     try {
