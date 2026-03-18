@@ -233,21 +233,24 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
 
   const totalItems = items.reduce((sum, item) => sum + item.valor_total, 0);
 
+  const getCentroCustoLabel = (value?: string) => {
+    return CENTROS_CUSTO.find((cc) => cc.value === value)?.label || '-';
+  };
+
   return (
-    <div className="space-y-4">
-      {/* Header com botão de adicionar */}
+    <div className="space-y-4 min-w-0">
       {!readOnly && (
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <div className="flex items-center gap-2">
-            <Package className="h-5 w-5 text-primary" />
-            <span className="font-medium">Itens do Pedido ({items.length})</span>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-center gap-2">
+            <Package className="h-5 w-5 shrink-0 text-primary" />
+            <span className="min-w-0 font-medium">Itens do Pedido ({items.length})</span>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setShowProductSelector(true)} className="gap-2">
+          <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:justify-end">
+            <Button variant="outline" onClick={() => setShowProductSelector(true)} className="w-full gap-2 sm:w-auto">
               <Import className="h-4 w-4" />
               Importar Produto
             </Button>
-            <Button onClick={() => setIsAddingItem(true)} disabled={isAddingItem} className="gap-2">
+            <Button onClick={() => setIsAddingItem(true)} disabled={isAddingItem} className="w-full gap-2 sm:w-auto">
               <Plus className="h-4 w-4" />
               Adicionar Manual
             </Button>
@@ -255,9 +258,8 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
         </div>
       )}
 
-      {/* Modal de seleção de produtos */}
       <Dialog open={showProductSelector} onOpenChange={setShowProductSelector}>
-        <DialogContent className="max-w-3xl max-h-[80vh]">
+        <DialogContent className="max-h-[80vh] w-[calc(100vw-2rem)] max-w-3xl overflow-hidden">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Package className="h-5 w-5" />
@@ -265,10 +267,9 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
             </DialogTitle>
           </DialogHeader>
           
-          <div className="space-y-4">
-            {/* Busca */}
+          <div className="space-y-4 min-w-0">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Buscar produto..."
                 value={buscaProduto}
@@ -277,15 +278,14 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
               />
             </div>
             
-            {/* Lista de produtos */}
             <ScrollArea className="h-[400px] pr-4">
               {loadingProdutos ? (
                 <div className="flex items-center justify-center py-8">
                   <span className="text-muted-foreground">Carregando...</span>
                 </div>
               ) : produtosFiltrados.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Package className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <div className="py-8 text-center text-muted-foreground">
+                  <Package className="mx-auto mb-2 h-8 w-8 opacity-50" />
                   <p>Nenhum produto encontrado</p>
                 </div>
               ) : (
@@ -293,7 +293,7 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                   {produtosFiltrados.map(produto => (
                     <Card
                       key={produto.id}
-                      className="cursor-pointer hover:border-primary transition-colors"
+                      className="cursor-pointer transition-colors hover:border-primary"
                       onClick={() => addProdutoToOrder(produto)}
                     >
                       <div className="flex items-center gap-3 p-3">
@@ -301,23 +301,23 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                           <img 
                             src={produto.image_url} 
                             alt={produto.name}
-                            className="w-12 h-12 object-cover rounded"
+                            className="h-12 w-12 rounded object-cover"
                           />
                         ) : (
-                          <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">
+                          <div className="flex h-12 w-12 items-center justify-center rounded bg-muted">
                             <Package className="h-6 w-6 text-muted-foreground" />
                           </div>
                         )}
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium truncate">{produto.name}</p>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate font-medium">{produto.name}</p>
                           <p className="text-xs text-muted-foreground">
                             {produto.code || 'Sem código'}
                           </p>
                         </div>
-                        <div className="text-right space-y-1">
+                        <div className="shrink-0 text-right space-y-1">
                           <p className="font-medium">{formatCurrency(produto.cost_price || 0)}</p>
-                          <Badge variant={(produto.current_stock ?? 0) > 0 ? "default" : "secondary"}>
-                            {(produto.current_stock ?? 0) > 0 ? `${produto.current_stock} ${produto.unit || 'UN'}` : "Sem estoque"}
+                          <Badge variant={(produto.current_stock ?? 0) > 0 ? 'default' : 'secondary'}>
+                            {(produto.current_stock ?? 0) > 0 ? `${produto.current_stock} ${produto.unit || 'UN'}` : 'Sem estoque'}
                           </Badge>
                         </div>
                       </div>
@@ -330,12 +330,11 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
         </DialogContent>
       </Dialog>
 
-      {/* Formulário expandido para adicionar item */}
       {isAddingItem && !readOnly && (
-        <Card className="border-primary/50 bg-primary/5">
+        <Card className="overflow-hidden border-primary/50 bg-primary/5">
           <CardHeader className="py-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm flex items-center gap-2">
+            <div className="flex items-center justify-between gap-2">
+              <CardTitle className="flex items-center gap-2 text-sm">
                 <Plus className="h-4 w-4" />
                 Novo Item
               </CardTitle>
@@ -344,8 +343,8 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
               </Button>
             </div>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <CardContent className="space-y-4 min-w-0">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
               {showFiscalFields && (
                 <div className="space-y-1">
                   <Label className="text-xs">Código</Label>
@@ -356,7 +355,7 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                   />
                 </div>
               )}
-              <div className="space-y-1 col-span-2">
+              <div className="space-y-1 sm:col-span-2 xl:col-span-2">
                 <Label className="text-xs">Descrição *</Label>
                 <Input
                   placeholder="Nome/descrição do item"
@@ -417,49 +416,49 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">Total</Label>
-                <div className="h-10 flex items-center px-3 bg-muted rounded-md font-medium">
+                <div className="flex h-10 items-center rounded-md bg-muted px-3 font-medium">
                   {formatCurrency((newItem.quantidade || 0) * (newItem.valor_unitario || 0))}
                 </div>
               </div>
             </div>
 
             {requireCentroCusto && (
-              <div className="space-y-1">
-                <Label className="text-xs">Centro de Custo *</Label>
-                <Select
-                  value={newItem.centro_custo || "_placeholder"}
-                  onValueChange={(v) => setNewItem({ ...newItem, centro_custo: v === "_placeholder" ? "" : v })}
-                >
-                  <SelectTrigger className={!newItem.centro_custo ? 'border-destructive/50' : ''}>
-                    <SelectValue placeholder="Selecione o centro de custo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="_placeholder" disabled>Selecione</SelectItem>
-                    {CENTROS_CUSTO.map((cc) => (
-                      <SelectItem key={cc.value} value={cc.value}>{cc.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+              <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+                <div className="space-y-1 min-w-0">
+                  <Label className="text-xs">Centro de Custo *</Label>
+                  <Select
+                    value={newItem.centro_custo || '_placeholder'}
+                    onValueChange={(v) => setNewItem({ ...newItem, centro_custo: v === '_placeholder' ? '' : v })}
+                  >
+                    <SelectTrigger className={!newItem.centro_custo ? 'border-destructive/50' : ''}>
+                      <SelectValue placeholder="Selecione o centro de custo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="_placeholder" disabled>Selecione</SelectItem>
+                      {CENTROS_CUSTO.map((cc) => (
+                        <SelectItem key={cc.value} value={cc.value}>{cc.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-            {requireCentroCusto && (
-              <div className="space-y-1">
-                <Label className="text-xs">Projeto</Label>
-                <Select
-                  value={newItem.project_id || "_placeholder"}
-                  onValueChange={(v) => setNewItem({ ...newItem, project_id: v === "_placeholder" ? "" : v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecionar agora ou gerar no salvamento" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="_placeholder">Gerar automaticamente ao salvar</SelectItem>
-                    {PROJETOS.map((p) => (
-                      <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="space-y-1 min-w-0">
+                  <Label className="text-xs">Projeto</Label>
+                  <Select
+                    value={newItem.project_id || '_placeholder'}
+                    onValueChange={(v) => setNewItem({ ...newItem, project_id: v === '_placeholder' ? '' : v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecionar agora ou gerar no salvamento" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="_placeholder">Gerar automaticamente ao salvar</SelectItem>
+                      {PROJETOS.map((p) => (
+                        <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             )}
 
@@ -473,12 +472,12 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
               />
             </div>
 
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => { setIsAddingItem(false); setNewItem(emptyItem); }}>
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <Button variant="outline" onClick={() => { setIsAddingItem(false); setNewItem(emptyItem); }} className="w-full sm:w-auto">
                 Cancelar
               </Button>
-              <Button onClick={handleAddItem} disabled={!newItem.descricao || !newItem.valor_unitario || (requireCentroCusto && !newItem.centro_custo)}>
-                <Plus className="h-4 w-4 mr-1" />
+              <Button onClick={handleAddItem} disabled={!newItem.descricao || !newItem.valor_unitario || (requireCentroCusto && !newItem.centro_custo)} className="w-full sm:w-auto">
+                <Plus className="mr-1 h-4 w-4" />
                 Adicionar Item
               </Button>
             </div>
@@ -486,13 +485,129 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
         </Card>
       )}
 
-      {/* Tabela de itens */}
-      <div className="border rounded-lg overflow-hidden">
+      <div className="space-y-3 md:hidden">
+        {items.length === 0 ? (
+          <Card className="border-dashed">
+            <CardContent className="py-8 text-center text-muted-foreground">
+              <Package className="mx-auto mb-2 h-8 w-8 opacity-50" />
+              <p>Nenhum item adicionado</p>
+              {!readOnly && <p className="mt-1 text-xs">Clique em "Adicionar Manual" para começar</p>}
+            </CardContent>
+          </Card>
+        ) : (
+          items.map((item) => (
+            <Card key={item.id} className="overflow-hidden">
+              <CardContent className="space-y-3 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 space-y-1">
+                    <p className="break-words font-medium">{item.descricao}</p>
+                    {showFiscalFields && item.codigo_produto && (
+                      <p className="text-xs text-muted-foreground">Código: {item.codigo_produto}</p>
+                    )}
+                  </div>
+                  {!readOnly && (
+                    <div className="flex shrink-0 gap-1">
+                      <Button size="icon" variant="ghost" onClick={() => setEditingId(editingId === item.id ? null : item.id)}>
+                        {editingId === item.id ? <Check className="h-4 w-4 text-primary" /> : <Edit2 className="h-4 w-4" />}
+                      </Button>
+                      <Button size="icon" variant="ghost" onClick={() => handleRemoveItem(item.id)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                {editingId === item.id ? (
+                  <div className="grid grid-cols-1 gap-3">
+                    <Input value={item.descricao} onChange={(e) => handleUpdateItem(item.id, { descricao: e.target.value })} />
+                    {showFiscalFields && (
+                      <div className="grid grid-cols-2 gap-3">
+                        <Input value={item.codigo_produto || ''} onChange={(e) => handleUpdateItem(item.id, { codigo_produto: e.target.value })} placeholder="Código" />
+                        <Input value={item.unidade || 'UN'} onChange={(e) => handleUpdateItem(item.id, { unidade: e.target.value })} placeholder="Unidade" />
+                        <Input value={item.ncm || ''} onChange={(e) => handleUpdateItem(item.id, { ncm: e.target.value })} placeholder="NCM" />
+                        <Input value={item.cfop || ''} onChange={(e) => handleUpdateItem(item.id, { cfop: e.target.value })} placeholder="CFOP" />
+                      </div>
+                    )}
+                    {requireCentroCusto && (
+                      <Select
+                        value={item.centro_custo || '_placeholder'}
+                        onValueChange={(v) => handleUpdateItem(item.id, { centro_custo: v === '_placeholder' ? '' : v })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Centro de custo" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="_placeholder" disabled>Selecione</SelectItem>
+                          {CENTROS_CUSTO.map((cc) => (
+                            <SelectItem key={cc.value} value={cc.value}>{cc.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                    <div className="grid grid-cols-2 gap-3">
+                      <Input type="number" value={item.quantidade} onChange={(e) => handleUpdateItem(item.id, { quantidade: Number(e.target.value) })} min={1} placeholder="Quantidade" />
+                      <Input type="number" value={item.valor_unitario} onChange={(e) => handleUpdateItem(item.id, { valor_unitario: Number(e.target.value) })} min={0} step={0.01} placeholder="Valor unitário" />
+                    </div>
+                    <Textarea value={item.especificacoes || ''} onChange={(e) => handleUpdateItem(item.id, { especificacoes: e.target.value })} placeholder="Especificações / observações" rows={2} />
+                  </div>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-2 gap-3 rounded-lg bg-muted/30 p-3 text-sm">
+                      <div>
+                        <p className="text-xs text-muted-foreground">Quantidade</p>
+                        <p className="font-medium">{item.quantidade}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Unidade</p>
+                        <p className="font-medium">{item.unidade || 'UN'}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Valor unitário</p>
+                        <p className="font-medium">{formatCurrency(item.valor_unitario)}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Total</p>
+                        <p className="font-medium">{formatCurrency(item.valor_total)}</p>
+                      </div>
+                      {requireCentroCusto && (
+                        <div className="col-span-2">
+                          <p className="text-xs text-muted-foreground">Centro de custo</p>
+                          <p className="font-medium break-words">{getCentroCustoLabel(item.centro_custo)}</p>
+                        </div>
+                      )}
+                      {showFiscalFields && (item.ncm || item.cfop) && (
+                        <div className="col-span-2 grid grid-cols-2 gap-3">
+                          <div>
+                            <p className="text-xs text-muted-foreground">NCM</p>
+                            <p className="font-medium">{item.ncm || '-'}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">CFOP</p>
+                            <p className="font-medium">{item.cfop || '-'}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    {item.especificacoes && (
+                      <div className="rounded-lg bg-muted/20 p-3 text-sm">
+                        <p className="text-xs text-muted-foreground">Especificações</p>
+                        <p className="break-words">{item.especificacoes}</p>
+                      </div>
+                    )}
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
+
+      <div className="hidden overflow-hidden rounded-lg border md:block">
         <Table>
           <TableHeader>
             <TableRow>
               {showFiscalFields && <TableHead className="w-[90px]">Código</TableHead>}
-              <TableHead className={showFiscalFields ? "w-[30%]" : "w-[40%]"}>Descrição</TableHead>
+              <TableHead className={showFiscalFields ? 'w-[30%]' : 'w-[40%]'}>Descrição</TableHead>
               {showFiscalFields && (
                 <>
                   <TableHead className="w-[80px]">NCM</TableHead>
@@ -538,8 +653,8 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                         {requireCentroCusto && (
                           <TableCell>
                             <Select
-                              value={item.centro_custo || "_placeholder"}
-                              onValueChange={(v) => handleUpdateItem(item.id, { centro_custo: v === "_placeholder" ? "" : v })}
+                              value={item.centro_custo || '_placeholder'}
+                              onValueChange={(v) => handleUpdateItem(item.id, { centro_custo: v === '_placeholder' ? '' : v })}
                             >
                               <SelectTrigger className="h-8">
                                 <SelectValue placeholder="-" />
@@ -559,7 +674,7 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                         <TableCell>
                           <Input type="number" className="h-8" value={item.valor_unitario} onChange={(e) => handleUpdateItem(item.id, { valor_unitario: Number(e.target.value) })} min={0} step={0.01} />
                         </TableCell>
-                        <TableCell className="font-medium text-right">{formatCurrency(item.valor_total)}</TableCell>
+                        <TableCell className="text-right font-medium">{formatCurrency(item.valor_total)}</TableCell>
                         <TableCell>
                           <Button size="icon" variant="ghost" onClick={() => setEditingId(null)}>
                             <Check className="h-4 w-4 text-primary" />
@@ -574,7 +689,7 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                         <TableCell>
                           <CollapsibleTrigger asChild>
                             <div className="cursor-pointer">
-                              <p className="font-medium flex items-center gap-1">
+                              <p className="flex items-center gap-1 font-medium">
                                 {item.descricao}
                                 {item.especificacoes && (
                                   expandedId === item.id ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />
@@ -593,16 +708,16 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                         {requireCentroCusto && (
                           <TableCell>
                             <span className="text-xs">
-                              {CENTROS_CUSTO.find(cc => cc.value === item.centro_custo)?.label || '-'}
+                              {getCentroCustoLabel(item.centro_custo)}
                             </span>
                           </TableCell>
                         )}
                         <TableCell className="text-center">{item.quantidade}</TableCell>
                         <TableCell className="text-right">{formatCurrency(item.valor_unitario)}</TableCell>
-                        <TableCell className="font-medium text-right">{formatCurrency(item.valor_total)}</TableCell>
+                        <TableCell className="text-right font-medium">{formatCurrency(item.valor_total)}</TableCell>
                         {!readOnly && (
                           <TableCell>
-                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                               <Button size="icon" variant="ghost" onClick={() => setEditingId(item.id)}>
                                 <Edit2 className="h-4 w-4" />
                               </Button>
@@ -630,10 +745,10 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
 
             {items.length === 0 && (
               <TableRow>
-                <TableCell colSpan={showFiscalFields ? 9 : 5} className="text-center text-muted-foreground py-8">
-                  <Package className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <TableCell colSpan={showFiscalFields ? 9 : 5} className="py-8 text-center text-muted-foreground">
+                  <Package className="mx-auto mb-2 h-8 w-8 opacity-50" />
                   <p>Nenhum item adicionado</p>
-                  {!readOnly && <p className="text-xs mt-1">Clique em "Adicionar Item" para começar</p>}
+                  {!readOnly && <p className="mt-1 text-xs">Clique em "Adicionar Item" para começar</p>}
                 </TableCell>
               </TableRow>
             )}
@@ -641,12 +756,11 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
         </Table>
       </div>
 
-      {/* Total dos itens */}
       {items.length > 0 && (
         <div className="flex justify-end">
-          <div className="bg-muted/50 rounded-lg px-4 py-2">
-            <span className="text-sm text-muted-foreground mr-2">Total dos Itens:</span>
-            <span className="font-bold text-lg">{formatCurrency(totalItems)}</span>
+          <div className="rounded-lg bg-muted/50 px-4 py-2 text-right">
+            <span className="mr-2 text-sm text-muted-foreground">Total dos Itens:</span>
+            <span className="text-lg font-bold break-words">{formatCurrency(totalItems)}</span>
           </div>
         </div>
       )}
