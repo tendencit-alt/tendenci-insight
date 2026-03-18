@@ -16,6 +16,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
 import { OrderItemsTable } from './OrderItemsTable';
 import { useProjects } from '@/hooks/useProjects';
+import { useOrderResponsibles } from '@/hooks/useOrderResponsibles';
 
 import { CreateClientDialog } from '@/components/crm/CreateClientDialog';
 import { CreateWonDealDialog } from './CreateWonDealDialog';
