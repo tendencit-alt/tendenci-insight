@@ -467,25 +467,25 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
           habilitado: (orderAny.comissao_vendedor_valor || 0) > 0 || (orderAny.comissao_vendedor_percentual || 0) > 0,
           percentual: Number(orderAny.comissao_vendedor_percentual) || 3,
           valor: Number(orderAny.comissao_vendedor_valor) || 0,
-          responsavel_id: orderAny.comissao_vendedor_responsavel_id || ''
+          responsavel_id: orderAny.comissao_vendedor_responsible_id || orderAny.comissao_vendedor_responsavel_id || orderAny.seller_responsible_id || ''
         },
         orcamentista: {
           habilitado: (orderAny.comissao_orcamentista_valor || 0) > 0 || (orderAny.comissao_orcamentista_percentual || 0) > 0,
           percentual: Number(orderAny.comissao_orcamentista_percentual) || 0.2,
           valor: Number(orderAny.comissao_orcamentista_valor) || 0,
-          responsavel_id: orderAny.comissao_orcamentista_responsavel_id || ''
+          responsavel_id: orderAny.comissao_orcamentista_responsible_id || orderAny.comissao_orcamentista_responsavel_id || ''
         },
         projetista: {
           habilitado: (orderAny.comissao_projetista_valor || 0) > 0 || (orderAny.comissao_projetista_percentual || 0) > 0,
           percentual: Number(orderAny.comissao_projetista_percentual) || 0.2,
           valor: Number(orderAny.comissao_projetista_valor) || 0,
-          responsavel_id: orderAny.comissao_projetista_responsavel_id || ''
+          responsavel_id: orderAny.comissao_projetista_responsible_id || orderAny.comissao_projetista_responsavel_id || ''
         },
         montador: {
           habilitado: (orderAny.comissao_montador_valor || 0) > 0 || (orderAny.comissao_montador_percentual || 0) > 0,
           percentual: Number(orderAny.comissao_montador_percentual) || 10,
           valor: Number(orderAny.comissao_montador_valor) || 0,
-          responsavel_id: orderAny.comissao_montador_responsavel_id || ''
+          responsavel_id: orderAny.comissao_montador_responsible_id || orderAny.comissao_montador_responsavel_id || orderAny.montador_responsible_id || ''
         },
       });
     }
