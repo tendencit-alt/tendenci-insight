@@ -478,7 +478,7 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
               <Button variant="outline" onClick={() => { setIsAddingItem(false); setNewItem(emptyItem); }} className="w-full sm:w-auto">
                 Cancelar
               </Button>
-              <Button onClick={handleAddItem} disabled={!newItem.descricao || !newItem.valor_unitario || (requireCentroCusto && !newItem.centro_custo)} className="w-full sm:w-auto">
+              <Button onClick={handleAddItem} disabled={!newItem.descricao || !newItem.valor_unitario || (requireCentroCusto && !newItem.centro_custo) || (requireProject && !newItem.project_id)} className="w-full sm:w-auto">
                 <Plus className="mr-1 h-4 w-4" />
                 Adicionar Item
               </Button>
