@@ -3922,6 +3922,33 @@ export type Database = {
           },
         ]
       }
+      order_responsibles: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          type: Database["public"]["Enums"]["order_responsible_type"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          type: Database["public"]["Enums"]["order_responsible_type"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          type?: Database["public"]["Enums"]["order_responsible_type"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           approved_by: string | null
@@ -3931,15 +3958,19 @@ export type Database = {
           client_id: string | null
           comissao_montador_percentual: number | null
           comissao_montador_responsavel_id: string | null
+          comissao_montador_responsible_id: string | null
           comissao_montador_valor: number | null
           comissao_orcamentista_percentual: number | null
           comissao_orcamentista_responsavel_id: string | null
+          comissao_orcamentista_responsible_id: string | null
           comissao_orcamentista_valor: number | null
           comissao_projetista_percentual: number | null
           comissao_projetista_responsavel_id: string | null
+          comissao_projetista_responsible_id: string | null
           comissao_projetista_valor: number | null
           comissao_vendedor_percentual: number | null
           comissao_vendedor_responsavel_id: string | null
+          comissao_vendedor_responsible_id: string | null
           comissao_vendedor_valor: number | null
           condicao_pagamento: string | null
           created_at: string | null
@@ -3978,6 +4009,8 @@ export type Database = {
           rt_habilitado: boolean | null
           rt_percentual: number | null
           rt_valor: number | null
+          seller_responsible_id: string | null
+          seller_responsible_name: string | null
           status: string | null
           subtotal: number | null
           taxa_boleto_percentual: number | null
@@ -4002,15 +4035,19 @@ export type Database = {
           client_id?: string | null
           comissao_montador_percentual?: number | null
           comissao_montador_responsavel_id?: string | null
+          comissao_montador_responsible_id?: string | null
           comissao_montador_valor?: number | null
           comissao_orcamentista_percentual?: number | null
           comissao_orcamentista_responsavel_id?: string | null
+          comissao_orcamentista_responsible_id?: string | null
           comissao_orcamentista_valor?: number | null
           comissao_projetista_percentual?: number | null
           comissao_projetista_responsavel_id?: string | null
+          comissao_projetista_responsible_id?: string | null
           comissao_projetista_valor?: number | null
           comissao_vendedor_percentual?: number | null
           comissao_vendedor_responsavel_id?: string | null
+          comissao_vendedor_responsible_id?: string | null
           comissao_vendedor_valor?: number | null
           condicao_pagamento?: string | null
           created_at?: string | null
@@ -4049,6 +4086,8 @@ export type Database = {
           rt_habilitado?: boolean | null
           rt_percentual?: number | null
           rt_valor?: number | null
+          seller_responsible_id?: string | null
+          seller_responsible_name?: string | null
           status?: string | null
           subtotal?: number | null
           taxa_boleto_percentual?: number | null
@@ -4073,15 +4112,19 @@ export type Database = {
           client_id?: string | null
           comissao_montador_percentual?: number | null
           comissao_montador_responsavel_id?: string | null
+          comissao_montador_responsible_id?: string | null
           comissao_montador_valor?: number | null
           comissao_orcamentista_percentual?: number | null
           comissao_orcamentista_responsavel_id?: string | null
+          comissao_orcamentista_responsible_id?: string | null
           comissao_orcamentista_valor?: number | null
           comissao_projetista_percentual?: number | null
           comissao_projetista_responsavel_id?: string | null
+          comissao_projetista_responsible_id?: string | null
           comissao_projetista_valor?: number | null
           comissao_vendedor_percentual?: number | null
           comissao_vendedor_responsavel_id?: string | null
+          comissao_vendedor_responsible_id?: string | null
           comissao_vendedor_valor?: number | null
           condicao_pagamento?: string | null
           created_at?: string | null
@@ -4120,6 +4163,8 @@ export type Database = {
           rt_habilitado?: boolean | null
           rt_percentual?: number | null
           rt_valor?: number | null
+          seller_responsible_id?: string | null
+          seller_responsible_name?: string | null
           status?: string | null
           subtotal?: number | null
           taxa_boleto_percentual?: number | null
@@ -4166,10 +4211,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "orders_comissao_montador_responsible_id_fkey"
+            columns: ["comissao_montador_responsible_id"]
+            isOneToOne: false
+            referencedRelation: "order_responsibles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "orders_comissao_orcamentista_responsavel_id_fkey"
             columns: ["comissao_orcamentista_responsavel_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_comissao_orcamentista_responsible_id_fkey"
+            columns: ["comissao_orcamentista_responsible_id"]
+            isOneToOne: false
+            referencedRelation: "order_responsibles"
             referencedColumns: ["id"]
           },
           {
@@ -4180,10 +4239,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "orders_comissao_projetista_responsible_id_fkey"
+            columns: ["comissao_projetista_responsible_id"]
+            isOneToOne: false
+            referencedRelation: "order_responsibles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "orders_comissao_vendedor_responsavel_id_fkey"
             columns: ["comissao_vendedor_responsavel_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_comissao_vendedor_responsible_id_fkey"
+            columns: ["comissao_vendedor_responsible_id"]
+            isOneToOne: false
+            referencedRelation: "order_responsibles"
             referencedColumns: ["id"]
           },
           {
@@ -4205,6 +4278,13 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "fin_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_seller_responsible_id_fkey"
+            columns: ["seller_responsible_id"]
+            isOneToOne: false
+            referencedRelation: "order_responsibles"
             referencedColumns: ["id"]
           },
           {
@@ -8741,6 +8821,11 @@ export type Database = {
         | "compras"
         | "pedidos"
         | "ia_configuracao"
+      order_responsible_type:
+        | "vendedor"
+        | "orcamentista"
+        | "projetista"
+        | "montador"
       user_role: "admin" | "vendedor" | "arquiteto" | "projetista"
     }
     CompositeTypes: {
@@ -8886,6 +8971,12 @@ export const Constants = {
         "compras",
         "pedidos",
         "ia_configuracao",
+      ],
+      order_responsible_type: [
+        "vendedor",
+        "orcamentista",
+        "projetista",
+        "montador",
       ],
       user_role: ["admin", "vendedor", "arquiteto", "projetista"],
     },
