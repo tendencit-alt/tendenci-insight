@@ -68,7 +68,7 @@ const emptyItem = {
   project_id: '',
 };
 
-export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFiscalFields = false, requireCentroCusto = false, clientName }: OrderItemsTableProps) {
+export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFiscalFields = false, requireCentroCusto = false, requireProject = false, clientName }: OrderItemsTableProps) {
   const { costCenters: CENTROS_CUSTO } = useCostCenters();
   const { projects: PROJETOS } = useProjects();
   const [editingId, setEditingId] = useState<string | null>(null);
