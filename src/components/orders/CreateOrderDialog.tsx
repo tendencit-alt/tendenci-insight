@@ -507,8 +507,9 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
   const diferencaPagamento = Math.abs(valorTotalPagamento - total);
   // Se total é 0 ou negativo, não permite validar como correto
   const isPagamentoValorCorreto = total > 0 ? diferencaPagamento < 0.01 : false;
+  const isRtValid = !hasSelectedArchitect || (comissoes.rt.habilitado && comissoes.rt.responsavel_id === formData.architect_id);
   
-  const isPagamentoValid = parcelas.length > 0 && parcelas.every(p => p.forma_pagamento) && totalPercentual === 100 && isPagamentoValorCorreto;
+  const isPagamentoValid = parcelas.length > 0 && parcelas.every(p => p.forma_pagamento) && totalPercentual === 100 && isPagamentoValorCorreto && isRtValid;
   const isEntregaValid = !!formData.tipo_entrega;
   const isFormValid = isClienteValid && isItensValid && isPagamentoValid && isEntregaValid;
 
