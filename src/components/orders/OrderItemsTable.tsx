@@ -577,6 +577,12 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                           <p className="font-medium break-words">{getCentroCustoLabel(item.centro_custo)}</p>
                         </div>
                       )}
+                      {requireProject && (
+                        <div className="col-span-2">
+                          <p className="text-xs text-muted-foreground">Projeto</p>
+                          <p className="font-medium break-words">{PROJETOS.find((project) => project.value === item.project_id)?.label || '-'}</p>
+                        </div>
+                      )}
                       {showFiscalFields && (item.ncm || item.cfop) && (
                         <div className="col-span-2 grid grid-cols-2 gap-3">
                           <div>
