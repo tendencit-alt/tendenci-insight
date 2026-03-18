@@ -641,18 +641,23 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
           rt_habilitado: comissoes.rt.habilitado,
           rt_percentual: comissoes.rt.habilitado ? comissoes.rt.percentual : 0,
           rt_valor: comissoes.rt.habilitado ? comissoes.rt.valor : 0,
+          seller_responsible_id: comissoes.vendedor.responsavel_id || null,
           comissao_vendedor_percentual: comissoes.vendedor.habilitado ? comissoes.vendedor.percentual : 0,
           comissao_vendedor_valor: comissoes.vendedor.habilitado ? comissoes.vendedor.valor : 0,
           comissao_vendedor_responsavel_id: comissoes.vendedor.responsavel_id || null,
+          comissao_vendedor_responsible_id: comissoes.vendedor.responsavel_id || null,
           comissao_orcamentista_percentual: comissoes.orcamentista.habilitado ? comissoes.orcamentista.percentual : 0,
           comissao_orcamentista_valor: comissoes.orcamentista.habilitado ? comissoes.orcamentista.valor : 0,
           comissao_orcamentista_responsavel_id: comissoes.orcamentista.responsavel_id || null,
+          comissao_orcamentista_responsible_id: comissoes.orcamentista.responsavel_id || null,
           comissao_projetista_percentual: comissoes.projetista.habilitado ? comissoes.projetista.percentual : 0,
           comissao_projetista_valor: comissoes.projetista.habilitado ? comissoes.projetista.valor : 0,
           comissao_projetista_responsavel_id: comissoes.projetista.responsavel_id || null,
+          comissao_projetista_responsible_id: comissoes.projetista.responsavel_id || null,
           comissao_montador_percentual: comissoes.montador.habilitado ? comissoes.montador.percentual : 0,
           comissao_montador_valor: comissoes.montador.habilitado ? comissoes.montador.valor : 0,
           comissao_montador_responsavel_id: comissoes.montador.responsavel_id || null,
+          comissao_montador_responsible_id: comissoes.montador.responsavel_id || null,
         })
         .select()
         .single();
