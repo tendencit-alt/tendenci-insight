@@ -181,8 +181,8 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
     vendedor_id: '',
   });
 
-  // Query para buscar vendedores (apenas para masters)
-  const { data: vendedores } = useQuery({
+  // Query para buscar vendedores do sistema (apenas para masters)
+  const { data: systemVendedores } = useQuery({
     queryKey: ['vendedores-for-order'],
     queryFn: async () => {
       const { data } = await supabase
@@ -195,33 +195,17 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
     enabled: isMaster && open,
   });
 
-  // Query para orçamentistas (profile_type = 'Orçamentista')
-  const { data: orcamentistas } = useQuery({
-    queryKey: ['orcamentistas-for-order'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('profiles')
-        .select('id, full_name, profile_type:profile_types!inner(name)')
-        .eq('profile_types.name', 'Orçamentista')
-        .order('full_name');
-      return data || [];
-    },
-    enabled: open,
-  });
+  const {
+    vendedores: vendedoresAll,
+    orcamentistas: orcamentistasAll,
+    projetistas: projetistasAll,
+    montadores: montadoresAll,
+  } = useOrderResponsibles(open);
 
-  // Query para projetistas (role = 'projetista')
-  const { data: projetistas } = useQuery({
-    queryKey: ['projetistas-for-order'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('profiles')
-        .select('id, full_name')
-        .eq('role', 'projetista')
-        .order('full_name');
-      return data || [];
-    },
-    enabled: open,
-  });
+  const vendedores = vendedoresAll.filter((item) => item.is_active);
+  const orcamentistas = orcamentistasAll.filter((item) => item.is_active);
+  const projetistas = projetistasAll.filter((item) => item.is_active);
+  const montadores = montadoresAll.filter((item) => item.is_active);
 
   const [parcelas, setParcelas] = useState<PagamentoParcela[]>([
     { id: '1', forma_pagamento: '', percentual: 100, data_vencimento: '', numero_parcelas: 1 }
