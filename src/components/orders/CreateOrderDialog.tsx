@@ -282,7 +282,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
 
     setComissoes((prev) => {
       if (!formData.architect_id) {
-        if (!prev.rt.habilitado && !prev.rt.responsavel_id) return prev;
+        if (!prev.rt.habilitado && !prev.rt.responsavel_id && prev.rt.valor === 0) return prev;
 
         return {
           ...prev,
@@ -290,6 +290,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
             ...prev.rt,
             habilitado: false,
             responsavel_id: '',
+            valor: 0,
           },
         };
       }
@@ -297,11 +298,13 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
       const nextPercentual = selectedArchitect?.commission_percent
         ? Number(selectedArchitect.commission_percent)
         : prev.rt.percentual;
+      const nextValor = total * (nextPercentual / 100);
 
       const shouldUpdate =
         !prev.rt.habilitado ||
         prev.rt.responsavel_id !== formData.architect_id ||
-        prev.rt.percentual !== nextPercentual;
+        prev.rt.percentual !== nextPercentual ||
+        prev.rt.valor !== nextValor;
 
       if (!shouldUpdate) return prev;
 
@@ -312,10 +315,11 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
           habilitado: true,
           responsavel_id: formData.architect_id,
           percentual: nextPercentual,
+          valor: nextValor,
         },
       };
     });
-  }, [formData.architect_id, architects]);
+  }, [formData.architect_id, architects, total]);
 
   const { data: deals, refetch: refetchDeals } = useQuery({
     queryKey: ['deals-for-order'],
