@@ -797,6 +797,11 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                       ))}
                     </SelectContent>
                   </Select>
+                  {!hasSelectedArchitect && (
+                    <p className="text-sm text-muted-foreground">
+                      Selecione um arquiteto para liberar o recurso estratégico RT na etapa de pagamento.
+                    </p>
+                  )}
                 </div>
 
 
