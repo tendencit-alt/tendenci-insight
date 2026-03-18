@@ -3,7 +3,9 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 
-export type OrderResponsible = Database["public"]["Tables"]["order_responsibles"]["Row"];
+export type OrderResponsible = Database["public"]["Tables"]["order_responsibles"]["Row"] & {
+  full_name: string;
+};
 export type OrderResponsibleType = Database["public"]["Enums"]["order_responsible_type"];
 
 export function useOrderResponsibles(enabled = true) {
@@ -17,7 +19,7 @@ export function useOrderResponsibles(enabled = true) {
         .order("name");
 
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []).map((item) => ({ ...item, full_name: item.name }));
     },
   });
 
