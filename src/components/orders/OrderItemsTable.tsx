@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -71,50 +70,25 @@ const emptyItem = {
 export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFiscalFields = false, requireCentroCusto = false, clientName }: OrderItemsTableProps) {
   const { costCenters: CENTROS_CUSTO } = useCostCenters();
   const { projects: PROJETOS } = useProjects();
-  const [creatingProject, setCreatingProject] = useState(false);
-  const queryClient = useQueryClient();
-
-  const handleCreateProjectForClient = async () => {
-    if (!clientName || creatingProject) return;
-    setCreatingProject(true);
-    try {
-      const { data, error } = await supabase
-        .from('fin_projects')
-        .insert({ name: clientName, status: 'ativo' })
-        .select('id')
-        .single();
-      if (error) throw error;
-      queryClient.invalidateQueries({ queryKey: ['fin-projects-active'] });
-      toast.success(`Projeto "${clientName}" criado!`);
-      setNewItem(prev => ({ ...prev, project_id: data.id }));
-    } catch (err: any) {
-      toast.error('Erro ao criar projeto: ' + err.message);
-    } finally {
-      setCreatingProject(false);
-    }
-  };
-
   const [editingId, setEditingId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [isAddingItem, setIsAddingItem] = useState(false);
   const [newItem, setNewItem] = useState<Partial<OrderItem>>(emptyItem);
   const [autoProjectDone, setAutoProjectDone] = useState(false);
 
-  // Auto-preencher projeto com nome do cliente ao abrir novo item
   useEffect(() => {
     if (!isAddingItem || !clientName || autoProjectDone) return;
 
-    const existing = PROJETOS.find(p => p.label === clientName);
-    if (existing) {
-      setNewItem(prev => ({ ...prev, project_id: existing.value }));
-      setAutoProjectDone(true);
-    } else if (!creatingProject) {
-      setAutoProjectDone(true);
-      handleCreateProjectForClient();
-    }
-  }, [isAddingItem, clientName, PROJETOS, autoProjectDone, creatingProject]);
+    const normalizedClientName = clientName.trim().toLowerCase();
+    const existing = PROJETOS.find((project) => project.label.trim().toLowerCase() === normalizedClientName);
 
-  // Reset flag quando fecha o form
+    if (existing) {
+      setNewItem((prev) => ({ ...prev, project_id: existing.value }));
+    }
+
+    setAutoProjectDone(true);
+  }, [isAddingItem, clientName, PROJETOS, autoProjectDone]);
+
   useEffect(() => {
     if (!isAddingItem) setAutoProjectDone(false);
   }, [isAddingItem]);
