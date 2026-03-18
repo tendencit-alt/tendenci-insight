@@ -274,17 +274,47 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     },
   });
 
-  // Auto-preencher RT quando arquiteto é selecionado
+  const hasSelectedArchitect = !!formData.architect_id;
+
+  // RT fica obrigatório e vinculado ao arquiteto selecionado
   useEffect(() => {
-    if (formData.architect_id) {
-      const selectedArchitect = architects?.find(a => a.id === formData.architect_id);
-      if (selectedArchitect?.commission_percent) {
-        setComissoes(prev => ({
+    const selectedArchitect = architects?.find((a) => a.id === formData.architect_id);
+
+    setComissoes((prev) => {
+      if (!formData.architect_id) {
+        if (!prev.rt.habilitado && !prev.rt.responsavel_id) return prev;
+
+        return {
           ...prev,
-          rt: { ...prev.rt, percentual: Number(selectedArchitect.commission_percent) }
-        }));
+          rt: {
+            ...prev.rt,
+            habilitado: false,
+            responsavel_id: '',
+          },
+        };
       }
-    }
+
+      const nextPercentual = selectedArchitect?.commission_percent
+        ? Number(selectedArchitect.commission_percent)
+        : prev.rt.percentual;
+
+      const shouldUpdate =
+        !prev.rt.habilitado ||
+        prev.rt.responsavel_id !== formData.architect_id ||
+        prev.rt.percentual !== nextPercentual;
+
+      if (!shouldUpdate) return prev;
+
+      return {
+        ...prev,
+        rt: {
+          ...prev.rt,
+          habilitado: true,
+          responsavel_id: formData.architect_id,
+          percentual: nextPercentual,
+        },
+      };
+    });
   }, [formData.architect_id, architects]);
 
   const { data: deals, refetch: refetchDeals } = useQuery({
