@@ -2946,6 +2946,41 @@ export type Database = {
           },
         ]
       }
+      fin_strategic_resource_account_configs: {
+        Row: {
+          active: boolean
+          chart_account_id: string | null
+          created_at: string
+          id: string
+          resource_type: Database["public"]["Enums"]["fin_strategic_resource_type"]
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          chart_account_id?: string | null
+          created_at?: string
+          id?: string
+          resource_type: Database["public"]["Enums"]["fin_strategic_resource_type"]
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          chart_account_id?: string | null
+          created_at?: string
+          id?: string
+          resource_type?: Database["public"]["Enums"]["fin_strategic_resource_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fin_strategic_resource_account_configs_chart_account_id_fkey"
+            columns: ["chart_account_id"]
+            isOneToOne: false
+            referencedRelation: "fin_chart_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       followup_logs: {
         Row: {
           created_at: string | null
@@ -8568,6 +8603,12 @@ export type Database = {
         Returns: Json
       }
       get_sellers_without_goals: { Args: never; Returns: number }
+      get_strategic_resource_chart_account: {
+        Args: {
+          _resource_type: Database["public"]["Enums"]["fin_strategic_resource_type"]
+        }
+        Returns: string
+      }
       get_user_especializacao: { Args: { user_uuid: string }; Returns: string }
       get_user_role: {
         Args: { user_id: string }
@@ -8780,6 +8821,12 @@ export type Database = {
       purchases_metrics: { Args: never; Returns: Json }
       reactivate_lost_deals_to_followup: { Args: never; Returns: Json }
       recalculate_all_goal_progress: { Args: never; Returns: undefined }
+      require_strategic_resource_chart_account: {
+        Args: {
+          _resource_type: Database["public"]["Enums"]["fin_strategic_resource_type"]
+        }
+        Returns: string
+      }
       run_inactive_architects_check: { Args: never; Returns: Json }
       stock_abc_analysis: {
         Args: never
@@ -8847,6 +8894,13 @@ export type Database = {
         | "compras"
         | "pedidos"
         | "ia_configuracao"
+      fin_strategic_resource_type:
+        | "rt"
+        | "vendedor"
+        | "orcamentista"
+        | "projetista"
+        | "montador"
+        | "producao"
       order_responsible_type:
         | "vendedor"
         | "orcamentista"
@@ -8998,6 +9052,14 @@ export const Constants = {
         "compras",
         "pedidos",
         "ia_configuracao",
+      ],
+      fin_strategic_resource_type: [
+        "rt",
+        "vendedor",
+        "orcamentista",
+        "projetista",
+        "montador",
+        "producao",
       ],
       order_responsible_type: [
         "vendedor",
