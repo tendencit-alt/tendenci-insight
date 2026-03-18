@@ -81,10 +81,15 @@ export default function Orders() {
   return (
     <PermissionGuard module="pedidos">
       <DashboardLayout>
-        <div className="space-y-4 p-4">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Pedidos</h1>
-          <Button onClick={() => setCreateOpen(true)}>
+        <div className="mx-auto w-full max-w-[1600px] space-y-5 p-4 md:p-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="space-y-1">
+            <h1 className="text-2xl font-bold tracking-tight">Pedidos</h1>
+            <p className="text-sm text-muted-foreground">
+              Acompanhe KPIs, filtre com rapidez e gerencie cada pedido em um só lugar.
+            </p>
+          </div>
+          <Button onClick={() => setCreateOpen(true)} className="h-11 px-5 shadow-sm">
             <Plus className="h-4 w-4 mr-2" />
             Novo Pedido
           </Button>

@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ShoppingCart, DollarSign, Clock, CheckCircle, Truck, FileText, TrendingUp, Factory, AlertCircle } from 'lucide-react';
+import { ShoppingCart, DollarSign, Clock, CheckCircle, Truck, TrendingUp, Factory, AlertCircle } from 'lucide-react';
 
 interface OrdersKPIsProps {
   filters: {
@@ -26,7 +26,7 @@ export function OrdersKPIs({ filters }: OrdersKPIsProps) {
         p_date_field: filters.dateField || 'data_emissao',
       });
       if (error) throw error;
-      const result = data?.[0] || {
+      return data?.[0] || {
         total_pedidos: 0,
         valor_total: 0,
         ticket_medio: 0,
@@ -42,7 +42,6 @@ export function OrdersKPIs({ filters }: OrdersKPIsProps) {
         valor_em_producao: 0,
         valor_ativo: 0,
       };
-      return result;
     },
   });
 
@@ -56,22 +55,22 @@ export function OrdersKPIs({ filters }: OrdersKPIsProps) {
   if (isLoading) {
     return (
       <div className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
           {[...Array(2)].map((_, i) => (
-            <Card key={i} className="bg-gradient-to-br from-primary/10 to-primary/5">
-              <CardContent className="p-4">
-                <Skeleton className="h-4 w-24 mb-2" />
-                <Skeleton className="h-8 w-32" />
+            <Card key={i} className="overflow-hidden border-border/80 shadow-sm">
+              <CardContent className="space-y-4 p-5">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-9 w-40" />
               </CardContent>
             </Card>
           ))}
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
-          {[...Array(7)].map((_, i) => (
-            <Card key={i}>
-              <CardContent className="p-3">
-                <Skeleton className="h-4 w-16 mb-2" />
-                <Skeleton className="h-6 w-12" />
+        <div className="grid grid-cols-2 gap-3 xl:grid-cols-4 2xl:grid-cols-8">
+          {[...Array(8)].map((_, i) => (
+            <Card key={i} className="border-border/70 shadow-sm">
+              <CardContent className="space-y-3 p-4">
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-7 w-16" />
               </CardContent>
             </Card>
           ))}
@@ -84,16 +83,18 @@ export function OrdersKPIs({ filters }: OrdersKPIsProps) {
     {
       label: 'Valor Total em Produção',
       value: formatCurrency(metrics?.valor_em_producao || 0),
+      description: 'Pedidos atualmente em fase produtiva.',
       icon: Factory,
-      gradient: 'from-purple-500/20 to-purple-600/10',
-      borderColor: 'border-l-purple-500',
+      accentBar: 'bg-primary/70',
+      iconTone: 'bg-primary/10 text-primary',
     },
     {
       label: 'Ticket Médio',
       value: formatCurrency(metrics?.ticket_medio || 0),
+      description: 'Média de valor por pedido no período filtrado.',
       icon: TrendingUp,
-      gradient: 'from-emerald-500/20 to-emerald-600/10',
-      borderColor: 'border-l-emerald-500',
+      accentBar: 'bg-secondary',
+      iconTone: 'bg-secondary text-secondary-foreground',
     },
   ];
 
@@ -102,81 +103,90 @@ export function OrdersKPIs({ filters }: OrdersKPIsProps) {
       label: 'Total Pedidos',
       value: metrics?.total_pedidos || 0,
       icon: ShoppingCart,
-      color: 'text-blue-500',
+      iconTone: 'bg-primary/10 text-primary',
     },
     {
       label: 'Valor Total',
       value: formatCurrency(metrics?.valor_total || 0),
       icon: DollarSign,
-      color: 'text-green-500',
+      iconTone: 'bg-secondary text-secondary-foreground',
     },
     {
       label: 'Ativos',
       value: metrics?.ativo || 0,
       icon: CheckCircle,
-      color: 'text-blue-500',
+      iconTone: 'bg-primary/10 text-primary',
     },
     {
       label: 'Aguardando',
       value: metrics?.aguardando_aprovacao || 0,
       icon: Clock,
-      color: 'text-yellow-500',
+      iconTone: 'bg-accent text-accent-foreground',
     },
     {
       label: 'Aprovados',
       value: metrics?.aprovado || 0,
       icon: CheckCircle,
-      color: 'text-emerald-500',
+      iconTone: 'bg-secondary text-secondary-foreground',
     },
     {
       label: 'Em Produção',
       value: metrics?.em_producao || 0,
       icon: Factory,
-      color: 'text-purple-500',
+      iconTone: 'bg-primary/10 text-primary',
     },
     {
       label: 'Entregues',
       value: metrics?.entregue || 0,
       icon: Truck,
-      color: 'text-teal-500',
+      iconTone: 'bg-accent text-accent-foreground',
     },
     {
       label: 'Cancelados',
       value: metrics?.cancelado || 0,
       icon: AlertCircle,
-      color: 'text-red-500',
+      iconTone: 'bg-destructive/10 text-destructive',
     },
   ];
 
   return (
     <div className="space-y-4">
-      {/* KPIs em destaque */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         {highlightKpis.map((kpi) => (
-          <Card key={kpi.label} className={`bg-gradient-to-br ${kpi.gradient} border-l-4 ${kpi.borderColor}`}>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">{kpi.label}</p>
-                  <p className="text-2xl font-bold">{kpi.value}</p>
+          <Card key={kpi.label} className="overflow-hidden border-border/80 bg-card shadow-sm">
+            <CardContent className="p-0">
+              <div className={`h-1.5 w-full ${kpi.accentBar}`} />
+              <div className="flex items-center justify-between gap-4 p-5">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-muted-foreground">{kpi.label}</p>
+                  <p className="text-3xl font-semibold tracking-tight text-foreground">{kpi.value}</p>
+                  <p className="text-xs text-muted-foreground">{kpi.description}</p>
                 </div>
-                <kpi.icon className="h-10 w-10 opacity-20" />
+                <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl ${kpi.iconTone}`}>
+                  <kpi.icon className="h-7 w-7" />
+                </div>
               </div>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      {/* KPIs secundários */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4 2xl:grid-cols-8">
         {kpis.map((kpi) => (
-          <Card key={kpi.label} className="hover:shadow-md transition-shadow">
-            <CardContent className="p-3">
-              <div className="flex items-center gap-2 mb-1">
-                <kpi.icon className={`h-4 w-4 ${kpi.color}`} />
-                <span className="text-xs text-muted-foreground">{kpi.label}</span>
+          <Card
+            key={kpi.label}
+            className="border-border/70 bg-card/90 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+          >
+            <CardContent className="p-4">
+              <div className="mb-3 flex items-start justify-between gap-3">
+                <span className="text-xs font-medium uppercase tracking-[0.08em] text-muted-foreground">
+                  {kpi.label}
+                </span>
+                <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${kpi.iconTone}`}>
+                  <kpi.icon className="h-4 w-4" />
+                </div>
               </div>
-              <p className="text-lg font-bold">{kpi.value}</p>
+              <p className="text-xl font-semibold tracking-tight text-foreground break-words">{kpi.value}</p>
             </CardContent>
           </Card>
         ))}
