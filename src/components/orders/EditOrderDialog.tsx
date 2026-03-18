@@ -181,8 +181,8 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
     vendedor_id: '',
   });
 
-  // Query para buscar vendedores (apenas para masters)
-  const { data: vendedores } = useQuery({
+  // Query para buscar vendedores do sistema (apenas para masters)
+  const { data: systemVendedores } = useQuery({
     queryKey: ['vendedores-for-order'],
     queryFn: async () => {
       const { data } = await supabase
@@ -195,33 +195,17 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
     enabled: isMaster && open,
   });
 
-  // Query para orçamentistas (profile_type = 'Orçamentista')
-  const { data: orcamentistas } = useQuery({
-    queryKey: ['orcamentistas-for-order'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('profiles')
-        .select('id, full_name, profile_type:profile_types!inner(name)')
-        .eq('profile_types.name', 'Orçamentista')
-        .order('full_name');
-      return data || [];
-    },
-    enabled: open,
-  });
+  const {
+    vendedores: vendedoresAll,
+    orcamentistas: orcamentistasAll,
+    projetistas: projetistasAll,
+    montadores: montadoresAll,
+  } = useOrderResponsibles(open);
 
-  // Query para projetistas (role = 'projetista')
-  const { data: projetistas } = useQuery({
-    queryKey: ['projetistas-for-order'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('profiles')
-        .select('id, full_name')
-        .eq('role', 'projetista')
-        .order('full_name');
-      return data || [];
-    },
-    enabled: open,
-  });
+  const vendedores = vendedoresAll.filter((item) => item.is_active);
+  const orcamentistas = orcamentistasAll.filter((item) => item.is_active);
+  const projetistas = projetistasAll.filter((item) => item.is_active);
+  const montadores = montadoresAll.filter((item) => item.is_active);
 
   const [parcelas, setParcelas] = useState<PagamentoParcela[]>([
     { id: '1', forma_pagamento: '', percentual: 100, data_vencimento: '', numero_parcelas: 1 }
@@ -483,25 +467,25 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
           habilitado: (orderAny.comissao_vendedor_valor || 0) > 0 || (orderAny.comissao_vendedor_percentual || 0) > 0,
           percentual: Number(orderAny.comissao_vendedor_percentual) || 3,
           valor: Number(orderAny.comissao_vendedor_valor) || 0,
-          responsavel_id: orderAny.comissao_vendedor_responsavel_id || ''
+          responsavel_id: orderAny.comissao_vendedor_responsible_id || orderAny.comissao_vendedor_responsavel_id || orderAny.seller_responsible_id || ''
         },
         orcamentista: {
           habilitado: (orderAny.comissao_orcamentista_valor || 0) > 0 || (orderAny.comissao_orcamentista_percentual || 0) > 0,
           percentual: Number(orderAny.comissao_orcamentista_percentual) || 0.2,
           valor: Number(orderAny.comissao_orcamentista_valor) || 0,
-          responsavel_id: orderAny.comissao_orcamentista_responsavel_id || ''
+          responsavel_id: orderAny.comissao_orcamentista_responsible_id || orderAny.comissao_orcamentista_responsavel_id || ''
         },
         projetista: {
           habilitado: (orderAny.comissao_projetista_valor || 0) > 0 || (orderAny.comissao_projetista_percentual || 0) > 0,
           percentual: Number(orderAny.comissao_projetista_percentual) || 0.2,
           valor: Number(orderAny.comissao_projetista_valor) || 0,
-          responsavel_id: orderAny.comissao_projetista_responsavel_id || ''
+          responsavel_id: orderAny.comissao_projetista_responsible_id || orderAny.comissao_projetista_responsavel_id || ''
         },
         montador: {
           habilitado: (orderAny.comissao_montador_valor || 0) > 0 || (orderAny.comissao_montador_percentual || 0) > 0,
           percentual: Number(orderAny.comissao_montador_percentual) || 10,
           valor: Number(orderAny.comissao_montador_valor) || 0,
-          responsavel_id: orderAny.comissao_montador_responsavel_id || ''
+          responsavel_id: orderAny.comissao_montador_responsible_id || orderAny.comissao_montador_responsavel_id || orderAny.montador_responsible_id || ''
         },
       });
     }
@@ -826,18 +810,23 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
           rt_percentual: comissoes.rt.habilitado ? comissoes.rt.percentual : 0,
           rt_valor: comissoes.rt.habilitado ? comissoes.rt.valor : 0,
           // Campos de Comissões
+          seller_responsible_id: comissoes.vendedor.responsavel_id || null,
           comissao_vendedor_percentual: comissoes.vendedor.habilitado ? comissoes.vendedor.percentual : 0,
           comissao_vendedor_valor: comissoes.vendedor.habilitado ? comissoes.vendedor.valor : 0,
           comissao_vendedor_responsavel_id: comissoes.vendedor.responsavel_id || null,
+          comissao_vendedor_responsible_id: comissoes.vendedor.responsavel_id || null,
           comissao_orcamentista_percentual: comissoes.orcamentista.habilitado ? comissoes.orcamentista.percentual : 0,
           comissao_orcamentista_valor: comissoes.orcamentista.habilitado ? comissoes.orcamentista.valor : 0,
           comissao_orcamentista_responsavel_id: comissoes.orcamentista.responsavel_id || null,
+          comissao_orcamentista_responsible_id: comissoes.orcamentista.responsavel_id || null,
           comissao_projetista_percentual: comissoes.projetista.habilitado ? comissoes.projetista.percentual : 0,
           comissao_projetista_valor: comissoes.projetista.habilitado ? comissoes.projetista.valor : 0,
           comissao_projetista_responsavel_id: comissoes.projetista.responsavel_id || null,
+          comissao_projetista_responsible_id: comissoes.projetista.responsavel_id || null,
           comissao_montador_percentual: comissoes.montador.habilitado ? comissoes.montador.percentual : 0,
           comissao_montador_valor: comissoes.montador.habilitado ? comissoes.montador.valor : 0,
           comissao_montador_responsavel_id: comissoes.montador.responsavel_id || null,
+          comissao_montador_responsible_id: comissoes.montador.responsavel_id || null,
           ...(isMaster && formData.data_emissao ? { data_emissao: new Date(formData.data_emissao).toISOString() } : {}),
           ...(isMaster && formData.vendedor_id ? { vendedor_id: formData.vendedor_id } : {}),
         })
@@ -1048,7 +1037,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="_placeholder" disabled>Selecionar vendedor</SelectItem>
-                    {vendedores?.map((v) => (
+                    {systemVendedores?.map((v) => (
                       <SelectItem key={v.id} value={v.id}>
                         {v.full_name}
                       </SelectItem>
@@ -2019,8 +2008,8 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="_none">-</SelectItem>
-                            {vendedores?.map((v) => (
-                              <SelectItem key={v.id} value={v.id}>{v.full_name}</SelectItem>
+                            {montadores?.map((m) => (
+                              <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
