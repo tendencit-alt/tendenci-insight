@@ -482,7 +482,6 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                 Adicionar Item
               </Button>
             </div>
-            </div>
           </CardContent>
         </Card>
       )}
