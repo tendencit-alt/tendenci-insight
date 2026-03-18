@@ -374,6 +374,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
   });
 
   const selectedClient = clients?.find(c => c.id === formData.client_id);
+  const selectedArchitect = architects?.find(arch => arch.id === formData.architect_id);
 
   // Validação de dados fiscais para PJ
   const hasFiscalWarning = selectedClient?.tipo_pessoa === 'pj' && (
