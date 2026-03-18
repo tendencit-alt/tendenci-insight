@@ -738,6 +738,13 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                             </span>
                           </TableCell>
                         )}
+                        {requireProject && (
+                          <TableCell>
+                            <span className="text-xs">
+                              {PROJETOS.find((project) => project.value === item.project_id)?.label || '-'}
+                            </span>
+                          </TableCell>
+                        )}
                         <TableCell className="text-center">{item.quantidade}</TableCell>
                         <TableCell className="text-right">{formatCurrency(item.valor_unitario)}</TableCell>
                         <TableCell className="text-right font-medium">{formatCurrency(item.valor_total)}</TableCell>
