@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -71,50 +70,25 @@ const emptyItem = {
 export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFiscalFields = false, requireCentroCusto = false, clientName }: OrderItemsTableProps) {
   const { costCenters: CENTROS_CUSTO } = useCostCenters();
   const { projects: PROJETOS } = useProjects();
-  const [creatingProject, setCreatingProject] = useState(false);
-  const queryClient = useQueryClient();
-
-  const handleCreateProjectForClient = async () => {
-    if (!clientName || creatingProject) return;
-    setCreatingProject(true);
-    try {
-      const { data, error } = await supabase
-        .from('fin_projects')
-        .insert({ name: clientName, status: 'ativo' })
-        .select('id')
-        .single();
-      if (error) throw error;
-      queryClient.invalidateQueries({ queryKey: ['fin-projects-active'] });
-      toast.success(`Projeto "${clientName}" criado!`);
-      setNewItem(prev => ({ ...prev, project_id: data.id }));
-    } catch (err: any) {
-      toast.error('Erro ao criar projeto: ' + err.message);
-    } finally {
-      setCreatingProject(false);
-    }
-  };
-
   const [editingId, setEditingId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [isAddingItem, setIsAddingItem] = useState(false);
   const [newItem, setNewItem] = useState<Partial<OrderItem>>(emptyItem);
   const [autoProjectDone, setAutoProjectDone] = useState(false);
 
-  // Auto-preencher projeto com nome do cliente ao abrir novo item
   useEffect(() => {
     if (!isAddingItem || !clientName || autoProjectDone) return;
 
-    const existing = PROJETOS.find(p => p.label === clientName);
-    if (existing) {
-      setNewItem(prev => ({ ...prev, project_id: existing.value }));
-      setAutoProjectDone(true);
-    } else if (!creatingProject) {
-      setAutoProjectDone(true);
-      handleCreateProjectForClient();
-    }
-  }, [isAddingItem, clientName, PROJETOS, autoProjectDone, creatingProject]);
+    const normalizedClientName = clientName.trim().toLowerCase();
+    const existing = PROJETOS.find((project) => project.label.trim().toLowerCase() === normalizedClientName);
 
-  // Reset flag quando fecha o form
+    if (existing) {
+      setNewItem((prev) => ({ ...prev, project_id: existing.value }));
+    }
+
+    setAutoProjectDone(true);
+  }, [isAddingItem, clientName, PROJETOS, autoProjectDone]);
+
   useEffect(() => {
     if (!isAddingItem) setAutoProjectDone(false);
   }, [isAddingItem]);
@@ -215,7 +189,6 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
   const handleAddItem = () => {
     if (!newItem.descricao || !newItem.valor_unitario) return;
     if (requireCentroCusto && !newItem.centro_custo) return;
-    if (requireCentroCusto && !newItem.project_id) return;
 
     const item: OrderItem = {
       id: crypto.randomUUID(),
@@ -472,17 +445,16 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
 
             {requireCentroCusto && (
               <div className="space-y-1">
-                <Label className="text-xs">Projeto *</Label>
+                <Label className="text-xs">Projeto</Label>
                 <Select
                   value={newItem.project_id || "_placeholder"}
                   onValueChange={(v) => setNewItem({ ...newItem, project_id: v === "_placeholder" ? "" : v })}
-                  disabled={creatingProject}
                 >
-                  <SelectTrigger className={!newItem.project_id ? 'border-destructive/50' : ''}>
-                    <SelectValue placeholder="Selecione o projeto" />
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecionar agora ou gerar no salvamento" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="_placeholder" disabled>Selecione</SelectItem>
+                    <SelectItem value="_placeholder">Gerar automaticamente ao salvar</SelectItem>
                     {PROJETOS.map((p) => (
                       <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
                     ))}
@@ -505,7 +477,7 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
               <Button variant="outline" onClick={() => { setIsAddingItem(false); setNewItem(emptyItem); }}>
                 Cancelar
               </Button>
-              <Button onClick={handleAddItem} disabled={!newItem.descricao || !newItem.valor_unitario || (requireCentroCusto && !newItem.centro_custo) || (requireCentroCusto && !newItem.project_id)}>
+              <Button onClick={handleAddItem} disabled={!newItem.descricao || !newItem.valor_unitario || (requireCentroCusto && !newItem.centro_custo)}>
                 <Plus className="h-4 w-4 mr-1" />
                 Adicionar Item
               </Button>
@@ -590,7 +562,7 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                         <TableCell className="font-medium text-right">{formatCurrency(item.valor_total)}</TableCell>
                         <TableCell>
                           <Button size="icon" variant="ghost" onClick={() => setEditingId(null)}>
-                            <Check className="h-4 w-4 text-green-600" />
+                            <Check className="h-4 w-4 text-primary" />
                           </Button>
                         </TableCell>
                       </>

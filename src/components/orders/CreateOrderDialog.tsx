@@ -536,6 +536,66 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     }
   };
 
+  const resolveProjectIdForItems = async () => {
+    const hasItemsWithoutProject = items.some((item) => !item.project_id);
+
+    if (!hasItemsWithoutProject) {
+      return null;
+    }
+
+    let clientName = selectedClient?.name?.trim() || '';
+
+    if (!clientName) {
+      const { data: clientData, error: clientError } = await supabase
+        .from('clients')
+        .select('name')
+        .eq('id', formData.client_id)
+        .single();
+
+      if (clientError) throw clientError;
+      clientName = clientData?.name?.trim() || '';
+    }
+
+    if (!clientName) {
+      throw new Error('Não foi possível identificar o nome do cliente para gerar o projeto do pedido');
+    }
+
+    const normalizedClientName = clientName.toLowerCase();
+    const projectFromCache = projects.find(
+      (project) => project.label.trim().toLowerCase() === normalizedClientName
+    );
+
+    if (projectFromCache?.value) {
+      return projectFromCache.value;
+    }
+
+    const { data: existingProjects, error: existingProjectError } = await supabase
+      .from('fin_projects')
+      .select('id, name')
+      .ilike('name', clientName)
+      .limit(1);
+
+    if (existingProjectError) throw existingProjectError;
+
+    const existingProject = existingProjects?.find(
+      (project) => project.name.trim().toLowerCase() === normalizedClientName
+    ) || existingProjects?.[0];
+
+    if (existingProject) {
+      return existingProject.id;
+    }
+
+    const { data: newProject, error: newProjectError } = await supabase
+      .from('fin_projects')
+      .insert({ name: clientName, status: 'ativo' })
+      .select('id')
+      .single();
+
+    if (newProjectError) throw newProjectError;
+
+    return newProject.id;
+  };
+
   const handleSubmit = async () => {
     if (!isFormValid) {
       toast.error('Preencha todos os campos obrigatórios');
@@ -544,9 +604,13 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
 
     setLoading(true);
     try {
-      // Create order - save first parcela as forma_pagamento principal
       const parcelasPrincipal = parcelas[0];
       const parcelasSecundaria = parcelas.length > 1 ? parcelas[1] : null;
+      const resolvedProjectId = await resolveProjectIdForItems();
+      const itemsWithResolvedProject = items.map((item) => ({
+        ...item,
+        project_id: item.project_id || resolvedProjectId || undefined,
+      }));
       
       const { data: order, error: orderError } = await supabase
         .from('orders')
@@ -562,7 +626,6 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
           percentual_forma_2: parcelasSecundaria?.percentual || 0,
           data_primeiro_vencimento: parcelasPrincipal?.data_vencimento || null,
           condicao_pagamento: null,
-          // Salvar parcelas em JSON se >2 formas OU se alguma tiver parcelamento
           observacao_pagamento: (parcelas.length > 2 || parcelas.some(p => p.numero_parcelas > 1)) 
             ? JSON.stringify(parcelas) 
             : (formData.observacao_pagamento || null),
@@ -584,25 +647,21 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
           valor_frete: formData.valor_frete,
           subtotal,
           valor_total: total,
-          centro_custo: null, // centro_custo agora é por item
-          project_id: formData.project_id || null,
+          centro_custo: null,
+          project_id: formData.project_id || resolvedProjectId || null,
           status: 'rascunho',
-          // Campos de taxa de cartão
           taxa_cartao_percentual: taxaCartao.percentual,
           taxa_cartao_valor: taxaCartao.valor,
           taxa_cartao_responsavel: taxaCartao.responsavel,
           numero_parcelas_cartao: taxaCartao.numeroParcelas,
-          // Campos de taxa de boleto
           taxa_boleto_percentual: taxaBoleto.percentual,
           taxa_boleto_valor: taxaBoleto.valor,
           taxa_boleto_responsavel: taxaBoleto.responsavel,
           numero_parcelas_boleto: taxaBoleto.numeroParcelas,
           carencia_boleto: taxaBoleto.carencia,
-          // Campos de RT (Repasse Técnico) - agora unificado com comissões
           rt_habilitado: comissoes.rt.habilitado,
           rt_percentual: comissoes.rt.habilitado ? comissoes.rt.percentual : 0,
           rt_valor: comissoes.rt.habilitado ? comissoes.rt.valor : 0,
-          // Campos de Comissões
           comissao_vendedor_percentual: comissoes.vendedor.habilitado ? comissoes.vendedor.percentual : 0,
           comissao_vendedor_valor: comissoes.vendedor.habilitado ? comissoes.vendedor.valor : 0,
           comissao_vendedor_responsavel_id: comissoes.vendedor.responsavel_id || null,
@@ -621,8 +680,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
 
       if (orderError) throw orderError;
 
-      // Create order items with fiscal fields
-      const itemsToInsert = items.map((item, index) => ({
+      const itemsToInsert = itemsWithResolvedProject.map((item, index) => ({
         order_id: order.id,
         descricao: item.descricao,
         quantidade: item.quantidade,
