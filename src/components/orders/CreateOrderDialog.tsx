@@ -274,17 +274,48 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     },
   });
 
-  // Auto-preencher RT quando arquiteto é selecionado
+  const hasSelectedArchitect = !!formData.architect_id;
+
+  // RT fica obrigatório e vinculado ao arquiteto selecionado
   useEffect(() => {
-    if (formData.architect_id) {
-      const selectedArchitect = architects?.find(a => a.id === formData.architect_id);
-      if (selectedArchitect?.commission_percent) {
-        setComissoes(prev => ({
+    const architect = architects?.find((a) => a.id === formData.architect_id);
+
+    setComissoes((prev) => {
+      if (!formData.architect_id) {
+        if (!prev.rt.habilitado && !prev.rt.responsavel_id && prev.rt.valor === 0) return prev;
+
+        return {
           ...prev,
-          rt: { ...prev.rt, percentual: Number(selectedArchitect.commission_percent) }
-        }));
+          rt: {
+            ...prev.rt,
+            habilitado: false,
+            responsavel_id: '',
+            valor: 0,
+          },
+        };
       }
-    }
+
+      const nextPercentual = architect?.commission_percent
+        ? Number(architect.commission_percent)
+        : prev.rt.percentual;
+
+      const shouldUpdate =
+        !prev.rt.habilitado ||
+        prev.rt.responsavel_id !== formData.architect_id ||
+        prev.rt.percentual !== nextPercentual;
+
+      if (!shouldUpdate) return prev;
+
+      return {
+        ...prev,
+        rt: {
+          ...prev.rt,
+          habilitado: true,
+          responsavel_id: formData.architect_id,
+          percentual: nextPercentual,
+        },
+      };
+    });
   }, [formData.architect_id, architects]);
 
   const { data: deals, refetch: refetchDeals } = useQuery({
@@ -340,6 +371,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
   });
 
   const selectedClient = clients?.find(c => c.id === formData.client_id);
+  const selectedArchitect = architects?.find(arch => arch.id === formData.architect_id);
 
   // Validação de dados fiscais para PJ
   const hasFiscalWarning = selectedClient?.tipo_pessoa === 'pj' && (
@@ -472,8 +504,9 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
   const diferencaPagamento = Math.abs(valorTotalPagamento - total);
   // Se total é 0 ou negativo, não permite validar como correto
   const isPagamentoValorCorreto = total > 0 ? diferencaPagamento < 0.01 : false;
+  const isRtValid = !hasSelectedArchitect || (comissoes.rt.habilitado && comissoes.rt.responsavel_id === formData.architect_id);
   
-  const isPagamentoValid = parcelas.length > 0 && parcelas.every(p => p.forma_pagamento) && totalPercentual === 100 && isPagamentoValorCorreto;
+  const isPagamentoValid = parcelas.length > 0 && parcelas.every(p => p.forma_pagamento) && totalPercentual === 100 && isPagamentoValorCorreto && isRtValid;
   const isEntregaValid = !!formData.tipo_entrega;
   const isFormValid = isClienteValid && isItensValid && isPagamentoValid && isEntregaValid;
 
@@ -761,6 +794,11 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                       ))}
                     </SelectContent>
                   </Select>
+                  {!hasSelectedArchitect && (
+                    <p className="text-sm text-muted-foreground">
+                      Selecione um arquiteto para liberar o recurso estratégico RT na etapa de pagamento.
+                    </p>
+                  )}
                 </div>
 
 
@@ -1212,16 +1250,24 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                   </div>
                   
                   <div className="space-y-3">
+                    {!hasSelectedArchitect && (
+                      <Alert>
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertDescription>
+                          Selecione um arquiteto na aba Cliente para habilitar o RT neste pedido.
+                        </AlertDescription>
+                      </Alert>
+                    )}
+
                     {/* RT - Repasse Técnico */}
                     <div className="flex items-center gap-3">
-                      <Switch
-                        checked={comissoes.rt.habilitado}
-                        onCheckedChange={(checked) => setComissoes(prev => ({
-                          ...prev,
-                          rt: { ...prev.rt, habilitado: checked }
-                        }))}
-                      />
-                      <span className="text-sm font-medium w-28">RT</span>
+                      <Switch checked={comissoes.rt.habilitado} disabled />
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium w-28">RT</span>
+                        <Badge variant={hasSelectedArchitect ? "secondary" : "outline"}>
+                          {hasSelectedArchitect ? "Obrigatório" : "Selecione arquiteto"}
+                        </Badge>
+                      </div>
                       {comissoes.rt.habilitado && (
                         <>
                           <div className="flex items-center gap-1">
@@ -1246,21 +1292,15 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                               disabled
                             />
                           </div>
-                          <Select
-                            value={comissoes.rt.responsavel_id || "_none"}
-                            onValueChange={(v) => setComissoes(prev => ({
-                              ...prev,
-                              rt: { ...prev.rt, responsavel_id: v === "_none" ? "" : v }
-                            }))}
-                          >
-                            <SelectTrigger className="h-8 w-40">
+                          <Select value={comissoes.rt.responsavel_id || "_none"} disabled>
+                            <SelectTrigger className="h-8 w-52">
                               <SelectValue placeholder="Responsável" />
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="_none">-</SelectItem>
-                              {architects?.map((a) => (
-                                <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
-                              ))}
+                              {selectedArchitect && (
+                                <SelectItem value={selectedArchitect.id}>{selectedArchitect.name}</SelectItem>
+                              )}
                             </SelectContent>
                           </Select>
                         </>
