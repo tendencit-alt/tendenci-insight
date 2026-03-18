@@ -445,16 +445,16 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                 </div>
 
                 <div className="space-y-1 min-w-0">
-                  <Label className="text-xs">Projeto</Label>
+                  <Label className="text-xs">Projeto {requireProject ? '*' : ''}</Label>
                   <Select
                     value={newItem.project_id || '_placeholder'}
                     onValueChange={(v) => setNewItem({ ...newItem, project_id: v === '_placeholder' ? '' : v })}
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecionar agora ou gerar no salvamento" />
+                    <SelectTrigger className={requireProject && !newItem.project_id ? 'border-destructive/50' : ''}>
+                      <SelectValue placeholder={requireProject ? 'Selecione o projeto' : 'Selecionar agora ou gerar no salvamento'} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="_placeholder">Gerar automaticamente ao salvar</SelectItem>
+                      <SelectItem value="_placeholder" disabled>{requireProject ? 'Selecione' : 'Gerar automaticamente ao salvar'}</SelectItem>
                       {PROJETOS.map((p) => (
                         <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
                       ))}
