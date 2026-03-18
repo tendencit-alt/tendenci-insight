@@ -26,7 +26,7 @@ type ChartAccountOption = {
   name: string;
 };
 
-const TABLE_NAME = "fin_strategic_resource_account_configs" as any;
+const TABLE_NAME = "fin_strategic_resource_account_configs";
 
 const RESOURCE_OPTIONS: Array<{
   value: StrategicResourceType;
@@ -51,12 +51,12 @@ export function StrategicResourceCategoriesManager() {
     queryKey: ["fin-strategic-resource-account-configs"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from(TABLE_NAME)
+        .from(TABLE_NAME as any)
         .select("id, resource_type, chart_account_id, active")
         .order("resource_type");
 
       if (error) throw error;
-      return (data ?? []) as ConfigRow[];
+      return ((data ?? []) as unknown) as ConfigRow[];
     },
   });
 
@@ -105,13 +105,13 @@ export function StrategicResourceCategoriesManager() {
     try {
       if (existing) {
         const { error } = await supabase
-          .from(TABLE_NAME)
+          .from(TABLE_NAME as any)
           .update(nextData)
           .eq("id", existing.id);
 
         if (error) throw error;
       } else {
-        const { error } = await supabase.from(TABLE_NAME).insert(nextData);
+        const { error } = await supabase.from(TABLE_NAME as any).insert(nextData);
         if (error) throw error;
       }
 
