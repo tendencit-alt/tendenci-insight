@@ -2008,8 +2008,8 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="_none">-</SelectItem>
-                            {vendedores?.map((v) => (
-                              <SelectItem key={v.id} value={v.id}>{v.full_name}</SelectItem>
+                            {montadores?.map((m) => (
+                              <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
