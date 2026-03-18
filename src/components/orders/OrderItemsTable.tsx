@@ -487,7 +487,7 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
         </Card>
       )}
 
-      <div className="space-y-3 md:hidden">
+      <div className="space-y-3 xl:hidden">
         {items.length === 0 ? (
           <Card className="border-dashed">
             <CardContent className="py-8 text-center text-muted-foreground">
