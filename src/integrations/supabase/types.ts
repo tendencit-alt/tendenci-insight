@@ -2529,6 +2529,7 @@ export type Database = {
           installment: number | null
           ledger_entry_id: string | null
           notes: string | null
+          order_id: string | null
           paid_amount: number | null
           payment_date: string | null
           project_id: string | null
@@ -2553,6 +2554,7 @@ export type Database = {
           installment?: number | null
           ledger_entry_id?: string | null
           notes?: string | null
+          order_id?: string | null
           paid_amount?: number | null
           payment_date?: string | null
           project_id?: string | null
@@ -2577,6 +2579,7 @@ export type Database = {
           installment?: number | null
           ledger_entry_id?: string | null
           notes?: string | null
+          order_id?: string | null
           paid_amount?: number | null
           payment_date?: string | null
           project_id?: string | null
@@ -2620,6 +2623,13 @@ export type Database = {
             columns: ["ledger_entry_id"]
             isOneToOne: false
             referencedRelation: "fin_ledger_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_payables_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
             referencedColumns: ["id"]
           },
           {
@@ -4254,7 +4264,7 @@ export type Database = {
             foreignKeyName: "orders_comissao_montador_responsavel_id_fkey"
             columns: ["comissao_montador_responsavel_id"]
             isOneToOne: false
-            referencedRelation: "profiles"
+            referencedRelation: "order_responsibles"
             referencedColumns: ["id"]
           },
           {
@@ -4268,7 +4278,7 @@ export type Database = {
             foreignKeyName: "orders_comissao_orcamentista_responsavel_id_fkey"
             columns: ["comissao_orcamentista_responsavel_id"]
             isOneToOne: false
-            referencedRelation: "profiles"
+            referencedRelation: "order_responsibles"
             referencedColumns: ["id"]
           },
           {
@@ -4282,7 +4292,7 @@ export type Database = {
             foreignKeyName: "orders_comissao_producao_responsavel_id_fkey"
             columns: ["comissao_producao_responsavel_id"]
             isOneToOne: false
-            referencedRelation: "profiles"
+            referencedRelation: "order_responsibles"
             referencedColumns: ["id"]
           },
           {
@@ -4296,7 +4306,7 @@ export type Database = {
             foreignKeyName: "orders_comissao_projetista_responsavel_id_fkey"
             columns: ["comissao_projetista_responsavel_id"]
             isOneToOne: false
-            referencedRelation: "profiles"
+            referencedRelation: "order_responsibles"
             referencedColumns: ["id"]
           },
           {
@@ -4310,7 +4320,7 @@ export type Database = {
             foreignKeyName: "orders_comissao_vendedor_responsavel_id_fkey"
             columns: ["comissao_vendedor_responsavel_id"]
             isOneToOne: false
-            referencedRelation: "profiles"
+            referencedRelation: "order_responsibles"
             referencedColumns: ["id"]
           },
           {
