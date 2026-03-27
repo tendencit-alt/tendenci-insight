@@ -646,7 +646,7 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                       {requireProject && (
                         <div className="col-span-2">
                           <p className="text-xs text-muted-foreground">Projeto</p>
-                          <p className="font-medium break-words">{item.project_id === NEW_PROJECT_VALUE ? `Novo: ${clientName}` : (PROJETOS.find((project) => project.value === item.project_id)?.label || '-')}</p>
+                          <p className="font-medium break-words">{item.project_id === NEW_PROJECT_VALUE ? `Novo: ${clientName}` : item.project_id?.startsWith(CUSTOM_PROJECT_PREFIX) ? `Novo: ${item.project_id.replace(CUSTOM_PROJECT_PREFIX, '')}` : (PROJETOS.find((project) => project.value === item.project_id)?.label || '-')}</p>
                         </div>
                       )}
                       {showFiscalFields && (item.ncm || item.cfop) && (
@@ -745,37 +745,72 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                         )}
                         {requireProject && (
                           <TableCell>
-                            <div className="flex items-center gap-1">
-                              <Select
-                                value={item.project_id || '_placeholder'}
-                                onValueChange={(v) => handleUpdateItem(item.id, { project_id: v === '_placeholder' ? '' : v })}
-                              >
-                                <SelectTrigger className="h-8 flex-1">
-                                  <SelectValue placeholder="Projeto" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="_placeholder" disabled>Selecione</SelectItem>
-                                  {clientName && (
-                                    <SelectItem value={NEW_PROJECT_VALUE}>Novo projeto: {clientName}</SelectItem>
-                                  )}
-                                  {PROJETOS.map((project) => (
-                                    <SelectItem key={project.value} value={project.value}>{project.label}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                              {clientName && (
+                            {showNewProjectInputInline === item.id ? (
+                              <div className="flex items-center gap-1">
+                                <Input
+                                  className="h-8 flex-1"
+                                  placeholder="Nome do projeto"
+                                  value={customProjectNameInline}
+                                  onChange={(e) => setCustomProjectNameInline(e.target.value)}
+                                  autoFocus
+                                />
+                                <Button
+                                  type="button"
+                                  size="icon"
+                                  className="h-8 w-8 shrink-0"
+                                  disabled={!customProjectNameInline.trim()}
+                                  onClick={() => {
+                                    handleUpdateItem(item.id, { project_id: `${CUSTOM_PROJECT_PREFIX}${customProjectNameInline.trim()}` });
+                                    setShowNewProjectInputInline(null);
+                                    setCustomProjectNameInline('');
+                                  }}
+                                >
+                                  <Check className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 shrink-0"
+                                  onClick={() => { setShowNewProjectInputInline(null); setCustomProjectNameInline(''); }}
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-1">
+                                <Select
+                                  value={item.project_id || '_placeholder'}
+                                  onValueChange={(v) => handleUpdateItem(item.id, { project_id: v === '_placeholder' ? '' : v })}
+                                >
+                                  <SelectTrigger className="h-8 flex-1">
+                                    <SelectValue placeholder="Projeto" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="_placeholder" disabled>Selecione</SelectItem>
+                                    {clientName && (
+                                      <SelectItem value={NEW_PROJECT_VALUE}>Novo projeto: {clientName}</SelectItem>
+                                    )}
+                                    {item.project_id?.startsWith(CUSTOM_PROJECT_PREFIX) && (
+                                      <SelectItem value={item.project_id}>Novo projeto: {item.project_id.replace(CUSTOM_PROJECT_PREFIX, '')}</SelectItem>
+                                    )}
+                                    {PROJETOS.map((project) => (
+                                      <SelectItem key={project.value} value={project.value}>{project.label}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
                                 <Button
                                   type="button"
                                   variant="outline"
                                   size="icon"
                                   className="h-8 w-8 shrink-0"
-                                  title={`Novo projeto: ${clientName}`}
-                                  onClick={() => handleUpdateItem(item.id, { project_id: NEW_PROJECT_VALUE })}
+                                  title="Criar novo projeto"
+                                  onClick={() => { setCustomProjectNameInline(clientName || ''); setShowNewProjectInputInline(item.id); }}
                                 >
                                   <Plus className="h-3 w-3" />
                                 </Button>
-                              )}
-                            </div>
+                              </div>
+                            )}
                           </TableCell>
                         )}
                         <TableCell>
@@ -825,7 +860,7 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                         {requireProject && (
                           <TableCell>
                             <span className="text-xs">
-                              {item.project_id === NEW_PROJECT_VALUE ? `Novo: ${clientName}` : (PROJETOS.find((project) => project.value === item.project_id)?.label || '-')}
+                              {item.project_id === NEW_PROJECT_VALUE ? `Novo: ${clientName}` : item.project_id?.startsWith(CUSTOM_PROJECT_PREFIX) ? `Novo: ${item.project_id.replace(CUSTOM_PROJECT_PREFIX, '')}` : (PROJETOS.find((project) => project.value === item.project_id)?.label || '-')}
                             </span>
                           </TableCell>
                         )}
