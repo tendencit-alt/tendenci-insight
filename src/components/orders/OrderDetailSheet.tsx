@@ -22,6 +22,8 @@ import {
   Truck, FileText, Clock, CheckCircle, AlertCircle, Loader2, Factory,
   Edit, Copy, Download, Printer, MessageSquare, ExternalLink, Trash2
 } from 'lucide-react';
+import { useMinimizedDialogs } from '@/contexts/MinimizedDialogsContext';
+import { MinimizeButton } from '@/components/ui/MinimizeButton';
 
 interface OrderDetailSheetProps {
   orderId: string;
