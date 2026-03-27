@@ -526,8 +526,8 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
       }
       setActiveTab('pagamento');
     } else if (activeTab === 'pagamento') {
-      if (missingStrategicResponsible) {
-        toast.error(`Selecione o responsável para ${strategicResourceLabels[missingStrategicResponsible]}`);
+      if (allMissingStrategicResponsibles.length > 0) {
+        toast.error(`Selecione o responsável para: ${allMissingStrategicResponsibles.map(key => strategicResourceLabels[key]).join(', ')}`);
         return;
       }
       if (!isRtValid) {
@@ -603,8 +603,8 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
   };
 
   const handleSubmit = async () => {
-    if (missingStrategicResponsible) {
-      toast.error(`Selecione o responsável para ${strategicResourceLabels[missingStrategicResponsible]}`);
+    if (allMissingStrategicResponsibles.length > 0) {
+      toast.error(`Selecione o responsável para: ${allMissingStrategicResponsibles.map(key => strategicResourceLabels[key]).join(', ')}`);
       return;
     }
 

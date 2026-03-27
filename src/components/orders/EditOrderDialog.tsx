@@ -790,8 +790,8 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
 
   const handleSubmit = async () => {
     if (!order) return;
-    if (missingStrategicResponsible) {
-      toast.error(`Selecione o responsável para ${strategicResourceLabels[missingStrategicResponsible]}`);
+    if (allMissingStrategicResponsibles.length > 0) {
+      toast.error(`Selecione o responsável para: ${allMissingStrategicResponsibles.map(key => strategicResourceLabels[key]).join(', ')}`);
       return;
     }
     if (!isRtValid) {
