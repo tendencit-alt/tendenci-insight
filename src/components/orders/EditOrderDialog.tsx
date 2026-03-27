@@ -2196,6 +2196,18 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                     <span className="text-sm font-medium">- {formatCurrency(comissoes.producao.valor)}</span>
                   </div>
                 )}
+                {taxaCartao.valor > 0 && (
+                  <div className="flex items-center justify-between text-foreground">
+                    <span className="text-sm">💳 Taxa Cartão ({taxaCartao.percentual.toFixed(2)}%):</span>
+                    <span className="text-sm font-medium">- {formatCurrency(taxaCartao.valor)}</span>
+                  </div>
+                )}
+                {taxaBoleto.valor > 0 && (
+                  <div className="flex items-center justify-between text-foreground">
+                    <span className="text-sm">📄 Taxa Boleto ({taxaBoleto.percentual.toFixed(2)}%):</span>
+                    <span className="text-sm font-medium">- {formatCurrency(taxaBoleto.valor)}</span>
+                  </div>
+                )}
                 <div className="flex items-center justify-between border-t pt-2">
                   <span className="text-sm font-semibold">Total do Pedido:</span>
                   <span className="text-base font-bold text-primary">{formatCurrency(total)}</span>
