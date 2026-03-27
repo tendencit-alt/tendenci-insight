@@ -713,12 +713,15 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                                 </SelectTrigger>
                                 <SelectContent>
                                   <SelectItem value="_placeholder" disabled>Selecione</SelectItem>
+                                  {clientName && (
+                                    <SelectItem value={NEW_PROJECT_VALUE}>Novo projeto: {clientName}</SelectItem>
+                                  )}
                                   {PROJETOS.map((project) => (
                                     <SelectItem key={project.value} value={project.value}>{project.label}</SelectItem>
                                   ))}
                                 </SelectContent>
                               </Select>
-                              {clientName && !PROJETOS.find((p) => p.label.trim().toLowerCase() === clientName.trim().toLowerCase()) && (
+                              {clientName && (
                                 <Button
                                   type="button"
                                   variant="outline"
