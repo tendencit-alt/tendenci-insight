@@ -236,11 +236,9 @@ export function CreateReceivableDialog({ open, onOpenChange, onSuccess, initialD
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <MinimizeButton onClick={handleMinimize} absolute />
         <DialogHeader>
-          <div className="flex items-center justify-between">
-            <DialogTitle>Nova Conta a Receber</DialogTitle>
-            <MinimizeButton onClick={handleMinimize} />
-          </div>
+          <DialogTitle>Nova Conta a Receber</DialogTitle>
         </DialogHeader>
 
         <div className="grid gap-4 py-4">

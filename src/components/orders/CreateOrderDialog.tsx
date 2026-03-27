@@ -809,18 +809,16 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <MinimizeButton onClick={handleMinimize} absolute />
           <DialogHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <DialogTitle>Novo Pedido</DialogTitle>
-                {linkedDeal && (
-                  <Badge variant="secondary" className="gap-1">
-                    <Link className="h-3 w-3" />
-                    Vinculado: {linkedDeal.title}
-                  </Badge>
-                )}
-              </div>
-              <MinimizeButton onClick={handleMinimize} />
+            <div className="flex items-center gap-2">
+              <DialogTitle>Novo Pedido</DialogTitle>
+              {linkedDeal && (
+                <Badge variant="secondary" className="gap-1">
+                  <Link className="h-3 w-3" />
+                  Vinculado: {linkedDeal.title}
+                </Badge>
+              )}
             </div>
           </DialogHeader>
 

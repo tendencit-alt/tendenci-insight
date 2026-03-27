@@ -1079,14 +1079,12 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <MinimizeButton onClick={handleMinimize} absolute />
         <DialogHeader>
-          <div className="flex items-center justify-between">
-            <DialogTitle className="flex items-center gap-2">
-              Editar Pedido #{order.order_number}
-              {!isEditable && <Badge variant="destructive">Bloqueado para edição</Badge>}
-            </DialogTitle>
-            <MinimizeButton onClick={handleMinimize} />
-          </div>
+          <DialogTitle className="flex items-center gap-2">
+            Editar Pedido #{order.order_number}
+            {!isEditable && <Badge variant="destructive">Bloqueado para edição</Badge>}
+          </DialogTitle>
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
