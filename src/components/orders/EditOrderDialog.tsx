@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,6 +21,8 @@ import { useProjects } from '@/hooks/useProjects';
 import { AddressForm } from './AddressForm';
 import { User, Calendar, Trash2 } from 'lucide-react';
 import { Loader2, AlertTriangle, Plus, Search } from 'lucide-react';
+import { useMinimizedDialogs } from '@/contexts/MinimizedDialogsContext';
+import { MinimizeButton } from '@/components/ui/MinimizeButton';
 
 const FORMAS_PAGAMENTO = [
   { value: 'pix', label: 'PIX' },
@@ -149,9 +151,25 @@ const initialClientData: ClientData = {
 export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: EditOrderDialogProps) {
   const { user } = useAuth();
   const { isMaster } = usePermissions();
+  const { minimize: minimizeDialog } = useMinimizedDialogs();
+  const [isMinimized, setIsMinimized] = useState(false);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('cliente');
   const [loadingCep, setLoadingCep] = useState(false);
+
+  const handleMinimize = useCallback(() => {
+    setIsMinimized(true);
+    onOpenChange(false);
+    minimizeDialog({
+      id: `edit-order-${orderId}`,
+      label: `Editar Pedido #${orderId?.substring(0, 6)}`,
+      icon: '✏️',
+      restore: () => {
+        setIsMinimized(false);
+        onOpenChange(true);
+      },
+    });
+  }, [minimizeDialog, onOpenChange, orderId]);
   
   const { projects } = useProjects();
 
@@ -1062,10 +1080,13 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            Editar Pedido #{order.order_number}
-            {!isEditable && <Badge variant="destructive">Bloqueado para edição</Badge>}
-          </DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogTitle className="flex items-center gap-2">
+              Editar Pedido #{order.order_number}
+              {!isEditable && <Badge variant="destructive">Bloqueado para edição</Badge>}
+            </DialogTitle>
+            <MinimizeButton onClick={handleMinimize} />
+          </div>
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>

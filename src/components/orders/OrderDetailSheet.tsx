@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -22,6 +22,8 @@ import {
   Truck, FileText, Clock, CheckCircle, AlertCircle, Loader2, Factory,
   Edit, Copy, Download, Printer, MessageSquare, ExternalLink, Trash2
 } from 'lucide-react';
+import { useMinimizedDialogs } from '@/contexts/MinimizedDialogsContext';
+import { MinimizeButton } from '@/components/ui/MinimizeButton';
 
 interface OrderDetailSheetProps {
   orderId: string;
@@ -43,11 +45,27 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }>
 
 export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: OrderDetailSheetProps) {
   const { isMaster } = usePermissions();
+  const { minimize: minimizeDialog } = useMinimizedDialogs();
+  const [isMinimized, setIsMinimized] = useState(false);
   const [loading, setLoading] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+
+  const handleMinimize = useCallback(() => {
+    setIsMinimized(true);
+    onOpenChange(false);
+    minimizeDialog({
+      id: `order-detail-${orderId}`,
+      label: `Pedido #${orderId?.substring(0, 6)}`,
+      icon: '📄',
+      restore: () => {
+        setIsMinimized(false);
+        onOpenChange(true);
+      },
+    });
+  }, [minimizeDialog, onOpenChange, orderId]);
 
   const { data: order, refetch } = useQuery({
     queryKey: ['order-detail', orderId],
@@ -281,6 +299,7 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
                 <Badge className={statusConfig.color}>{statusConfig.label}</Badge>
               </SheetTitle>
               <div className="flex items-center gap-2">
+                <MinimizeButton onClick={handleMinimize} />
                 {canEdit && (
                   <Button size="sm" variant="outline" onClick={() => setEditOpen(true)}>
                     <Edit className="h-4 w-4 mr-1" />

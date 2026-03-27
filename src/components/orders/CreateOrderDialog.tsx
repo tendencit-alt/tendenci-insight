@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,6 +21,9 @@ import { useOrderResponsibles } from '@/hooks/useOrderResponsibles';
 import { CreateClientDialog } from '@/components/crm/CreateClientDialog';
 import { CreateWonDealDialog } from './CreateWonDealDialog';
 import { Loader2, AlertTriangle, Link, Plus, ChevronRight, Check, Trash2 } from 'lucide-react';
+import { useMinimizedDialogs } from '@/contexts/MinimizedDialogsContext';
+import { MinimizeButton } from '@/components/ui/MinimizeButton';
+import { AddressForm } from './AddressForm';
 
 interface CreateOrderDialogProps {
   open: boolean;
@@ -84,10 +87,26 @@ const TIPOS_ENTREGA = [
 
 export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clientId }: CreateOrderDialogProps) {
   const { user } = useAuth();
+  const { minimize: minimizeDialog } = useMinimizedDialogs();
+  const [isMinimized, setIsMinimized] = useState(false);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('cliente');
   const [showCreateClient, setShowCreateClient] = useState(false);
   const [showCreateDeal, setShowCreateDeal] = useState(false);
+
+  const handleMinimize = useCallback(() => {
+    setIsMinimized(true);
+    onOpenChange(false);
+    minimizeDialog({
+      id: 'create-order',
+      label: 'Novo Pedido',
+      icon: '📋',
+      restore: () => {
+        setIsMinimized(false);
+        onOpenChange(true);
+      },
+    });
+  }, [minimizeDialog, onOpenChange]);
   
   interface PagamentoParcela {
     id: string;
@@ -791,14 +810,17 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <div className="flex items-center gap-2">
-              <DialogTitle>Novo Pedido</DialogTitle>
-              {linkedDeal && (
-                <Badge variant="secondary" className="gap-1">
-                  <Link className="h-3 w-3" />
-                  Vinculado: {linkedDeal.title}
-                </Badge>
-              )}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <DialogTitle>Novo Pedido</DialogTitle>
+                {linkedDeal && (
+                  <Badge variant="secondary" className="gap-1">
+                    <Link className="h-3 w-3" />
+                    Vinculado: {linkedDeal.title}
+                  </Badge>
+                )}
+              </div>
+              <MinimizeButton onClick={handleMinimize} />
             </div>
           </DialogHeader>
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -12,6 +12,8 @@ import { CurrencyInput, parseCurrencyToNumber } from "@/components/ui/currency-i
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { Loader2, AlertCircle, Plus } from "lucide-react";
+import { useMinimizedDialogs } from '@/contexts/MinimizedDialogsContext';
+import { MinimizeButton } from '@/components/ui/MinimizeButton';
 import { QuickCreateClientDialog } from "./QuickCreateClientDialog";
 import { cn } from "@/lib/utils";
 import { createReceivableWithLedger } from "@/lib/financeiroIntegration";
@@ -44,7 +46,20 @@ export function CreateReceivableDialog({ open, onOpenChange, onSuccess, initialD
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   const [showCreateClient, setShowCreateClient] = useState(false);
+  const { minimize: minimizeDialog } = useMinimizedDialogs();
+  const [isMinimized, setIsMinimized] = useState(false);
   const { invalidateReceivables } = useFinanceiroSync();
+
+  const handleMinimize = useCallback(() => {
+    setIsMinimized(true);
+    onOpenChange(false);
+    minimizeDialog({
+      id: 'create-receivable',
+      label: 'Nova Conta a Receber',
+      icon: '💰',
+      restore: () => { setIsMinimized(false); onOpenChange(true); },
+    });
+  }, [minimizeDialog, onOpenChange]);
   const [form, setForm] = useState({
     customer_id: "",
     amount: "",
@@ -222,7 +237,10 @@ export function CreateReceivableDialog({ open, onOpenChange, onSuccess, initialD
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Nova Conta a Receber</DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogTitle>Nova Conta a Receber</DialogTitle>
+            <MinimizeButton onClick={handleMinimize} />
+          </div>
         </DialogHeader>
 
         <div className="grid gap-4 py-4">

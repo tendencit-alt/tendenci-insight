@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -12,6 +12,8 @@ import { CurrencyInput, parseCurrencyToNumber } from "@/components/ui/currency-i
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { Loader2, AlertCircle, Plus } from "lucide-react";
+import { useMinimizedDialogs } from '@/contexts/MinimizedDialogsContext';
+import { MinimizeButton } from '@/components/ui/MinimizeButton';
 import { QuickCreateSupplierDialog } from "./QuickCreateSupplierDialog";
 import { cn } from "@/lib/utils";
 import { createPayableWithLedger } from "@/lib/financeiroIntegration";
@@ -44,7 +46,20 @@ export function CreatePayableDialog({ open, onOpenChange, onSuccess, initialData
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   const [showCreateSupplier, setShowCreateSupplier] = useState(false);
+  const { minimize: minimizeDialog } = useMinimizedDialogs();
+  const [isMinimized, setIsMinimized] = useState(false);
   const { invalidatePayables } = useFinanceiroSync();
+
+  const handleMinimize = useCallback(() => {
+    setIsMinimized(true);
+    onOpenChange(false);
+    minimizeDialog({
+      id: 'create-payable',
+      label: 'Nova Conta a Pagar',
+      icon: '💸',
+      restore: () => { setIsMinimized(false); onOpenChange(true); },
+    });
+  }, [minimizeDialog, onOpenChange]);
   const [form, setForm] = useState({
     supplier_id: "",
     amount: "",
@@ -223,7 +238,10 @@ export function CreatePayableDialog({ open, onOpenChange, onSuccess, initialData
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Nova Conta a Pagar</DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogTitle>Nova Conta a Pagar</DialogTitle>
+            <MinimizeButton onClick={handleMinimize} />
+          </div>
         </DialogHeader>
 
         <div className="grid gap-4 py-4">
