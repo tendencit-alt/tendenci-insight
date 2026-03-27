@@ -21,6 +21,8 @@ import { useProjects } from '@/hooks/useProjects';
 import { AddressForm } from './AddressForm';
 import { User, Calendar, Trash2 } from 'lucide-react';
 import { Loader2, AlertTriangle, Plus, Search } from 'lucide-react';
+import { useMinimizedDialogs } from '@/contexts/MinimizedDialogsContext';
+import { MinimizeButton } from '@/components/ui/MinimizeButton';
 
 const FORMAS_PAGAMENTO = [
   { value: 'pix', label: 'PIX' },
