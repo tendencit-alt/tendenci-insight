@@ -678,11 +678,12 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
     montador: 'Montador',
     producao: 'Produção',
   } as const;
-  const missingStrategicResponsible = (Object.entries(comissoes) as Array<[
+  const allMissingStrategicResponsibles = (Object.entries(comissoes) as Array<[
     keyof typeof comissoes,
     (typeof comissoes)[keyof typeof comissoes]
-  ]>).find(([, recurso]) => recurso.habilitado && !recurso.responsavel_id)?.[0];
-  const hasAllStrategicResponsibles = !missingStrategicResponsible;
+  ]>).filter(([, recurso]) => recurso.habilitado && !recurso.responsavel_id).map(([key]) => key);
+  const missingStrategicResponsible = allMissingStrategicResponsibles[0] || null;
+  const hasAllStrategicResponsibles = allMissingStrategicResponsibles.length === 0;
 
   // Validação rigorosa: valor das formas de pagamento deve ser igual ao total
   const valorTotalPagamento = parcelas.reduce((sum, p) => sum + (total * (p.percentual / 100)), 0);
