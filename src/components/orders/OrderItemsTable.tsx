@@ -77,6 +77,8 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
   const [newItem, setNewItem] = useState<Partial<OrderItem>>(emptyItem);
   const [autoProjectDone, setAutoProjectDone] = useState(false);
 
+  const NEW_PROJECT_VALUE = '__new_from_client__';
+
   useEffect(() => {
     if (!isAddingItem || !clientName || autoProjectDone) return;
 
@@ -85,6 +87,9 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
 
     if (existing) {
       setNewItem((prev) => ({ ...prev, project_id: existing.value }));
+    } else {
+      // Pre-fill with marker to create new project from client name
+      setNewItem((prev) => ({ ...prev, project_id: NEW_PROJECT_VALUE }));
     }
 
     setAutoProjectDone(true);
@@ -455,6 +460,11 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="_placeholder" disabled>{requireProject ? 'Selecione' : 'Gerar automaticamente ao salvar'}</SelectItem>
+                      {clientName && !PROJETOS.find((p) => p.label.trim().toLowerCase() === clientName.trim().toLowerCase()) && (
+                        <SelectItem value={NEW_PROJECT_VALUE}>
+                          + Novo projeto: {clientName}
+                        </SelectItem>
+                      )}
                       {PROJETOS.map((p) => (
                         <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
                       ))}
@@ -580,7 +590,7 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                       {requireProject && (
                         <div className="col-span-2">
                           <p className="text-xs text-muted-foreground">Projeto</p>
-                          <p className="font-medium break-words">{PROJETOS.find((project) => project.value === item.project_id)?.label || '-'}</p>
+                          <p className="font-medium break-words">{item.project_id === NEW_PROJECT_VALUE ? `Novo: ${clientName}` : (PROJETOS.find((project) => project.value === item.project_id)?.label || '-')}</p>
                         </div>
                       )}
                       {showFiscalFields && (item.ncm || item.cfop) && (
@@ -688,6 +698,9 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="_placeholder" disabled>Selecione</SelectItem>
+                                {clientName && !PROJETOS.find((p) => p.label.trim().toLowerCase() === clientName.trim().toLowerCase()) && (
+                                  <SelectItem value={NEW_PROJECT_VALUE}>+ Novo projeto: {clientName}</SelectItem>
+                                )}
                                 {PROJETOS.map((project) => (
                                   <SelectItem key={project.value} value={project.value}>{project.label}</SelectItem>
                                 ))}
@@ -742,7 +755,7 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                         {requireProject && (
                           <TableCell>
                             <span className="text-xs">
-                              {PROJETOS.find((project) => project.value === item.project_id)?.label || '-'}
+                              {item.project_id === NEW_PROJECT_VALUE ? `Novo: ${clientName}` : (PROJETOS.find((project) => project.value === item.project_id)?.label || '-')}
                             </span>
                           </TableCell>
                         )}
