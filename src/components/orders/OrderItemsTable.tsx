@@ -77,6 +77,8 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
   const [newItem, setNewItem] = useState<Partial<OrderItem>>(emptyItem);
   const [autoProjectDone, setAutoProjectDone] = useState(false);
 
+  const NEW_PROJECT_VALUE = '__new_from_client__';
+
   useEffect(() => {
     if (!isAddingItem || !clientName || autoProjectDone) return;
 
@@ -85,6 +87,9 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
 
     if (existing) {
       setNewItem((prev) => ({ ...prev, project_id: existing.value }));
+    } else {
+      // Pre-fill with marker to create new project from client name
+      setNewItem((prev) => ({ ...prev, project_id: NEW_PROJECT_VALUE }));
     }
 
     setAutoProjectDone(true);
