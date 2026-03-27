@@ -238,7 +238,10 @@ export function CreatePayableDialog({ open, onOpenChange, onSuccess, initialData
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Nova Conta a Pagar</DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogTitle>Nova Conta a Pagar</DialogTitle>
+            <MinimizeButton onClick={handleMinimize} />
+          </div>
         </DialogHeader>
 
         <div className="grid gap-4 py-4">
