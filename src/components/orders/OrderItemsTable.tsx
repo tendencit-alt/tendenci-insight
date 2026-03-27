@@ -451,25 +451,34 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
 
                 <div className="space-y-1 min-w-0">
                   <Label className="text-xs">Projeto {requireProject ? '*' : ''}</Label>
-                  <Select
-                    value={newItem.project_id || '_placeholder'}
-                    onValueChange={(v) => setNewItem({ ...newItem, project_id: v === '_placeholder' ? '' : v })}
-                  >
-                    <SelectTrigger className={requireProject && !newItem.project_id ? 'border-destructive/50' : ''}>
-                      <SelectValue placeholder={requireProject ? 'Selecione o projeto' : 'Selecionar agora ou gerar no salvamento'} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="_placeholder" disabled>{requireProject ? 'Selecione' : 'Gerar automaticamente ao salvar'}</SelectItem>
-                      {clientName && !PROJETOS.find((p) => p.label.trim().toLowerCase() === clientName.trim().toLowerCase()) && (
-                        <SelectItem value={NEW_PROJECT_VALUE}>
-                          + Novo projeto: {clientName}
-                        </SelectItem>
-                      )}
-                      {PROJETOS.map((p) => (
-                        <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex items-center gap-2">
+                    <Select
+                      value={newItem.project_id || '_placeholder'}
+                      onValueChange={(v) => setNewItem({ ...newItem, project_id: v === '_placeholder' ? '' : v })}
+                    >
+                      <SelectTrigger className={`flex-1 ${requireProject && !newItem.project_id ? 'border-destructive/50' : ''}`}>
+                        <SelectValue placeholder={requireProject ? 'Selecione o projeto' : 'Selecionar agora ou gerar no salvamento'} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="_placeholder" disabled>{requireProject ? 'Selecione' : 'Gerar automaticamente ao salvar'}</SelectItem>
+                        {PROJETOS.map((p) => (
+                          <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {clientName && !PROJETOS.find((p) => p.label.trim().toLowerCase() === clientName.trim().toLowerCase()) && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="shrink-0 whitespace-nowrap text-xs"
+                        onClick={() => setNewItem({ ...newItem, project_id: NEW_PROJECT_VALUE })}
+                      >
+                        <Plus className="h-3 w-3 mr-1" />
+                        Novo: {clientName}
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
@@ -689,23 +698,34 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                         )}
                         {requireProject && (
                           <TableCell>
-                            <Select
-                              value={item.project_id || '_placeholder'}
-                              onValueChange={(v) => handleUpdateItem(item.id, { project_id: v === '_placeholder' ? '' : v })}
-                            >
-                              <SelectTrigger className="h-8">
-                                <SelectValue placeholder="Projeto" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="_placeholder" disabled>Selecione</SelectItem>
-                                {clientName && !PROJETOS.find((p) => p.label.trim().toLowerCase() === clientName.trim().toLowerCase()) && (
-                                  <SelectItem value={NEW_PROJECT_VALUE}>+ Novo projeto: {clientName}</SelectItem>
-                                )}
-                                {PROJETOS.map((project) => (
-                                  <SelectItem key={project.value} value={project.value}>{project.label}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                            <div className="flex items-center gap-1">
+                              <Select
+                                value={item.project_id || '_placeholder'}
+                                onValueChange={(v) => handleUpdateItem(item.id, { project_id: v === '_placeholder' ? '' : v })}
+                              >
+                                <SelectTrigger className="h-8 flex-1">
+                                  <SelectValue placeholder="Projeto" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="_placeholder" disabled>Selecione</SelectItem>
+                                  {PROJETOS.map((project) => (
+                                    <SelectItem key={project.value} value={project.value}>{project.label}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              {clientName && !PROJETOS.find((p) => p.label.trim().toLowerCase() === clientName.trim().toLowerCase()) && (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="icon"
+                                  className="h-8 w-8 shrink-0"
+                                  title={`Novo projeto: ${clientName}`}
+                                  onClick={() => handleUpdateItem(item.id, { project_id: NEW_PROJECT_VALUE })}
+                                >
+                                  <Plus className="h-3 w-3" />
+                                </Button>
+                              )}
+                            </div>
                           </TableCell>
                         )}
                         <TableCell>
