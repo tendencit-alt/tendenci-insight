@@ -486,11 +486,12 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     montador: 'Montador',
     producao: 'Produção',
   } as const;
-  const missingStrategicResponsible = (Object.entries(comissoes) as Array<[
+  const allMissingStrategicResponsibles = (Object.entries(comissoes) as Array<[
     keyof typeof comissoes,
     (typeof comissoes)[keyof typeof comissoes]
-  ]>).find(([, recurso]) => recurso.habilitado && !recurso.responsavel_id)?.[0];
-  const hasAllStrategicResponsibles = !missingStrategicResponsible;
+  ]>).filter(([, recurso]) => recurso.habilitado && !recurso.responsavel_id).map(([key]) => key);
+  const missingStrategicResponsible = allMissingStrategicResponsibles[0] || null;
+  const hasAllStrategicResponsibles = allMissingStrategicResponsibles.length === 0;
   
   // Validação rigorosa: valor das formas de pagamento deve ser igual ao total
   const valorTotalPagamento = parcelas.reduce((sum, p) => sum + (total * (p.percentual / 100)), 0);
@@ -525,8 +526,8 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
       }
       setActiveTab('pagamento');
     } else if (activeTab === 'pagamento') {
-      if (missingStrategicResponsible) {
-        toast.error(`Selecione o responsável para ${strategicResourceLabels[missingStrategicResponsible]}`);
+      if (allMissingStrategicResponsibles.length > 0) {
+        toast.error(`Selecione o responsável para: ${allMissingStrategicResponsibles.map(key => strategicResourceLabels[key]).join(', ')}`);
         return;
       }
       if (!isRtValid) {
@@ -602,8 +603,8 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
   };
 
   const handleSubmit = async () => {
-    if (missingStrategicResponsible) {
-      toast.error(`Selecione o responsável para ${strategicResourceLabels[missingStrategicResponsible]}`);
+    if (allMissingStrategicResponsibles.length > 0) {
+      toast.error(`Selecione o responsável para: ${allMissingStrategicResponsibles.map(key => strategicResourceLabels[key]).join(', ')}`);
       return;
     }
 
@@ -1754,7 +1755,16 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                     </AlertDescription>
                   </Alert>
                 )}
-              </div>
+               </div>
+
+               {allMissingStrategicResponsibles.length > 0 && (
+                 <Alert variant="destructive" className="mt-2">
+                   <AlertTriangle className="h-4 w-4" />
+                   <AlertDescription>
+                     Selecione o responsável para: {allMissingStrategicResponsibles.map(key => strategicResourceLabels[key]).join(', ')}
+                   </AlertDescription>
+                 </Alert>
+               )}
 
 
 
