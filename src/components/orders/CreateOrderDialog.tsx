@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,6 +21,9 @@ import { useOrderResponsibles } from '@/hooks/useOrderResponsibles';
 import { CreateClientDialog } from '@/components/crm/CreateClientDialog';
 import { CreateWonDealDialog } from './CreateWonDealDialog';
 import { Loader2, AlertTriangle, Link, Plus, ChevronRight, Check, Trash2 } from 'lucide-react';
+import { useMinimizedDialogs } from '@/contexts/MinimizedDialogsContext';
+import { MinimizeButton } from '@/components/ui/MinimizeButton';
+import { AddressForm } from './AddressForm';
 
 interface CreateOrderDialogProps {
   open: boolean;
