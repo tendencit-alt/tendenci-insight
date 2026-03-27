@@ -590,7 +590,7 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                       {requireProject && (
                         <div className="col-span-2">
                           <p className="text-xs text-muted-foreground">Projeto</p>
-                          <p className="font-medium break-words">{PROJETOS.find((project) => project.value === item.project_id)?.label || '-'}</p>
+                          <p className="font-medium break-words">{item.project_id === NEW_PROJECT_VALUE ? `Novo: ${clientName}` : (PROJETOS.find((project) => project.value === item.project_id)?.label || '-')}</p>
                         </div>
                       )}
                       {showFiscalFields && (item.ncm || item.cfop) && (
@@ -755,7 +755,7 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                         {requireProject && (
                           <TableCell>
                             <span className="text-xs">
-                              {PROJETOS.find((project) => project.value === item.project_id)?.label || '-'}
+                              {item.project_id === NEW_PROJECT_VALUE ? `Novo: ${clientName}` : (PROJETOS.find((project) => project.value === item.project_id)?.label || '-')}
                             </span>
                           </TableCell>
                         )}
