@@ -87,10 +87,26 @@ const TIPOS_ENTREGA = [
 
 export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clientId }: CreateOrderDialogProps) {
   const { user } = useAuth();
+  const { minimize: minimizeDialog } = useMinimizedDialogs();
+  const [isMinimized, setIsMinimized] = useState(false);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('cliente');
   const [showCreateClient, setShowCreateClient] = useState(false);
   const [showCreateDeal, setShowCreateDeal] = useState(false);
+
+  const handleMinimize = useCallback(() => {
+    setIsMinimized(true);
+    onOpenChange(false);
+    minimizeDialog({
+      id: 'create-order',
+      label: 'Novo Pedido',
+      icon: '📋',
+      restore: () => {
+        setIsMinimized(false);
+        onOpenChange(true);
+      },
+    });
+  }, [minimizeDialog, onOpenChange]);
   
   interface PagamentoParcela {
     id: string;
