@@ -460,6 +460,11 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="_placeholder" disabled>{requireProject ? 'Selecione' : 'Gerar automaticamente ao salvar'}</SelectItem>
+                      {clientName && !PROJETOS.find((p) => p.label.trim().toLowerCase() === clientName.trim().toLowerCase()) && (
+                        <SelectItem value={NEW_PROJECT_VALUE}>
+                          + Novo projeto: {clientName}
+                        </SelectItem>
+                      )}
                       {PROJETOS.map((p) => (
                         <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
                       ))}
