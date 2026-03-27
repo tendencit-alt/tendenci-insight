@@ -4,6 +4,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { MinimizedDialogsProvider } from "@/contexts/MinimizedDialogsContext";
+import { MinimizedDialogsBar } from "@/components/ui/MinimizedDialogsBar";
 import { PermissionsProvider } from "@/contexts/PermissionsContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { PermissionGuard } from "@/components/auth/PermissionGuard";
@@ -35,6 +37,8 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <AuthProvider>
+            <MinimizedDialogsProvider>
+            <MinimizedDialogsBar />
             <PermissionsProvider>
                <Routes>
               <Route path="/auth" element={<Auth />} />
@@ -71,6 +75,7 @@ const App = () => (
               } />
               </Routes>
             </PermissionsProvider>
+            </MinimizedDialogsProvider>
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
