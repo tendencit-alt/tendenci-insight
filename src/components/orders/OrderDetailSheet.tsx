@@ -45,11 +45,27 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }>
 
 export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: OrderDetailSheetProps) {
   const { isMaster } = usePermissions();
+  const { minimize: minimizeDialog } = useMinimizedDialogs();
+  const [isMinimized, setIsMinimized] = useState(false);
   const [loading, setLoading] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+
+  const handleMinimize = useCallback(() => {
+    setIsMinimized(true);
+    onOpenChange(false);
+    minimizeDialog({
+      id: `order-detail-${orderId}`,
+      label: `Pedido #${orderId?.substring(0, 6)}`,
+      icon: '📄',
+      restore: () => {
+        setIsMinimized(false);
+        onOpenChange(true);
+      },
+    });
+  }, [minimizeDialog, onOpenChange, orderId]);
 
   const { data: order, refetch } = useQuery({
     queryKey: ['order-detail', orderId],
