@@ -76,8 +76,13 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
   const [isAddingItem, setIsAddingItem] = useState(false);
   const [newItem, setNewItem] = useState<Partial<OrderItem>>(emptyItem);
   const [autoProjectDone, setAutoProjectDone] = useState(false);
+  const [showNewProjectInput, setShowNewProjectInput] = useState(false);
+  const [customProjectName, setCustomProjectName] = useState('');
+  const [showNewProjectInputInline, setShowNewProjectInputInline] = useState<string | null>(null);
+  const [customProjectNameInline, setCustomProjectNameInline] = useState('');
 
   const NEW_PROJECT_VALUE = '__new_from_client__';
+  const CUSTOM_PROJECT_PREFIX = '__custom_project__';
 
   useEffect(() => {
     if (!isAddingItem || !clientName || autoProjectDone) return;
