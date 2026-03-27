@@ -35,6 +35,8 @@ import {
   Info,
   Timer
 } from 'lucide-react';
+import { useMinimizedDialogs } from '@/contexts/MinimizedDialogsContext';
+import { MinimizeButton } from '@/components/ui/MinimizeButton';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { EditProductionOrderDialog } from './EditProductionOrderDialog';
@@ -67,11 +69,24 @@ const statusColors: Record<string, string> = {
 
 export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: ProductionOrderDetailSheetProps) {
   const queryClient = useQueryClient();
+  const { minimize: minimizeDialog } = useMinimizedDialogs();
+  const [isMinimized, setIsMinimized] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [prazoDialogOpen, setPrazoDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('info');
   const { isMaster } = usePermissions();
+
+  const handleMinimize = useCallback(() => {
+    setIsMinimized(true);
+    onOpenChange(false);
+    minimizeDialog({
+      id: `production-detail-${orderId}`,
+      label: `Ordem Produção`,
+      icon: '🏭',
+      restore: () => { setIsMinimized(false); onOpenChange(true); },
+    });
+  }, [minimizeDialog, onOpenChange, orderId]);
 
   // Buscar detalhes da OP com queries separadas para evitar problemas de FK
   const { data: order, isLoading } = useQuery({
