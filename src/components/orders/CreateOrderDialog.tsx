@@ -561,6 +561,37 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     }
   };
 
+  const CUSTOM_PROJECT_PREFIX = '__custom_project__';
+
+  const resolveProjectId = async (projectName: string): Promise<string> => {
+    const normalizedName = projectName.trim().toLowerCase();
+    
+    const projectFromCache = projects.find(
+      (project) => project.label.trim().toLowerCase() === normalizedName
+    );
+    if (projectFromCache?.value) return projectFromCache.value;
+
+    const { data: existingProjects, error: existingProjectError } = await supabase
+      .from('fin_projects')
+      .select('id, name')
+      .ilike('name', projectName.trim())
+      .limit(1);
+    if (existingProjectError) throw existingProjectError;
+
+    const existingProject = existingProjects?.find(
+      (p) => p.name.trim().toLowerCase() === normalizedName
+    ) || existingProjects?.[0];
+    if (existingProject) return existingProject.id;
+
+    const { data: newProject, error: newProjectError } = await supabase
+      .from('fin_projects')
+      .insert({ name: projectName.trim(), status: 'ativo' })
+      .select('id')
+      .single();
+    if (newProjectError) throw newProjectError;
+    return newProject.id;
+  };
+
   const resolveProjectIdForItems = async () => {
     const hasItemsWithoutProject = items.some((item) => !item.project_id || item.project_id === '__new_from_client__');
 
@@ -576,7 +607,6 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
         .select('name')
         .eq('id', formData.client_id)
         .single();
-
       if (clientError) throw clientError;
       clientName = clientData?.name?.trim() || '';
     }
@@ -585,40 +615,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
       throw new Error('Não foi possível identificar o nome do cliente para gerar o projeto do pedido');
     }
 
-    const normalizedClientName = clientName.toLowerCase();
-    const projectFromCache = projects.find(
-      (project) => project.label.trim().toLowerCase() === normalizedClientName
-    );
-
-    if (projectFromCache?.value) {
-      return projectFromCache.value;
-    }
-
-    const { data: existingProjects, error: existingProjectError } = await supabase
-      .from('fin_projects')
-      .select('id, name')
-      .ilike('name', clientName)
-      .limit(1);
-
-    if (existingProjectError) throw existingProjectError;
-
-    const existingProject = existingProjects?.find(
-      (project) => project.name.trim().toLowerCase() === normalizedClientName
-    ) || existingProjects?.[0];
-
-    if (existingProject) {
-      return existingProject.id;
-    }
-
-    const { data: newProject, error: newProjectError } = await supabase
-      .from('fin_projects')
-      .insert({ name: clientName, status: 'ativo' })
-      .select('id')
-      .single();
-
-    if (newProjectError) throw newProjectError;
-
-    return newProject.id;
+    return await resolveProjectId(clientName);
   };
 
   const handleSubmit = async () => {
@@ -637,10 +634,28 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
       const parcelasPrincipal = parcelas[0];
       const parcelasSecundaria = parcelas.length > 1 ? parcelas[1] : null;
       const resolvedProjectId = await resolveProjectIdForItems();
-      const itemsWithResolvedProject = items.map((item) => ({
-        ...item,
-        project_id: (!item.project_id || item.project_id === '__new_from_client__') ? resolvedProjectId || undefined : item.project_id,
-      }));
+      
+      // Resolve custom project names for each item
+      const resolvedCustomProjects: Record<string, string> = {};
+      for (const item of items) {
+        if (item.project_id?.startsWith(CUSTOM_PROJECT_PREFIX)) {
+          const customName = item.project_id.replace(CUSTOM_PROJECT_PREFIX, '');
+          if (!resolvedCustomProjects[customName]) {
+            resolvedCustomProjects[customName] = await resolveProjectId(customName);
+          }
+        }
+      }
+
+      const itemsWithResolvedProject = items.map((item) => {
+        if (item.project_id?.startsWith(CUSTOM_PROJECT_PREFIX)) {
+          const customName = item.project_id.replace(CUSTOM_PROJECT_PREFIX, '');
+          return { ...item, project_id: resolvedCustomProjects[customName] };
+        }
+        return {
+          ...item,
+          project_id: (!item.project_id || item.project_id === '__new_from_client__') ? resolvedProjectId || undefined : item.project_id,
+        };
+      });
       
       const { data: order, error: orderError } = await supabase
         .from('orders')
