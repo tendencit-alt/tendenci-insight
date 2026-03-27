@@ -299,6 +299,7 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
                 <Badge className={statusConfig.color}>{statusConfig.label}</Badge>
               </SheetTitle>
               <div className="flex items-center gap-2">
+                <MinimizeButton onClick={handleMinimize} />
                 {canEdit && (
                   <Button size="sm" variant="outline" onClick={() => setEditOpen(true)}>
                     <Edit className="h-4 w-4 mr-1" />
