@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -13,6 +13,8 @@ import { CurrencyInput, parseCurrencyToNumber } from "@/components/ui/currency-i
 import { toast } from "sonner";
 import { format, addDays, addWeeks, addMonths, addYears } from "date-fns";
 import { Loader2, Repeat, Info, Link2 } from "lucide-react";
+import { useMinimizedDialogs } from '@/contexts/MinimizedDialogsContext';
+import { MinimizeButton } from '@/components/ui/MinimizeButton';
 import {
   Tooltip,
   TooltipContent,
@@ -31,7 +33,20 @@ interface CreateLedgerEntryDialogProps {
 
 export function CreateLedgerEntryDialog({ open, onOpenChange, onSuccess }: CreateLedgerEntryDialogProps) {
   const [loading, setLoading] = useState(false);
+  const { minimize: minimizeDialog } = useMinimizedDialogs();
+  const [isMinimized, setIsMinimized] = useState(false);
   const { invalidateLedger } = useFinanceiroSync();
+
+  const handleMinimize = useCallback(() => {
+    setIsMinimized(true);
+    onOpenChange(false);
+    minimizeDialog({
+      id: 'create-ledger-entry',
+      label: 'Novo Lançamento',
+      icon: '📒',
+      restore: () => { setIsMinimized(false); onOpenChange(true); },
+    });
+  }, [minimizeDialog, onOpenChange]);
   const [form, setForm] = useState({
     type: "DESPESA",
     description: "",
@@ -299,7 +314,10 @@ export function CreateLedgerEntryDialog({ open, onOpenChange, onSuccess }: Creat
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto overflow-x-visible">
         <DialogHeader>
-          <DialogTitle>Novo Lançamento</DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogTitle>Novo Lançamento</DialogTitle>
+            <MinimizeButton onClick={handleMinimize} />
+          </div>
         </DialogHeader>
 
         <div className="grid gap-4 py-4">
