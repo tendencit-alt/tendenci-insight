@@ -542,7 +542,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
   };
 
   const resolveProjectIdForItems = async () => {
-    const hasItemsWithoutProject = items.some((item) => !item.project_id);
+    const hasItemsWithoutProject = items.some((item) => !item.project_id || item.project_id === '__new_from_client__');
 
     if (!hasItemsWithoutProject) {
       return null;
