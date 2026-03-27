@@ -461,21 +461,26 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="_placeholder" disabled>{requireProject ? 'Selecione' : 'Gerar automaticamente ao salvar'}</SelectItem>
+                        {clientName && (
+                          <SelectItem value={NEW_PROJECT_VALUE}>
+                            Novo projeto: {clientName}
+                          </SelectItem>
+                        )}
                         {PROJETOS.map((p) => (
                           <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                    {clientName && !PROJETOS.find((p) => p.label.trim().toLowerCase() === clientName.trim().toLowerCase()) && (
+                    {clientName && (
                       <Button
                         type="button"
                         variant="outline"
-                        size="sm"
-                        className="shrink-0 whitespace-nowrap text-xs"
+                        size="icon"
+                        className="h-9 w-9 shrink-0"
+                        title={`Criar novo projeto: ${clientName}`}
                         onClick={() => setNewItem({ ...newItem, project_id: NEW_PROJECT_VALUE })}
                       >
-                        <Plus className="h-3 w-3 mr-1" />
-                        Novo: {clientName}
+                        <Plus className="h-4 w-4" />
                       </Button>
                     )}
                   </div>
@@ -708,12 +713,15 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                                 </SelectTrigger>
                                 <SelectContent>
                                   <SelectItem value="_placeholder" disabled>Selecione</SelectItem>
+                                  {clientName && (
+                                    <SelectItem value={NEW_PROJECT_VALUE}>Novo projeto: {clientName}</SelectItem>
+                                  )}
                                   {PROJETOS.map((project) => (
                                     <SelectItem key={project.value} value={project.value}>{project.label}</SelectItem>
                                   ))}
                                 </SelectContent>
                               </Select>
-                              {clientName && !PROJETOS.find((p) => p.label.trim().toLowerCase() === clientName.trim().toLowerCase()) && (
+                              {clientName && (
                                 <Button
                                   type="button"
                                   variant="outline"
