@@ -1755,7 +1755,16 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                     </AlertDescription>
                   </Alert>
                 )}
-              </div>
+               </div>
+
+               {allMissingStrategicResponsibles.length > 0 && (
+                 <Alert variant="destructive" className="mt-2">
+                   <AlertTriangle className="h-4 w-4" />
+                   <AlertDescription>
+                     Selecione o responsável para: {allMissingStrategicResponsibles.map(key => strategicResourceLabels[key]).join(', ')}
+                   </AlertDescription>
+                 </Alert>
+               )}
 
 
 
