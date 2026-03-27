@@ -418,6 +418,7 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
                     )}
                   </div>
                   <div className="flex gap-2 shrink-0">
+                    <MinimizeButton onClick={handleMinimize} />
                     <Button
                       variant="outline"
                       size="sm"
