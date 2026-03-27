@@ -619,7 +619,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
       const resolvedProjectId = await resolveProjectIdForItems();
       const itemsWithResolvedProject = items.map((item) => ({
         ...item,
-        project_id: item.project_id || resolvedProjectId || undefined,
+        project_id: (!item.project_id || item.project_id === '__new_from_client__') ? resolvedProjectId || undefined : item.project_id,
       }));
       
       const { data: order, error: orderError } = await supabase
