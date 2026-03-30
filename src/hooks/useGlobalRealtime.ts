@@ -46,12 +46,11 @@ export function useGlobalRealtime() {
   }, [invalidateByKeys]);
 
   const onInventoryChange = useCallback(() => {
-    console.log("[GlobalRT] Inventory changed → invalidating inventory, production, suppliers, BI");
     invalidateByKeys([
-      "products", "stock-", "inventory",
+      "products", "stock-", "inventory", "categories", "locations",
       "production", "prod-",
       "suppliers",
-      "bi-", "dashboard",
+      "purchase-orders",
     ]);
   }, [invalidateByKeys]);
 
