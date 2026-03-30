@@ -96,6 +96,15 @@ export default function Financeiro() {
             </button>
           </div>
 
+          {/* Filtros */}
+          <FinanceiroFilters filters={filters} onChange={setFilters} />
+
+          {/* Orphan Entries Alert */}
+          <OrphanEntriesAlert />
+
+          {/* Global Pending Alerts */}
+          <PendingAlertsCard />
+
           <TabsContent value="dashboard" className="space-y-4">
             <FinanceiroDashboard filters={filters} />
           </TabsContent>
