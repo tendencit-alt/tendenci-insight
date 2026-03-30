@@ -1065,7 +1065,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
             </TabsContent>
 
             <TabsContent value="itens" className="space-y-4">
-              <OrderItemsTable items={items} onItemsChange={setItems} showFiscalFields={true} requireCentroCusto={true} requireProject={true} clientName={selectedClient?.name} />
+              <OrderItemsTable items={items} onItemsChange={setItems} showFiscalFields={true} requireCentroCusto={true} requireProject={true} clientName={selectedClient?.name} draftStorageKey={CREATE_ORDER_ITEMS_DRAFT_KEY} />
 
 
 
