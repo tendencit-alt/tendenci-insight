@@ -21,6 +21,7 @@ import {
 import { useNavigate } from "react-router-dom";
 
 export default function Financeiro() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [filters, setFilters] = useState<FinanceiroFiltersState>({
     dateFrom: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
