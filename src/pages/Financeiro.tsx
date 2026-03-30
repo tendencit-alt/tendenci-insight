@@ -58,39 +58,39 @@ export default function Financeiro() {
         <PendingAlertsCard />
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <div className="w-full border-b border-border flex items-center justify-between">
-            <TabsList className="flex h-12 justify-start gap-0 rounded-none bg-transparent p-0">
+          <div className="w-full rounded-xl bg-card border border-border p-1.5 flex items-center gap-1">
+            <TabsList className="flex h-auto justify-start gap-1 rounded-none bg-transparent p-0 flex-1">
               <TabsTrigger
                 value="dashboard"
-                className="relative flex items-center gap-2 rounded-none border-b-2 border-transparent px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none data-[state=active]:bg-transparent"
+                className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-muted-foreground transition-all hover:text-foreground data-[state=active]:bg-foreground data-[state=active]:text-background data-[state=active]:shadow-sm"
               >
                 <LayoutDashboard className="h-4 w-4 flex-shrink-0" />
                 <span>BI/Dashboard</span>
               </TabsTrigger>
               <TabsTrigger
                 value="dre-cashflow"
-                className="relative flex items-center gap-2 rounded-none border-b-2 border-transparent px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none data-[state=active]:bg-transparent"
+                className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-muted-foreground transition-all hover:text-foreground data-[state=active]:bg-foreground data-[state=active]:text-background data-[state=active]:shadow-sm"
               >
                 <BarChart3 className="h-4 w-4 flex-shrink-0" />
                 <span>DRE / Fluxo de Caixa</span>
               </TabsTrigger>
               <TabsTrigger
                 value="payables-receivables"
-                className="relative flex items-center gap-2 rounded-none border-b-2 border-transparent px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none data-[state=active]:bg-transparent"
+                className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-muted-foreground transition-all hover:text-foreground data-[state=active]:bg-foreground data-[state=active]:text-background data-[state=active]:shadow-sm"
               >
                 <Wallet className="h-4 w-4 flex-shrink-0" />
                 <span>Contas a Pagar/Receber</span>
               </TabsTrigger>
               <TabsTrigger
                 value="ledger-reconciliation"
-                className="relative flex items-center gap-2 rounded-none border-b-2 border-transparent px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none data-[state=active]:bg-transparent"
+                className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-muted-foreground transition-all hover:text-foreground data-[state=active]:bg-foreground data-[state=active]:text-background data-[state=active]:shadow-sm"
               >
                 <BookOpen className="h-4 w-4 flex-shrink-0" />
                 <span>Lançamentos & Conciliação</span>
               </TabsTrigger>
               <TabsTrigger
                 value="purchases"
-                className="relative flex items-center gap-2 rounded-none border-b-2 border-transparent px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none data-[state=active]:bg-transparent"
+                className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-muted-foreground transition-all hover:text-foreground data-[state=active]:bg-foreground data-[state=active]:text-background data-[state=active]:shadow-sm"
               >
                 <ShoppingCart className="h-4 w-4 flex-shrink-0" />
                 <span>Compras</span>
@@ -98,10 +98,10 @@ export default function Financeiro() {
             </TabsList>
             <button
               onClick={() => navigate("/cadastros-financeiros")}
-              className="flex items-center gap-2 px-4 py-2 mr-2 rounded-lg bg-primary/10 text-primary font-semibold text-sm hover:bg-primary/20 transition-colors border border-primary/20"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-all"
             >
               <Database className="h-4 w-4" />
-              <span>Cadastros Financeiros</span>
+              <span>Cadastros</span>
             </button>
           </div>
 
