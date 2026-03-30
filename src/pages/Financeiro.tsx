@@ -48,15 +48,6 @@ export default function Financeiro() {
           </div>
         </div>
 
-        {/* Filtros sempre visíveis */}
-        <FinanceiroFilters filters={filters} onChange={setFilters} />
-
-        {/* Orphan Entries Alert - Shows when ledger entries are not synced */}
-        <OrphanEntriesAlert />
-
-        {/* Global Pending Alerts */}
-        <PendingAlertsCard />
-
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <div className="w-full rounded-xl bg-card border border-border p-1.5 flex items-center gap-1">
             <TabsList className="flex h-auto justify-start gap-1 rounded-none bg-transparent p-0 flex-1">
@@ -104,6 +95,15 @@ export default function Financeiro() {
               <span>Cadastros</span>
             </button>
           </div>
+
+          {/* Filtros */}
+          <FinanceiroFilters filters={filters} onChange={setFilters} />
+
+          {/* Orphan Entries Alert */}
+          <OrphanEntriesAlert />
+
+          {/* Global Pending Alerts */}
+          <PendingAlertsCard />
 
           <TabsContent value="dashboard" className="space-y-4">
             <FinanceiroDashboard filters={filters} />
