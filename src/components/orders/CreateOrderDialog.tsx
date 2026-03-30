@@ -87,7 +87,7 @@ const TIPOS_ENTREGA = [
 
 export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clientId }: CreateOrderDialogProps) {
   const { user } = useAuth();
-  const { minimize: minimizeDialog } = useMinimizedDialogs();
+  const { minimize: minimizeDialog, remove: removeMinimized } = useMinimizedDialogs();
   const [isMinimized, setIsMinimized] = useState(false);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('cliente');
@@ -101,12 +101,20 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
       id: 'create-order',
       label: 'Novo Pedido',
       icon: '📋',
+      route: '/pedidos',
       restore: () => {
         setIsMinimized(false);
         onOpenChange(true);
       },
     });
   }, [minimizeDialog, onOpenChange]);
+
+  // Clean up minimized entry when dialog is closed normally (not minimized)
+  useEffect(() => {
+    if (!open && !isMinimized) {
+      removeMinimized('create-order');
+    }
+  }, [open, isMinimized, removeMinimized]);
   
   interface PagamentoParcela {
     id: string;

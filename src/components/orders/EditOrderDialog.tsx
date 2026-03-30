@@ -151,25 +151,35 @@ const initialClientData: ClientData = {
 export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: EditOrderDialogProps) {
   const { user } = useAuth();
   const { isMaster } = usePermissions();
-  const { minimize: minimizeDialog } = useMinimizedDialogs();
+  const { minimize: minimizeDialog, remove: removeMinimized } = useMinimizedDialogs();
   const [isMinimized, setIsMinimized] = useState(false);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('cliente');
   const [loadingCep, setLoadingCep] = useState(false);
 
+  const dialogId = `edit-order-${orderId}`;
+
   const handleMinimize = useCallback(() => {
     setIsMinimized(true);
     onOpenChange(false);
     minimizeDialog({
-      id: `edit-order-${orderId}`,
+      id: dialogId,
       label: `Editar Pedido #${orderId?.substring(0, 6)}`,
       icon: '✏️',
+      route: '/pedidos',
       restore: () => {
         setIsMinimized(false);
         onOpenChange(true);
       },
     });
-  }, [minimizeDialog, onOpenChange, orderId]);
+  }, [minimizeDialog, onOpenChange, orderId, dialogId]);
+
+  // Clean up minimized entry when dialog is closed normally
+  useEffect(() => {
+    if (!open && !isMinimized) {
+      removeMinimized(dialogId);
+    }
+  }, [open, isMinimized, removeMinimized, dialogId]);
   
   const { projects } = useProjects();
 
