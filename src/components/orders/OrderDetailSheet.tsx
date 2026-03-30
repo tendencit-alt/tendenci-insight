@@ -45,7 +45,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }>
 
 export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: OrderDetailSheetProps) {
   const { isMaster } = usePermissions();
-  const { minimize: minimizeDialog } = useMinimizedDialogs();
+  const { minimize: minimizeDialog, remove: removeMinimized } = useMinimizedDialogs();
   const [isMinimized, setIsMinimized] = useState(false);
   const [loading, setLoading] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -53,19 +53,29 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
   const [cancelOpen, setCancelOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
+  const dialogId = `order-detail-${orderId}`;
+
   const handleMinimize = useCallback(() => {
     setIsMinimized(true);
     onOpenChange(false);
     minimizeDialog({
-      id: `order-detail-${orderId}`,
+      id: dialogId,
       label: `Pedido #${orderId?.substring(0, 6)}`,
       icon: '📄',
+      route: '/pedidos',
       restore: () => {
         setIsMinimized(false);
         onOpenChange(true);
       },
     });
-  }, [minimizeDialog, onOpenChange, orderId]);
+  }, [minimizeDialog, onOpenChange, orderId, dialogId]);
+
+  // Clean up minimized entry when dialog is closed normally
+  useEffect(() => {
+    if (!open && !isMinimized) {
+      removeMinimized(dialogId);
+    }
+  }, [open, isMinimized, removeMinimized, dialogId]);
 
   const { data: order, refetch } = useQuery({
     queryKey: ['order-detail', orderId],
