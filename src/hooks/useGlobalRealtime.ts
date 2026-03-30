@@ -55,33 +55,47 @@ export function useGlobalRealtime() {
   }, [invalidateByKeys]);
 
   const onSuppliersChange = useCallback(() => {
-    console.log("[GlobalRT] Suppliers changed → invalidating suppliers, inventory, financeiro");
     invalidateByKeys([
-      "suppliers",
+      "suppliers", "suppliers-list",
       "products", "stock-", "inventory",
       "fin-", "financeiro",
+      "purchase-orders",
     ]);
   }, [invalidateByKeys]);
 
   const onFinanceiroChange = useCallback(() => {
-    console.log("[GlobalRT] Financeiro changed → invalidating financeiro, BI, cost-centers, projects");
     invalidateByKeys([
-      "fin-", "financeiro",
-      "bi-", "dashboard",
-      "fin-cost-centers-active",
-      "fin-projects-active",
+      "fin-", "financeiro", "financeiro-summary",
+      "cashflow", "dre",
+      "orders", "order-",
     ]);
   }, [invalidateByKeys]);
 
   const onPurchasesChange = useCallback(() => {
-    console.log("[GlobalRT] Purchases changed → invalidating purchases, financeiro, inventory, suppliers");
     invalidateByKeys([
       "purchase-orders", "purchase-order-",
       "fin-", "financeiro",
       "products", "stock-", "inventory",
       "suppliers",
-      "bi-", "dashboard",
     ]);
+  }, [invalidateByKeys]);
+
+  const onCRMChange = useCallback(() => {
+    invalidateByKeys([
+      "deals", "crm", "crm-deals", "pipeline",
+      "goals", "seller-goals",
+    ]);
+  }, [invalidateByKeys]);
+
+  const onGoalsChange = useCallback(() => {
+    invalidateByKeys([
+      "goals", "seller-goals", "goal",
+      "tendenci",
+    ]);
+  }, [invalidateByKeys]);
+
+  const onClientsChange = useCallback(() => {
+    invalidateByKeys(["clients", "clients-list"]);
   }, [invalidateByKeys]);
 
   useEffect(() => {
