@@ -634,8 +634,20 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
         toast.error('O responsável de RT deve ser o arquiteto selecionado');
         return;
       }
-      if (!isPagamentoValid) {
-        toast.error('Selecione a forma de pagamento');
+      if (parcelas.length === 0) {
+        toast.error('Adicione pelo menos uma forma de pagamento');
+        return;
+      }
+      if (!parcelas.every(p => p.forma_pagamento)) {
+        toast.error('Selecione a forma de pagamento em todas as parcelas');
+        return;
+      }
+      if (totalPercentual !== 100) {
+        toast.error(`O percentual total das parcelas deve ser 100%. Atual: ${totalPercentual.toFixed(1)}%`);
+        return;
+      }
+      if (!isPagamentoValorCorreto) {
+        toast.error('O valor total das parcelas deve ser igual ao total do pedido');
         return;
       }
       setActiveTab('entrega');
