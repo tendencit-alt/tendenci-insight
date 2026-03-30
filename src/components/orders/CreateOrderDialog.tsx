@@ -1715,8 +1715,8 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="_none">-</SelectItem>
-                              {vendedores?.map((v) => (
-                                <SelectItem key={v.id} value={v.id}>{v.full_name}</SelectItem>
+                              {montadores?.map((m) => (
+                                <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
