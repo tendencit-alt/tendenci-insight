@@ -853,6 +853,9 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
       }
 
       toast.success(`Pedido #${order.order_number} criado com sucesso!`);
+      if (typeof window !== 'undefined') {
+        window.localStorage.removeItem(CREATE_ORDER_DRAFT_KEY);
+      }
       onSuccess();
     } catch (error: any) {
       console.error('Error creating order:', error);
