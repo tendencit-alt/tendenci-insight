@@ -15,8 +15,10 @@ import {
   Wallet, 
   BookOpen, 
   BarChart3, 
-  ShoppingCart
+  ShoppingCart,
+  Database
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export default function Financeiro() {
   const [activeTab, setActiveTab] = useState("dashboard");
