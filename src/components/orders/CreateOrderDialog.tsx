@@ -85,6 +85,7 @@ const TIPOS_ENTREGA = [
 
 // Centro de custo agora é por item, não mais no pedido
 const CREATE_ORDER_DRAFT_KEY = 'orders:create-order:draft';
+const CREATE_ORDER_ITEMS_DRAFT_KEY = 'orders:create-order:draft:items-table';
 
 export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clientId }: CreateOrderDialogProps) {
   const { user } = useAuth();
@@ -168,6 +169,12 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     producao: { habilitado: false, percentual: 0.3, valor: 0, responsavel_id: '' },
   });
 
+  const clearDraftStorage = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.removeItem(CREATE_ORDER_DRAFT_KEY);
+    window.localStorage.removeItem(CREATE_ORDER_ITEMS_DRAFT_KEY);
+  }, []);
+
   const saveDraft = useCallback(() => {
     if (typeof window === 'undefined') return;
 
@@ -202,10 +209,10 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
       if (draft.comissoes) setComissoes(draft.comissoes);
       return true;
     } catch {
-      window.localStorage.removeItem(CREATE_ORDER_DRAFT_KEY);
+      clearDraftStorage();
       return false;
     }
-  }, []);
+  }, [clearDraftStorage]);
 
   const handleMinimize = useCallback(() => {
     saveDraft();
@@ -233,13 +240,11 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
       return;
     }
 
-    if (!open && !isMinimized && !isPersistedAsMinimized) {
+    if (!open && !isMinimized && !isPersistedAsMinimized && !hasPendingRestore) {
       removeMinimized('create-order');
-      if (typeof window !== 'undefined') {
-        window.localStorage.removeItem(CREATE_ORDER_DRAFT_KEY);
-      }
+      clearDraftStorage();
     }
-  }, [open, isMinimized, isPersistedAsMinimized, removeMinimized]);
+  }, [open, isMinimized, isPersistedAsMinimized, hasPendingRestore, removeMinimized, clearDraftStorage]);
 
   useEffect(() => {
     if (!hasPendingRestore) return;
