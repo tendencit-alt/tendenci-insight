@@ -38,11 +38,10 @@ export function useGlobalRealtime() {
   }, [invalidateByKeys]);
 
   const onProductionChange = useCallback(() => {
-    console.log("[GlobalRT] Production changed → invalidating production, inventory, BI");
     invalidateByKeys([
-      "production", "prod-",
+      "production", "prod-", "production-total-all", "production-metrics",
       "products", "stock-", "inventory",
-      "bi-", "dashboard",
+      "orders", "order-",
     ]);
   }, [invalidateByKeys]);
 
