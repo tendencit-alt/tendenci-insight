@@ -112,28 +112,37 @@ export function useGlobalRealtime() {
       // Inventory
       .on("postgres_changes", { event: "*", schema: "public", table: "products" }, onInventoryChange)
       .on("postgres_changes", { event: "*", schema: "public", table: "stock_movements" }, onInventoryChange)
+      .on("postgres_changes", { event: "*", schema: "public", table: "product_categories" }, onInventoryChange)
+      .on("postgres_changes", { event: "*", schema: "public", table: "stock_locations" }, onInventoryChange)
       // Suppliers
       .on("postgres_changes", { event: "*", schema: "public", table: "suppliers" }, onSuppliersChange)
+      // Clients
+      .on("postgres_changes", { event: "*", schema: "public", table: "clients" }, onClientsChange)
+      // CRM
+      .on("postgres_changes", { event: "*", schema: "public", table: "crm_deals" }, onCRMChange)
       // Financeiro
       .on("postgres_changes", { event: "*", schema: "public", table: "fin_ledger_entries" }, onFinanceiroChange)
       .on("postgres_changes", { event: "*", schema: "public", table: "fin_payables" }, onFinanceiroChange)
       .on("postgres_changes", { event: "*", schema: "public", table: "fin_receivables" }, onFinanceiroChange)
       .on("postgres_changes", { event: "*", schema: "public", table: "fin_bank_accounts" }, onFinanceiroChange)
+      .on("postgres_changes", { event: "*", schema: "public", table: "fin_bank_transactions" }, onFinanceiroChange)
+      .on("postgres_changes", { event: "*", schema: "public", table: "fin_cost_centers" }, onFinanceiroChange)
+      .on("postgres_changes", { event: "*", schema: "public", table: "fin_chart_accounts" }, onFinanceiroChange)
+      .on("postgres_changes", { event: "*", schema: "public", table: "fin_projects" }, onFinanceiroChange)
+      .on("postgres_changes", { event: "*", schema: "public", table: "fin_financial_goals" }, onFinanceiroChange)
+      .on("postgres_changes", { event: "*", schema: "public", table: "fin_loan_contracts" }, onFinanceiroChange)
       // Purchase Orders
       .on("postgres_changes", { event: "*", schema: "public", table: "purchase_orders" }, onPurchasesChange)
       .on("postgres_changes", { event: "*", schema: "public", table: "purchase_order_items" }, onPurchasesChange)
-      // Cost Centers (propagate to all modules using cost centers)
-      .on("postgres_changes", { event: "*", schema: "public", table: "fin_cost_centers" }, onFinanceiroChange)
-      // Financial Projects
-      .on("postgres_changes", { event: "*", schema: "public", table: "fin_projects" }, onFinanceiroChange)
-      .subscribe((status, err) => {
-        console.log("[GlobalRT] Channel status:", status);
-        if (err) console.error("[GlobalRT] Error:", err);
-      });
+      // Goals
+      .on("postgres_changes", { event: "*", schema: "public", table: "tendenci_seller_goals" }, onGoalsChange)
+      .on("postgres_changes", { event: "*", schema: "public", table: "tendenci_goal_progress" }, onGoalsChange)
+      .on("postgres_changes", { event: "*", schema: "public", table: "tendenci_daily_goal_records" }, onGoalsChange)
+      .on("postgres_changes", { event: "*", schema: "public", table: "tendenci_daily_architect_goals" }, onGoalsChange)
+      .subscribe();
 
     return () => {
-      console.log("[GlobalRT] Cleaning up cross-module realtime...");
       supabase.removeChannel(channel);
     };
-  }, [onOrdersChange, onProductionChange, onInventoryChange, onSuppliersChange, onFinanceiroChange, onPurchasesChange]);
+  }, [onOrdersChange, onProductionChange, onInventoryChange, onSuppliersChange, onFinanceiroChange, onPurchasesChange, onCRMChange, onGoalsChange, onClientsChange]);
 }
