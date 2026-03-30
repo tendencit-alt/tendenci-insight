@@ -33,12 +33,15 @@ export function MinimizedDialogsProvider({ children }: { children: ReactNode }) 
   }, []);
 
   const restore = useCallback((id: string) => {
-    // Find dialog BEFORE removing from state
+    setPendingRestores(prev => {
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+
     setMinimized(prev => {
       const dialog = prev.find(d => d.id === id);
       if (dialog) {
-        // Schedule the restore callback to run AFTER state update
-        // using setTimeout to avoid calling setState during another setState
         setTimeout(() => {
           dialog.restore();
         }, 0);

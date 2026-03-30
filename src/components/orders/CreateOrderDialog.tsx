@@ -84,38 +84,24 @@ const TIPOS_ENTREGA = [
 ];
 
 // Centro de custo agora é por item, não mais no pedido
+const CREATE_ORDER_DRAFT_KEY = 'orders:create-order:draft';
 
 export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clientId }: CreateOrderDialogProps) {
   const { user } = useAuth();
-  const { minimize: minimizeDialog, remove: removeMinimized } = useMinimizedDialogs();
+  const {
+    minimize: minimizeDialog,
+    remove: removeMinimized,
+    isMinimized: isDialogMinimized,
+    getPendingRestore,
+    clearPendingRestore,
+  } = useMinimizedDialogs();
   const [isMinimized, setIsMinimized] = useState(false);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('cliente');
   const [showCreateClient, setShowCreateClient] = useState(false);
   const [showCreateDeal, setShowCreateDeal] = useState(false);
+  const hasMountedRef = useRef(false);
 
-  const handleMinimize = useCallback(() => {
-    setIsMinimized(true);
-    onOpenChange(false);
-    minimizeDialog({
-      id: 'create-order',
-      label: 'Novo Pedido',
-      icon: '📋',
-      route: '/pedidos',
-      restore: () => {
-        setIsMinimized(false);
-        onOpenChange(true);
-      },
-    });
-  }, [minimizeDialog, onOpenChange]);
-
-  // Clean up minimized entry when dialog is closed normally (not minimized)
-  useEffect(() => {
-    if (!open && !isMinimized) {
-      removeMinimized('create-order');
-    }
-  }, [open, isMinimized, removeMinimized]);
-  
   interface PagamentoParcela {
     id: string;
     forma_pagamento: string;
@@ -181,6 +167,88 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     montador: { habilitado: false, percentual: 10, valor: 0, responsavel_id: '' },
     producao: { habilitado: false, percentual: 0.3, valor: 0, responsavel_id: '' },
   });
+
+  const saveDraft = useCallback(() => {
+    if (typeof window === 'undefined') return;
+
+    window.localStorage.setItem(
+      CREATE_ORDER_DRAFT_KEY,
+      JSON.stringify({
+        activeTab,
+        formData,
+        parcelas,
+        items,
+        taxaCartao,
+        taxaBoleto,
+        comissoes,
+      })
+    );
+  }, [activeTab, formData, parcelas, items, taxaCartao, taxaBoleto, comissoes]);
+
+  const restoreDraft = useCallback(() => {
+    if (typeof window === 'undefined') return false;
+
+    const rawDraft = window.localStorage.getItem(CREATE_ORDER_DRAFT_KEY);
+    if (!rawDraft) return false;
+
+    try {
+      const draft = JSON.parse(rawDraft);
+      if (draft.activeTab) setActiveTab(draft.activeTab);
+      if (draft.formData) setFormData(draft.formData);
+      if (Array.isArray(draft.parcelas) && draft.parcelas.length > 0) setParcelas(draft.parcelas);
+      if (Array.isArray(draft.items)) setItems(draft.items);
+      if (draft.taxaCartao) setTaxaCartao(draft.taxaCartao);
+      if (draft.taxaBoleto) setTaxaBoleto(draft.taxaBoleto);
+      if (draft.comissoes) setComissoes(draft.comissoes);
+      return true;
+    } catch {
+      window.localStorage.removeItem(CREATE_ORDER_DRAFT_KEY);
+      return false;
+    }
+  }, []);
+
+  const handleMinimize = useCallback(() => {
+    saveDraft();
+    setIsMinimized(true);
+    onOpenChange(false);
+    minimizeDialog({
+      id: 'create-order',
+      label: 'Novo Pedido',
+      icon: '📋',
+      route: '/pedidos',
+      restore: () => {
+        restoreDraft();
+        setIsMinimized(false);
+        onOpenChange(true);
+      },
+    });
+  }, [minimizeDialog, onOpenChange, restoreDraft, saveDraft]);
+
+  const hasPendingRestore = getPendingRestore('create-order');
+  const isPersistedAsMinimized = isDialogMinimized('create-order');
+
+  useEffect(() => {
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true;
+      return;
+    }
+
+    if (!open && !isMinimized && !isPersistedAsMinimized) {
+      removeMinimized('create-order');
+      if (typeof window !== 'undefined') {
+        window.localStorage.removeItem(CREATE_ORDER_DRAFT_KEY);
+      }
+    }
+  }, [open, isMinimized, isPersistedAsMinimized, removeMinimized]);
+
+  useEffect(() => {
+    if (!hasPendingRestore) return;
+
+    restoreDraft();
+    setIsMinimized(false);
+    onOpenChange(true);
+    clearPendingRestore('create-order');
+  }, [hasPendingRestore, restoreDraft, onOpenChange, clearPendingRestore]);
 
   // Adicionar nova forma de pagamento
   const adicionarFormaPagamento = () => {
