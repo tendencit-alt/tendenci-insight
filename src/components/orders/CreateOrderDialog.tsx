@@ -1352,7 +1352,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                                 setParcelas(newParcelas);
                               }}
                             >
-                              <SelectTrigger className="h-9">
+                              <SelectTrigger className={`h-9 ${!parcela.forma_pagamento ? 'border-destructive ring-1 ring-destructive/30' : ''}`}>
                                 <SelectValue placeholder="Selecione" />
                               </SelectTrigger>
                               <SelectContent>
