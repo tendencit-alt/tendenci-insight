@@ -13,10 +13,8 @@ import { DeleteOrderDialog } from '@/components/orders/DeleteOrderDialog';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { startOfMonth } from 'date-fns';
-import { useOrdersRealtime } from '@/hooks/useOrdersRealtime';
 
 export default function Orders() {
-  useOrdersRealtime();
   const [createOpen, setCreateOpen] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [editingOrderId, setEditingOrderId] = useState<string | null>(null);
