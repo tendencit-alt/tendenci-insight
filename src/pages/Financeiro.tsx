@@ -58,8 +58,8 @@ export default function Financeiro() {
         <PendingAlertsCard />
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <div className="w-full border-b border-border">
-            <TabsList className="flex h-12 w-full justify-start gap-0 rounded-none bg-transparent p-0">
+          <div className="w-full border-b border-border flex items-center justify-between">
+            <TabsList className="flex h-12 justify-start gap-0 rounded-none bg-transparent p-0">
               <TabsTrigger
                 value="dashboard"
                 className="relative flex items-center gap-2 rounded-none border-b-2 border-transparent px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none data-[state=active]:bg-transparent"
@@ -96,6 +96,13 @@ export default function Financeiro() {
                 <span>Compras</span>
               </TabsTrigger>
             </TabsList>
+            <button
+              onClick={() => navigate("/cadastros-financeiros")}
+              className="flex items-center gap-2 px-4 py-2 mr-2 rounded-lg bg-primary/10 text-primary font-semibold text-sm hover:bg-primary/20 transition-colors border border-primary/20"
+            >
+              <Database className="h-4 w-4" />
+              <span>Cadastros Financeiros</span>
+            </button>
           </div>
 
           <TabsContent value="dashboard" className="space-y-4">
