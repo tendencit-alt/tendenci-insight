@@ -39,6 +39,7 @@ interface OrderItemsTableProps {
   requireCentroCusto?: boolean;
   requireProject?: boolean;
   clientName?: string;
+  draftStorageKey?: string;
 }
 
 interface ProdutoEstoque {
@@ -68,7 +69,7 @@ const emptyItem = {
   project_id: '',
 };
 
-export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFiscalFields = false, requireCentroCusto = false, requireProject = false, clientName }: OrderItemsTableProps) {
+export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFiscalFields = false, requireCentroCusto = false, requireProject = false, clientName, draftStorageKey }: OrderItemsTableProps) {
   const { costCenters: CENTROS_CUSTO } = useCostCenters();
   const { projects: PROJETOS } = useProjects();
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -83,6 +84,60 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
 
   const NEW_PROJECT_VALUE = '__new_from_client__';
   const CUSTOM_PROJECT_PREFIX = '__custom_project__';
+
+  useEffect(() => {
+    if (!draftStorageKey || typeof window === 'undefined') return;
+
+    const raw = window.localStorage.getItem(draftStorageKey);
+    if (!raw) return;
+
+    try {
+      const draft = JSON.parse(raw);
+      if (draft.orderItemsTable) {
+        if (typeof draft.orderItemsTable.isAddingItem === 'boolean') setIsAddingItem(draft.orderItemsTable.isAddingItem);
+        if (draft.orderItemsTable.newItem) setNewItem(draft.orderItemsTable.newItem);
+        if (typeof draft.orderItemsTable.autoProjectDone === 'boolean') setAutoProjectDone(draft.orderItemsTable.autoProjectDone);
+        if (typeof draft.orderItemsTable.showNewProjectInput === 'boolean') setShowNewProjectInput(draft.orderItemsTable.showNewProjectInput);
+        if (typeof draft.orderItemsTable.customProjectName === 'string') setCustomProjectName(draft.orderItemsTable.customProjectName);
+        if (typeof draft.orderItemsTable.showNewProjectInputInline === 'string' || draft.orderItemsTable.showNewProjectInputInline === null) setShowNewProjectInputInline(draft.orderItemsTable.showNewProjectInputInline);
+        if (typeof draft.orderItemsTable.customProjectNameInline === 'string') setCustomProjectNameInline(draft.orderItemsTable.customProjectNameInline);
+        if (typeof draft.orderItemsTable.editingId === 'string' || draft.orderItemsTable.editingId === null) setEditingId(draft.orderItemsTable.editingId);
+        if (typeof draft.orderItemsTable.expandedId === 'string' || draft.orderItemsTable.expandedId === null) setExpandedId(draft.orderItemsTable.expandedId);
+      }
+    } catch {
+      // noop: the parent draft handler already cleans invalid payloads
+    }
+  }, [draftStorageKey]);
+
+  useEffect(() => {
+    if (!draftStorageKey || typeof window === 'undefined') return;
+
+    const raw = window.localStorage.getItem(draftStorageKey);
+    if (!raw) return;
+
+    try {
+      const draft = JSON.parse(raw);
+      window.localStorage.setItem(
+        draftStorageKey,
+        JSON.stringify({
+          ...draft,
+          orderItemsTable: {
+            isAddingItem,
+            newItem,
+            autoProjectDone,
+            showNewProjectInput,
+            customProjectName,
+            showNewProjectInputInline,
+            customProjectNameInline,
+            editingId,
+            expandedId,
+          },
+        })
+      );
+    } catch {
+      // noop: parent draft is source of truth
+    }
+  }, [draftStorageKey, isAddingItem, newItem, autoProjectDone, showNewProjectInput, customProjectName, showNewProjectInputInline, customProjectNameInline, editingId, expandedId]);
 
   useEffect(() => {
     if (!isAddingItem || !clientName || autoProjectDone) return;
