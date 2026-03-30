@@ -9,7 +9,6 @@ import { DRECashflowView } from "@/components/financeiro/DRECashflowView";
 import { PendingAlertsCard } from "@/components/financeiro/PendingAlertsCard";
 import { OrphanEntriesAlert } from "@/components/financeiro/OrphanEntriesAlert";
 import { PurchasesTab } from "@/components/financeiro/PurchasesTab";
-import { useFinanceiroRealtime } from "@/hooks/useFinanceiroRealtime";
 
 import {
   LayoutDashboard, 
@@ -20,9 +19,6 @@ import {
 } from "lucide-react";
 
 export default function Financeiro() {
-  // Enable real-time updates for all financial data
-  useFinanceiroRealtime();
-
   const [activeTab, setActiveTab] = useState("dashboard");
   const [filters, setFilters] = useState<FinanceiroFiltersState>({
     dateFrom: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
@@ -59,25 +55,40 @@ export default function Financeiro() {
         <PendingAlertsCard />
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <div className="w-full">
-            <TabsList className="flex flex-wrap h-auto w-full justify-start gap-1 bg-muted/50 p-1.5">
-              <TabsTrigger value="dashboard" className="flex items-center gap-1.5 px-3 py-2 text-sm">
+          <div className="w-full border-b border-border">
+            <TabsList className="flex h-12 w-full justify-start gap-0 rounded-none bg-transparent p-0">
+              <TabsTrigger
+                value="dashboard"
+                className="relative flex items-center gap-2 rounded-none border-b-2 border-transparent px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none data-[state=active]:bg-transparent"
+              >
                 <LayoutDashboard className="h-4 w-4 flex-shrink-0" />
                 <span>BI/Dashboard</span>
               </TabsTrigger>
-              <TabsTrigger value="dre-cashflow" className="flex items-center gap-1.5 px-3 py-2 text-sm">
+              <TabsTrigger
+                value="dre-cashflow"
+                className="relative flex items-center gap-2 rounded-none border-b-2 border-transparent px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none data-[state=active]:bg-transparent"
+              >
                 <BarChart3 className="h-4 w-4 flex-shrink-0" />
                 <span>DRE / Fluxo de Caixa</span>
               </TabsTrigger>
-              <TabsTrigger value="payables-receivables" className="flex items-center gap-1.5 px-3 py-2 text-sm">
+              <TabsTrigger
+                value="payables-receivables"
+                className="relative flex items-center gap-2 rounded-none border-b-2 border-transparent px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none data-[state=active]:bg-transparent"
+              >
                 <Wallet className="h-4 w-4 flex-shrink-0" />
                 <span>Contas a Pagar/Receber</span>
               </TabsTrigger>
-              <TabsTrigger value="ledger-reconciliation" className="flex items-center gap-1.5 px-3 py-2 text-sm">
+              <TabsTrigger
+                value="ledger-reconciliation"
+                className="relative flex items-center gap-2 rounded-none border-b-2 border-transparent px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none data-[state=active]:bg-transparent"
+              >
                 <BookOpen className="h-4 w-4 flex-shrink-0" />
                 <span>Lançamentos & Conciliação</span>
               </TabsTrigger>
-              <TabsTrigger value="purchases" className="flex items-center gap-1.5 px-3 py-2 text-sm">
+              <TabsTrigger
+                value="purchases"
+                className="relative flex items-center gap-2 rounded-none border-b-2 border-transparent px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none data-[state=active]:bg-transparent"
+              >
                 <ShoppingCart className="h-4 w-4 flex-shrink-0" />
                 <span>Compras</span>
               </TabsTrigger>
