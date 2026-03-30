@@ -46,7 +46,7 @@ export function CreatePayableDialog({ open, onOpenChange, onSuccess, initialData
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   const [showCreateSupplier, setShowCreateSupplier] = useState(false);
-  const { minimize: minimizeDialog } = useMinimizedDialogs();
+  const { minimize: minimizeDialog, remove: removeMinimized } = useMinimizedDialogs();
   const [isMinimized, setIsMinimized] = useState(false);
   const { invalidatePayables } = useFinanceiroSync();
 
@@ -57,9 +57,14 @@ export function CreatePayableDialog({ open, onOpenChange, onSuccess, initialData
       id: 'create-payable',
       label: 'Nova Conta a Pagar',
       icon: '💸',
+      route: '/financeiro',
       restore: () => { setIsMinimized(false); onOpenChange(true); },
     });
   }, [minimizeDialog, onOpenChange]);
+
+  useEffect(() => {
+    if (!open && !isMinimized) removeMinimized('create-payable');
+  }, [open, isMinimized, removeMinimized]);
   const [form, setForm] = useState({
     supplier_id: "",
     amount: "",

@@ -69,7 +69,7 @@ const statusColors: Record<string, string> = {
 
 export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: ProductionOrderDetailSheetProps) {
   const queryClient = useQueryClient();
-  const { minimize: minimizeDialog } = useMinimizedDialogs();
+  const { minimize: minimizeDialog, remove: removeMinimized } = useMinimizedDialogs();
   const [isMinimized, setIsMinimized] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -77,16 +77,23 @@ export function ProductionOrderDetailSheet({ orderId, open, onOpenChange }: Prod
   const [activeTab, setActiveTab] = useState('info');
   const { isMaster } = usePermissions();
 
+  const dialogId = `production-detail-${orderId}`;
+
   const handleMinimize = useCallback(() => {
     setIsMinimized(true);
     onOpenChange(false);
     minimizeDialog({
-      id: `production-detail-${orderId}`,
+      id: dialogId,
       label: `Ordem Produção`,
       icon: '🏭',
+      route: '/producao',
       restore: () => { setIsMinimized(false); onOpenChange(true); },
     });
-  }, [minimizeDialog, onOpenChange, orderId]);
+  }, [minimizeDialog, onOpenChange, orderId, dialogId]);
+
+  useEffect(() => {
+    if (!open && !isMinimized) removeMinimized(dialogId);
+  }, [open, isMinimized, removeMinimized, dialogId]);
 
   // Buscar detalhes da OP com queries separadas para evitar problemas de FK
   const { data: order, isLoading } = useQuery({

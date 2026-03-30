@@ -33,7 +33,7 @@ interface CreateLedgerEntryDialogProps {
 
 export function CreateLedgerEntryDialog({ open, onOpenChange, onSuccess }: CreateLedgerEntryDialogProps) {
   const [loading, setLoading] = useState(false);
-  const { minimize: minimizeDialog } = useMinimizedDialogs();
+  const { minimize: minimizeDialog, remove: removeMinimized } = useMinimizedDialogs();
   const [isMinimized, setIsMinimized] = useState(false);
   const { invalidateLedger } = useFinanceiroSync();
 
@@ -44,9 +44,14 @@ export function CreateLedgerEntryDialog({ open, onOpenChange, onSuccess }: Creat
       id: 'create-ledger-entry',
       label: 'Novo Lançamento',
       icon: '📒',
+      route: '/financeiro',
       restore: () => { setIsMinimized(false); onOpenChange(true); },
     });
   }, [minimizeDialog, onOpenChange]);
+
+  useEffect(() => {
+    if (!open && !isMinimized) removeMinimized('create-ledger-entry');
+  }, [open, isMinimized, removeMinimized]);
   const [form, setForm] = useState({
     type: "DESPESA",
     description: "",

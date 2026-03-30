@@ -46,7 +46,7 @@ export function CreateReceivableDialog({ open, onOpenChange, onSuccess, initialD
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   const [showCreateClient, setShowCreateClient] = useState(false);
-  const { minimize: minimizeDialog } = useMinimizedDialogs();
+  const { minimize: minimizeDialog, remove: removeMinimized } = useMinimizedDialogs();
   const [isMinimized, setIsMinimized] = useState(false);
   const { invalidateReceivables } = useFinanceiroSync();
 
@@ -57,9 +57,14 @@ export function CreateReceivableDialog({ open, onOpenChange, onSuccess, initialD
       id: 'create-receivable',
       label: 'Nova Conta a Receber',
       icon: '💰',
+      route: '/financeiro',
       restore: () => { setIsMinimized(false); onOpenChange(true); },
     });
   }, [minimizeDialog, onOpenChange]);
+
+  useEffect(() => {
+    if (!open && !isMinimized) removeMinimized('create-receivable');
+  }, [open, isMinimized, removeMinimized]);
   const [form, setForm] = useState({
     customer_id: "",
     amount: "",
