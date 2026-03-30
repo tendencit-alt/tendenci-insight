@@ -29,12 +29,11 @@ export function useGlobalRealtime() {
 
   // Cross-module invalidation maps
   const onOrdersChange = useCallback(() => {
-    console.log("[GlobalRT] Orders changed → invalidating orders, financeiro, production, BI");
     invalidateByKeys([
-      "orders", "order-",
+      "orders", "order-", "orders-metrics",
       "fin-", "financeiro",
-      "production", "prod-",
-      "bi-", "dashboard",
+      "production", "prod-", "production-total-all", "production-metrics",
+      "goals", "seller-goals", "goal",
     ]);
   }, [invalidateByKeys]);
 
