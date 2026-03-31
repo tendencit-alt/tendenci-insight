@@ -8,8 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Check, Pencil, X, CreditCard, Link2, Building2 } from "lucide-react";
+import { Check, Pencil, X, CreditCard, Link2, Building2, Plus } from "lucide-react";
 import { toast } from "sonner";
+import { QuickCreateSupplierDialog } from "@/components/financeiro/QuickCreateSupplierDialog";
 
 interface RateRow {
   id: string;
