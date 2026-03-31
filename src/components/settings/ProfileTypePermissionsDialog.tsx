@@ -37,44 +37,31 @@ interface ModulePermission {
   can_delete: boolean;
 }
 
+// Current system modules - must match PermissionsContext.tsx AppModule type
 const ALL_MODULES = [
   'dashboard',
-  'crm',
-  'leads',
-  'architects',
-  'projects',
-  'production',
-  'orders',
-  'inventory',
-  'suppliers',
-  'purchases',
-  'goals',
-  'activities',
-  'prospeccao',
-  'settings',
-  'ia',
-  'catalogo',
-  'fichas_tecnicas',
+  'pedidos',
+  'producao',
+  'financeiro',
+  'cadastros_financeiros',
+  'fornecedores',
+  'estoque',
+  'configuracoes',
+  'gestao_usuarios',
+  'system_errors',
 ];
 
 const MODULE_LABELS: Record<string, string> = {
-  dashboard: 'Dashboard',
-  crm: 'CRM Clientes',
-  leads: 'Leads',
-  architects: 'Arquitetos',
-  projects: 'Projetos',
-  production: 'Produção',
-  orders: 'Pedidos',
-  inventory: 'Estoque',
-  suppliers: 'Fornecedores',
-  purchases: 'Compras',
-  goals: 'Metas',
-  activities: 'Atividades',
-  prospeccao: 'Prospecção',
-  settings: 'Configurações',
-  ia: 'IA',
-  catalogo: 'Catálogo',
-  fichas_tecnicas: 'Fichas Técnicas',
+  dashboard: 'Dashboard / BI',
+  pedidos: 'Pedidos',
+  producao: 'Fase Produtiva',
+  financeiro: 'Financeiro',
+  cadastros_financeiros: 'Cadastros Financeiros',
+  fornecedores: 'Fornecedores',
+  estoque: 'Estoque',
+  configuracoes: 'Configurações',
+  gestao_usuarios: 'Gestão de Usuários',
+  system_errors: 'Erros do Sistema',
 };
 
 export function ProfileTypePermissionsDialog({
@@ -105,7 +92,6 @@ export function ProfileTypePermissionsDialog({
 
       if (error) throw error;
 
-      // Converter para objeto
       const permMap: Record<string, ModulePermission> = {};
       ALL_MODULES.forEach(module => {
         const existing = data?.find(p => p.module === module);
@@ -153,17 +139,33 @@ export function ProfileTypePermissionsDialog({
     setPermissions(newPerms);
   };
 
+  const handleSelectAll = () => {
+    const newPerms = { ...permissions };
+    const allChecked = ALL_MODULES.every(m =>
+      permissions[m]?.can_view && permissions[m]?.can_create && permissions[m]?.can_edit && permissions[m]?.can_delete
+    );
+    ALL_MODULES.forEach(module => {
+      newPerms[module] = {
+        can_view: !allChecked,
+        can_create: !allChecked,
+        can_edit: !allChecked,
+        can_delete: !allChecked,
+      };
+    });
+    setPermissions(newPerms);
+  };
+
   const handleSave = async () => {
     try {
       setSaving(true);
 
-      // Deletar permissões existentes
+      // Delete existing permissions
       await supabase
         .from('profile_type_permissions')
         .delete()
         .eq('profile_type_id', profileType.id);
 
-      // Inserir novas permissões
+      // Insert new permissions (only modules with at least one permission)
       const permissionsToInsert = ALL_MODULES
         .filter(module => {
           const perm = permissions[module];
@@ -188,7 +190,7 @@ export function ProfileTypePermissionsDialog({
 
       toast({
         title: 'Permissões salvas',
-        description: `Permissões padrão de "${profileType.display_name}" atualizadas.`,
+        description: `Permissões de "${profileType.display_name}" atualizadas com sucesso.`,
       });
 
       onSuccess();
@@ -205,19 +207,21 @@ export function ProfileTypePermissionsDialog({
     }
   };
 
+  const isMasterType = profileType.name === 'master' || profileType.name === 'admin';
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>
-            Permissões Padrão - {profileType.display_name}
+            Permissões — {profileType.display_name}
           </DialogTitle>
           <DialogDescription>
-            Configure as permissões padrão para novos usuários deste tipo
+            Configure as permissões padrão para usuários com este perfil
           </DialogDescription>
         </DialogHeader>
 
-        {profileType.name === 'admin' && (
+        {isMasterType && (
           <Alert>
             <Info className="h-4 w-4" />
             <AlertDescription>
@@ -240,13 +244,23 @@ export function ProfileTypePermissionsDialog({
                     type="button"
                     variant="ghost"
                     size="sm"
-                    onClick={handleSelectAllView}
-                    className="h-auto p-0 text-xs"
+                    onClick={handleSelectAll}
+                    className="h-auto p-0 text-xs hover:text-foreground"
                   >
-                    Módulo
+                    Módulo (Marcar tudo)
                   </Button>
                 </div>
-                <div className="text-center">Visualizar</div>
+                <div className="text-center">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleSelectAllView}
+                    className="h-auto p-0 text-xs hover:text-foreground"
+                  >
+                    Visualizar
+                  </Button>
+                </div>
                 <div className="text-center">Criar</div>
                 <div className="text-center">Editar</div>
                 <div className="text-center">Excluir</div>
@@ -256,9 +270,9 @@ export function ProfileTypePermissionsDialog({
               {ALL_MODULES.map(module => (
                 <div
                   key={module}
-                  className="grid grid-cols-5 gap-4 py-2 border-b border-border/50 items-center"
+                  className="grid grid-cols-5 gap-4 py-2.5 border-b border-border/50 items-center"
                 >
-                  <Label className="font-medium">{MODULE_LABELS[module] || module}</Label>
+                  <Label className="font-medium text-sm">{MODULE_LABELS[module] || module}</Label>
                   <div className="flex justify-center">
                     <Checkbox
                       checked={permissions[module]?.can_view || false}
