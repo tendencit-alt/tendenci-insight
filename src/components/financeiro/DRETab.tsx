@@ -506,7 +506,7 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
             }
           }}
         >
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 min-w-0">
             {canExpand ? (
               (isExpanded || isEntriesExpanded) ? (
                 <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
