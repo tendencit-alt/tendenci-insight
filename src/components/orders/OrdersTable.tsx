@@ -49,7 +49,7 @@ const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
 
 const ITEMS_PER_PAGE = 20;
 
-export function OrdersTable({ orders, isLoading, onSelectOrder, onEditOrder, onDeleteOrder, selectedIds = [], onSelectedIdsChange }: OrdersTableProps) {
+export function OrdersTable({ orders, isLoading, onSelectOrder, onEditOrder, onDeleteOrder, selectedIds = [], onSelectedIdsChange, onBulkEdit }: OrdersTableProps) {
   const { isMaster } = usePermissions();
   const isEditable = (status: string) => ['rascunho', 'ativo', 'aguardando_aprovacao'].includes(status);
   const [searchTerm, setSearchTerm] = useState('');
