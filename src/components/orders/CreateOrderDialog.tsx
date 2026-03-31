@@ -99,6 +99,7 @@ const CREATE_ORDER_ITEMS_DRAFT_KEY = 'orders:create-order:draft:items-table';
 
 export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clientId }: CreateOrderDialogProps) {
   const { user } = useAuth();
+  const linkRatesDb = usePaymentLinkRates();
   const {
     minimize: minimizeDialog,
     remove: removeMinimized,
