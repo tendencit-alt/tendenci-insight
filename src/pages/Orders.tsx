@@ -108,7 +108,7 @@ export default function Orders() {
           </div>
 
           {/* KPIs compactos */}
-          <OrdersKPIs filters={filters} />
+          <OrdersKPIs orders={orders || []} isLoading={isLoading} />
 
           {/* Filtros inline */}
           <OrdersFilters filters={filters} onFiltersChange={setFilters} />
