@@ -693,7 +693,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
     (atual.numero_parcelas || 1) > (maior?.numero_parcelas || 0) ? atual : maior
   , null as typeof parcelasLink[0] | null);
   const numParcelasLink = parcelaLinkMaiorTaxa?.numero_parcelas || 1;
-  const taxaLinkPercentual = parcelaLinkMaiorTaxa ? (TAXAS_LINK_PAGAMENTO[numParcelasLink] || 0) : 0;
+  const taxaLinkPercentual = parcelaLinkMaiorTaxa ? (linkRatesDb[numParcelasLink] ?? TAXAS_LINK_PAGAMENTO[numParcelasLink] ?? 0) : 0;
 
   useEffect(() => {
     if (parcelasLink.length > 0) {
