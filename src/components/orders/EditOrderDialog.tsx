@@ -1177,19 +1177,30 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
 
               <div className="space-y-2">
                 <Label>Arquiteto</Label>
-                <Select value={formData.architect_id || "_none"} onValueChange={(v) => setFormData({ ...formData, architect_id: v === "_none" ? "" : v })} disabled={!isEditable}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="-" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="_none">-</SelectItem>
-                    {architects?.map((arch) => (
-                      <SelectItem key={arch.id} value={arch.id}>
-                        {arch.name} {arch.company && `- ${arch.company}`}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="flex gap-2">
+                  <Select value={formData.architect_id || "_none"} onValueChange={(v) => setFormData({ ...formData, architect_id: v === "_none" ? "" : v })} disabled={!isEditable}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="-" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="_none">-</SelectItem>
+                      {architects?.map((arch) => (
+                        <SelectItem key={arch.id} value={arch.id}>
+                          {arch.name} {arch.company && `- ${arch.company}`}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="icon"
+                    onClick={() => setShowCreateArchitect(true)}
+                    disabled={!isEditable}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
 
             </div>
