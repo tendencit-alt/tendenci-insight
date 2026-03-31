@@ -47,7 +47,6 @@ const ALL_MODULES: AppModule[] = [
   'pedidos',
   'financeiro',
   'cadastros_financeiros',
-  'system_errors'
 ];
 
 export function PermissionsProvider({ children }: { children: ReactNode }) {
