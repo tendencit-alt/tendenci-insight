@@ -17,9 +17,10 @@ interface FinanceiroKPIsProps {
     saldoConsolidado: number;
   };
   isLoading: boolean;
+  onSelectKPI?: (kpi: "saldo" | "receitas" | "despesas" | "resultado") => void;
 }
 
-export function FinanceiroKPIs({ metrics, isLoading }: FinanceiroKPIsProps) {
+export function FinanceiroKPIs({ metrics, isLoading, onSelectKPI }: FinanceiroKPIsProps) {
   const formatCurrency = (value: number) => {
     return value.toLocaleString("pt-BR", {
       style: "currency",
