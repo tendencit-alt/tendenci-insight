@@ -192,6 +192,7 @@ export function OrdersFilters({ filters, onFiltersChange }: OrdersFiltersProps) 
         </SelectContent>
       </Select>
 
+      {hasFilters && (
         <Button variant="ghost" size="sm" onClick={clearFilters} className="h-9 px-2 text-muted-foreground hover:text-foreground">
           <X className="mr-1 h-3.5 w-3.5" />
           Limpar
