@@ -679,6 +679,33 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
     }
   }, [parcelas, totalSemTaxa, taxaBoletoPercentual, taxaTotalBoleto, numParcelasBoleto, carenciaBoleto, parcelasBoleto.length]);
 
+  // Calcular taxa de link de pagamento automaticamente
+  const parcelasLink = parcelas.filter(p => p.forma_pagamento === 'link_pagamento');
+  const taxaTotalLink = parcelasLink.reduce((acc, parcela) => {
+    const numParcelas = parcela.numero_parcelas || 1;
+    const taxaPerc = TAXAS_LINK_PAGAMENTO[numParcelas] || 0;
+    const valorBase = totalSemTaxa * (parcela.percentual / 100);
+    return acc + valorBase * (taxaPerc / 100);
+  }, 0);
+  const parcelaLinkMaiorTaxa = parcelasLink.reduce((maior, atual) => 
+    (atual.numero_parcelas || 1) > (maior?.numero_parcelas || 0) ? atual : maior
+  , null as typeof parcelasLink[0] | null);
+  const numParcelasLink = parcelaLinkMaiorTaxa?.numero_parcelas || 1;
+  const taxaLinkPercentual = parcelaLinkMaiorTaxa ? (TAXAS_LINK_PAGAMENTO[numParcelasLink] || 0) : 0;
+
+  useEffect(() => {
+    if (parcelasLink.length > 0) {
+      setTaxaLink(prev => ({
+        ...prev,
+        percentual: taxaLinkPercentual,
+        valor: taxaTotalLink,
+        numeroParcelas: numParcelasLink
+      }));
+    } else {
+      setTaxaLink({ percentual: 0, valor: 0, responsavel: 'tendenci', numeroParcelas: 1 });
+    }
+  }, [parcelas, totalSemTaxa, taxaLinkPercentual, taxaTotalLink, numParcelasLink, parcelasLink.length]);
+
   // Total final: taxas sempre absorvidas pela Tendenci, não adicionam ao total do cliente
   const total = totalSemTaxa;
 
@@ -691,8 +718,8 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
     (comissoes.montador.habilitado ? comissoes.montador.valor : 0) +
     (comissoes.producao.habilitado ? comissoes.producao.valor : 0);
 
-  // Valor líquido Tendenci (deduz apenas as taxas de cartão e boleto)
-  const valorLiquidoTendenci = totalSemTaxa - taxaCartao.valor - taxaBoleto.valor;
+  // Valor líquido Tendenci (deduz taxas de cartão, boleto e link)
+  const valorLiquidoTendenci = totalSemTaxa - taxaCartao.valor - taxaBoleto.valor - taxaLink.valor;
 
   // Valor líquido após recursos estratégicos (deduz taxas + comissões)
   const valorLiquidoRecursos = valorLiquidoTendenci - totalComissoes;
