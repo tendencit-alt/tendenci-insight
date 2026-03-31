@@ -27,6 +27,7 @@ export default function Orders() {
     status: '',
     vendedorId: '',
     centroCusto: '',
+    clientId: '',
     period: 'all',
     dateFrom: new Date(2020, 0, 1),
     dateTo: now,
