@@ -227,8 +227,6 @@ export default function Production() {
                 productionTypeId={type.id} 
                 filters={filters}
                 onOrderClick={(orderId) => setSelectedOrderId(orderId)}
-                viewMode={viewMode}
-                onGroupClick={(groupId) => setSelectedGroupId(groupId)}
               />
             </TabsContent>
           ))}
