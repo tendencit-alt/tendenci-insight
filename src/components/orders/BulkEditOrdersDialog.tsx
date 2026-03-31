@@ -141,7 +141,7 @@ export function BulkEditOrdersDialog({ open, onOpenChange, selectedIds, onSucces
           {/* Tipo Entrega */}
           <div className="space-y-1.5">
             <Label className="text-sm">Tipo de Entrega</Label>
-            <Select value={fields.tipo_entrega || ''} onValueChange={(v) => setFields({ ...fields, tipo_entrega: v || undefined })}>
+            <Select value={fields.tipo_entrega || '__clear__'} onValueChange={(v) => setFields({ ...fields, tipo_entrega: v === '__clear__' ? undefined : v })}>
               <SelectTrigger className="h-9">
                 <SelectValue placeholder="Não alterar" />
               </SelectTrigger>
