@@ -1620,7 +1620,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                                 if (!FORMAS_COM_PARCELAS.includes(v)) {
                                   newParcelas[index].numero_parcelas = 1;
                                 }
-                                if (v === 'cartao_credito') {
+                                if (v === 'cartao_credito' || v === 'link_pagamento') {
                                   newParcelas[index].data_vencimento = new Date().toISOString().split('T')[0];
                                 }
                                 setParcelas(newParcelas);
