@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Shield, User, Palette, Ruler, Loader2, Settings2, Trash2, Edit2 } from 'lucide-react';
+import { Plus, Shield, User, Palette, Ruler, Loader2, Settings2, Trash2, Edit2, Briefcase, Calculator, Factory, DollarSign, Eye } from 'lucide-react';
 import { CreateProfileTypeDialog } from './CreateProfileTypeDialog';
 import { ProfileTypePermissionsDialog } from './ProfileTypePermissionsDialog';
 import {
