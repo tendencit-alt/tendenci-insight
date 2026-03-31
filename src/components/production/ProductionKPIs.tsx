@@ -39,7 +39,7 @@ interface ProductionMetrics {
 }
 
 export function ProductionKPIs({ productionTypeId, filters }: ProductionKPIsProps) {
-  const queryClient = useQueryClient();
+  
 
   // Query direta para calcular o TOTAL de TODOS os tipos em produção (exceto cancelado)
   const { data: totalEmProducao, isLoading: loadingTotal } = useQuery({
