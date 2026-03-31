@@ -63,6 +63,7 @@ export default function Orders() {
 
       if (filters.status) query = query.eq('status', filters.status);
       if (filters.vendedorId) query = query.eq('vendedor_id', filters.vendedorId);
+      if (filters.clientId) query = query.eq('client_id', filters.clientId);
       if (orderIdsWithCentroCusto) query = query.in('id', orderIdsWithCentroCusto);
 
       const dateColumn = 'data_emissao';

@@ -193,6 +193,18 @@ export function OrdersFilters({ filters, onFiltersChange }: OrdersFiltersProps) 
         </SelectContent>
       </Select>
 
+      <Select value={filters.clientId || 'all'} onValueChange={(v) => onFiltersChange({ ...filters, clientId: v === 'all' ? '' : v })}>
+        <SelectTrigger className="h-9 w-[180px] border-border/60 bg-card text-sm">
+          <SelectValue>{filters.clientId ? clientes?.find((c) => c.id === filters.clientId)?.name : 'Cliente'}</SelectValue>
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Todos</SelectItem>
+          {clientes?.map((c) => (
+            <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
       <Select value={filters.centroCusto || 'all'} onValueChange={(v) => onFiltersChange({ ...filters, centroCusto: v === 'all' ? '' : v })}>
         <SelectTrigger className="h-9 w-[180px] border-border/60 bg-card text-sm">
           <SelectValue>{filters.centroCusto ? centrosCusto?.find((c) => c.name === filters.centroCusto)?.name : 'Centro de Custo'}</SelectValue>
