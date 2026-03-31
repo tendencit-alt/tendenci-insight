@@ -6,7 +6,8 @@ import { CostCentersManager } from "@/components/financeiro/masters/CostCentersM
 import { FinProjectsManager } from "@/components/financeiro/masters/FinProjectsManager";
 import { OrderResponsiblesManager } from "@/components/financeiro/masters/OrderResponsiblesManager";
 import { StrategicResourceCategoriesManager } from "@/components/financeiro/masters/StrategicResourceCategoriesManager";
-import { Building2, FileSpreadsheet, Landmark, FolderKanban, Database, BriefcaseBusiness, FolderCog } from "lucide-react";
+import { CardRatesManager } from "@/components/financeiro/masters/CardRatesManager";
+import { Building2, FileSpreadsheet, Landmark, FolderKanban, Database, BriefcaseBusiness, FolderCog, CreditCard } from "lucide-react";
 import { useState } from "react";
 
 export default function CadastrosFinanceiros() {
@@ -51,6 +52,10 @@ export default function CadastrosFinanceiros() {
               <BriefcaseBusiness className="h-4 w-4" />
               Responsáveis
             </TabsTrigger>
+            <TabsTrigger value="card_rates" className="flex items-center gap-2 px-4 py-2">
+              <CreditCard className="h-4 w-4" />
+              Taxas Cartão
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="bank_accounts" className="mt-6">
@@ -75,6 +80,10 @@ export default function CadastrosFinanceiros() {
 
           <TabsContent value="responsibles" className="mt-6">
             <OrderResponsiblesManager />
+          </TabsContent>
+
+          <TabsContent value="card_rates" className="mt-6">
+            <CardRatesManager />
           </TabsContent>
         </Tabs>
       </div>
