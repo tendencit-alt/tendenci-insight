@@ -463,6 +463,14 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
         numeroParcelas: (order as any).numero_parcelas_boleto || 1,
         carencia: ((order as any).carencia_boleto as 30 | 60) || 30
       });
+
+      // Carregar dados de taxa de link do pedido - forçar Tendenci
+      setTaxaLink({
+        percentual: Number((order as any).taxa_link_percentual) || 0,
+        valor: Number((order as any).taxa_link_valor) || 0,
+        responsavel: 'tendenci',
+        numeroParcelas: (order as any).numero_parcelas_link || 1
+      });
     }
   }, [order]);
 
