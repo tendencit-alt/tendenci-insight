@@ -53,13 +53,21 @@ const FORMAS_PAGAMENTO = [
   { value: 'pix', label: 'PIX' },
   { value: 'cartao_credito', label: 'Cartão de Crédito' },
   { value: 'cartao_debito', label: 'Cartão de Débito' },
+  { value: 'link_pagamento', label: 'Link de Pagamento' },
   { value: 'boleto', label: 'Boleto' },
   { value: 'transferencia', label: 'Transferência' },
   { value: 'permuta', label: 'Permuta' },
   { value: 'dinheiro', label: 'Dinheiro' },
 ];
 
-const FORMAS_COM_PARCELAS = ['boleto', 'cartao_credito'];
+const FORMAS_COM_PARCELAS = ['boleto', 'cartao_credito', 'link_pagamento'];
+
+// Taxas de link de pagamento por número de parcelas (fallback)
+const TAXAS_LINK_PAGAMENTO: Record<number, number> = {
+  1: 0, 2: 0, 3: 0, 4: 0,
+  5: 0, 6: 0, 7: 0, 8: 0,
+  9: 0, 10: 0, 11: 0, 12: 0
+};
 
 // Taxas de cartão de crédito por número de parcelas (fallback)
 const TAXAS_CARTAO_CREDITO: Record<number, number> = {
