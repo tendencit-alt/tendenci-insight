@@ -1801,8 +1801,8 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                           </Select>
                         </div>
 
-                        {/* Parcelas - só para cartão de crédito */}
-                        {parcela.forma_pagamento === 'cartao_credito' && (
+                        {/* Parcelas - para cartão de crédito e link de pagamento */}
+                        {(parcela.forma_pagamento === 'cartao_credito' || parcela.forma_pagamento === 'link_pagamento') && (
                           <div className="col-span-2 space-y-1">
                             <Label className="text-xs">Parcelas</Label>
                             <div className="flex items-center h-10 border rounded-lg overflow-hidden bg-background">
