@@ -50,6 +50,9 @@ export function OrderResponsiblesManager() {
   const [deleting, setDeleting] = useState<OrderResponsible | null>(null);
   const [loading, setLoading] = useState(false);
   const [typeFilter, setTypeFilter] = useState<"todos" | OrderResponsibleType>("todos");
+  const [newSupplierOpen, setNewSupplierOpen] = useState(false);
+  const [newSupplierName, setNewSupplierName] = useState("");
+  const [creatingSup, setCreatingSup] = useState(false);
   const [form, setForm] = useState<{ name: string; type: OrderResponsibleType; is_active: boolean; supplier_id: string }>({
     name: "",
     type: "vendedor",
