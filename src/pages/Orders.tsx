@@ -33,6 +33,17 @@ export default function Orders() {
   const { data: orders, isLoading, refetch } = useQuery({
     queryKey: ['orders', filters],
     queryFn: async () => {
+      // If filtering by centro_custo, first get order IDs that have items with that centro_custo
+      let orderIdsWithCentroCusto: string[] | null = null;
+      if (filters.centroCusto) {
+        const { data: matchingItems } = await supabase
+          .from('order_items')
+          .select('order_id')
+          .eq('centro_custo', filters.centroCusto);
+        orderIdsWithCentroCusto = [...new Set((matchingItems || []).map(i => i.order_id))];
+        if (orderIdsWithCentroCusto.length === 0) return [];
+      }
+
       let query = supabase
         .from('orders')
         .select(`
@@ -47,7 +58,7 @@ export default function Orders() {
 
       if (filters.status) query = query.eq('status', filters.status);
       if (filters.vendedorId) query = query.eq('vendedor_id', filters.vendedorId);
-      if (filters.centroCusto) query = query.eq('centro_custo', filters.centroCusto);
+      if (orderIdsWithCentroCusto) query = query.in('id', orderIdsWithCentroCusto);
 
       const dateColumn = 'created_at';
 
