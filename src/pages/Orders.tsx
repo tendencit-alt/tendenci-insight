@@ -47,7 +47,7 @@ export default function Orders() {
       if (filters.status) query = query.eq('status', filters.status);
       if (filters.vendedorId) query = query.eq('vendedor_id', filters.vendedorId);
 
-      const dateColumn = filters.dateField === 'created_at' ? 'created_at' : 'data_emissao';
+      const dateColumn = 'created_at';
 
       if (filters.dateFrom) {
         const fromDate = new Date(filters.dateFrom);
