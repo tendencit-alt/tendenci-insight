@@ -48,11 +48,29 @@ const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
 
 const ITEMS_PER_PAGE = 20;
 
-export function OrdersTable({ orders, isLoading, onSelectOrder, onEditOrder, onDeleteOrder }: OrdersTableProps) {
+export function OrdersTable({ orders, isLoading, onSelectOrder, onEditOrder, onDeleteOrder, selectedIds = [], onSelectedIdsChange }: OrdersTableProps) {
   const { isMaster } = usePermissions();
   const isEditable = (status: string) => ['rascunho', 'ativo', 'aguardando_aprovacao'].includes(status);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+
+  const toggleSelect = (id: string) => {
+    if (!onSelectedIdsChange) return;
+    onSelectedIdsChange(
+      selectedIds.includes(id) ? selectedIds.filter(i => i !== id) : [...selectedIds, id]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (!onSelectedIdsChange) return;
+    const pageIds = paginatedOrders.map(o => o.id);
+    const allSelected = pageIds.every(id => selectedIds.includes(id));
+    if (allSelected) {
+      onSelectedIdsChange(selectedIds.filter(id => !pageIds.includes(id)));
+    } else {
+      onSelectedIdsChange([...new Set([...selectedIds, ...pageIds])]);
+    }
+  };
 
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value || 0);
