@@ -122,6 +122,13 @@ export function DashboardBI({ filters }: DashboardBIProps) {
         .select("opening_balance")
         .eq("active", true);
 
+      // Get ALL ledger entries up to dateTo for real cash balance
+      const { data: allEntriesForBalance } = await supabase
+        .from("fin_ledger_entries")
+        .select("type, amount, cash_date, competence_date")
+        .neq("status", "CANCELADO")
+        .or(`cash_date.lte.${dateTo},and(cash_date.is.null,competence_date.lte.${dateTo})`);
+
       // Get financial goals (metas)
       const currentMonth = new Date().getMonth() + 1;
       const currentYear = new Date().getFullYear();
@@ -131,12 +138,16 @@ export function DashboardBI({ filters }: DashboardBIProps) {
         .eq("month", currentMonth)
         .eq("year", currentYear);
 
-      // Calculate totals
+      // Calculate period totals (filtered)
       const receitas = entries?.filter(e => e.type === "RECEITA").reduce((sum, e) => sum + Number(e.amount), 0) || 0;
       const despesas = entries?.filter(e => e.type === "DESPESA").reduce((sum, e) => sum + Number(e.amount), 0) || 0;
-      const saldoInicial = accounts?.reduce((sum, a) => sum + Number(a.opening_balance || 0), 0) || 0;
       const resultado = receitas - despesas;
-      const saldoAtual = saldoInicial + resultado;
+
+      // Calculate real consolidated balance: opening balances + ALL transactions up to dateTo
+      const saldoInicial = accounts?.reduce((sum, a) => sum + Number(a.opening_balance || 0), 0) || 0;
+      const allReceitas = allEntriesForBalance?.filter(e => e.type === "RECEITA").reduce((sum, e) => sum + Number(e.amount), 0) || 0;
+      const allDespesas = allEntriesForBalance?.filter(e => e.type === "DESPESA").reduce((sum, e) => sum + Number(e.amount), 0) || 0;
+      const saldoAtual = saldoInicial + allReceitas - allDespesas;
 
       // Group entries by chart account for BI
       const receitasByAccount = new Map<string, CategoryData>();
