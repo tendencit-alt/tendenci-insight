@@ -995,22 +995,32 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
 
               <div className="space-y-2">
                   <Label>Arquiteto</Label>
-                  <Select
-                    value={formData.architect_id || "_none"}
-                    onValueChange={(v) => setFormData({ ...formData, architect_id: v === "_none" ? "" : v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="-" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="_none">-</SelectItem>
-                      {architects?.map((arch) => (
-                        <SelectItem key={arch.id} value={arch.id}>
-                          {arch.name} {arch.company && `- ${arch.company}`}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex gap-2">
+                    <Select
+                      value={formData.architect_id || "_none"}
+                      onValueChange={(v) => setFormData({ ...formData, architect_id: v === "_none" ? "" : v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="-" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="_none">-</SelectItem>
+                        {architects?.map((arch) => (
+                          <SelectItem key={arch.id} value={arch.id}>
+                            {arch.name} {arch.company && `- ${arch.company}`}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="icon"
+                      onClick={() => setShowCreateArchitect(true)}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
                   {!hasSelectedArchitect && (
                     <p className="text-sm text-muted-foreground">
                       Selecione um arquiteto para liberar o recurso estratégico RT na etapa de pagamento.
