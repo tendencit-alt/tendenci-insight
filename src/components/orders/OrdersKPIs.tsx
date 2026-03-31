@@ -10,9 +10,10 @@ interface Order {
 interface OrdersKPIsProps {
   orders: Order[];
   isLoading: boolean;
+  selectedIds?: string[];
 }
 
-export function OrdersKPIs({ orders, isLoading }: OrdersKPIsProps) {
+export function OrdersKPIs({ orders, isLoading, selectedIds = [] }: OrdersKPIsProps) {
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 }).format(value || 0);
 
