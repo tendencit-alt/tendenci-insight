@@ -2406,6 +2406,18 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
           </Button>
         </div>
       </DialogContent>
+
+      <CreateArchitectDialog
+        open={showCreateArchitect}
+        onOpenChange={setShowCreateArchitect}
+        onSuccess={async (architectId?: string) => {
+          await refetchArchitects();
+          if (architectId) {
+            setFormData(prev => ({ ...prev, architect_id: architectId }));
+          }
+          setShowCreateArchitect(false);
+        }}
+      />
     </Dialog>
   );
 }
