@@ -6,6 +6,7 @@ import { Plus, Settings, Zap } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { ProductionKanban } from '@/components/production/ProductionKanban';
+import { ProductionKPIs } from '@/components/production/ProductionKPIs';
 import { CreateProductionOrderDialog } from '@/components/production/CreateProductionOrderDialog';
 import { ProductionFilters } from '@/components/production/ProductionFilters';
 import { ProductionOrderDetailSheet } from '@/components/production/ProductionOrderDetailSheet';
@@ -199,8 +200,11 @@ export default function Production() {
           </div>
         </div>
 
+        {/* Resumo / KPIs */}
+        <ProductionKPIs productionTypeId={currentTypeId} filters={filters} />
+
         {/* Filtros */}
-        <ProductionFilters 
+        <ProductionFilters
           filters={filters} 
           onFiltersChange={setFilters} 
           onExport={handleExport}
