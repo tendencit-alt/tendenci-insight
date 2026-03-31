@@ -102,6 +102,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
   const [activeTab, setActiveTab] = useState('cliente');
   const [showCreateClient, setShowCreateClient] = useState(false);
   const [showCreateDeal, setShowCreateDeal] = useState(false);
+  const [showCreateArchitect, setShowCreateArchitect] = useState(false);
   const hasMountedRef = useRef(false);
 
   interface PagamentoParcela {
