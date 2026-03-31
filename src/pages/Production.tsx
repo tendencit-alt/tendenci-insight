@@ -12,7 +12,7 @@ import { ProductionOrderDetailSheet } from '@/components/production/ProductionOr
 import { ManageProductionStagesDialog } from '@/components/production/ManageProductionStagesDialog';
 import { ManageProductionAutomationsDialog } from '@/components/production/ManageProductionAutomationsDialog';
 import { UnifyOpsDialog } from '@/components/production/UnifyOpsDialog';
-import { UnifiedOpsDetailSheet } from '@/components/production/UnifiedOpsDetailSheet';
+
 import { getTailwindColor } from '@/utils/tailwindColors';
 import { toast } from 'sonner';
 import { format, subDays, startOfMonth } from 'date-fns';
@@ -25,8 +25,6 @@ export default function Production() {
   const [automationsDialogOpen, setAutomationsDialogOpen] = useState(false);
   const [unifyDialogOpen, setUnifyDialogOpen] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
-  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'individual' | 'grouped'>('individual');
   const [filters, setFilters] = useState({
     status: 'all',
     priority: 'all',
@@ -207,8 +205,6 @@ export default function Production() {
           onFiltersChange={setFilters} 
           onExport={handleExport}
           onUnifyOps={() => setUnifyDialogOpen(true)}
-          viewMode={viewMode}
-          onViewModeChange={setViewMode}
         />
 
         {/* Tabs por tipo de produção + Kanban */}
@@ -231,8 +227,6 @@ export default function Production() {
                 productionTypeId={type.id} 
                 filters={filters}
                 onOrderClick={(orderId) => setSelectedOrderId(orderId)}
-                viewMode={viewMode}
-                onGroupClick={(groupId) => setSelectedGroupId(groupId)}
               />
             </TabsContent>
           ))}
@@ -250,14 +244,6 @@ export default function Production() {
           orderId={selectedOrderId}
           open={!!selectedOrderId}
           onOpenChange={(open) => !open && setSelectedOrderId(null)}
-        />
-
-        {/* Sheet de grupo unificado */}
-        <UnifiedOpsDetailSheet
-          groupId={selectedGroupId}
-          open={!!selectedGroupId}
-          onOpenChange={(open) => !open && setSelectedGroupId(null)}
-          onOrderClick={(orderId) => setSelectedOrderId(orderId)}
         />
 
         {/* Dialog de unificar OPs */}
