@@ -204,8 +204,8 @@ export function ProfileTypesManager() {
                     <Settings2 className="w-4 h-4" />
                     Permissões
                   </Button>
-                  {/* Master (name='admin') não pode ser editado, mas outros tipos sistema podem */}
-                  {profileType.name !== 'admin' && (
+                  {/* Master type cannot be edited */}
+                  {profileType.name !== 'master' && profileType.name !== 'admin' && (
                     <Button
                       variant="outline"
                       size="sm"
