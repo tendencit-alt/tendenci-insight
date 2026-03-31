@@ -7,6 +7,7 @@ interface OrdersKPIsProps {
   filters: {
     status: string;
     vendedorId: string;
+    centroCusto: string;
     dateFrom: Date;
     dateTo: Date;
     dateField: string;
