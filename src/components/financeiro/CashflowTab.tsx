@@ -524,8 +524,8 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
       />
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0 flex-1">
           <h2 className="text-base sm:text-lg font-semibold flex items-center gap-2">
             <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5" />
             Fluxo de Caixa <span className="text-primary">(Realizado)</span>
@@ -534,14 +534,14 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
             Regime de Caixa - Clique para expandir
           </p>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <Button variant="outline" size="sm" onClick={expandAll} className="text-xs h-8">
+        <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
+          <Button variant="outline" size="sm" onClick={expandAll} className="h-8 whitespace-nowrap text-xs">
             Expandir
           </Button>
-          <Button variant="outline" size="sm" onClick={collapseAll} className="text-xs h-8">
+          <Button variant="outline" size="sm" onClick={collapseAll} className="h-8 whitespace-nowrap text-xs">
             Recolher
           </Button>
-          <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8">
+          <Button variant="outline" size="sm" className="h-8 gap-1.5 whitespace-nowrap text-xs">
             <Download className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Exportar</span> PDF
           </Button>
