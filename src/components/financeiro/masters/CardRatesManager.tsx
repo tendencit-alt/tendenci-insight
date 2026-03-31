@@ -7,7 +7,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { Check, Pencil, X, CreditCard, Link2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Check, Pencil, X, CreditCard, Link2, Building2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface RateRow {
@@ -15,6 +16,17 @@ interface RateRow {
   installments: number;
   rate_percent: number;
   active: boolean;
+}
+
+interface FeeSupplierConfig {
+  id: string;
+  fee_type: string;
+  supplier_id: string | null;
+}
+
+interface Supplier {
+  id: string;
+  name: string;
 }
 
 function useEditableRate(tableName: string, queryKey: string) {
@@ -75,6 +87,38 @@ function useEditableRate(tableName: string, queryKey: string) {
   };
 
   return { rates, isLoading, editingId, editValue, setEditValue, startEdit, cancelEdit, saveEdit, handleKeyDown };
+}
+
+function FeeSupplierSelector({ feeType, label, configs, suppliers, onUpdate }: {
+  feeType: string;
+  label: string;
+  configs: FeeSupplierConfig[];
+  suppliers: Supplier[];
+  onUpdate: (feeType: string, supplierId: string | null) => void;
+}) {
+  const config = configs.find(c => c.fee_type === feeType);
+  const currentSupplier = config?.supplier_id || "";
+
+  return (
+    <div className="flex items-center gap-3 py-2 px-3 bg-muted/30 rounded-lg">
+      <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
+      <span className="text-sm text-muted-foreground whitespace-nowrap">{label}:</span>
+      <Select
+        value={currentSupplier || "none"}
+        onValueChange={(v) => onUpdate(feeType, v === "none" ? null : v)}
+      >
+        <SelectTrigger className="h-8 flex-1 max-w-[300px]">
+          <SelectValue placeholder="Selecionar fornecedor" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="none">Nenhum fornecedor</SelectItem>
+          {suppliers.map(s => (
+            <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
 }
 
 function RatesTable({
@@ -160,8 +204,52 @@ function RatesTable({
 }
 
 export function CardRatesManager() {
+  const queryClient = useQueryClient();
   const card = useEditableRate("credit_card_rates", "card-rates-all");
   const link = useEditableRate("payment_link_rates", "link-rates-all");
+
+  const { data: suppliers = [] } = useQuery({
+    queryKey: ["suppliers-for-fees"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("suppliers")
+        .select("id, name")
+        .eq("active", true)
+        .order("name");
+      if (error) throw error;
+      return (data || []) as Supplier[];
+    },
+  });
+
+  const { data: feeConfigs = [] } = useQuery({
+    queryKey: ["fee-supplier-configs"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("fee_supplier_configs" as any)
+        .select("*");
+      if (error) throw error;
+      return (data || []) as unknown as FeeSupplierConfig[];
+    },
+  });
+
+  const updateFeeSupplier = useMutation({
+    mutationFn: async ({ feeType, supplierId }: { feeType: string; supplierId: string | null }) => {
+      const { error } = await supabase
+        .from("fee_supplier_configs" as any)
+        .update({ supplier_id: supplierId, updated_at: new Date().toISOString() } as any)
+        .eq("fee_type", feeType);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["fee-supplier-configs"] });
+      toast.success("Fornecedor atualizado!");
+    },
+    onError: () => toast.error("Erro ao atualizar fornecedor"),
+  });
+
+  const handleSupplierUpdate = (feeType: string, supplierId: string | null) => {
+    updateFeeSupplier.mutate({ feeType, supplierId });
+  };
 
   const debitRate = card.rates?.find((r) => r.installments === 0);
   const creditRates = card.rates?.filter((r) => r.installments > 0) || [];
@@ -186,7 +274,7 @@ export function CardRatesManager() {
             Taxa de Débito
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
           {debitRate ? (
             <div className="flex items-center gap-4">
               <span className="text-sm text-muted-foreground">Taxa à vista (Débito):</span>
@@ -221,6 +309,13 @@ export function CardRatesManager() {
           ) : (
             <p className="text-sm text-muted-foreground">Nenhuma taxa de débito cadastrada.</p>
           )}
+          <FeeSupplierSelector
+            feeType="cartao_debito"
+            label="Fornecedor Débito"
+            configs={feeConfigs}
+            suppliers={suppliers}
+            onUpdate={handleSupplierUpdate}
+          />
         </CardContent>
       </Card>
 
@@ -232,7 +327,7 @@ export function CardRatesManager() {
             Taxas de Crédito
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
           <RatesTable
             rates={creditRates}
             editingId={card.editingId}
@@ -243,6 +338,32 @@ export function CardRatesManager() {
             saveEdit={card.saveEdit}
             handleKeyDown={card.handleKeyDown}
             emptyMessage="Nenhuma taxa de crédito cadastrada."
+          />
+          <FeeSupplierSelector
+            feeType="cartao_credito"
+            label="Fornecedor Crédito"
+            configs={feeConfigs}
+            suppliers={suppliers}
+            onUpdate={handleSupplierUpdate}
+          />
+        </CardContent>
+      </Card>
+
+      {/* Boleto Rate - supplier only */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <CreditCard className="h-5 w-5 text-primary" />
+            Taxa de Boleto
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <FeeSupplierSelector
+            feeType="boleto"
+            label="Fornecedor Boleto"
+            configs={feeConfigs}
+            suppliers={suppliers}
+            onUpdate={handleSupplierUpdate}
           />
         </CardContent>
       </Card>
@@ -255,7 +376,7 @@ export function CardRatesManager() {
             Taxas Link de Pagamento
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
           <RatesTable
             rates={linkRates}
             editingId={link.editingId}
@@ -266,6 +387,13 @@ export function CardRatesManager() {
             saveEdit={link.saveEdit}
             handleKeyDown={link.handleKeyDown}
             emptyMessage="Nenhuma taxa de link de pagamento cadastrada."
+          />
+          <FeeSupplierSelector
+            feeType="link_pagamento"
+            label="Fornecedor Link"
+            configs={feeConfigs}
+            suppliers={suppliers}
+            onUpdate={handleSupplierUpdate}
           />
         </CardContent>
       </Card>
