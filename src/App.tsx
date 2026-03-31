@@ -18,7 +18,7 @@ import Production from "./pages/Production";
 import Orders from "./pages/Orders";
 import Suppliers from "./pages/Suppliers";
 import Inventory from "./pages/Inventory";
-import SystemErrors from "./pages/SystemErrors";
+
 import ActivityCenter from "./pages/ActivityCenter";
 import Catalogo from "./pages/Catalogo";
 import Financeiro from "./pages/Financeiro";
