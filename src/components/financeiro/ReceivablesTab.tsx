@@ -367,19 +367,19 @@ export function ReceivablesTab({ filters }: ReceivablesTabProps) {
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground text-sm">Em Aberto</span>
                   <span className="font-semibold">
-                    {summary?.abertasCount || 0} títulos - R$ {(summary?.abertasValor || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                    {summary?.abertasCount || 0} lançamentos - R$ {(summary?.abertasValor || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-orange-600">
                   <span className="text-sm">Vencidas</span>
                   <span className="font-semibold">
-                    {summary?.vencidasCount || 0} títulos - R$ {(summary?.vencidasValor || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                    {summary?.vencidasCount || 0} lançamentos - R$ {(summary?.vencidasValor || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-green-600">
                   <span className="text-sm">Recebidas</span>
                   <span className="font-semibold">
-                    {summary?.recebidasCount || 0} títulos - R$ {(summary?.recebidasValor || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                    {summary?.recebidasCount || 0} lançamentos - R$ {(summary?.recebidasValor || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                   </span>
                 </div>
                 <div className="flex gap-4 text-xs text-muted-foreground pt-2 border-t">
@@ -410,7 +410,7 @@ export function ReceivablesTab({ filters }: ReceivablesTabProps) {
               <div>
                 <p className="text-xs text-muted-foreground">Em Aberto (Período)</p>
                 <p className="text-xl font-bold text-blue-600">{formatCurrency(kpis.aberto)}</p>
-                <p className="text-xs text-muted-foreground">{kpis.abertoCount} títulos</p>
+                <p className="text-xs text-muted-foreground">{kpis.abertoCount} lançamentos</p>
               </div>
               <Clock className="h-8 w-8 text-blue-600 opacity-50" />
             </div>
@@ -422,7 +422,7 @@ export function ReceivablesTab({ filters }: ReceivablesTabProps) {
               <div>
                 <p className="text-xs text-muted-foreground">Vencidas (Período)</p>
                 <p className="text-xl font-bold text-orange-600">{formatCurrency(kpis.vencido)}</p>
-                <p className="text-xs text-muted-foreground">{kpis.vencidoCount} títulos</p>
+                <p className="text-xs text-muted-foreground">{kpis.vencidoCount} lançamentos</p>
               </div>
               <AlertTriangle className="h-8 w-8 text-orange-600 opacity-50" />
             </div>
@@ -434,7 +434,7 @@ export function ReceivablesTab({ filters }: ReceivablesTabProps) {
               <div>
                 <p className="text-xs text-muted-foreground">Recebidas no Período</p>
                 <p className="text-xl font-bold text-green-600">{formatCurrency(kpis.recebido)}</p>
-                <p className="text-xs text-muted-foreground">{kpis.recebidoCount} títulos</p>
+                <p className="text-xs text-muted-foreground">{kpis.recebidoCount} lançamentos</p>
               </div>
               <CheckCircle className="h-8 w-8 text-green-600 opacity-50" />
             </div>
