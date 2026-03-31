@@ -704,25 +704,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
   const CUSTOM_PROJECT_PREFIX = '__custom_project__';
 
   const resolveProjectId = async (projectName: string): Promise<string> => {
-    const normalizedName = projectName.trim().toLowerCase();
-    
-    const projectFromCache = projects.find(
-      (project) => project.label.trim().toLowerCase() === normalizedName
-    );
-    if (projectFromCache?.value) return projectFromCache.value;
-
-    const { data: existingProjects, error: existingProjectError } = await supabase
-      .from('fin_projects')
-      .select('id, name')
-      .ilike('name', projectName.trim())
-      .limit(1);
-    if (existingProjectError) throw existingProjectError;
-
-    const existingProject = existingProjects?.find(
-      (p) => p.name.trim().toLowerCase() === normalizedName
-    ) || existingProjects?.[0];
-    if (existingProject) return existingProject.id;
-
+    // Always create a new project - each order gets its own project
     const { data: newProject, error: newProjectError } = await supabase
       .from('fin_projects')
       .insert({ name: projectName.trim(), status: 'ativo' })
