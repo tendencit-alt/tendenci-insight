@@ -8911,6 +8911,9 @@ export type Database = {
         | "compras"
         | "pedidos"
         | "ia_configuracao"
+        | "financeiro"
+        | "cadastros_financeiros"
+        | "system_errors"
       fin_strategic_resource_type:
         | "rt"
         | "vendedor"
@@ -9069,6 +9072,9 @@ export const Constants = {
         "compras",
         "pedidos",
         "ia_configuracao",
+        "financeiro",
+        "cadastros_financeiros",
+        "system_errors",
       ],
       fin_strategic_resource_type: [
         "rt",

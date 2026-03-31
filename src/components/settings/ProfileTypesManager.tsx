@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Shield, User, Palette, Ruler, Loader2, Settings2, Trash2, Edit2 } from 'lucide-react';
+import { Plus, Shield, User, Palette, Ruler, Loader2, Settings2, Trash2, Edit2, Briefcase, Calculator, Factory, DollarSign, Eye } from 'lucide-react';
 import { CreateProfileTypeDialog } from './CreateProfileTypeDialog';
 import { ProfileTypePermissionsDialog } from './ProfileTypePermissionsDialog';
 import {
@@ -35,6 +35,11 @@ const iconMap: Record<string, React.ReactNode> = {
   user: <User className="w-4 h-4" />,
   palette: <Palette className="w-4 h-4" />,
   ruler: <Ruler className="w-4 h-4" />,
+  briefcase: <Briefcase className="w-4 h-4" />,
+  calculator: <Calculator className="w-4 h-4" />,
+  factory: <Factory className="w-4 h-4" />,
+  'dollar-sign': <DollarSign className="w-4 h-4" />,
+  eye: <Eye className="w-4 h-4" />,
 };
 
 export function ProfileTypesManager() {
@@ -204,8 +209,8 @@ export function ProfileTypesManager() {
                     <Settings2 className="w-4 h-4" />
                     Permissões
                   </Button>
-                  {/* Master (name='admin') não pode ser editado, mas outros tipos sistema podem */}
-                  {profileType.name !== 'admin' && (
+                  {/* Master type cannot be edited */}
+                  {profileType.name !== 'master' && profileType.name !== 'admin' && (
                     <Button
                       variant="outline"
                       size="sm"
