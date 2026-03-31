@@ -8,6 +8,11 @@ export function isProjectVisibleInKpis(
   project: ProjectKpiVisibilityCandidate,
   executedAmount = 0,
 ) {
+  // For finalized projects, always show them
+  if (project.status === "concluido") {
+    return true;
+  }
+
   if (project.status !== "ativo") {
     return false;
   }
