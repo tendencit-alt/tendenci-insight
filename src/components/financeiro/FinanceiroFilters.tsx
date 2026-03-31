@@ -150,6 +150,8 @@ export function FinanceiroFilters({ filters, onChange }: FinanceiroFiltersProps)
   const clearFilters = () => {
     onChange({
       ...filters,
+      dateFrom: null,
+      dateTo: null,
       bankAccountId: null,
       costCenterId: null,
       projectId: null,
