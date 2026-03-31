@@ -1,59 +1,45 @@
 
 
-## Plano: Nomear projetos com Centro de Custo + Cliente + #Pedido
+## Plano: Gerar Contas a Pagar para Taxas e RT
 
-### Problema Atual
-Hoje o projeto é criado apenas com o nome do cliente (ex: "Igreen Comercial S.A"), gerando confusão quando há múltiplos pedidos do mesmo cliente.
+### Problema
+O trigger `update_financial_entries_on_order_edit` cria lançamentos no Livro Razão para **Taxa Cartão**, **Taxa Boleto**, **Taxa Link** e **RT**, mas **não gera os títulos correspondentes em `fin_payables`**. Apenas comissões (Vendedor, Orçamentista, Projetista, Montador, Produção) e Receita geram títulos automaticamente.
 
-### Nova Lógica de Nomenclatura
+### Solução
+Atualizar o trigger para que, imediatamente após inserir cada lançamento de despesa de Taxa/RT no razão, também insira o registro correspondente em `fin_payables`, seguindo exatamente o mesmo padrão já usado nas comissões.
 
-O nome do projeto seguirá o formato:
+### Alteração Técnica
 
-```text
-[Centro de Custo] - [Nome do Cliente]
+**Migração SQL** — Recriar a função `update_financial_entries_on_order_edit`:
+
+Para cada um dos 4 blocos (Taxa Cartão, Taxa Boleto, Taxa Link, RT), adicionar após o `INSERT INTO fin_ledger_entries`:
+
+```sql
+) RETURNING id INTO v_expense_ledger_id;
+
+INSERT INTO public.fin_payables (
+  amount, due_date, competence_date, status, description,
+  document_number, notes, ledger_entry_id, created_by,
+  cost_center_id, project_id, order_id, chart_account_id
+) VALUES (
+  NEW.taxa_xxx_valor,
+  (NOW() + interval '30 days')::date, v_competence_date, 'ABERTO',
+  'PED #' || NEW.order_number || ' - Taxa/RT ...',
+  v_doc_number, 'Gerado automaticamente...', 
+  v_expense_ledger_id, NEW.created_by, 
+  v_cost_center_id, NEW.project_id, NEW.id, v_chart_account_id
+);
 ```
 
-Quando já existir um projeto com esse mesmo nome (mesmo cliente + mesmo centro de custo), o sistema adicionará o número do pedido:
+### Blocos a modificar (4 inserções novas):
+1. **Taxa Cartão** (linha ~110-123) — adicionar `RETURNING id` + `INSERT fin_payables`
+2. **Taxa Boleto** (linha ~126-139) — idem
+3. **Taxa Link** (linha ~142-155) — idem
+4. **RT** (linha ~158-176) — idem
 
-```text
-[Centro de Custo] - [Nome do Cliente] #[order_number]
-```
+### Correção de dados existentes
+Uma segunda migração para criar os `fin_payables` faltantes nos pedidos atuais (PED-1, PED-2, PED-3), vinculando aos `ledger_entry_id` já existentes.
 
-**Exemplos:**
-- Primeiro pedido de Planejados para Igreen → `Planejados - Igreen Comercial S.A`
-- Segundo pedido de Planejados para Igreen → `Planejados - Igreen Comercial S.A #102`
-- E o primeiro será renomeado para → `Planejados - Igreen Comercial S.A #98`
-
-### Alterações Técnicas
-
-**Arquivos a editar:**
-1. **`src/components/orders/CreateOrderDialog.tsx`**
-   - Alterar `resolveProjectIdForItems` e `resolveProjectId`/`createNewProjectForOrder` para:
-     - Receber o centro de custo do item (ou o predominante dos itens)
-     - Montar o nome como `[centro_custo] - [clientName]`
-     - Verificar se já existe um projeto com esse nome exato
-     - Se existir, renomear o existente para `[nome] #[order_number do pedido vinculado]` e criar o novo como `[nome] #[order_number]`
-     - Se não existir, criar normalmente sem sufixo
-   - Como o `order_number` é gerado pelo banco ao inserir o pedido, o fluxo será: criar o pedido primeiro, obter o `order_number`, e então criar/nomear os projetos
-
-2. **`src/components/orders/EditOrderDialog.tsx`**
-   - Aplicar a mesma lógica de nomenclatura na função `resolveProjectIdForItems`
-
-### Fluxo Detalhado
-
-```text
-1. Inserir o pedido (orders) → obter order_number
-2. Para cada item, determinar o centro_custo
-3. Montar nome base: "[centro_custo] - [clientName]"
-4. Buscar projetos existentes com esse nome exato
-5. Se encontrou:
-   a. Renomear o existente adicionando #order_number (consultando o pedido vinculado)
-   b. Criar novo projeto com nome "[base] #[novo_order_number]"
-6. Se não encontrou:
-   a. Criar projeto com o nome base sem sufixo
-7. Vincular project_id aos itens
-```
-
-### Observação sobre itens com centros de custo diferentes
-Quando um pedido tem itens com centros de custo distintos, cada grupo de centro de custo gerará seu próprio projeto, mantendo a separação financeira correta.
+### Resultado
+Todos os 10 tipos de lançamento (Receita + 4 Taxas + 5 Comissões) passarão a gerar títulos automaticamente no módulo de Contas a Pagar/Receber.
 
