@@ -80,6 +80,8 @@ export function CampanhasKPIDashboard() {
     const now = new Date();
     
     switch (datePreset) {
+      case 'all':
+        return { from: new Date('2020-01-01'), to: endOfDay(now) };
       case 'today':
         return { from: startOfDay(now), to: endOfDay(now) };
       case 'yesterday':
