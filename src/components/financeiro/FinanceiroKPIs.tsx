@@ -63,12 +63,6 @@ export function FinanceiroKPIs({ metrics, isLoading }: FinanceiroKPIsProps) {
     return { text: "text-red-600", bg: "bg-red-50", status: "Crítico", border: "border-l-red-500" };
   };
 
-  // Status colors - Qualidade do Caixa
-  const getQualidadeColor = () => {
-    if (conversao >= 10 && cobertura >= 100) return { text: "text-green-600", bg: "bg-green-50", status: "Boa", border: "border-l-green-500" };
-    if (conversao >= 0 && cobertura >= 50) return { text: "text-yellow-600", bg: "bg-yellow-50", status: "Atenção", border: "border-l-yellow-500" };
-    return { text: "text-red-600", bg: "bg-red-50", status: "Crítica", border: "border-l-red-500" };
-  };
 
   // Status colors - DSCR
   const getDscrColor = () => {
