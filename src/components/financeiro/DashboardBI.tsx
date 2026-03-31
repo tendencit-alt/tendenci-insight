@@ -126,11 +126,16 @@ export function DashboardBI({ filters }: DashboardBIProps) {
         .eq("active", true);
 
       // Get ALL ledger entries up to dateTo for real cash balance
-      const { data: allEntriesForBalance } = await supabase
+      let balanceQuery = supabase
         .from("fin_ledger_entries")
         .select("type, amount, cash_date, competence_date")
-        .neq("status", "CANCELADO")
-        .or(`cash_date.lte.${dateTo},and(cash_date.is.null,competence_date.lte.${dateTo})`);
+        .neq("status", "CANCELADO");
+
+      if (dateTo) {
+        balanceQuery = balanceQuery.or(`cash_date.lte.${dateTo},and(cash_date.is.null,competence_date.lte.${dateTo})`);
+      }
+
+      const { data: allEntriesForBalance } = await balanceQuery;
 
       // Get financial goals (metas)
       const currentMonth = new Date().getMonth() + 1;

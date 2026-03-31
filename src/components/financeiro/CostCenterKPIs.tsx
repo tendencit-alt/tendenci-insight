@@ -54,8 +54,8 @@ export function CostCenterKPIs({ filters }: CostCenterKPIsProps) {
   const { data, isLoading } = useQuery({
     queryKey: ["fin-cost-center-kpis", filters],
     queryFn: async () => {
-      const dateFrom = format(filters.dateFrom, "yyyy-MM-dd");
-      const dateTo = format(filters.dateTo, "yyyy-MM-dd");
+      const dateFrom = filters.dateFrom ? format(filters.dateFrom, "yyyy-MM-dd") : null;
+      const dateTo = filters.dateTo ? format(filters.dateTo, "yyyy-MM-dd") : null;
 
       // Get all active cost centers
       const { data: costCenters } = await supabase
@@ -65,11 +65,16 @@ export function CostCenterKPIs({ filters }: CostCenterKPIsProps) {
         .order("code");
 
       // Get ledger entries grouped by cost center - include entries without cash_date using competence_date
-      const { data: entries } = await supabase
+      let entriesQuery = supabase
         .from("fin_ledger_entries")
         .select("cost_center_id, type, amount")
-        .neq("status", "CANCELADO")
-        .or(`and(cash_date.gte.${dateFrom},cash_date.lte.${dateTo}),and(cash_date.is.null,competence_date.gte.${dateFrom},competence_date.lte.${dateTo})`);
+        .neq("status", "CANCELADO");
+
+      if (dateFrom && dateTo) {
+        entriesQuery = entriesQuery.or(`and(cash_date.gte.${dateFrom},cash_date.lte.${dateTo}),and(cash_date.is.null,competence_date.gte.${dateFrom},competence_date.lte.${dateTo})`);
+      }
+
+      const { data: entries } = await entriesQuery;
 
       // Get financial goals for cost centers
       const { data: goals } = await supabase
