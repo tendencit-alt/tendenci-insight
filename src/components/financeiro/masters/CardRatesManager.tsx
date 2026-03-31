@@ -241,7 +241,8 @@ export function CardRatesManager() {
       if (error) throw error;
       return (data || []) as Supplier[];
     },
-  });
+
+  const refreshSuppliers = () => queryClient.invalidateQueries({ queryKey: ["suppliers-for-fees"] });
 
   const { data: feeConfigs = [] } = useQuery({
     queryKey: ["fee-supplier-configs"],
