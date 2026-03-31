@@ -135,6 +135,7 @@ export function OrdersTable({ orders, isLoading, onSelectOrder, onEditOrder, onD
                   <TableHead className="text-right text-xs font-semibold text-muted-foreground">Valor</TableHead>
                   <TableHead className="hidden text-xs font-semibold text-muted-foreground lg:table-cell">Emissão</TableHead>
                   <TableHead className="hidden text-xs font-semibold text-muted-foreground md:table-cell">Entrega</TableHead>
+                  <TableHead className="hidden text-xs font-semibold text-muted-foreground lg:table-cell">Centro Custo</TableHead>
                   <TableHead className="w-[90px] text-center text-xs font-semibold text-muted-foreground">Ações</TableHead>
                 </TableRow>
               </TableHeader>
@@ -188,6 +189,9 @@ export function OrdersTable({ orders, isLoading, onSelectOrder, onEditOrder, onD
                         ) : (
                           <span className="text-sm text-muted-foreground">-</span>
                         )}
+                      </TableCell>
+                      <TableCell className="hidden text-sm text-muted-foreground lg:table-cell truncate max-w-[150px]">
+                        {(order as any).centro_custo || '-'}
                       </TableCell>
                       <TableCell onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-center gap-0.5">
