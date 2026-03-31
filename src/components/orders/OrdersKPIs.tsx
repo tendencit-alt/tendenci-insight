@@ -1,41 +1,18 @@
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ShoppingCart, DollarSign, Factory, TrendingUp } from 'lucide-react';
 
-interface OrdersKPIsProps {
-  filters: {
-    status: string;
-    vendedorId: string;
-    centroCusto: string;
-    dateFrom: Date;
-    dateTo: Date;
-    dateField: string;
-  };
+interface Order {
+  id: string;
+  status: string;
+  valor_total: number;
 }
 
-export function OrdersKPIs({ filters }: OrdersKPIsProps) {
-  const { data: metrics, isLoading } = useQuery({
-    queryKey: ['orders-metrics', filters],
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc('orders_metrics', {
-        p_status: filters.status || null,
-        p_vendedor_id: filters.vendedorId || null,
-        p_date_from: filters.dateFrom?.toISOString() || null,
-        p_date_to: filters.dateTo?.toISOString() || null,
-        p_date_field: 'data_emissao',
-      });
-      if (error) throw error;
-      return data?.[0] || {
-        total_pedidos: 0,
-        valor_total: 0,
-        ticket_medio: 0,
-        valor_em_producao: 0,
-        em_producao: 0,
-      };
-    },
-  });
+interface OrdersKPIsProps {
+  orders: Order[];
+  isLoading: boolean;
+}
 
+export function OrdersKPIs({ orders, isLoading }: OrdersKPIsProps) {
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0 }).format(value || 0);
 
@@ -52,32 +29,38 @@ export function OrdersKPIs({ filters }: OrdersKPIsProps) {
     );
   }
 
+  const totalPedidos = orders.length;
+  const valorTotal = orders.reduce((sum, o) => sum + (o.valor_total || 0), 0);
+  const emProducao = orders.filter((o) => o.status === 'em_producao');
+  const valorEmProducao = emProducao.reduce((sum, o) => sum + (o.valor_total || 0), 0);
+  const ticketMedio = totalPedidos > 0 ? valorTotal / totalPedidos : 0;
+
   const kpis = [
     {
       label: 'Pedidos',
-      value: String(metrics?.total_pedidos || 0),
+      value: String(totalPedidos),
       icon: ShoppingCart,
       color: 'text-primary',
       bg: 'bg-primary/10',
     },
     {
       label: 'Valor Total',
-      value: formatCurrency(metrics?.valor_total || 0),
+      value: formatCurrency(valorTotal),
       icon: DollarSign,
       color: 'text-emerald-600',
       bg: 'bg-emerald-500/10',
     },
     {
       label: 'Em Produção',
-      value: formatCurrency(metrics?.valor_em_producao || 0),
-      sub: `${metrics?.em_producao || 0} pedidos`,
+      value: formatCurrency(valorEmProducao),
+      sub: `${emProducao.length} pedidos`,
       icon: Factory,
       color: 'text-amber-600',
       bg: 'bg-amber-500/10',
     },
     {
       label: 'Ticket Médio',
-      value: formatCurrency(metrics?.ticket_medio || 0),
+      value: formatCurrency(ticketMedio),
       icon: TrendingUp,
       color: 'text-blue-700',
       bg: 'bg-blue-500/10',
