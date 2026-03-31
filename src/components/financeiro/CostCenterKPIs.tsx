@@ -118,6 +118,9 @@ export function CostCenterKPIs({ filters }: CostCenterKPIsProps) {
         };
       });
 
+      // Sort by receitas descending
+      result.sort((a, b) => b.receitas - a.receitas);
+
       // Calculate totals
       const totalReceitas = result.reduce((sum, cc) => sum + cc.receitas, 0);
       const totalDespesas = result.reduce((sum, cc) => sum + cc.despesas, 0);
