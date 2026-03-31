@@ -16,8 +16,8 @@ export type SortDirection = "asc" | "desc" | null;
 export type SortField = "date" | "value" | null;
 
 export interface FinanceiroFiltersState {
-  dateFrom: Date;
-  dateTo: Date;
+  dateFrom: Date | null;
+  dateTo: Date | null;
   bankAccountId: string | null;
   costCenterId: string | null;
   projectId: string | null;
