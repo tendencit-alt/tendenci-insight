@@ -303,5 +303,6 @@ export function OrdersTable({ orders, isLoading, onSelectOrder, onEditOrder, onD
         </>
       )}
     </div>
+    </div>
   );
 }
