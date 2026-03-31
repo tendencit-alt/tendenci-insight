@@ -98,7 +98,7 @@ export function BulkEditOrdersDialog({ open, onOpenChange, selectedIds, onSucces
           {/* Status */}
           <div className="space-y-1.5">
             <Label className="text-sm">Status</Label>
-            <Select value={fields.status || ''} onValueChange={(v) => setFields({ ...fields, status: v || undefined })}>
+            <Select value={fields.status || '__clear__'} onValueChange={(v) => setFields({ ...fields, status: v === '__clear__' ? undefined : v })}>
               <SelectTrigger className="h-9">
                 <SelectValue placeholder="Não alterar" />
               </SelectTrigger>
