@@ -90,35 +90,56 @@ function useEditableRate(tableName: string, queryKey: string) {
   return { rates, isLoading, editingId, editValue, setEditValue, startEdit, cancelEdit, saveEdit, handleKeyDown };
 }
 
-function FeeSupplierSelector({ feeType, label, configs, suppliers, onUpdate }: {
+function FeeSupplierSelector({ feeType, label, configs, suppliers, onUpdate, onRefreshSuppliers }: {
   feeType: string;
   label: string;
   configs: FeeSupplierConfig[];
   suppliers: Supplier[];
   onUpdate: (feeType: string, supplierId: string | null) => void;
+  onRefreshSuppliers: () => void;
 }) {
+  const [showCreate, setShowCreate] = useState(false);
   const config = configs.find(c => c.fee_type === feeType);
   const currentSupplier = config?.supplier_id || "";
 
   return (
-    <div className="flex items-center gap-3 py-2 px-3 bg-muted/30 rounded-lg">
-      <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
-      <span className="text-sm text-muted-foreground whitespace-nowrap">{label}:</span>
-      <Select
-        value={currentSupplier || "none"}
-        onValueChange={(v) => onUpdate(feeType, v === "none" ? null : v)}
-      >
-        <SelectTrigger className="h-8 flex-1 max-w-[300px]">
-          <SelectValue placeholder="Selecionar fornecedor" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="none">Nenhum fornecedor</SelectItem>
-          {suppliers.map(s => (
-            <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
+    <>
+      <div className="flex items-center gap-3 py-2 px-3 bg-muted/30 rounded-lg">
+        <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
+        <span className="text-sm text-muted-foreground whitespace-nowrap">{label}:</span>
+        <Select
+          value={currentSupplier || "none"}
+          onValueChange={(v) => onUpdate(feeType, v === "none" ? null : v)}
+        >
+          <SelectTrigger className="h-8 flex-1 max-w-[300px]">
+            <SelectValue placeholder="Selecionar fornecedor" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">Nenhum fornecedor</SelectItem>
+            {suppliers.map(s => (
+              <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Button
+          size="icon"
+          variant="outline"
+          className="h-8 w-8 shrink-0"
+          onClick={() => setShowCreate(true)}
+          title="Criar novo fornecedor"
+        >
+          <Plus className="h-4 w-4" />
+        </Button>
+      </div>
+      <QuickCreateSupplierDialog
+        open={showCreate}
+        onOpenChange={setShowCreate}
+        onCreated={(supplierId) => {
+          onRefreshSuppliers();
+          onUpdate(feeType, supplierId);
+        }}
+      />
+    </>
   );
 }
 
