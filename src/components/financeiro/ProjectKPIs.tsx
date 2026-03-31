@@ -164,12 +164,12 @@ function EditProjectDialog({ open, onOpenChange, project }: EditProjectDialogPro
   const [status, setStatus] = useState(project?.status || "ativo");
   const [budgetPercent, setBudgetPercent] = useState(String(project?.budget_percent ?? 50));
 
-  // Reset state when project changes
-  useState(() => {});
-  if (project) {
-    // Use useEffect-like pattern to sync
-  }
-}
+  useEffect(() => {
+    if (project) {
+      setStatus(project.status || "ativo");
+      setBudgetPercent(String(project.budget_percent ?? 50));
+    }
+  }, [project]);
 
   const updateMutation = useMutation({
     mutationFn: async () => {
