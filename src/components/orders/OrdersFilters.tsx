@@ -81,11 +81,11 @@ export function OrdersFilters({ filters, onFiltersChange }: OrdersFiltersProps) 
       period: 'thisMonth',
       dateFrom: startOfMonth(now),
       dateTo: now,
-      dateField: 'data_emissao',
+      dateField: 'created_at',
     });
   };
 
-  const hasFilters = filters.status || filters.vendedorId || filters.period !== 'thisMonth' || filters.dateField !== 'data_emissao';
+  const hasFilters = filters.status || filters.vendedorId || filters.period !== 'thisMonth';
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -166,15 +166,6 @@ export function OrdersFilters({ filters, onFiltersChange }: OrdersFiltersProps) 
         </SelectContent>
       </Select>
 
-      <Select value={filters.dateField} onValueChange={(v) => onFiltersChange({ ...filters, dateField: v as 'data_emissao' | 'created_at' })}>
-        <SelectTrigger className="h-9 w-[150px] border-border/60 bg-card text-sm">
-          <SelectValue placeholder="Filtrar por" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="data_emissao">Dt. Emissão</SelectItem>
-          <SelectItem value="created_at">Dt. Criação</SelectItem>
-        </SelectContent>
-      </Select>
 
       {hasFilters && (
         <Button variant="ghost" size="sm" onClick={clearFilters} className="h-9 px-2 text-muted-foreground hover:text-foreground">

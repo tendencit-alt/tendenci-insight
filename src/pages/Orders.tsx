@@ -26,7 +26,7 @@ export default function Orders() {
     period: 'thisMonth',
     dateFrom: startOfMonth(now),
     dateTo: now,
-    dateField: 'data_emissao' as 'data_emissao' | 'created_at',
+    dateField: 'created_at' as 'data_emissao' | 'created_at',
   });
 
   const { data: orders, isLoading, refetch } = useQuery({
@@ -47,7 +47,7 @@ export default function Orders() {
       if (filters.status) query = query.eq('status', filters.status);
       if (filters.vendedorId) query = query.eq('vendedor_id', filters.vendedorId);
 
-      const dateColumn = filters.dateField === 'created_at' ? 'created_at' : 'data_emissao';
+      const dateColumn = 'created_at';
 
       if (filters.dateFrom) {
         const fromDate = new Date(filters.dateFrom);
