@@ -30,7 +30,7 @@ function useEditableRate(tableName: string, queryKey: string) {
         .select("*")
         .order("installments");
       if (error) throw error;
-      return (data || []) as RateRow[];
+      return (data || []) as unknown as RateRow[];
     },
   });
 
