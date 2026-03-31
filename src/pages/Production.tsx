@@ -25,8 +25,6 @@ export default function Production() {
   const [automationsDialogOpen, setAutomationsDialogOpen] = useState(false);
   const [unifyDialogOpen, setUnifyDialogOpen] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
-  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'individual' | 'grouped'>('individual');
   const [filters, setFilters] = useState({
     status: 'all',
     priority: 'all',
