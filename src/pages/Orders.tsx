@@ -19,6 +19,7 @@ export default function Orders() {
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [editingOrderId, setEditingOrderId] = useState<string | null>(null);
   const [deletingOrder, setDeletingOrder] = useState<{ id: string; orderNumber: number } | null>(null);
+  const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
   const now = new Date();
   const [filters, setFilters] = useState({
     status: '',
@@ -117,6 +118,8 @@ export default function Orders() {
             onSelectOrder={setSelectedOrderId}
             onEditOrder={setEditingOrderId}
             onDeleteOrder={(id, orderNumber) => setDeletingOrder({ id, orderNumber })}
+            selectedIds={selectedOrderIds}
+            onSelectedIdsChange={setSelectedOrderIds}
           />
 
           <CreateOrderDialog

@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { usePermissions } from '@/hooks/usePermissions';
 import { format, differenceInDays } from 'date-fns';
@@ -30,6 +31,8 @@ interface OrdersTableProps {
   onSelectOrder: (id: string) => void;
   onEditOrder?: (id: string) => void;
   onDeleteOrder?: (id: string, orderNumber: number) => void;
+  selectedIds?: string[];
+  onSelectedIdsChange?: (ids: string[]) => void;
 }
 
 const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
@@ -45,11 +48,18 @@ const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
 
 const ITEMS_PER_PAGE = 20;
 
-export function OrdersTable({ orders, isLoading, onSelectOrder, onEditOrder, onDeleteOrder }: OrdersTableProps) {
+export function OrdersTable({ orders, isLoading, onSelectOrder, onEditOrder, onDeleteOrder, selectedIds = [], onSelectedIdsChange }: OrdersTableProps) {
   const { isMaster } = usePermissions();
   const isEditable = (status: string) => ['rascunho', 'ativo', 'aguardando_aprovacao'].includes(status);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+
+  const toggleSelect = (id: string) => {
+    if (!onSelectedIdsChange) return;
+    onSelectedIdsChange(
+      selectedIds.includes(id) ? selectedIds.filter(i => i !== id) : [...selectedIds, id]
+    );
+  };
 
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value || 0);
@@ -68,6 +78,19 @@ export function OrdersTable({ orders, isLoading, onSelectOrder, onEditOrder, onD
 
   const totalPages = Math.ceil(filteredOrders.length / ITEMS_PER_PAGE);
   const paginatedOrders = filteredOrders.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+
+  const pageIds = paginatedOrders.map(o => o.id);
+  const allPageSelected = pageIds.length > 0 && pageIds.every(id => selectedIds.includes(id));
+  const somePageSelected = pageIds.some(id => selectedIds.includes(id)) && !allPageSelected;
+
+  const toggleSelectAll = () => {
+    if (!onSelectedIdsChange) return;
+    if (allPageSelected) {
+      onSelectedIdsChange(selectedIds.filter(id => !pageIds.includes(id)));
+    } else {
+      onSelectedIdsChange([...new Set([...selectedIds, ...pageIds])]);
+    }
+  };
 
   const getDeadlineStatus = (deadline: string | null, status: string) => {
     if (!deadline || status === 'entregue' || status === 'cancelado') return null;
@@ -98,6 +121,17 @@ export function OrdersTable({ orders, isLoading, onSelectOrder, onEditOrder, onD
   }
 
   return (
+    <div className="space-y-2">
+      {selectedIds.length > 0 && (
+        <div className="flex items-center gap-3 rounded-lg border border-primary/20 bg-primary/5 px-4 py-2.5">
+          <span className="text-sm font-medium text-primary">
+            {selectedIds.length} pedido{selectedIds.length !== 1 ? 's' : ''} selecionado{selectedIds.length !== 1 ? 's' : ''}
+          </span>
+          <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground" onClick={() => onSelectedIdsChange?.([])}>
+            Limpar seleção
+          </Button>
+        </div>
+      )}
     <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
       {/* Search bar */}
       <div className="flex items-center gap-3 border-b border-border/50 px-4 py-3">
@@ -128,6 +162,13 @@ export function OrdersTable({ orders, isLoading, onSelectOrder, onEditOrder, onD
             <Table>
               <TableHeader>
                 <TableRow className="border-border/50 hover:bg-transparent">
+                  <TableHead className="w-[40px]">
+                    <Checkbox
+                      checked={allPageSelected ? true : somePageSelected ? "indeterminate" : false}
+                      onCheckedChange={toggleSelectAll}
+                      aria-label="Selecionar todos"
+                    />
+                  </TableHead>
                   <TableHead className="w-[70px] text-xs font-semibold text-muted-foreground">Nº</TableHead>
                   <TableHead className="text-xs font-semibold text-muted-foreground">Cliente</TableHead>
                   <TableHead className="hidden text-xs font-semibold text-muted-foreground xl:table-cell">Vendedor</TableHead>
@@ -148,9 +189,16 @@ export function OrdersTable({ orders, isLoading, onSelectOrder, onEditOrder, onD
                   return (
                     <TableRow
                       key={order.id}
-                      className="cursor-pointer border-border/40 transition-colors hover:bg-muted/30"
+                      className={`cursor-pointer border-border/40 transition-colors hover:bg-muted/30 ${selectedIds.includes(order.id) ? 'bg-primary/5' : ''}`}
                       onClick={() => onSelectOrder(order.id)}
                     >
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <Checkbox
+                          checked={selectedIds.includes(order.id)}
+                          onCheckedChange={() => toggleSelect(order.id)}
+                          aria-label={`Selecionar pedido #${order.order_number}`}
+                        />
+                      </TableCell>
                       <TableCell className="font-mono text-sm font-semibold text-foreground">
                         #{order.order_number}
                       </TableCell>
@@ -254,6 +302,7 @@ export function OrdersTable({ orders, isLoading, onSelectOrder, onEditOrder, onD
           )}
         </>
       )}
+    </div>
     </div>
   );
 }
