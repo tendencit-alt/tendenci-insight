@@ -4407,6 +4407,33 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_link_rates: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          id: string
+          installments: number
+          rate_percent: number
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          id?: string
+          installments: number
+          rate_percent?: number
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          id?: string
+          installments?: number
+          rate_percent?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       pipeline_stages: {
         Row: {
           id: string
