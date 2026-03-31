@@ -193,7 +193,9 @@ export function FinanceiroFilters({ filters, onChange }: FinanceiroFiltersProps)
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium">Filtros</span>
             <span className="text-xs text-muted-foreground">
-              {format(filters.dateFrom, "dd/MM/yy", { locale: ptBR })} - {format(filters.dateTo, "dd/MM/yy", { locale: ptBR })}
+              {filters.dateFrom && filters.dateTo
+                ? `${format(filters.dateFrom, "dd/MM/yy", { locale: ptBR })} - ${format(filters.dateTo, "dd/MM/yy", { locale: ptBR })}`
+                : "Todo período"}
             </span>
             {activeFiltersCount > 0 && (
               <span className="text-xs text-muted-foreground">
