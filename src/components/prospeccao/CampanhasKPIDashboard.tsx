@@ -190,6 +190,7 @@ export function CampanhasKPIDashboard() {
 
   const getPresetLabel = (): string => {
     switch (datePreset) {
+      case 'all': return 'Todo período';
       case 'today': return 'Hoje';
       case 'yesterday': return 'Ontem';
       case 'last7days': return 'Últimos 7 dias';
