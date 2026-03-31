@@ -62,10 +62,23 @@ export function OrderResponsiblesManager() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("order_responsibles")
-        .select("*")
+        .select("*, suppliers(id, name)")
         .order("type")
         .order("name");
 
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const { data: suppliers } = useQuery({
+    queryKey: ["suppliers-for-responsibles"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("suppliers")
+        .select("id, name")
+        .eq("active", true)
+        .order("name");
       if (error) throw error;
       return data ?? [];
     },
@@ -82,6 +95,7 @@ export function OrderResponsiblesManager() {
       name: "",
       type: "vendedor",
       is_active: true,
+      supplier_id: "",
     });
     setDialogOpen(true);
   };
@@ -92,6 +106,7 @@ export function OrderResponsiblesManager() {
       name: responsible.name,
       type: responsible.type,
       is_active: responsible.is_active,
+      supplier_id: responsible.supplier_id || "",
     });
     setDialogOpen(true);
   };
