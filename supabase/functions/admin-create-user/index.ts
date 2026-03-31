@@ -74,7 +74,17 @@ serve(async (req) => {
         username: finalUsername,
       };
       
-      if (role) updateData.role = role;
+      // Map role to valid user_role enum values
+      const validRoles = ['admin', 'vendedor', 'arquiteto', 'projetista'];
+      if (role === 'master') {
+        updateData.role = 'admin';
+      } else if (role && validRoles.includes(role)) {
+        updateData.role = role;
+      } else {
+        // Default to vendedor for any non-standard profile type
+        updateData.role = 'vendedor';
+      }
+      
       if (full_name) updateData.full_name = full_name;
       if (profile_type_id) updateData.profile_type_id = profile_type_id;
 
