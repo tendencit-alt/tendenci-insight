@@ -14,6 +14,7 @@ interface OrdersFiltersProps {
     status: string;
     vendedorId: string;
     centroCusto: string;
+    clientId: string;
     period: string;
     dateFrom: Date;
     dateTo: Date;
@@ -68,6 +69,17 @@ export function OrdersFilters({ filters, onFiltersChange }: OrdersFiltersProps) 
     },
   });
 
+  const { data: clientes } = useQuery({
+    queryKey: ['clientes-list-orders'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('clients')
+        .select('id, name')
+        .order('name');
+      return data || [];
+    },
+  });
+
   const handlePeriodChange = (period: string) => {
     if (period === 'custom') {
       onFiltersChange({ ...filters, period });
@@ -92,6 +104,7 @@ export function OrdersFilters({ filters, onFiltersChange }: OrdersFiltersProps) 
       status: '',
       vendedorId: '',
       centroCusto: '',
+      clientId: '',
       period: 'thisMonth',
       dateFrom: startOfMonth(now),
       dateTo: now,
@@ -99,7 +112,7 @@ export function OrdersFilters({ filters, onFiltersChange }: OrdersFiltersProps) 
     });
   };
 
-  const hasFilters = filters.status || filters.vendedorId || filters.centroCusto || filters.period !== 'thisMonth';
+  const hasFilters = filters.status || filters.vendedorId || filters.centroCusto || filters.clientId || filters.period !== 'thisMonth';
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -176,6 +189,18 @@ export function OrdersFilters({ filters, onFiltersChange }: OrdersFiltersProps) 
           <SelectItem value="all">Todos</SelectItem>
           {vendedores?.map((v) => (
             <SelectItem key={v.id} value={v.id}>{v.full_name}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Select value={filters.clientId || 'all'} onValueChange={(v) => onFiltersChange({ ...filters, clientId: v === 'all' ? '' : v })}>
+        <SelectTrigger className="h-9 w-[180px] border-border/60 bg-card text-sm">
+          <SelectValue>{filters.clientId ? clientes?.find((c) => c.id === filters.clientId)?.name : 'Cliente'}</SelectValue>
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Todos</SelectItem>
+          {clientes?.map((c) => (
+            <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
           ))}
         </SelectContent>
       </Select>
