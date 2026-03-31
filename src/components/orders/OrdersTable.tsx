@@ -191,7 +191,7 @@ export function OrdersTable({ orders, isLoading, onSelectOrder, onEditOrder, onD
                         )}
                       </TableCell>
                       <TableCell className="hidden text-sm text-muted-foreground lg:table-cell truncate max-w-[150px]">
-                        {(order as any).centro_custo || '-'}
+                        {(order as any).centro_custo || [...new Set(((order as any).order_items || []).map((i: any) => i.centro_custo).filter(Boolean))].join(', ') || '-'}
                       </TableCell>
                       <TableCell onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-center gap-0.5">
