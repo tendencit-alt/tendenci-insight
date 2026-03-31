@@ -69,6 +69,17 @@ export function OrdersFilters({ filters, onFiltersChange }: OrdersFiltersProps) 
     },
   });
 
+  const { data: clientes } = useQuery({
+    queryKey: ['clientes-list-orders'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('clients')
+        .select('id, name')
+        .order('name');
+      return data || [];
+    },
+  });
+
   const handlePeriodChange = (period: string) => {
     if (period === 'custom') {
       onFiltersChange({ ...filters, period });
