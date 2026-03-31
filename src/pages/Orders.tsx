@@ -131,6 +131,13 @@ export default function Orders() {
             onSuccess={() => { refetch(); setCreateOpen(false); }}
           />
 
+          <BulkEditOrdersDialog
+            open={bulkEditOpen}
+            onOpenChange={setBulkEditOpen}
+            selectedIds={selectedOrderIds}
+            onSuccess={() => { refetch(); setBulkEditOpen(false); setSelectedOrderIds([]); }}
+          />
+
           {selectedOrderId && (
             <OrderDetailSheet
               orderId={selectedOrderId}
