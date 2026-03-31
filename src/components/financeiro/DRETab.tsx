@@ -506,18 +506,19 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
             }
           }}
         >
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 min-w-0">
             {canExpand ? (
               (isExpanded || isEntriesExpanded) ? (
-                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
               ) : (
-                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
               )
             ) : (
-              <span className="w-4" />
+              <span className="w-3.5 shrink-0" />
             )}
-            <span className="text-muted-foreground font-mono text-sm">{line.code}</span>
+            <span className="text-muted-foreground font-mono text-[11px] shrink-0">{line.code}</span>
             <span className={cn(
+              "truncate",
               isResultado && "font-semibold"
             )}>{line.name}</span>
             {isResultado && (
@@ -578,7 +579,7 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
             <TableCell 
               style={{ paddingLeft: `${((line.level + 1) * 24) + 16}px` }}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 min-w-0">
                 <button
                   onClick={() => {
                     setSelectedEntryId(entry.id);
@@ -592,7 +593,7 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
                 <span className="text-muted-foreground font-mono text-xs">
                   {entryDate ? formatDate(entryDate) : '-'}
                 </span>
-                <span className="text-foreground/80">{entry.description}</span>
+                <span className="text-foreground/80 truncate">{entry.description}</span>
                 {entry.document_number && (
                   <span className="text-xs text-muted-foreground">
                     Doc: {entry.document_number}
@@ -770,14 +771,14 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
       </div>
 
       <Card>
-        <CardContent className="p-2 sm:pt-6 sm:px-6">
-          <div className="overflow-x-auto -mx-2 sm:mx-0">
-            <Table className="min-w-[500px]">
+        <CardContent className="p-1.5 sm:p-4">
+          <div className="overflow-x-auto">
+            <Table className="w-full table-fixed">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[50%] text-xs sm:text-sm">Conta</TableHead>
-                  <TableHead className="text-right text-xs sm:text-sm hidden md:table-cell">Meta</TableHead>
-                  <TableHead className="text-right text-xs sm:text-sm">Realizado</TableHead>
+                  <TableHead className="w-[55%] text-xs">Conta</TableHead>
+                  <TableHead className="w-[20%] text-right text-xs hidden lg:table-cell">Meta</TableHead>
+                  <TableHead className="w-[25%] text-right text-xs">Realizado</TableHead>
                 </TableRow>
               </TableHeader>
             <TableBody>

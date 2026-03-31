@@ -403,18 +403,18 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
             }
           }}
         >
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 min-w-0">
             {canExpand ? (
               (isExpanded || isEntriesExpanded) ? (
-                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
               ) : (
-                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
               )
             ) : (
-              <span className="w-4" />
+              <span className="w-3.5 shrink-0" />
             )}
-            <span className="text-muted-foreground font-mono text-sm">{line.code}</span>
-            <span>{line.name}</span>
+            <span className="text-muted-foreground font-mono text-[11px] shrink-0">{line.code}</span>
+            <span className="truncate">{line.name}</span>
             {hasEntries && !line.hasChildren && (
               <span className="text-xs text-muted-foreground ml-1">
                 ({line.entries.length} lançamento{line.entries.length !== 1 ? 's' : ''})
@@ -456,7 +456,7 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
             <TableCell 
               style={{ paddingLeft: `${((line.level + 1) * 24) + 16}px` }}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 min-w-0">
                 <button
                   onClick={() => {
                     setSelectedEntryId(entry.id);
@@ -470,7 +470,7 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
                 <span className="text-muted-foreground font-mono text-xs">
                   {formatDate(entry.cash_date)}
                 </span>
-                <span className="text-foreground/80">{entry.description}</span>
+                <span className="text-foreground/80 truncate">{entry.description}</span>
                 {entry.document_number && (
                   <span className="text-xs text-muted-foreground">
                     Doc: {entry.document_number}
@@ -640,14 +640,14 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
       </div>
 
       <Card>
-        <CardContent className="p-2 sm:pt-6 sm:px-6">
-          <div className="overflow-x-auto -mx-2 sm:mx-0">
-            <Table className="min-w-[500px]">
+        <CardContent className="p-1.5 sm:p-4">
+          <div className="overflow-x-auto">
+            <Table className="w-full table-fixed">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[50%] text-xs sm:text-sm">Conta</TableHead>
-                  <TableHead className="text-right text-xs sm:text-sm hidden md:table-cell">Orçamento</TableHead>
-                  <TableHead className="text-right text-xs sm:text-sm">Realizado</TableHead>
+                  <TableHead className="w-[55%] text-xs">Conta</TableHead>
+                  <TableHead className="w-[20%] text-right text-xs hidden lg:table-cell">Orçamento</TableHead>
+                  <TableHead className="w-[25%] text-right text-xs">Realizado</TableHead>
                 </TableRow>
               </TableHeader>
             <TableBody>
