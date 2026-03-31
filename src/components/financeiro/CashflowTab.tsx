@@ -445,7 +445,7 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
         rows.push(
           <TableRow 
             key={`${line.id}-entry-${entry.id}`}
-            className="bg-muted/20 text-sm hover:bg-muted/40"
+            className="bg-muted/20 text-xs hover:bg-muted/40"
           >
             <TableCell 
               style={{ paddingLeft: `${((line.level + 1) * 14) + 8}px` }}
@@ -472,12 +472,9 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
                 )}
               </div>
             </TableCell>
-            <TableCell className="text-right text-muted-foreground font-mono text-sm">
-              -
-            </TableCell>
             <TableCell 
               className={cn(
-                "text-right font-mono text-sm",
+                "text-right font-mono text-xs p-1",
                 isReceita && "text-green-600/80",
                 isDespesa && "text-red-600/80",
                 isFinanciamento && "text-orange-500/80"
