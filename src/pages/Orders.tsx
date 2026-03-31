@@ -23,6 +23,7 @@ export default function Orders() {
   const [filters, setFilters] = useState({
     status: '',
     vendedorId: '',
+    centroCusto: '',
     period: 'thisMonth',
     dateFrom: startOfMonth(now),
     dateTo: now,
