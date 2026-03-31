@@ -992,7 +992,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
           subtotal,
           valor_total: total,
           centro_custo: null,
-          project_id: formData.project_id || resolvedProjectId || null,
+          project_id: formData.project_id || null,
           status: shouldBeAtivo ? 'ativo' : order.status,
           taxa_cartao_percentual: taxaCartao.percentual,
           taxa_cartao_valor: taxaCartao.valor,
