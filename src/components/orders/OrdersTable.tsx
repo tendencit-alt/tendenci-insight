@@ -190,6 +190,9 @@ export function OrdersTable({ orders, isLoading, onSelectOrder, onEditOrder, onD
                           <span className="text-sm text-muted-foreground">-</span>
                         )}
                       </TableCell>
+                      <TableCell className="hidden text-sm text-muted-foreground lg:table-cell truncate max-w-[150px]">
+                        {(order as any).centro_custo || '-'}
+                      </TableCell>
                       <TableCell onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-center gap-0.5">
                           <TooltipProvider>
