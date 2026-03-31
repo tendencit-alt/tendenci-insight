@@ -1,5 +1,4 @@
-import { useEffect } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -40,7 +39,7 @@ interface ProductionMetrics {
 }
 
 export function ProductionKPIs({ productionTypeId, filters }: ProductionKPIsProps) {
-  const queryClient = useQueryClient();
+  
 
   // Query direta para calcular o TOTAL de TODOS os tipos em produção (exceto cancelado)
   const { data: totalEmProducao, isLoading: loadingTotal } = useQuery({
@@ -79,49 +78,7 @@ export function ProductionKPIs({ productionTypeId, filters }: ProductionKPIsProp
 
   const isLoading = loadingTotal || loadingType;
 
-  // Realtime subscription para atualizar KPIs quando OPs mudam
-  useEffect(() => {
-    let debounceTimer: NodeJS.Timeout;
-    
-    const channel = supabase
-      .channel('production-kpis-realtime')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'production_orders'
-        },
-        () => {
-          clearTimeout(debounceTimer);
-          debounceTimer = setTimeout(() => {
-            queryClient.invalidateQueries({ queryKey: ['production-metrics'] });
-            queryClient.invalidateQueries({ queryKey: ['production-total-all'] });
-          }, 500);
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'production_phases'
-        },
-        () => {
-          clearTimeout(debounceTimer);
-          debounceTimer = setTimeout(() => {
-            queryClient.invalidateQueries({ queryKey: ['production-metrics'] });
-            queryClient.invalidateQueries({ queryKey: ['production-total-all'] });
-          }, 500);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      clearTimeout(debounceTimer);
-      supabase.removeChannel(channel);
-    };
-  }, [queryClient]);
+  // Realtime é gerenciado pelo useGlobalRealtime no DashboardLayout
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
