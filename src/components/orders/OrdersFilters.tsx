@@ -14,6 +14,7 @@ interface OrdersFiltersProps {
     status: string;
     vendedorId: string;
     centroCusto: string;
+    clientId: string;
     period: string;
     dateFrom: Date;
     dateTo: Date;
