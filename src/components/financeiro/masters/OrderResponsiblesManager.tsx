@@ -123,6 +123,7 @@ export function OrderResponsiblesManager() {
         name: form.name.trim(),
         type: form.type,
         is_active: form.is_active,
+        supplier_id: form.supplier_id || null,
       };
 
       if (editing) {
