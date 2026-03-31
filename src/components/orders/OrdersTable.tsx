@@ -33,6 +33,7 @@ interface OrdersTableProps {
   onDeleteOrder?: (id: string, orderNumber: number) => void;
   selectedIds?: string[];
   onSelectedIdsChange?: (ids: string[]) => void;
+  onBulkEdit?: () => void;
 }
 
 const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
