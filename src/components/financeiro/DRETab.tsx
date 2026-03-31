@@ -156,7 +156,7 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
   const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
   const [entryDialogOpen, setEntryDialogOpen] = useState(false);
   const queryClient = useQueryClient();
-  const dateField = "cash_date";
+  const dateField = "competence_date";
 
   // Subscribe to real-time changes
   useEffect(() => {
