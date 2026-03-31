@@ -78,8 +78,8 @@ export function OrdersKPIs({ filters }: OrdersKPIsProps) {
       label: 'Ticket Médio',
       value: formatCurrency(metrics?.ticket_medio || 0),
       icon: TrendingUp,
-      color: 'text-violet-600',
-      bg: 'bg-violet-500/10',
+      color: 'text-blue-700',
+      bg: 'bg-blue-500/10',
     },
   ];
 
