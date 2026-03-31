@@ -104,6 +104,7 @@ export function OrdersFilters({ filters, onFiltersChange }: OrdersFiltersProps) 
       status: '',
       vendedorId: '',
       centroCusto: '',
+      clientId: '',
       period: 'thisMonth',
       dateFrom: startOfMonth(now),
       dateTo: now,
@@ -111,7 +112,7 @@ export function OrdersFilters({ filters, onFiltersChange }: OrdersFiltersProps) 
     });
   };
 
-  const hasFilters = filters.status || filters.vendedorId || filters.centroCusto || filters.period !== 'thisMonth';
+  const hasFilters = filters.status || filters.vendedorId || filters.centroCusto || filters.clientId || filters.period !== 'thisMonth';
 
   return (
     <div className="flex flex-wrap items-center gap-2">
