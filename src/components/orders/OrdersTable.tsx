@@ -178,9 +178,16 @@ export function OrdersTable({ orders, isLoading, onSelectOrder, onEditOrder, onD
                   return (
                     <TableRow
                       key={order.id}
-                      className="cursor-pointer border-border/40 transition-colors hover:bg-muted/30"
+                      className={`cursor-pointer border-border/40 transition-colors hover:bg-muted/30 ${selectedIds.includes(order.id) ? 'bg-primary/5' : ''}`}
                       onClick={() => onSelectOrder(order.id)}
                     >
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <Checkbox
+                          checked={selectedIds.includes(order.id)}
+                          onCheckedChange={() => toggleSelect(order.id)}
+                          aria-label={`Selecionar pedido #${order.order_number}`}
+                        />
+                      </TableCell>
                       <TableCell className="font-mono text-sm font-semibold text-foreground">
                         #{order.order_number}
                       </TableCell>
