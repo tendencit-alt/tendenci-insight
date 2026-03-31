@@ -9,7 +9,7 @@ interface OrdersKPIsProps {
     vendedorId: string;
     dateFrom: Date;
     dateTo: Date;
-    dateField: 'data_emissao' | 'created_at';
+    dateField: string;
   };
 }
 

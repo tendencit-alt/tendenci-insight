@@ -26,7 +26,7 @@ export default function Orders() {
     period: 'thisMonth',
     dateFrom: startOfMonth(now),
     dateTo: now,
-    dateField: 'created_at' as 'data_emissao' | 'created_at',
+    dateField: 'created_at',
   });
 
   const { data: orders, isLoading, refetch } = useQuery({
