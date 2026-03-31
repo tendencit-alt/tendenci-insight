@@ -81,7 +81,7 @@ export function OrdersFilters({ filters, onFiltersChange }: OrdersFiltersProps) 
       period: 'thisMonth',
       dateFrom: startOfMonth(now),
       dateTo: now,
-      dateField: 'data_emissao',
+      dateField: 'created_at',
     });
   };
 
