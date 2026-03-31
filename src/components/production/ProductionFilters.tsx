@@ -141,21 +141,6 @@ export function ProductionFilters({
         </SelectContent>
       </Select>
 
-      {/* Toggle Visualização Agrupada */}
-      {onViewModeChange && (
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50">
-          <Layers className="h-4 w-4 text-muted-foreground" />
-          <Label htmlFor="grouped-view" className="text-sm cursor-pointer">
-            Agrupar por Cliente
-          </Label>
-          <Switch
-            id="grouped-view"
-            checked={viewMode === 'grouped'}
-            onCheckedChange={(checked) => onViewModeChange(checked ? 'grouped' : 'individual')}
-          />
-        </div>
-      )}
-
       {/* Limpar Filtros */}
       {hasActiveFilters && (
         <Button variant="ghost" size="sm" onClick={handleReset} className="gap-1">

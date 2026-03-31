@@ -246,14 +246,6 @@ export default function Production() {
           onOpenChange={(open) => !open && setSelectedOrderId(null)}
         />
 
-        {/* Sheet de grupo unificado */}
-        <UnifiedOpsDetailSheet
-          groupId={selectedGroupId}
-          open={!!selectedGroupId}
-          onOpenChange={(open) => !open && setSelectedGroupId(null)}
-          onOrderClick={(orderId) => setSelectedOrderId(orderId)}
-        />
-
         {/* Dialog de unificar OPs */}
         <UnifyOpsDialog
           open={unifyDialogOpen}
