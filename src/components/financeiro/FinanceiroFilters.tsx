@@ -227,11 +227,12 @@ export function FinanceiroFilters({ filters, onChange }: FinanceiroFiltersProps)
           <div className="p-3">
             <div className="flex flex-wrap items-center gap-2">
               {/* Period Presets */}
-              <Select onValueChange={handlePresetPeriod}>
+              <Select defaultValue="all" onValueChange={handlePresetPeriod}>
                 <SelectTrigger className="h-8 w-[120px]">
                   <SelectValue placeholder="Período" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
                   <SelectItem value="today">Hoje</SelectItem>
                   <SelectItem value="this_week">Semana</SelectItem>
                   <SelectItem value="this_month">Mês</SelectItem>
