@@ -91,6 +91,7 @@ export function OrdersFilters({ filters, onFiltersChange }: OrdersFiltersProps) 
     onFiltersChange({
       status: '',
       vendedorId: '',
+      centroCusto: '',
       period: 'thisMonth',
       dateFrom: startOfMonth(now),
       dateTo: now,
