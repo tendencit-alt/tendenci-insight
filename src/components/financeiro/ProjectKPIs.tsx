@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -163,6 +163,13 @@ function EditProjectDialog({ open, onOpenChange, project }: EditProjectDialogPro
   const queryClient = useQueryClient();
   const [status, setStatus] = useState(project?.status || "ativo");
   const [budgetPercent, setBudgetPercent] = useState(String(project?.budget_percent ?? 50));
+
+  useEffect(() => {
+    if (project) {
+      setStatus(project.status || "ativo");
+      setBudgetPercent(String(project.budget_percent ?? 50));
+    }
+  }, [project]);
 
   const updateMutation = useMutation({
     mutationFn: async () => {
