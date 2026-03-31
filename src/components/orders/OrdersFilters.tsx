@@ -180,8 +180,18 @@ export function OrdersFilters({ filters, onFiltersChange }: OrdersFiltersProps) 
         </SelectContent>
       </Select>
 
+      <Select value={filters.centroCusto || 'all'} onValueChange={(v) => onFiltersChange({ ...filters, centroCusto: v === 'all' ? '' : v })}>
+        <SelectTrigger className="h-9 w-[180px] border-border/60 bg-card text-sm">
+          <SelectValue>{filters.centroCusto ? centrosCusto?.find((c) => c.name === filters.centroCusto)?.name : 'Centro de Custo'}</SelectValue>
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Todos</SelectItem>
+          {centrosCusto?.map((c) => (
+            <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
 
-      {hasFilters && (
         <Button variant="ghost" size="sm" onClick={clearFilters} className="h-9 px-2 text-muted-foreground hover:text-foreground">
           <X className="mr-1 h-3.5 w-3.5" />
           Limpar
