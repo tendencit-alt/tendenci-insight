@@ -2200,7 +2200,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Total dos percentuais:</span>
                   <span className={`text-sm font-medium ${totalPercentual === 100 ? 'text-green-600' : 'text-destructive'}`}>
-                    {totalPercentual}%
+                    {totalPercentual.toFixed(1)}%
                   </span>
                 </div>
                 {comissoes.rt.habilitado && comissoes.rt.valor > 0 && (

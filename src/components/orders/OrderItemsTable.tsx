@@ -869,7 +869,7 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
                           <Input type="number" className="h-8 w-16" value={item.quantidade} onChange={(e) => handleUpdateItem(item.id, { quantidade: Number(e.target.value) })} min={1} />
                         </TableCell>
                         <TableCell>
-                          <Input type="number" className="h-8" value={item.valor_unitario} onChange={(e) => handleUpdateItem(item.id, { valor_unitario: Number(e.target.value) })} min={0} step={0.01} />
+                          <CurrencyInput className="h-8" value={formatToCurrencyDisplay(item.valor_unitario)} onChange={(v) => handleUpdateItem(item.id, { valor_unitario: parseCurrencyToNumber(v) })} />
                         </TableCell>
                         <TableCell className="text-right font-medium">{formatCurrency(item.valor_total)}</TableCell>
                         <TableCell>
