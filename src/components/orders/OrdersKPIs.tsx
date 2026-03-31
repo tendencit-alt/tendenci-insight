@@ -30,9 +30,13 @@ export function OrdersKPIs({ orders, isLoading, selectedIds = [] }: OrdersKPIsPr
     );
   }
 
-  const totalPedidos = orders.length;
-  const valorTotal = orders.reduce((sum, o) => sum + (o.valor_total || 0), 0);
-  const emProducao = orders.filter((o) => o.status === 'em_producao');
+  const activeOrders = selectedIds.length > 0
+    ? orders.filter((o) => selectedIds.includes(o.id))
+    : orders;
+
+  const totalPedidos = activeOrders.length;
+  const valorTotal = activeOrders.reduce((sum, o) => sum + (o.valor_total || 0), 0);
+  const emProducao = activeOrders.filter((o) => o.status === 'em_producao');
   const valorEmProducao = emProducao.reduce((sum, o) => sum + (o.valor_total || 0), 0);
   const ticketMedio = totalPedidos > 0 ? valorTotal / totalPedidos : 0;
 
