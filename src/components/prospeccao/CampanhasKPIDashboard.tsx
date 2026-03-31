@@ -63,7 +63,7 @@ interface VendorComparison {
   taxa_conversao: number;
 }
 
-type DatePreset = 'today' | 'yesterday' | 'last7days' | 'thisWeek' | 'thisMonth' | 'lastMonth' | 'custom';
+type DatePreset = 'all' | 'today' | 'yesterday' | 'last7days' | 'thisWeek' | 'thisMonth' | 'lastMonth' | 'custom';
 
 export function CampanhasKPIDashboard() {
   const [metrics, setMetrics] = useState<CampaignMetrics | null>(null);
