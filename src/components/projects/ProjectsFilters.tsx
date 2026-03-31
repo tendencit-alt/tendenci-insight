@@ -63,7 +63,7 @@ export function ProjectsFilters({ filters, onFiltersChange }: ProjectsFiltersPro
   const handleClearFilters = () => {
     setSearchInput("");
     onFiltersChange({
-      period: "thisMonth",
+      period: "all",
       stages: [],
       architect: "Todos",
       search: "",
