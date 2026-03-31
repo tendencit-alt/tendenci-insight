@@ -12,7 +12,7 @@ import { ProductionOrderDetailSheet } from '@/components/production/ProductionOr
 import { ManageProductionStagesDialog } from '@/components/production/ManageProductionStagesDialog';
 import { ManageProductionAutomationsDialog } from '@/components/production/ManageProductionAutomationsDialog';
 import { UnifyOpsDialog } from '@/components/production/UnifyOpsDialog';
-import { UnifiedOpsDetailSheet } from '@/components/production/UnifiedOpsDetailSheet';
+
 import { getTailwindColor } from '@/utils/tailwindColors';
 import { toast } from 'sonner';
 import { format, subDays, startOfMonth } from 'date-fns';
