@@ -1,0 +1,1 @@
+DELETE FROM menu_items WHERE id IN ('c7a9e171-f1be-49fc-84a4-326cc675df6c', 'ad797723-8085-4487-adf3-df84e8aaa550');
