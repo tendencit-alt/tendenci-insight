@@ -22,10 +22,7 @@ export function DashboardFilters({
   onArchitectChange 
 }: DashboardFiltersProps) {
   const { theme, setTheme } = useTheme();
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: new Date(new Date().setDate(new Date().getDate() - 30)),
-    to: new Date(),
-  });
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
 
   const handleDateChange = (range: DateRange | undefined) => {
     setDateRange(range);

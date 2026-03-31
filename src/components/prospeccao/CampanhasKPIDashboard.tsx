@@ -63,14 +63,14 @@ interface VendorComparison {
   taxa_conversao: number;
 }
 
-type DatePreset = 'today' | 'yesterday' | 'last7days' | 'thisWeek' | 'thisMonth' | 'lastMonth' | 'custom';
+type DatePreset = 'all' | 'today' | 'yesterday' | 'last7days' | 'thisWeek' | 'thisMonth' | 'lastMonth' | 'custom';
 
 export function CampanhasKPIDashboard() {
   const [metrics, setMetrics] = useState<CampaignMetrics | null>(null);
   const [evolution, setEvolution] = useState<EvolutionData[]>([]);
   const [vendorComparison, setVendorComparison] = useState<VendorComparison[]>([]);
   const [loading, setLoading] = useState(true);
-  const [datePreset, setDatePreset] = useState<DatePreset>('lastMonth');
+  const [datePreset, setDatePreset] = useState<DatePreset>('all');
   const [customRange, setCustomRange] = useState<DateRange | undefined>();
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [vendedores, setVendedores] = useState<Vendedor[]>([]);
@@ -80,6 +80,8 @@ export function CampanhasKPIDashboard() {
     const now = new Date();
     
     switch (datePreset) {
+      case 'all':
+        return { from: new Date('2020-01-01'), to: endOfDay(now) };
       case 'today':
         return { from: startOfDay(now), to: endOfDay(now) };
       case 'yesterday':
@@ -188,6 +190,7 @@ export function CampanhasKPIDashboard() {
 
   const getPresetLabel = (): string => {
     switch (datePreset) {
+      case 'all': return 'Todo período';
       case 'today': return 'Hoje';
       case 'yesterday': return 'Ontem';
       case 'last7days': return 'Últimos 7 dias';
@@ -275,6 +278,7 @@ export function CampanhasKPIDashboard() {
               <SelectValue placeholder="Período" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="all">Todo período</SelectItem>
               <SelectItem value="today">Hoje</SelectItem>
               <SelectItem value="yesterday">Ontem</SelectItem>
               <SelectItem value="last7days">Últimos 7 dias</SelectItem>

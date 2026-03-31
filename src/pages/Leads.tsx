@@ -12,7 +12,7 @@ const Leads = () => {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [filters, setFilters] = useState({
-    period: "last_30_days",
+    period: "all",
     source: "Todos",
     status: "Todos",
     owner: "Todos",
