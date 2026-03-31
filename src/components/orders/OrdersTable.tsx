@@ -121,6 +121,17 @@ export function OrdersTable({ orders, isLoading, onSelectOrder, onEditOrder, onD
   }
 
   return (
+    <div className="space-y-2">
+      {selectedIds.length > 0 && (
+        <div className="flex items-center gap-3 rounded-lg border border-primary/20 bg-primary/5 px-4 py-2.5">
+          <span className="text-sm font-medium text-primary">
+            {selectedIds.length} pedido{selectedIds.length !== 1 ? 's' : ''} selecionado{selectedIds.length !== 1 ? 's' : ''}
+          </span>
+          <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground" onClick={() => onSelectedIdsChange?.([])}>
+            Limpar seleção
+          </Button>
+        </div>
+      )}
     <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
       {/* Search bar */}
       <div className="flex items-center gap-3 border-b border-border/50 px-4 py-3">
