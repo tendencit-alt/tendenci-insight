@@ -906,6 +906,28 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
 
       if (orderError) throw orderError;
 
+      // Now resolve projects using order_number with [CentroCusto] - [Client] naming
+      const projectMap = await resolveProjectsAfterOrder(order.order_number);
+
+      // Build final items with resolved project IDs
+      const itemsWithResolvedProject = items.map((item) => {
+        if (item.project_id?.startsWith(CUSTOM_PROJECT_PREFIX)) {
+          const customName = item.project_id.replace(CUSTOM_PROJECT_PREFIX, '');
+          return { ...item, project_id: resolvedCustomProjects[customName] };
+        }
+        if (!item.project_id || item.project_id === '__new_from_client__') {
+          const cc = item.centro_custo || 'Geral';
+          return { ...item, project_id: projectMap[cc] || undefined };
+        }
+        return item;
+      });
+
+      // Update order with the first resolved project_id if not already set
+      if (!formData.project_id && Object.keys(projectMap).length > 0) {
+        const firstProjectId = Object.values(projectMap)[0];
+        await supabase.from('orders').update({ project_id: firstProjectId }).eq('id', order.id);
+      }
+
       const itemsToInsert = itemsWithResolvedProject.map((item, index) => ({
         order_id: order.id,
         descricao: item.descricao,
