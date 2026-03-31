@@ -16,8 +16,8 @@ export type SortDirection = "asc" | "desc" | null;
 export type SortField = "date" | "value" | null;
 
 export interface FinanceiroFiltersState {
-  dateFrom: Date;
-  dateTo: Date;
+  dateFrom: Date | null;
+  dateTo: Date | null;
   bankAccountId: string | null;
   costCenterId: string | null;
   projectId: string | null;
@@ -112,6 +112,11 @@ export function FinanceiroFilters({ filters, onChange }: FinanceiroFiltersProps)
   ].filter(Boolean).length;
 
   const handlePresetPeriod = (preset: string) => {
+    if (preset === "all") {
+      onChange({ ...filters, dateFrom: null, dateTo: null });
+      return;
+    }
+
     const today = new Date();
     let dateFrom = new Date();
     let dateTo = new Date();
@@ -188,7 +193,9 @@ export function FinanceiroFilters({ filters, onChange }: FinanceiroFiltersProps)
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium">Filtros</span>
             <span className="text-xs text-muted-foreground">
-              {format(filters.dateFrom, "dd/MM/yy", { locale: ptBR })} - {format(filters.dateTo, "dd/MM/yy", { locale: ptBR })}
+              {filters.dateFrom && filters.dateTo
+                ? `${format(filters.dateFrom, "dd/MM/yy", { locale: ptBR })} - ${format(filters.dateTo, "dd/MM/yy", { locale: ptBR })}`
+                : "Todo período"}
             </span>
             {activeFiltersCount > 0 && (
               <span className="text-xs text-muted-foreground">
@@ -220,11 +227,12 @@ export function FinanceiroFilters({ filters, onChange }: FinanceiroFiltersProps)
           <div className="p-3">
             <div className="flex flex-wrap items-center gap-2">
               {/* Period Presets */}
-              <Select onValueChange={handlePresetPeriod}>
+              <Select defaultValue="all" onValueChange={handlePresetPeriod}>
                 <SelectTrigger className="h-8 w-[120px]">
                   <SelectValue placeholder="Período" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
                   <SelectItem value="today">Hoje</SelectItem>
                   <SelectItem value="this_week">Semana</SelectItem>
                   <SelectItem value="this_month">Mês</SelectItem>
@@ -239,14 +247,16 @@ export function FinanceiroFilters({ filters, onChange }: FinanceiroFiltersProps)
                   <Button variant="outline" className="h-8 w-[130px] justify-start gap-1.5 text-xs font-normal px-2">
                     <CalendarIcon className="h-3.5 w-3.5" />
                     <span className="truncate">
-                      {format(filters.dateFrom, "dd/MM", { locale: ptBR })} - {format(filters.dateTo, "dd/MM", { locale: ptBR })}
+                      {filters.dateFrom && filters.dateTo
+                        ? `${format(filters.dateFrom, "dd/MM", { locale: ptBR })} - ${format(filters.dateTo, "dd/MM", { locale: ptBR })}`
+                        : "Todo período"}
                     </span>
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0 z-50" align="start">
                   <Calendar
                     mode="range"
-                    selected={{ from: filters.dateFrom, to: filters.dateTo }}
+                    selected={filters.dateFrom && filters.dateTo ? { from: filters.dateFrom, to: filters.dateTo } : undefined}
                     onSelect={(range) => {
                       if (range?.from && range?.to) {
                         onChange({ ...filters, dateFrom: range.from, dateTo: range.to });

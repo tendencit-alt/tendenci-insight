@@ -8,8 +8,8 @@ import { LayoutDashboard } from "lucide-react";
 export default function DashboardBI() {
   useFinanceiroRealtime();
   const [filters, setFilters] = useState<FinanceiroFiltersState>({
-    dateFrom: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
-    dateTo: new Date(),
+    dateFrom: null,
+    dateTo: null,
     bankAccountId: null,
     costCenterId: null,
     projectId: null,
