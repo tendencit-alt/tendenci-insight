@@ -632,7 +632,7 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
 
       <Card>
         <CardContent className="p-1.5 sm:p-4">
-          <div className="overflow-hidden">
+          <div className="[&>div]:overflow-hidden">
             <Table className="w-full table-fixed text-xs">
               <TableHeader>
                 <TableRow>
