@@ -22,8 +22,6 @@ interface ProductionFiltersProps {
   }) => void;
   onExport?: () => void;
   onUnifyOps?: () => void;
-  viewMode?: 'individual' | 'grouped';
-  onViewModeChange?: (mode: 'individual' | 'grouped') => void;
 }
 
 export function ProductionFilters({ 
