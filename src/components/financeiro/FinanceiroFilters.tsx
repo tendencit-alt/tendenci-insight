@@ -256,7 +256,7 @@ export function FinanceiroFilters({ filters, onChange }: FinanceiroFiltersProps)
                 <PopoverContent className="w-auto p-0 z-50" align="start">
                   <Calendar
                     mode="range"
-                    selected={{ from: filters.dateFrom, to: filters.dateTo }}
+                    selected={filters.dateFrom && filters.dateTo ? { from: filters.dateFrom, to: filters.dateTo } : undefined}
                     onSelect={(range) => {
                       if (range?.from && range?.to) {
                         onChange({ ...filters, dateFrom: range.from, dateTo: range.to });
