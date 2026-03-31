@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Plus, Factory, Settings, Zap, Layers } from 'lucide-react';
+import { Plus, Settings, Zap } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { ProductionKanban } from '@/components/production/ProductionKanban';
