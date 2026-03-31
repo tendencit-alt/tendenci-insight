@@ -205,8 +205,6 @@ export default function Production() {
           onFiltersChange={setFilters} 
           onExport={handleExport}
           onUnifyOps={() => setUnifyDialogOpen(true)}
-          viewMode={viewMode}
-          onViewModeChange={setViewMode}
         />
 
         {/* Tabs por tipo de produção + Kanban */}
