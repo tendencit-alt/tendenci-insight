@@ -157,6 +157,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('cliente');
   const [loadingCep, setLoadingCep] = useState(false);
+  const [showCreateArchitect, setShowCreateArchitect] = useState(false);
 
   const dialogId = `edit-order-${orderId}`;
 
