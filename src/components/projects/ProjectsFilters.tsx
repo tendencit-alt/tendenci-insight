@@ -222,6 +222,7 @@ export function ProjectsFilters({ filters, onFiltersChange }: ProjectsFiltersPro
           <SelectValue placeholder="Período" />
         </SelectTrigger>
         <SelectContent>
+          <SelectItem value="all">Todo período</SelectItem>
           <SelectItem value="today">Hoje</SelectItem>
           <SelectItem value="last_7_days">Últimos 7 dias</SelectItem>
           <SelectItem value="thisMonth">Este mês</SelectItem>
