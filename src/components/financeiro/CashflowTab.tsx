@@ -422,15 +422,9 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
             )}
           </div>
         </TableCell>
-        <TableCell className="text-right p-2">
-          <div className="flex items-center justify-end gap-2">
-            <span className="text-muted-foreground font-mono text-sm">-</span>
-            <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">-%</span>
-          </div>
-        </TableCell>
-        <TableCell className="text-right p-2">
+        <TableCell className="text-right p-1">
           <span className={cn(
-            "font-mono",
+            "font-mono text-xs",
             isReceita && "text-green-600",
             isDespesa && "text-red-600",
             isFinanciamento && "text-orange-500"

@@ -528,17 +528,11 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
             )}
           </div>
         </TableCell>
-        <TableCell className="text-right p-2">
-          <div className="flex items-center justify-end gap-2">
-            <span className="text-muted-foreground font-mono text-sm">-</span>
-            <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">-%</span>
-          </div>
-        </TableCell>
-        <TableCell className="text-right p-2">
+        <TableCell className="text-right p-1">
           {isResultado ? (
             <div className={cn(
-              "inline-flex items-center justify-end px-3 py-1.5 rounded-md font-bold font-mono text-sm",
-              "bg-white dark:bg-slate-900 shadow-sm border",
+              "inline-flex items-center justify-end px-1.5 py-0.5 rounded font-bold font-mono text-[11px]",
+              "bg-background shadow-sm border",
               line.value >= 0 
                 ? "border-green-300 dark:border-green-700 text-green-700 dark:text-green-400" 
                 : "border-red-300 dark:border-red-700 text-red-700 dark:text-red-400"
@@ -548,7 +542,7 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
             </div>
           ) : (
             <span className={cn(
-              "font-mono",
+              "font-mono text-xs",
               isReceita && "text-green-600",
               isDespesa && "text-red-600",
               isFinanciamento && "text-orange-500"
