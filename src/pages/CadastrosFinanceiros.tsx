@@ -52,6 +52,10 @@ export default function CadastrosFinanceiros() {
               <BriefcaseBusiness className="h-4 w-4" />
               Responsáveis
             </TabsTrigger>
+            <TabsTrigger value="card_rates" className="flex items-center gap-2 px-4 py-2">
+              <CreditCard className="h-4 w-4" />
+              Taxas Cartão
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="bank_accounts" className="mt-6">
