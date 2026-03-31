@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { TrendingDown, Wind, BarChart3, Shield, Info } from "lucide-react";
+import { TrendingDown, TrendingUp, Wind, Shield, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Tooltip,
