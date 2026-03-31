@@ -7,6 +7,7 @@ import { OrdersKPIs } from '@/components/orders/OrdersKPIs';
 import { OrdersFilters } from '@/components/orders/OrdersFilters';
 import { OrdersTable } from '@/components/orders/OrdersTable';
 import { CreateOrderDialog } from '@/components/orders/CreateOrderDialog';
+import { BulkEditOrdersDialog } from '@/components/orders/BulkEditOrdersDialog';
 import { OrderDetailSheet } from '@/components/orders/OrderDetailSheet';
 import { EditOrderDialog } from '@/components/orders/EditOrderDialog';
 import { DeleteOrderDialog } from '@/components/orders/DeleteOrderDialog';
