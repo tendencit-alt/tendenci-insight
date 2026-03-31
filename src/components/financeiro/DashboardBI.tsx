@@ -431,7 +431,11 @@ export function DashboardBI({ filters }: DashboardBIProps) {
     <TooltipProvider>
       <div className="space-y-6">
         {/* New unified KPIs */}
-        <FinanceiroKPIs metrics={metrics} isLoading={false} />
+        <FinanceiroKPIs
+          metrics={metrics}
+          isLoading={false}
+          onSelectKPI={setSelectedKPI}
+        />
 
 
         {/* BI Section - Dynamic content based on selected KPI */}
