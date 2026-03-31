@@ -118,6 +118,8 @@ export default function Orders() {
             onSelectOrder={setSelectedOrderId}
             onEditOrder={setEditingOrderId}
             onDeleteOrder={(id, orderNumber) => setDeletingOrder({ id, orderNumber })}
+            selectedIds={selectedOrderIds}
+            onSelectedIdsChange={setSelectedOrderIds}
           />
 
           <CreateOrderDialog
