@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { TrendingDown, Wind, BarChart3, Shield, Info } from "lucide-react";
+import { TrendingDown, TrendingUp, Wind, Shield, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Tooltip,
@@ -43,9 +43,11 @@ export function FinanceiroKPIs({ metrics, isLoading }: FinanceiroKPIsProps) {
   const dscr = saidas > 0 ? entradas / saidas : entradas > 0 ? 999 : 0;
   const hasDivida = saidas > 0;
 
-  // Qualidade do Caixa: Conversão (% do resultado sobre entradas) + Cobertura (% saldo/saídas)
-  const conversao = entradas > 0 ? (resultado / entradas) * 100 : 0;
-  const cobertura = saidas > 0 ? (saldoConsolidado / saidas) * 100 : 0;
+  // Receita Total color
+  const getReceitaColor = () => {
+    if (entradas > 0) return { text: "text-green-600", bg: "bg-green-50", border: "border-l-green-500" };
+    return { text: "text-muted-foreground", bg: "bg-muted", border: "border-l-muted" };
+  };
 
   // Status colors - Resultado
   const getResultadoColor = () => {
@@ -61,12 +63,6 @@ export function FinanceiroKPIs({ metrics, isLoading }: FinanceiroKPIsProps) {
     return { text: "text-red-600", bg: "bg-red-50", status: "Crítico", border: "border-l-red-500" };
   };
 
-  // Status colors - Qualidade do Caixa
-  const getQualidadeColor = () => {
-    if (conversao >= 10 && cobertura >= 100) return { text: "text-green-600", bg: "bg-green-50", status: "Boa", border: "border-l-green-500" };
-    if (conversao >= 0 && cobertura >= 50) return { text: "text-yellow-600", bg: "bg-yellow-50", status: "Atenção", border: "border-l-yellow-500" };
-    return { text: "text-red-600", bg: "bg-red-50", status: "Crítica", border: "border-l-red-500" };
-  };
 
   // Status colors - DSCR
   const getDscrColor = () => {
@@ -75,9 +71,9 @@ export function FinanceiroKPIs({ metrics, isLoading }: FinanceiroKPIsProps) {
     return { text: "text-red-600", bg: "bg-red-50", status: "Crítico", border: "border-l-red-500" };
   };
 
+  const receitaColors = getReceitaColor();
   const resultadoColors = getResultadoColor();
   const folegoColors = getFolegoColor();
-  const qualidadeColors = getQualidadeColor();
   const dscrColors = getDscrColor();
 
   if (isLoading) {
@@ -98,7 +94,35 @@ export function FinanceiroKPIs({ metrics, isLoading }: FinanceiroKPIsProps) {
   return (
     <TooltipProvider>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {/* ✅ 1. Resultado Líquido do Período */}
+        {/* ✅ 1. Receita Total */}
+        <Card className={cn("relative overflow-hidden border-l-4", receitaColors.border)}>
+          <CardContent className="pt-4 pb-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1 flex-1">
+                <div className="flex items-center gap-1">
+                  <span className="text-sm">💰</span>
+                  <p className="text-xs text-muted-foreground font-medium">Receita Total</p>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-3 w-3 text-muted-foreground/60 cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-[250px] text-xs">
+                      <p>Total de receitas no período filtrado.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+                <p className={cn("text-2xl font-bold", receitaColors.text)}>
+                  {formatCurrency(entradas)}
+                </p>
+              </div>
+              <div className={cn("p-3 rounded-full", receitaColors.bg)}>
+                <TrendingUp className={cn("h-6 w-6", receitaColors.text)} />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* ✅ 2. Resultado Líquido do Período */}
         <Card className={cn("relative overflow-hidden border-l-4", resultadoColors.border)}>
           <CardContent className="pt-4 pb-4">
             <div className="flex items-center justify-between">
@@ -127,7 +151,7 @@ export function FinanceiroKPIs({ metrics, isLoading }: FinanceiroKPIsProps) {
           </CardContent>
         </Card>
 
-        {/* ✅ 2. Fôlego de Caixa (unifica Burn + Runway + Saúde) */}
+        {/* ✅ 3. Fôlego de Caixa */}
         <Card className={cn("relative overflow-hidden border-l-4", folegoColors.border)}>
           <CardContent className="pt-4 pb-4">
             <div className="flex items-center justify-between">
@@ -162,41 +186,6 @@ export function FinanceiroKPIs({ metrics, isLoading }: FinanceiroKPIsProps) {
               </div>
               <div className={cn("p-3 rounded-full", folegoColors.bg)}>
                 <Wind className={cn("h-6 w-6", folegoColors.text)} />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* ✅ 3. Qualidade do Caixa (simplificado) */}
-        <Card className={cn("relative overflow-hidden border-l-4", qualidadeColors.border)}>
-          <CardContent className="pt-4 pb-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1 flex-1">
-                <div className="flex items-center gap-1">
-                  <span className="text-sm">🟡</span>
-                  <p className="text-xs text-muted-foreground font-medium">Qualidade do Caixa</p>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Info className="h-3 w-3 text-muted-foreground/60 cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent side="top" className="max-w-[300px] text-xs">
-                      <p className="font-semibold mb-1">Detalhamento:</p>
-                      <p><strong>Conversão:</strong> {conversao.toFixed(1)}% (margem sobre receitas)</p>
-                      <p><strong>Cobertura:</strong> {cobertura.toFixed(0)}% (saldo vs despesas)</p>
-                      <p className="mt-2 text-muted-foreground">
-                        Boa = Conversão ≥10% e Cobertura ≥100%<br/>
-                        Atenção = Conversão ≥0% e Cobertura ≥50%<br/>
-                        Crítica = Abaixo dos limites
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-                <p className={cn("text-2xl font-bold", qualidadeColors.text)}>
-                  {qualidadeColors.status}
-                </p>
-              </div>
-              <div className={cn("p-3 rounded-full", qualidadeColors.bg)}>
-                <BarChart3 className={cn("h-6 w-6", qualidadeColors.text)} />
               </div>
             </div>
           </CardContent>
