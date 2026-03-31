@@ -366,7 +366,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     },
   });
 
-  const { data: architects } = useQuery({
+  const { data: architects, refetch: refetchArchitects } = useQuery({
     queryKey: ['architects-for-order'],
     queryFn: async () => {
       const { data } = await supabase
