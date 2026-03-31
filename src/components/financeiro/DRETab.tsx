@@ -497,7 +497,7 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
       >
         <TableCell 
           className={cn("cursor-pointer select-none")}
-          style={{ paddingLeft: `${(line.level * 24) + 16}px` }}
+          style={{ paddingLeft: `${(line.level * 14) + 8}px` }}
           onClick={() => {
             if (line.hasChildren) {
               toggleExpand(line.id);
@@ -516,14 +516,11 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
             ) : (
               <span className="w-3.5 shrink-0" />
             )}
-            <span className="text-muted-foreground font-mono text-[11px] shrink-0">{line.code}</span>
+            <span className="text-muted-foreground font-mono text-[10px] shrink-0">{line.code}</span>
             <span className={cn(
               "truncate",
               isResultado && "font-semibold"
             )}>{line.name}</span>
-            {isResultado && (
-              <span className="text-xs text-muted-foreground ml-1">(calculado)</span>
-            )}
             {hasEntries && !line.hasChildren && (
               <span className="text-xs text-muted-foreground ml-1">
                 ({line.entries.length} lançamento{line.entries.length !== 1 ? 's' : ''})
@@ -531,17 +528,11 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
             )}
           </div>
         </TableCell>
-        <TableCell className="text-right p-2">
-          <div className="flex items-center justify-end gap-2">
-            <span className="text-muted-foreground font-mono text-sm">-</span>
-            <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">-%</span>
-          </div>
-        </TableCell>
-        <TableCell className="text-right p-2">
+        <TableCell className="text-right p-1">
           {isResultado ? (
             <div className={cn(
-              "inline-flex items-center justify-end px-3 py-1.5 rounded-md font-bold font-mono text-sm",
-              "bg-white dark:bg-slate-900 shadow-sm border",
+              "inline-flex items-center justify-end px-1.5 py-0.5 rounded font-bold font-mono text-[11px]",
+              "bg-background shadow-sm border",
               line.value >= 0 
                 ? "border-green-300 dark:border-green-700 text-green-700 dark:text-green-400" 
                 : "border-red-300 dark:border-red-700 text-red-700 dark:text-red-400"
@@ -551,7 +542,7 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
             </div>
           ) : (
             <span className={cn(
-              "font-mono",
+              "font-mono text-xs",
               isReceita && "text-green-600",
               isDespesa && "text-red-600",
               isFinanciamento && "text-orange-500"
@@ -574,10 +565,10 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
         rows.push(
           <TableRow 
             key={`${line.id}-entry-${entry.id}`}
-            className="bg-muted/20 text-sm hover:bg-muted/40"
+            className="bg-muted/20 text-xs hover:bg-muted/40"
           >
             <TableCell 
-              style={{ paddingLeft: `${((line.level + 1) * 24) + 16}px` }}
+              style={{ paddingLeft: `${((line.level + 1) * 14) + 8}px` }}
             >
               <div className="flex items-center gap-2 min-w-0">
                 <button
@@ -601,12 +592,9 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
                 )}
               </div>
             </TableCell>
-            <TableCell className="text-right text-muted-foreground font-mono text-sm">
-              -
-            </TableCell>
             <TableCell 
               className={cn(
-                "text-right font-mono text-sm",
+                "text-right font-mono text-xs p-1",
                 isReceita && "text-green-600/80",
                 isDespesa && "text-red-600/80",
                 isFinanciamento && "text-orange-500/80"
@@ -772,13 +760,12 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
 
       <Card>
         <CardContent className="p-1.5 sm:p-4">
-          <div className="overflow-x-auto">
-            <Table className="w-full table-fixed">
+          <div className="[&>div]:overflow-hidden">
+            <Table className="w-full table-fixed text-xs">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[55%] text-xs">Conta</TableHead>
-                  <TableHead className="w-[20%] text-right text-xs hidden lg:table-cell">Meta</TableHead>
-                  <TableHead className="w-[25%] text-right text-xs">Realizado</TableHead>
+                  <TableHead className="text-xs">Conta</TableHead>
+                  <TableHead className="w-[120px] text-right text-xs">Realizado</TableHead>
                 </TableRow>
               </TableHeader>
             <TableBody>
@@ -786,29 +773,17 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
               
               {/* Summary footer */}
               <TableRow>
-                <TableCell colSpan={3} className="h-4 bg-muted/30" />
+                <TableCell colSpan={2} className="h-3 bg-muted/30" />
               </TableRow>
               <TableRow className="bg-green-50 dark:bg-green-950/20 font-semibold">
-                <TableCell>TOTAL RECEITAS</TableCell>
-                <TableCell className="text-right">
-                  <div className="flex items-center justify-end gap-2">
-                    <span className="text-muted-foreground font-mono">-</span>
-                    <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">-%</span>
-                  </div>
-                </TableCell>
-                <TableCell className="text-right text-green-600 font-mono">
+                <TableCell className="text-xs">TOTAL RECEITAS</TableCell>
+                <TableCell className="text-right text-green-600 font-mono text-xs">
                   {formatCurrency(dreData?.summary.totalReceitas || 0)}
                 </TableCell>
               </TableRow>
               <TableRow className="bg-red-50 dark:bg-red-950/20 font-semibold">
-                <TableCell>TOTAL DESPESAS</TableCell>
-                <TableCell className="text-right">
-                  <div className="flex items-center justify-end gap-2">
-                    <span className="text-muted-foreground font-mono">-</span>
-                    <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">-%</span>
-                  </div>
-                </TableCell>
-                <TableCell className="text-right text-red-600 font-mono">
+                <TableCell className="text-xs">TOTAL DESPESAS</TableCell>
+                <TableCell className="text-right text-red-600 font-mono text-xs">
                   ({formatCurrency(dreData?.summary.totalDespesas || 0)})
                 </TableCell>
               </TableRow>
@@ -818,15 +793,9 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
                   ? "bg-green-100 dark:bg-green-950/30 border-green-400" 
                   : "bg-red-100 dark:bg-red-950/30 border-red-400"
               )}>
-                <TableCell className="text-base">RESULTADO</TableCell>
-                <TableCell className="text-right">
-                  <div className="flex items-center justify-end gap-2">
-                    <span className="text-muted-foreground font-mono">-</span>
-                    <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">-%</span>
-                  </div>
-                </TableCell>
+                <TableCell className="text-xs font-bold">RESULTADO</TableCell>
                 <TableCell className={cn(
-                  "text-right font-mono text-base",
+                  "text-right font-mono text-xs font-bold",
                   ((dreData?.summary.totalReceitas || 0) - (dreData?.summary.totalDespesas || 0)) >= 0 
                     ? "text-green-700 dark:text-green-400" 
                     : "text-red-700 dark:text-red-400"

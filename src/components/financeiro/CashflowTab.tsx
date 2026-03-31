@@ -394,7 +394,7 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
       >
         <TableCell 
           className="cursor-pointer select-none"
-          style={{ paddingLeft: `${(line.level * 24) + 16}px` }}
+          style={{ paddingLeft: `${(line.level * 14) + 8}px` }}
           onClick={() => {
             if (line.hasChildren) {
               toggleExpand(line.id);
@@ -422,15 +422,9 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
             )}
           </div>
         </TableCell>
-        <TableCell className="text-right p-2">
-          <div className="flex items-center justify-end gap-2">
-            <span className="text-muted-foreground font-mono text-sm">-</span>
-            <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">-%</span>
-          </div>
-        </TableCell>
-        <TableCell className="text-right p-2">
+        <TableCell className="text-right p-1">
           <span className={cn(
-            "font-mono",
+            "font-mono text-xs",
             isReceita && "text-green-600",
             isDespesa && "text-red-600",
             isFinanciamento && "text-orange-500"
@@ -451,10 +445,10 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
         rows.push(
           <TableRow 
             key={`${line.id}-entry-${entry.id}`}
-            className="bg-muted/20 text-sm hover:bg-muted/40"
+            className="bg-muted/20 text-xs hover:bg-muted/40"
           >
             <TableCell 
-              style={{ paddingLeft: `${((line.level + 1) * 24) + 16}px` }}
+              style={{ paddingLeft: `${((line.level + 1) * 14) + 8}px` }}
             >
               <div className="flex items-center gap-2 min-w-0">
                 <button
@@ -478,12 +472,9 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
                 )}
               </div>
             </TableCell>
-            <TableCell className="text-right text-muted-foreground font-mono text-sm">
-              -
-            </TableCell>
             <TableCell 
               className={cn(
-                "text-right font-mono text-sm",
+                "text-right font-mono text-xs p-1",
                 isReceita && "text-green-600/80",
                 isDespesa && "text-red-600/80",
                 isFinanciamento && "text-orange-500/80"
@@ -641,13 +632,12 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
 
       <Card>
         <CardContent className="p-1.5 sm:p-4">
-          <div className="overflow-x-auto">
-            <Table className="w-full table-fixed">
+          <div className="[&>div]:overflow-hidden">
+            <Table className="w-full table-fixed text-xs">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[55%] text-xs">Conta</TableHead>
-                  <TableHead className="w-[20%] text-right text-xs hidden lg:table-cell">Orçamento</TableHead>
-                  <TableHead className="w-[25%] text-right text-xs">Realizado</TableHead>
+                  <TableHead className="text-xs">Conta</TableHead>
+                  <TableHead className="w-[120px] text-right text-xs">Realizado</TableHead>
                 </TableRow>
               </TableHeader>
             <TableBody>
@@ -655,29 +645,17 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
               
               {/* Summary */}
               <TableRow>
-                <TableCell colSpan={3} className="h-4 bg-muted/30" />
+                <TableCell colSpan={2} className="h-3 bg-muted/30" />
               </TableRow>
               <TableRow className="bg-green-50 dark:bg-green-950/20 font-semibold">
-                <TableCell>TOTAL ENTRADAS</TableCell>
-                <TableCell className="text-right">
-                  <div className="flex items-center justify-end gap-2">
-                    <span className="text-muted-foreground font-mono">-</span>
-                    <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">-%</span>
-                  </div>
-                </TableCell>
-                <TableCell className="text-right text-green-600 font-mono">
+                <TableCell className="text-xs">TOTAL ENTRADAS</TableCell>
+                <TableCell className="text-right text-green-600 font-mono text-xs">
                   {formatCurrency(cashflowData?.totalEntradas || 0)}
                 </TableCell>
               </TableRow>
               <TableRow className="bg-red-50 dark:bg-red-950/20 font-semibold">
-                <TableCell>TOTAL SAÍDAS</TableCell>
-                <TableCell className="text-right">
-                  <div className="flex items-center justify-end gap-2">
-                    <span className="text-muted-foreground font-mono">-</span>
-                    <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">-%</span>
-                  </div>
-                </TableCell>
-                <TableCell className="text-right text-red-600 font-mono">
+                <TableCell className="text-xs">TOTAL SAÍDAS</TableCell>
+                <TableCell className="text-right text-red-600 font-mono text-xs">
                   ({formatCurrency(cashflowData?.totalSaidas || 0)})
                 </TableCell>
               </TableRow>
@@ -687,15 +665,9 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
                   ? "bg-green-100 dark:bg-green-950/30 border-green-400" 
                   : "bg-red-100 dark:bg-red-950/30 border-red-400"
               )}>
-                <TableCell className="text-base">RESULTADO</TableCell>
-                <TableCell className="text-right">
-                  <div className="flex items-center justify-end gap-2">
-                    <span className="text-muted-foreground font-mono">-</span>
-                    <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">-%</span>
-                  </div>
-                </TableCell>
+                <TableCell className="text-xs font-bold">RESULTADO</TableCell>
                 <TableCell className={cn(
-                  "text-right font-mono text-base",
+                  "text-right font-mono text-xs font-bold",
                   ((cashflowData?.totalEntradas || 0) - (cashflowData?.totalSaidas || 0)) >= 0 
                     ? "text-green-700 dark:text-green-400" 
                     : "text-red-700 dark:text-red-400"
@@ -711,7 +683,7 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
       </Card>
 
       {/* KPI Cards - After table */}
-      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-2 grid-cols-2">
         <Card>
           <CardContent className="p-3 sm:pt-4 sm:px-4">
             <div className="flex items-center justify-between gap-2">

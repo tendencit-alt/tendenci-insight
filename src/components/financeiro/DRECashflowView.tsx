@@ -61,10 +61,10 @@ export function DRECashflowView({ filters, onFiltersChange }: DRECashflowViewPro
 
       {viewMode === "both" ? (
         <div className="grid gap-4 lg:grid-cols-2">
-          <div className={cn("min-w-0 rounded-lg border bg-background p-4") }>
+          <div className={cn("min-w-0 overflow-hidden rounded-lg border bg-background p-2") }>
             <DRETab filters={filters} onFiltersChange={onFiltersChange} />
           </div>
-          <div className={cn("min-w-0 rounded-lg border bg-background p-4") }>
+          <div className={cn("min-w-0 overflow-hidden rounded-lg border bg-background p-2") }>
             <CashflowTab filters={filters} onFiltersChange={onFiltersChange} />
           </div>
         </div>
