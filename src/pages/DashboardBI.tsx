@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useFinanceiroRealtime } from "@/hooks/useFinanceiroRealtime";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { FinanceiroFilters, FinanceiroFiltersState } from "@/components/financeiro/FinanceiroFilters";
 import { DashboardBI as DashboardBIComponent } from "@/components/financeiro/DashboardBI";
