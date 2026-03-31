@@ -99,7 +99,7 @@ export function OrdersFilters({ filters, onFiltersChange }: OrdersFiltersProps) 
     });
   };
 
-  const hasFilters = filters.status || filters.vendedorId || filters.period !== 'thisMonth';
+  const hasFilters = filters.status || filters.vendedorId || filters.centroCusto || filters.period !== 'thisMonth';
 
   return (
     <div className="flex flex-wrap items-center gap-2">
