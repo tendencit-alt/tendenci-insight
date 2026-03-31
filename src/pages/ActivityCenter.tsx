@@ -67,7 +67,8 @@ export default function ActivityCenter() {
       case "last_7_days": return 500;
       case "last_30_days": return 1000;
       case "custom": return 1000;
-      default: return 300;
+      case "all": return 1000;
+      default: return 1000;
     }
   };
 
