@@ -813,9 +813,8 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     try {
       const parcelasPrincipal = parcelas[0];
       const parcelasSecundaria = parcelas.length > 1 ? parcelas[1] : null;
-      const resolvedProjectId = await resolveProjectIdForItems();
       
-      // Resolve custom project names for each item
+      // Resolve custom project names for each item (these don't need order_number)
       const resolvedCustomProjects: Record<string, string> = {};
       for (const item of items) {
         if (item.project_id?.startsWith(CUSTOM_PROJECT_PREFIX)) {
@@ -825,17 +824,6 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
           }
         }
       }
-
-      const itemsWithResolvedProject = items.map((item) => {
-        if (item.project_id?.startsWith(CUSTOM_PROJECT_PREFIX)) {
-          const customName = item.project_id.replace(CUSTOM_PROJECT_PREFIX, '');
-          return { ...item, project_id: resolvedCustomProjects[customName] };
-        }
-        return {
-          ...item,
-          project_id: (!item.project_id || item.project_id === '__new_from_client__') ? resolvedProjectId || undefined : item.project_id,
-        };
-      });
       
       const { data: order, error: orderError } = await supabase
         .from('orders')
