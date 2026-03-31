@@ -477,7 +477,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
     },
   });
 
-  const { data: architects } = useQuery({
+  const { data: architects, refetch: refetchArchitects } = useQuery({
     queryKey: ['architects-for-order'],
     queryFn: async () => {
       const { data } = await supabase.from('architects').select('id, name, company, commission_percent').eq('active', true).order('name');
