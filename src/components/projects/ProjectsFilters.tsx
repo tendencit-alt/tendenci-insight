@@ -63,7 +63,7 @@ export function ProjectsFilters({ filters, onFiltersChange }: ProjectsFiltersPro
   const handleClearFilters = () => {
     setSearchInput("");
     onFiltersChange({
-      period: "thisMonth",
+      period: "all",
       stages: [],
       architect: "Todos",
       search: "",
@@ -132,7 +132,7 @@ export function ProjectsFilters({ filters, onFiltersChange }: ProjectsFiltersPro
   const hasActiveFilters = 
     (filters.stages && filters.stages.length > 0) || 
     filters.architect !== "Todos" || 
-    filters.period !== "thisMonth" ||
+    filters.period !== "all" ||
     filters.search ||
     filters.customDateRange?.from;
 
@@ -222,6 +222,7 @@ export function ProjectsFilters({ filters, onFiltersChange }: ProjectsFiltersPro
           <SelectValue placeholder="Período" />
         </SelectTrigger>
         <SelectContent>
+          <SelectItem value="all">Todo período</SelectItem>
           <SelectItem value="today">Hoje</SelectItem>
           <SelectItem value="last_7_days">Últimos 7 dias</SelectItem>
           <SelectItem value="thisMonth">Este mês</SelectItem>

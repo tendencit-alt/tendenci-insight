@@ -105,14 +105,14 @@ export function OrdersFilters({ filters, onFiltersChange }: OrdersFiltersProps) 
       vendedorId: '',
       centroCusto: '',
       clientId: '',
-      period: 'thisMonth',
-      dateFrom: startOfMonth(now),
+      period: 'all',
+      dateFrom: new Date(2020, 0, 1),
       dateTo: now,
       dateField: 'created_at',
     });
   };
 
-  const hasFilters = filters.status || filters.vendedorId || filters.centroCusto || filters.clientId || filters.period !== 'thisMonth';
+  const hasFilters = filters.status || filters.vendedorId || filters.centroCusto || filters.clientId || filters.period !== 'all';
 
   return (
     <div className="flex flex-wrap items-center gap-2">
