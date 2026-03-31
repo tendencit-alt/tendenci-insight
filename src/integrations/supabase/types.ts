@@ -3609,13 +3609,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "master_ideas_aprovado_por_fkey"
-            columns: ["aprovado_por"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "master_ideas_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
