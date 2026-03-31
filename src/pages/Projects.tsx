@@ -46,7 +46,7 @@ const Projects = () => {
   const [refreshKey, setRefreshKey] = useState(0);
   const [showDetailKPIs, setShowDetailKPIs] = useState(false);
   const [filters, setFilters] = useState({
-    period: "thisMonth",
+    period: "all",
     stages: [] as string[],
     architect: "Todos",
     search: "",
