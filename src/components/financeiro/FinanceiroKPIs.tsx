@@ -71,9 +71,9 @@ export function FinanceiroKPIs({ metrics, isLoading }: FinanceiroKPIsProps) {
     return { text: "text-red-600", bg: "bg-red-50", status: "Crítico", border: "border-l-red-500" };
   };
 
+  const receitaColors = getReceitaColor();
   const resultadoColors = getResultadoColor();
   const folegoColors = getFolegoColor();
-  const qualidadeColors = getQualidadeColor();
   const dscrColors = getDscrColor();
 
   if (isLoading) {
