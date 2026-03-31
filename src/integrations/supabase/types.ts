@@ -1830,6 +1830,38 @@ export type Database = {
         }
         Relationships: []
       }
+      fee_supplier_configs: {
+        Row: {
+          created_at: string | null
+          fee_type: string
+          id: string
+          supplier_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          fee_type: string
+          id?: string
+          supplier_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          fee_type?: string
+          id?: string
+          supplier_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fee_supplier_configs_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fin_attachments: {
         Row: {
           created_at: string | null
