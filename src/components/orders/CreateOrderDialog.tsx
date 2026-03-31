@@ -900,6 +900,14 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     setShowCreateClient(false);
   };
 
+  const handleArchitectCreated = async (architectId?: string) => {
+    await refetchArchitects();
+    if (architectId) {
+      setFormData(prev => ({ ...prev, architect_id: architectId }));
+    }
+    setShowCreateArchitect(false);
+  };
+
   const handleDealCreated = (dealId: string) => {
     refetchDeals();
     setFormData(prev => ({ ...prev, deal_id: dealId }));
