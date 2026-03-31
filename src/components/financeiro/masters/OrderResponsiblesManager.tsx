@@ -214,6 +214,7 @@ export function OrderResponsiblesManager() {
               <TableRow>
                 <TableHead>Nome</TableHead>
                 <TableHead>Tipo</TableHead>
+                <TableHead>Fornecedor</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="w-[120px]">Ações</TableHead>
               </TableRow>
@@ -224,6 +225,9 @@ export function OrderResponsiblesManager() {
                   <TableCell className="font-medium">{item.name}</TableCell>
                   <TableCell>
                     <Badge variant="outline">{TYPE_LABELS[item.type]}</Badge>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground text-sm">
+                    {(item as any).suppliers?.name || "—"}
                   </TableCell>
                   <TableCell>
                     <Badge variant={item.is_active ? "default" : "secondary"}>
@@ -244,7 +248,7 @@ export function OrderResponsiblesManager() {
               ))}
               {filteredResponsibles.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={4} className="py-8 text-center text-muted-foreground">
+                  <TableCell colSpan={5} className="py-8 text-center text-muted-foreground">
                     Nenhum responsável encontrado
                   </TableCell>
                 </TableRow>
