@@ -1,31 +1,26 @@
 
 
-## Plano: Unificar "Agrupar por Cliente" e "Unificar OPs"
+## Plano: Simplificar filtro de datas — usar apenas Data de Criação
 
 ### Problema
-- O toggle "Agrupar por Cliente" não tem efeito real — o Kanban ignora o `viewMode`
-- O botão "Unificar OPs" faz algo semelhante (agrupa OPs por cliente) mas de forma persistente no banco
-- Dois controles para o mesmo conceito confundem o usuário
+O seletor "Dt. Emissão / Dt. Criação" confunde o usuário e adiciona complexidade desnecessária.
 
 ### Solução
-Remover o toggle "Agrupar por Cliente" e manter apenas o botão "Unificar OPs", que é funcional e persistente.
+Remover o seletor `dateField` e fixar o filtro de período sempre em `created_at`.
 
 ### Alterações
 
-**1. `src/components/production/ProductionFilters.tsx`**
-- Remover o toggle Switch "Agrupar por Cliente"
-- Remover props `viewMode` e `onViewModeChange`
-- Remover imports de `Switch`, `Label`, `Layers` (se não usados em outro lugar)
+**1. `src/components/orders/OrdersFilters.tsx`**
+- Remover o `<Select>` de `dateField` (linhas 169-177)
+- Remover `dateField` da interface e do `clearFilters`
 
-**2. `src/pages/Production.tsx`**
-- Remover state `viewMode` e `setViewMode`
-- Remover props `viewMode` e `onViewModeChange` do `<ProductionFilters>`
-- Remover props `viewMode` e `onGroupClick` do `<ProductionKanban>`
-- Remover `selectedGroupId` state e `<UnifiedOpsDetailSheet>` se não houver outro ponto de acesso aos grupos
+**2. `src/pages/Orders.tsx`**
+- Remover `dateField` do state `filters` inicial
+- Fixar a query para sempre filtrar por `created_at` (remover lógica condicional de `dateColumn`)
 
-**3. `src/components/production/ProductionKanban.tsx`**
-- Remover props `viewMode` e `onGroupClick` da interface (limpeza)
+**3. `src/components/orders/OrdersKPIs.tsx`** (se referencia `dateField`)
+- Ajustar para usar `created_at` fixo
 
 ### Resultado
-Interface mais limpa com um único ponto de ação claro: o botão "Unificar OPs" para agrupar ordens do mesmo cliente.
+Um filtro de período mais limpo, sem ambiguidade, sempre baseado na data de criação do pedido.
 
