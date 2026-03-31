@@ -28,9 +28,7 @@ export function ProductionFilters({
   filters, 
   onFiltersChange, 
   onExport,
-  onUnifyOps,
-  viewMode = 'individual',
-  onViewModeChange
+  onUnifyOps
 }: ProductionFiltersProps) {
   const { data: users = [] } = useQuery({
     queryKey: ['users-for-filters'],
