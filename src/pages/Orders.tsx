@@ -17,6 +17,7 @@ import { startOfMonth } from 'date-fns';
 
 export default function Orders() {
   const [createOpen, setCreateOpen] = useState(false);
+  const [bulkEditOpen, setBulkEditOpen] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [editingOrderId, setEditingOrderId] = useState<string | null>(null);
   const [deletingOrder, setDeletingOrder] = useState<{ id: string; orderNumber: number } | null>(null);
