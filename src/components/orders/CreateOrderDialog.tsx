@@ -2085,6 +2085,12 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
         prefilledClientId={formData.client_id}
         prefilledArchitectId={formData.architect_id}
       />
+
+      <CreateArchitectDialog
+        open={showCreateArchitect}
+        onOpenChange={setShowCreateArchitect}
+        onSuccess={handleArchitectCreated}
+      />
     </>
   );
 }
