@@ -740,59 +740,16 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     const projectMap: Record<string, string> = {};
 
     for (const cc of centroCustoSet) {
-      const baseName = `${cc} - ${clientName}`;
+      // Always use format: "[CentroCusto] - [ClientName] #[order_number]"
+      const projectName = `${cc} - ${clientName} #${orderNumber}`;
 
-      // Check if a project with the exact base name already exists
-      const { data: existing } = await supabase
+      const { data: newProject, error } = await supabase
         .from('fin_projects')
-        .select('id, name')
-        .eq('name', baseName)
-        .eq('status', 'ativo')
-        .limit(1);
-
-      if (existing && existing.length > 0) {
-        // Rename the existing project: find the order_number linked to it
-        const existingProject = existing[0];
-        const { data: linkedItem } = await supabase
-          .from('order_items')
-          .select('order_id')
-          .eq('project_id', existingProject.id)
-          .limit(1);
-
-        if (linkedItem && linkedItem.length > 0) {
-          const { data: linkedOrder } = await supabase
-            .from('orders')
-            .select('order_number')
-            .eq('id', linkedItem[0].order_id)
-            .single();
-
-          if (linkedOrder) {
-            await supabase
-              .from('fin_projects')
-              .update({ name: `${baseName} #${linkedOrder.order_number}` })
-              .eq('id', existingProject.id);
-          }
-        }
-
-        // Create new project with order number suffix
-        const newName = `${baseName} #${orderNumber}`;
-        const { data: newProject, error } = await supabase
-          .from('fin_projects')
-          .insert({ name: newName, status: 'ativo' })
-          .select('id')
-          .single();
-        if (error) throw error;
-        projectMap[cc] = newProject.id;
-      } else {
-        // No conflict - create with base name
-        const { data: newProject, error } = await supabase
-          .from('fin_projects')
-          .insert({ name: baseName, status: 'ativo' })
-          .select('id')
-          .single();
-        if (error) throw error;
-        projectMap[cc] = newProject.id;
-      }
+        .insert({ name: projectName, status: 'ativo' })
+        .select('id')
+        .single();
+      if (error) throw error;
+      projectMap[cc] = newProject.id;
     }
 
     return projectMap;
