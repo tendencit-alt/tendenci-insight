@@ -19,6 +19,7 @@ import { useProjects } from '@/hooks/useProjects';
 import { useOrderResponsibles } from '@/hooks/useOrderResponsibles';
 
 import { CreateClientDialog } from '@/components/crm/CreateClientDialog';
+import { CreateArchitectDialog } from '@/components/architects/CreateArchitectDialog';
 import { CreateWonDealDialog } from './CreateWonDealDialog';
 import { Loader2, AlertTriangle, Link, Plus, ChevronRight, Check, Trash2 } from 'lucide-react';
 import { useMinimizedDialogs } from '@/contexts/MinimizedDialogsContext';
@@ -101,6 +102,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
   const [activeTab, setActiveTab] = useState('cliente');
   const [showCreateClient, setShowCreateClient] = useState(false);
   const [showCreateDeal, setShowCreateDeal] = useState(false);
+  const [showCreateArchitect, setShowCreateArchitect] = useState(false);
   const hasMountedRef = useRef(false);
 
   interface PagamentoParcela {
@@ -364,7 +366,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     },
   });
 
-  const { data: architects } = useQuery({
+  const { data: architects, refetch: refetchArchitects } = useQuery({
     queryKey: ['architects-for-order'],
     queryFn: async () => {
       const { data } = await supabase
@@ -898,6 +900,14 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     setShowCreateClient(false);
   };
 
+  const handleArchitectCreated = async (architectId?: string) => {
+    await refetchArchitects();
+    if (architectId) {
+      setFormData(prev => ({ ...prev, architect_id: architectId }));
+    }
+    setShowCreateArchitect(false);
+  };
+
   const handleDealCreated = (dealId: string) => {
     refetchDeals();
     setFormData(prev => ({ ...prev, deal_id: dealId }));
@@ -985,22 +995,32 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
 
               <div className="space-y-2">
                   <Label>Arquiteto</Label>
-                  <Select
-                    value={formData.architect_id || "_none"}
-                    onValueChange={(v) => setFormData({ ...formData, architect_id: v === "_none" ? "" : v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="-" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="_none">-</SelectItem>
-                      {architects?.map((arch) => (
-                        <SelectItem key={arch.id} value={arch.id}>
-                          {arch.name} {arch.company && `- ${arch.company}`}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex gap-2">
+                    <Select
+                      value={formData.architect_id || "_none"}
+                      onValueChange={(v) => setFormData({ ...formData, architect_id: v === "_none" ? "" : v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="-" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="_none">-</SelectItem>
+                        {architects?.map((arch) => (
+                          <SelectItem key={arch.id} value={arch.id}>
+                            {arch.name} {arch.company && `- ${arch.company}`}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="icon"
+                      onClick={() => setShowCreateArchitect(true)}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
                   {!hasSelectedArchitect && (
                     <p className="text-sm text-muted-foreground">
                       Selecione um arquiteto para liberar o recurso estratégico RT na etapa de pagamento.
@@ -2064,6 +2084,12 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
         onSuccess={handleDealCreated}
         prefilledClientId={formData.client_id}
         prefilledArchitectId={formData.architect_id}
+      />
+
+      <CreateArchitectDialog
+        open={showCreateArchitect}
+        onOpenChange={setShowCreateArchitect}
+        onSuccess={handleArchitectCreated}
       />
     </>
   );

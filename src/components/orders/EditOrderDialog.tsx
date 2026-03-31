@@ -21,6 +21,7 @@ import { useProjects } from '@/hooks/useProjects';
 import { AddressForm } from './AddressForm';
 import { User, Calendar, Trash2 } from 'lucide-react';
 import { Loader2, AlertTriangle, Plus, Search } from 'lucide-react';
+import { CreateArchitectDialog } from '@/components/architects/CreateArchitectDialog';
 import { useMinimizedDialogs } from '@/contexts/MinimizedDialogsContext';
 import { MinimizeButton } from '@/components/ui/MinimizeButton';
 
@@ -156,6 +157,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('cliente');
   const [loadingCep, setLoadingCep] = useState(false);
+  const [showCreateArchitect, setShowCreateArchitect] = useState(false);
 
   const dialogId = `edit-order-${orderId}`;
 
@@ -475,7 +477,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
     },
   });
 
-  const { data: architects } = useQuery({
+  const { data: architects, refetch: refetchArchitects } = useQuery({
     queryKey: ['architects-for-order'],
     queryFn: async () => {
       const { data } = await supabase.from('architects').select('id, name, company, commission_percent').eq('active', true).order('name');
@@ -1175,19 +1177,30 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
 
               <div className="space-y-2">
                 <Label>Arquiteto</Label>
-                <Select value={formData.architect_id || "_none"} onValueChange={(v) => setFormData({ ...formData, architect_id: v === "_none" ? "" : v })} disabled={!isEditable}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="-" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="_none">-</SelectItem>
-                    {architects?.map((arch) => (
-                      <SelectItem key={arch.id} value={arch.id}>
-                        {arch.name} {arch.company && `- ${arch.company}`}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="flex gap-2">
+                  <Select value={formData.architect_id || "_none"} onValueChange={(v) => setFormData({ ...formData, architect_id: v === "_none" ? "" : v })} disabled={!isEditable}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="-" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="_none">-</SelectItem>
+                      {architects?.map((arch) => (
+                        <SelectItem key={arch.id} value={arch.id}>
+                          {arch.name} {arch.company && `- ${arch.company}`}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="icon"
+                    onClick={() => setShowCreateArchitect(true)}
+                    disabled={!isEditable}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
 
             </div>
@@ -2393,6 +2406,18 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
           </Button>
         </div>
       </DialogContent>
+
+      <CreateArchitectDialog
+        open={showCreateArchitect}
+        onOpenChange={setShowCreateArchitect}
+        onSuccess={async (architectId?: string) => {
+          await refetchArchitects();
+          if (architectId) {
+            setFormData(prev => ({ ...prev, architect_id: architectId }));
+          }
+          setShowCreateArchitect(false);
+        }}
+      />
     </Dialog>
   );
 }
