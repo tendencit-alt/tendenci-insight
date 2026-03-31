@@ -773,29 +773,17 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
               
               {/* Summary footer */}
               <TableRow>
-                <TableCell colSpan={3} className="h-4 bg-muted/30" />
+                <TableCell colSpan={2} className="h-3 bg-muted/30" />
               </TableRow>
               <TableRow className="bg-green-50 dark:bg-green-950/20 font-semibold">
-                <TableCell>TOTAL RECEITAS</TableCell>
-                <TableCell className="text-right">
-                  <div className="flex items-center justify-end gap-2">
-                    <span className="text-muted-foreground font-mono">-</span>
-                    <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">-%</span>
-                  </div>
-                </TableCell>
-                <TableCell className="text-right text-green-600 font-mono">
+                <TableCell className="text-xs">TOTAL RECEITAS</TableCell>
+                <TableCell className="text-right text-green-600 font-mono text-xs">
                   {formatCurrency(dreData?.summary.totalReceitas || 0)}
                 </TableCell>
               </TableRow>
               <TableRow className="bg-red-50 dark:bg-red-950/20 font-semibold">
-                <TableCell>TOTAL DESPESAS</TableCell>
-                <TableCell className="text-right">
-                  <div className="flex items-center justify-end gap-2">
-                    <span className="text-muted-foreground font-mono">-</span>
-                    <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">-%</span>
-                  </div>
-                </TableCell>
-                <TableCell className="text-right text-red-600 font-mono">
+                <TableCell className="text-xs">TOTAL DESPESAS</TableCell>
+                <TableCell className="text-right text-red-600 font-mono text-xs">
                   ({formatCurrency(dreData?.summary.totalDespesas || 0)})
                 </TableCell>
               </TableRow>
@@ -805,15 +793,9 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
                   ? "bg-green-100 dark:bg-green-950/30 border-green-400" 
                   : "bg-red-100 dark:bg-red-950/30 border-red-400"
               )}>
-                <TableCell className="text-base">RESULTADO</TableCell>
-                <TableCell className="text-right">
-                  <div className="flex items-center justify-end gap-2">
-                    <span className="text-muted-foreground font-mono">-</span>
-                    <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">-%</span>
-                  </div>
-                </TableCell>
+                <TableCell className="text-xs font-bold">RESULTADO</TableCell>
                 <TableCell className={cn(
-                  "text-right font-mono text-base",
+                  "text-right font-mono text-xs font-bold",
                   ((dreData?.summary.totalReceitas || 0) - (dreData?.summary.totalDespesas || 0)) >= 0 
                     ? "text-green-700 dark:text-green-400" 
                     : "text-red-700 dark:text-red-400"
