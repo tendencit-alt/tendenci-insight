@@ -637,7 +637,7 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
               <TableHeader>
                 <TableRow>
                   <TableHead className="text-xs">Conta</TableHead>
-                  <TableHead className="w-[100px] text-right text-xs">Realizado</TableHead>
+                  <TableHead className="w-[120px] text-right text-xs">Realizado</TableHead>
                 </TableRow>
               </TableHeader>
             <TableBody>
