@@ -81,6 +81,10 @@ export default function CadastrosFinanceiros() {
           <TabsContent value="responsibles" className="mt-6">
             <OrderResponsiblesManager />
           </TabsContent>
+
+          <TabsContent value="card_rates" className="mt-6">
+            <CardRatesManager />
+          </TabsContent>
         </Tabs>
       </div>
     </DashboardLayout>
