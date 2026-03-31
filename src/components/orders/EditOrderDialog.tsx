@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { usePaymentLinkRates } from '@/hooks/usePaymentLinkRates';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -29,13 +30,21 @@ const FORMAS_PAGAMENTO = [
   { value: 'pix', label: 'PIX' },
   { value: 'cartao_credito', label: 'Cartão de Crédito' },
   { value: 'cartao_debito', label: 'Cartão de Débito' },
+  { value: 'link_pagamento', label: 'Link de Pagamento' },
   { value: 'boleto', label: 'Boleto' },
   { value: 'transferencia', label: 'Transferência' },
   { value: 'permuta', label: 'Permuta' },
   { value: 'dinheiro', label: 'Dinheiro' },
 ];
 
-const FORMAS_COM_PARCELAS = ['boleto', 'cartao_credito'];
+const FORMAS_COM_PARCELAS = ['boleto', 'cartao_credito', 'link_pagamento'];
+
+// Taxas de link de pagamento por número de parcelas (fallback)
+const TAXAS_LINK_PAGAMENTO: Record<number, number> = {
+  1: 0, 2: 0, 3: 0, 4: 0,
+  5: 0, 6: 0, 7: 0, 8: 0,
+  9: 0, 10: 0, 11: 0, 12: 0
+};
 
 // Taxas de cartão de crédito por número de parcelas (fallback)
 const TAXAS_CARTAO_CREDITO: Record<number, number> = {
@@ -151,6 +160,7 @@ const initialClientData: ClientData = {
 
 export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: EditOrderDialogProps) {
   const { user } = useAuth();
+  const linkRatesDb = usePaymentLinkRates();
   const { isMaster } = usePermissions();
   const { minimize: minimizeDialog, remove: removeMinimized } = useMinimizedDialogs();
   const [isMinimized, setIsMinimized] = useState(false);
@@ -322,6 +332,14 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
     numeroParcelas: 1
   });
 
+  // Estado para taxas de link de pagamento - sempre Tendenci absorve
+  const [taxaLink, setTaxaLink] = useState({
+    percentual: 0,
+    valor: 0,
+    responsavel: 'tendenci' as const,
+    numeroParcelas: 1
+  });
+
   // Estado para taxas de boleto - sempre Tendenci absorve
   const [taxaBoleto, setTaxaBoleto] = useState({
     percentual: 0,
@@ -446,6 +464,14 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
         responsavel: 'tendenci',
         numeroParcelas: (order as any).numero_parcelas_boleto || 1,
         carencia: ((order as any).carencia_boleto as 30 | 60) || 30
+      });
+
+      // Carregar dados de taxa de link do pedido - forçar Tendenci
+      setTaxaLink({
+        percentual: Number((order as any).taxa_link_percentual) || 0,
+        valor: Number((order as any).taxa_link_valor) || 0,
+        responsavel: 'tendenci',
+        numeroParcelas: (order as any).numero_parcelas_link || 1
       });
     }
   }, [order]);
@@ -655,6 +681,33 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
     }
   }, [parcelas, totalSemTaxa, taxaBoletoPercentual, taxaTotalBoleto, numParcelasBoleto, carenciaBoleto, parcelasBoleto.length]);
 
+  // Calcular taxa de link de pagamento automaticamente
+  const parcelasLink = parcelas.filter(p => p.forma_pagamento === 'link_pagamento');
+  const taxaTotalLink = parcelasLink.reduce((acc, parcela) => {
+    const numParcelas = parcela.numero_parcelas || 1;
+    const taxaPerc = linkRatesDb[numParcelas] ?? TAXAS_LINK_PAGAMENTO[numParcelas] ?? 0;
+    const valorBase = totalSemTaxa * (parcela.percentual / 100);
+    return acc + valorBase * (taxaPerc / 100);
+  }, 0);
+  const parcelaLinkMaiorTaxa = parcelasLink.reduce((maior, atual) => 
+    (atual.numero_parcelas || 1) > (maior?.numero_parcelas || 0) ? atual : maior
+  , null as typeof parcelasLink[0] | null);
+  const numParcelasLink = parcelaLinkMaiorTaxa?.numero_parcelas || 1;
+  const taxaLinkPercentual = parcelaLinkMaiorTaxa ? (linkRatesDb[numParcelasLink] ?? TAXAS_LINK_PAGAMENTO[numParcelasLink] ?? 0) : 0;
+
+  useEffect(() => {
+    if (parcelasLink.length > 0) {
+      setTaxaLink(prev => ({
+        ...prev,
+        percentual: taxaLinkPercentual,
+        valor: taxaTotalLink,
+        numeroParcelas: numParcelasLink
+      }));
+    } else {
+      setTaxaLink({ percentual: 0, valor: 0, responsavel: 'tendenci', numeroParcelas: 1 });
+    }
+  }, [parcelas, totalSemTaxa, taxaLinkPercentual, taxaTotalLink, numParcelasLink, parcelasLink.length]);
+
   // Total final: taxas sempre absorvidas pela Tendenci, não adicionam ao total do cliente
   const total = totalSemTaxa;
 
@@ -667,8 +720,8 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
     (comissoes.montador.habilitado ? comissoes.montador.valor : 0) +
     (comissoes.producao.habilitado ? comissoes.producao.valor : 0);
 
-  // Valor líquido Tendenci (deduz apenas as taxas de cartão e boleto)
-  const valorLiquidoTendenci = totalSemTaxa - taxaCartao.valor - taxaBoleto.valor;
+  // Valor líquido Tendenci (deduz taxas de cartão, boleto e link)
+  const valorLiquidoTendenci = totalSemTaxa - taxaCartao.valor - taxaBoleto.valor - taxaLink.valor;
 
   // Valor líquido após recursos estratégicos (deduz taxas + comissões)
   const valorLiquidoRecursos = valorLiquidoTendenci - totalComissoes;
@@ -916,6 +969,10 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
           taxa_boleto_responsavel: taxaBoleto.responsavel,
           numero_parcelas_boleto: taxaBoleto.numeroParcelas,
           carencia_boleto: taxaBoleto.carencia,
+          taxa_link_percentual: taxaLink.percentual,
+          taxa_link_valor: taxaLink.valor,
+          taxa_link_responsavel: taxaLink.responsavel,
+          numero_parcelas_link: taxaLink.numeroParcelas,
           rt_habilitado: comissoes.rt.habilitado,
           rt_percentual: comissoes.rt.habilitado ? comissoes.rt.percentual : 0,
           rt_valor: comissoes.rt.habilitado ? comissoes.rt.valor : 0,
@@ -1565,7 +1622,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                                 if (!FORMAS_COM_PARCELAS.includes(v)) {
                                   newParcelas[index].numero_parcelas = 1;
                                 }
-                                if (v === 'cartao_credito') {
+                                if (v === 'cartao_credito' || v === 'link_pagamento') {
                                   newParcelas[index].data_vencimento = new Date().toISOString().split('T')[0];
                                 }
                                 setParcelas(newParcelas);
@@ -1727,7 +1784,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                               if (!FORMAS_COM_PARCELAS.includes(v)) {
                                 newParcelas[index].numero_parcelas = 1;
                               }
-                              if (v === 'cartao_credito') {
+                              if (v === 'cartao_credito' || v === 'link_pagamento') {
                                 newParcelas[index].data_vencimento = new Date().toISOString().split('T')[0];
                               }
                               setParcelas(newParcelas);
@@ -1746,8 +1803,8 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                           </Select>
                         </div>
 
-                        {/* Parcelas - só para cartão de crédito */}
-                        {parcela.forma_pagamento === 'cartao_credito' && (
+                        {/* Parcelas - para cartão de crédito e link de pagamento */}
+                        {(parcela.forma_pagamento === 'cartao_credito' || parcela.forma_pagamento === 'link_pagamento') && (
                           <div className="col-span-2 space-y-1">
                             <Label className="text-xs">Parcelas</Label>
                             <div className="flex items-center h-10 border rounded-lg overflow-hidden bg-background">

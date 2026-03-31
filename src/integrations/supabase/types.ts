@@ -4054,6 +4054,7 @@ export type Database = {
           motivo_cancelamento: string | null
           numero_parcelas_boleto: number | null
           numero_parcelas_cartao: number | null
+          numero_parcelas_link: number | null
           observacao_pagamento: string | null
           observacoes_internas: string | null
           observacoes_nf: string | null
@@ -4075,6 +4076,9 @@ export type Database = {
           taxa_cartao_percentual: number | null
           taxa_cartao_responsavel: string | null
           taxa_cartao_valor: number | null
+          taxa_link_percentual: number | null
+          taxa_link_responsavel: string | null
+          taxa_link_valor: number | null
           tipo_entrega: string | null
           transportadora_cnpj: string | null
           transportadora_nome: string | null
@@ -4135,6 +4139,7 @@ export type Database = {
           motivo_cancelamento?: string | null
           numero_parcelas_boleto?: number | null
           numero_parcelas_cartao?: number | null
+          numero_parcelas_link?: number | null
           observacao_pagamento?: string | null
           observacoes_internas?: string | null
           observacoes_nf?: string | null
@@ -4156,6 +4161,9 @@ export type Database = {
           taxa_cartao_percentual?: number | null
           taxa_cartao_responsavel?: string | null
           taxa_cartao_valor?: number | null
+          taxa_link_percentual?: number | null
+          taxa_link_responsavel?: string | null
+          taxa_link_valor?: number | null
           tipo_entrega?: string | null
           transportadora_cnpj?: string | null
           transportadora_nome?: string | null
@@ -4216,6 +4224,7 @@ export type Database = {
           motivo_cancelamento?: string | null
           numero_parcelas_boleto?: number | null
           numero_parcelas_cartao?: number | null
+          numero_parcelas_link?: number | null
           observacao_pagamento?: string | null
           observacoes_internas?: string | null
           observacoes_nf?: string | null
@@ -4237,6 +4246,9 @@ export type Database = {
           taxa_cartao_percentual?: number | null
           taxa_cartao_responsavel?: string | null
           taxa_cartao_valor?: number | null
+          taxa_link_percentual?: number | null
+          taxa_link_responsavel?: string | null
+          taxa_link_valor?: number | null
           tipo_entrega?: string | null
           transportadora_cnpj?: string | null
           transportadora_nome?: string | null
