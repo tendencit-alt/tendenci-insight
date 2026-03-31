@@ -11,8 +11,7 @@ export type AppModule =
   | 'estoque'
   | 'pedidos'
   | 'financeiro'
-  | 'cadastros_financeiros'
-  | 'system_errors';
+  | 'cadastros_financeiros';
 
 export interface ModulePermission {
   module: AppModule;
