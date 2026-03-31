@@ -24,8 +24,8 @@ export default function Orders() {
     status: '',
     vendedorId: '',
     centroCusto: '',
-    period: 'thisMonth',
-    dateFrom: startOfMonth(now),
+    period: 'all',
+    dateFrom: new Date(2020, 0, 1),
     dateTo: now,
     dateField: 'created_at',
   });
