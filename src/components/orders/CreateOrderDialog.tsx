@@ -19,6 +19,7 @@ import { useProjects } from '@/hooks/useProjects';
 import { useOrderResponsibles } from '@/hooks/useOrderResponsibles';
 
 import { CreateClientDialog } from '@/components/crm/CreateClientDialog';
+import { CreateArchitectDialog } from '@/components/architects/CreateArchitectDialog';
 import { CreateWonDealDialog } from './CreateWonDealDialog';
 import { Loader2, AlertTriangle, Link, Plus, ChevronRight, Check, Trash2 } from 'lucide-react';
 import { useMinimizedDialogs } from '@/contexts/MinimizedDialogsContext';
