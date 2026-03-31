@@ -70,7 +70,7 @@ export function CampanhasKPIDashboard() {
   const [evolution, setEvolution] = useState<EvolutionData[]>([]);
   const [vendorComparison, setVendorComparison] = useState<VendorComparison[]>([]);
   const [loading, setLoading] = useState(true);
-  const [datePreset, setDatePreset] = useState<DatePreset>('lastMonth');
+  const [datePreset, setDatePreset] = useState<DatePreset>('all');
   const [customRange, setCustomRange] = useState<DateRange | undefined>();
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [vendedores, setVendedores] = useState<Vendedor[]>([]);
