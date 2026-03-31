@@ -96,7 +96,10 @@ export function FinanceiroKPIs({ metrics, isLoading, onSelectKPI }: FinanceiroKP
     <TooltipProvider>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {/* ✅ 1. Receita Total */}
-        <Card className={cn("relative overflow-hidden border-l-4", receitaColors.border)}>
+        <Card
+          className={cn("relative overflow-hidden border-l-4", receitaColors.border, onSelectKPI && "cursor-pointer transition-transform hover:-translate-y-0.5")}
+          onClick={() => onSelectKPI?.("receitas")}
+        >
           <CardContent className="pt-4 pb-4">
             <div className="flex items-center justify-between">
               <div className="space-y-1 flex-1">
@@ -124,7 +127,10 @@ export function FinanceiroKPIs({ metrics, isLoading, onSelectKPI }: FinanceiroKP
         </Card>
 
         {/* ✅ 2. Resultado Líquido do Período */}
-        <Card className={cn("relative overflow-hidden border-l-4", resultadoColors.border)}>
+        <Card
+          className={cn("relative overflow-hidden border-l-4", resultadoColors.border, onSelectKPI && "cursor-pointer transition-transform hover:-translate-y-0.5")}
+          onClick={() => onSelectKPI?.("resultado")}
+        >
           <CardContent className="pt-4 pb-4">
             <div className="flex items-center justify-between">
               <div className="space-y-1 flex-1">
@@ -153,7 +159,10 @@ export function FinanceiroKPIs({ metrics, isLoading, onSelectKPI }: FinanceiroKP
         </Card>
 
         {/* ✅ 3. Fôlego de Caixa */}
-        <Card className={cn("relative overflow-hidden border-l-4", folegoColors.border)}>
+        <Card
+          className={cn("relative overflow-hidden border-l-4", folegoColors.border, onSelectKPI && "cursor-pointer transition-transform hover:-translate-y-0.5")}
+          onClick={() => onSelectKPI?.("saldo")}
+        >
           <CardContent className="pt-4 pb-4">
             <div className="flex items-center justify-between">
               <div className="space-y-1 flex-1">
@@ -180,6 +189,9 @@ export function FinanceiroKPIs({ metrics, isLoading, onSelectKPI }: FinanceiroKP
                       {folegoColors.status}
                     </span>
                   </div>
+                  <p className="text-xs text-muted-foreground">
+                    Caixa: <span className="font-medium text-foreground">{formatCurrency(saldoConsolidado)}</span>
+                  </p>
                   <p className="text-xs text-muted-foreground">
                     Consumo: <span className="font-medium text-foreground">{formatCurrency(burnRate)}/mês</span>
                   </p>
