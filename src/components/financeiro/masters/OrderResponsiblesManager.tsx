@@ -50,10 +50,11 @@ export function OrderResponsiblesManager() {
   const [deleting, setDeleting] = useState<OrderResponsible | null>(null);
   const [loading, setLoading] = useState(false);
   const [typeFilter, setTypeFilter] = useState<"todos" | OrderResponsibleType>("todos");
-  const [form, setForm] = useState<{ name: string; type: OrderResponsibleType; is_active: boolean }>({
+  const [form, setForm] = useState<{ name: string; type: OrderResponsibleType; is_active: boolean; supplier_id: string }>({
     name: "",
     type: "vendedor",
     is_active: true,
+    supplier_id: "",
   });
 
   const { data: responsibles, isLoading, refetch } = useQuery({
