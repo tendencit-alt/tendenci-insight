@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,7 +9,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { format, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { parseDateOnly } from '@/utils/timezone';
-import { Search, ChevronLeft, ChevronRight, AlertTriangle, ExternalLink, Eye, Pencil, Trash2, PackageSearch } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, AlertTriangle, Eye, Pencil, Trash2, PackageSearch } from 'lucide-react';
 
 interface Order {
   id: string;
@@ -33,18 +32,15 @@ interface OrdersTableProps {
   onDeleteOrder?: (id: string, orderNumber: number) => void;
 }
 
-const STATUS_CONFIG: Record<
-  string,
-  { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline'; className: string }
-> = {
-  rascunho: { label: 'Rascunho', variant: 'outline', className: 'border-border bg-muted text-muted-foreground' },
-  ativo: { label: 'Ativo', variant: 'outline', className: 'border-primary/20 bg-primary/10 text-primary' },
-  aguardando_aprovacao: { label: 'Aguardando', variant: 'outline', className: 'border-border bg-accent text-accent-foreground' },
-  aprovado: { label: 'Aprovado', variant: 'outline', className: 'border-border bg-secondary text-secondary-foreground' },
-  em_producao: { label: 'Em Produção', variant: 'outline', className: 'border-primary/10 bg-primary/5 text-foreground' },
-  faturado: { label: 'Faturado', variant: 'outline', className: 'border-border bg-secondary/80 text-secondary-foreground' },
-  entregue: { label: 'Entregue', variant: 'outline', className: 'border-border bg-accent/80 text-accent-foreground' },
-  cancelado: { label: 'Cancelado', variant: 'outline', className: 'border-destructive/20 bg-destructive/10 text-destructive' },
+const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
+  rascunho: { label: 'Rascunho', className: 'border-border bg-muted text-muted-foreground' },
+  ativo: { label: 'Ativo', className: 'border-primary/20 bg-primary/10 text-primary' },
+  aguardando_aprovacao: { label: 'Aguardando', className: 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-400' },
+  aprovado: { label: 'Aprovado', className: 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-400' },
+  em_producao: { label: 'Produção', className: 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-400' },
+  faturado: { label: 'Faturado', className: 'border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-800 dark:bg-violet-950 dark:text-violet-400' },
+  entregue: { label: 'Entregue', className: 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-400' },
+  cancelado: { label: 'Cancelado', className: 'border-destructive/20 bg-destructive/10 text-destructive' },
 };
 
 const ITEMS_PER_PAGE = 20;
@@ -55,9 +51,8 @@ export function OrdersTable({ orders, isLoading, onSelectOrder, onEditOrder, onD
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value || 0);
-  };
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value || 0);
 
   const filteredOrders = orders.filter((order) => {
     const search = searchTerm.toLowerCase();
@@ -76,282 +71,185 @@ export function OrdersTable({ orders, isLoading, onSelectOrder, onEditOrder, onD
 
   const getDeadlineStatus = (deadline: string | null, status: string) => {
     if (!deadline || status === 'entregue' || status === 'cancelado') return null;
-
     const deadlineDate = parseDateOnly(deadline);
     if (!deadlineDate) return null;
-
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    const dn = new Date(deadlineDate);
+    dn.setHours(0, 0, 0, 0);
+    const days = differenceInDays(dn, today);
 
-    const deadlineDateNormalized = new Date(deadlineDate);
-    deadlineDateNormalized.setHours(0, 0, 0, 0);
-
-    const daysRemaining = differenceInDays(deadlineDateNormalized, today);
-
-    if (daysRemaining < 0) {
-      const daysLate = Math.abs(daysRemaining);
-      return {
-        label: `${daysLate}d atrasado`,
-        className: 'border-destructive/20 bg-destructive/10 text-destructive',
-        isLate: true,
-      };
-    }
-    if (daysRemaining === 0) {
-      return {
-        label: 'Hoje',
-        className: 'border-border bg-accent text-accent-foreground',
-        isLate: false,
-      };
-    }
-    if (daysRemaining <= 30) {
-      return {
-        label: `${daysRemaining}d`,
-        className: 'border-border bg-secondary text-secondary-foreground',
-        isLate: false,
-      };
-    }
-    return {
-      label: `${daysRemaining}d`,
-      className: 'border-border bg-muted text-muted-foreground',
-      isLate: false,
-    };
+    if (days < 0) return { label: `${Math.abs(days)}d atrasado`, className: 'border-destructive/20 bg-destructive/10 text-destructive', isLate: true };
+    if (days === 0) return { label: 'Hoje', className: 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-400', isLate: false };
+    if (days <= 7) return { label: `${days}d`, className: 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-400', isLate: false };
+    return { label: `${days}d`, className: 'border-border bg-muted text-muted-foreground', isLate: false };
   };
 
   if (isLoading) {
     return (
-      <Card className="border-border/80 shadow-sm">
-        <CardContent className="p-5">
-          <div className="space-y-3">
-            {[...Array(5)].map((_, i) => (
-              <Skeleton key={i} className="h-14 w-full" />
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      <div className="rounded-xl border border-border/60 bg-card">
+        <div className="p-4 space-y-3">
+          {[...Array(6)].map((_, i) => (
+            <Skeleton key={i} className="h-12 w-full rounded-lg" />
+          ))}
+        </div>
+      </div>
     );
   }
 
   return (
-    <Card className="overflow-hidden border-border/80 shadow-sm">
-      <CardContent className="p-0">
-        <div className="border-b border-border/70 bg-card/60 p-4 md:p-5">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="space-y-1">
-              <p className="text-sm font-semibold text-foreground">Resultados</p>
-              <p className="text-sm text-muted-foreground">
-                {filteredOrders.length} pedido{filteredOrders.length === 1 ? '' : 's'} encontrado{filteredOrders.length === 1 ? '' : 's'} no período atual.
-              </p>
-            </div>
-            <div className="relative w-full lg:max-w-xl">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Buscar por número, cliente, vendedor, arquiteto ou negócio..."
-                value={searchTerm}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="h-11 border-border/70 bg-background pl-10 text-foreground"
-              />
-            </div>
-          </div>
+    <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
+      {/* Search bar */}
+      <div className="flex items-center gap-3 border-b border-border/50 px-4 py-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Buscar pedido, cliente, vendedor..."
+            value={searchTerm}
+            onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+            className="h-9 border-0 bg-muted/50 pl-9 text-sm focus-visible:ring-1"
+          />
         </div>
+        <span className="hidden text-xs text-muted-foreground sm:block">
+          {filteredOrders.length} resultado{filteredOrders.length !== 1 ? 's' : ''}
+        </span>
+      </div>
 
-        {filteredOrders.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-3 px-6 py-16 text-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
-              <PackageSearch className="h-6 w-6" />
-            </div>
-            <div className="space-y-1">
-              <p className="font-medium text-foreground">
-                {searchTerm ? 'Nenhum pedido encontrado para essa busca' : 'Nenhum pedido encontrado'}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {searchTerm ? 'Tente buscar por cliente, vendedor, arquiteto ou número.' : 'Assim que houver pedidos cadastrados, eles aparecerão aqui.'}
-              </p>
-            </div>
+      {filteredOrders.length === 0 ? (
+        <div className="flex flex-col items-center justify-center gap-2 py-16">
+          <PackageSearch className="h-8 w-8 text-muted-foreground/50" />
+          <p className="text-sm font-medium text-muted-foreground">
+            {searchTerm ? 'Nenhum resultado encontrado' : 'Nenhum pedido cadastrado'}
+          </p>
+        </div>
+      ) : (
+        <>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-border/50 hover:bg-transparent">
+                  <TableHead className="w-[70px] text-xs font-semibold text-muted-foreground">Nº</TableHead>
+                  <TableHead className="text-xs font-semibold text-muted-foreground">Cliente</TableHead>
+                  <TableHead className="hidden text-xs font-semibold text-muted-foreground xl:table-cell">Vendedor</TableHead>
+                  <TableHead className="text-xs font-semibold text-muted-foreground">Status</TableHead>
+                  <TableHead className="text-right text-xs font-semibold text-muted-foreground">Valor</TableHead>
+                  <TableHead className="hidden text-xs font-semibold text-muted-foreground lg:table-cell">Emissão</TableHead>
+                  <TableHead className="hidden text-xs font-semibold text-muted-foreground md:table-cell">Entrega</TableHead>
+                  <TableHead className="w-[90px] text-center text-xs font-semibold text-muted-foreground">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paginatedOrders.map((order) => {
+                  const sc = STATUS_CONFIG[order.status] || { label: order.status, className: 'border-border bg-muted text-muted-foreground' };
+                  const dl = getDeadlineStatus(order.data_entrega_prevista, order.status);
+                  const canEdit = isEditable(order.status);
+
+                  return (
+                    <TableRow
+                      key={order.id}
+                      className="cursor-pointer border-border/40 transition-colors hover:bg-muted/30"
+                      onClick={() => onSelectOrder(order.id)}
+                    >
+                      <TableCell className="font-mono text-sm font-semibold text-foreground">
+                        #{order.order_number}
+                      </TableCell>
+                      <TableCell>
+                        <p className="text-sm font-medium text-foreground truncate max-w-[200px]">
+                          {order.client?.name || 'Sem cliente'}
+                        </p>
+                      </TableCell>
+                      <TableCell className="hidden text-sm text-muted-foreground xl:table-cell">
+                        {order.vendedor?.full_name || '-'}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={`text-[11px] font-medium ${sc.className}`}>
+                          {sc.label}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right text-sm font-semibold text-foreground whitespace-nowrap">
+                        {formatCurrency(order.valor_total)}
+                      </TableCell>
+                      <TableCell className="hidden text-sm text-muted-foreground lg:table-cell">
+                        {format(new Date(order.data_emissao), 'dd/MM/yy', { locale: ptBR })}
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell">
+                        {order.data_entrega_prevista ? (
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-sm text-muted-foreground">
+                              {format(parseDateOnly(order.data_entrega_prevista)!, 'dd/MM/yy', { locale: ptBR })}
+                            </span>
+                            {dl && (
+                              <Badge variant="outline" className={`px-1 py-0 text-[10px] ${dl.className}`}>
+                                {dl.isLate && <AlertTriangle className="mr-0.5 h-2.5 w-2.5" />}
+                                {dl.label}
+                              </Badge>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-center gap-0.5">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => onSelectOrder(order.id)}>
+                                  <Eye className="h-3.5 w-3.5" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Ver</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" disabled={!canEdit} onClick={() => canEdit && onEditOrder?.(order.id)}>
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>{canEdit ? 'Editar' : 'Não editável neste status'}</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          {isMaster && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:bg-destructive/10" onClick={() => onDeleteOrder?.(order.id, order.order_number)}>
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Excluir</TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
           </div>
-        ) : (
-          <>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-border/70 bg-muted/25 hover:bg-muted/25">
-                    <TableHead className="w-[80px] text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Nº</TableHead>
-                    <TableHead className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Cliente</TableHead>
-                    <TableHead className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Arquiteto</TableHead>
-                    <TableHead className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Negócio</TableHead>
-                    <TableHead className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Vendedor</TableHead>
-                    <TableHead className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Status</TableHead>
-                    <TableHead className="text-right text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Valor</TableHead>
-                    <TableHead className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Emissão</TableHead>
-                    <TableHead className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Entrega</TableHead>
-                    <TableHead className="w-[110px] text-center text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {paginatedOrders.map((order) => {
-                    const statusConfig = STATUS_CONFIG[order.status] || {
-                      label: order.status,
-                      variant: 'outline' as const,
-                      className: 'border-border bg-muted text-muted-foreground',
-                    };
-                    const deadlineStatus = getDeadlineStatus(order.data_entrega_prevista, order.status);
-                    const canEdit = isEditable(order.status);
 
-                    return (
-                      <TableRow key={order.id} className="border-border/60 transition-colors hover:bg-muted/20">
-                        <TableCell className="font-mono text-base font-semibold text-foreground">#{order.order_number}</TableCell>
-                        <TableCell>
-                          <div className="space-y-0.5">
-                            <p className="font-medium text-foreground">{order.client?.name || 'Sem cliente'}</p>
-                            {order.client?.cpf_cnpj && (
-                              <p className="font-mono text-xs text-muted-foreground">{order.client.cpf_cnpj}</p>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {order.architect ? (
-                            <span className="text-sm text-foreground">{order.architect.name}</span>
-                          ) : (
-                            <span className="text-sm text-muted-foreground">-</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {order.deal ? (
-                            <div className="flex items-center gap-1.5 text-foreground">
-                              <span className="max-w-[140px] truncate text-sm">{order.deal.title}</span>
-                              <ExternalLink className="h-3 w-3 text-muted-foreground" />
-                            </div>
-                          ) : (
-                            <span className="text-sm text-muted-foreground">-</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-sm text-foreground">{order.vendedor?.full_name || '-'}</TableCell>
-                        <TableCell>
-                          <Badge variant={statusConfig.variant} className={statusConfig.className}>
-                            {statusConfig.label}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right font-semibold text-foreground">
-                          {formatCurrency(order.valor_total)}
-                        </TableCell>
-                        <TableCell className="text-sm text-foreground">
-                          {format(new Date(order.data_emissao), 'dd/MM/yy', { locale: ptBR })}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            {order.data_entrega_prevista ? (
-                              <>
-                                <span className="text-sm text-foreground">
-                                  {format(parseDateOnly(order.data_entrega_prevista)!, 'dd/MM/yy', { locale: ptBR })}
-                                </span>
-                                {deadlineStatus && (
-                                  <Badge variant="outline" className={`px-1.5 text-xs ${deadlineStatus.className}`}>
-                                    {deadlineStatus.isLate && <AlertTriangle className="mr-1 h-3 w-3" />}
-                                    {deadlineStatus.label}
-                                  </Badge>
-                                )}
-                              </>
-                            ) : (
-                              <span className="text-sm text-muted-foreground">-</span>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center justify-center gap-1">
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-                                    onClick={() => onSelectOrder(order.id)}
-                                  >
-                                    <Eye className="h-4 w-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>Visualizar</TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-                                    disabled={!canEdit}
-                                    onClick={() => canEdit && onEditOrder?.(order.id)}
-                                  >
-                                    <Pencil className="h-4 w-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  {canEdit ? 'Editar' : 'Apenas rascunhos, ativos e aguardando aprovação podem ser editados'}
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-
-                            {isMaster && (
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-8 w-8 rounded-md text-destructive hover:bg-destructive/10 hover:text-destructive"
-                                      onClick={() => onDeleteOrder?.(order.id, order.order_number)}
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>Excluir</TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-
-            {totalPages > 1 && (
-              <div className="flex flex-col gap-3 border-t border-border/70 bg-muted/10 p-4 md:flex-row md:items-center md:justify-between">
-                <p className="text-sm text-muted-foreground">
-                  Mostrando {((currentPage - 1) * ITEMS_PER_PAGE) + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, filteredOrders.length)} de {filteredOrders.length}
-                </p>
-                <div className="flex items-center gap-2 self-end md:self-auto">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <span className="text-sm text-foreground">
-                    Página {currentPage} de {totalPages}
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                    disabled={currentPage === totalPages}
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between border-t border-border/50 px-4 py-2.5">
+              <p className="text-xs text-muted-foreground">
+                {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, filteredOrders.length)} de {filteredOrders.length}
+              </p>
+              <div className="flex items-center gap-1">
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1}>
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-xs text-muted-foreground px-2">{currentPage}/{totalPages}</span>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
               </div>
-            )}
-          </>
-        )}
-      </CardContent>
-    </Card>
+            </div>
+          )}
+        </>
+      )}
+    </div>
   );
 }

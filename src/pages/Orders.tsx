@@ -44,28 +44,22 @@ export default function Orders() {
         `)
         .order('created_at', { ascending: false });
 
-      if (filters.status) {
-        query = query.eq('status', filters.status);
-      }
-      if (filters.vendedorId) {
-        query = query.eq('vendedor_id', filters.vendedorId);
-      }
-      // Aplicar filtro de data baseado no campo selecionado
+      if (filters.status) query = query.eq('status', filters.status);
+      if (filters.vendedorId) query = query.eq('vendedor_id', filters.vendedorId);
+
       const dateColumn = filters.dateField === 'created_at' ? 'created_at' : 'data_emissao';
-      
+
       if (filters.dateFrom) {
-        // Início do dia em Brasília (00:00 Brasília = 03:00 UTC do mesmo dia)
         const fromDate = new Date(filters.dateFrom);
         const year = fromDate.getFullYear();
         const month = String(fromDate.getMonth() + 1).padStart(2, '0');
         const day = String(fromDate.getDate()).padStart(2, '0');
         query = query.gte(dateColumn, `${year}-${month}-${day}T03:00:00.000Z`);
       }
-      
+
       if (filters.dateTo) {
-        // Fim do dia em Brasília (23:59:59.999 Brasília = 02:59:59.999 UTC do dia SEGUINTE)
         const toDate = new Date(filters.dateTo);
-        toDate.setDate(toDate.getDate() + 1); // Vai para o dia seguinte
+        toDate.setDate(toDate.getDate() + 1);
         const year = toDate.getFullYear();
         const month = String(toDate.getMonth() + 1).padStart(2, '0');
         const day = String(toDate.getDate()).padStart(2, '0');
@@ -81,76 +75,71 @@ export default function Orders() {
   return (
     <PermissionGuard module="pedidos">
       <DashboardLayout>
-        <div className="mx-auto w-full max-w-[1600px] space-y-5 p-4 md:p-6">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div className="space-y-1">
-            <h1 className="text-2xl font-bold tracking-tight">Pedidos</h1>
-            <p className="text-sm text-muted-foreground">
-              Acompanhe KPIs, filtre com rapidez e gerencie cada pedido em um só lugar.
-            </p>
+        <div className="mx-auto w-full max-w-[1600px] space-y-4 p-4 md:p-6">
+          {/* Header compacto */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-xl font-bold tracking-tight">Pedidos</h1>
+              <p className="text-xs text-muted-foreground">
+                Gerencie seus pedidos em um só lugar.
+              </p>
+            </div>
+            <Button onClick={() => setCreateOpen(true)} size="sm" className="h-9 px-4 shadow-sm">
+              <Plus className="h-4 w-4 mr-1.5" />
+              Novo Pedido
+            </Button>
           </div>
-          <Button onClick={() => setCreateOpen(true)} className="h-11 px-5 shadow-sm">
-            <Plus className="h-4 w-4 mr-2" />
-            Novo Pedido
-          </Button>
+
+          {/* KPIs compactos */}
+          <OrdersKPIs filters={filters} />
+
+          {/* Filtros inline */}
+          <OrdersFilters filters={filters} onFiltersChange={setFilters} />
+
+          {/* Tabela */}
+          <OrdersTable
+            orders={orders || []}
+            isLoading={isLoading}
+            onSelectOrder={setSelectedOrderId}
+            onEditOrder={setEditingOrderId}
+            onDeleteOrder={(id, orderNumber) => setDeletingOrder({ id, orderNumber })}
+          />
+
+          <CreateOrderDialog
+            open={createOpen}
+            onOpenChange={setCreateOpen}
+            onSuccess={() => { refetch(); setCreateOpen(false); }}
+          />
+
+          {selectedOrderId && (
+            <OrderDetailSheet
+              orderId={selectedOrderId}
+              open={!!selectedOrderId}
+              onOpenChange={(open) => !open && setSelectedOrderId(null)}
+              onUpdate={refetch}
+            />
+          )}
+
+          {editingOrderId && (
+            <EditOrderDialog
+              orderId={editingOrderId}
+              open={!!editingOrderId}
+              onOpenChange={(open) => !open && setEditingOrderId(null)}
+              onSuccess={() => { refetch(); setEditingOrderId(null); }}
+            />
+          )}
+
+          {deletingOrder && (
+            <DeleteOrderDialog
+              orderId={deletingOrder.id}
+              orderNumber={deletingOrder.orderNumber}
+              open={!!deletingOrder}
+              onOpenChange={(open) => !open && setDeletingOrder(null)}
+              onSuccess={() => { refetch(); setDeletingOrder(null); }}
+            />
+          )}
         </div>
-
-        <OrdersKPIs filters={filters} />
-
-        <OrdersFilters filters={filters} onFiltersChange={setFilters} />
-
-        <OrdersTable
-          orders={orders || []}
-          isLoading={isLoading}
-          onSelectOrder={setSelectedOrderId}
-          onEditOrder={setEditingOrderId}
-          onDeleteOrder={(id, orderNumber) => setDeletingOrder({ id, orderNumber })}
-        />
-
-        <CreateOrderDialog
-          open={createOpen}
-          onOpenChange={setCreateOpen}
-          onSuccess={() => {
-            refetch();
-            setCreateOpen(false);
-          }}
-        />
-
-        {selectedOrderId && (
-          <OrderDetailSheet
-            orderId={selectedOrderId}
-            open={!!selectedOrderId}
-            onOpenChange={(open) => !open && setSelectedOrderId(null)}
-            onUpdate={refetch}
-          />
-        )}
-
-        {editingOrderId && (
-          <EditOrderDialog
-            orderId={editingOrderId}
-            open={!!editingOrderId}
-            onOpenChange={(open) => !open && setEditingOrderId(null)}
-            onSuccess={() => {
-              refetch();
-              setEditingOrderId(null);
-            }}
-          />
-        )}
-
-        {deletingOrder && (
-          <DeleteOrderDialog
-            orderId={deletingOrder.id}
-            orderNumber={deletingOrder.orderNumber}
-            open={!!deletingOrder}
-            onOpenChange={(open) => !open && setDeletingOrder(null)}
-            onSuccess={() => {
-              refetch();
-              setDeletingOrder(null);
-            }}
-          />
-        )}
-      </div>
-    </DashboardLayout>
+      </DashboardLayout>
     </PermissionGuard>
   );
 }

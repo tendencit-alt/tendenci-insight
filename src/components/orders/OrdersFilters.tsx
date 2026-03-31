@@ -2,8 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { SlidersHorizontal, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { subDays, startOfMonth } from 'date-fns';
 
 interface OrdersFiltersProps {
@@ -21,7 +20,7 @@ interface OrdersFiltersProps {
 const ORDER_STATUSES = [
   { value: 'rascunho', label: 'Rascunho' },
   { value: 'ativo', label: 'Ativo' },
-  { value: 'aguardando_aprovacao', label: 'Aguardando Aprovação' },
+  { value: 'aguardando_aprovacao', label: 'Aguardando' },
   { value: 'aprovado', label: 'Aprovado' },
   { value: 'em_producao', label: 'Em Produção' },
   { value: 'faturado', label: 'Faturado' },
@@ -32,10 +31,10 @@ const ORDER_STATUSES = [
 const PERIODS = [
   { value: 'all', label: 'Todos' },
   { value: 'today', label: 'Hoje' },
-  { value: 'last7days', label: 'Últimos 7 dias' },
-  { value: 'last30days', label: 'Últimos 30 dias' },
+  { value: 'last7days', label: '7 dias' },
+  { value: 'last30days', label: '30 dias' },
   { value: 'thisMonth', label: 'Este mês' },
-  { value: 'last90days', label: 'Últimos 90 dias' },
+  { value: 'last90days', label: '90 dias' },
 ];
 
 export function OrdersFilters({ filters, onFiltersChange }: OrdersFiltersProps) {
@@ -54,29 +53,15 @@ export function OrdersFilters({ filters, onFiltersChange }: OrdersFiltersProps) 
   const handlePeriodChange = (period: string) => {
     const now = new Date();
     let dateFrom: Date;
-    const dateTo = now;
-
     switch (period) {
-      case 'today':
-        dateFrom = now;
-        break;
-      case 'last7days':
-        dateFrom = subDays(now, 7);
-        break;
-      case 'last30days':
-        dateFrom = subDays(now, 30);
-        break;
-      case 'thisMonth':
-        dateFrom = startOfMonth(now);
-        break;
-      case 'last90days':
-        dateFrom = subDays(now, 90);
-        break;
-      default:
-        dateFrom = new Date(2020, 0, 1);
+      case 'today': dateFrom = now; break;
+      case 'last7days': dateFrom = subDays(now, 7); break;
+      case 'last30days': dateFrom = subDays(now, 30); break;
+      case 'thisMonth': dateFrom = startOfMonth(now); break;
+      case 'last90days': dateFrom = subDays(now, 90); break;
+      default: dateFrom = new Date(2020, 0, 1);
     }
-
-    onFiltersChange({ ...filters, period, dateFrom, dateTo });
+    onFiltersChange({ ...filters, period, dateFrom, dateTo: now });
   };
 
   const clearFilters = () => {
@@ -91,99 +76,61 @@ export function OrdersFilters({ filters, onFiltersChange }: OrdersFiltersProps) 
     });
   };
 
-  const hasFilters =
-    filters.status ||
-    filters.vendedorId ||
-    filters.period !== 'thisMonth' ||
-    filters.dateField !== 'data_emissao';
+  const hasFilters = filters.status || filters.vendedorId || filters.period !== 'thisMonth' || filters.dateField !== 'data_emissao';
 
   return (
-    <Card className="border-border/80 shadow-sm">
-      <CardContent className="p-4 md:p-5">
-        <div className="space-y-4">
-          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-            <div className="flex items-center gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                <SlidersHorizontal className="h-4 w-4" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-foreground">Filtros</p>
-                <p className="text-xs text-muted-foreground">Refine a visualização por status, responsável e período.</p>
-              </div>
-            </div>
-            {hasFilters && (
-              <Button variant="ghost" size="sm" onClick={clearFilters} className="w-full md:w-auto">
-                <X className="mr-1 h-4 w-4" />
-                Limpar filtros
-              </Button>
-            )}
-          </div>
+    <div className="flex flex-wrap items-center gap-2">
+      <Select value={filters.period} onValueChange={handlePeriodChange}>
+        <SelectTrigger className="h-9 w-[120px] border-border/60 bg-card text-sm">
+          <SelectValue placeholder="Período" />
+        </SelectTrigger>
+        <SelectContent>
+          {PERIODS.map((p) => (
+            <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
 
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-            <Select value={filters.status || 'all'} onValueChange={(v) => onFiltersChange({ ...filters, status: v === 'all' ? '' : v })}>
-              <SelectTrigger className="h-11 w-full bg-background text-foreground">
-                <SelectValue>
-                  {filters.status
-                    ? ORDER_STATUSES.find((s) => s.value === filters.status)?.label || 'Status'
-                    : 'Status'}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                {ORDER_STATUSES.map((s) => (
-                  <SelectItem key={s.value} value={s.value}>
-                    {s.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+      <Select value={filters.status || 'all'} onValueChange={(v) => onFiltersChange({ ...filters, status: v === 'all' ? '' : v })}>
+        <SelectTrigger className="h-9 w-[140px] border-border/60 bg-card text-sm">
+          <SelectValue>{filters.status ? ORDER_STATUSES.find((s) => s.value === filters.status)?.label : 'Status'}</SelectValue>
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Todos</SelectItem>
+          {ORDER_STATUSES.map((s) => (
+            <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
 
-            <Select value={filters.vendedorId || 'all'} onValueChange={(v) => onFiltersChange({ ...filters, vendedorId: v === 'all' ? '' : v })}>
-              <SelectTrigger className="h-11 w-full bg-background text-foreground">
-                <SelectValue>
-                  {filters.vendedorId
-                    ? vendedores?.find((v) => v.id === filters.vendedorId)?.full_name || 'Responsável'
-                    : 'Responsável'}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                {vendedores?.map((v) => (
-                  <SelectItem key={v.id} value={v.id}>
-                    {v.full_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+      <Select value={filters.vendedorId || 'all'} onValueChange={(v) => onFiltersChange({ ...filters, vendedorId: v === 'all' ? '' : v })}>
+        <SelectTrigger className="h-9 w-[160px] border-border/60 bg-card text-sm">
+          <SelectValue>{filters.vendedorId ? vendedores?.find((v) => v.id === filters.vendedorId)?.full_name : 'Responsável'}</SelectValue>
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Todos</SelectItem>
+          {vendedores?.map((v) => (
+            <SelectItem key={v.id} value={v.id}>{v.full_name}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
 
-            <Select value={filters.period} onValueChange={handlePeriodChange}>
-              <SelectTrigger className="h-11 w-full bg-background text-foreground">
-                <SelectValue placeholder="Período" />
-              </SelectTrigger>
-              <SelectContent>
-                {PERIODS.map((p) => (
-                  <SelectItem key={p.value} value={p.value}>
-                    {p.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+      <Select value={filters.dateField} onValueChange={(v) => onFiltersChange({ ...filters, dateField: v as 'data_emissao' | 'created_at' })}>
+        <SelectTrigger className="h-9 w-[150px] border-border/60 bg-card text-sm">
+          <SelectValue placeholder="Filtrar por" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="data_emissao">Dt. Emissão</SelectItem>
+          <SelectItem value="created_at">Dt. Criação</SelectItem>
+        </SelectContent>
+      </Select>
 
-            <Select
-              value={filters.dateField}
-              onValueChange={(v) => onFiltersChange({ ...filters, dateField: v as 'data_emissao' | 'created_at' })}
-            >
-              <SelectTrigger className="h-11 w-full bg-background text-foreground">
-                <SelectValue placeholder="Filtrar por" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="data_emissao">Data de Emissão</SelectItem>
-                <SelectItem value="created_at">Data de Criação</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+      {hasFilters && (
+        <Button variant="ghost" size="sm" onClick={clearFilters} className="h-9 px-2 text-muted-foreground hover:text-foreground">
+          <X className="mr-1 h-3.5 w-3.5" />
+          Limpar
+        </Button>
+      )}
+    </div>
   );
 }
