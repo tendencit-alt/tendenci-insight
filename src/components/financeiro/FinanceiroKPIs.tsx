@@ -43,9 +43,11 @@ export function FinanceiroKPIs({ metrics, isLoading }: FinanceiroKPIsProps) {
   const dscr = saidas > 0 ? entradas / saidas : entradas > 0 ? 999 : 0;
   const hasDivida = saidas > 0;
 
-  // Qualidade do Caixa: Conversão (% do resultado sobre entradas) + Cobertura (% saldo/saídas)
-  const conversao = entradas > 0 ? (resultado / entradas) * 100 : 0;
-  const cobertura = saidas > 0 ? (saldoConsolidado / saidas) * 100 : 0;
+  // Receita Total color
+  const getReceitaColor = () => {
+    if (entradas > 0) return { text: "text-green-600", bg: "bg-green-50", border: "border-l-green-500" };
+    return { text: "text-muted-foreground", bg: "bg-muted", border: "border-l-muted" };
+  };
 
   // Status colors - Resultado
   const getResultadoColor = () => {
