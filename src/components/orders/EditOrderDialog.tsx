@@ -835,31 +835,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
       throw new Error('Não foi possível identificar o nome do cliente para gerar o projeto do pedido');
     }
 
-    const normalizedClientName = clientName.toLowerCase();
-    const projectFromCache = projects.find(
-      (project) => project.label.trim().toLowerCase() === normalizedClientName,
-    );
-
-    if (projectFromCache?.value) {
-      return projectFromCache.value;
-    }
-
-    const { data: existingProjects, error: existingProjectError } = await supabase
-      .from('fin_projects')
-      .select('id, name')
-      .ilike('name', clientName)
-      .limit(1);
-
-    if (existingProjectError) throw existingProjectError;
-
-    const existingProject = existingProjects?.find(
-      (project) => project.name.trim().toLowerCase() === normalizedClientName,
-    ) || existingProjects?.[0];
-
-    if (existingProject) {
-      return existingProject.id;
-    }
-
+    // Each order always gets its own new project - never reuse existing ones
     const { data: newProject, error: newProjectError } = await supabase
       .from('fin_projects')
       .insert({ name: clientName, status: 'ativo' })

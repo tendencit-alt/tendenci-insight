@@ -704,25 +704,18 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
   const CUSTOM_PROJECT_PREFIX = '__custom_project__';
 
   const resolveProjectId = async (projectName: string): Promise<string> => {
-    const normalizedName = projectName.trim().toLowerCase();
-    
-    const projectFromCache = projects.find(
-      (project) => project.label.trim().toLowerCase() === normalizedName
-    );
-    if (projectFromCache?.value) return projectFromCache.value;
-
-    const { data: existingProjects, error: existingProjectError } = await supabase
+    // Always create a new project - each order gets its own project
+    const { data: newProject, error: newProjectError } = await supabase
       .from('fin_projects')
-      .select('id, name')
-      .ilike('name', projectName.trim())
-      .limit(1);
-    if (existingProjectError) throw existingProjectError;
+      .insert({ name: projectName.trim(), status: 'ativo' })
+      .select('id')
+      .single();
+    if (newProjectError) throw newProjectError;
+    return newProject.id;
+  };
 
-    const existingProject = existingProjects?.find(
-      (p) => p.name.trim().toLowerCase() === normalizedName
-    ) || existingProjects?.[0];
-    if (existingProject) return existingProject.id;
-
+  const createNewProjectForOrder = async (projectName: string): Promise<string> => {
+    // Always create a new project for each order - never reuse existing ones
     const { data: newProject, error: newProjectError } = await supabase
       .from('fin_projects')
       .insert({ name: projectName.trim(), status: 'ativo' })
@@ -755,7 +748,8 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
       throw new Error('Não foi possível identificar o nome do cliente para gerar o projeto do pedido');
     }
 
-    return await resolveProjectId(clientName);
+    // Each order always gets its own new project
+    return await createNewProjectForOrder(clientName);
   };
 
   const handleSubmit = async () => {
