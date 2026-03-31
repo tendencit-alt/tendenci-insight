@@ -472,13 +472,9 @@ export function OrderItemsTable({ items, onItemsChange, readOnly = false, showFi
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">Valor Unitário *</Label>
-                <Input
-                  type="number"
-                  placeholder="0,00"
-                  value={newItem.valor_unitario || ''}
-                  onChange={(e) => setNewItem({ ...newItem, valor_unitario: Number(e.target.value) })}
-                  min={0}
-                  step={0.01}
+                <CurrencyInput
+                  value={newItem.valor_unitario ? formatToCurrencyDisplay(newItem.valor_unitario) : ''}
+                  onChange={(v) => setNewItem({ ...newItem, valor_unitario: parseCurrencyToNumber(v) })}
                   className={!newItem.valor_unitario ? 'border-destructive/50' : ''}
                 />
               </div>
