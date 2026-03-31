@@ -811,40 +811,88 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
     }
   };
 
-  const resolveProjectIdForItems = async () => {
+  const resolveProjectsForItems = async (orderNumber: number): Promise<Record<string, string>> => {
     const hasItemsWithoutProject = items.some((item) => !item.project_id);
-
-    if (!hasItemsWithoutProject) {
-      return null;
-    }
+    if (!hasItemsWithoutProject) return {};
 
     let clientName = selectedClient?.name?.trim() || '';
-
     if (!clientName) {
-      const { data: clientRecord, error: clientError } = await supabase
+      const { data: clientRecord } = await supabase
         .from('clients')
         .select('name')
         .eq('id', formData.client_id)
         .single();
-
-      if (clientError) throw clientError;
       clientName = clientRecord?.name?.trim() || '';
     }
+    if (!clientName) throw new Error('Não foi possível identificar o nome do cliente para gerar o projeto do pedido');
 
-    if (!clientName) {
-      throw new Error('Não foi possível identificar o nome do cliente para gerar o projeto do pedido');
+    // Group items by centro_custo that need project resolution
+    const centroCustoSet = new Set<string>();
+    for (const item of items) {
+      if (!item.project_id) {
+        centroCustoSet.add(item.centro_custo || 'Geral');
+      }
     }
 
-    // Each order always gets its own new project - never reuse existing ones
-    const { data: newProject, error: newProjectError } = await supabase
-      .from('fin_projects')
-      .insert({ name: clientName, status: 'ativo' })
-      .select('id')
-      .single();
+    const projectMap: Record<string, string> = {};
 
-    if (newProjectError) throw newProjectError;
+    for (const cc of centroCustoSet) {
+      const baseName = `${cc} - ${clientName}`;
 
-    return newProject.id;
+      // Check if a project with the exact base name already exists
+      const { data: existing } = await supabase
+        .from('fin_projects')
+        .select('id, name')
+        .eq('name', baseName)
+        .eq('status', 'ativo')
+        .limit(1);
+
+      if (existing && existing.length > 0) {
+        // Rename the existing project
+        const existingProject = existing[0];
+        const { data: linkedItem } = await supabase
+          .from('order_items')
+          .select('order_id')
+          .eq('project_id', existingProject.id)
+          .limit(1);
+
+        if (linkedItem && linkedItem.length > 0) {
+          const { data: linkedOrder } = await supabase
+            .from('orders')
+            .select('order_number')
+            .eq('id', linkedItem[0].order_id)
+            .single();
+
+          if (linkedOrder) {
+            await supabase
+              .from('fin_projects')
+              .update({ name: `${baseName} #${linkedOrder.order_number}` })
+              .eq('id', existingProject.id);
+          }
+        }
+
+        // Create new project with order number suffix
+        const newName = `${baseName} #${orderNumber}`;
+        const { data: newProject, error } = await supabase
+          .from('fin_projects')
+          .insert({ name: newName, status: 'ativo' })
+          .select('id')
+          .single();
+        if (error) throw error;
+        projectMap[cc] = newProject.id;
+      } else {
+        // No conflict - create with base name
+        const { data: newProject, error } = await supabase
+          .from('fin_projects')
+          .insert({ name: baseName, status: 'ativo' })
+          .select('id')
+          .single();
+        if (error) throw error;
+        projectMap[cc] = newProject.id;
+      }
+    }
+
+    return projectMap;
   };
 
   const handleSubmit = async () => {
@@ -863,11 +911,21 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
       const shouldBeAtivo = order.status === 'rascunho' && isFormValid;
       const parcelasPrincipal = parcelas[0];
       const parcelasSecundaria = parcelas.length > 1 ? parcelas[1] : null;
-      const resolvedProjectId = await resolveProjectIdForItems();
-      const itemsWithResolvedProject = items.map((item) => ({
-        ...item,
-        project_id: item.project_id || resolvedProjectId || undefined,
-      }));
+      // Resolve projects with naming convention after order update
+      const projectMap = await resolveProjectsForItems(order.order_number);
+      const itemsWithResolvedProject = items.map((item) => {
+        if (!item.project_id) {
+          const cc = item.centro_custo || 'Geral';
+          return { ...item, project_id: projectMap[cc] || undefined };
+        }
+        return item;
+      });
+
+      // Update order project_id if resolved
+      if (!formData.project_id && Object.keys(projectMap).length > 0) {
+        const firstProjectId = Object.values(projectMap)[0];
+        await supabase.from('orders').update({ project_id: firstProjectId }).eq('id', orderId);
+      }
 
       const { error: clientError } = await supabase
         .from('clients')
@@ -934,7 +992,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
           subtotal,
           valor_total: total,
           centro_custo: null,
-          project_id: formData.project_id || resolvedProjectId || null,
+          project_id: formData.project_id || null,
           status: shouldBeAtivo ? 'ativo' : order.status,
           taxa_cartao_percentual: taxaCartao.percentual,
           taxa_cartao_valor: taxaCartao.valor,
