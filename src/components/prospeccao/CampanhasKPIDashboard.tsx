@@ -278,6 +278,7 @@ export function CampanhasKPIDashboard() {
               <SelectValue placeholder="Período" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="all">Todo período</SelectItem>
               <SelectItem value="today">Hoje</SelectItem>
               <SelectItem value="yesterday">Ontem</SelectItem>
               <SelectItem value="last7days">Últimos 7 dias</SelectItem>
