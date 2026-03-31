@@ -50,6 +50,9 @@ export function OrderResponsiblesManager() {
   const [deleting, setDeleting] = useState<OrderResponsible | null>(null);
   const [loading, setLoading] = useState(false);
   const [typeFilter, setTypeFilter] = useState<"todos" | OrderResponsibleType>("todos");
+  const [newSupplierOpen, setNewSupplierOpen] = useState(false);
+  const [newSupplierName, setNewSupplierName] = useState("");
+  const [creatingSup, setCreatingSup] = useState(false);
   const [form, setForm] = useState<{ name: string; type: OrderResponsibleType; is_active: boolean; supplier_id: string }>({
     name: "",
     type: "vendedor",
@@ -71,7 +74,7 @@ export function OrderResponsiblesManager() {
     },
   });
 
-  const { data: suppliers } = useQuery({
+  const { data: suppliers, refetch: refetchSuppliers } = useQuery({
     queryKey: ["suppliers-for-responsibles"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -83,6 +86,31 @@ export function OrderResponsiblesManager() {
       return data ?? [];
     },
   });
+
+  const handleCreateSupplier = async () => {
+    if (!newSupplierName.trim()) {
+      toast.error("Nome do fornecedor é obrigatório");
+      return;
+    }
+    setCreatingSup(true);
+    try {
+      const { data, error } = await supabase
+        .from("suppliers")
+        .insert({ name: newSupplierName.trim(), active: true })
+        .select("id")
+        .single();
+      if (error) throw error;
+      await refetchSuppliers();
+      setForm((prev) => ({ ...prev, supplier_id: data.id }));
+      setNewSupplierName("");
+      setNewSupplierOpen(false);
+      toast.success("Fornecedor criado e selecionado!");
+    } catch (err: any) {
+      toast.error("Erro ao criar fornecedor: " + err.message);
+    } finally {
+      setCreatingSup(false);
+    }
+  };
 
   const filteredResponsibles = useMemo(() => {
     if (!responsibles) return [];
@@ -292,22 +320,46 @@ export function OrderResponsiblesManager() {
 
             <div className="space-y-2">
               <Label>Fornecedor (Contas a Pagar)</Label>
-              <Select
-                value={form.supplier_id || "none"}
-                onValueChange={(value) => setForm((prev) => ({ ...prev, supplier_id: value === "none" ? "" : value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o fornecedor..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Nenhum</SelectItem>
-                  {(suppliers || []).map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {s.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex gap-2">
+                <Select
+                  value={form.supplier_id || "none"}
+                  onValueChange={(value) => setForm((prev) => ({ ...prev, supplier_id: value === "none" ? "" : value }))}
+                >
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Selecione o fornecedor..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Nenhum</SelectItem>
+                    {(suppliers || []).map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button type="button" variant="outline" size="icon" onClick={() => { setNewSupplierName(form.name); setNewSupplierOpen(true); }}>
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              {newSupplierOpen && (
+                <div className="flex gap-2 items-end p-3 rounded-lg border bg-muted/50">
+                  <div className="flex-1 space-y-1">
+                    <Label className="text-xs">Nome do novo fornecedor</Label>
+                    <Input
+                      value={newSupplierName}
+                      onChange={(e) => setNewSupplierName(e.target.value)}
+                      placeholder="Nome do fornecedor"
+                      onKeyDown={(e) => e.key === "Enter" && handleCreateSupplier()}
+                    />
+                  </div>
+                  <Button size="sm" onClick={handleCreateSupplier} disabled={creatingSup}>
+                    {creatingSup ? <Loader2 className="h-4 w-4 animate-spin" /> : "Criar"}
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => setNewSupplierOpen(false)}>
+                    Cancelar
+                  </Button>
+                </div>
+              )}
             </div>
 
             <div className="flex items-center gap-2">
