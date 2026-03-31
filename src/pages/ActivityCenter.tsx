@@ -50,7 +50,7 @@ export default function ActivityCenter() {
     module: "all",
     actionType: "all",
     userId: "all",
-    period: "today",
+    period: "all",
     search: "",
     startDate: null,
     endDate: null,
