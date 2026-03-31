@@ -74,7 +74,7 @@ export function OrderResponsiblesManager() {
     },
   });
 
-  const { data: suppliers } = useQuery({
+  const { data: suppliers, refetch: refetchSuppliers } = useQuery({
     queryKey: ["suppliers-for-responsibles"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -86,6 +86,31 @@ export function OrderResponsiblesManager() {
       return data ?? [];
     },
   });
+
+  const handleCreateSupplier = async () => {
+    if (!newSupplierName.trim()) {
+      toast.error("Nome do fornecedor é obrigatório");
+      return;
+    }
+    setCreatingSup(true);
+    try {
+      const { data, error } = await supabase
+        .from("suppliers")
+        .insert({ name: newSupplierName.trim(), active: true })
+        .select("id")
+        .single();
+      if (error) throw error;
+      await refetchSuppliers();
+      setForm((prev) => ({ ...prev, supplier_id: data.id }));
+      setNewSupplierName("");
+      setNewSupplierOpen(false);
+      toast.success("Fornecedor criado e selecionado!");
+    } catch (err: any) {
+      toast.error("Erro ao criar fornecedor: " + err.message);
+    } finally {
+      setCreatingSup(false);
+    }
+  };
 
   const filteredResponsibles = useMemo(() => {
     if (!responsibles) return [];
