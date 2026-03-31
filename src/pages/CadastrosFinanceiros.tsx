@@ -6,7 +6,8 @@ import { CostCentersManager } from "@/components/financeiro/masters/CostCentersM
 import { FinProjectsManager } from "@/components/financeiro/masters/FinProjectsManager";
 import { OrderResponsiblesManager } from "@/components/financeiro/masters/OrderResponsiblesManager";
 import { StrategicResourceCategoriesManager } from "@/components/financeiro/masters/StrategicResourceCategoriesManager";
-import { Building2, FileSpreadsheet, Landmark, FolderKanban, Database, BriefcaseBusiness, FolderCog } from "lucide-react";
+import { CardRatesManager } from "@/components/financeiro/masters/CardRatesManager";
+import { Building2, FileSpreadsheet, Landmark, FolderKanban, Database, BriefcaseBusiness, FolderCog, CreditCard } from "lucide-react";
 import { useState } from "react";
 
 export default function CadastrosFinanceiros() {
