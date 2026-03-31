@@ -911,11 +911,21 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
       const shouldBeAtivo = order.status === 'rascunho' && isFormValid;
       const parcelasPrincipal = parcelas[0];
       const parcelasSecundaria = parcelas.length > 1 ? parcelas[1] : null;
-      const resolvedProjectId = await resolveProjectIdForItems();
-      const itemsWithResolvedProject = items.map((item) => ({
-        ...item,
-        project_id: item.project_id || resolvedProjectId || undefined,
-      }));
+      // Resolve projects with naming convention after order update
+      const projectMap = await resolveProjectsForItems(order.order_number);
+      const itemsWithResolvedProject = items.map((item) => {
+        if (!item.project_id) {
+          const cc = item.centro_custo || 'Geral';
+          return { ...item, project_id: projectMap[cc] || undefined };
+        }
+        return item;
+      });
+
+      // Update order project_id if resolved
+      if (!formData.project_id && Object.keys(projectMap).length > 0) {
+        const firstProjectId = Object.values(projectMap)[0];
+        await supabase.from('orders').update({ project_id: firstProjectId }).eq('id', orderId);
+      }
 
       const { error: clientError } = await supabase
         .from('clients')
