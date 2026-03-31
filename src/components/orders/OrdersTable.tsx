@@ -151,6 +151,13 @@ export function OrdersTable({ orders, isLoading, onSelectOrder, onEditOrder, onD
             <Table>
               <TableHeader>
                 <TableRow className="border-border/50 hover:bg-transparent">
+                  <TableHead className="w-[40px]">
+                    <Checkbox
+                      checked={allPageSelected ? true : somePageSelected ? "indeterminate" : false}
+                      onCheckedChange={toggleSelectAll}
+                      aria-label="Selecionar todos"
+                    />
+                  </TableHead>
                   <TableHead className="w-[70px] text-xs font-semibold text-muted-foreground">Nº</TableHead>
                   <TableHead className="text-xs font-semibold text-muted-foreground">Cliente</TableHead>
                   <TableHead className="hidden text-xs font-semibold text-muted-foreground xl:table-cell">Vendedor</TableHead>
