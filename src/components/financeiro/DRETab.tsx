@@ -497,7 +497,7 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
       >
         <TableCell 
           className={cn("cursor-pointer select-none")}
-          style={{ paddingLeft: `${(line.level * 24) + 16}px` }}
+          style={{ paddingLeft: `${(line.level * 14) + 8}px` }}
           onClick={() => {
             if (line.hasChildren) {
               toggleExpand(line.id);

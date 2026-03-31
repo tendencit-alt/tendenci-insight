@@ -641,13 +641,12 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
 
       <Card>
         <CardContent className="p-1.5 sm:p-4">
-          <div className="overflow-x-auto">
-            <Table className="w-full table-fixed">
+          <div className="overflow-hidden">
+            <Table className="w-full table-fixed text-xs">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[55%] text-xs">Conta</TableHead>
-                  <TableHead className="w-[20%] text-right text-xs hidden lg:table-cell">Orçamento</TableHead>
-                  <TableHead className="w-[25%] text-right text-xs">Realizado</TableHead>
+                  <TableHead className="text-xs">Conta</TableHead>
+                  <TableHead className="w-[100px] text-right text-xs">Realizado</TableHead>
                 </TableRow>
               </TableHeader>
             <TableBody>
