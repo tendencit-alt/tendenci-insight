@@ -61,17 +61,6 @@ export function OrdersTable({ orders, isLoading, onSelectOrder, onEditOrder, onD
     );
   };
 
-  const toggleSelectAll = () => {
-    if (!onSelectedIdsChange) return;
-    const pageIds = paginatedOrders.map(o => o.id);
-    const allSelected = pageIds.every(id => selectedIds.includes(id));
-    if (allSelected) {
-      onSelectedIdsChange(selectedIds.filter(id => !pageIds.includes(id)));
-    } else {
-      onSelectedIdsChange([...new Set([...selectedIds, ...pageIds])]);
-    }
-  };
-
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value || 0);
 
