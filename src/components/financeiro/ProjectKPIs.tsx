@@ -1,15 +1,19 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FolderKanban, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { FolderKanban, AlertTriangle, CheckCircle2, Pencil, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { isProjectVisibleInKpis } from "@/lib/projectKpiVisibility";
+import { toast } from "sonner";
 
 interface ProjectEntriesDialogProps {
   open: boolean;
@@ -149,6 +153,105 @@ function ProjectEntriesDialog({ open, onOpenChange, projectId, projectName, filt
   );
 }
 
+interface EditProjectDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  project: any;
+}
+
+function EditProjectDialog({ open, onOpenChange, project }: EditProjectDialogProps) {
+  const queryClient = useQueryClient();
+  const [status, setStatus] = useState(project?.status || "ativo");
+  const [budgetPercent, setBudgetPercent] = useState(String(project?.budget_percent ?? 50));
+
+  const updateMutation = useMutation({
+    mutationFn: async () => {
+      const percent = parseFloat(budgetPercent);
+      if (isNaN(percent) || percent < 0 || percent > 100) {
+        throw new Error("Percentual deve ser entre 0 e 100");
+      }
+
+      const updateData: any = {
+        status,
+        budget_percent: percent,
+      };
+
+      if (status === "concluido" && project.status !== "concluido") {
+        updateData.end_date = new Date().toISOString().split("T")[0];
+      }
+      if (status === "ativo" && project.status === "concluido") {
+        updateData.end_date = null;
+      }
+
+      const { error } = await supabase
+        .from("fin_projects")
+        .update(updateData)
+        .eq("id", project.id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["fin-projects-kpis"] });
+      queryClient.invalidateQueries({ queryKey: ["fin-projects-active"] });
+      toast.success("Projeto atualizado com sucesso");
+      onOpenChange(false);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao atualizar projeto");
+    },
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Editar Projeto: {project?.name}</DialogTitle>
+        </DialogHeader>
+
+        <div className="grid gap-4 py-4">
+          <div className="space-y-2">
+            <Label>Status</Label>
+            <Select value={status} onValueChange={setStatus}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ativo">Ativo</SelectItem>
+                <SelectItem value="concluido">Finalizado</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Percentual do Orçamento (%)</Label>
+            <Input
+              type="number"
+              min="0"
+              max="100"
+              step="1"
+              value={budgetPercent}
+              onChange={(e) => setBudgetPercent(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              O orçamento será calculado como {budgetPercent || 0}% do valor total dos pedidos vinculados
+            </p>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancelar
+          </Button>
+          <Button onClick={() => updateMutation.mutate()} disabled={updateMutation.isPending}>
+            {updateMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            Salvar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export function ProjectKPIs() {
   const [statusFilter, setStatusFilter] = useState<"ativo" | "concluido">("ativo");
   const [selectedProject, setSelectedProject] = useState<{
@@ -156,6 +259,7 @@ export function ProjectKPIs() {
     name: string;
     filterType: "all" | "budget" | "executed" | "available";
   } | null>(null);
+  const [editProject, setEditProject] = useState<any>(null);
 
   const { data: projects, isLoading: projectsLoading } = useQuery({
     queryKey: ["fin-projects-kpis", statusFilter],
@@ -260,20 +364,23 @@ export function ProjectKPIs() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-[250px]">Projeto</TableHead>
+                  <TableHead className="text-right w-[100px]">% Orç.</TableHead>
                   <TableHead className="text-right w-[120px]">Orçamento</TableHead>
                   <TableHead className="text-right w-[120px]">Executado</TableHead>
                   <TableHead className="text-right w-[120px]">Disponível</TableHead>
-                  <TableHead className="w-[300px]">Progresso</TableHead>
+                  <TableHead className="w-[280px]">Progresso</TableHead>
+                  <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {visibleProjects.map((project) => {
+                {visibleProjects.map((project: any) => {
                   const budget = Number(project.budget) || 0;
                   const executed = realizedByProject[project.id] || 0;
                   const available = budget - executed;
                   const percent = budget > 0 ? (executed / budget) * 100 : 0;
                   const isOverBudget = available < 0;
                   const isNearLimit = percent > 80 && percent <= 100;
+                  const budgetPct = project.budget_percent ?? 50;
 
                   return (
                     <TableRow key={project.id}>
@@ -289,6 +396,11 @@ export function ProjectKPIs() {
                             </Badge>
                           )}
                         </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Badge variant="outline" className="text-xs">
+                          {budgetPct}%
+                        </Badge>
                       </TableCell>
                       <TableCell className="text-right">
                         <button
@@ -366,6 +478,16 @@ export function ProjectKPIs() {
                           <span className="text-xs text-muted-foreground">Sem orçamento</span>
                         )}
                       </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => setEditProject(project)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   );
                 })}
@@ -382,6 +504,14 @@ export function ProjectKPIs() {
           projectId={selectedProject.id}
           projectName={selectedProject.name}
           filterType={selectedProject.filterType}
+        />
+      )}
+
+      {editProject && (
+        <EditProjectDialog
+          open={!!editProject}
+          onOpenChange={(open) => !open && setEditProject(null)}
+          project={editProject}
         />
       )}
     </>
