@@ -2,8 +2,12 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { X } from 'lucide-react';
-import { subDays, startOfMonth } from 'date-fns';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
+import { CalendarIcon, X } from 'lucide-react';
+import { format, subDays, startOfMonth } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 interface OrdersFiltersProps {
   filters: {
@@ -35,6 +39,7 @@ const PERIODS = [
   { value: 'last30days', label: '30 dias' },
   { value: 'thisMonth', label: 'Este mês' },
   { value: 'last90days', label: '90 dias' },
+  { value: 'custom', label: 'Personalizado' },
 ];
 
 export function OrdersFilters({ filters, onFiltersChange }: OrdersFiltersProps) {
@@ -51,6 +56,10 @@ export function OrdersFilters({ filters, onFiltersChange }: OrdersFiltersProps) 
   });
 
   const handlePeriodChange = (period: string) => {
+    if (period === 'custom') {
+      onFiltersChange({ ...filters, period });
+      return;
+    }
     const now = new Date();
     let dateFrom: Date;
     switch (period) {
@@ -81,7 +90,7 @@ export function OrdersFilters({ filters, onFiltersChange }: OrdersFiltersProps) 
   return (
     <div className="flex flex-wrap items-center gap-2">
       <Select value={filters.period} onValueChange={handlePeriodChange}>
-        <SelectTrigger className="h-9 w-[120px] border-border/60 bg-card text-sm">
+        <SelectTrigger className="h-9 w-[140px] border-border/60 bg-card text-sm">
           <SelectValue placeholder="Período" />
         </SelectTrigger>
         <SelectContent>
@@ -90,6 +99,48 @@ export function OrdersFilters({ filters, onFiltersChange }: OrdersFiltersProps) 
           ))}
         </SelectContent>
       </Select>
+
+      {filters.period === 'custom' && (
+        <>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className={cn("h-9 w-[140px] justify-start text-left text-sm border-border/60 bg-card font-normal", !filters.dateFrom && "text-muted-foreground")}>
+                <CalendarIcon className="mr-1.5 h-3.5 w-3.5" />
+                {filters.dateFrom ? format(filters.dateFrom, 'dd/MM/yyyy', { locale: ptBR }) : 'De'}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={filters.dateFrom}
+                onSelect={(date) => date && onFiltersChange({ ...filters, dateFrom: date })}
+                initialFocus
+                className={cn("p-3 pointer-events-auto")}
+                locale={ptBR}
+              />
+            </PopoverContent>
+          </Popover>
+
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className={cn("h-9 w-[140px] justify-start text-left text-sm border-border/60 bg-card font-normal", !filters.dateTo && "text-muted-foreground")}>
+                <CalendarIcon className="mr-1.5 h-3.5 w-3.5" />
+                {filters.dateTo ? format(filters.dateTo, 'dd/MM/yyyy', { locale: ptBR }) : 'Até'}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={filters.dateTo}
+                onSelect={(date) => date && onFiltersChange({ ...filters, dateTo: date })}
+                initialFocus
+                className={cn("p-3 pointer-events-auto")}
+                locale={ptBR}
+              />
+            </PopoverContent>
+          </Popover>
+        </>
+      )}
 
       <Select value={filters.status || 'all'} onValueChange={(v) => onFiltersChange({ ...filters, status: v === 'all' ? '' : v })}>
         <SelectTrigger className="h-9 w-[140px] border-border/60 bg-card text-sm">
