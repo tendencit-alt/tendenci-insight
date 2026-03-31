@@ -247,7 +247,9 @@ export function FinanceiroFilters({ filters, onChange }: FinanceiroFiltersProps)
                   <Button variant="outline" className="h-8 w-[130px] justify-start gap-1.5 text-xs font-normal px-2">
                     <CalendarIcon className="h-3.5 w-3.5" />
                     <span className="truncate">
-                      {format(filters.dateFrom, "dd/MM", { locale: ptBR })} - {format(filters.dateTo, "dd/MM", { locale: ptBR })}
+                      {filters.dateFrom && filters.dateTo
+                        ? `${format(filters.dateFrom, "dd/MM", { locale: ptBR })} - ${format(filters.dateTo, "dd/MM", { locale: ptBR })}`
+                        : "Todo período"}
                     </span>
                   </Button>
                 </PopoverTrigger>
