@@ -2308,11 +2308,17 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                     <span className="text-sm font-medium">- {formatCurrency(taxaBoleto.valor)}</span>
                   </div>
                 )}
+                {taxaLink.valor > 0 && (
+                  <div className="flex items-center justify-between text-foreground">
+                    <span className="text-sm">🔗 Taxa Link ({taxaLink.percentual.toFixed(2)}%):</span>
+                    <span className="text-sm font-medium">- {formatCurrency(taxaLink.valor)}</span>
+                  </div>
+                )}
                 <div className="flex items-center justify-between border-t pt-2">
                   <span className="text-sm font-semibold">Total do Pedido:</span>
                   <span className="text-base font-bold text-primary">{formatCurrency(total)}</span>
                 </div>
-                {(taxaCartao.valor > 0 || taxaBoleto.valor > 0 || totalComissoes > 0) && (
+                {(taxaCartao.valor > 0 || taxaBoleto.valor > 0 || taxaLink.valor > 0 || totalComissoes > 0) && (
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-semibold text-green-600">Valor Líquido Tendenci:</span>
                     <span className="text-base font-bold text-green-600">{formatCurrency(valorLiquidoTendenci)}</span>
