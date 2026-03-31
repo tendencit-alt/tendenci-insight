@@ -71,8 +71,8 @@ export function DashboardBI({ filters }: DashboardBIProps) {
   const { data, isLoading } = useQuery({
     queryKey: ["fin-dashboard-bi", filters],
     queryFn: async () => {
-      const dateFrom = format(filters.dateFrom, "yyyy-MM-dd");
-      const dateTo = format(filters.dateTo, "yyyy-MM-dd");
+      const dateFrom = filters.dateFrom ? format(filters.dateFrom, "yyyy-MM-dd") : null;
+      const dateTo = filters.dateTo ? format(filters.dateTo, "yyyy-MM-dd") : null;
 
       // Build ledger entries query - use competence_date as fallback when cash_date is null
       // This ensures entries from orders (which have no cash_date yet) still appear
@@ -83,8 +83,11 @@ export function DashboardBI({ filters }: DashboardBIProps) {
           document_number, party_type, party_id,
           chart_account:fin_chart_accounts(id, code, name, nature)
         `)
-        .neq("status", "CANCELADO")
-        .or(`and(cash_date.gte.${dateFrom},cash_date.lte.${dateTo}),and(cash_date.is.null,competence_date.gte.${dateFrom},competence_date.lte.${dateTo})`);
+        .neq("status", "CANCELADO");
+
+      if (dateFrom && dateTo) {
+        entriesQuery = entriesQuery.or(`and(cash_date.gte.${dateFrom},cash_date.lte.${dateTo}),and(cash_date.is.null,competence_date.gte.${dateFrom},competence_date.lte.${dateTo})`);
+      }
 
       // Apply sorting from global filters
       if (filters.sortField === "date") {
