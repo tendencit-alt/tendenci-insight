@@ -667,15 +667,15 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground text-sm">Em Aberto</span>
-                  <span className="font-semibold">{payablesSummary?.abertasCount || 0} títulos - {formatCurrency(payablesSummary?.abertasValor || 0)}</span>
+                  <span className="font-semibold">{payablesSummary?.abertasCount || 0} lançamentos - {formatCurrency(payablesSummary?.abertasValor || 0)}</span>
                 </div>
                 <div className="flex items-center justify-between text-red-600">
                   <span className="text-sm">Vencidas</span>
-                  <span className="font-semibold">{payablesSummary?.vencidasCount || 0} títulos - {formatCurrency(payablesSummary?.vencidasValor || 0)}</span>
+                  <span className="font-semibold">{payablesSummary?.vencidasCount || 0} lançamentos - {formatCurrency(payablesSummary?.vencidasValor || 0)}</span>
                 </div>
                 <div className="flex items-center justify-between text-blue-600">
                   <span className="text-sm">Pagas</span>
-                  <span className="font-semibold">{payablesSummary?.pagasCount || 0} títulos - {formatCurrency(payablesSummary?.pagasValor || 0)}</span>
+                  <span className="font-semibold">{payablesSummary?.pagasCount || 0} lançamentos - {formatCurrency(payablesSummary?.pagasValor || 0)}</span>
                 </div>
                 <div className="flex gap-4 text-xs text-muted-foreground pt-2 border-t">
                   <span className="flex items-center gap-1"><Clock className="h-3 w-3" />7d: {payablesSummary?.aVencer7d || 0}</span>
@@ -701,15 +701,15 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground text-sm">Em Aberto</span>
-                  <span className="font-semibold">{receivablesSummary?.abertasCount || 0} títulos - {formatCurrency(receivablesSummary?.abertasValor || 0)}</span>
+                  <span className="font-semibold">{receivablesSummary?.abertasCount || 0} lançamentos - {formatCurrency(receivablesSummary?.abertasValor || 0)}</span>
                 </div>
                 <div className="flex items-center justify-between text-red-600">
                   <span className="text-sm">Vencidas</span>
-                  <span className="font-semibold">{receivablesSummary?.vencidasCount || 0} títulos - {formatCurrency(receivablesSummary?.vencidasValor || 0)}</span>
+                  <span className="font-semibold">{receivablesSummary?.vencidasCount || 0} lançamentos - {formatCurrency(receivablesSummary?.vencidasValor || 0)}</span>
                 </div>
                 <div className="flex items-center justify-between text-green-600">
                   <span className="text-sm">Recebidas</span>
-                  <span className="font-semibold">{receivablesSummary?.recebidasCount || 0} títulos - {formatCurrency(receivablesSummary?.recebidasValor || 0)}</span>
+                  <span className="font-semibold">{receivablesSummary?.recebidasCount || 0} lançamentos - {formatCurrency(receivablesSummary?.recebidasValor || 0)}</span>
                 </div>
                 <div className="flex gap-4 text-xs text-muted-foreground pt-2 border-t">
                   <span className="flex items-center gap-1"><Clock className="h-3 w-3" />7d: {receivablesSummary?.aVencer7d || 0}</span>
