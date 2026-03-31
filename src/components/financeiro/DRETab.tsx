@@ -770,14 +770,14 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
       </div>
 
       <Card>
-        <CardContent className="p-2 sm:pt-6 sm:px-6">
-          <div className="overflow-x-auto -mx-2 sm:mx-0">
-            <Table className="min-w-[500px]">
+        <CardContent className="p-1.5 sm:p-4">
+          <div className="overflow-x-auto">
+            <Table className="w-full table-fixed">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[50%] text-xs sm:text-sm">Conta</TableHead>
-                  <TableHead className="text-right text-xs sm:text-sm hidden md:table-cell">Meta</TableHead>
-                  <TableHead className="text-right text-xs sm:text-sm">Realizado</TableHead>
+                  <TableHead className="w-[55%] text-xs">Conta</TableHead>
+                  <TableHead className="w-[20%] text-right text-xs hidden lg:table-cell">Meta</TableHead>
+                  <TableHead className="w-[25%] text-right text-xs">Realizado</TableHead>
                 </TableRow>
               </TableHeader>
             <TableBody>
