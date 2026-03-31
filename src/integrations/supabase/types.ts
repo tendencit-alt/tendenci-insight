@@ -3976,6 +3976,7 @@ export type Database = {
           id: string
           is_active: boolean
           name: string
+          supplier_id: string | null
           type: Database["public"]["Enums"]["order_responsible_type"]
           updated_at: string
         }
@@ -3984,6 +3985,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           name: string
+          supplier_id?: string | null
           type: Database["public"]["Enums"]["order_responsible_type"]
           updated_at?: string
         }
@@ -3992,10 +3994,19 @@ export type Database = {
           id?: string
           is_active?: boolean
           name?: string
+          supplier_id?: string | null
           type?: Database["public"]["Enums"]["order_responsible_type"]
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "order_responsibles_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       orders: {
         Row: {

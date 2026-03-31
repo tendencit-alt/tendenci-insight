@@ -50,10 +50,11 @@ export function OrderResponsiblesManager() {
   const [deleting, setDeleting] = useState<OrderResponsible | null>(null);
   const [loading, setLoading] = useState(false);
   const [typeFilter, setTypeFilter] = useState<"todos" | OrderResponsibleType>("todos");
-  const [form, setForm] = useState<{ name: string; type: OrderResponsibleType; is_active: boolean }>({
+  const [form, setForm] = useState<{ name: string; type: OrderResponsibleType; is_active: boolean; supplier_id: string }>({
     name: "",
     type: "vendedor",
     is_active: true,
+    supplier_id: "",
   });
 
   const { data: responsibles, isLoading, refetch } = useQuery({
@@ -61,10 +62,23 @@ export function OrderResponsiblesManager() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("order_responsibles")
-        .select("*")
+        .select("*, suppliers(id, name)")
         .order("type")
         .order("name");
 
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const { data: suppliers } = useQuery({
+    queryKey: ["suppliers-for-responsibles"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("suppliers")
+        .select("id, name")
+        .eq("active", true)
+        .order("name");
       if (error) throw error;
       return data ?? [];
     },
@@ -81,6 +95,7 @@ export function OrderResponsiblesManager() {
       name: "",
       type: "vendedor",
       is_active: true,
+      supplier_id: "",
     });
     setDialogOpen(true);
   };
@@ -91,6 +106,7 @@ export function OrderResponsiblesManager() {
       name: responsible.name,
       type: responsible.type,
       is_active: responsible.is_active,
+      supplier_id: responsible.supplier_id || "",
     });
     setDialogOpen(true);
   };
@@ -107,6 +123,7 @@ export function OrderResponsiblesManager() {
         name: form.name.trim(),
         type: form.type,
         is_active: form.is_active,
+        supplier_id: form.supplier_id || null,
       };
 
       if (editing) {
@@ -197,6 +214,7 @@ export function OrderResponsiblesManager() {
               <TableRow>
                 <TableHead>Nome</TableHead>
                 <TableHead>Tipo</TableHead>
+                <TableHead>Fornecedor</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="w-[120px]">Ações</TableHead>
               </TableRow>
@@ -207,6 +225,9 @@ export function OrderResponsiblesManager() {
                   <TableCell className="font-medium">{item.name}</TableCell>
                   <TableCell>
                     <Badge variant="outline">{TYPE_LABELS[item.type]}</Badge>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground text-sm">
+                    {(item as any).suppliers?.name || "—"}
                   </TableCell>
                   <TableCell>
                     <Badge variant={item.is_active ? "default" : "secondary"}>
@@ -227,7 +248,7 @@ export function OrderResponsiblesManager() {
               ))}
               {filteredResponsibles.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={4} className="py-8 text-center text-muted-foreground">
+                  <TableCell colSpan={5} className="py-8 text-center text-muted-foreground">
                     Nenhum responsável encontrado
                   </TableCell>
                 </TableRow>
@@ -263,6 +284,26 @@ export function OrderResponsiblesManager() {
                   {TYPE_OPTIONS.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Fornecedor (Contas a Pagar)</Label>
+              <Select
+                value={form.supplier_id || "none"}
+                onValueChange={(value) => setForm((prev) => ({ ...prev, supplier_id: value === "none" ? "" : value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o fornecedor..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Nenhum</SelectItem>
+                  {(suppliers || []).map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
