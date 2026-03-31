@@ -330,6 +330,14 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
     numeroParcelas: 1
   });
 
+  // Estado para taxas de link de pagamento - sempre Tendenci absorve
+  const [taxaLink, setTaxaLink] = useState({
+    percentual: 0,
+    valor: 0,
+    responsavel: 'tendenci' as const,
+    numeroParcelas: 1
+  });
+
   // Estado para taxas de boleto - sempre Tendenci absorve
   const [taxaBoleto, setTaxaBoleto] = useState({
     percentual: 0,
