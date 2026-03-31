@@ -107,23 +107,23 @@ export default function Financeiro() {
           {/* Global Pending Alerts */}
           <PendingAlertsCard />
 
-          <TabsContent value="dashboard" className="space-y-4">
+          <TabsContent value="dashboard" forceMount className={activeTab === "dashboard" ? "space-y-4" : "hidden"}>
             <FinanceiroDashboard filters={filters} />
           </TabsContent>
 
-          <TabsContent value="dre-cashflow" className="space-y-4">
+          <TabsContent value="dre-cashflow" forceMount className={activeTab === "dre-cashflow" ? "space-y-4" : "hidden"}>
             <DRECashflowView filters={filters} onFiltersChange={setFilters} />
           </TabsContent>
 
-          <TabsContent value="payables-receivables" className="space-y-4">
+          <TabsContent value="payables-receivables" forceMount className={activeTab === "payables-receivables" ? "space-y-4" : "hidden"}>
             <PayablesReceivablesTab filters={filters} />
           </TabsContent>
 
-          <TabsContent value="ledger-reconciliation" className="space-y-4">
+          <TabsContent value="ledger-reconciliation" forceMount className={activeTab === "ledger-reconciliation" ? "space-y-4" : "hidden"}>
             <LedgerReconciliationTab filters={filters} />
           </TabsContent>
 
-          <TabsContent value="purchases" className="space-y-4">
+          <TabsContent value="purchases" forceMount className={activeTab === "purchases" ? "space-y-4" : "hidden"}>
             <PurchasesTab />
           </TabsContent>
         </Tabs>
