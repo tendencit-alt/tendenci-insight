@@ -2651,6 +2651,7 @@ export type Database = {
       fin_projects: {
         Row: {
           budget: number | null
+          budget_percent: number
           code: string | null
           created_at: string | null
           end_date: string | null
@@ -2662,6 +2663,7 @@ export type Database = {
         }
         Insert: {
           budget?: number | null
+          budget_percent?: number
           code?: string | null
           created_at?: string | null
           end_date?: string | null
@@ -2673,6 +2675,7 @@ export type Database = {
         }
         Update: {
           budget?: number | null
+          budget_percent?: number
           code?: string | null
           created_at?: string | null
           end_date?: string | null
