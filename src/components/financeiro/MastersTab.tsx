@@ -6,7 +6,8 @@ import { CostCentersManager } from "./masters/CostCentersManager";
 import { FinProjectsManager } from "./masters/FinProjectsManager";
 import { OrderResponsiblesManager } from "./masters/OrderResponsiblesManager";
 import { StrategicResourceCategoriesManager } from "./masters/StrategicResourceCategoriesManager";
-import { BriefcaseBusiness, Building2, FileSpreadsheet, Landmark, FolderCog, FolderKanban } from "lucide-react";
+import { CardRatesManager } from "./masters/CardRatesManager";
+import { BriefcaseBusiness, Building2, FileSpreadsheet, Landmark, FolderCog, FolderKanban, CreditCard } from "lucide-react";
 
 export function MastersTab() {
   const [activeTab, setActiveTab] = useState("bank_accounts");
