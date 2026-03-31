@@ -56,6 +56,18 @@ export function OrdersFilters({ filters, onFiltersChange }: OrdersFiltersProps) 
     },
   });
 
+  const { data: centrosCusto } = useQuery({
+    queryKey: ['centros-custo-list'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('fin_cost_centers')
+        .select('id, name')
+        .eq('active', true)
+        .order('name');
+      return data || [];
+    },
+  });
+
   const handlePeriodChange = (period: string) => {
     if (period === 'custom') {
       onFiltersChange({ ...filters, period });
