@@ -112,6 +112,11 @@ export function FinanceiroFilters({ filters, onChange }: FinanceiroFiltersProps)
   ].filter(Boolean).length;
 
   const handlePresetPeriod = (preset: string) => {
+    if (preset === "all") {
+      onChange({ ...filters, dateFrom: null, dateTo: null });
+      return;
+    }
+
     const today = new Date();
     let dateFrom = new Date();
     let dateTo = new Date();
