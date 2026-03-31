@@ -47,6 +47,10 @@ export function MastersTab() {
             <BriefcaseBusiness className="h-4 w-4" />
             Responsáveis
           </TabsTrigger>
+          <TabsTrigger value="card_rates" className="gap-2">
+            <CreditCard className="h-4 w-4" />
+            Taxas Cartão
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="bank_accounts" className="mt-4">
@@ -71,6 +75,10 @@ export function MastersTab() {
 
         <TabsContent value="responsibles" className="mt-4">
           <OrderResponsiblesManager />
+        </TabsContent>
+
+        <TabsContent value="card_rates" className="mt-4">
+          <CardRatesManager />
         </TabsContent>
       </Tabs>
     </div>
