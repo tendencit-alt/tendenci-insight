@@ -79,6 +79,19 @@ export function OrdersTable({ orders, isLoading, onSelectOrder, onEditOrder, onD
   const totalPages = Math.ceil(filteredOrders.length / ITEMS_PER_PAGE);
   const paginatedOrders = filteredOrders.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
+  const pageIds = paginatedOrders.map(o => o.id);
+  const allPageSelected = pageIds.length > 0 && pageIds.every(id => selectedIds.includes(id));
+  const somePageSelected = pageIds.some(id => selectedIds.includes(id)) && !allPageSelected;
+
+  const toggleSelectAll = () => {
+    if (!onSelectedIdsChange) return;
+    if (allPageSelected) {
+      onSelectedIdsChange(selectedIds.filter(id => !pageIds.includes(id)));
+    } else {
+      onSelectedIdsChange([...new Set([...selectedIds, ...pageIds])]);
+    }
+  };
+
   const getDeadlineStatus = (deadline: string | null, status: string) => {
     if (!deadline || status === 'entregue' || status === 'cancelado') return null;
     const deadlineDate = parseDateOnly(deadline);
