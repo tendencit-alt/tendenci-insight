@@ -60,7 +60,7 @@ export default function Orders() {
       if (filters.vendedorId) query = query.eq('vendedor_id', filters.vendedorId);
       if (orderIdsWithCentroCusto) query = query.in('id', orderIdsWithCentroCusto);
 
-      const dateColumn = 'created_at';
+      const dateColumn = 'data_emissao';
 
       if (filters.dateFrom) {
         const fromDate = new Date(filters.dateFrom);
