@@ -35,6 +35,11 @@ const iconMap: Record<string, React.ReactNode> = {
   user: <User className="w-4 h-4" />,
   palette: <Palette className="w-4 h-4" />,
   ruler: <Ruler className="w-4 h-4" />,
+  briefcase: <Briefcase className="w-4 h-4" />,
+  calculator: <Calculator className="w-4 h-4" />,
+  factory: <Factory className="w-4 h-4" />,
+  'dollar-sign': <DollarSign className="w-4 h-4" />,
+  eye: <Eye className="w-4 h-4" />,
 };
 
 export function ProfileTypesManager() {
