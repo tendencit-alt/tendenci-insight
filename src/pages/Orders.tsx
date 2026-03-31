@@ -52,7 +52,8 @@ export default function Orders() {
           vendedor:profiles!orders_vendedor_id_fkey(id, full_name),
           architect:architects(id, name),
           deal:crm_deals(id, title),
-          project:fin_projects(id, name)
+          project:fin_projects(id, name),
+          order_items(centro_custo)
         `)
         .order('created_at', { ascending: false });
 
