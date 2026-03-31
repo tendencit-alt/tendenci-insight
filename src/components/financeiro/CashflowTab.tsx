@@ -394,7 +394,7 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
       >
         <TableCell 
           className="cursor-pointer select-none"
-          style={{ paddingLeft: `${(line.level * 24) + 16}px` }}
+          style={{ paddingLeft: `${(line.level * 14) + 8}px` }}
           onClick={() => {
             if (line.hasChildren) {
               toggleExpand(line.id);
