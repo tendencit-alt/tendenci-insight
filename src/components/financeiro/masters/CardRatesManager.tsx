@@ -338,6 +338,7 @@ export function CardRatesManager() {
             configs={feeConfigs}
             suppliers={suppliers}
             onUpdate={handleSupplierUpdate}
+            onRefreshSuppliers={refreshSuppliers}
           />
         </CardContent>
       </Card>
