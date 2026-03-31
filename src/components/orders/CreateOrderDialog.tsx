@@ -556,7 +556,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
   const parcelasLink = parcelas.filter(p => p.forma_pagamento === 'link_pagamento');
   const taxaTotalLink = parcelasLink.reduce((acc, parcela) => {
     const numParcelas = parcela.numero_parcelas || 1;
-    const taxaPerc = TAXAS_LINK_PAGAMENTO[numParcelas] || 0;
+    const taxaPerc = linkRatesDb[numParcelas] ?? TAXAS_LINK_PAGAMENTO[numParcelas] ?? 0;
     const valorBase = totalSemTaxa * (parcela.percentual / 100);
     return acc + valorBase * (taxaPerc / 100);
   }, 0);
