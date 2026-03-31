@@ -23,7 +23,7 @@ export function OrdersKPIs({ filters }: OrdersKPIsProps) {
         p_vendedor_id: filters.vendedorId || null,
         p_date_from: filters.dateFrom?.toISOString() || null,
         p_date_to: filters.dateTo?.toISOString() || null,
-        p_date_field: 'created_at',
+        p_date_field: 'data_emissao',
       });
       if (error) throw error;
       return data?.[0] || {
