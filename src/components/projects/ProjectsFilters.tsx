@@ -132,7 +132,7 @@ export function ProjectsFilters({ filters, onFiltersChange }: ProjectsFiltersPro
   const hasActiveFilters = 
     (filters.stages && filters.stages.length > 0) || 
     filters.architect !== "Todos" || 
-    filters.period !== "thisMonth" ||
+    filters.period !== "all" ||
     filters.search ||
     filters.customDateRange?.from;
 

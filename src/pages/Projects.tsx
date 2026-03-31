@@ -109,7 +109,7 @@ const Projects = () => {
         }
         break;
       default:
-        dateFrom = startOfMonth(now);
+        // "all" — no date filter
         break;
     }
 
