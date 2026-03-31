@@ -454,7 +454,7 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
             className="bg-muted/20 text-sm hover:bg-muted/40"
           >
             <TableCell 
-              style={{ paddingLeft: `${((line.level + 1) * 24) + 16}px` }}
+              style={{ paddingLeft: `${((line.level + 1) * 14) + 8}px` }}
             >
               <div className="flex items-center gap-2 min-w-0">
                 <button

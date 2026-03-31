@@ -516,14 +516,11 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
             ) : (
               <span className="w-3.5 shrink-0" />
             )}
-            <span className="text-muted-foreground font-mono text-[11px] shrink-0">{line.code}</span>
+            <span className="text-muted-foreground font-mono text-[10px] shrink-0">{line.code}</span>
             <span className={cn(
               "truncate",
               isResultado && "font-semibold"
             )}>{line.name}</span>
-            {isResultado && (
-              <span className="text-xs text-muted-foreground ml-1">(calculado)</span>
-            )}
             {hasEntries && !line.hasChildren && (
               <span className="text-xs text-muted-foreground ml-1">
                 ({line.entries.length} lançamento{line.entries.length !== 1 ? 's' : ''})
@@ -577,7 +574,7 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
             className="bg-muted/20 text-sm hover:bg-muted/40"
           >
             <TableCell 
-              style={{ paddingLeft: `${((line.level + 1) * 24) + 16}px` }}
+              style={{ paddingLeft: `${((line.level + 1) * 14) + 8}px` }}
             >
               <div className="flex items-center gap-2 min-w-0">
                 <button
