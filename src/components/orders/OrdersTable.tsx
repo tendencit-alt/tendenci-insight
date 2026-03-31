@@ -33,6 +33,7 @@ interface OrdersTableProps {
   onDeleteOrder?: (id: string, orderNumber: number) => void;
   selectedIds?: string[];
   onSelectedIdsChange?: (ids: string[]) => void;
+  onBulkEdit?: () => void;
 }
 
 const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
@@ -48,7 +49,7 @@ const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
 
 const ITEMS_PER_PAGE = 20;
 
-export function OrdersTable({ orders, isLoading, onSelectOrder, onEditOrder, onDeleteOrder, selectedIds = [], onSelectedIdsChange }: OrdersTableProps) {
+export function OrdersTable({ orders, isLoading, onSelectOrder, onEditOrder, onDeleteOrder, selectedIds = [], onSelectedIdsChange, onBulkEdit }: OrdersTableProps) {
   const { isMaster } = usePermissions();
   const isEditable = (status: string) => ['rascunho', 'ativo', 'aguardando_aprovacao'].includes(status);
   const [searchTerm, setSearchTerm] = useState('');
@@ -127,9 +128,15 @@ export function OrdersTable({ orders, isLoading, onSelectOrder, onEditOrder, onD
           <span className="text-sm font-medium text-primary">
             {selectedIds.length} pedido{selectedIds.length !== 1 ? 's' : ''} selecionado{selectedIds.length !== 1 ? 's' : ''}
           </span>
-          <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground" onClick={() => onSelectedIdsChange?.([])}>
-            Limpar seleção
-          </Button>
+          <div className="flex items-center gap-1.5">
+            <Button variant="default" size="sm" className="h-7 text-xs" onClick={() => onBulkEdit?.()}>
+              <Pencil className="h-3 w-3 mr-1" />
+              Editar em massa
+            </Button>
+            <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground" onClick={() => onSelectedIdsChange?.([])}>
+              Limpar seleção
+            </Button>
+          </div>
         </div>
       )}
     <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
