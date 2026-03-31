@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { usePermissions } from '@/hooks/usePermissions';
 import { format, differenceInDays } from 'date-fns';
@@ -30,6 +31,8 @@ interface OrdersTableProps {
   onSelectOrder: (id: string) => void;
   onEditOrder?: (id: string) => void;
   onDeleteOrder?: (id: string, orderNumber: number) => void;
+  selectedIds?: string[];
+  onSelectedIdsChange?: (ids: string[]) => void;
 }
 
 const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
