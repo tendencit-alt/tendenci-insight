@@ -179,52 +179,30 @@ export default function Production() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-4">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <Factory className="h-6 w-6 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">Produção</h1>
-              <p className="text-sm text-muted-foreground">
-                Gerencie as ordens de produção por tipo de móvel
-              </p>
-            </div>
-          </div>
+      <div className="space-y-3">
+        {/* Header compacto */}
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-semibold text-foreground">Produção</h1>
           
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
             {isMaster && (
-              <Button variant="outline" onClick={() => setAutomationsDialogOpen(true)} className="gap-2">
+              <Button variant="ghost" size="sm" onClick={() => setAutomationsDialogOpen(true)} className="gap-1.5 text-muted-foreground">
                 <Zap className="h-4 w-4" />
-                Automações
+                <span className="hidden sm:inline">Automações</span>
               </Button>
             )}
             {isMaster && (
-              <Button variant="outline" onClick={() => setConfigDialogOpen(true)} className="gap-2">
+              <Button variant="ghost" size="sm" onClick={() => setConfigDialogOpen(true)} className="gap-1.5 text-muted-foreground">
                 <Settings className="h-4 w-4" />
-                Configurar Etapas
+                <span className="hidden sm:inline">Etapas</span>
               </Button>
             )}
-            <Button onClick={() => setCreateDialogOpen(true)} className="gap-2">
+            <Button size="sm" onClick={() => setCreateDialogOpen(true)} className="gap-1.5">
               <Plus className="h-4 w-4" />
               Nova OP
             </Button>
           </div>
         </div>
-
-        {/* KPIs Dashboard */}
-        <ProductionKPIs 
-          productionTypeId={currentTypeId}
-          filters={filters}
-        />
-
-        {/* Alertas de SLA */}
-        <ProductionSLAAlerts 
-          productionTypeId={currentTypeId}
-          onOrderClick={(orderId) => setSelectedOrderId(orderId)}
-        />
 
         {/* Filtros */}
         <ProductionFilters 
@@ -236,7 +214,7 @@ export default function Production() {
           onViewModeChange={setViewMode}
         />
 
-        {/* Tabs por tipo de produção */}
+        {/* Tabs por tipo de produção + Kanban */}
         <Tabs value={selectedType || productionTypes[0]?.id || ''} onValueChange={setSelectedType} className="w-full">
           <TabsList className="w-full justify-start overflow-x-auto">
             {productionTypes.map((type) => (
@@ -251,7 +229,7 @@ export default function Production() {
           </TabsList>
 
           {productionTypes.map((type) => (
-            <TabsContent key={type.id} value={type.id} className="mt-4">
+            <TabsContent key={type.id} value={type.id} className="mt-3">
               <ProductionKanban 
                 productionTypeId={type.id} 
                 filters={filters}
@@ -262,9 +240,6 @@ export default function Production() {
             </TabsContent>
           ))}
         </Tabs>
-
-        {/* Gráfico Tempo Médio por Fase vs Prazo */}
-        <ProductionSLAChart productionTypeId={currentTypeId} />
 
         {/* Dialog de criação */}
         <CreateProductionOrderDialog 
