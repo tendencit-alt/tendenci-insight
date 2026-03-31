@@ -199,8 +199,11 @@ export default function Production() {
           </div>
         </div>
 
+        {/* Resumo / KPIs */}
+        <ProductionKPIs productionTypeId={currentTypeId} filters={filters} />
+
         {/* Filtros */}
-        <ProductionFilters 
+        <ProductionFilters
           filters={filters} 
           onFiltersChange={setFilters} 
           onExport={handleExport}
