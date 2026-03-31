@@ -290,6 +290,26 @@ export function OrderResponsiblesManager() {
               </Select>
             </div>
 
+            <div className="space-y-2">
+              <Label>Fornecedor (Contas a Pagar)</Label>
+              <Select
+                value={form.supplier_id || "none"}
+                onValueChange={(value) => setForm((prev) => ({ ...prev, supplier_id: value === "none" ? "" : value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o fornecedor..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Nenhum</SelectItem>
+                  {(suppliers || []).map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="flex items-center gap-2">
               <Switch
                 checked={form.is_active}
