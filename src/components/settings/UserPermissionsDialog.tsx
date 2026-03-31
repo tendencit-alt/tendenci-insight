@@ -36,7 +36,6 @@ const MODULE_LABELS: Record<AppModule, string> = {
   'pedidos': 'Pedidos',
   'financeiro': 'Financeiro',
   'cadastros_financeiros': 'Cadastros Financeiros',
-  'system_errors': 'Erros do Sistema'
 };
 
 const ALL_MODULES: AppModule[] = [
@@ -49,7 +48,6 @@ const ALL_MODULES: AppModule[] = [
   'cadastros_financeiros',
   'configuracoes',
   'gestao_usuarios',
-  'system_errors'
 ];
 
 export function UserPermissionsDialog({

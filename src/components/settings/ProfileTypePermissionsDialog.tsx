@@ -48,7 +48,6 @@ const ALL_MODULES = [
   'estoque',
   'configuracoes',
   'gestao_usuarios',
-  'system_errors',
 ];
 
 const MODULE_LABELS: Record<string, string> = {
@@ -61,7 +60,6 @@ const MODULE_LABELS: Record<string, string> = {
   estoque: 'Estoque',
   configuracoes: 'Configurações',
   gestao_usuarios: 'Gestão de Usuários',
-  system_errors: 'Erros do Sistema',
 };
 
 export function ProfileTypePermissionsDialog({

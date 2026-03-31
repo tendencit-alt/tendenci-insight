@@ -11,8 +11,7 @@ export type AppModule =
   | 'estoque'
   | 'pedidos'
   | 'financeiro'
-  | 'cadastros_financeiros'
-  | 'system_errors';
+  | 'cadastros_financeiros';
 
 export interface ModulePermission {
   module: AppModule;
@@ -48,7 +47,6 @@ const ALL_MODULES: AppModule[] = [
   'pedidos',
   'financeiro',
   'cadastros_financeiros',
-  'system_errors'
 ];
 
 export function PermissionsProvider({ children }: { children: ReactNode }) {
