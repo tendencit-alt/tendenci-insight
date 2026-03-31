@@ -1,10 +1,12 @@
 import { useState } from "react";
+import { useFinanceiroRealtime } from "@/hooks/useFinanceiroRealtime";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { FinanceiroFilters, FinanceiroFiltersState } from "@/components/financeiro/FinanceiroFilters";
 import { DashboardBI as DashboardBIComponent } from "@/components/financeiro/DashboardBI";
 import { LayoutDashboard } from "lucide-react";
 
 export default function DashboardBI() {
+  useFinanceiroRealtime();
   const [filters, setFilters] = useState<FinanceiroFiltersState>({
     dateFrom: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
     dateTo: new Date(),

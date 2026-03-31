@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useFinanceiroRealtime } from "@/hooks/useFinanceiroRealtime";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FinanceiroFilters, FinanceiroFiltersState } from "@/components/financeiro/FinanceiroFilters";
@@ -22,6 +23,7 @@ import { useNavigate } from "react-router-dom";
 
 export default function Financeiro() {
   const navigate = useNavigate();
+  useFinanceiroRealtime();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [filters, setFilters] = useState<FinanceiroFiltersState>({
     dateFrom: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
