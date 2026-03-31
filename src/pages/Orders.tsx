@@ -23,6 +23,7 @@ export default function Orders() {
   const [filters, setFilters] = useState({
     status: '',
     vendedorId: '',
+    centroCusto: '',
     period: 'thisMonth',
     dateFrom: startOfMonth(now),
     dateTo: now,
@@ -46,6 +47,7 @@ export default function Orders() {
 
       if (filters.status) query = query.eq('status', filters.status);
       if (filters.vendedorId) query = query.eq('vendedor_id', filters.vendedorId);
+      if (filters.centroCusto) query = query.eq('centro_custo', filters.centroCusto);
 
       const dateColumn = 'created_at';
 

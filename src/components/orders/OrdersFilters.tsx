@@ -13,6 +13,7 @@ interface OrdersFiltersProps {
   filters: {
     status: string;
     vendedorId: string;
+    centroCusto: string;
     period: string;
     dateFrom: Date;
     dateTo: Date;
@@ -55,6 +56,18 @@ export function OrdersFilters({ filters, onFiltersChange }: OrdersFiltersProps) 
     },
   });
 
+  const { data: centrosCusto } = useQuery({
+    queryKey: ['centros-custo-list'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('fin_cost_centers')
+        .select('id, name')
+        .eq('active', true)
+        .order('name');
+      return data || [];
+    },
+  });
+
   const handlePeriodChange = (period: string) => {
     if (period === 'custom') {
       onFiltersChange({ ...filters, period });
@@ -78,6 +91,7 @@ export function OrdersFilters({ filters, onFiltersChange }: OrdersFiltersProps) 
     onFiltersChange({
       status: '',
       vendedorId: '',
+      centroCusto: '',
       period: 'thisMonth',
       dateFrom: startOfMonth(now),
       dateTo: now,
@@ -85,7 +99,7 @@ export function OrdersFilters({ filters, onFiltersChange }: OrdersFiltersProps) 
     });
   };
 
-  const hasFilters = filters.status || filters.vendedorId || filters.period !== 'thisMonth';
+  const hasFilters = filters.status || filters.vendedorId || filters.centroCusto || filters.period !== 'thisMonth';
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -166,6 +180,17 @@ export function OrdersFilters({ filters, onFiltersChange }: OrdersFiltersProps) 
         </SelectContent>
       </Select>
 
+      <Select value={filters.centroCusto || 'all'} onValueChange={(v) => onFiltersChange({ ...filters, centroCusto: v === 'all' ? '' : v })}>
+        <SelectTrigger className="h-9 w-[180px] border-border/60 bg-card text-sm">
+          <SelectValue>{filters.centroCusto ? centrosCusto?.find((c) => c.name === filters.centroCusto)?.name : 'Centro de Custo'}</SelectValue>
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Todos</SelectItem>
+          {centrosCusto?.map((c) => (
+            <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
 
       {hasFilters && (
         <Button variant="ghost" size="sm" onClick={clearFilters} className="h-9 px-2 text-muted-foreground hover:text-foreground">
