@@ -94,7 +94,35 @@ export function FinanceiroKPIs({ metrics, isLoading }: FinanceiroKPIsProps) {
   return (
     <TooltipProvider>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {/* ✅ 1. Resultado Líquido do Período */}
+        {/* ✅ 1. Receita Total */}
+        <Card className={cn("relative overflow-hidden border-l-4", receitaColors.border)}>
+          <CardContent className="pt-4 pb-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1 flex-1">
+                <div className="flex items-center gap-1">
+                  <span className="text-sm">💰</span>
+                  <p className="text-xs text-muted-foreground font-medium">Receita Total</p>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-3 w-3 text-muted-foreground/60 cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-[250px] text-xs">
+                      <p>Total de receitas no período filtrado.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+                <p className={cn("text-2xl font-bold", receitaColors.text)}>
+                  {formatCurrency(entradas)}
+                </p>
+              </div>
+              <div className={cn("p-3 rounded-full", receitaColors.bg)}>
+                <TrendingUp className={cn("h-6 w-6", receitaColors.text)} />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* ✅ 2. Resultado Líquido do Período */}
         <Card className={cn("relative overflow-hidden border-l-4", resultadoColors.border)}>
           <CardContent className="pt-4 pb-4">
             <div className="flex items-center justify-between">
@@ -123,7 +151,7 @@ export function FinanceiroKPIs({ metrics, isLoading }: FinanceiroKPIsProps) {
           </CardContent>
         </Card>
 
-        {/* ✅ 2. Fôlego de Caixa (unifica Burn + Runway + Saúde) */}
+        {/* ✅ 3. Fôlego de Caixa */}
         <Card className={cn("relative overflow-hidden border-l-4", folegoColors.border)}>
           <CardContent className="pt-4 pb-4">
             <div className="flex items-center justify-between">
@@ -158,41 +186,6 @@ export function FinanceiroKPIs({ metrics, isLoading }: FinanceiroKPIsProps) {
               </div>
               <div className={cn("p-3 rounded-full", folegoColors.bg)}>
                 <Wind className={cn("h-6 w-6", folegoColors.text)} />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* ✅ 3. Qualidade do Caixa (simplificado) */}
-        <Card className={cn("relative overflow-hidden border-l-4", qualidadeColors.border)}>
-          <CardContent className="pt-4 pb-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1 flex-1">
-                <div className="flex items-center gap-1">
-                  <span className="text-sm">🟡</span>
-                  <p className="text-xs text-muted-foreground font-medium">Qualidade do Caixa</p>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Info className="h-3 w-3 text-muted-foreground/60 cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent side="top" className="max-w-[300px] text-xs">
-                      <p className="font-semibold mb-1">Detalhamento:</p>
-                      <p><strong>Conversão:</strong> {conversao.toFixed(1)}% (margem sobre receitas)</p>
-                      <p><strong>Cobertura:</strong> {cobertura.toFixed(0)}% (saldo vs despesas)</p>
-                      <p className="mt-2 text-muted-foreground">
-                        Boa = Conversão ≥10% e Cobertura ≥100%<br/>
-                        Atenção = Conversão ≥0% e Cobertura ≥50%<br/>
-                        Crítica = Abaixo dos limites
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-                <p className={cn("text-2xl font-bold", qualidadeColors.text)}>
-                  {qualidadeColors.status}
-                </p>
-              </div>
-              <div className={cn("p-3 rounded-full", qualidadeColors.bg)}>
-                <BarChart3 className={cn("h-6 w-6", qualidadeColors.text)} />
               </div>
             </div>
           </CardContent>
