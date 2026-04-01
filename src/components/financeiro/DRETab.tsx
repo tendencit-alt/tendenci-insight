@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { AccountsStatusTooltip } from "./AccountsStatusTooltip";
 import { supabase } from "@/integrations/supabase/client";
 import { FinanceiroFiltersState } from "./FinanceiroFilters";
 import { CostCenterSubFilter } from "./CostCenterSubFilter";
