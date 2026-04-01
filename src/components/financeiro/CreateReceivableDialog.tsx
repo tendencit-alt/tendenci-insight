@@ -159,8 +159,14 @@ export function CreateReceivableDialog({ open, onOpenChange, onSuccess, initialD
     if (!form.chart_account_id) {
       newErrors.chart_account_id = "Categoria é obrigatória";
     }
-    if (!form.cost_center_id) {
+    if (!form.cost_center_id && !isRateio) {
       newErrors.cost_center_id = "Centro de Custo é obrigatório";
+    }
+    if (isRateio) {
+      const totalPct = apportionmentItems.reduce((s, i) => s + i.percentage, 0);
+      if (Math.abs(totalPct - 100) >= 0.01) {
+        newErrors.cost_center_id = "O rateio deve totalizar 100%";
+      }
     }
     if (!form.project_id) {
       newErrors.project_id = "Projeto é obrigatório";
