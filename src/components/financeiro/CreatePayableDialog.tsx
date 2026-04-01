@@ -260,6 +260,8 @@ export function CreatePayableDialog({ open, onOpenChange, onSuccess, initialData
       notes: "",
     });
     setErrors({});
+    setIsRateio(false);
+    setApportionmentItems([]);
   };
 
   const handleOpenChange = (newOpen: boolean) => {
