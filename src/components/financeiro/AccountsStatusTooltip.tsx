@@ -154,7 +154,7 @@ export function AccountsStatusTooltip({
           <Info className="h-3.5 w-3.5 text-muted-foreground/60 cursor-help hover:text-muted-foreground transition-colors" />
         )}
       </HoverCardTrigger>
-      <HoverCardContent side="bottom" align="start" className="w-72 p-3">
+      <HoverCardContent side="bottom" align="start" className="w-72 p-3 z-[9999]">
         <div className={cn("space-y-3", show === "both" && "divide-y divide-border")}>
           {(show === "both" || show === "receivables") && (
             <SummaryBlock title="Contas a Receber" data={receivableSummary} paidLabel="Recebidas" />
