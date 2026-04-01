@@ -780,7 +780,8 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
                 <TableCell className="text-xs">
                   <span className="inline-flex items-center gap-1">
                     TOTAL RECEITAS
-                    <AccountsStatusTooltip dateFrom={dateFrom} dateTo={dateTo} show="receivables" />
+                    <AccountsStatusTooltip dateFrom={filters.dateFrom ? format(filters.dateFrom, "yyyy-MM-dd") : null} dateTo={filters.dateTo ? format(filters.dateTo, "yyyy-MM-dd") : null} show="receivables" />
+                  </span>
                   </span>
                 </TableCell>
                 <TableCell className="text-right text-green-600 font-mono text-xs">
