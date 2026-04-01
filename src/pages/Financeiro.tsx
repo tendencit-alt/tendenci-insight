@@ -24,7 +24,7 @@ import { useNavigate } from "react-router-dom";
 export default function Financeiro() {
   const navigate = useNavigate();
   useFinanceiroRealtime();
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const [activeTab, setActiveTab] = useState("dre-cashflow");
   const [filters, setFilters] = useState<FinanceiroFiltersState>({
     dateFrom: null,
     dateTo: null,
