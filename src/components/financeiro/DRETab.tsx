@@ -183,8 +183,8 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
   const { data: dreData, isLoading } = useQuery({
     queryKey: ["fin-dre", filters],
     queryFn: async () => {
-      const dateFrom = format(filters.dateFrom, "yyyy-MM-dd");
-      const dateTo = format(filters.dateTo, "yyyy-MM-dd");
+      const dateFrom = filters.dateFrom ? format(filters.dateFrom, "yyyy-MM-dd") : "2000-01-01";
+      const dateTo = filters.dateTo ? format(filters.dateTo, "yyyy-MM-dd") : "2099-12-31";
 
       // Get ALL chart accounts with in_dre = true
       const { data: chartAccounts } = await supabase
