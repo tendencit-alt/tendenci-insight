@@ -1068,8 +1068,8 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
       {drillDown && (
         <DrillDownEntriesDialog
           filter={drillDown}
-          dateFrom={dfFrom}
-          dateTo={dfTo}
+          dateFrom="2000-01-01"
+          dateTo="2099-12-31"
           onClose={() => setDrillDown(null)}
         />
       )}
