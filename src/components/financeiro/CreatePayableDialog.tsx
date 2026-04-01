@@ -414,9 +414,16 @@ export function CreatePayableDialog({ open, onOpenChange, onSuccess, initialData
                 Centro de Custo <span className="text-destructive">*</span>
               </Label>
               <Select 
-                value={form.cost_center_id} 
+                value={isRateio ? "__RATEIO__" : form.cost_center_id} 
                 onValueChange={(v) => {
-                  setForm({ ...form, cost_center_id: v });
+                  if (v === "__RATEIO__") {
+                    setIsRateio(true);
+                    setForm({ ...form, cost_center_id: "" });
+                  } else {
+                    setIsRateio(false);
+                    setApportionmentItems([]);
+                    setForm({ ...form, cost_center_id: v });
+                  }
                   if (errors.cost_center_id) setErrors({ ...errors, cost_center_id: undefined });
                 }}
               >
@@ -427,6 +434,7 @@ export function CreatePayableDialog({ open, onOpenChange, onSuccess, initialData
                   {costCenters?.map((c) => (
                     <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                   ))}
+                  <SelectItem value="__RATEIO__">📊 Rateio entre Centros de Custo</SelectItem>
                 </SelectContent>
               </Select>
               {errors.cost_center_id && (
