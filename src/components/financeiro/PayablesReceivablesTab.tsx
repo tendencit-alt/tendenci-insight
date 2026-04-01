@@ -713,18 +713,27 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
               <div className="space-y-2"><Skeleton className="h-6 w-32" /><Skeleton className="h-4 w-24" /></div>
             ) : (
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
+                <button
+                  onClick={() => setDrillDown({ type: "receivables", statusFilter: "open", title: "Contas a Receber - Em Aberto" })}
+                  className="flex items-center justify-between w-full rounded px-1 py-0.5 -mx-1 hover:bg-muted/80 cursor-pointer transition-colors"
+                >
                   <span className="text-muted-foreground text-sm">Em Aberto</span>
                   <span className="font-semibold">{receivablesSummary?.abertasCount || 0} lançamentos - {formatCurrency(receivablesSummary?.abertasValor || 0)}</span>
-                </div>
-                <div className="flex items-center justify-between text-red-600">
+                </button>
+                <button
+                  onClick={() => setDrillDown({ type: "receivables", statusFilter: "overdue", title: "Contas a Receber - Vencidas" })}
+                  className="flex items-center justify-between w-full rounded px-1 py-0.5 -mx-1 hover:bg-muted/80 cursor-pointer transition-colors text-red-600"
+                >
                   <span className="text-sm">Vencidas</span>
                   <span className="font-semibold">{receivablesSummary?.vencidasCount || 0} lançamentos - {formatCurrency(receivablesSummary?.vencidasValor || 0)}</span>
-                </div>
-                <div className="flex items-center justify-between text-green-600">
+                </button>
+                <button
+                  onClick={() => setDrillDown({ type: "receivables", statusFilter: "paid", title: "Contas a Receber - Recebidas" })}
+                  className="flex items-center justify-between w-full rounded px-1 py-0.5 -mx-1 hover:bg-muted/80 cursor-pointer transition-colors text-green-600"
+                >
                   <span className="text-sm">Recebidas</span>
                   <span className="font-semibold">{receivablesSummary?.recebidasCount || 0} lançamentos - {formatCurrency(receivablesSummary?.recebidasValor || 0)}</span>
-                </div>
+                </button>
                 <div className="flex gap-4 text-xs text-muted-foreground pt-2 border-t">
                   <span className="flex items-center gap-1"><Clock className="h-3 w-3" />7d: {receivablesSummary?.aVencer7d || 0}</span>
                   <span>15d: {receivablesSummary?.aVencer15d || 0}</span>
