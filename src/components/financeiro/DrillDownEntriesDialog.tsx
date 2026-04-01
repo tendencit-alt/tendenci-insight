@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -5,12 +6,14 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { ArrowDownCircle, ArrowUpCircle, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export type DrillDownFilter = {
   type: "payables" | "receivables";
@@ -32,18 +35,16 @@ type EntryRow = {
 const formatCurrency = (value: number) =>
   value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-function getStatusColor(status: string, dueDate: string) {
-  const today = new Date().toISOString().slice(0, 10);
+function getStatusColor(status: string) {
   if (status === "PAGO" || status === "RECEBIDO") return "text-green-600";
-  if (status === "ABERTO" && dueDate < today) return "text-red-600";
+  if (status === "VENCIDO") return "text-red-600";
   return "text-yellow-600";
 }
 
-function getStatusLabel(status: string, dueDate: string, type: "payables" | "receivables") {
-  const today = new Date().toISOString().slice(0, 10);
+function getStatusLabel(status: string, type: "payables" | "receivables") {
   if (status === "PAGO") return "Paga";
   if (status === "RECEBIDO") return "Recebida";
-  if (status === "ABERTO" && dueDate < today) return "Vencida";
+  if (status === "VENCIDO") return "Vencida";
   return "A vencer";
 }
 
@@ -61,7 +62,7 @@ export function DrillDownEntriesDialog({
   onClose,
 }: DrillDownEntriesDialogProps) {
   const table = filter.type === "payables" ? "fin_payables" : "fin_receivables";
-  const today = new Date().toISOString().slice(0, 10);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const { data: entries, isLoading } = useQuery({
     queryKey: ["drilldown-entries", filter.type, filter.statusFilter, dateFrom, dateTo],
@@ -78,9 +79,9 @@ export function DrillDownEntriesDialog({
         const paidStatuses = filter.type === "payables" ? ["PAGO"] : ["RECEBIDO"];
         query = query.in("status", paidStatuses);
       } else if (filter.statusFilter === "open") {
-        query = query.eq("status", "ABERTO").gte("due_date", today);
+        query = query.eq("status", "ABERTO");
       } else if (filter.statusFilter === "overdue") {
-        query = query.eq("status", "ABERTO").lt("due_date", today);
+        query = query.eq("status", "VENCIDO");
       }
 
       const { data } = await query;
@@ -89,6 +90,28 @@ export function DrillDownEntriesDialog({
   });
 
   const totalAmount = entries?.reduce((sum, e) => sum + (Number(e.amount) || 0), 0) || 0;
+
+  const selectedAmount = entries
+    ?.filter((e) => selectedIds.has(e.id))
+    .reduce((sum, e) => sum + (Number(e.amount) || 0), 0) || 0;
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    if (!entries) return;
+    if (selectedIds.size === entries.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(entries.map((e) => e.id)));
+    }
+  };
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
@@ -102,10 +125,24 @@ export function DrillDownEntriesDialog({
             )}
             {filter.title}
           </DialogTitle>
-          {entries && (
-            <p className="text-sm text-muted-foreground">
-              {entries.length} lançamento{entries.length !== 1 ? "s" : ""} — Total: {formatCurrency(totalAmount)}
-            </p>
+          <DialogDescription className="sr-only">
+            Detalhamento dos lançamentos
+          </DialogDescription>
+          <div className="flex items-center justify-between text-sm text-muted-foreground">
+            <span>
+              {entries?.length || 0} lançamento{(entries?.length || 0) !== 1 ? "s" : ""} — Total: {formatCurrency(totalAmount)}
+            </span>
+          </div>
+          {selectedIds.size > 0 && (
+            <div className="flex items-center gap-2 rounded-lg bg-primary/10 border border-primary/20 px-3 py-2 mt-1">
+              <span className="text-sm font-medium text-primary">
+                {selectedIds.size} selecionado{selectedIds.size !== 1 ? "s" : ""}
+              </span>
+              <span className="text-sm text-primary/80">—</span>
+              <span className="text-sm font-semibold text-primary">
+                {formatCurrency(selectedAmount)}
+              </span>
+            </div>
           )}
         </DialogHeader>
 
@@ -120,7 +157,14 @@ export function DrillDownEntriesDialog({
             </div>
           ) : (
             <div className="space-y-1">
-              <div className="grid grid-cols-[1fr_100px_100px_80px] gap-2 px-2 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wide border-b border-border">
+              <div className="grid grid-cols-[32px_1fr_100px_100px_80px] gap-2 px-2 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wide border-b border-border">
+                <div className="flex items-center justify-center">
+                  <Checkbox
+                    checked={selectedIds.size === entries.length && entries.length > 0}
+                    onCheckedChange={toggleAll}
+                    className="h-3.5 w-3.5"
+                  />
+                </div>
                 <span>Descrição</span>
                 <span className="text-right">Valor</span>
                 <span className="text-center">Vencimento</span>
@@ -129,8 +173,19 @@ export function DrillDownEntriesDialog({
               {entries.map((entry) => (
                 <div
                   key={entry.id}
-                  className="grid grid-cols-[1fr_100px_100px_80px] gap-2 px-2 py-2 text-sm rounded hover:bg-muted/50 transition-colors border-b border-border/50 last:border-0"
+                  onClick={() => toggleSelect(entry.id)}
+                  className={cn(
+                    "grid grid-cols-[32px_1fr_100px_100px_80px] gap-2 px-2 py-2 text-sm rounded cursor-pointer transition-colors border-b border-border/50 last:border-0",
+                    selectedIds.has(entry.id) ? "bg-primary/5 hover:bg-primary/10" : "hover:bg-muted/50"
+                  )}
                 >
+                  <div className="flex items-center justify-center">
+                    <Checkbox
+                      checked={selectedIds.has(entry.id)}
+                      onCheckedChange={() => toggleSelect(entry.id)}
+                      className="h-3.5 w-3.5"
+                    />
+                  </div>
                   <div className="truncate">
                     <span className="font-medium text-foreground">
                       {entry.description || "Sem descrição"}
@@ -157,10 +212,10 @@ export function DrillDownEntriesDialog({
                       variant="outline"
                       className={cn(
                         "text-[10px] px-1.5 py-0",
-                        getStatusColor(entry.status, entry.due_date)
+                        getStatusColor(entry.status)
                       )}
                     >
-                      {getStatusLabel(entry.status, entry.due_date, filter.type)}
+                      {getStatusLabel(entry.status, filter.type)}
                     </Badge>
                   </div>
                 </div>
