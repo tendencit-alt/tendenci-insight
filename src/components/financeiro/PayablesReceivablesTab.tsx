@@ -27,6 +27,7 @@ import { ViewEditReceivableDialog } from "./ViewEditReceivableDialog";
 import { toast } from "sonner";
 import { useFinanceiroSync } from "@/hooks/useFinanceiroSync";
 import { bulkUpdatePayablesWithSync, bulkDeletePayablesWithSync, bulkUpdateReceivablesWithSync, bulkDeleteReceivablesWithSync } from "@/lib/financeiroIntegration";
+import { DrillDownEntriesDialog, DrillDownFilter } from "./DrillDownEntriesDialog";
 
 interface PayablesReceivablesTabProps {
   filters: FinanceiroFiltersState;
