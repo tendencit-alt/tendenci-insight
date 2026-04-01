@@ -670,18 +670,27 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
               <div className="space-y-2"><Skeleton className="h-6 w-32" /><Skeleton className="h-4 w-24" /></div>
             ) : (
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
+                <button
+                  onClick={() => setDrillDown({ type: "payables", statusFilter: "open", title: "Contas a Pagar - Em Aberto" })}
+                  className="flex items-center justify-between w-full rounded px-1 py-0.5 -mx-1 hover:bg-muted/80 cursor-pointer transition-colors"
+                >
                   <span className="text-muted-foreground text-sm">Em Aberto</span>
                   <span className="font-semibold">{payablesSummary?.abertasCount || 0} lançamentos - {formatCurrency(payablesSummary?.abertasValor || 0)}</span>
-                </div>
-                <div className="flex items-center justify-between text-red-600">
+                </button>
+                <button
+                  onClick={() => setDrillDown({ type: "payables", statusFilter: "overdue", title: "Contas a Pagar - Vencidas" })}
+                  className="flex items-center justify-between w-full rounded px-1 py-0.5 -mx-1 hover:bg-muted/80 cursor-pointer transition-colors text-red-600"
+                >
                   <span className="text-sm">Vencidas</span>
                   <span className="font-semibold">{payablesSummary?.vencidasCount || 0} lançamentos - {formatCurrency(payablesSummary?.vencidasValor || 0)}</span>
-                </div>
-                <div className="flex items-center justify-between text-blue-600">
+                </button>
+                <button
+                  onClick={() => setDrillDown({ type: "payables", statusFilter: "paid", title: "Contas a Pagar - Pagas" })}
+                  className="flex items-center justify-between w-full rounded px-1 py-0.5 -mx-1 hover:bg-muted/80 cursor-pointer transition-colors text-blue-600"
+                >
                   <span className="text-sm">Pagas</span>
                   <span className="font-semibold">{payablesSummary?.pagasCount || 0} lançamentos - {formatCurrency(payablesSummary?.pagasValor || 0)}</span>
-                </div>
+                </button>
                 <div className="flex gap-4 text-xs text-muted-foreground pt-2 border-t">
                   <span className="flex items-center gap-1"><Clock className="h-3 w-3" />7d: {payablesSummary?.aVencer7d || 0}</span>
                   <span>15d: {payablesSummary?.aVencer15d || 0}</span>
