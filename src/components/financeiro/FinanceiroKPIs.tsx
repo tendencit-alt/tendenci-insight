@@ -109,14 +109,7 @@ export function FinanceiroKPIs({ metrics, isLoading, onSelectKPI, dateFrom, date
                 <div className="flex items-center gap-1">
                   <span className="text-sm">💰</span>
                   <p className="text-xs text-muted-foreground font-medium">Receita Total</p>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span><AccountsStatusTooltip dateFrom={dateFrom} dateTo={dateTo} show="receivables" /></span>
-                    </TooltipTrigger>
-                    <TooltipContent side="top" className="max-w-[250px] text-xs">
-                      <p>Total de receitas no período. Passe o mouse para ver títulos.</p>
-                    </TooltipContent>
-                  </Tooltip>
+                  <AccountsStatusTooltip dateFrom={dateFrom} dateTo={dateTo} show="receivables" />
                 </div>
                 <p className={cn("text-2xl font-bold", receitaColors.text)}>
                   {formatCurrency(entradas)}
