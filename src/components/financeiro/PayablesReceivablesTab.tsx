@@ -1064,6 +1064,15 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {drillDown && (
+        <DrillDownEntriesDialog
+          filter={drillDown}
+          dateFrom={dfFrom}
+          dateTo={dfTo}
+          onClose={() => setDrillDown(null)}
+        />
+      )}
     </div>
   );
 }
