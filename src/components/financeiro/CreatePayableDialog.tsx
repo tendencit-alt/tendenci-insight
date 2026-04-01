@@ -195,13 +195,13 @@ export function CreatePayableDialog({ open, onOpenChange, onSuccess, initialData
     setLoading(true);
     try {
       // Use integrated service to create payable AND ledger entry
-      await createPayableWithLedger({
+      const result = await createPayableWithLedger({
         supplier_id: form.supplier_id,
         amount: parseCurrencyToNumber(form.amount),
         due_date: form.due_date,
         competence_date: form.competence_date,
         chart_account_id: form.chart_account_id,
-        cost_center_id: form.cost_center_id || undefined,
+        cost_center_id: isRateio ? undefined : (form.cost_center_id || undefined),
         project_id: form.project_id || undefined,
         description: form.description,
         document_number: form.document_number || undefined,
@@ -210,8 +210,30 @@ export function CreatePayableDialog({ open, onOpenChange, onSuccess, initialData
         notes: form.notes || undefined,
       });
 
+      // If rateio, mark ledger entry has_splits and insert splits
+      if (isRateio && result.ledgerEntry?.id) {
+        await supabase
+          .from("fin_ledger_entries")
+          .update({ has_splits: true })
+          .eq("id", result.ledgerEntry.id);
+
+        const splits = apportionmentItems
+          .filter((item) => item.percentage > 0)
+          .map((item) => ({
+            parent_entry_id: result.ledgerEntry.id,
+            cost_center_id: item.cost_center_id,
+            percentage: item.percentage,
+            amount: item.amount,
+            description: form.description || "Rateio",
+          }));
+
+        if (splits.length > 0) {
+          await supabase.from("fin_ledger_splits").insert(splits);
+        }
+      }
+
       toast.success("Conta a pagar e lançamento criados com sucesso!");
-      invalidatePayables(); // Sync all related queries
+      invalidatePayables();
       onSuccess();
       onOpenChange(false);
       resetForm();
