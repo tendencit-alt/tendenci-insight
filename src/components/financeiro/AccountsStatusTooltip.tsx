@@ -37,7 +37,6 @@ function summarize(
   if (!rows || rows.length === 0)
     return { total: 0, totalCount: 0, paid: 0, paidCount: 0, open: 0, openCount: 0, overdue: 0, overdueCount: 0 };
 
-  const today = new Date().toISOString().slice(0, 10);
   const result: StatusSummary = { total: 0, totalCount: 0, paid: 0, paidCount: 0, open: 0, openCount: 0, overdue: 0, overdueCount: 0 };
 
   rows.forEach((r) => {
@@ -48,7 +47,7 @@ function summarize(
     if (r.status === "PAGO" || r.status === "RECEBIDO") {
       result.paid += amt;
       result.paidCount++;
-    } else if (r.status === "ABERTO" && r.due_date < today) {
+    } else if (r.status === "VENCIDO") {
       result.overdue += amt;
       result.overdueCount++;
     } else {
