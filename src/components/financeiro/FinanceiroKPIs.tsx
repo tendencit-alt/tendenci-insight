@@ -23,7 +23,7 @@ interface FinanceiroKPIsProps {
   dateTo?: string | null;
 }
 
-export function FinanceiroKPIs({ metrics, isLoading, onSelectKPI }: FinanceiroKPIsProps) {
+export function FinanceiroKPIs({ metrics, isLoading, onSelectKPI, dateFrom, dateTo }: FinanceiroKPIsProps) {
   const formatCurrency = (value: number) => {
     return value.toLocaleString("pt-BR", {
       style: "currency",
