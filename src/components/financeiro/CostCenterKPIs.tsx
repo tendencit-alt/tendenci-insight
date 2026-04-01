@@ -433,6 +433,15 @@ export function CostCenterKPIs({ filters }: CostCenterKPIsProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {drillDown && (
+        <CostCenterEntriesDialog
+          filter={drillDown}
+          dateFrom={filters.dateFrom ? format(filters.dateFrom, "yyyy-MM-dd") : null}
+          dateTo={filters.dateTo ? format(filters.dateTo, "yyyy-MM-dd") : null}
+          onClose={() => setDrillDown(null)}
+        />
+      )}
     </div>
   );
 }
