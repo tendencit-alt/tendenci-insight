@@ -142,11 +142,10 @@ export function FinanceiroKPIs({ metrics, isLoading, onSelectKPI, dateFrom, date
                   <p className="text-xs text-muted-foreground font-medium">Resultado Líquido</p>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Info className="h-3 w-3 text-muted-foreground/60 cursor-help" />
+                      <span><AccountsStatusTooltip dateFrom={dateFrom} dateTo={dateTo} show="both" /></span>
                     </TooltipTrigger>
                     <TooltipContent side="top" className="max-w-[250px] text-xs">
-                      <p>Lucro ou prejuízo do período filtrado.</p>
-                      <p className="mt-1 text-muted-foreground">Receitas – Despesas = Resultado</p>
+                      <p>Resultado do período. Passe o mouse para ver títulos.</p>
                     </TooltipContent>
                   </Tooltip>
                 </div>
