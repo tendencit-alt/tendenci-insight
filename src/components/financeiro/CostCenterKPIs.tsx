@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
+import { CostCenterEntriesDialog, CostCenterDrillDownFilter } from "./CostCenterEntriesDialog";
 
 interface CostCenterKPIsProps {
   filters: FinanceiroFiltersState;
