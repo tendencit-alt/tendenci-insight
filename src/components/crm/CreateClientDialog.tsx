@@ -221,12 +221,12 @@ export function CreateClientDialog({
           {/* Dados Básicos */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2 col-span-2">
-              <Label htmlFor="name">Nome do Lead *</Label>
+              <Label htmlFor="name">Nome do Cliente *</Label>
               <Input
                 id="name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="Digite o nome do lead"
+                placeholder="Digite o nome do cliente"
                 required
               />
             </div>
