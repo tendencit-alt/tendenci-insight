@@ -443,6 +443,8 @@ export function DashboardBI({ filters }: DashboardBIProps) {
           metrics={metrics}
           isLoading={false}
           onSelectKPI={setSelectedKPI}
+          dateFrom={filters.dateFrom ? format(filters.dateFrom, "yyyy-MM-dd") : null}
+          dateTo={filters.dateTo ? format(filters.dateTo, "yyyy-MM-dd") : null}
         />
 
 

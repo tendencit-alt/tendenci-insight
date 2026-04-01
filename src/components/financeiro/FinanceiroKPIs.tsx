@@ -8,6 +8,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { AccountsStatusTooltip } from "./AccountsStatusTooltip";
 
 interface FinanceiroKPIsProps {
   metrics?: {
@@ -18,9 +19,11 @@ interface FinanceiroKPIsProps {
   };
   isLoading: boolean;
   onSelectKPI?: (kpi: "saldo" | "receitas" | "despesas" | "resultado") => void;
+  dateFrom?: string | null;
+  dateTo?: string | null;
 }
 
-export function FinanceiroKPIs({ metrics, isLoading, onSelectKPI }: FinanceiroKPIsProps) {
+export function FinanceiroKPIs({ metrics, isLoading, onSelectKPI, dateFrom, dateTo }: FinanceiroKPIsProps) {
   const formatCurrency = (value: number) => {
     return value.toLocaleString("pt-BR", {
       style: "currency",
@@ -108,10 +111,10 @@ export function FinanceiroKPIs({ metrics, isLoading, onSelectKPI }: FinanceiroKP
                   <p className="text-xs text-muted-foreground font-medium">Receita Total</p>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Info className="h-3 w-3 text-muted-foreground/60 cursor-help" />
+                      <span><AccountsStatusTooltip dateFrom={dateFrom} dateTo={dateTo} show="receivables" /></span>
                     </TooltipTrigger>
                     <TooltipContent side="top" className="max-w-[250px] text-xs">
-                      <p>Total de receitas no período filtrado.</p>
+                      <p>Total de receitas no período. Passe o mouse para ver títulos.</p>
                     </TooltipContent>
                   </Tooltip>
                 </div>
@@ -139,11 +142,10 @@ export function FinanceiroKPIs({ metrics, isLoading, onSelectKPI }: FinanceiroKP
                   <p className="text-xs text-muted-foreground font-medium">Resultado Líquido</p>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Info className="h-3 w-3 text-muted-foreground/60 cursor-help" />
+                      <span><AccountsStatusTooltip dateFrom={dateFrom} dateTo={dateTo} show="both" /></span>
                     </TooltipTrigger>
                     <TooltipContent side="top" className="max-w-[250px] text-xs">
-                      <p>Lucro ou prejuízo do período filtrado.</p>
-                      <p className="mt-1 text-muted-foreground">Receitas – Despesas = Resultado</p>
+                      <p>Resultado do período. Passe o mouse para ver títulos.</p>
                     </TooltipContent>
                   </Tooltip>
                 </div>
