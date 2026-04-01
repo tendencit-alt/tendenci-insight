@@ -100,9 +100,6 @@ export default function Financeiro() {
           {/* Global Pending Alerts */}
           <PendingAlertsCard />
 
-          <TabsContent value="dashboard" forceMount className={activeTab === "dashboard" ? "space-y-4" : "hidden"}>
-            <FinanceiroDashboard filters={filters} />
-          </TabsContent>
 
           <TabsContent value="dre-cashflow" forceMount className={activeTab === "dre-cashflow" ? "space-y-4" : "hidden"}>
             <DRECashflowView filters={filters} onFiltersChange={setFilters} />
