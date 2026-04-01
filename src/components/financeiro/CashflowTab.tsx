@@ -649,9 +649,15 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
                 <TableCell colSpan={2} className="h-3 bg-muted/30" />
               </TableRow>
               <TableRow className="bg-green-50 dark:bg-green-950/20 font-semibold">
-                <TableCell className="text-xs">TOTAL ENTRADAS</TableCell>
+                <TableCell className="text-xs">
+                  <span className="inline-flex items-center gap-1">
+                    TOTAL ENTRADAS
+                    <AccountsStatusTooltip dateFrom={filters.dateFrom ? format(filters.dateFrom, "yyyy-MM-dd") : null} dateTo={filters.dateTo ? format(filters.dateTo, "yyyy-MM-dd") : null} show="receivables" />
+                  </span>
+                </TableCell>
                 <TableCell className="text-right text-green-600 font-mono text-xs">
                   {formatCurrency(cashflowData?.totalEntradas || 0)}
+                </TableCell>
                 </TableCell>
               </TableRow>
               <TableRow className="bg-red-50 dark:bg-red-950/20 font-semibold">
