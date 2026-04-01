@@ -164,8 +164,8 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
   const { data: cashflowData, isLoading } = useQuery({
     queryKey: ["fin-cashflow-list", filters],
     queryFn: async () => {
-      const dateFrom = format(filters.dateFrom, "yyyy-MM-dd");
-      const dateTo = format(filters.dateTo, "yyyy-MM-dd");
+      const dateFrom = filters.dateFrom ? format(filters.dateFrom, "yyyy-MM-dd") : "2000-01-01";
+      const dateTo = filters.dateTo ? format(filters.dateTo, "yyyy-MM-dd") : "2099-12-31";
 
       // Get chart accounts with in_cashflow = true
       const { data: chartAccounts } = await supabase
