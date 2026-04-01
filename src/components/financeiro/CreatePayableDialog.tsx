@@ -47,6 +47,8 @@ export function CreatePayableDialog({ open, onOpenChange, onSuccess, initialData
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   const [showCreateSupplier, setShowCreateSupplier] = useState(false);
+  const [isRateio, setIsRateio] = useState(false);
+  const [apportionmentItems, setApportionmentItems] = useState<ApportionmentItem[]>([]);
   const { minimize: minimizeDialog, remove: removeMinimized } = useMinimizedDialogs();
   const [isMinimized, setIsMinimized] = useState(false);
   const { invalidatePayables } = useFinanceiroSync();

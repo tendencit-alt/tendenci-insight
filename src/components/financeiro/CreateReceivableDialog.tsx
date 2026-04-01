@@ -47,6 +47,8 @@ export function CreateReceivableDialog({ open, onOpenChange, onSuccess, initialD
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   const [showCreateClient, setShowCreateClient] = useState(false);
+  const [isRateio, setIsRateio] = useState(false);
+  const [apportionmentItems, setApportionmentItems] = useState<ApportionmentItem[]>([]);
   const { minimize: minimizeDialog, remove: removeMinimized } = useMinimizedDialogs();
   const [isMinimized, setIsMinimized] = useState(false);
   const { invalidateReceivables } = useFinanceiroSync();
