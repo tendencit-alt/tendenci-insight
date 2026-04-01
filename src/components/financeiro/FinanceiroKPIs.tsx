@@ -8,6 +8,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { AccountsStatusTooltip } from "./AccountsStatusTooltip";
 
 interface FinanceiroKPIsProps {
   metrics?: {
