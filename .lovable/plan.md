@@ -1,61 +1,33 @@
 
 
-# Hover com Resumo de Títulos (Contas a Pagar / Receber) no BI e DRE
+## Plano: Opção "Rateio" para Centro de Custo
 
-## Problema
-O usuário quer ver o status dos títulos (pago, vencido, em aberto) sem poluir a interface com cards ou painéis extras.
+### Contexto
+Lançamentos sem centro de custo específico precisam ser rateados entre todos os centros de custo ativos, com percentuais configuráveis. O sistema já possui infraestrutura de splits (`fin_ledger_splits`, `SplitEntryDialog`, flag `has_splits`).
 
-## Solução
-Adicionar **tooltips enriquecidos** (hover) nos KPIs do BI Dashboard e nas linhas totalizadoras do DRE, mostrando ao passar o mouse um mini-resumo de contas a pagar e a receber.
+### Abordagem
+Adicionar uma opção **"Rateio"** no campo de Centro de Custo dos formulários de criação de lançamentos (Contas a Pagar e Contas a Receber). Ao selecionar "Rateio", um painel expandido aparece permitindo configurar o percentual de cada centro de custo. Ao salvar, o sistema cria o lançamento principal (sem `cost_center_id`) com `has_splits = true` e gera automaticamente registros na tabela `fin_ledger_splits` — um para cada centro de custo com percentual > 0.
 
-## O que será feito
+### Mudanças
 
-### 1. Novo componente `AccountsStatusTooltip`
-Componente reutilizável que faz query em `fin_payables` e `fin_receivables` (excluindo `CANCELADO`) e exibe no hover:
+1. **Criar componente `CostCenterApportionmentPanel.tsx`**
+   - Lista todos os centros de custo ativos com campo de percentual editável
+   - Botão "Distribuir Igual" para dividir 100% igualmente
+   - Indicador visual de soma dos percentuais (deve totalizar 100%)
+   - Exibe o valor calculado (R$) ao lado de cada percentual
 
-```text
-┌─────────────────────────────┐
-│ CONTAS A PAGAR              │
-│ Total: R$ 50.000 (12 títulos)│
-│ ✓ Pagas: R$ 30.000 (8)     │
-│ ⏳ A vencer: R$ 15.000 (3)  │
-│ ⚠ Vencidas: R$ 5.000 (1)   │
-├─────────────────────────────┤
-│ CONTAS A RECEBER            │
-│ Total: R$ 80.000 (15 títulos)│
-│ ✓ Recebidas: R$ 60.000 (10)│
-│ ⏳ A vencer: R$ 18.000 (4)  │
-│ ⚠ Vencidas: R$ 2.000 (1)   │
-└─────────────────────────────┘
-```
+2. **Atualizar `CreatePayableDialog.tsx` e `CreateReceivableDialog.tsx`**
+   - Adicionar opção "Rateio entre Centros de Custo" no Select de Centro de Custo
+   - Quando selecionada, exibir o painel de rateio abaixo
+   - Na submissão: criar o lançamento principal sem `cost_center_id`, marcar `has_splits = true`, e inserir os splits em `fin_ledger_splits`
 
-- Usa `HoverCard` (Radix) para suportar conteúdo mais rico que um tooltip simples
-- Classifica: `status = 'PAGO'/'RECEBIDO'` → pago; `status = 'ABERTO' AND due_date < hoje` → vencido; demais → a vencer
-- Respeita os filtros de data ativos
+3. **Atualizar `ViewEditPayableDialog.tsx` e `ViewEditReceivableDialog.tsx`**
+   - Exibir os splits de rateio quando `has_splits = true` (visualização somente leitura dos centros de custo e seus percentuais)
 
-### 2. Integração no BI Dashboard (`FinanceiroKPIs.tsx`)
-- Adicionar um ícone `Info` discreto no card de **Receita Total** e **Resultado Líquido**
-- Ao passar o mouse no ícone, exibe o `AccountsStatusTooltip` com o resumo
+### Detalhes Técnicos
 
-### 3. Integração no DRE (`DRETab.tsx`)
-- Nas linhas totalizadoras (Receita Bruta, Despesas Totais, Resultado), adicionar o mesmo ícone `Info` com hover
-- Mostra apenas a seção relevante (ex: linha de Receita mostra só Contas a Receber)
-
-### 4. Integração no Fluxo de Caixa (`CashflowTab.tsx`)
-- Mesma lógica nas linhas de totalização
-
-## Arquivos a criar/editar
-
-| Arquivo | Ação |
-|---------|------|
-| `src/components/financeiro/AccountsStatusTooltip.tsx` | **Criar** — componente com query e HoverCard |
-| `src/components/financeiro/FinanceiroKPIs.tsx` | Adicionar hover nos cards de Receita e Resultado |
-| `src/components/financeiro/DRETab.tsx` | Adicionar hover nas linhas totalizadoras |
-| `src/components/financeiro/CashflowTab.tsx` | Adicionar hover nas linhas totalizadoras |
-
-## Detalhes técnicos
-- Query com `useQuery` cacheada (`staleTime: 60s`) para não repetir chamadas a cada hover
-- Filtros de data passados como props para o componente
-- Cores: verde para pago, amarelo para a vencer, vermelho para vencido
-- O HoverCard abre com delay de 200ms para não ser intrusivo
+- Reutiliza a tabela `fin_ledger_splits` existente — sem alteração de schema
+- Cada split recebe: `parent_entry_id`, `cost_center_id`, `percentage`, `amount` (calculado), `description` (herdada do pai), `chart_account_id` (herdado do pai)
+- Validação: soma dos percentuais deve ser exatamente 100%
+- Nenhuma migração de banco necessária
 
