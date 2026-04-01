@@ -54,13 +54,6 @@ export default function Financeiro() {
           <div className="w-full rounded-xl bg-card border border-border p-1.5 flex items-center gap-1">
             <TabsList className="flex h-auto justify-start gap-1 rounded-none bg-transparent p-0 flex-1">
               <TabsTrigger
-                value="dashboard"
-                className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-muted-foreground transition-all hover:text-foreground data-[state=active]:bg-foreground data-[state=active]:text-background data-[state=active]:shadow-sm"
-              >
-                <LayoutDashboard className="h-4 w-4 flex-shrink-0" />
-                <span>BI/Dashboard</span>
-              </TabsTrigger>
-              <TabsTrigger
                 value="dre-cashflow"
                 className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-muted-foreground transition-all hover:text-foreground data-[state=active]:bg-foreground data-[state=active]:text-background data-[state=active]:shadow-sm"
               >
