@@ -51,7 +51,7 @@ const ITEMS_PER_PAGE = 20;
 
 export function OrdersTable({ orders, isLoading, onSelectOrder, onEditOrder, onDeleteOrder, selectedIds = [], onSelectedIdsChange, onBulkEdit }: OrdersTableProps) {
   const { isMaster } = usePermissions();
-  const isEditable = (status: string) => ['rascunho', 'ativo', 'aguardando_aprovacao', 'producao'].includes(status);
+  const isEditable = (status: string) => ['rascunho', 'ativo', 'aguardando_aprovacao', 'em_producao'].includes(status);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
 
