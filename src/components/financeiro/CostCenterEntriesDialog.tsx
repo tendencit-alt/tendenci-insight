@@ -1,0 +1,232 @@
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { ArrowDownCircle, ArrowUpCircle, DollarSign, Clock } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+
+export interface CostCenterDrillDownFilter {
+  costCenterId: string;
+  costCenterName: string;
+  type: "receitas" | "despesas" | "resultado";
+}
+
+interface CostCenterEntriesDialogProps {
+  filter: CostCenterDrillDownFilter;
+  dateFrom: string | null;
+  dateTo: string | null;
+  onClose: () => void;
+}
+
+const formatCurrency = (value: number) =>
+  value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+export function CostCenterEntriesDialog({
+  filter,
+  dateFrom,
+  dateTo,
+  onClose,
+}: CostCenterEntriesDialogProps) {
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  const { data: entries, isLoading } = useQuery({
+    queryKey: ["cc-drilldown", filter.costCenterId, filter.type, dateFrom, dateTo],
+    queryFn: async () => {
+      let query = supabase
+        .from("fin_ledger_entries")
+        .select("id, description, amount, type, competence_date, cash_date, status, chart_account:fin_chart_accounts(name, code)")
+        .eq("cost_center_id", filter.costCenterId)
+        .neq("status", "CANCELADO")
+        .order("competence_date", { ascending: false });
+
+      if (filter.type === "receitas") {
+        query = query.eq("type", "RECEITA");
+      } else if (filter.type === "despesas") {
+        query = query.eq("type", "DESPESA");
+      }
+
+      if (dateFrom && dateTo) {
+        query = query.or(
+          `and(cash_date.gte.${dateFrom},cash_date.lte.${dateTo}),and(cash_date.is.null,competence_date.gte.${dateFrom},competence_date.lte.${dateTo})`
+        );
+      }
+
+      const { data } = await query;
+      return (data || []) as any[];
+    },
+  });
+
+  const totalAmount =
+    entries?.reduce((sum, e) => {
+      const amt = Math.abs(Number(e.amount) || 0);
+      return sum + (e.type === "DESPESA" ? -amt : amt);
+    }, 0) || 0;
+
+  const selectedAmount =
+    entries
+      ?.filter((e) => selectedIds.has(e.id))
+      .reduce((sum, e) => {
+        const amt = Math.abs(Number(e.amount) || 0);
+        return sum + (e.type === "DESPESA" ? -amt : amt);
+      }, 0) || 0;
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    if (!entries) return;
+    if (selectedIds.size === entries.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(entries.map((e) => e.id)));
+    }
+  };
+
+  const titleMap = {
+    receitas: `Receitas — ${filter.costCenterName}`,
+    despesas: `Despesas — ${filter.costCenterName}`,
+    resultado: `Resultado — ${filter.costCenterName}`,
+  };
+
+  const iconMap = {
+    receitas: <ArrowUpCircle className="h-5 w-5 text-green-500" />,
+    despesas: <ArrowDownCircle className="h-5 w-5 text-red-500" />,
+    resultado: <DollarSign className="h-5 w-5 text-primary" />,
+  };
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-base">
+            {iconMap[filter.type]}
+            {titleMap[filter.type]}
+          </DialogTitle>
+          <DialogDescription className="sr-only">
+            Detalhamento dos lançamentos por centro de custo
+          </DialogDescription>
+          <div className="flex items-center justify-between text-sm text-muted-foreground">
+            <span>
+              {entries?.length || 0} lançamento{(entries?.length || 0) !== 1 ? "s" : ""} — Total:{" "}
+              {filter.type === "resultado"
+                ? formatCurrency(totalAmount)
+                : formatCurrency(entries?.reduce((s, e) => s + Math.abs(Number(e.amount) || 0), 0) || 0)}
+            </span>
+          </div>
+          {selectedIds.size > 0 && (
+            <div className="flex items-center gap-2 rounded-lg bg-primary/10 border border-primary/20 px-3 py-2 mt-1">
+              <span className="text-sm font-medium text-primary">
+                {selectedIds.size} selecionado{selectedIds.size !== 1 ? "s" : ""}
+              </span>
+              <span className="text-sm text-primary/80">—</span>
+              <span className="text-sm font-semibold text-primary">
+                {formatCurrency(
+                  filter.type === "resultado"
+                    ? selectedAmount
+                    : entries
+                        ?.filter((e) => selectedIds.has(e.id))
+                        .reduce((s, e) => s + Math.abs(Number(e.amount) || 0), 0) || 0
+                )}
+              </span>
+            </div>
+          )}
+        </DialogHeader>
+
+        <ScrollArea className="flex-1 -mx-6 px-6">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">
+              <Clock className="h-4 w-4 animate-spin mr-2" /> Carregando...
+            </div>
+          ) : !entries || entries.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground text-sm">
+              Nenhum lançamento encontrado.
+            </div>
+          ) : (
+            <div className="space-y-1">
+              <div className="grid grid-cols-[32px_1fr_120px_100px_80px] gap-2 px-2 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wide border-b border-border">
+                <div className="flex items-center justify-center">
+                  <Checkbox
+                    checked={selectedIds.size === entries.length && entries.length > 0}
+                    onCheckedChange={toggleAll}
+                    className="h-3.5 w-3.5"
+                  />
+                </div>
+                <span>Descrição</span>
+                <span className="text-right">Valor</span>
+                <span className="text-center">Data</span>
+                <span className="text-center">Tipo</span>
+              </div>
+              {entries.map((entry) => (
+                <div
+                  key={entry.id}
+                  onClick={() => toggleSelect(entry.id)}
+                  className={cn(
+                    "grid grid-cols-[32px_1fr_120px_100px_80px] gap-2 px-2 py-2 text-sm rounded cursor-pointer transition-colors border-b border-border/50 last:border-0",
+                    selectedIds.has(entry.id) ? "bg-primary/5 hover:bg-primary/10" : "hover:bg-muted/50"
+                  )}
+                >
+                  <div className="flex items-center justify-center">
+                    <Checkbox
+                      checked={selectedIds.has(entry.id)}
+                      onCheckedChange={() => toggleSelect(entry.id)}
+                      className="h-3.5 w-3.5"
+                    />
+                  </div>
+                  <div className="truncate">
+                    <span className="font-medium text-foreground">
+                      {entry.description || "Sem descrição"}
+                    </span>
+                    {entry.chart_account && (
+                      <span className="text-[10px] text-muted-foreground block">
+                        {entry.chart_account.code} - {entry.chart_account.name}
+                      </span>
+                    )}
+                  </div>
+                  <span
+                    className={cn(
+                      "font-mono text-right",
+                      entry.type === "RECEITA" ? "text-green-600" : "text-red-600"
+                    )}
+                  >
+                    {entry.type === "RECEITA" ? "+" : "-"}
+                    {formatCurrency(Math.abs(Number(entry.amount) || 0))}
+                  </span>
+                  <span className="text-center text-muted-foreground">
+                    {format(new Date(entry.competence_date + "T12:00:00"), "dd/MM/yyyy")}
+                  </span>
+                  <div className="flex justify-center">
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        "text-[10px] px-1.5 py-0",
+                        entry.type === "RECEITA" ? "text-green-600" : "text-red-600"
+                      )}
+                    >
+                      {entry.type === "RECEITA" ? "Receita" : "Despesa"}
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </ScrollArea>
+      </DialogContent>
+    </Dialog>
+  );
+}
