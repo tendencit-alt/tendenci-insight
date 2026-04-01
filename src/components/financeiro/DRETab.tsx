@@ -788,7 +788,12 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
                 </TableCell>
               </TableRow>
               <TableRow className="bg-red-50 dark:bg-red-950/20 font-semibold">
-                <TableCell className="text-xs">TOTAL DESPESAS</TableCell>
+                <TableCell className="text-xs">
+                  <span className="inline-flex items-center gap-1">
+                    TOTAL DESPESAS
+                    <AccountsStatusTooltip dateFrom={dateFrom} dateTo={dateTo} show="payables" />
+                  </span>
+                </TableCell>
                 <TableCell className="text-right text-red-600 font-mono text-xs">
                   ({formatCurrency(dreData?.summary.totalDespesas || 0)})
                 </TableCell>
