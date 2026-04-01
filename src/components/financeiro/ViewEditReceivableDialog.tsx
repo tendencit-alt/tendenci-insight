@@ -16,6 +16,7 @@ import { Loader2, AlertCircle, Eye, Edit } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useFinanceiroSync } from "@/hooks/useFinanceiroSync";
 import { Badge } from "@/components/ui/badge";
+import { CostCenterApportionmentPanel, ApportionmentItem } from "./CostCenterApportionmentPanel";
 
 interface ViewEditReceivableDialogProps {
   open: boolean;
@@ -114,6 +115,27 @@ export function ViewEditReceivableDialog({ open, onOpenChange, receivable, onSuc
       return data || [];
     },
   });
+
+  // Fetch splits if the entry has rateio
+  const { data: splits } = useQuery({
+    queryKey: ["fin-ledger-splits", receivable?.ledger_entry_id],
+    queryFn: async () => {
+      if (!receivable?.ledger_entry_id) return [];
+      const { data } = await supabase
+        .from("fin_ledger_splits")
+        .select("id, cost_center_id, percentage, amount, description")
+        .eq("parent_entry_id", receivable.ledger_entry_id);
+      return data || [];
+    },
+    enabled: !!receivable?.ledger_entry_id,
+  });
+
+  const splitsAsApportionment: ApportionmentItem[] = (splits || []).map((s: any) => ({
+    cost_center_id: s.cost_center_id,
+    cost_center_name: costCenters?.find((cc) => cc.id === s.cost_center_id)?.name || "—",
+    percentage: Number(s.percentage) || 0,
+    amount: Number(s.amount) || 0,
+  }));
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
@@ -345,6 +367,15 @@ export function ViewEditReceivableDialog({ open, onOpenChange, receivable, onSuc
               )}
             </div>
           </div>
+
+          {splitsAsApportionment.length > 0 && (
+            <CostCenterApportionmentPanel
+              totalAmount={Number(receivable.amount) || 0}
+              items={splitsAsApportionment}
+              onChange={() => {}}
+              readOnly
+            />
+          )}
 
           <div className="space-y-2">
             <Label>Descrição {isEditing && <span className="text-destructive">*</span>}</Label>

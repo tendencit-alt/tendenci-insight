@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { CostCenterApportionmentPanel, ApportionmentItem } from "./CostCenterApportionmentPanel";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -46,6 +47,8 @@ export function CreateReceivableDialog({ open, onOpenChange, onSuccess, initialD
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   const [showCreateClient, setShowCreateClient] = useState(false);
+  const [isRateio, setIsRateio] = useState(false);
+  const [apportionmentItems, setApportionmentItems] = useState<ApportionmentItem[]>([]);
   const { minimize: minimizeDialog, remove: removeMinimized } = useMinimizedDialogs();
   const [isMinimized, setIsMinimized] = useState(false);
   const { invalidateReceivables } = useFinanceiroSync();
@@ -156,8 +159,14 @@ export function CreateReceivableDialog({ open, onOpenChange, onSuccess, initialD
     if (!form.chart_account_id) {
       newErrors.chart_account_id = "Categoria é obrigatória";
     }
-    if (!form.cost_center_id) {
+    if (!form.cost_center_id && !isRateio) {
       newErrors.cost_center_id = "Centro de Custo é obrigatório";
+    }
+    if (isRateio) {
+      const totalPct = apportionmentItems.reduce((s, i) => s + i.percentage, 0);
+      if (Math.abs(totalPct - 100) >= 0.01) {
+        newErrors.cost_center_id = "O rateio deve totalizar 100%";
+      }
     }
     if (!form.project_id) {
       newErrors.project_id = "Projeto é obrigatório";
@@ -185,14 +194,13 @@ export function CreateReceivableDialog({ open, onOpenChange, onSuccess, initialD
 
     setLoading(true);
     try {
-      // Use integrated service to create receivable AND ledger entry
-      await createReceivableWithLedger({
+      const result = await createReceivableWithLedger({
         customer_id: form.customer_id,
         amount: parseCurrencyToNumber(form.amount),
         due_date: form.due_date,
         competence_date: form.competence_date,
         chart_account_id: form.chart_account_id,
-        cost_center_id: form.cost_center_id || undefined,
+        cost_center_id: isRateio ? undefined : (form.cost_center_id || undefined),
         project_id: form.project_id || undefined,
         description: form.description,
         document_number: form.document_number || undefined,
@@ -201,8 +209,30 @@ export function CreateReceivableDialog({ open, onOpenChange, onSuccess, initialD
         notes: form.notes || undefined,
       });
 
+      // If rateio, mark ledger entry has_splits and insert splits
+      if (isRateio && result.ledgerEntry?.id) {
+        await supabase
+          .from("fin_ledger_entries")
+          .update({ has_splits: true })
+          .eq("id", result.ledgerEntry.id);
+
+        const splits = apportionmentItems
+          .filter((item) => item.percentage > 0)
+          .map((item) => ({
+            parent_entry_id: result.ledgerEntry.id,
+            cost_center_id: item.cost_center_id,
+            percentage: item.percentage,
+            amount: item.amount,
+            description: form.description || "Rateio",
+          }));
+
+        if (splits.length > 0) {
+          await supabase.from("fin_ledger_splits").insert(splits);
+        }
+      }
+
       toast.success("Conta a receber e lançamento criados com sucesso!");
-      invalidateReceivables(); // Sync all related queries
+      invalidateReceivables();
       onSuccess();
       onOpenChange(false);
       resetForm();
@@ -229,6 +259,8 @@ export function CreateReceivableDialog({ open, onOpenChange, onSuccess, initialD
       notes: "",
     });
     setErrors({});
+    setIsRateio(false);
+    setApportionmentItems([]);
   };
 
   const handleOpenChange = (newOpen: boolean) => {
@@ -380,9 +412,16 @@ export function CreateReceivableDialog({ open, onOpenChange, onSuccess, initialD
                 Centro de Custo <span className="text-destructive">*</span>
               </Label>
               <Select 
-                value={form.cost_center_id} 
+                value={isRateio ? "__RATEIO__" : form.cost_center_id} 
                 onValueChange={(v) => {
-                  setForm({ ...form, cost_center_id: v });
+                  if (v === "__RATEIO__") {
+                    setIsRateio(true);
+                    setForm({ ...form, cost_center_id: "" });
+                  } else {
+                    setIsRateio(false);
+                    setApportionmentItems([]);
+                    setForm({ ...form, cost_center_id: v });
+                  }
                   if (errors.cost_center_id) setErrors({ ...errors, cost_center_id: undefined });
                 }}
               >
@@ -393,6 +432,7 @@ export function CreateReceivableDialog({ open, onOpenChange, onSuccess, initialD
                   {costCenters?.map((c) => (
                     <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                   ))}
+                  <SelectItem value="__RATEIO__">📊 Rateio entre Centros de Custo</SelectItem>
                 </SelectContent>
               </Select>
               {errors.cost_center_id && (
@@ -431,6 +471,14 @@ export function CreateReceivableDialog({ open, onOpenChange, onSuccess, initialD
               )}
             </div>
           </div>
+
+          {isRateio && (
+            <CostCenterApportionmentPanel
+              totalAmount={parseCurrencyToNumber(form.amount)}
+              items={apportionmentItems}
+              onChange={setApportionmentItems}
+            />
+          )}
 
           <div className="space-y-2">
             <Label className="flex items-center gap-1">
