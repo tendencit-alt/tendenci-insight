@@ -111,10 +111,10 @@ export function FinanceiroKPIs({ metrics, isLoading, onSelectKPI, dateFrom, date
                   <p className="text-xs text-muted-foreground font-medium">Receita Total</p>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Info className="h-3 w-3 text-muted-foreground/60 cursor-help" />
+                      <span><AccountsStatusTooltip dateFrom={dateFrom} dateTo={dateTo} show="receivables" /></span>
                     </TooltipTrigger>
                     <TooltipContent side="top" className="max-w-[250px] text-xs">
-                      <p>Total de receitas no período filtrado.</p>
+                      <p>Total de receitas no período. Passe o mouse para ver títulos.</p>
                     </TooltipContent>
                   </Tooltip>
                 </div>
