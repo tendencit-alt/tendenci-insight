@@ -474,6 +474,14 @@ export function CreatePayableDialog({ open, onOpenChange, onSuccess, initialData
             </div>
           </div>
 
+          {isRateio && (
+            <CostCenterApportionmentPanel
+              totalAmount={parseCurrencyToNumber(form.amount)}
+              items={apportionmentItems}
+              onChange={setApportionmentItems}
+            />
+          )}
+
           <div className="space-y-2">
             <Label className="flex items-center gap-1">
               Descrição <span className="text-destructive">*</span>
