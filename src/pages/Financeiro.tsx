@@ -24,7 +24,7 @@ import { useNavigate } from "react-router-dom";
 export default function Financeiro() {
   const navigate = useNavigate();
   useFinanceiroRealtime();
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const [activeTab, setActiveTab] = useState("dre-cashflow");
   const [filters, setFilters] = useState<FinanceiroFiltersState>({
     dateFrom: null,
     dateTo: null,
@@ -53,13 +53,6 @@ export default function Financeiro() {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <div className="w-full rounded-xl bg-card border border-border p-1.5 flex items-center gap-1">
             <TabsList className="flex h-auto justify-start gap-1 rounded-none bg-transparent p-0 flex-1">
-              <TabsTrigger
-                value="dashboard"
-                className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-muted-foreground transition-all hover:text-foreground data-[state=active]:bg-foreground data-[state=active]:text-background data-[state=active]:shadow-sm"
-              >
-                <LayoutDashboard className="h-4 w-4 flex-shrink-0" />
-                <span>BI/Dashboard</span>
-              </TabsTrigger>
               <TabsTrigger
                 value="dre-cashflow"
                 className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-muted-foreground transition-all hover:text-foreground data-[state=active]:bg-foreground data-[state=active]:text-background data-[state=active]:shadow-sm"
@@ -107,9 +100,6 @@ export default function Financeiro() {
           {/* Global Pending Alerts */}
           <PendingAlertsCard />
 
-          <TabsContent value="dashboard" forceMount className={activeTab === "dashboard" ? "space-y-4" : "hidden"}>
-            <FinanceiroDashboard filters={filters} />
-          </TabsContent>
 
           <TabsContent value="dre-cashflow" forceMount className={activeTab === "dre-cashflow" ? "space-y-4" : "hidden"}>
             <DRECashflowView filters={filters} onFiltersChange={setFilters} />
