@@ -19,6 +19,8 @@ interface FinanceiroKPIsProps {
   };
   isLoading: boolean;
   onSelectKPI?: (kpi: "saldo" | "receitas" | "despesas" | "resultado") => void;
+  dateFrom?: string | null;
+  dateTo?: string | null;
 }
 
 export function FinanceiroKPIs({ metrics, isLoading, onSelectKPI }: FinanceiroKPIsProps) {
