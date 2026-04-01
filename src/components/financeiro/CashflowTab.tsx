@@ -658,7 +658,6 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
                 <TableCell className="text-right text-green-600 font-mono text-xs">
                   {formatCurrency(cashflowData?.totalEntradas || 0)}
                 </TableCell>
-                </TableCell>
               </TableRow>
               <TableRow className="bg-red-50 dark:bg-red-950/20 font-semibold">
                 <TableCell className="text-xs">
