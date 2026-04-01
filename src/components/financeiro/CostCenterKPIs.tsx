@@ -341,27 +341,36 @@ export function CostCenterKPIs({ filters }: CostCenterKPIsProps) {
 
               {/* Values */}
               <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="bg-green-500/10 rounded-md p-2">
+                <button
+                  onClick={() => setDrillDown({ costCenterId: cc.id, costCenterName: `${cc.code} - ${cc.name}`, type: "receitas" })}
+                  className="bg-green-500/10 rounded-md p-2 text-left hover:bg-green-500/20 transition-colors cursor-pointer"
+                >
                   <div className="flex items-center gap-1 text-muted-foreground mb-0.5">
                     <TrendingUp className="h-3 w-3 text-green-600" />
                     Receitas
                   </div>
                   <p className="font-semibold text-green-600 truncate">{formatCurrency(cc.receitas)}</p>
-                </div>
-                <div className="bg-red-500/10 rounded-md p-2">
+                </button>
+                <button
+                  onClick={() => setDrillDown({ costCenterId: cc.id, costCenterName: `${cc.code} - ${cc.name}`, type: "despesas" })}
+                  className="bg-red-500/10 rounded-md p-2 text-left hover:bg-red-500/20 transition-colors cursor-pointer"
+                >
                   <div className="flex items-center gap-1 text-muted-foreground mb-0.5">
                     <TrendingDown className="h-3 w-3 text-red-600" />
                     Despesas
                   </div>
                   <p className="font-semibold text-red-600 truncate">{formatCurrency(cc.despesas)}</p>
-                </div>
+                </button>
               </div>
 
               {/* Resultado */}
-              <div className={cn(
-                "rounded-md p-2 text-center",
-                cc.resultado >= 0 ? "bg-green-500/10" : "bg-red-500/10"
-              )}>
+              <button
+                onClick={() => setDrillDown({ costCenterId: cc.id, costCenterName: `${cc.code} - ${cc.name}`, type: "resultado" })}
+                className={cn(
+                  "rounded-md p-2 text-center w-full hover:opacity-80 transition-opacity cursor-pointer",
+                  cc.resultado >= 0 ? "bg-green-500/10" : "bg-red-500/10"
+                )}
+              >
                 <p className="text-xs text-muted-foreground mb-0.5">Resultado</p>
                 <p className={cn(
                   "font-bold text-sm",
@@ -369,7 +378,7 @@ export function CostCenterKPIs({ filters }: CostCenterKPIsProps) {
                 )}>
                   {cc.resultado >= 0 ? "+" : ""}{formatCurrency(cc.resultado)}
                 </p>
-              </div>
+              </button>
             </CardContent>
           </Card>
         ))}
