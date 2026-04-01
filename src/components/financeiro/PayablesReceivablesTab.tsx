@@ -95,6 +95,10 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
   const [receivableBulkDeleteOpen, setReceivableBulkDeleteOpen] = useState(false);
   const [receivableBulkLoading, setReceivableBulkLoading] = useState(false);
   const [receivableBulkEditForm, setReceivableBulkEditForm] = useState({ status: "" });
+  const [drillDown, setDrillDown] = useState<DrillDownFilter | null>(null);
+
+  const dfFrom = filters.dateFrom ? format(filters.dateFrom, "yyyy-MM-dd") : "2000-01-01";
+  const dfTo = filters.dateTo ? format(filters.dateTo, "yyyy-MM-dd") : "2099-12-31";
 
   // Fetch Payables
   const { data: payables, isLoading: payablesLoading, refetch: refetchPayables } = useQuery({
