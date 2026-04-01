@@ -384,6 +384,15 @@ export function ViewEditPayableDialog({ open, onOpenChange, payable, onSuccess, 
             </div>
           </div>
 
+          {splitsAsApportionment.length > 0 && (
+            <CostCenterApportionmentPanel
+              totalAmount={Number(payable.amount) || 0}
+              items={splitsAsApportionment}
+              onChange={() => {}}
+              readOnly
+            />
+          )}
+
           <div className="space-y-2">
             <Label>Descrição {isEditing && <span className="text-destructive">*</span>}</Label>
             {isEditing ? (
