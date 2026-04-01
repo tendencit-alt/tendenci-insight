@@ -777,7 +777,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
   const isPagamentoValid = parcelas.length > 0 && parcelas.every((p) => p.forma_pagamento) && totalPercentual === 100 && isPagamentoValorCorreto && isRtValid && hasAllStrategicResponsibles;
   const isEntregaValid = !!formData.tipo_entrega;
   const isFormValid = isClienteValid && isItensValid && isPagamentoValid && isEntregaValid;
-  const isEditable = order?.status === 'rascunho' || order?.status === 'ativo' || order?.status === 'aguardando_aprovacao';
+  const isEditable = order?.status === 'rascunho' || order?.status === 'ativo' || order?.status === 'aguardando_aprovacao' || order?.status === 'em_producao';
 
   const handleCepSearch = async (cepValue: string) => {
     const cep = cepValue.replace(/\D/g, '');
