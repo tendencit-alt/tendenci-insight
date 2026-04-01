@@ -296,7 +296,7 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
 
   const statusConfig = STATUS_CONFIG[order.status] || { label: order.status, color: 'bg-gray-500', icon: FileText };
   const StatusIcon = statusConfig.icon;
-  const canEdit = order.status === 'rascunho' || order.status === 'ativo' || order.status === 'aguardando_aprovacao';
+  const canEdit = order.status === 'rascunho' || order.status === 'ativo' || order.status === 'aguardando_aprovacao' || order.status === 'em_producao';
 
   return (
     <>
