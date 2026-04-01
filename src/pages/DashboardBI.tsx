@@ -1,12 +1,15 @@
 import { useState } from "react";
 import { useFinanceiroRealtime } from "@/hooks/useFinanceiroRealtime";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FinanceiroFilters, FinanceiroFiltersState } from "@/components/financeiro/FinanceiroFilters";
 import { DashboardBI as DashboardBIComponent } from "@/components/financeiro/DashboardBI";
-import { LayoutDashboard } from "lucide-react";
+import { DRECashflowView } from "@/components/financeiro/DRECashflowView";
+import { LayoutDashboard, BarChart3 } from "lucide-react";
 
 export default function DashboardBI() {
   useFinanceiroRealtime();
+  const [activeTab, setActiveTab] = useState("bi-dashboard");
   const [filters, setFilters] = useState<FinanceiroFiltersState>({
     dateFrom: null,
     dateTo: null,
@@ -35,11 +38,37 @@ export default function DashboardBI() {
           </div>
         </div>
 
-        {/* Filtros */}
-        <FinanceiroFilters filters={filters} onChange={setFilters} />
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+          <div className="w-full rounded-xl bg-card border border-border p-1.5 flex items-center gap-1">
+            <TabsList className="flex h-auto justify-start gap-1 rounded-none bg-transparent p-0 flex-1">
+              <TabsTrigger
+                value="bi-dashboard"
+                className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-muted-foreground transition-all hover:text-foreground data-[state=active]:bg-foreground data-[state=active]:text-background data-[state=active]:shadow-sm"
+              >
+                <LayoutDashboard className="h-4 w-4 flex-shrink-0" />
+                <span>BI / Dashboard</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="dre-cashflow"
+                className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-muted-foreground transition-all hover:text-foreground data-[state=active]:bg-foreground data-[state=active]:text-background data-[state=active]:shadow-sm"
+              >
+                <BarChart3 className="h-4 w-4 flex-shrink-0" />
+                <span>DRE / Fluxo de Caixa</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
-        {/* Dashboard BI */}
-        <DashboardBIComponent filters={filters} />
+          {/* Filtros */}
+          <FinanceiroFilters filters={filters} onChange={setFilters} />
+
+          <TabsContent value="bi-dashboard" forceMount className={activeTab === "bi-dashboard" ? "space-y-4" : "hidden"}>
+            <DashboardBIComponent filters={filters} />
+          </TabsContent>
+
+          <TabsContent value="dre-cashflow" forceMount className={activeTab === "dre-cashflow" ? "space-y-4" : "hidden"}>
+            <DRECashflowView filters={filters} onFiltersChange={setFilters} />
+          </TabsContent>
+        </Tabs>
       </div>
     </DashboardLayout>
   );
