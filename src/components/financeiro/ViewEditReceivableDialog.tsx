@@ -16,6 +16,7 @@ import { Loader2, AlertCircle, Eye, Edit } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useFinanceiroSync } from "@/hooks/useFinanceiroSync";
 import { Badge } from "@/components/ui/badge";
+import { CostCenterApportionmentPanel, ApportionmentItem } from "./CostCenterApportionmentPanel";
 
 interface ViewEditReceivableDialogProps {
   open: boolean;

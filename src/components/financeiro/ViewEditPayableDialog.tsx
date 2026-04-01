@@ -17,6 +17,7 @@ import { QuickCreateSupplierDialog } from "./QuickCreateSupplierDialog";
 import { cn } from "@/lib/utils";
 import { useFinanceiroSync } from "@/hooks/useFinanceiroSync";
 import { Badge } from "@/components/ui/badge";
+import { CostCenterApportionmentPanel, ApportionmentItem } from "./CostCenterApportionmentPanel";
 
 interface ViewEditPayableDialogProps {
   open: boolean;
