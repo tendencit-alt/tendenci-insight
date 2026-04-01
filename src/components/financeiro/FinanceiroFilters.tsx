@@ -34,7 +34,7 @@ interface FinanceiroFiltersProps {
 }
 
 export function FinanceiroFilters({ filters, onChange }: FinanceiroFiltersProps) {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const { data: bankAccounts } = useQuery({
     queryKey: ["fin-bank-accounts"],
