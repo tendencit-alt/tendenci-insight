@@ -47,6 +47,8 @@ export function CostCenterKPIs({ filters }: CostCenterKPIsProps) {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedCostCenter, setSelectedCostCenter] = useState<CostCenterData | null>(null);
   const [metaValue, setMetaValue] = useState("");
+  const [drillDown, setDrillDown] = useState<CostCenterDrillDownFilter | null>(null);
+  const queryClient = useQueryClient();
   const queryClient = useQueryClient();
 
   const currentMonth = new Date().getMonth() + 1;
