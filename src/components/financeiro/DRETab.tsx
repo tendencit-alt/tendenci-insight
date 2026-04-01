@@ -782,7 +782,6 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
                     TOTAL RECEITAS
                     <AccountsStatusTooltip dateFrom={filters.dateFrom ? format(filters.dateFrom, "yyyy-MM-dd") : null} dateTo={filters.dateTo ? format(filters.dateTo, "yyyy-MM-dd") : null} show="receivables" />
                   </span>
-                  </span>
                 </TableCell>
                 <TableCell className="text-right text-green-600 font-mono text-xs">
                   {formatCurrency(dreData?.summary.totalReceitas || 0)}
