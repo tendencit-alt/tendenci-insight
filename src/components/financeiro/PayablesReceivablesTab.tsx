@@ -104,9 +104,6 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
   const { data: payables, isLoading: payablesLoading, refetch: refetchPayables } = useQuery({
     queryKey: ["fin-payables", filters],
     queryFn: async () => {
-      const dateFrom = format(filters.dateFrom, "yyyy-MM-dd");
-      const dateTo = format(filters.dateTo, "yyyy-MM-dd");
-
       let query = supabase
         .from("fin_payables")
         .select(`
@@ -115,7 +112,7 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
           chart_account:fin_chart_accounts(name, code),
           bank_account:fin_bank_accounts(nickname)
         `)
-        .or(`and(due_date.gte.${dateFrom},due_date.lte.${dateTo}),and(competence_date.gte.${dateFrom},competence_date.lte.${dateTo})`);
+        .or(`and(due_date.gte.${dfFrom},due_date.lte.${dfTo}),and(competence_date.gte.${dfFrom},competence_date.lte.${dfTo})`);
 
       // Apply sorting from global filters
       if (filters.sortField === "date") {
@@ -151,9 +148,6 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
   const { data: receivables, isLoading: receivablesLoading, refetch: refetchReceivables } = useQuery({
     queryKey: ["fin-receivables", filters],
     queryFn: async () => {
-      const dateFrom = format(filters.dateFrom, "yyyy-MM-dd");
-      const dateTo = format(filters.dateTo, "yyyy-MM-dd");
-
       let query = supabase
         .from("fin_receivables")
         .select(`
@@ -162,7 +156,7 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
           chart_account:fin_chart_accounts(name, code),
           bank_account:fin_bank_accounts(nickname)
         `)
-        .or(`and(due_date.gte.${dateFrom},due_date.lte.${dateTo}),and(competence_date.gte.${dateFrom},competence_date.lte.${dateTo})`);
+        .or(`and(due_date.gte.${dfFrom},due_date.lte.${dfTo}),and(competence_date.gte.${dfFrom},competence_date.lte.${dfTo})`);
 
       // Apply sorting from global filters
       if (filters.sortField === "date") {
