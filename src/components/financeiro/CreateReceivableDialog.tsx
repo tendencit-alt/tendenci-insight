@@ -259,6 +259,8 @@ export function CreateReceivableDialog({ open, onOpenChange, onSuccess, initialD
       notes: "",
     });
     setErrors({});
+    setIsRateio(false);
+    setApportionmentItems([]);
   };
 
   const handleOpenChange = (newOpen: boolean) => {
