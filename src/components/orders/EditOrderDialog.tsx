@@ -1021,12 +1021,6 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
 
       let opsCreated = 0;
       if (shouldBeAtivo && insertedItems) {
-        const centroCustoMap: Record<string, string> = {
-          moveis_planejados: 'Móveis Planejados',
-          producao_tendenci: 'Produção Tendenci',
-          revenda: 'Revenda',
-        };
-
         const { data: productionTypes } = await supabase
           .from('production_types')
           .select('id, name')
@@ -1036,25 +1030,28 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
           for (const item of insertedItems) {
             if (!item.centro_custo) continue;
 
-            const productionTypeName = centroCustoMap[item.centro_custo];
-            if (!productionTypeName) continue;
-
-            const productionType = productionTypes.find((pt) => pt.name === productionTypeName);
+            // Dynamic matching: same logic as the SQL trigger
+            const productionType = productionTypes.find((pt) =>
+              pt.name === item.centro_custo ||
+              pt.name.toLowerCase().includes(item.centro_custo.toLowerCase()) ||
+              item.centro_custo.toLowerCase().includes(pt.name.toLowerCase())
+            );
             if (!productionType) continue;
 
-            const { data: firstPhaseTemplate } = await supabase
-              .from('production_phase_templates')
+            // Check if OP already exists for this item
+            const { data: existingOp } = await supabase
+              .from('production_orders')
               .select('id')
-              .eq('production_type_id', productionType.id)
-              .eq('active', true)
-              .order('position')
-              .limit(1)
-              .single();
+              .eq('order_item_id', item.id)
+              .maybeSingle();
 
+            if (existingOp) continue;
+
+            // Insert OP - phases are created automatically by create_phases_on_op_insert trigger
             const { data: newOP, error: opError } = await supabase
               .from('production_orders')
               .insert({
-                title: `${item.descricao} - Pedido #${order.order_number}`,
+                title: `Pedido #${order.order_number} - ${item.descricao || 'Item'}`,
                 production_type_id: productionType.id,
                 deal_id: formData.deal_id || null,
                 client_id: formData.client_id,
@@ -1070,24 +1067,24 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
             if (!opError && newOP) {
               opsCreated++;
 
-              if (firstPhaseTemplate) {
-                const { data: newPhase } = await supabase
-                  .from('production_phases')
-                  .insert({
-                    production_order_id: newOP.id,
-                    phase_template_id: firstPhaseTemplate.id,
-                    status: 'em_andamento',
-                    started_at: new Date().toISOString(),
-                  })
-                  .select('id')
-                  .single();
+              // Set first auto-created phase as current and em_andamento
+              const { data: firstPhase } = await supabase
+                .from('production_phases')
+                .select('id')
+                .eq('production_order_id', newOP.id)
+                .order('position')
+                .limit(1)
+                .maybeSingle();
 
-                if (newPhase) {
-                  await supabase
-                    .from('production_orders')
-                    .update({ current_phase_id: newPhase.id })
-                    .eq('id', newOP.id);
-                }
+              if (firstPhase) {
+                await supabase
+                  .from('production_orders')
+                  .update({ current_phase_id: firstPhase.id })
+                  .eq('id', newOP.id);
+                await supabase
+                  .from('production_phases')
+                  .update({ status: 'em_andamento', started_at: new Date().toISOString() })
+                  .eq('id', firstPhase.id);
               }
             }
           }
