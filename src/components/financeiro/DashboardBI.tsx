@@ -97,7 +97,9 @@ export function DashboardBI({ filters }: DashboardBIProps) {
       }
 
       if (filters.costCenterId) {
-        entriesQuery = entriesQuery.eq("cost_center_id", filters.costCenterId);
+        // For entries with splits (has_splits=true), cost_center_id is null
+        // We need to also include those and resolve via fin_ledger_splits
+        entriesQuery = entriesQuery.or(`cost_center_id.eq.${filters.costCenterId},has_splits.eq.true`);
       }
       if (filters.projectId) {
         entriesQuery = entriesQuery.eq("project_id", filters.projectId);
