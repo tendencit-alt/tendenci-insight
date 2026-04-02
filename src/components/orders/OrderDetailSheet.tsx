@@ -187,7 +187,7 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
         // Verificar se já existe OP para este item (simplificado)
         const { data: existingOps } = await supabase
           .from('production_orders')
-          .select('id, order_id')
+          .select('id, order_id, order_item_id')
           .eq('order_id', orderId);
 
         const existingOp = existingOps?.find((op: any) => op.order_item_id === item.id);
