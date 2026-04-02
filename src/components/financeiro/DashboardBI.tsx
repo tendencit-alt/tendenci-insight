@@ -80,7 +80,7 @@ export function DashboardBI({ filters }: DashboardBIProps) {
         .from("fin_ledger_entries")
         .select(`
           id, type, amount, description, cash_date, competence_date, 
-          document_number, party_type, party_id,
+          document_number, party_type, party_id, has_splits,
           chart_account:fin_chart_accounts(id, code, name, nature)
         `)
         .neq("status", "CANCELADO");
@@ -97,7 +97,9 @@ export function DashboardBI({ filters }: DashboardBIProps) {
       }
 
       if (filters.costCenterId) {
-        entriesQuery = entriesQuery.eq("cost_center_id", filters.costCenterId);
+        // For entries with splits (has_splits=true), cost_center_id is null
+        // We need to also include those and resolve via fin_ledger_splits
+        entriesQuery = entriesQuery.or(`cost_center_id.eq.${filters.costCenterId},has_splits.eq.true`);
       }
       if (filters.projectId) {
         entriesQuery = entriesQuery.eq("project_id", filters.projectId);
@@ -110,7 +112,39 @@ export function DashboardBI({ filters }: DashboardBIProps) {
       }
 
       // Get all ledger entries with chart accounts
-      const { data: entries } = await entriesQuery;
+      const { data: rawEntries } = await entriesQuery;
+
+      // When filtering by cost center, resolve split entries
+      // Entries with has_splits=true have cost_center_id=null, their distribution is in fin_ledger_splits
+      let entries = rawEntries;
+      if (filters.costCenterId && rawEntries) {
+        const splitParentIds = rawEntries.filter(e => (e as any).has_splits === true).map(e => e.id);
+        let splitAmounts = new Map<string, number>();
+        
+        if (splitParentIds.length > 0) {
+          const { data: splits } = await supabase
+            .from("fin_ledger_splits")
+            .select("parent_entry_id, amount")
+            .eq("cost_center_id", filters.costCenterId)
+            .in("parent_entry_id", splitParentIds);
+          
+          splits?.forEach(s => {
+            splitAmounts.set(s.parent_entry_id, Number(s.amount));
+          });
+        }
+
+        // Replace split parent amounts with their CC-specific split amount, or exclude if no split for this CC
+        entries = rawEntries.map(e => {
+          if ((e as any).has_splits === true) {
+            const splitAmount = splitAmounts.get(e.id);
+            if (splitAmount !== undefined && splitAmount > 0) {
+              return { ...e, amount: splitAmount };
+            }
+            return null; // This split parent has no allocation to this CC
+          }
+          return e;
+        }).filter(Boolean) as typeof rawEntries;
+      }
 
       // Get chart accounts for grouping
       const { data: chartAccounts } = await supabase
