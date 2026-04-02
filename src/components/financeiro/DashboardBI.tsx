@@ -80,7 +80,7 @@ export function DashboardBI({ filters }: DashboardBIProps) {
         .from("fin_ledger_entries")
         .select(`
           id, type, amount, description, cash_date, competence_date, 
-          document_number, party_type, party_id,
+          document_number, party_type, party_id, has_splits,
           chart_account:fin_chart_accounts(id, code, name, nature)
         `)
         .neq("status", "CANCELADO");
