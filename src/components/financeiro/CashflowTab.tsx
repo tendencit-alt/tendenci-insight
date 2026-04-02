@@ -192,7 +192,7 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
       // Get ledger entries with cash_date
       let query = supabase
         .from("fin_ledger_entries")
-        .select("id, chart_account_id, description, amount, cash_date, document_number")
+        .select("id, chart_account_id, description, amount, cash_date, document_number, has_splits")
         .neq("status", "CANCELADO")
         .not("cash_date", "is", null)
         .gte("cash_date", dateFrom)
@@ -202,7 +202,7 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
         query = query.eq("bank_account_id", filters.bankAccountId);
       }
       if (filters.costCenterId) {
-        query = query.eq("cost_center_id", filters.costCenterId);
+        query = query.or(`cost_center_id.eq.${filters.costCenterId},has_splits.eq.true`);
       }
       if (filters.projectId) {
         query = query.eq("project_id", filters.projectId);
@@ -214,7 +214,37 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
         query = query.eq("chart_account_id", filters.categoryId);
       }
 
-      const { data: entries } = await query;
+      const { data: rawEntries } = await query;
+
+      // Resolve split entries when filtering by cost center
+      let entries = rawEntries;
+      if (filters.costCenterId && rawEntries) {
+        const splitParentIds = rawEntries.filter(e => e.has_splits === true).map(e => e.id);
+        const splitAmounts = new Map<string, number>();
+        
+        if (splitParentIds.length > 0) {
+          const { data: splits } = await supabase
+            .from("fin_ledger_splits")
+            .select("parent_entry_id, amount")
+            .eq("cost_center_id", filters.costCenterId)
+            .in("parent_entry_id", splitParentIds);
+          
+          splits?.forEach(s => {
+            splitAmounts.set(s.parent_entry_id, Number(s.amount));
+          });
+        }
+
+        entries = rawEntries.map(e => {
+          if (e.has_splits === true) {
+            const splitAmount = splitAmounts.get(e.id);
+            if (splitAmount !== undefined && splitAmount > 0) {
+              return { ...e, amount: splitAmount };
+            }
+            return null;
+          }
+          return e;
+        }).filter(Boolean) as typeof rawEntries;
+      }
 
       // Group entries by account and calculate values
       const accountValues = new Map<string, number>();
