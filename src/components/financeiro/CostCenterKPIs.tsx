@@ -376,7 +376,7 @@ export function CostCenterKPIs({ filters }: CostCenterKPIsProps) {
               {/* Values */}
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <button
-                  onClick={() => setDrillDown({ costCenterId: cc.id, costCenterName: `${cc.code} - ${cc.name}`, type: "receitas" })}
+                  onClick={(e) => { e.stopPropagation(); console.log("DRILL-DOWN RECEITAS clicked", cc.id); setDrillDown({ costCenterId: cc.id, costCenterName: `${cc.code} - ${cc.name}`, type: "receitas" }); }}
                   className="bg-green-500/10 rounded-md p-2 text-left hover:bg-green-500/20 transition-colors cursor-pointer"
                 >
                   <div className="flex items-center gap-1 text-muted-foreground mb-0.5">
@@ -386,7 +386,7 @@ export function CostCenterKPIs({ filters }: CostCenterKPIsProps) {
                   <p className="font-semibold text-green-600 truncate">{formatCurrency(cc.receitas)}</p>
                 </button>
                 <button
-                  onClick={() => setDrillDown({ costCenterId: cc.id, costCenterName: `${cc.code} - ${cc.name}`, type: "despesas" })}
+                  onClick={(e) => { e.stopPropagation(); console.log("DRILL-DOWN DESPESAS clicked", cc.id); setDrillDown({ costCenterId: cc.id, costCenterName: `${cc.code} - ${cc.name}`, type: "despesas" }); }}
                   className="bg-red-500/10 rounded-md p-2 text-left hover:bg-red-500/20 transition-colors cursor-pointer"
                 >
                   <div className="flex items-center gap-1 text-muted-foreground mb-0.5">
