@@ -763,7 +763,7 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
               })()}
 
               {/* Observações */}
-              {order.observacoes && (
+              {order.observacoes_internas && (
                 <Card>
                   <CardHeader className="py-3">
                     <CardTitle className="text-sm flex items-center gap-2">
@@ -772,7 +772,7 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="py-2 text-sm text-muted-foreground whitespace-pre-wrap">
-                    {order.observacoes}
+                    {order.observacoes_internas}
                   </CardContent>
                 </Card>
               )}
