@@ -1,44 +1,36 @@
 
 
-## Plano: Extrato por Conta Bancária
+## Plano: Redesign das Sub-abas de Lançamentos & Conciliação
 
-### Situação Atual
-A aba "Lançamentos & Conciliação" já possui o filtro de conta bancária nos filtros globais, mas não há uma visão dedicada de **extrato por conta** que mostre claramente entradas/saídas e saldo acumulado de cada conta.
+### Problema
+As 3 sub-abas ("Lançamentos", "Extrato Bancário", "Extrato por Conta") aparecem como botões genéricos sem contexto, poluindo a interface e confundindo o usuário sobre a finalidade de cada uma.
 
 ### Solução
-Adicionar uma terceira sub-aba **"Extrato por Conta"** dentro de "Lançamentos & Conciliação" (ao lado de "Lançamentos" e "Extrato Bancário"). Esta sub-aba mostrará:
+Substituir os tabs genéricos por **cards informativos clicáveis** com métricas resumidas, transformando a navegação em algo útil por si só.
 
-### Estrutura da nova sub-aba
-
-1. **Seletor de conta bancária** no topo (dropdown com todas as contas ativas)
-2. **Cards de resumo**: Saldo anterior, Total Entradas, Total Saídas, Saldo Final
-3. **Tabela de extrato** com:
-   - Data (cash_date)
-   - Descrição
-   - Tipo (Receita/Despesa badge)
-   - Categoria (chart_account)
-   - Entrada (valor se RECEITA)
-   - Saída (valor se DESPESA)
-   - Saldo Acumulado (calculado linha a linha)
-   - Status de conciliação
-
-A query buscará apenas lançamentos com `status = 'PAGO_RECEBIDO'` e `bank_account_id` da conta selecionada, ordenados por `cash_date` ascendente para calcular o saldo progressivo.
+```text
+┌─────────────────────┐  ┌─────────────────────┐  ┌─────────────────────┐
+│ 📖 Lançamentos      │  │ 🔗 Extrato Bancário │  │ 🏛 Extrato por Conta│
+│                     │  │                     │  │                     │
+│ 42 registros        │  │ 15 transações       │  │ Saldo consolidado   │
+│ 3 não conciliados   │  │ 8 não vinculadas    │  │ por conta bancária  │
+│ ─────────────────── │  │ ─────────────────── │  │ ─────────────────── │
+│ [ativo: borda azul] │  │                     │  │                     │
+└─────────────────────┘  └─────────────────────┘  └─────────────────────┘
+```
 
 ### Alterações
 
-**1. `src/components/financeiro/LedgerReconciliationTab.tsx`**
-- Adicionar a sub-aba "Extrato por Conta" no TabsList (grid-cols-2 → grid-cols-3)
-- Adicionar o estado `selectedAccountId` para o seletor dentro da sub-aba
-- Criar query dedicada `fin-account-extract` que busca lançamentos realizados da conta selecionada
-- Renderizar a tabela de extrato com cálculo de saldo acumulado progressivo
-
-**2. Componente `BankAccountExtractTab`** (novo arquivo)
-- Componente separado para manter o `LedgerReconciliationTab` organizado
-- Props: `filters` (para período) 
-- Lógica: seletor de conta, query de lançamentos realizados, cálculo de saldo acumulado
-- Cards de resumo (saldo anterior, entradas, saídas, saldo final)
-- Tabela com colunas separadas de Entrada/Saída e saldo progressivo
+**1. `src/components/financeiro/LedgerReconciliationTab.tsx`** (linhas 641-655)
+- Substituir o `TabsList` com `grid-cols-3` por 3 cards clicáveis lado a lado
+- Cada card mostra: ícone, título, descrição contextual e métricas dinâmicas
+  - **Lançamentos**: total de registros no período + quantidade não conciliados (badge de alerta)
+  - **Extrato Bancário**: total de transações importadas + não vinculadas
+  - **Extrato por Conta**: texto descritivo "Saldo e movimentação por conta"
+- Card ativo recebe `ring-2 ring-primary bg-primary/5`, inativos ficam com `hover:bg-muted/50`
+- Manter a lógica de `activeSubTab` e `setActiveSubTab` — os cards apenas substituem visualmente os TabsTriggers
+- Usar contagem real dos dados já carregados (`entries?.length`, `entries?.filter(e => !e.reconciled).length`, `transactions?.length`, etc.)
 
 ### Resultado
-O usuário poderá selecionar qualquer conta bancária e ver o extrato completo com entradas, saídas e saldo acumulado — como um extrato bancário real.
+Os "botões" viram cards informativos que mostram métricas úteis, orientam o usuário sobre o que cada seção contém e destacam pendências — tornando a navegação mais intuitiva e produtiva.
 
