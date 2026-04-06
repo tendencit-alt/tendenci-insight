@@ -15,7 +15,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
-import { Plus, CreditCard, Receipt, AlertTriangle, Clock, CheckCircle, ArrowDownCircle, ArrowUpCircle, Landmark, TrendingUp, TrendingDown, ArrowUpDown, ArrowUp, ArrowDown, Filter, X, Edit, Trash2, Loader2, Eye } from "lucide-react";
+import { Plus, CreditCard, Receipt, AlertTriangle, Clock, CheckCircle, ArrowDownCircle, ArrowUpCircle, Landmark, TrendingUp, TrendingDown, ArrowUpDown, ArrowUp, ArrowDown, Filter, X, Edit, Trash2, Loader2, Eye, Undo2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { CreatePayableDialog } from "./CreatePayableDialog";
@@ -400,6 +400,52 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
   const handleEditPayable = (payable: any) => { setSelectedPayable(payable); setViewEditPayableMode("edit"); setViewEditPayableOpen(true); };
   const handleViewReceivable = (receivable: any) => { setSelectedReceivable(receivable); setViewEditReceivableMode("view"); setViewEditReceivableOpen(true); };
   const handleEditReceivable = (receivable: any) => { setSelectedReceivable(receivable); setViewEditReceivableMode("edit"); setViewEditReceivableOpen(true); };
+
+  const handleReopenPayable = async (payable: any) => {
+    try {
+      // Revert payable status to ABERTO and clear paid_amount/paid_at
+      const { error: payableError } = await supabase
+        .from("fin_payables")
+        .update({ status: "ABERTO", paid_amount: 0, paid_at: null })
+        .eq("id", payable.id);
+      if (payableError) throw payableError;
+
+      // Revert linked ledger entry status
+      if (payable.ledger_entry_id) {
+        await supabase
+          .from("fin_ledger_entries")
+          .update({ status: "ABERTO", cash_date: null })
+          .eq("id", payable.ledger_entry_id);
+      }
+
+      toast.success("Conta reaberta com sucesso");
+      refetch();
+    } catch (err) {
+      toast.error("Erro ao reabrir conta");
+    }
+  };
+
+  const handleReopenReceivable = async (receivable: any) => {
+    try {
+      const { error: receivableError } = await supabase
+        .from("fin_receivables")
+        .update({ status: "ABERTO", received_amount: 0, received_at: null })
+        .eq("id", receivable.id);
+      if (receivableError) throw receivableError;
+
+      if (receivable.ledger_entry_id) {
+        await supabase
+          .from("fin_ledger_entries")
+          .update({ status: "ABERTO", cash_date: null })
+          .eq("id", receivable.ledger_entry_id);
+      }
+
+      toast.success("Conta reaberta com sucesso");
+      refetch();
+    } catch (err) {
+      toast.error("Erro ao reabrir conta");
+    }
+  };
 
   // Payable selection handlers
   const togglePayableSelectAll = () => {
