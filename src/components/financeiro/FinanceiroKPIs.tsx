@@ -16,6 +16,8 @@ interface FinanceiroKPIsProps {
     saidas: number;
     resultado: number;
     saldoConsolidado: number;
+    receitasRealizadas?: number;
+    despesasRealizadas?: number;
   };
   isLoading: boolean;
   onSelectKPI?: (kpi: "saldo" | "receitas" | "despesas" | "resultado") => void;
