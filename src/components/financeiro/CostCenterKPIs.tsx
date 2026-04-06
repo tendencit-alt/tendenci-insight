@@ -426,8 +426,6 @@ export function CostCenterKPIs({ filters }: CostCenterKPIsProps) {
                   </p>
                 </button>
               </div>
-                </button>
-              </div>
 
               {/* Resultado */}
               <button
