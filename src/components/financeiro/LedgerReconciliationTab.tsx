@@ -324,7 +324,29 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
 
   const selectedEntries = unreconciledEntries.filter(e => selectedForReconcile.has(e.id));
 
-  // Bank transactions helpers
+  // Ledger selection helpers
+  const toggleLedgerSelect = (id: string) => {
+    setSelectedLedgerIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleLedgerSelectAll = () => {
+    if (!entries) return;
+    const active = entries.filter(e => e.status !== "CANCELADO");
+    if (selectedLedgerIds.size === active.length) {
+      setSelectedLedgerIds(new Set());
+    } else {
+      setSelectedLedgerIds(new Set(active.map(e => e.id)));
+    }
+  };
+
+  const selectedLedgerTotal = entries
+    ?.filter(e => selectedLedgerIds.has(e.id))
+    .reduce((sum, e) => sum + Math.abs(Number(e.amount) || 0), 0) || 0;
+
   const bankKpis = transactions?.reduce(
     (acc, t) => {
       acc.total++;
