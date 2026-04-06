@@ -369,6 +369,7 @@ export function CostCenterEntriesDialog({
           orderId={selectedOrderId}
           open={!!selectedOrderId}
           onOpenChange={(open) => !open && setSelectedOrderId(null)}
+          onUpdate={() => {}}
         />
       )}
     </>
