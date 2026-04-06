@@ -271,7 +271,13 @@ export function CostCenterKPIs({ filters }: CostCenterKPIsProps) {
             KPIs por Centro de Custo
           </h2>
           <p className="text-xs sm:text-sm text-muted-foreground">
-            Acompanhamento de metas de receita - {format(new Date(), "MMMM/yyyy", { locale: ptBR })}
+            Acompanhamento de metas de receita - {filters.dateFrom && filters.dateTo
+              ? `${format(filters.dateFrom, "dd/MM/yyyy", { locale: ptBR })} a ${format(filters.dateTo, "dd/MM/yyyy", { locale: ptBR })}`
+              : filters.dateFrom
+                ? `a partir de ${format(filters.dateFrom, "dd/MM/yyyy", { locale: ptBR })}`
+                : filters.dateTo
+                  ? `até ${format(filters.dateTo, "dd/MM/yyyy", { locale: ptBR })}`
+                  : "todo período"}
           </p>
         </div>
       </div>
