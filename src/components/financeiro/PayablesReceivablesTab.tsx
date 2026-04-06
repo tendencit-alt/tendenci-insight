@@ -743,6 +743,12 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
       {showPayables && selectedPayableIds.size > 0 && (
         <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
           <span className="text-sm font-medium">{selectedPayableIds.size} conta(s) a pagar selecionada(s)</span>
+          <span className="text-sm font-semibold text-primary">
+            Total: {filteredPayables
+              .filter(p => selectedPayableIds.has(p.id))
+              .reduce((sum, p) => sum + (Number(p.amount) || 0), 0)
+              .toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+          </span>
           <div className="flex-1" />
           <Button variant="outline" size="sm" onClick={() => setPayableBulkEditOpen(true)} className="gap-1">
             <Edit className="h-4 w-4" /> Editar Status
@@ -859,6 +865,12 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
       {showReceivables && selectedReceivableIds.size > 0 && (
         <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
           <span className="text-sm font-medium">{selectedReceivableIds.size} conta(s) a receber selecionada(s)</span>
+          <span className="text-sm font-semibold text-primary">
+            Total: {filteredReceivables
+              .filter(r => selectedReceivableIds.has(r.id))
+              .reduce((sum, r) => sum + (Number(r.amount) || 0), 0)
+              .toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+          </span>
           <div className="flex-1" />
           <Button variant="outline" size="sm" onClick={() => setReceivableBulkEditOpen(true)} className="gap-1">
             <Edit className="h-4 w-4" /> Editar Status
