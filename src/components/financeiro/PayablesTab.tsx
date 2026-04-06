@@ -446,6 +446,12 @@ export function PayablesTab({ filters }: PayablesTabProps) {
       {selectedIds.size > 0 && (
         <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
           <span className="text-sm font-medium">{selectedIds.size} selecionado(s)</span>
+          <span className="text-sm font-semibold text-primary">
+            Total: {filteredAndSortedData
+              .filter(p => selectedIds.has(p.id))
+              .reduce((sum, p) => sum + (Number(p.amount) || 0), 0)
+              .toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+          </span>
           <div className="flex-1" />
           <Button variant="outline" size="sm" onClick={() => setBulkEditOpen(true)} className="gap-2">
             <Edit className="h-4 w-4" />
