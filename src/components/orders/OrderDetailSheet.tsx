@@ -624,13 +624,67 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
               <Card>
                 <CardHeader className="py-3">
                   <CardTitle className="text-sm flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
+                    <DollarSign className="h-4 w-4" />
                     Pagamento
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="py-2 space-y-1 text-sm">
-                  <p>Forma: {order.forma_pagamento || 'Não definida'}</p>
-                  <p>Condição: {order.condicao_pagamento || 'Não definida'}</p>
+                <CardContent className="py-2 space-y-2 text-sm">
+                  {(() => {
+                    const FORMAS_MAP: Record<string, string> = {
+                      pix: 'PIX', cartao_credito: 'Cartão de Crédito', cartao_debito: 'Cartão de Débito',
+                      link_pagamento: 'Link de Pagamento', boleto: 'Boleto', transferencia: 'Transferência',
+                      permuta: 'Permuta', dinheiro: 'Dinheiro',
+                    };
+
+                    let parcelas: any[] = [];
+                    try {
+                      if (order.observacao_pagamento) {
+                        const info = JSON.parse(order.observacao_pagamento);
+                        parcelas = info?.parcelas || [];
+                      }
+                    } catch {}
+
+                    if (parcelas.length > 0) {
+                      return (
+                        <div className="space-y-2">
+                          {parcelas.map((p: any, i: number) => (
+                            <div key={i} className="rounded-lg border border-border bg-muted/30 p-2.5 space-y-1">
+                              <div className="flex items-center justify-between">
+                                <span className="font-medium">
+                                  {FORMAS_MAP[p.forma_pagamento] || p.forma_pagamento}
+                                </span>
+                                <Badge variant="secondary" className="text-xs">
+                                  {p.percentual}%
+                                </Badge>
+                              </div>
+                              {p.numero_parcelas && (
+                                <p className="text-xs text-muted-foreground">
+                                  {p.numero_parcelas}x parcela{p.numero_parcelas > 1 ? 's' : ''}
+                                  {p.carencia_dias ? ` · Carência ${p.carencia_dias} dias` : ''}
+                                </p>
+                              )}
+                              {p.data_vencimento && (
+                                <p className="text-xs text-muted-foreground">
+                                  Vencimento: {format(parseDateOnly(p.data_vencimento), "dd/MM/yyyy")}
+                                </p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    }
+
+                    // Fallback: show forma_pagamento fields
+                    return (
+                      <div className="space-y-1">
+                        <p>Forma: {FORMAS_MAP[order.forma_pagamento] || order.forma_pagamento || 'Não definida'}</p>
+                        {order.forma_pagamento_2 && (
+                          <p>Forma 2: {FORMAS_MAP[order.forma_pagamento_2] || order.forma_pagamento_2}</p>
+                        )}
+                        <p>Condição: {order.condicao_pagamento || 'Não definida'}</p>
+                      </div>
+                    );
+                  })()}
                   {order.observacoes_nf && (
                     <>
                       <Separator className="my-2" />
