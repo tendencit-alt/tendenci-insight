@@ -599,7 +599,7 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
                           />
                         </TableCell>
                         <TableCell className="text-xs py-2">
-                          {entry.cash_date && format(new Date(entry.cash_date), "dd/MM/yy", { locale: ptBR })}
+                          {(entry.cash_date || entry.competence_date) && format(new Date(entry.cash_date || entry.competence_date), "dd/MM/yy", { locale: ptBR })}
                         </TableCell>
                         <TableCell className="text-xs py-2">
                           {getTypeBadge(entry.type, true)}

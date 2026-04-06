@@ -36,6 +36,8 @@ export function useFinanceiroSync() {
     queryClient.invalidateQueries({ queryKey: ["fin-payables"] });
     queryClient.invalidateQueries({ queryKey: ["fin-payables-summary-tab"] });
     queryClient.invalidateQueries({ queryKey: ["fin-ledger-entries"] });
+    queryClient.invalidateQueries({ queryKey: ["fin-bank-balance-unified"] });
+    queryClient.invalidateQueries({ queryKey: ["fin-bank-accounts-balance"] });
   };
 
   /**
