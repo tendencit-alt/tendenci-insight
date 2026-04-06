@@ -42,6 +42,7 @@ import { OFXImportDialog } from "./OFXImportDialog";
 import { FinanceiroAlerts } from "./FinanceiroAlerts";
 import { toast } from "sonner";
 import { parseOFX, OFXTransaction } from "@/lib/ofx-parser";
+import { BankAccountExtractTab } from "./BankAccountExtractTab";
 import {
   DropdownMenu,
   DropdownMenuContent,
