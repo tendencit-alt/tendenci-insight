@@ -1,42 +1,44 @@
 
 
-## Plano: Rateio de Receita por Centro de Custo dos Itens
+## Plan: Add Click-to-Origin on Drill-Down Entries
 
-### Problema
-A trigger `update_financial_entries_on_order_edit` resolve o centro de custo com `LIMIT 1` dos itens do pedido — pega apenas o primeiro e aplica a **todos** os lançamentos financeiros. No pedido do Juliano, os itens "Rústico" (R$15.900) e "Náutico" (R$12.870) ficam todos lançados como "Náutico".
+### Problem
+When clicking on Receitas/Despesas in the BI Cost Center KPIs, the drill-down dialog shows entries but they are not clickable. Users want to click an entry and navigate to the originating order (for entries generated from Pedidos/Recursos Estrategicos) or view the original ledger entry details.
 
-### Solução
-Reescrever a trigger para gerar **um lançamento de receita por centro de custo distinto**, rateando o valor proporcionalmente pelos itens.
+### How It Works Today
+- `CostCenterEntriesDialog` shows `fin_ledger_entries` data
+- `fin_ledger_entries` has NO `order_id` column
+- However, `fin_payables` and `fin_receivables` have both `ledger_entry_id` and `order_id`, creating the link back to orders
+- Entries from orders follow the pattern "PED #N - Comissão Vendedor (Nome)" or "PED #N - Receita"
 
-### Mudanças
+### Implementation
 
-**1. Alterar a trigger `update_financial_entries_on_order_edit` (migração SQL)**
+**Step 1: Fetch order linkage in the query**
 
-Substituir a lógica atual de receita única por um loop que:
-- Agrupa os `order_items` por `centro_custo` (e `project_id` do item, se disponível)
-- Para cada grupo, calcula o subtotal dos itens
-- Cria um `fin_ledger_entries` (RECEITA) separado por centro de custo com o valor proporcional
-- Cria um `fin_receivables` separado por centro de custo
-- A descrição incluirá o nome do centro de custo: `Pedido #X - Receita (Náutico)`
+In `CostCenterEntriesDialog.tsx`, after fetching ledger entries, perform a secondary lookup:
+- Query `fin_payables` and `fin_receivables` where `ledger_entry_id` is in the fetched entry IDs, selecting `ledger_entry_id, order_id`
+- Also fetch order numbers from `orders` table via the join
+- Build a map: `ledger_entry_id -> { order_id, order_number }`
+- Attach this info to each entry in the merged results
 
-Para **comissões e taxas** (que são calculadas sobre o valor total do pedido), a lógica será:
-- Ratear proporcionalmente entre os centros de custo, baseado no peso de cada CC no valor total
-- Cada comissão gera N lançamentos (um por CC), com valor = `comissão_total × (valor_cc / valor_total)`
+**Step 2: Add a clickable action per row**
 
-**2. Manter o fallback**
-- Se não houver itens ou todos os itens não tiverem centro de custo, comportamento atual (CC nulo ou do header)
+- Add an "open origin" icon button (ExternalLink) at the end of each row
+- For entries linked to an order: open `OrderDetailSheet` with the order ID
+- For entries without an order link: optionally open a simple detail view or show a tooltip "Lançamento manual"
+- The checkbox/selection behavior remains on the row click; the origin button is a separate action
 
-### Exemplo concreto (pedido Juliano)
-```text
-Antes:  1 receita R$28.770 → Náutico
-Depois: 1 receita R$15.900 → Rústico
-        1 receita R$12.870 → Náutico
-```
+**Step 3: Integrate OrderDetailSheet**
 
-### Detalhes Técnicos
-- Uma migração SQL com `CREATE OR REPLACE FUNCTION`
-- Loop via `FOR v_item IN (SELECT centro_custo, SUM(valor_total) ... GROUP BY centro_custo)`
-- O `document_number` permanece o mesmo (`PED-X`) para todos os lançamentos do pedido
-- O `parent_entry_id` para despesas referenciará o primeiro `ledger_id` criado (mantendo a hierarquia)
-- Nenhuma alteração de código frontend necessária
+- Import and render `OrderDetailSheet` conditionally when an order is selected
+- Track state: `selectedOrderId` for opening the sheet
+- When clicked, the sheet opens showing full order details (already exists as a reusable component)
+
+### Files to Edit
+1. **`src/components/financeiro/CostCenterEntriesDialog.tsx`** — Add order lookup query, add origin button per row, integrate OrderDetailSheet
+
+### Technical Details
+- The select query will include: `fin_payables(ledger_entry_id, order_id, order:orders(order_number))` and same for `fin_receivables`
+- Grid columns adjusted to add a narrow action column: `[32px_1fr_120px_100px_80px_32px]`
+- Badge or icon indicating "Pedido #N" when order is linked
 
