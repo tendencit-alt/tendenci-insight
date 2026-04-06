@@ -494,103 +494,26 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
       </div>
 
 
-      {/* System Alerts */}
+      {/* Unified Alerts Panel */}
       <FinanceiroAlerts 
         entries={entries || []} 
         transactions={transactions || []} 
         lastImportDate={lastImportData?.created_at}
+        isImportOverdue={isImportOverdue}
+        lastImportFormatted={lastImportDate}
+        unreconciledEntries={unreconciledEntries}
+        unreconciledTotal={unreconciledTotal}
+        selectedForReconcile={selectedForReconcile}
+        onToggleSelectForReconcile={toggleSelectForReconcile}
+        onToggleSelectAll={toggleSelectAll}
+        onOpenReconcileDialog={handleOpenReconcileDialog}
         onNavigateToEntry={(id) => {
           const entry = entries?.find(e => e.id === id);
           if (entry) handleViewAudit(entry);
         }}
+        getTypeBadge={getTypeBadge}
+        formatCurrency={formatCurrency}
       />
-
-      {/* Alert for unreconciled entries */}
-      {unreconciledEntries.length > 0 && (
-        <Collapsible open={alertOpen} onOpenChange={setAlertOpen}>
-          <Alert variant="destructive" className="border-yellow-500/50 bg-yellow-500/10">
-            <AlertTriangle className="h-4 w-4 text-yellow-600" />
-            <AlertTitle className="text-yellow-600 flex items-center justify-between">
-              <span>Lançamentos Pendentes de Conciliação</span>
-              <CollapsibleTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-yellow-600">
-                  {alertOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                </Button>
-              </CollapsibleTrigger>
-            </AlertTitle>
-            <AlertDescription className="text-yellow-600/90">
-              <span className="font-medium">{unreconciledEntries.length}</span> lançamento(s) não conciliado(s) 
-              totalizando <span className="font-medium">{formatCurrencySimple(unreconciledTotal)}</span>
-            </AlertDescription>
-            <CollapsibleContent className="mt-3 space-y-3">
-              <div className="max-h-[250px] overflow-y-auto rounded border border-yellow-500/30 bg-background/50">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="hover:bg-transparent">
-                      <TableHead className="text-xs h-8 w-[40px]">
-                        <Checkbox 
-                          checked={selectedForReconcile.size === unreconciledEntries.length && unreconciledEntries.length > 0}
-                          onCheckedChange={toggleSelectAll}
-                          className="border-yellow-600 data-[state=checked]:bg-yellow-600"
-                        />
-                      </TableHead>
-                      <TableHead className="text-xs h-8">Data</TableHead>
-                      <TableHead className="text-xs h-8">Tipo</TableHead>
-                      <TableHead className="text-xs h-8">Descrição</TableHead>
-                      <TableHead className="text-xs text-right h-8">Valor</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {unreconciledEntries.map((entry) => (
-                      <TableRow 
-                        key={entry.id} 
-                        className={`hover:bg-yellow-500/5 cursor-pointer ${selectedForReconcile.has(entry.id) ? "bg-yellow-500/10" : ""}`}
-                        onClick={() => toggleSelectForReconcile(entry.id)}
-                      >
-                        <TableCell className="text-xs py-2">
-                          <Checkbox 
-                            checked={selectedForReconcile.has(entry.id)}
-                            onCheckedChange={() => toggleSelectForReconcile(entry.id)}
-                            onClick={(e) => e.stopPropagation()}
-                            className="border-yellow-600 data-[state=checked]:bg-yellow-600"
-                          />
-                        </TableCell>
-                        <TableCell className="text-xs py-2">
-                          {(entry.cash_date || entry.competence_date) && format(new Date(entry.cash_date || entry.competence_date), "dd/MM/yy", { locale: ptBR })}
-                        </TableCell>
-                        <TableCell className="text-xs py-2">
-                          {getTypeBadge(entry.type, true)}
-                        </TableCell>
-                        <TableCell className="text-xs py-2 max-w-[200px] truncate">
-                          {entry.description}
-                        </TableCell>
-                        <TableCell className="text-xs py-2 text-right font-medium">
-                          {formatCurrency(Number(entry.amount), entry.type)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-              {selectedForReconcile.size > 0 && (
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-yellow-600">
-                    {selectedForReconcile.size} selecionado(s)
-                  </span>
-                  <Button 
-                    size="sm" 
-                    onClick={handleOpenReconcileDialog}
-                    className="gap-1.5 bg-green-600 hover:bg-green-700"
-                  >
-                    <Check className="h-3.5 w-3.5" />
-                    Conciliar Selecionados
-                  </Button>
-                </div>
-              )}
-            </CollapsibleContent>
-          </Alert>
-        </Collapsible>
-      )}
 
       {/* Sub-tabs */}
       <Tabs value={activeSubTab} onValueChange={setActiveSubTab} className="space-y-4">
