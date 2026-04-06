@@ -38,6 +38,8 @@ interface CostCenterData {
   receitas: number;
   despesas: number;
   resultado: number;
+  receitasRealizadas: number;
+  despesasRealizadas: number;
   meta_receitas: number;
   meta_id: string | null;
   percentual_atingido: number;
@@ -69,7 +71,7 @@ export function CostCenterKPIs({ filters }: CostCenterKPIsProps) {
       // Get ledger entries grouped by cost center - include entries without cash_date using competence_date
       let entriesQuery = supabase
         .from("fin_ledger_entries")
-        .select("id, cost_center_id, type, amount, has_splits")
+        .select("id, cost_center_id, type, amount, has_splits, status")
         .neq("status", "CANCELADO");
 
       if (dateFrom && dateTo) {
@@ -113,35 +115,37 @@ export function CostCenterKPIs({ filters }: CostCenterKPIsProps) {
         .not("cost_center_id", "is", null);
 
       // Calculate totals per cost center
-      const costCenterMap = new Map<string, { receitas: number; despesas: number }>();
+      const costCenterMap = new Map<string, { receitas: number; despesas: number; receitasRealizadas: number; despesasRealizadas: number }>();
       
-      const addToCC = (ccId: string, type: string | null, amount: number) => {
+      const addToCC = (ccId: string, type: string | null, amount: number, isRealizado: boolean) => {
         if (!costCenterMap.has(ccId)) {
-          costCenterMap.set(ccId, { receitas: 0, despesas: 0 });
+          costCenterMap.set(ccId, { receitas: 0, despesas: 0, receitasRealizadas: 0, despesasRealizadas: 0 });
         }
         const current = costCenterMap.get(ccId)!;
         if (type === "RECEITA") {
           current.receitas += amount;
+          if (isRealizado) current.receitasRealizadas += amount;
         } else if (type === "DESPESA") {
           current.despesas += amount;
+          if (isRealizado) current.despesasRealizadas += amount;
         }
       };
 
       entries?.forEach(entry => {
+        const isRealizado = entry.status === "PAGO_RECEBIDO";
         if (entry.has_splits === true) {
-          // Resolve via splits - distribute to each CC
           const splits = splitsMap.get(entry.id);
           splits?.forEach(split => {
-            addToCC(split.cost_center_id, split.type, split.amount);
+            addToCC(split.cost_center_id, split.type, split.amount, isRealizado);
           });
         } else if (entry.cost_center_id) {
-          addToCC(entry.cost_center_id, entry.type, Number(entry.amount));
+          addToCC(entry.cost_center_id, entry.type, Number(entry.amount), isRealizado);
         }
       });
 
       // Build cost center data with goals
       const result: CostCenterData[] = (costCenters || []).map(cc => {
-        const values = costCenterMap.get(cc.id) || { receitas: 0, despesas: 0 };
+        const values = costCenterMap.get(cc.id) || { receitas: 0, despesas: 0, receitasRealizadas: 0, despesasRealizadas: 0 };
         const goal = goals?.find(g => g.cost_center_id === cc.id);
         const meta = goal?.target_amount || 0;
         const percentual = meta > 0 ? (values.receitas / meta) * 100 : 0;
@@ -153,6 +157,8 @@ export function CostCenterKPIs({ filters }: CostCenterKPIsProps) {
           receitas: values.receitas,
           despesas: values.despesas,
           resultado: values.receitas - values.despesas,
+          receitasRealizadas: values.receitasRealizadas,
+          despesasRealizadas: values.despesasRealizadas,
           meta_receitas: meta,
           meta_id: goal?.id || null,
           percentual_atingido: percentual,
@@ -165,6 +171,8 @@ export function CostCenterKPIs({ filters }: CostCenterKPIsProps) {
       // Calculate totals
       const totalReceitas = result.reduce((sum, cc) => sum + cc.receitas, 0);
       const totalDespesas = result.reduce((sum, cc) => sum + cc.despesas, 0);
+      const totalReceitasRealizadas = result.reduce((sum, cc) => sum + cc.receitasRealizadas, 0);
+      const totalDespesasRealizadas = result.reduce((sum, cc) => sum + cc.despesasRealizadas, 0);
       const totalMeta = result.reduce((sum, cc) => sum + cc.meta_receitas, 0);
 
       return {
@@ -172,6 +180,8 @@ export function CostCenterKPIs({ filters }: CostCenterKPIsProps) {
         totals: {
           receitas: totalReceitas,
           despesas: totalDespesas,
+          receitasRealizadas: totalReceitasRealizadas,
+          despesasRealizadas: totalDespesasRealizadas,
           resultado: totalReceitas - totalDespesas,
           meta: totalMeta,
           percentual: totalMeta > 0 ? (totalReceitas / totalMeta) * 100 : 0,
@@ -293,6 +303,10 @@ export function CostCenterKPIs({ filters }: CostCenterKPIsProps) {
               <div>
                 <p className="text-xs text-muted-foreground">Receitas Total</p>
                 <p className="text-sm sm:text-lg font-bold text-green-600">{formatCurrency(data?.totals.receitas || 0)}</p>
+                <p className="text-[10px] text-muted-foreground">
+                  Realizado: <span className="font-semibold text-foreground">{(data?.totals.receitas ? ((data.totals.receitasRealizadas / data.totals.receitas) * 100) : 0).toFixed(1)}%</span>
+                  <span className="ml-1 text-muted-foreground/70">({formatCurrency(data?.totals.receitasRealizadas || 0)})</span>
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -302,6 +316,10 @@ export function CostCenterKPIs({ filters }: CostCenterKPIsProps) {
               <div>
                 <p className="text-xs text-muted-foreground">Despesas Total</p>
                 <p className="text-sm sm:text-lg font-bold text-red-600">{formatCurrency(data?.totals.despesas || 0)}</p>
+                <p className="text-[10px] text-muted-foreground">
+                  Realizado: <span className="font-semibold text-foreground">{(data?.totals.despesas ? ((data.totals.despesasRealizadas / data.totals.despesas) * 100) : 0).toFixed(1)}%</span>
+                  <span className="ml-1 text-muted-foreground/70">({formatCurrency(data?.totals.despesasRealizadas || 0)})</span>
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -382,7 +400,7 @@ export function CostCenterKPIs({ filters }: CostCenterKPIsProps) {
               {/* Values */}
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <button
-                  onClick={(e) => { e.stopPropagation(); console.log("DRILL-DOWN RECEITAS clicked", cc.id); setDrillDown({ costCenterId: cc.id, costCenterName: `${cc.code} - ${cc.name}`, type: "receitas" }); }}
+                  onClick={(e) => { e.stopPropagation(); setDrillDown({ costCenterId: cc.id, costCenterName: `${cc.code} - ${cc.name}`, type: "receitas" }); }}
                   className="bg-green-500/10 rounded-md p-2 text-left hover:bg-green-500/20 transition-colors cursor-pointer"
                 >
                   <div className="flex items-center gap-1 text-muted-foreground mb-0.5">
@@ -390,9 +408,12 @@ export function CostCenterKPIs({ filters }: CostCenterKPIsProps) {
                     Receitas
                   </div>
                   <p className="font-semibold text-green-600 truncate">{formatCurrency(cc.receitas)}</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                    Realizado: <span className="font-semibold text-foreground">{(cc.receitas > 0 ? (cc.receitasRealizadas / cc.receitas * 100) : 0).toFixed(1)}%</span>
+                  </p>
                 </button>
                 <button
-                  onClick={(e) => { e.stopPropagation(); console.log("DRILL-DOWN DESPESAS clicked", cc.id); setDrillDown({ costCenterId: cc.id, costCenterName: `${cc.code} - ${cc.name}`, type: "despesas" }); }}
+                  onClick={(e) => { e.stopPropagation(); setDrillDown({ costCenterId: cc.id, costCenterName: `${cc.code} - ${cc.name}`, type: "despesas" }); }}
                   className="bg-red-500/10 rounded-md p-2 text-left hover:bg-red-500/20 transition-colors cursor-pointer"
                 >
                   <div className="flex items-center gap-1 text-muted-foreground mb-0.5">
@@ -400,6 +421,9 @@ export function CostCenterKPIs({ filters }: CostCenterKPIsProps) {
                     Despesas
                   </div>
                   <p className="font-semibold text-red-600 truncate">{formatCurrency(cc.despesas)}</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                    Realizado: <span className="font-semibold text-foreground">{(cc.despesas > 0 ? (cc.despesasRealizadas / cc.despesas * 100) : 0).toFixed(1)}%</span>
+                  </p>
                 </button>
               </div>
 
