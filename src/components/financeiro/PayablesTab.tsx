@@ -13,7 +13,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Plus, CreditCard, AlertTriangle, Clock, CheckCircle, ArrowDownCircle, Trash2, Edit, Loader2, ArrowUpDown, ArrowUp, ArrowDown, Filter, X } from "lucide-react";
+import { Plus, CreditCard, AlertTriangle, Clock, CheckCircle, ArrowDownCircle, Trash2, Edit, Loader2, ArrowUpDown, ArrowUp, ArrowDown, Filter, X, Undo2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { CreatePayableDialog } from "./CreatePayableDialog";
@@ -571,13 +571,32 @@ export function PayablesTab({ filters }: PayablesTabProps) {
                         </TableCell>
                         <TableCell>{getStatusBadge(payable.status)}</TableCell>
                         <TableCell>
-                          {payable.status !== "PAGO" && payable.status !== "CANCELADO" && (
+                          {payable.status !== "PAGO" && payable.status !== "CANCELADO" && !(Number(payable.paid_amount) > 0) && (
                             <Button 
                               variant="outline" 
                               size="sm"
                               onClick={() => handlePay(payable)}
                             >
                               Pagar
+                            </Button>
+                          )}
+                          {(payable.status === "PAGO" || Number(payable.paid_amount) > 0) && (
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              className="gap-1"
+                              onClick={async () => {
+                                try {
+                                  await supabase.from("fin_payables").update({ status: "ABERTO", paid_amount: 0, payment_date: null }).eq("id", payable.id);
+                                  if (payable.ledger_entry_id) {
+                                    await supabase.from("fin_ledger_entries").update({ status: "ABERTO", cash_date: null }).eq("id", payable.ledger_entry_id);
+                                  }
+                                  toast.success("Conta reaberta com sucesso");
+                                  invalidatePayables();
+                                } catch { toast.error("Erro ao reabrir conta"); }
+                              }}
+                            >
+                              <Undo2 className="h-3 w-3" /> Reabrir
                             </Button>
                           )}
                         </TableCell>
