@@ -12,10 +12,14 @@ import {
   ChevronRight,
   Upload,
   Check,
-  Clock
+  Clock,
+  Wallet,
+  XCircle
 } from "lucide-react";
 import { useState } from "react";
-import { format } from "date-fns";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { format, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 interface FinanceiroAlertsProps {
@@ -62,6 +66,58 @@ export function FinanceiroAlerts({
 }: FinanceiroAlertsProps) {
   const [panelOpen, setPanelOpen] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
+  const [dismissedOverdue, setDismissedOverdue] = useState<Set<string>>(new Set());
+
+  // Fetch overdue payables/receivables
+  const { data: overdueItems } = useQuery({
+    queryKey: ["fin-overdue-alerts"],
+    queryFn: async () => {
+      const today = new Date();
+      const todayStr = format(today, "yyyy-MM-dd");
+      const items: { id: string; type: "payable" | "receivable"; description: string; amount: number; due_date: string; days_overdue: number; party_name: string }[] = [];
+
+      const { data: payables } = await supabase
+        .from("fin_payables")
+        .select("id, description, amount, due_date, status, supplier:suppliers(name)")
+        .in("status", ["ABERTO", "VENCIDO"])
+        .lte("due_date", todayStr)
+        .order("due_date", { ascending: true })
+        .limit(10);
+
+      payables?.forEach((p) => {
+        items.push({
+          id: p.id, type: "payable",
+          description: p.description || "Conta a Pagar",
+          amount: Number(p.amount), due_date: p.due_date,
+          days_overdue: differenceInDays(today, new Date(p.due_date)),
+          party_name: (p.supplier as any)?.name || "Fornecedor",
+        });
+      });
+
+      const { data: receivables } = await supabase
+        .from("fin_receivables")
+        .select("id, description, amount, due_date, status, customer:clients(name)")
+        .in("status", ["ABERTO", "VENCIDO"])
+        .lte("due_date", todayStr)
+        .order("due_date", { ascending: true })
+        .limit(10);
+
+      receivables?.forEach((r) => {
+        items.push({
+          id: r.id, type: "receivable",
+          description: r.description || "Conta a Receber",
+          amount: Number(r.amount), due_date: r.due_date,
+          days_overdue: differenceInDays(today, new Date(r.due_date)),
+          party_name: (r.customer as any)?.name || "Cliente",
+        });
+      });
+
+      return items.sort((a, b) => b.days_overdue - a.days_overdue);
+    },
+    refetchInterval: 60000,
+  });
+
+  const visibleOverdue = overdueItems?.filter(i => !dismissedOverdue.has(i.id)) || [];
 
   const toggleSection = (id: string) => {
     setExpandedSections(prev => {
@@ -73,6 +129,68 @@ export function FinanceiroAlerts({
 
   // Build alert sections
   const sections: AlertSection[] = [];
+
+  // 0. Contas vencidas (highest priority)
+  if (visibleOverdue.length > 0) {
+    const totalOverdue = visibleOverdue.reduce((s, i) => s + i.amount, 0);
+    sections.push({
+      id: 'overdue-accounts',
+      type: 'error',
+      icon: <Wallet className="h-3.5 w-3.5" />,
+      title: 'Contas vencidas',
+      count: visibleOverdue.length,
+      content: (
+        <div className="space-y-2">
+          <p className="text-xs text-muted-foreground">
+            Total vencido: <span className="font-semibold text-destructive">{totalOverdue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+          </p>
+          <div className="space-y-1 rounded border border-border bg-background/50 p-2 max-h-[200px] overflow-y-auto">
+            {visibleOverdue.map(item => (
+              <div key={`${item.type}-${item.id}`} className="flex items-center justify-between text-xs py-1.5 px-2 rounded hover:bg-muted/50 gap-2">
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  {item.days_overdue > 0 ? (
+                    <AlertTriangle className="h-3 w-3 text-destructive flex-shrink-0" />
+                  ) : (
+                    <Clock className="h-3 w-3 text-yellow-500 flex-shrink-0" />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <span className="font-medium truncate block">{item.party_name}</span>
+                    <span className="text-muted-foreground truncate block">{item.description}</span>
+                  </div>
+                  <Badge variant={item.type === "payable" ? "destructive" : "default"} className="text-[10px] h-4 px-1.5 flex-shrink-0">
+                    {item.type === "payable" ? "Pagar" : "Receber"}
+                  </Badge>
+                  {item.days_overdue > 0 && (
+                    <span className="text-destructive font-medium flex-shrink-0">{item.days_overdue}d</span>
+                  )}
+                  {item.days_overdue === 0 && (
+                    <span className="text-yellow-600 font-medium flex-shrink-0">Hoje</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  <span className="font-semibold">{item.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setDismissedOverdue(prev => new Set([...prev, item.id])); }}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    <XCircle className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+          {dismissedOverdue.size > 0 && (
+            <button
+              onClick={() => setDismissedOverdue(new Set())}
+              className="text-[10px] text-muted-foreground hover:text-foreground w-full text-center"
+            >
+              Mostrar {dismissedOverdue.size} oculto(s)
+            </button>
+          )}
+        </div>
+      ),
+    });
+  }
 
   // 1. Último Extrato Importado
   if (isImportOverdue) {
