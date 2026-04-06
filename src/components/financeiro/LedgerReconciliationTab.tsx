@@ -639,20 +639,80 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
 
       {/* Sub-tabs */}
       <Tabs value={activeSubTab} onValueChange={setActiveSubTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3 max-w-lg">
-          <TabsTrigger value="ledger" className="gap-1.5">
-            <BookOpen className="h-4 w-4" />
-            Lançamentos
-          </TabsTrigger>
-          <TabsTrigger value="bank" className="gap-1.5">
-            <Link2 className="h-4 w-4" />
-            Extrato Bancário
-          </TabsTrigger>
-          <TabsTrigger value="account-extract" className="gap-1.5">
-            <Landmark className="h-4 w-4" />
-            Extrato por Conta
-          </TabsTrigger>
-        </TabsList>
+        {/* Navigation Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {/* Lançamentos Card */}
+          <button
+            onClick={() => setActiveSubTab("ledger")}
+            className={`text-left rounded-lg border p-4 transition-all ${
+              activeSubTab === "ledger"
+                ? "ring-2 ring-primary bg-primary/5 border-primary/30"
+                : "bg-card hover:bg-muted/50 border-border"
+            }`}
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <div className={`p-1.5 rounded-md ${activeSubTab === "ledger" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
+                <BookOpen className="h-4 w-4" />
+              </div>
+              <span className="font-medium text-sm">Lançamentos</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-2xl font-bold">{entries?.filter(e => e.status !== "CANCELADO").length || 0}</span>
+              {unreconciledEntries.length > 0 && (
+                <Badge variant="outline" className="text-xs gap-1 border-yellow-500/50 text-yellow-600 bg-yellow-50">
+                  <AlertTriangle className="h-3 w-3" />
+                  {unreconciledEntries.length} não conciliados
+                </Badge>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">registros no período</p>
+          </button>
+
+          {/* Extrato Bancário Card */}
+          <button
+            onClick={() => setActiveSubTab("bank")}
+            className={`text-left rounded-lg border p-4 transition-all ${
+              activeSubTab === "bank"
+                ? "ring-2 ring-primary bg-primary/5 border-primary/30"
+                : "bg-card hover:bg-muted/50 border-border"
+            }`}
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <div className={`p-1.5 rounded-md ${activeSubTab === "bank" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
+                <Link2 className="h-4 w-4" />
+              </div>
+              <span className="font-medium text-sm">Extrato Bancário</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-2xl font-bold">{transactions?.length || 0}</span>
+              {(transactions?.filter(t => t.status === "PENDENTE").length || 0) > 0 && (
+                <Badge variant="outline" className="text-xs gap-1 border-blue-500/50 text-blue-600 bg-blue-50">
+                  {transactions?.filter(t => t.status === "PENDENTE").length} não vinculadas
+                </Badge>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">transações importadas</p>
+          </button>
+
+          {/* Extrato por Conta Card */}
+          <button
+            onClick={() => setActiveSubTab("account-extract")}
+            className={`text-left rounded-lg border p-4 transition-all ${
+              activeSubTab === "account-extract"
+                ? "ring-2 ring-primary bg-primary/5 border-primary/30"
+                : "bg-card hover:bg-muted/50 border-border"
+            }`}
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <div className={`p-1.5 rounded-md ${activeSubTab === "account-extract" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
+                <Landmark className="h-4 w-4" />
+              </div>
+              <span className="font-medium text-sm">Extrato por Conta</span>
+            </div>
+            <p className="text-sm font-medium text-foreground">Saldo consolidado</p>
+            <p className="text-xs text-muted-foreground mt-1">movimentação por conta bancária</p>
+          </button>
+        </div>
 
         {/* Ledger Tab Content */}
         <TabsContent value="ledger" className="space-y-4">
