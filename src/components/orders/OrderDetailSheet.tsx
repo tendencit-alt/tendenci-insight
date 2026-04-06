@@ -98,6 +98,30 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
     enabled: !!orderId,
   });
 
+  // Fetch responsible names for comissões
+  const responsibleIds = order ? [
+    (order as any).comissao_vendedor_responsible_id || (order as any).comissao_vendedor_responsavel_id,
+    (order as any).comissao_orcamentista_responsible_id || (order as any).comissao_orcamentista_responsavel_id,
+    (order as any).comissao_projetista_responsible_id || (order as any).comissao_projetista_responsavel_id,
+    (order as any).comissao_montador_responsible_id || (order as any).comissao_montador_responsavel_id,
+    (order as any).comissao_producao_responsible_id || (order as any).comissao_producao_responsavel_id,
+  ].filter(Boolean) : [];
+
+  const { data: responsibles } = useQuery({
+    queryKey: ['order-responsibles', responsibleIds],
+    queryFn: async () => {
+      if (responsibleIds.length === 0) return [];
+      const { data } = await supabase
+        .from('order_responsibles')
+        .select('id, name')
+        .in('id', responsibleIds);
+      return data || [];
+    },
+    enabled: responsibleIds.length > 0,
+  });
+
+  const responsibleMap = new Map(responsibles?.map(r => [r.id, r.name]) || []);
+
   const { data: items } = useQuery({
     queryKey: ['order-items', orderId],
     queryFn: async () => {
