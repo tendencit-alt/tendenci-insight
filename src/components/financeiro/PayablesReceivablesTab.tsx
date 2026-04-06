@@ -406,7 +406,7 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
       // Revert payable status to ABERTO and clear paid_amount/paid_at
       const { error: payableError } = await supabase
         .from("fin_payables")
-        .update({ status: "ABERTO", paid_amount: 0, payment_date: null })
+        .update({ status: "ABERTO", paid_amount: 0, payment_date: null, reconciled: false })
         .eq("id", payable.id);
       if (payableError) throw payableError;
 
@@ -414,7 +414,7 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
       if (payable.ledger_entry_id) {
         await supabase
           .from("fin_ledger_entries")
-          .update({ status: "ABERTO", cash_date: null })
+          .update({ status: "ABERTO", cash_date: null, reconciled: false })
           .eq("id", payable.ledger_entry_id);
       }
 
@@ -429,14 +429,14 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
     try {
       const { error: receivableError } = await supabase
         .from("fin_receivables")
-        .update({ status: "ABERTO", received_amount: 0 })
+        .update({ status: "ABERTO", received_amount: 0, reconciled: false })
         .eq("id", receivable.id);
       if (receivableError) throw receivableError;
 
       if (receivable.ledger_entry_id) {
         await supabase
           .from("fin_ledger_entries")
-          .update({ status: "ABERTO", cash_date: null })
+          .update({ status: "ABERTO", cash_date: null, reconciled: false })
           .eq("id", receivable.ledger_entry_id);
       }
 
