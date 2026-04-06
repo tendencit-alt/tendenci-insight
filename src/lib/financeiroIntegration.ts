@@ -311,6 +311,7 @@ export async function payPayableWithLedgerSync(
       status: newStatus,
       payment_date: newStatus === "PAGO" ? paymentDate : null,
       bank_account_id: bankAccountId,
+      reconciled: true,
     })
     .eq("id", payableId);
 
@@ -324,6 +325,7 @@ export async function payPayableWithLedgerSync(
         cash_date: paymentDate,
         bank_account_id: bankAccountId,
         status: "PAGO_RECEBIDO",
+        reconciled: true,
       })
       .eq("id", ledgerEntryId);
 
@@ -347,6 +349,7 @@ export async function payPayableWithLedgerSync(
         party_id: payableData?.supplier_id || null,
         party_type: "supplier",
         status: "PAGO_RECEBIDO",
+        reconciled: true,
       });
 
     if (ledgerInsertError) throw ledgerInsertError;
@@ -387,6 +390,7 @@ export async function receivePaymentWithLedgerSync(
       status: newStatus,
       receipt_date: newStatus === "RECEBIDO" ? receiptDate : null,
       bank_account_id: bankAccountId,
+      reconciled: true,
     })
     .eq("id", receivableId);
 
@@ -400,6 +404,7 @@ export async function receivePaymentWithLedgerSync(
         cash_date: receiptDate,
         bank_account_id: bankAccountId,
         status: "PAGO_RECEBIDO",
+        reconciled: true,
       })
       .eq("id", ledgerEntryId);
 
@@ -423,6 +428,7 @@ export async function receivePaymentWithLedgerSync(
         party_id: receivableData?.customer_id || null,
         party_type: "client",
         status: "PAGO_RECEBIDO",
+        reconciled: true,
       });
 
     if (ledgerInsertError) throw ledgerInsertError;
@@ -507,9 +513,13 @@ export async function bulkUpdatePayablesWithSync(
   if (fetchError) throw fetchError;
 
   // Update payables status
+  const updateData: any = { status: newStatus };
+  if (newStatus === "PAGO") updateData.reconciled = true;
+  if (newStatus === "ABERTO") updateData.reconciled = false;
+
   const { error: updateError } = await supabase
     .from("fin_payables")
-    .update({ status: newStatus })
+    .update(updateData)
     .in("id", payableIds);
 
   if (updateError) throw updateError;
@@ -525,9 +535,13 @@ export async function bulkUpdatePayablesWithSync(
 
   // Update linked ledger entries
   if (ledgerEntryIds.length > 0) {
+    const ledgerUpdateData: any = { status: ledgerStatus };
+    if (ledgerStatus === "PAGO_RECEBIDO") ledgerUpdateData.reconciled = true;
+    if (ledgerStatus === "ABERTO") ledgerUpdateData.reconciled = false;
+
     await supabase
       .from("fin_ledger_entries")
-      .update({ status: ledgerStatus })
+      .update(ledgerUpdateData)
       .in("id", ledgerEntryIds);
   }
 
@@ -586,9 +600,13 @@ export async function bulkUpdateReceivablesWithSync(
   if (fetchError) throw fetchError;
 
   // Update receivables status
+  const recUpdateData: any = { status: newStatus };
+  if (newStatus === "RECEBIDO") recUpdateData.reconciled = true;
+  if (newStatus === "ABERTO") recUpdateData.reconciled = false;
+
   const { error: updateError } = await supabase
     .from("fin_receivables")
-    .update({ status: newStatus })
+    .update(recUpdateData)
     .in("id", receivableIds);
 
   if (updateError) throw updateError;
@@ -604,9 +622,13 @@ export async function bulkUpdateReceivablesWithSync(
 
   // Update linked ledger entries
   if (ledgerEntryIds.length > 0) {
+    const recLedgerData: any = { status: ledgerStatus };
+    if (ledgerStatus === "PAGO_RECEBIDO") recLedgerData.reconciled = true;
+    if (ledgerStatus === "ABERTO") recLedgerData.reconciled = false;
+
     await supabase
       .from("fin_ledger_entries")
-      .update({ status: ledgerStatus })
+      .update(recLedgerData)
       .in("id", ledgerEntryIds);
   }
 
