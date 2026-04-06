@@ -28,7 +28,8 @@ import {
   Link2,
   Split,
   MoreHorizontal,
-  Undo2
+  Undo2,
+  Landmark
 } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -42,6 +43,7 @@ import { OFXImportDialog } from "./OFXImportDialog";
 import { FinanceiroAlerts } from "./FinanceiroAlerts";
 import { toast } from "sonner";
 import { parseOFX, OFXTransaction } from "@/lib/ofx-parser";
+import { BankAccountExtractTab } from "./BankAccountExtractTab";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -637,7 +639,7 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
 
       {/* Sub-tabs */}
       <Tabs value={activeSubTab} onValueChange={setActiveSubTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-2 max-w-md">
+        <TabsList className="grid w-full grid-cols-3 max-w-lg">
           <TabsTrigger value="ledger" className="gap-1.5">
             <BookOpen className="h-4 w-4" />
             Lançamentos
@@ -645,6 +647,10 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
           <TabsTrigger value="bank" className="gap-1.5">
             <Link2 className="h-4 w-4" />
             Extrato Bancário
+          </TabsTrigger>
+          <TabsTrigger value="account-extract" className="gap-1.5">
+            <Landmark className="h-4 w-4" />
+            Extrato por Conta
           </TabsTrigger>
         </TabsList>
 
@@ -935,6 +941,11 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Account Extract Tab Content */}
+        <TabsContent value="account-extract" className="space-y-4">
+          <BankAccountExtractTab filters={filters} />
         </TabsContent>
       </Tabs>
 
