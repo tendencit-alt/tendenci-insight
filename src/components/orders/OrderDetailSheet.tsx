@@ -353,8 +353,9 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
           </SheetHeader>
 
           <Tabs defaultValue="info" className="mt-4">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="info">Info</TabsTrigger>
+              <TabsTrigger value="pagamento">Pagamento</TabsTrigger>
               <TabsTrigger value="itens">Itens</TabsTrigger>
               <TabsTrigger value="entrega">Entrega</TabsTrigger>
               <TabsTrigger value="historico">Histórico</TabsTrigger>
