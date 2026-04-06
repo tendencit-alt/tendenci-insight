@@ -1,28 +1,36 @@
 
 
-## Plano: Unificar "Extrato Bancário" no "Extrato por Conta"
+## Plano: Unificar Alertas de Pendências em um único painel
 
 ### Problema
-Existem 3 cards de navegação, sendo que "Extrato Bancário" (transações importadas via OFX) e "Extrato por Conta" (lançamentos realizados por conta) são visões complementares da mesma informação por conta bancária. Isso confunde o usuário.
+Existem dois componentes de alerta separados na tela Financeiro:
+1. **PendingAlertsCard** — card grande vermelho no topo da página (contas a pagar/receber vencidas), muito chamativo e poluindo a interface
+2. **FinanceiroAlerts** — painel colapsável dentro da aba Lançamentos & Conciliação (alertas de conciliação, extrato, etc.)
+
+Ambos mostram "Alertas de Pendências" mas de forma redundante e inconsistente.
 
 ### Solução
-Remover o card e a sub-aba "Extrato Bancário" e incorporar suas funcionalidades no "Extrato por Conta", que passa a mostrar tanto os lançamentos realizados quanto as transações importadas (OFX) da conta selecionada.
+Remover o `PendingAlertsCard` e incorporar os dados de contas vencidas (payables/receivables) como uma nova seção dentro do `FinanceiroAlerts`, mantendo tudo em um único painel colapsável e clean.
 
 ### Alterações
 
-**1. `src/components/financeiro/LedgerReconciliationTab.tsx`**
-- Remover o card clicável "Extrato Bancário" (linhas 557-581)
-- Mudar grid de `grid-cols-3` para `grid-cols-2`
-- Remover toda a `TabsContent value="bank"` (linhas 784-887) com KPIs e tabela de transações bancárias
-- Atualizar o card "Extrato por Conta" para exibir métricas dinâmicas: total de transações importadas + pendentes (dados que antes estavam no card "Extrato Bancário")
-- Passar dados de transações bancárias (`transactions`, `bankKpis`, handlers) como props para `BankAccountExtractTab`
+**1. `src/components/financeiro/FinanceiroAlerts.tsx`**
+- Adicionar nova prop opcional: `pendingItems` (contas vencidas a pagar/receber)
+- Ou adicionar query interna para buscar contas vencidas (payables + receivables com status ABERTO/VENCIDO e due_date <= hoje)
+- Criar nova seção colapsável **"Contas vencidas"** com ícone vermelho, mostrando:
+  - Total pendente/vencido no header da seção
+  - Lista compacta: nome da parte, descrição, badge Pagar/Receber, dias de atraso, valor
+  - Botão de dismiss individual (mantendo funcionalidade atual)
+- Esta seção aparece como primeira na lista de alertas (prioridade mais alta)
+- O badge total no header do painel passa a somar também as contas vencidas
 
-**2. `src/components/financeiro/BankAccountExtractTab.tsx`**
-- Adicionar nova seção abaixo do extrato de lançamentos: **"Transações Importadas (OFX)"** filtrada pela conta selecionada
-- Buscar `fin_bank_transactions` da conta selecionada no período
-- Exibir tabela com: Data, Memo, Valor, Status de conciliação, Lançamento vinculado, botão Conciliar
-- Adicionar KPIs compactos da conciliação bancária (importadas, pendentes, conciliadas, %) integrados aos cards de resumo já existentes
+**2. `src/pages/Financeiro.tsx`**
+- Remover import e uso do `PendingAlertsCard`
+- Remover linhas 8 e 90
+
+**3. `src/components/financeiro/LedgerReconciliationTab.tsx`**
+- Nenhuma alteração necessária (já usa FinanceiroAlerts)
 
 ### Resultado
-De 3 cards → 2 cards (Lançamentos + Extrato por Conta). O "Extrato por Conta" se torna a visão completa de cada conta bancária: lançamentos realizados com saldo acumulado + transações importadas OFX e status de conciliação.
+Um único painel colapsável "Alertas de Pendências" concentra todos os tipos de alerta: contas vencidas, conciliação pendente, extrato desatualizado, sem plano de contas e divergências. Interface limpa sem o card vermelho grande no topo.
 
