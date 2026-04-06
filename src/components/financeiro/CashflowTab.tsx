@@ -192,7 +192,7 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
       // Get ledger entries with cash_date
       let query = supabase
         .from("fin_ledger_entries")
-        .select("id, chart_account_id, description, amount, cash_date, document_number, has_splits")
+        .select("id, chart_account_id, description, amount, cash_date, document_number, has_splits, type")
         .neq("status", "CANCELADO")
         .not("cash_date", "is", null)
         .gte("cash_date", dateFrom)
@@ -215,6 +215,38 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
       }
 
       const { data: rawEntries } = await query;
+
+      // Fetch competence-based totals for the same period (to show realized %)
+      let compQuery = supabase
+        .from("fin_ledger_entries")
+        .select("type, amount, status")
+        .neq("status", "CANCELADO")
+        .gte("competence_date", dateFrom)
+        .lte("competence_date", dateTo)
+        .not("competence_date", "is", null);
+
+      if (filters.bankAccountId) {
+        compQuery = compQuery.eq("bank_account_id", filters.bankAccountId);
+      }
+      if (filters.costCenterId) {
+        compQuery = compQuery.or(`cost_center_id.eq.${filters.costCenterId},has_splits.eq.true`);
+      }
+      if (filters.projectId) {
+        compQuery = compQuery.eq("project_id", filters.projectId);
+      }
+      if (filters.subcategoryId) {
+        compQuery = compQuery.eq("chart_account_id", filters.subcategoryId);
+      } else if (filters.categoryId) {
+        compQuery = compQuery.eq("chart_account_id", filters.categoryId);
+      }
+
+      const { data: compEntries } = await compQuery;
+
+      // Calculate competence totals and realized from competence
+      const compReceitas = compEntries?.filter(e => e.type === "RECEITA").reduce((s, e) => s + Number(e.amount), 0) || 0;
+      const compDespesas = compEntries?.filter(e => e.type === "DESPESA").reduce((s, e) => s + Number(e.amount), 0) || 0;
+      const compReceitasRealizadas = compEntries?.filter(e => e.type === "RECEITA" && e.status === "PAGO_RECEBIDO").reduce((s, e) => s + Number(e.amount), 0) || 0;
+      const compDespesasRealizadas = compEntries?.filter(e => e.type === "DESPESA" && e.status === "PAGO_RECEBIDO").reduce((s, e) => s + Number(e.amount), 0) || 0;
 
       // Resolve split entries when filtering by cost center
       let entries = rawEntries;
