@@ -80,14 +80,15 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
 
   const dateField = "cash_date";
 
-  // Fetch ledger entries
+  // Fetch ledger entries - use competence_date as fallback for entries without cash_date
   const { data: entries, isLoading: isLoadingEntries, refetch: refetchEntries } = useQuery({
     queryKey: ["fin-ledger-entries", filters],
     queryFn: async () => {
-      const dateFrom = format(filters.dateFrom, "yyyy-MM-dd");
-      const dateTo = format(filters.dateTo, "yyyy-MM-dd");
+      const dateFrom = filters.dateFrom ? format(filters.dateFrom, "yyyy-MM-dd") : "2000-01-01";
+      const dateTo = filters.dateTo ? format(filters.dateTo, "yyyy-MM-dd") : "2099-12-31";
 
-      let query = supabase
+      // Fetch entries with cash_date in range (paid/received)
+      let queryPaid = supabase
         .from("fin_ledger_entries")
         .select(`
           *,
@@ -96,39 +97,59 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
           cost_center:fin_cost_centers(name),
           project:fin_projects(name)
         `)
-        .gte(dateField, dateFrom)
-        .lte(dateField, dateTo);
+        .not("cash_date", "is", null)
+        .gte("cash_date", dateFrom)
+        .lte("cash_date", dateTo);
 
-      // Apply sorting based on filter
+      // Fetch entries without cash_date (ABERTO/VENCIDO) using competence_date
+      let queryOpen = supabase
+        .from("fin_ledger_entries")
+        .select(`
+          *,
+          bank_account:fin_bank_accounts(nickname),
+          chart_account:fin_chart_accounts(name, code),
+          cost_center:fin_cost_centers(name),
+          project:fin_projects(name)
+        `)
+        .is("cash_date", null)
+        .gte("competence_date", dateFrom)
+        .lte("competence_date", dateTo);
+
+      // Apply common filters to both queries
+      const applyFilters = (q: any) => {
+        if (filters.bankAccountId) q = q.eq("bank_account_id", filters.bankAccountId);
+        if (filters.costCenterId) q = q.eq("cost_center_id", filters.costCenterId);
+        if (filters.projectId) q = q.eq("project_id", filters.projectId);
+        if (filters.subcategoryId) q = q.eq("chart_account_id", filters.subcategoryId);
+        else if (filters.categoryId) q = q.eq("chart_account_id", filters.categoryId);
+        if (filters.search) q = q.ilike("description", `%${filters.search}%`);
+        return q;
+      };
+
+      queryPaid = applyFilters(queryPaid);
+      queryOpen = applyFilters(queryOpen);
+
+      const [paidResult, openResult] = await Promise.all([queryPaid, queryOpen]);
+      const allEntries = [...(paidResult.data || []), ...(openResult.data || [])];
+
+      // Sort combined results
       if (filters.sortField === "date") {
-        query = query.order(dateField, { ascending: filters.sortDirection === "asc" });
+        allEntries.sort((a, b) => {
+          const dateA = a.cash_date || a.competence_date;
+          const dateB = b.cash_date || b.competence_date;
+          return filters.sortDirection === "asc" ? dateA.localeCompare(dateB) : dateB.localeCompare(dateA);
+        });
       } else if (filters.sortField === "value") {
-        query = query.order("amount", { ascending: filters.sortDirection === "asc" });
+        allEntries.sort((a, b) => filters.sortDirection === "asc" ? a.amount - b.amount : b.amount - a.amount);
       } else {
-        query = query.order(dateField, { ascending: false });
+        allEntries.sort((a, b) => {
+          const dateA = a.cash_date || a.competence_date;
+          const dateB = b.cash_date || b.competence_date;
+          return dateB.localeCompare(dateA);
+        });
       }
 
-      if (filters.bankAccountId) {
-        query = query.eq("bank_account_id", filters.bankAccountId);
-      }
-      if (filters.costCenterId) {
-        query = query.eq("cost_center_id", filters.costCenterId);
-      }
-      if (filters.projectId) {
-        query = query.eq("project_id", filters.projectId);
-      }
-      // Subcategoria tem prioridade sobre categoria
-      if (filters.subcategoryId) {
-        query = query.eq("chart_account_id", filters.subcategoryId);
-      } else if (filters.categoryId) {
-        query = query.eq("chart_account_id", filters.categoryId);
-      }
-      if (filters.search) {
-        query = query.ilike("description", `%${filters.search}%`);
-      }
-
-      const { data } = await query;
-      return data || [];
+      return allEntries;
     },
   });
 
@@ -578,7 +599,7 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
                           />
                         </TableCell>
                         <TableCell className="text-xs py-2">
-                          {entry.cash_date && format(new Date(entry.cash_date), "dd/MM/yy", { locale: ptBR })}
+                          {(entry.cash_date || entry.competence_date) && format(new Date(entry.cash_date || entry.competence_date), "dd/MM/yy", { locale: ptBR })}
                         </TableCell>
                         <TableCell className="text-xs py-2">
                           {getTypeBadge(entry.type, true)}
@@ -686,7 +707,7 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
                                 />
                               </TableCell>
                             <TableCell className="font-medium text-xs py-3">
-                              {entry[dateField] && format(new Date(entry[dateField]), "dd/MM/yy", { locale: ptBR })}
+                              {(entry.cash_date || entry.competence_date) && format(new Date(entry.cash_date || entry.competence_date), "dd/MM/yy", { locale: ptBR })}
                             </TableCell>
                             <TableCell className="text-xs py-3">
                               <span className="sm:hidden">{getTypeBadge(entry.type, true)}</span>
