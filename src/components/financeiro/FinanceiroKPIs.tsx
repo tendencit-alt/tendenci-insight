@@ -16,6 +16,8 @@ interface FinanceiroKPIsProps {
     saidas: number;
     resultado: number;
     saldoConsolidado: number;
+    receitasRealizadas?: number;
+    despesasRealizadas?: number;
   };
   isLoading: boolean;
   onSelectKPI?: (kpi: "saldo" | "receitas" | "despesas" | "resultado") => void;
@@ -36,6 +38,14 @@ export function FinanceiroKPIs({ metrics, isLoading, onSelectKPI, dateFrom, date
   const saidas = metrics?.saidas || 0;
   const resultado = metrics?.resultado || 0;
   const saldoConsolidado = metrics?.saldoConsolidado || 0;
+  const receitasRealizadas = metrics?.receitasRealizadas || 0;
+  const despesasRealizadas = metrics?.despesasRealizadas || 0;
+
+  // Realized percentages
+  const receitaRealizadaPct = entradas > 0 ? (receitasRealizadas / entradas) * 100 : 0;
+  const despesaRealizadaPct = saidas > 0 ? (despesasRealizadas / saidas) * 100 : 0;
+  const resultadoRealizado = receitasRealizadas - despesasRealizadas;
+  const resultadoRealizadoPct = resultado !== 0 ? (resultadoRealizado / Math.abs(resultado)) * 100 : 0;
 
   // Fôlego de Caixa: Burn Rate mensal e Runway (meses)
   const burnRate = saidas; // consumo mensal total
@@ -114,6 +124,10 @@ export function FinanceiroKPIs({ metrics, isLoading, onSelectKPI, dateFrom, date
                 <p className={cn("text-2xl font-bold", receitaColors.text)}>
                   {formatCurrency(entradas)}
                 </p>
+                <p className="text-xs text-muted-foreground">
+                  Realizado: <span className="font-semibold text-foreground">{receitaRealizadaPct.toFixed(1)}%</span>
+                  <span className="ml-1 text-muted-foreground/70">({formatCurrency(receitasRealizadas)})</span>
+                </p>
               </div>
               <div className={cn("p-3 rounded-full", receitaColors.bg)}>
                 <TrendingUp className={cn("h-6 w-6", receitaColors.text)} />
@@ -137,6 +151,10 @@ export function FinanceiroKPIs({ metrics, isLoading, onSelectKPI, dateFrom, date
                 </div>
                 <p className={cn("text-2xl font-bold", resultadoColors.text)}>
                   {formatCurrency(resultado)}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Realizado: <span className="font-semibold text-foreground">{resultadoRealizadoPct.toFixed(1)}%</span>
+                  <span className="ml-1 text-muted-foreground/70">({formatCurrency(resultadoRealizado)})</span>
                 </p>
               </div>
               <div className={cn("p-3 rounded-full", resultadoColors.bg)}>
