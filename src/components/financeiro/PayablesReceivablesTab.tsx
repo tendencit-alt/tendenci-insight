@@ -871,6 +871,7 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
               .reduce((sum, r) => sum + (Number(r.amount) || 0), 0)
               .toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
           </span>
+          <div className="flex-1" />
           <Button variant="outline" size="sm" onClick={() => setReceivableBulkEditOpen(true)} className="gap-1">
             <Edit className="h-4 w-4" /> Editar Status
           </Button>
