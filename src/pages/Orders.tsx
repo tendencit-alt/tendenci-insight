@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
@@ -16,12 +17,25 @@ import { Plus } from 'lucide-react';
 import { startOfMonth } from 'date-fns';
 
 export default function Orders() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [createOpen, setCreateOpen] = useState(false);
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [editingOrderId, setEditingOrderId] = useState<string | null>(null);
   const [deletingOrder, setDeletingOrder] = useState<{ id: string; orderNumber: number } | null>(null);
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
+
+  // Auto-open order from URL query param (e.g. from BI drill-down)
+  useEffect(() => {
+    const orderId = searchParams.get('orderId');
+    if (orderId) {
+      setSelectedOrderId(orderId);
+      setSearchParams((prev) => {
+        prev.delete('orderId');
+        return prev;
+      }, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
   const now = new Date();
   const [filters, setFilters] = useState({
     status: '',
