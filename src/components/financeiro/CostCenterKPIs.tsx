@@ -69,7 +69,7 @@ export function CostCenterKPIs({ filters }: CostCenterKPIsProps) {
       // Get ledger entries grouped by cost center - include entries without cash_date using competence_date
       let entriesQuery = supabase
         .from("fin_ledger_entries")
-        .select("cost_center_id, type, amount")
+        .select("id, cost_center_id, type, amount, has_splits")
         .neq("status", "CANCELADO");
 
       if (dateFrom && dateTo) {
@@ -77,6 +77,31 @@ export function CostCenterKPIs({ filters }: CostCenterKPIsProps) {
       }
 
       const { data: entries } = await entriesQuery;
+
+      // Resolve split entries: fetch all splits for entries with has_splits=true
+      const splitParentIds = entries?.filter(e => e.has_splits === true).map(e => e.id) || [];
+      let splitsMap = new Map<string, Array<{ cost_center_id: string; amount: number; type: string }>>();
+
+      if (splitParentIds.length > 0) {
+        const { data: splits } = await supabase
+          .from("fin_ledger_splits")
+          .select("parent_entry_id, cost_center_id, amount")
+          .in("parent_entry_id", splitParentIds);
+
+        splits?.forEach(s => {
+          if (!s.cost_center_id) return;
+          const parentEntry = entries?.find(e => e.id === s.parent_entry_id);
+          if (!parentEntry) return;
+          if (!splitsMap.has(s.parent_entry_id)) {
+            splitsMap.set(s.parent_entry_id, []);
+          }
+          splitsMap.get(s.parent_entry_id)!.push({
+            cost_center_id: s.cost_center_id,
+            amount: Number(s.amount),
+            type: parentEntry.type || "DESPESA",
+          });
+        });
+      }
 
       // Get financial goals for cost centers
       const { data: goals } = await supabase
@@ -90,18 +115,27 @@ export function CostCenterKPIs({ filters }: CostCenterKPIsProps) {
       // Calculate totals per cost center
       const costCenterMap = new Map<string, { receitas: number; despesas: number }>();
       
-      entries?.forEach(entry => {
-        if (!entry.cost_center_id) return;
-        
-        if (!costCenterMap.has(entry.cost_center_id)) {
-          costCenterMap.set(entry.cost_center_id, { receitas: 0, despesas: 0 });
+      const addToCC = (ccId: string, type: string | null, amount: number) => {
+        if (!costCenterMap.has(ccId)) {
+          costCenterMap.set(ccId, { receitas: 0, despesas: 0 });
         }
-        
-        const current = costCenterMap.get(entry.cost_center_id)!;
-        if (entry.type === "RECEITA") {
-          current.receitas += Number(entry.amount);
-        } else if (entry.type === "DESPESA") {
-          current.despesas += Number(entry.amount);
+        const current = costCenterMap.get(ccId)!;
+        if (type === "RECEITA") {
+          current.receitas += amount;
+        } else if (type === "DESPESA") {
+          current.despesas += amount;
+        }
+      };
+
+      entries?.forEach(entry => {
+        if (entry.has_splits === true) {
+          // Resolve via splits - distribute to each CC
+          const splits = splitsMap.get(entry.id);
+          splits?.forEach(split => {
+            addToCC(split.cost_center_id, split.type, split.amount);
+          });
+        } else if (entry.cost_center_id) {
+          addToCC(entry.cost_center_id, entry.type, Number(entry.amount));
         }
       });
 
