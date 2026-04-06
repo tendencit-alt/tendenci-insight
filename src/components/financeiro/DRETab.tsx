@@ -441,6 +441,8 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
           pontoEquilibrioRealizado,
           pontoEquilibrioMeta,
           metaReceitas,
+          receitasRealizadas,
+          despesasRealizadas,
         },
       };
     },
