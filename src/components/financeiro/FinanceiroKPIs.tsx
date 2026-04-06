@@ -38,6 +38,14 @@ export function FinanceiroKPIs({ metrics, isLoading, onSelectKPI, dateFrom, date
   const saidas = metrics?.saidas || 0;
   const resultado = metrics?.resultado || 0;
   const saldoConsolidado = metrics?.saldoConsolidado || 0;
+  const receitasRealizadas = metrics?.receitasRealizadas || 0;
+  const despesasRealizadas = metrics?.despesasRealizadas || 0;
+
+  // Realized percentages
+  const receitaRealizadaPct = entradas > 0 ? (receitasRealizadas / entradas) * 100 : 0;
+  const despesaRealizadaPct = saidas > 0 ? (despesasRealizadas / saidas) * 100 : 0;
+  const resultadoRealizado = receitasRealizadas - despesasRealizadas;
+  const resultadoRealizadoPct = resultado !== 0 ? (resultadoRealizado / Math.abs(resultado)) * 100 : 0;
 
   // Fôlego de Caixa: Burn Rate mensal e Runway (meses)
   const burnRate = saidas; // consumo mensal total
