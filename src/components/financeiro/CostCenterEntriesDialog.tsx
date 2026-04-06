@@ -9,7 +9,8 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
-import { ArrowDownCircle, ArrowUpCircle, DollarSign, Clock, ExternalLink } from "lucide-react";
+import { ArrowDownCircle, ArrowUpCircle, DollarSign, Clock, ExternalLink, FileText } from "lucide-react";
+import { EntryDetailsDialog } from "./EntryDetailsDialog";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
