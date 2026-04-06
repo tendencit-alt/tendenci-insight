@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Sheet,
@@ -15,8 +16,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
-
-import { OrderDetailSheet } from "@/components/orders/OrderDetailSheet";
 
 export interface CostCenterDrillDownFilter {
   costCenterId: string;
@@ -41,7 +40,7 @@ export function CostCenterEntriesDialog({
   onClose,
 }: CostCenterEntriesDialogProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const { data: entries, isLoading } = useQuery({
     queryKey: ["cc-drilldown", filter.costCenterId, filter.type, dateFrom, dateTo],
@@ -340,7 +339,8 @@ export function CostCenterEntriesDialog({
                           title={`Ver Pedido #${entry._order_number}`}
                           onClick={(e) => {
                             e.stopPropagation();
-                            setSelectedOrderId(entry._order_id);
+                            onClose();
+                            navigate(`/pedidos?orderId=${entry._order_id}`);
                           }}
                         >
                           <ExternalLink className="h-3.5 w-3.5 text-primary" />
@@ -358,15 +358,6 @@ export function CostCenterEntriesDialog({
           </ScrollArea>
         </SheetContent>
       </Sheet>
-
-      {selectedOrderId && (
-        <OrderDetailSheet
-          orderId={selectedOrderId}
-          open={!!selectedOrderId}
-          onOpenChange={(open) => !open && setSelectedOrderId(null)}
-          onUpdate={() => {}}
-        />
-      )}
     </>
   );
 }
