@@ -42,7 +42,8 @@ export function CostCenterEntriesDialog({
   const { data: entries, isLoading } = useQuery({
     queryKey: ["cc-drilldown", filter.costCenterId, filter.type, dateFrom, dateTo],
     queryFn: async () => {
-      let query = supabase
+      // 1) Direct entries for this cost center
+      let directQuery = supabase
         .from("fin_ledger_entries")
         .select("id, description, amount, type, competence_date, cash_date, status, chart_account:fin_chart_accounts(name, code)")
         .eq("cost_center_id", filter.costCenterId)
@@ -50,19 +51,73 @@ export function CostCenterEntriesDialog({
         .order("competence_date", { ascending: false });
 
       if (filter.type === "receitas") {
-        query = query.eq("type", "RECEITA");
+        directQuery = directQuery.eq("type", "RECEITA");
       } else if (filter.type === "despesas") {
-        query = query.eq("type", "DESPESA");
+        directQuery = directQuery.eq("type", "DESPESA");
       }
 
       if (dateFrom && dateTo) {
-        query = query.or(
+        directQuery = directQuery.or(
           `and(cash_date.gte.${dateFrom},cash_date.lte.${dateTo}),and(cash_date.is.null,competence_date.gte.${dateFrom},competence_date.lte.${dateTo})`
         );
       }
 
-      const { data } = await query;
-      return (data || []) as any[];
+      const { data: directEntries } = await directQuery;
+
+      // 2) Split entries: find splits for this CC, then fetch parent entries
+      const { data: splits } = await supabase
+        .from("fin_ledger_splits")
+        .select("parent_entry_id, amount")
+        .eq("cost_center_id", filter.costCenterId);
+
+      const splitParentIds = [...new Set(splits?.map(s => s.parent_entry_id) || [])];
+      let splitEntries: any[] = [];
+
+      if (splitParentIds.length > 0) {
+        let splitQuery = supabase
+          .from("fin_ledger_entries")
+          .select("id, description, amount, type, competence_date, cash_date, status, has_splits, chart_account:fin_chart_accounts(name, code)")
+          .eq("has_splits", true)
+          .neq("status", "CANCELADO")
+          .in("id", splitParentIds)
+          .order("competence_date", { ascending: false });
+
+        if (filter.type === "receitas") {
+          splitQuery = splitQuery.eq("type", "RECEITA");
+        } else if (filter.type === "despesas") {
+          splitQuery = splitQuery.eq("type", "DESPESA");
+        }
+
+        if (dateFrom && dateTo) {
+          splitQuery = splitQuery.or(
+            `and(cash_date.gte.${dateFrom},cash_date.lte.${dateTo}),and(cash_date.is.null,competence_date.gte.${dateFrom},competence_date.lte.${dateTo})`
+          );
+        }
+
+        const { data: parentEntries } = await splitQuery;
+
+        // Build a map of split amounts per parent
+        const splitAmountMap = new Map<string, number>();
+        splits?.forEach(s => {
+          splitAmountMap.set(s.parent_entry_id, Number(s.amount));
+        });
+
+        // Replace parent amount with the CC-specific split amount
+        splitEntries = (parentEntries || []).map(e => ({
+          ...e,
+          amount: splitAmountMap.get(e.id) || e.amount,
+          description: `${e.description} (rateio)`,
+        }));
+      }
+
+      // Merge direct + split entries, avoiding duplicates
+      const directIds = new Set((directEntries || []).map(e => e.id));
+      const merged = [
+        ...(directEntries || []),
+        ...splitEntries.filter(e => !directIds.has(e.id)),
+      ];
+
+      return merged as any[];
     },
   });
 
