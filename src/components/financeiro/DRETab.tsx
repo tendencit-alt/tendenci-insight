@@ -198,7 +198,7 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
       // Get ledger entries with full details
       let query = supabase
         .from("fin_ledger_entries")
-        .select("id, chart_account_id, description, amount, competence_date, cash_date, document_number, party_type, party_id, has_splits")
+        .select("id, chart_account_id, description, amount, competence_date, cash_date, document_number, party_type, party_id, has_splits, status")
         .neq("status", "CANCELADO")
         .gte(dateField, dateFrom)
         .lte(dateField, dateTo)
@@ -252,12 +252,28 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
       // Group entries by account and calculate values
       const accountValues = new Map<string, number>();
       const entriesByAccount = new Map<string, LedgerEntry[]>();
+      let receitasRealizadas = 0;
+      let despesasRealizadas = 0;
       
       entries?.forEach((entry) => {
         if (entry.chart_account_id) {
           // Sum values
           const current = accountValues.get(entry.chart_account_id) || 0;
           accountValues.set(entry.chart_account_id, current + Number(entry.amount));
+
+          // Track realized amounts
+          if (entry.status === "PAGO_RECEBIDO") {
+            // Determine type from chart account
+            const account = chartAccounts?.find(a => a.id === entry.chart_account_id);
+            if (account) {
+              const mainCode = parseFloat(account.code.split('.')[0]);
+              if (mainCode === 1) {
+                receitasRealizadas += Number(entry.amount);
+              } else if ([2, 3, 5, 7].includes(mainCode)) {
+                despesasRealizadas += Number(entry.amount);
+              }
+            }
+          }
           
           // Group entries
           if (!entriesByAccount.has(entry.chart_account_id)) {
