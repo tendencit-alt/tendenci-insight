@@ -1,265 +1,349 @@
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { 
   AlertTriangle, 
+  Bell,
   Calculator, 
   FileQuestion,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Upload,
+  Check,
+  Clock
 } from "lucide-react";
 import { useState } from "react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 interface FinanceiroAlertsProps {
   entries: any[];
   transactions: any[];
   lastImportDate?: string | null;
+  isImportOverdue?: boolean;
+  lastImportFormatted?: string | null;
+  unreconciledEntries?: any[];
+  unreconciledTotal?: number;
+  selectedForReconcile?: Set<string>;
+  onToggleSelectForReconcile?: (id: string) => void;
+  onToggleSelectAll?: () => void;
+  onOpenReconcileDialog?: () => void;
   onNavigateToEntry?: (entryId: string) => void;
+  getTypeBadge?: (type: string, compact?: boolean) => React.ReactNode;
+  formatCurrency?: (value: number, type: string) => React.ReactNode;
 }
 
-interface AlertItem {
+interface AlertSection {
   id: string;
   type: 'warning' | 'error' | 'info';
-  category: string;
+  icon: React.ReactNode;
   title: string;
-  description: string;
   count?: number;
-  items?: { id: string; label: string; value?: string }[];
+  content: React.ReactNode;
 }
 
-export function FinanceiroAlerts({ entries, transactions, lastImportDate, onNavigateToEntry }: FinanceiroAlertsProps) {
-  const [expandedAlerts, setExpandedAlerts] = useState<Set<string>>(new Set());
+export function FinanceiroAlerts({ 
+  entries, 
+  transactions, 
+  lastImportDate, 
+  isImportOverdue,
+  lastImportFormatted,
+  unreconciledEntries = [],
+  unreconciledTotal = 0,
+  selectedForReconcile = new Set(),
+  onToggleSelectForReconcile,
+  onToggleSelectAll,
+  onOpenReconcileDialog,
+  onNavigateToEntry,
+  getTypeBadge,
+  formatCurrency,
+}: FinanceiroAlertsProps) {
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
 
-  const toggleAlert = (alertId: string) => {
-    const newExpanded = new Set(expandedAlerts);
-    if (newExpanded.has(alertId)) {
-      newExpanded.delete(alertId);
-    } else {
-      newExpanded.add(alertId);
-    }
-    setExpandedAlerts(newExpanded);
+  const toggleSection = (id: string) => {
+    setExpandedSections(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
   };
 
-  // Calculate alerts
-  const alerts: AlertItem[] = [];
+  // Build alert sections
+  const sections: AlertSection[] = [];
 
-  // 1. Unreconciled bank transactions
+  // 1. Último Extrato Importado
+  if (isImportOverdue) {
+    sections.push({
+      id: 'import-overdue',
+      type: 'error',
+      icon: <Upload className="h-3.5 w-3.5" />,
+      title: 'Extrato desatualizado',
+      content: (
+        <p className="text-xs text-muted-foreground">
+          {lastImportFormatted 
+            ? `Último: ${lastImportFormatted}` 
+            : "Nenhum extrato importado"}
+          {" — "}Importe o extrato atualizado
+        </p>
+      ),
+    });
+  }
+
+  // 2. Lançamentos pendentes de conciliação
+  if (unreconciledEntries.length > 0) {
+    sections.push({
+      id: 'unreconciled-ledger',
+      type: 'warning',
+      icon: <AlertTriangle className="h-3.5 w-3.5" />,
+      title: 'Pendentes de conciliação',
+      count: unreconciledEntries.length,
+      content: (
+        <div className="space-y-2">
+          <p className="text-xs text-muted-foreground">
+            {unreconciledEntries.length} lançamento(s) — total {unreconciledTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+          </p>
+          <div className="max-h-[200px] overflow-y-auto rounded border border-border bg-background/50">
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="text-xs h-7 w-[32px]">
+                    <Checkbox 
+                      checked={selectedForReconcile.size === unreconciledEntries.length && unreconciledEntries.length > 0}
+                      onCheckedChange={() => onToggleSelectAll?.()}
+                      className="h-3.5 w-3.5"
+                    />
+                  </TableHead>
+                  <TableHead className="text-xs h-7">Data</TableHead>
+                  <TableHead className="text-xs h-7">Tipo</TableHead>
+                  <TableHead className="text-xs h-7">Descrição</TableHead>
+                  <TableHead className="text-xs text-right h-7">Valor</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {unreconciledEntries.map((entry: any) => (
+                  <TableRow 
+                    key={entry.id} 
+                    className={`hover:bg-muted/50 cursor-pointer ${selectedForReconcile.has(entry.id) ? "bg-primary/5" : ""}`}
+                    onClick={() => onToggleSelectForReconcile?.(entry.id)}
+                  >
+                    <TableCell className="text-xs py-1.5">
+                      <Checkbox 
+                        checked={selectedForReconcile.has(entry.id)}
+                        onCheckedChange={() => onToggleSelectForReconcile?.(entry.id)}
+                        onClick={(e) => e.stopPropagation()}
+                        className="h-3.5 w-3.5"
+                      />
+                    </TableCell>
+                    <TableCell className="text-xs py-1.5">
+                      {(entry.cash_date || entry.competence_date) && format(new Date(entry.cash_date || entry.competence_date), "dd/MM/yy", { locale: ptBR })}
+                    </TableCell>
+                    <TableCell className="text-xs py-1.5">
+                      {getTypeBadge?.(entry.type, true)}
+                    </TableCell>
+                    <TableCell className="text-xs py-1.5 max-w-[180px] truncate">
+                      {entry.description}
+                    </TableCell>
+                    <TableCell className="text-xs py-1.5 text-right font-medium">
+                      {formatCurrency?.(Number(entry.amount), entry.type)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          {selectedForReconcile.size > 0 && (
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">
+                {selectedForReconcile.size} selecionado(s)
+              </span>
+              <Button 
+                size="sm" 
+                onClick={() => onOpenReconcileDialog?.()}
+                className="gap-1.5 bg-green-600 hover:bg-green-700 h-7 text-xs"
+              >
+                <Check className="h-3 w-3" />
+                Conciliar
+              </Button>
+            </div>
+          )}
+        </div>
+      ),
+    });
+  }
+
+  // 3. Transações bancárias pendentes
   const unreconciledTransactions = transactions?.filter(t => 
     t.status === 'PENDENTE' || t.status === 'SUGERIDA'
   ) || [];
   
   if (unreconciledTransactions.length > 0) {
-    alerts.push({
+    sections.push({
       id: 'unreconciled-transactions',
       type: 'warning',
-      category: 'Conciliação',
-      title: 'Transações pendentes de conciliação',
-      description: `${unreconciledTransactions.length} transação(ões) do extrato bancário aguardando conciliação`,
+      icon: <Clock className="h-3.5 w-3.5" />,
+      title: 'Transações bancárias não vinculadas',
       count: unreconciledTransactions.length,
-      items: unreconciledTransactions.slice(0, 5).map(t => ({
-        id: t.id,
-        label: t.bank_memo || 'Sem descrição',
-        value: Math.abs(Number(t.amount)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-      }))
+      content: (
+        <div className="space-y-1 rounded border border-border bg-background/50 p-2">
+          {unreconciledTransactions.slice(0, 5).map(t => (
+            <div key={t.id} className="flex items-center justify-between text-xs py-1 px-2 rounded hover:bg-muted/50">
+              <span className="truncate max-w-[200px]">{t.bank_memo || 'Sem descrição'}</span>
+              <span className="text-muted-foreground font-medium">
+                {Math.abs(Number(t.amount)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+              </span>
+            </div>
+          ))}
+          {unreconciledTransactions.length > 5 && (
+            <p className="text-xs text-muted-foreground text-center pt-1">
+              ... e mais {unreconciledTransactions.length - 5} transação(ões)
+            </p>
+          )}
+        </div>
+      ),
     });
   }
 
-  // 2. Value mismatch between reconciled entry and bank transaction
-  const reconciliationLinks = entries?.filter(e => e.reconciled && e.reconciliation_links?.length > 0) || [];
-  const valueMismatches: { id: string; label: string; value: string }[] = [];
-  
-  // For now, we check entries that have reconciliation data
-  // In a real scenario, we'd need to join with bank transactions
-  entries?.forEach(entry => {
-    if (entry.juros_atraso && Number(entry.juros_atraso) > 0) {
-      // Entry has late fees, which might indicate a mismatch
-      const entryAmount = Number(entry.amount);
-      const totalWithFees = entryAmount + Number(entry.juros_atraso);
-      valueMismatches.push({
-        id: entry.id,
-        label: entry.description,
-        value: `Lançamento: ${entryAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} + Juros: ${Number(entry.juros_atraso).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`
-      });
-    }
-  });
-
-  // Check for reconciled entries where the bank transaction amount differs
-  transactions?.forEach(tx => {
-    if (tx.status === 'DIVERGENTE') {
-      valueMismatches.push({
-        id: tx.id,
-        label: tx.bank_memo || 'Transação',
-        value: `Valor divergente: ${Math.abs(Number(tx.amount)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`
-      });
-    }
-  });
-
-  if (valueMismatches.length > 0) {
-    alerts.push({
-      id: 'value-mismatch',
-      type: 'error',
-      category: 'Divergência',
-      title: 'Valor conciliado ≠ valor do extrato',
-      description: `${valueMismatches.length} lançamento(s) com diferença entre valor conciliado e extrato`,
-      count: valueMismatches.length,
-      items: valueMismatches.slice(0, 5)
-    });
-  }
-
-  // 3. Entries without chart of accounts
+  // 4. Lançamentos sem plano de contas
   const entriesWithoutChartAccount = entries?.filter(e => 
     !e.chart_account_id && e.status !== 'CANCELADO'
   ) || [];
   
   if (entriesWithoutChartAccount.length > 0) {
-    alerts.push({
+    sections.push({
       id: 'no-chart-account',
-      type: 'warning',
-      category: 'Classificação',
-      title: 'Lançamento sem plano de contas',
-      description: `${entriesWithoutChartAccount.length} lançamento(s) não possuem classificação contábil`,
-      count: entriesWithoutChartAccount.length,
-      items: entriesWithoutChartAccount.slice(0, 5).map(e => ({
-        id: e.id,
-        label: e.description,
-        value: Math.abs(Number(e.amount)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-      }))
-    });
-  }
-
-  // 4. Entries with late fees (informational)
-  const entriesWithLateFees = entries?.filter(e => 
-    e.juros_atraso && Number(e.juros_atraso) > 0 && e.status !== 'CANCELADO'
-  ) || [];
-  
-  const totalLateFees = entriesWithLateFees.reduce((sum, e) => sum + Number(e.juros_atraso || 0), 0);
-  
-  if (entriesWithLateFees.length > 0) {
-    alerts.push({
-      id: 'late-fees',
       type: 'info',
-      category: 'Juros',
-      title: 'Juros por atraso registrados',
-      description: `${entriesWithLateFees.length} lançamento(s) com juros totalizando ${totalLateFees.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`,
-      count: entriesWithLateFees.length,
-      items: entriesWithLateFees.slice(0, 5).map(e => ({
-        id: e.id,
-        label: e.description,
-        value: `Juros: ${Number(e.juros_atraso).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`
-      }))
+      icon: <FileQuestion className="h-3.5 w-3.5" />,
+      title: 'Sem plano de contas',
+      count: entriesWithoutChartAccount.length,
+      content: (
+        <div className="space-y-1 rounded border border-border bg-background/50 p-2">
+          {entriesWithoutChartAccount.slice(0, 5).map(e => (
+            <div 
+              key={e.id} 
+              className="flex items-center justify-between text-xs py-1 px-2 rounded hover:bg-muted/50 cursor-pointer"
+              onClick={() => onNavigateToEntry?.(e.id)}
+            >
+              <span className="truncate max-w-[200px]">{e.description}</span>
+              <span className="text-muted-foreground font-medium">
+                {Math.abs(Number(e.amount)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+              </span>
+            </div>
+          ))}
+          {entriesWithoutChartAccount.length > 5 && (
+            <p className="text-xs text-muted-foreground text-center pt-1">
+              ... e mais {entriesWithoutChartAccount.length - 5} lançamento(s)
+            </p>
+          )}
+        </div>
+      ),
     });
   }
 
-  if (alerts.length === 0) return null;
+  // 5. Divergências de valor
+  const divergentTransactions = transactions?.filter(t => t.status === 'DIVERGENTE') || [];
+  if (divergentTransactions.length > 0) {
+    sections.push({
+      id: 'value-mismatch',
+      type: 'error',
+      icon: <Calculator className="h-3.5 w-3.5" />,
+      title: 'Divergências de valor',
+      count: divergentTransactions.length,
+      content: (
+        <div className="space-y-1 rounded border border-border bg-background/50 p-2">
+          {divergentTransactions.slice(0, 5).map(t => (
+            <div key={t.id} className="flex items-center justify-between text-xs py-1 px-2 rounded hover:bg-muted/50">
+              <span className="truncate max-w-[200px]">{t.bank_memo || 'Transação'}</span>
+              <span className="text-red-600 font-medium">
+                {Math.abs(Number(t.amount)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+              </span>
+            </div>
+          ))}
+        </div>
+      ),
+    });
+  }
 
-  const getAlertIcon = (type: string) => {
-    switch (type) {
-      case 'error':
-        return <Calculator className="h-4 w-4" />;
-      case 'warning':
-        return <AlertTriangle className="h-4 w-4" />;
-      default:
-        return <FileQuestion className="h-4 w-4" />;
-    }
-  };
+  if (sections.length === 0) return null;
 
-  const getAlertVariant = (type: string) => {
-    switch (type) {
-      case 'error':
-        return 'destructive' as const;
-      case 'warning':
-        return 'default' as const;
-      default:
-        return 'default' as const;
-    }
-  };
+  const totalAlerts = sections.reduce((sum, s) => sum + (s.count || 1), 0);
 
-  const getAlertStyles = (type: string) => {
+  const getTypeColor = (type: string) => {
     switch (type) {
-      case 'error':
-        return 'border-red-500/50 bg-red-500/10';
-      case 'warning':
-        return 'border-amber-500/50 bg-amber-500/10';
-      default:
-        return 'border-blue-500/50 bg-blue-500/10';
-    }
-  };
-
-  const getTextColor = (type: string) => {
-    switch (type) {
-      case 'error':
-        return 'text-red-600';
-      case 'warning':
-        return 'text-amber-600';
-      default:
-        return 'text-blue-600';
+      case 'error': return 'text-red-500';
+      case 'warning': return 'text-yellow-500';
+      default: return 'text-blue-500';
     }
   };
 
   return (
-    <div className="space-y-2">
-      {alerts.map((alert) => (
-        <Collapsible 
-          key={alert.id} 
-          open={expandedAlerts.has(alert.id)} 
-          onOpenChange={() => toggleAlert(alert.id)}
-        >
-          <Alert className={getAlertStyles(alert.type)}>
-            <div className="flex items-start gap-2">
-              <span className={getTextColor(alert.type)}>
-                {getAlertIcon(alert.type)}
-              </span>
-              <div className="flex-1">
-                <AlertTitle className={`${getTextColor(alert.type)} flex items-center justify-between text-sm`}>
-                  <span className="flex items-center gap-2">
-                    <Badge variant="outline" className={`${getTextColor(alert.type)} border-current text-xs`}>
-                      {alert.category}
-                    </Badge>
-                    {alert.title}
-                    <Badge className={`${alert.type === 'error' ? 'bg-red-600' : alert.type === 'warning' ? 'bg-amber-600' : 'bg-blue-600'} text-xs`}>
-                      {alert.count}
-                    </Badge>
-                  </span>
-                  <CollapsibleTrigger asChild>
-                    <Button variant="ghost" size="sm" className={`h-6 w-6 p-0 ${getTextColor(alert.type)}`}>
-                      {expandedAlerts.has(alert.id) ? (
-                        <ChevronDown className="h-4 w-4" />
-                      ) : (
-                        <ChevronRight className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </CollapsibleTrigger>
-                </AlertTitle>
-                <AlertDescription className={`${getTextColor(alert.type)}/80 text-xs mt-1`}>
-                  {alert.description}
-                </AlertDescription>
-                <CollapsibleContent className="mt-2">
-                  {alert.items && alert.items.length > 0 && (
-                    <div className="space-y-1 rounded border bg-background/50 p-2">
-                      {alert.items.map((item) => (
-                        <div 
-                          key={item.id} 
-                          className="flex items-center justify-between text-xs py-1 px-2 rounded hover:bg-muted/50 cursor-pointer"
-                          onClick={() => onNavigateToEntry?.(item.id)}
-                        >
-                          <span className="truncate max-w-[200px]">{item.label}</span>
-                          <span className="text-muted-foreground font-medium">{item.value}</span>
-                        </div>
-                      ))}
-                      {(alert.count || 0) > 5 && (
-                        <p className="text-xs text-muted-foreground text-center pt-1">
-                          ... e mais {(alert.count || 0) - 5} item(ns)
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </CollapsibleContent>
+    <Collapsible open={panelOpen} onOpenChange={setPanelOpen}>
+      <div className="rounded-lg border border-border bg-card">
+        <CollapsibleTrigger asChild>
+          <button className="w-full flex items-center justify-between p-3 hover:bg-muted/30 transition-colors rounded-lg">
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <Bell className="h-4 w-4 text-muted-foreground" />
+                <span className="absolute -top-1.5 -right-1.5 h-4 min-w-[16px] rounded-full bg-red-600 text-[10px] font-bold text-white flex items-center justify-center px-1">
+                  {totalAlerts}
+                </span>
+              </div>
+              <span className="text-sm font-medium">Alertas de Pendências</span>
+              <div className="flex items-center gap-1.5 ml-2">
+                {sections.some(s => s.type === 'error') && (
+                  <span className="h-2 w-2 rounded-full bg-red-500" />
+                )}
+                {sections.some(s => s.type === 'warning') && (
+                  <span className="h-2 w-2 rounded-full bg-yellow-500" />
+                )}
+                {sections.some(s => s.type === 'info') && (
+                  <span className="h-2 w-2 rounded-full bg-blue-500" />
+                )}
               </div>
             </div>
-          </Alert>
-        </Collapsible>
-      ))}
-    </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">{sections.length} tipo(s)</span>
+              {panelOpen ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+            </div>
+          </button>
+        </CollapsibleTrigger>
+
+        <CollapsibleContent>
+          <div className="border-t border-border px-3 pb-3 space-y-1">
+            {sections.map((section) => (
+              <Collapsible 
+                key={section.id} 
+                open={expandedSections.has(section.id)} 
+                onOpenChange={() => toggleSection(section.id)}
+              >
+                <CollapsibleTrigger asChild>
+                  <button className="w-full flex items-center justify-between py-2 px-2 hover:bg-muted/30 rounded-md transition-colors">
+                    <div className="flex items-center gap-2">
+                      <span className={getTypeColor(section.type)}>{section.icon}</span>
+                      <span className="text-xs font-medium">{section.title}</span>
+                      {section.count !== undefined && (
+                        <Badge variant="secondary" className="text-[10px] h-4 px-1.5">
+                          {section.count}
+                        </Badge>
+                      )}
+                    </div>
+                    {expandedSections.has(section.id) ? (
+                      <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+                    ) : (
+                      <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+                    )}
+                  </button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="px-2 pb-2">
+                  {section.content}
+                </CollapsibleContent>
+              </Collapsible>
+            ))}
+          </div>
+        </CollapsibleContent>
+      </div>
+    </Collapsible>
   );
 }
