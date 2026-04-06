@@ -41,6 +41,7 @@ export function CostCenterEntriesDialog({
   onClose,
 }: CostCenterEntriesDialogProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [viewEntryId, setViewEntryId] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const { data: entries, isLoading } = useQuery({
