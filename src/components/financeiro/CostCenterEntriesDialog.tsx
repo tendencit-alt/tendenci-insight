@@ -211,8 +211,8 @@ export function CostCenterEntriesDialog({
 
   return (
     <>
-      <Dialog open onOpenChange={(open) => !open && onClose()}>
-        <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
+      <Dialog open modal={true} onOpenChange={(open) => !open && onClose()}>
+        <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base">
               {iconMap[filter.type]}
