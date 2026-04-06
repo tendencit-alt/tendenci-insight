@@ -493,51 +493,6 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
         </div>
       </div>
 
-      {/* Summary KPIs */}
-      <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
-        <Card className="bg-muted/30">
-          <CardContent className="pt-3 pb-3">
-            <p className="text-xs text-muted-foreground">Total Lançamentos</p>
-            <p className="text-xl font-bold">{totalLancamentos}</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-muted/30">
-          <CardContent className="pt-3 pb-3">
-            <p className="text-xs text-muted-foreground">Pendentes Conciliação</p>
-            <p className="text-xl font-bold text-yellow-600">{unreconciledEntries.length}</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-muted/30">
-          <CardContent className="pt-3 pb-3">
-            <p className="text-xs text-muted-foreground">Transações Extrato</p>
-            <p className="text-xl font-bold">{bankKpis.total}</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-muted/30">
-          <CardContent className="pt-3 pb-3">
-            <p className="text-xs text-muted-foreground">% Conciliado</p>
-            <p className={`text-xl font-bold ${percentConciliados === 100 ? 'text-green-600' : 'text-red-600'}`}>
-              {percentConciliados}%
-            </p>
-          </CardContent>
-        </Card>
-        <Card className={`col-span-2 md:col-span-4 ${isImportOverdue ? 'bg-red-500/10 border-red-500/50' : 'bg-muted/30'}`}>
-          <CardContent className="pt-3 pb-3">
-            <p className={`text-xs ${isImportOverdue ? 'text-red-600 font-medium' : 'text-muted-foreground'}`}>
-              Último Extrato Importado
-              {isImportOverdue && <AlertTriangle className="inline h-3 w-3 ml-1" />}
-            </p>
-            <p className={`text-sm font-medium ${isImportOverdue ? 'text-red-600' : ''}`}>
-              {lastImportDate ? lastImportDate : "Nenhum extrato importado"}
-            </p>
-            {isImportOverdue && (
-              <p className="text-xs text-red-500 mt-1">
-                ⚠️ Importe o extrato atualizado
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      </div>
 
       {/* System Alerts */}
       <FinanceiroAlerts 
@@ -657,15 +612,23 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
               <span className="font-medium text-sm">Lançamentos</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-2xl font-bold">{entries?.filter(e => e.status !== "CANCELADO").length || 0}</span>
-              {unreconciledEntries.length > 0 && (
-                <Badge variant="outline" className="text-xs gap-1 border-yellow-500/50 text-yellow-600 bg-yellow-50">
-                  <AlertTriangle className="h-3 w-3" />
-                  {unreconciledEntries.length} não conciliados
-                </Badge>
-              )}
+              <span className="text-2xl font-bold">{totalLancamentos}</span>
+              <span className={`text-lg font-bold ${percentConciliados === 100 ? 'text-green-600' : percentConciliados >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
+                {percentConciliados}%
+              </span>
             </div>
-            <p className="text-xs text-muted-foreground mt-1">registros no período</p>
+            <div className="flex items-center justify-between mt-1">
+              <p className="text-xs text-muted-foreground">registros no período</p>
+              <p className="text-xs text-muted-foreground">conciliado</p>
+            </div>
+            {unreconciledEntries.length > 0 && (
+              <div className="mt-2 pt-2 border-t border-border/50">
+                <div className="flex items-center gap-1.5 text-xs text-yellow-600">
+                  <AlertTriangle className="h-3 w-3" />
+                  <span>{unreconciledEntries.length} pendentes de conciliação</span>
+                </div>
+              </div>
+            )}
           </button>
 
           {/* Extrato Bancário Card */}
@@ -846,14 +809,12 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
                                       onClick={async () => {
                                         try {
                                           await supabase.from("fin_ledger_entries").update({ status: "ABERTO", cash_date: null }).eq("id", entry.id);
-                                          // Also revert linked payable/receivable
                                           if (entry.type === "DESPESA") {
                                             await supabase.from("fin_payables").update({ status: "ABERTO", paid_amount: 0, payment_date: null }).eq("ledger_entry_id", entry.id);
                                           } else {
                                             await supabase.from("fin_receivables").update({ status: "ABERTO", received_amount: 0 }).eq("ledger_entry_id", entry.id);
                                           }
                                           toast.success("Lançamento reaberto com sucesso");
-                                          // Trigger refetch
                                           refetchEntries();
                                         } catch { toast.error("Erro ao estornar lançamento"); }
                                       }}
@@ -932,7 +893,6 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
               </CardContent>
             </Card>
           </div>
-
 
           {/* Bank transactions table */}
           <Card>
