@@ -2,12 +2,12 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
 import { ArrowDownCircle, ArrowUpCircle, DollarSign, Clock, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -211,16 +211,20 @@ export function CostCenterEntriesDialog({
 
   return (
     <>
-      <Dialog open modal={true} onOpenChange={(open) => !open && onClose()}>
-        <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-base">
+      <Sheet open onOpenChange={(open) => !open && onClose()}>
+        <SheetContent
+          side="right"
+          className="w-full sm:max-w-2xl flex flex-col p-0"
+          onOpenAutoFocus={(e) => e.preventDefault()}
+        >
+          <SheetHeader className="px-6 pt-6 pb-3 border-b">
+            <SheetTitle className="flex items-center gap-2 text-base">
               {iconMap[filter.type]}
               {titleMap[filter.type]}
-            </DialogTitle>
-            <DialogDescription className="sr-only">
+            </SheetTitle>
+            <SheetDescription className="sr-only">
               Detalhamento dos lançamentos por centro de custo
-            </DialogDescription>
+            </SheetDescription>
             <div className="flex items-center justify-between text-sm text-muted-foreground">
               <span>
                 {entries?.length || 0} lançamento{(entries?.length || 0) !== 1 ? "s" : ""} — Total:{" "}
@@ -246,9 +250,9 @@ export function CostCenterEntriesDialog({
                 </span>
               </div>
             )}
-          </DialogHeader>
+          </SheetHeader>
 
-          <ScrollArea className="flex-1 -mx-6 px-6">
+          <ScrollArea className="flex-1 px-6">
             {isLoading ? (
               <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">
                 <Clock className="h-4 w-4 animate-spin mr-2" /> Carregando...
@@ -352,8 +356,8 @@ export function CostCenterEntriesDialog({
               </div>
             )}
           </ScrollArea>
-        </DialogContent>
-      </Dialog>
+        </SheetContent>
+      </Sheet>
 
       {selectedOrderId && (
         <OrderDetailSheet
