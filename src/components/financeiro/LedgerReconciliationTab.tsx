@@ -763,7 +763,7 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
                     {entries && entries.length > 0 && (
                       <tfoot>
                         <TableRow className="bg-muted/50 font-medium border-t-2">
-                          <TableCell colSpan={5} className="text-right text-xs py-4 pr-4">
+                          <TableCell colSpan={6} className="text-right text-xs py-4 pr-4">
                             <span className="text-muted-foreground">Totais:</span>
                           </TableCell>
                           <TableCell className="text-right text-xs py-4">
