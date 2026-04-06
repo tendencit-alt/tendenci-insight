@@ -353,8 +353,9 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
           </SheetHeader>
 
           <Tabs defaultValue="info" className="mt-4">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="info">Info</TabsTrigger>
+              <TabsTrigger value="pagamento">Pagamento</TabsTrigger>
               <TabsTrigger value="itens">Itens</TabsTrigger>
               <TabsTrigger value="entrega">Entrega</TabsTrigger>
               <TabsTrigger value="historico">Histórico</TabsTrigger>
@@ -845,6 +846,162 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
                   )}
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            <TabsContent value="pagamento" className="space-y-4">
+              <Card>
+                <CardHeader className="py-3">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <DollarSign className="h-4 w-4" />
+                    Formas de Pagamento
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="py-2 space-y-3 text-sm">
+                  {(() => {
+                    const FORMAS_MAP: Record<string, string> = {
+                      pix: 'PIX', cartao_credito: 'Cartão de Crédito', cartao_debito: 'Cartão de Débito',
+                      link_pagamento: 'Link de Pagamento', boleto: 'Boleto', transferencia: 'Transferência',
+                      permuta: 'Permuta', dinheiro: 'Dinheiro',
+                    };
+
+                    let parcelas: any[] = [];
+                    try {
+                      if (order.observacao_pagamento) {
+                        const parsed = JSON.parse(order.observacao_pagamento);
+                        if (Array.isArray(parsed)) parcelas = parsed;
+                        else if (parsed?.parcelas) parcelas = parsed.parcelas;
+                      }
+                    } catch {}
+
+                    if (parcelas.length === 0) {
+                      parcelas = [
+                        {
+                          id: '1',
+                          forma_pagamento: order.forma_pagamento,
+                          percentual: order.percentual_forma_1 || (order.forma_pagamento ? 100 : 0),
+                          data_vencimento: order.data_primeiro_vencimento,
+                          numero_parcelas: order.parcelas || 1,
+                        },
+                        order.forma_pagamento_2 ? {
+                          id: '2',
+                          forma_pagamento: order.forma_pagamento_2,
+                          percentual: order.percentual_forma_2 || 0,
+                          data_vencimento: null,
+                          numero_parcelas: 1,
+                        } : null,
+                      ].filter(Boolean);
+                    }
+
+                    return (
+                      <div className="space-y-3">
+                        {parcelas.map((parcela: any, index: number) => (
+                          <div key={parcela.id || index} className="rounded-lg border border-border bg-muted/30 p-3 space-y-2">
+                            <div className="flex items-center justify-between gap-3">
+                              <div>
+                                <p className="font-medium">{FORMAS_MAP[parcela.forma_pagamento] || parcela.forma_pagamento || 'Não definida'}</p>
+                                {index === 0 && parcelas.length > 1 && (
+                                  <p className="text-xs text-muted-foreground">Entrada</p>
+                                )}
+                              </div>
+                              <Badge variant="secondary" className="text-xs">{Number(parcela.percentual || 0).toFixed(2)}%</Badge>
+                            </div>
+                            <div className="grid gap-2 sm:grid-cols-3 text-xs text-muted-foreground">
+                              <div>
+                                <span className="block">Parcelas</span>
+                                <strong className="text-foreground">{parcela.numero_parcelas || 1}x</strong>
+                              </div>
+                              <div>
+                                <span className="block">Vencimento</span>
+                                <strong className="text-foreground">
+                                  {parcela.data_vencimento ? format(parseDateOnly(parcela.data_vencimento), 'dd/MM/yyyy') : '—'}
+                                </strong>
+                              </div>
+                              <div>
+                                <span className="block">Valor estimado</span>
+                                <strong className="text-foreground">
+                                  {formatCurrency(((order.subtotal || 0) - (order.desconto_valor || 0) + (order.valor_frete || 0)) * ((Number(parcela.percentual || 0)) / 100))}
+                                </strong>
+                              </div>
+                            </div>
+                            {parcela.forma_pagamento === 'boleto' && (
+                              <p className="text-xs text-muted-foreground">Carência: {parcela.carencia_boleto || parcela.carencia_dias || 30} dias</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
+
+                  {order.condicao_pagamento && (
+                    <div className="rounded-lg border border-border bg-muted/20 p-3">
+                      <p className="text-xs text-muted-foreground mb-1">Condição de pagamento</p>
+                      <p className="font-medium">{order.condicao_pagamento}</p>
+                    </div>
+                  )}
+
+                  {typeof order.observacao_pagamento === 'string' && order.observacao_pagamento && !order.observacao_pagamento.trim().startsWith('[') && (
+                    <div className="rounded-lg border border-border bg-muted/20 p-3">
+                      <p className="text-xs text-muted-foreground mb-1">Observação de pagamento</p>
+                      <p className="whitespace-pre-wrap">{order.observacao_pagamento}</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {(() => {
+                const o = order as any;
+                const recursos = [
+                  { label: 'RT', perc: o.rt_percentual, valor: o.rt_valor, respId: null, habilitado: o.rt_habilitado },
+                  { label: 'Vendedor', perc: o.comissao_vendedor_percentual, valor: o.comissao_vendedor_valor, respId: o.comissao_vendedor_responsible_id || o.comissao_vendedor_responsavel_id },
+                  { label: 'Orçamentista', perc: o.comissao_orcamentista_percentual, valor: o.comissao_orcamentista_valor, respId: o.comissao_orcamentista_responsible_id || o.comissao_orcamentista_responsavel_id },
+                  { label: 'Projetista', perc: o.comissao_projetista_percentual, valor: o.comissao_projetista_valor, respId: o.comissao_projetista_responsible_id || o.comissao_projetista_responsavel_id },
+                  { label: 'Montador', perc: o.comissao_montador_percentual, valor: o.comissao_montador_valor, respId: o.comissao_montador_responsible_id || o.comissao_montador_responsavel_id },
+                  { label: 'Produção', perc: o.comissao_producao_percentual, valor: o.comissao_producao_valor, respId: o.comissao_producao_responsible_id || o.comissao_producao_responsavel_id },
+                ];
+                const ativos = recursos.filter(r => (Number(r.valor || 0) > 0 || Number(r.perc || 0) > 0) || r.habilitado);
+                if (ativos.length === 0) return null;
+
+                return (
+                  <Card>
+                    <CardHeader className="py-3">
+                      <CardTitle className="text-sm flex items-center gap-2">
+                        <User className="h-4 w-4" />
+                        Recursos Estratégicos
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="py-2 space-y-2 text-sm">
+                      {ativos.map((r) => (
+                        <div key={r.label} className="flex items-center justify-between rounded-lg border border-border bg-muted/30 px-3 py-2 gap-3">
+                          <div>
+                            <p className="font-medium">{r.label}</p>
+                            {r.respId && responsibleMap.get(r.respId) && (
+                              <p className="text-xs text-muted-foreground">{responsibleMap.get(r.respId)}</p>
+                            )}
+                          </div>
+                          <div className="text-right">
+                            <Badge variant="secondary" className="text-xs mb-1">{Number(r.perc || 0)}%</Badge>
+                            <p className="font-semibold">{formatCurrency(Number(r.valor || 0))}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                );
+              })()}
+
+              {order.observacoes_internas && (
+                <Card>
+                  <CardHeader className="py-3">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <MessageSquare className="h-4 w-4" />
+                      Observações
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="py-2 text-sm text-muted-foreground whitespace-pre-wrap">
+                    {order.observacoes_internas}
+                  </CardContent>
+                </Card>
+              )}
             </TabsContent>
 
             <TabsContent value="itens">
