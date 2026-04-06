@@ -716,10 +716,16 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
               </TableRow>
               <TableRow className="bg-green-50 dark:bg-green-950/20 font-semibold">
                 <TableCell className="text-xs">
-                  <span className="inline-flex items-center gap-1">
-                    TOTAL ENTRADAS
-                    <AccountsStatusTooltip dateFrom={filters.dateFrom ? format(filters.dateFrom, "yyyy-MM-dd") : null} dateTo={filters.dateTo ? format(filters.dateTo, "yyyy-MM-dd") : null} show="receivables" />
-                  </span>
+                  <div>
+                    <span className="inline-flex items-center gap-1">
+                      TOTAL ENTRADAS
+                      <AccountsStatusTooltip dateFrom={filters.dateFrom ? format(filters.dateFrom, "yyyy-MM-dd") : null} dateTo={filters.dateTo ? format(filters.dateTo, "yyyy-MM-dd") : null} show="receivables" />
+                    </span>
+                    <p className="text-[10px] text-muted-foreground font-normal mt-0.5">
+                      Realizado: <span className="font-semibold text-foreground">{((cashflowData?.compReceitas || 0) > 0 ? ((cashflowData?.compReceitasRealizadas || 0) / (cashflowData?.compReceitas || 1) * 100) : 0).toFixed(1)}%</span>
+                      <span className="ml-1 text-muted-foreground/70">de {formatCurrency(cashflowData?.compReceitas || 0)} (competência)</span>
+                    </p>
+                  </div>
                 </TableCell>
                 <TableCell className="text-right text-green-600 font-mono text-xs">
                   {formatCurrency(cashflowData?.totalEntradas || 0)}
@@ -727,32 +733,54 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
               </TableRow>
               <TableRow className="bg-red-50 dark:bg-red-950/20 font-semibold">
                 <TableCell className="text-xs">
-                  <span className="inline-flex items-center gap-1">
-                    TOTAL SAÍDAS
-                    <AccountsStatusTooltip dateFrom={filters.dateFrom ? format(filters.dateFrom, "yyyy-MM-dd") : null} dateTo={filters.dateTo ? format(filters.dateTo, "yyyy-MM-dd") : null} show="payables" />
-                  </span>
+                  <div>
+                    <span className="inline-flex items-center gap-1">
+                      TOTAL SAÍDAS
+                      <AccountsStatusTooltip dateFrom={filters.dateFrom ? format(filters.dateFrom, "yyyy-MM-dd") : null} dateTo={filters.dateTo ? format(filters.dateTo, "yyyy-MM-dd") : null} show="payables" />
+                    </span>
+                    <p className="text-[10px] text-muted-foreground font-normal mt-0.5">
+                      Realizado: <span className="font-semibold text-foreground">{((cashflowData?.compDespesas || 0) > 0 ? ((cashflowData?.compDespesasRealizadas || 0) / (cashflowData?.compDespesas || 1) * 100) : 0).toFixed(1)}%</span>
+                      <span className="ml-1 text-muted-foreground/70">de {formatCurrency(cashflowData?.compDespesas || 0)} (competência)</span>
+                    </p>
+                  </div>
                 </TableCell>
                 <TableCell className="text-right text-red-600 font-mono text-xs">
                   ({formatCurrency(cashflowData?.totalSaidas || 0)})
                 </TableCell>
               </TableRow>
-              <TableRow className={cn(
-                "font-bold border-t-2",
-                ((cashflowData?.totalEntradas || 0) - (cashflowData?.totalSaidas || 0)) >= 0 
-                  ? "bg-green-100 dark:bg-green-950/30 border-green-400" 
-                  : "bg-red-100 dark:bg-red-950/30 border-red-400"
-              )}>
-                <TableCell className="text-xs font-bold">RESULTADO</TableCell>
-                <TableCell className={cn(
-                  "text-right font-mono text-xs font-bold",
-                  ((cashflowData?.totalEntradas || 0) - (cashflowData?.totalSaidas || 0)) >= 0 
-                    ? "text-green-700 dark:text-green-400" 
-                    : "text-red-700 dark:text-red-400"
-                )}>
-                  {((cashflowData?.totalEntradas || 0) - (cashflowData?.totalSaidas || 0)) >= 0 ? "▲ " : "▼ "}
-                  {formatCurrency(Math.abs((cashflowData?.totalEntradas || 0) - (cashflowData?.totalSaidas || 0)))}
-                </TableCell>
-              </TableRow>
+              {(() => {
+                const resultado = (cashflowData?.totalEntradas || 0) - (cashflowData?.totalSaidas || 0);
+                const compResultado = (cashflowData?.compReceitas || 0) - (cashflowData?.compDespesas || 0);
+                const compResultadoRealizado = (cashflowData?.compReceitasRealizadas || 0) - (cashflowData?.compDespesasRealizadas || 0);
+                const realizadoPct = compResultado !== 0 ? (compResultadoRealizado / Math.abs(compResultado)) * 100 : 0;
+                return (
+                  <TableRow className={cn(
+                    "font-bold border-t-2",
+                    resultado >= 0 
+                      ? "bg-green-100 dark:bg-green-950/30 border-green-400" 
+                      : "bg-red-100 dark:bg-red-950/30 border-red-400"
+                  )}>
+                    <TableCell className="text-xs font-bold">
+                      <div>
+                        RESULTADO
+                        <p className="text-[10px] text-muted-foreground font-normal mt-0.5">
+                          Realizado: <span className="font-semibold text-foreground">{realizadoPct.toFixed(1)}%</span>
+                          <span className="ml-1 text-muted-foreground/70">({formatCurrency(compResultadoRealizado)})</span>
+                        </p>
+                      </div>
+                    </TableCell>
+                    <TableCell className={cn(
+                      "text-right font-mono text-xs font-bold",
+                      resultado >= 0 
+                        ? "text-green-700 dark:text-green-400" 
+                        : "text-red-700 dark:text-red-400"
+                    )}>
+                      {resultado >= 0 ? "▲ " : "▼ "}
+                      {formatCurrency(Math.abs(resultado))}
+                    </TableCell>
+                  </TableRow>
+                );
+              })()}
             </TableBody>
           </Table>
           </div>
