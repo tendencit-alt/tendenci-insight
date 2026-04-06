@@ -638,7 +638,7 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
 
       {/* Sub-tabs */}
       <Tabs value={activeSubTab} onValueChange={setActiveSubTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-2 max-w-md">
+        <TabsList className="grid w-full grid-cols-3 max-w-lg">
           <TabsTrigger value="ledger" className="gap-1.5">
             <BookOpen className="h-4 w-4" />
             Lançamentos
@@ -646,6 +646,10 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
           <TabsTrigger value="bank" className="gap-1.5">
             <Link2 className="h-4 w-4" />
             Extrato Bancário
+          </TabsTrigger>
+          <TabsTrigger value="account-extract" className="gap-1.5">
+            <Landmark className="h-4 w-4" />
+            Extrato por Conta
           </TabsTrigger>
         </TabsList>
 
