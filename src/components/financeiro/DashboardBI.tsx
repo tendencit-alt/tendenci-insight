@@ -185,6 +185,10 @@ export function DashboardBI({ filters }: DashboardBIProps) {
       const despesas = entries?.filter(e => e.type === "DESPESA").reduce((sum, e) => sum + Number(e.amount), 0) || 0;
       const resultado = receitas - despesas;
 
+      // Calculate realized amounts (PAGO_RECEBIDO)
+      const receitasRealizadas = entries?.filter(e => e.type === "RECEITA" && (e as any).status === "PAGO_RECEBIDO").reduce((sum, e) => sum + Number(e.amount), 0) || 0;
+      const despesasRealizadas = entries?.filter(e => e.type === "DESPESA" && (e as any).status === "PAGO_RECEBIDO").reduce((sum, e) => sum + Number(e.amount), 0) || 0;
+
       // Calculate real consolidated balance: opening balances + ALL transactions up to dateTo
       const saldoInicial = accounts?.reduce((sum, a) => sum + Number(a.opening_balance || 0), 0) || 0;
       const allReceitas = allEntriesForBalance?.filter(e => e.type === "RECEITA").reduce((sum, e) => sum + Number(e.amount), 0) || 0;
@@ -228,6 +232,8 @@ export function DashboardBI({ filters }: DashboardBIProps) {
         resultado,
         saldoAtual,
         saldoInicial,
+        receitasRealizadas,
+        despesasRealizadas,
         receitasCategories: Array.from(receitasByAccount.values()).sort((a, b) => b.value - a.value),
         despesasCategories: Array.from(despesasByAccount.values()).sort((a, b) => b.value - a.value),
       };
@@ -240,6 +246,8 @@ export function DashboardBI({ filters }: DashboardBIProps) {
     saidas: data.despesas,
     resultado: data.resultado,
     saldoConsolidado: data.saldoAtual,
+    receitasRealizadas: data.receitasRealizadas,
+    despesasRealizadas: data.despesasRealizadas,
   } : undefined;
 
   const toggleCategory = (categoryId: string) => {
