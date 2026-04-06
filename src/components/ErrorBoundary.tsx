@@ -19,10 +19,8 @@ const isRecoverableDomNotFoundError = (error: Error): boolean => {
   if (typeof window === 'undefined') return false;
 
   const message = (error.message || '').toLowerCase();
-  const isAuthFlow = window.location.pathname === '/auth' || window.location.pathname === '/reset-password';
 
   return (
-    isAuthFlow &&
     error.name === 'NotFoundError' &&
     (message.includes('insertbefore') ||
       message.includes('removechild') ||
