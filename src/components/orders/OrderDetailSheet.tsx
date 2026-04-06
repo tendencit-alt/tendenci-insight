@@ -98,6 +98,30 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
     enabled: !!orderId,
   });
 
+  // Fetch responsible names for comissões
+  const responsibleIds = order ? [
+    (order as any).comissao_vendedor_responsible_id || (order as any).comissao_vendedor_responsavel_id,
+    (order as any).comissao_orcamentista_responsible_id || (order as any).comissao_orcamentista_responsavel_id,
+    (order as any).comissao_projetista_responsible_id || (order as any).comissao_projetista_responsavel_id,
+    (order as any).comissao_montador_responsible_id || (order as any).comissao_montador_responsavel_id,
+    (order as any).comissao_producao_responsible_id || (order as any).comissao_producao_responsavel_id,
+  ].filter(Boolean) : [];
+
+  const { data: responsibles } = useQuery({
+    queryKey: ['order-responsibles', responsibleIds],
+    queryFn: async () => {
+      if (responsibleIds.length === 0) return [];
+      const { data } = await supabase
+        .from('order_responsibles')
+        .select('id, name')
+        .in('id', responsibleIds);
+      return data || [];
+    },
+    enabled: responsibleIds.length > 0,
+  });
+
+  const responsibleMap = new Map(responsibles?.map(r => [r.id, r.name]) || []);
+
   const { data: items } = useQuery({
     queryKey: ['order-items', orderId],
     queryFn: async () => {
@@ -693,6 +717,65 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
                   )}
                 </CardContent>
               </Card>
+
+              {/* Recursos Estratégicos */}
+              {(() => {
+                const o = order as any;
+                const recursos = [
+                  { label: 'RT', perc: o.rt_percentual, valor: o.rt_valor, respId: null, habilitado: o.rt_habilitado },
+                  { label: 'Vendedor', perc: o.comissao_vendedor_percentual, valor: o.comissao_vendedor_valor, respId: o.comissao_vendedor_responsible_id || o.comissao_vendedor_responsavel_id },
+                  { label: 'Orçamentista', perc: o.comissao_orcamentista_percentual, valor: o.comissao_orcamentista_valor, respId: o.comissao_orcamentista_responsible_id || o.comissao_orcamentista_responsavel_id },
+                  { label: 'Projetista', perc: o.comissao_projetista_percentual, valor: o.comissao_projetista_valor, respId: o.comissao_projetista_responsible_id || o.comissao_projetista_responsavel_id },
+                  { label: 'Montador', perc: o.comissao_montador_percentual, valor: o.comissao_montador_valor, respId: o.comissao_montador_responsible_id || o.comissao_montador_responsavel_id },
+                  { label: 'Produção', perc: o.comissao_producao_percentual, valor: o.comissao_producao_valor, respId: o.comissao_producao_responsible_id || o.comissao_producao_responsavel_id },
+                ];
+                const ativos = recursos.filter(r => (r.valor > 0 || r.perc > 0) || r.habilitado);
+                if (ativos.length === 0) return null;
+
+                return (
+                  <Card>
+                    <CardHeader className="py-3">
+                      <CardTitle className="text-sm flex items-center gap-2">
+                        <User className="h-4 w-4" />
+                        Recursos Estratégicos
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="py-2 space-y-2 text-sm">
+                      {ativos.map((r) => (
+                        <div key={r.label} className="flex items-center justify-between rounded-lg border border-border bg-muted/30 px-3 py-2">
+                          <div>
+                            <span className="font-medium">{r.label}</span>
+                            {r.respId && responsibleMap.get(r.respId) && (
+                              <span className="text-xs text-muted-foreground ml-2">
+                                — {responsibleMap.get(r.respId)}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="secondary" className="text-xs">{r.perc || 0}%</Badge>
+                            <span className="font-semibold">{formatCurrency(r.valor || 0)}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                );
+              })()}
+
+              {/* Observações */}
+              {order.observacoes_internas && (
+                <Card>
+                  <CardHeader className="py-3">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <MessageSquare className="h-4 w-4" />
+                      Observações
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="py-2 text-sm text-muted-foreground whitespace-pre-wrap">
+                    {order.observacoes_internas}
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Ações */}
               <Card>
