@@ -115,36 +115,41 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
         .gte("competence_date", dateFrom)
         .lte("competence_date", dateTo);
 
-      // Apply sorting based on filter
+      // Apply common filters to both queries
+      const applyFilters = (q: any) => {
+        if (filters.bankAccountId) q = q.eq("bank_account_id", filters.bankAccountId);
+        if (filters.costCenterId) q = q.eq("cost_center_id", filters.costCenterId);
+        if (filters.projectId) q = q.eq("project_id", filters.projectId);
+        if (filters.subcategoryId) q = q.eq("chart_account_id", filters.subcategoryId);
+        else if (filters.categoryId) q = q.eq("chart_account_id", filters.categoryId);
+        if (filters.search) q = q.ilike("description", `%${filters.search}%`);
+        return q;
+      };
+
+      queryPaid = applyFilters(queryPaid);
+      queryOpen = applyFilters(queryOpen);
+
+      const [paidResult, openResult] = await Promise.all([queryPaid, queryOpen]);
+      const allEntries = [...(paidResult.data || []), ...(openResult.data || [])];
+
+      // Sort combined results
       if (filters.sortField === "date") {
-        query = query.order(dateField, { ascending: filters.sortDirection === "asc" });
+        allEntries.sort((a, b) => {
+          const dateA = a.cash_date || a.competence_date;
+          const dateB = b.cash_date || b.competence_date;
+          return filters.sortDirection === "asc" ? dateA.localeCompare(dateB) : dateB.localeCompare(dateA);
+        });
       } else if (filters.sortField === "value") {
-        query = query.order("amount", { ascending: filters.sortDirection === "asc" });
+        allEntries.sort((a, b) => filters.sortDirection === "asc" ? a.amount - b.amount : b.amount - a.amount);
       } else {
-        query = query.order(dateField, { ascending: false });
+        allEntries.sort((a, b) => {
+          const dateA = a.cash_date || a.competence_date;
+          const dateB = b.cash_date || b.competence_date;
+          return dateB.localeCompare(dateA);
+        });
       }
 
-      if (filters.bankAccountId) {
-        query = query.eq("bank_account_id", filters.bankAccountId);
-      }
-      if (filters.costCenterId) {
-        query = query.eq("cost_center_id", filters.costCenterId);
-      }
-      if (filters.projectId) {
-        query = query.eq("project_id", filters.projectId);
-      }
-      // Subcategoria tem prioridade sobre categoria
-      if (filters.subcategoryId) {
-        query = query.eq("chart_account_id", filters.subcategoryId);
-      } else if (filters.categoryId) {
-        query = query.eq("chart_account_id", filters.categoryId);
-      }
-      if (filters.search) {
-        query = query.ilike("description", `%${filters.search}%`);
-      }
-
-      const { data } = await query;
-      return data || [];
+      return allEntries;
     },
   });
 
