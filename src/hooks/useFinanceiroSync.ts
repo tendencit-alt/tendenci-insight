@@ -73,6 +73,8 @@ export function useFinanceiroSync() {
     queryClient.invalidateQueries({ queryKey: ["fin-bank-transactions"] });
     queryClient.invalidateQueries({ queryKey: ["fin-payables"] });
     queryClient.invalidateQueries({ queryKey: ["fin-receivables"] });
+    queryClient.invalidateQueries({ queryKey: ["fin-bank-balance-unified"] });
+    queryClient.invalidateQueries({ queryKey: ["fin-bank-accounts-balance"] });
   };
 
   return {
