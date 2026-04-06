@@ -9,7 +9,8 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
-import { ArrowDownCircle, ArrowUpCircle, DollarSign, Clock, ExternalLink } from "lucide-react";
+import { ArrowDownCircle, ArrowUpCircle, DollarSign, Clock, ExternalLink, FileText } from "lucide-react";
+import { EntryDetailsDialog } from "./EntryDetailsDialog";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -40,6 +41,7 @@ export function CostCenterEntriesDialog({
   onClose,
 }: CostCenterEntriesDialogProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [viewEntryId, setViewEntryId] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const { data: entries, isLoading } = useQuery({
@@ -346,9 +348,18 @@ export function CostCenterEntriesDialog({
                           <ExternalLink className="h-3.5 w-3.5 text-primary" />
                         </Button>
                       ) : (
-                        <span className="h-6 w-6 flex items-center justify-center text-muted-foreground/40" title="Lançamento manual">
-                          <ExternalLink className="h-3 w-3" />
-                        </span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          title="Ver lançamento"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setViewEntryId(entry.id);
+                          }}
+                        >
+                          <FileText className="h-3.5 w-3.5 text-primary" />
+                        </Button>
                       )}
                     </div>
                   </div>
@@ -358,6 +369,12 @@ export function CostCenterEntriesDialog({
           </ScrollArea>
         </SheetContent>
       </Sheet>
+
+      <EntryDetailsDialog
+        entryId={viewEntryId}
+        open={!!viewEntryId}
+        onOpenChange={(open) => !open && setViewEntryId(null)}
+      />
     </>
   );
 }
