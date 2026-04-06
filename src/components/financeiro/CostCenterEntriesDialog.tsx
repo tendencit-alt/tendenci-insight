@@ -348,9 +348,18 @@ export function CostCenterEntriesDialog({
                           <ExternalLink className="h-3.5 w-3.5 text-primary" />
                         </Button>
                       ) : (
-                        <span className="h-6 w-6 flex items-center justify-center text-muted-foreground/40" title="Lançamento manual">
-                          <ExternalLink className="h-3 w-3" />
-                        </span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          title="Ver lançamento"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setViewEntryId(entry.id);
+                          }}
+                        >
+                          <FileText className="h-3.5 w-3.5 text-primary" />
+                        </Button>
                       )}
                     </div>
                   </div>
