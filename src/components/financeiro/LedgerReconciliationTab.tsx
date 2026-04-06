@@ -28,7 +28,8 @@ import {
   Link2,
   Split,
   MoreHorizontal,
-  Undo2
+  Undo2,
+  Landmark
 } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -940,6 +941,11 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Account Extract Tab Content */}
+        <TabsContent value="account-extract" className="space-y-4">
+          <BankAccountExtractTab filters={filters} />
         </TabsContent>
       </Tabs>
 
