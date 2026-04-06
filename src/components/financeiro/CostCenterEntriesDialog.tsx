@@ -369,6 +369,12 @@ export function CostCenterEntriesDialog({
           </ScrollArea>
         </SheetContent>
       </Sheet>
+
+      <EntryDetailsDialog
+        entryId={viewEntryId}
+        open={!!viewEntryId}
+        onOpenChange={(open) => !open && setViewEntryId(null)}
+      />
     </>
   );
 }
