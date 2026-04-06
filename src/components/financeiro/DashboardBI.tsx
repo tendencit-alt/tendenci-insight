@@ -41,6 +41,7 @@ interface DashboardBIProps {
 }
 
 type KPIType = "saldo" | "receitas" | "despesas" | "resultado" | null;
+type StatusView = "all" | "lancado" | "executado";
 
 interface CategoryData {
   id: string;
@@ -63,6 +64,7 @@ interface EntryData {
 export function DashboardBI({ filters }: DashboardBIProps) {
   const [selectedKPI, setSelectedKPI] = useState<KPIType>(null);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [statusView, setStatusView] = useState<StatusView>("all");
 
   const formatCurrency = (value: number) => {
     return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -70,13 +72,12 @@ export function DashboardBI({ filters }: DashboardBIProps) {
 
   // Fetch complete financial data
   const { data, isLoading } = useQuery({
-    queryKey: ["fin-dashboard-bi", filters],
+    queryKey: ["fin-dashboard-bi", filters, statusView],
     queryFn: async () => {
       const dateFrom = filters.dateFrom ? format(filters.dateFrom, "yyyy-MM-dd") : null;
       const dateTo = filters.dateTo ? format(filters.dateTo, "yyyy-MM-dd") : null;
 
-      // Build ledger entries query - use competence_date as fallback when cash_date is null
-      // This ensures entries from orders (which have no cash_date yet) still appear
+      // Build ledger entries query
       let entriesQuery = supabase
         .from("fin_ledger_entries")
         .select(`
@@ -85,6 +86,13 @@ export function DashboardBI({ filters }: DashboardBIProps) {
           chart_account:fin_chart_accounts(id, code, name, nature)
         `)
         .neq("status", "CANCELADO");
+
+      // Apply status view filter
+      if (statusView === "lancado") {
+        entriesQuery = entriesQuery.in("status", ["ABERTO", "VENCIDO"]);
+      } else if (statusView === "executado") {
+        entriesQuery = entriesQuery.eq("status", "PAGO_RECEBIDO");
+      }
 
       if (dateFrom && dateTo) {
         entriesQuery = entriesQuery.or(`and(cash_date.gte.${dateFrom},cash_date.lte.${dateTo}),and(cash_date.is.null,competence_date.gte.${dateFrom},competence_date.lte.${dateTo})`);
@@ -165,6 +173,13 @@ export function DashboardBI({ filters }: DashboardBIProps) {
         .from("fin_ledger_entries")
         .select("type, amount, cash_date, competence_date")
         .neq("status", "CANCELADO");
+
+      // Apply same status view filter to balance query
+      if (statusView === "lancado") {
+        balanceQuery = balanceQuery.in("status", ["ABERTO", "VENCIDO"]);
+      } else if (statusView === "executado") {
+        balanceQuery = balanceQuery.eq("status", "PAGO_RECEBIDO");
+      }
 
       if (dateTo) {
         balanceQuery = balanceQuery.or(`cash_date.lte.${dateTo},and(cash_date.is.null,competence_date.lte.${dateTo})`);
