@@ -1,44 +1,52 @@
 
+Objetivo: corrigir a abertura do “Ver pedido” a partir do BI para exibir o pedido completo, sem parecer cortado ou incompleto.
 
-## Plan: Add Click-to-Origin on Drill-Down Entries
+1. Confirmar a causa no fluxo atual
+- O BI abre `OrderDetailSheet` por cima de `CostCenterEntriesDialog`.
+- Ambos usam `Sheet` baseado em Radix Dialog, então hoje existe um sheet dentro de outro.
+- Isso explica o comportamento de visualização incompleta: o pedido abre em uma camada aninhada, com conflito de foco/portal/área visível, em vez de abrir como uma tela principal de pedido.
 
-### Problem
-When clicking on Receitas/Despesas in the BI Cost Center KPIs, the drill-down dialog shows entries but they are not clickable. Users want to click an entry and navigate to the originating order (for entries generated from Pedidos/Recursos Estrategicos) or view the original ledger entry details.
+2. Ajustar a navegação de origem no BI
+- Em vez de abrir `OrderDetailSheet` dentro de `CostCenterEntriesDialog`, mudar o clique do ícone para abrir o pedido na página de pedidos.
+- Estratégia recomendada:
+  - fechar o drill-down do BI;
+  - navegar para `/pedidos` com o `orderId` na URL;
+  - deixar a própria página de pedidos abrir o `OrderDetailSheet` no contexto correto.
+- Isso reaproveita o fluxo que já funciona quando o usuário abre pedidos diretamente na tela de Pedidos.
 
-### How It Works Today
-- `CostCenterEntriesDialog` shows `fin_ledger_entries` data
-- `fin_ledger_entries` has NO `order_id` column
-- However, `fin_payables` and `fin_receivables` have both `ledger_entry_id` and `order_id`, creating the link back to orders
-- Entries from orders follow the pattern "PED #N - Comissão Vendedor (Nome)" or "PED #N - Receita"
+3. Preparar a página de Pedidos para autoabrir o pedido vindo do BI
+- Ler o `orderId` da URL na página `src/pages/Orders.tsx`.
+- Ao detectar esse parâmetro, preencher `selectedOrderId` automaticamente.
+- Opcionalmente limpar o parâmetro da URL depois de abrir, para evitar reabertura indevida ao recarregar.
 
-### Implementation
+4. Melhorar o conteúdo do `OrderDetailSheet`
+- Hoje ele já busca bastante coisa, mas não mostra de forma clara toda a origem financeira/estratégica do pedido.
+- Ampliar a visualização para incluir um bloco “Recursos Estratégicos” completo, exibindo:
+  - RT;
+  - vendedor;
+  - orçamentista;
+  - projetista;
+  - montador;
+  - produção;
+  - percentual, valor e responsável quando existirem.
+- Também incluir observações internas quando existirem, porque hoje aparecem campos usados no pedido mas nem tudo é renderizado no detalhe.
 
-**Step 1: Fetch order linkage in the query**
+5. Corrigir acessibilidade e sinais de conflito de modal
+- Os logs mostram avisos de `DialogContent` sem título/descrição.
+- Revisar os dialogs/sheets envolvidos para garantir `Title` e `Description` válidos, reduzindo warnings e instabilidade de montagem.
+- Isso não é a causa principal do “pedido incompleto”, mas ajuda a estabilizar a experiência.
 
-In `CostCenterEntriesDialog.tsx`, after fetching ledger entries, perform a secondary lookup:
-- Query `fin_payables` and `fin_receivables` where `ledger_entry_id` is in the fetched entry IDs, selecting `ledger_entry_id, order_id`
-- Also fetch order numbers from `orders` table via the join
-- Build a map: `ledger_entry_id -> { order_id, order_number }`
-- Attach this info to each entry in the merged results
+Arquivos a ajustar
+- `src/components/financeiro/CostCenterEntriesDialog.tsx`
+- `src/pages/Orders.tsx`
+- `src/components/orders/OrderDetailSheet.tsx`
 
-**Step 2: Add a clickable action per row**
+Resultado esperado
+- Ao clicar em “Ver pedido” dentro de receitas/despesas do BI, o sistema abrirá o pedido completo no fluxo correto.
+- O usuário verá todos os dados principais do pedido, inclusive recursos estratégicos e observações relevantes.
+- O problema de abrir “pela metade” ou em camada quebrada deixa de acontecer porque o pedido não ficará mais aninhado dentro do sheet do BI.
 
-- Add an "open origin" icon button (ExternalLink) at the end of each row
-- For entries linked to an order: open `OrderDetailSheet` with the order ID
-- For entries without an order link: optionally open a simple detail view or show a tooltip "Lançamento manual"
-- The checkbox/selection behavior remains on the row click; the origin button is a separate action
-
-**Step 3: Integrate OrderDetailSheet**
-
-- Import and render `OrderDetailSheet` conditionally when an order is selected
-- Track state: `selectedOrderId` for opening the sheet
-- When clicked, the sheet opens showing full order details (already exists as a reusable component)
-
-### Files to Edit
-1. **`src/components/financeiro/CostCenterEntriesDialog.tsx`** — Add order lookup query, add origin button per row, integrate OrderDetailSheet
-
-### Technical Details
-- The select query will include: `fin_payables(ledger_entry_id, order_id, order:orders(order_number))` and same for `fin_receivables`
-- Grid columns adjusted to add a narrow action column: `[32px_1fr_120px_100px_80px_32px]`
-- Badge or icon indicating "Pedido #N" when order is linked
-
+Detalhes técnicos
+- Problema principal: nested sheet/dialog (`CostCenterEntriesDialog` + `OrderDetailSheet`).
+- Solução mais segura: navegação para rota `/pedidos` com auto-open por query param.
+- Benefício: reutiliza um fluxo já existente e reduz risco de novos conflitos de portal/foco.
