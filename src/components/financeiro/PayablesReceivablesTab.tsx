@@ -406,7 +406,7 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
       // Revert payable status to ABERTO and clear paid_amount/paid_at
       const { error: payableError } = await supabase
         .from("fin_payables")
-        .update({ status: "ABERTO", paid_amount: 0, paid_at: null })
+        .update({ status: "ABERTO", paid_amount: 0, payment_date: null })
         .eq("id", payable.id);
       if (payableError) throw payableError;
 
@@ -429,7 +429,7 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
     try {
       const { error: receivableError } = await supabase
         .from("fin_receivables")
-        .update({ status: "ABERTO", received_amount: 0, received_at: null })
+        .update({ status: "ABERTO", received_amount: 0 })
         .eq("id", receivable.id);
       if (receivableError) throw receivableError;
 
