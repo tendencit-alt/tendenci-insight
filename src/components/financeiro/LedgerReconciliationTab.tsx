@@ -60,6 +60,7 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
   const [alertOpen, setAlertOpen] = useState(true);
   const [selectedForReconcile, setSelectedForReconcile] = useState<Set<string>>(new Set());
   const [reconcileDialogOpen, setReconcileDialogOpen] = useState(false);
+  const [selectedLedgerIds, setSelectedLedgerIds] = useState<Set<string>>(new Set());
   const [splitDialogOpen, setSplitDialogOpen] = useState(false);
   const [selectedForSplit, setSelectedForSplit] = useState<any>(null);
   const [importing, setImporting] = useState(false);
