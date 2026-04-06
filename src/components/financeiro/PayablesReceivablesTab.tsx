@@ -406,7 +406,7 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
       // Revert payable status to ABERTO and clear paid_amount/paid_at
       const { error: payableError } = await supabase
         .from("fin_payables")
-        .update({ status: "ABERTO", paid_amount: 0, paid_at: null })
+        .update({ status: "ABERTO", paid_amount: 0, payment_date: null })
         .eq("id", payable.id);
       if (payableError) throw payableError;
 
@@ -429,7 +429,7 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
     try {
       const { error: receivableError } = await supabase
         .from("fin_receivables")
-        .update({ status: "ABERTO", received_amount: 0, received_at: null })
+        .update({ status: "ABERTO", received_amount: 0 })
         .eq("id", receivable.id);
       if (receivableError) throw receivableError;
 
@@ -886,7 +886,7 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
                               <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleViewPayable(payable)} title="Visualizar">
                                 <Eye className="h-3.5 w-3.5" />
                               </Button>
-                              {payable.status !== "PAGO" && payable.status !== "CANCELADO" && (
+                              {payable.status !== "PAGO" && payable.status !== "CANCELADO" && !(Number(payable.paid_amount) > 0) && (
                                 <>
                                   <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleEditPayable(payable)} title="Editar">
                                     <Edit className="h-3.5 w-3.5" />
@@ -894,7 +894,7 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
                                   <Button variant="outline" size="sm" className="text-xs h-7 px-2" onClick={() => handlePay(payable)}>Pagar</Button>
                                 </>
                               )}
-                              {payable.status === "PAGO" && (
+                              {(payable.status === "PAGO" || Number(payable.paid_amount) > 0) && (
                                 <Button variant="outline" size="sm" className="text-xs h-7 px-2 gap-1" onClick={() => handleReopenPayable(payable)} title="Reabrir como em aberto">
                                   <Undo2 className="h-3 w-3" /> Reabrir
                                 </Button>
@@ -1013,7 +1013,7 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
                               <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleViewReceivable(receivable)} title="Visualizar">
                                 <Eye className="h-3.5 w-3.5" />
                               </Button>
-                              {receivable.status !== "RECEBIDO" && receivable.status !== "CANCELADO" && (
+                              {receivable.status !== "RECEBIDO" && receivable.status !== "CANCELADO" && !(Number(receivable.received_amount) > 0) && (
                                 <>
                                   <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleEditReceivable(receivable)} title="Editar">
                                     <Edit className="h-3.5 w-3.5" />
@@ -1021,7 +1021,7 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
                                   <Button variant="outline" size="sm" className="text-xs h-7 px-2" onClick={() => handleReceive(receivable)}>Receber</Button>
                                 </>
                               )}
-                              {receivable.status === "RECEBIDO" && (
+                              {(receivable.status === "RECEBIDO" || Number(receivable.received_amount) > 0) && (
                                 <Button variant="outline" size="sm" className="text-xs h-7 px-2 gap-1" onClick={() => handleReopenReceivable(receivable)} title="Reabrir como em aberto">
                                   <Undo2 className="h-3 w-3" /> Reabrir
                                 </Button>
