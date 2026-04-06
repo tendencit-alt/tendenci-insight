@@ -767,7 +767,7 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
                                           }
                                           toast.success("Lançamento reaberto com sucesso");
                                           // Trigger refetch
-                                          window.location.reload();
+                                          refetchEntries();
                                         } catch { toast.error("Erro ao estornar lançamento"); }
                                       }}
                                       className="gap-2 text-yellow-600"
