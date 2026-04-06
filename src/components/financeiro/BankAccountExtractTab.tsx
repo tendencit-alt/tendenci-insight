@@ -24,7 +24,7 @@ export function BankAccountExtractTab({ filters }: BankAccountExtractTabProps) {
     queryFn: async () => {
       const { data } = await supabase
         .from("fin_bank_accounts")
-        .select("id, nickname, bank_name, current_balance")
+        .select("id, nickname, bank_name")
         .eq("active", true)
         .order("nickname");
       return data || [];
