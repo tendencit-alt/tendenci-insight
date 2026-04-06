@@ -886,13 +886,18 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
                               <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleViewPayable(payable)} title="Visualizar">
                                 <Eye className="h-3.5 w-3.5" />
                               </Button>
-                              {payable.status !== "PAGO" && (
+                              {payable.status !== "PAGO" && payable.status !== "CANCELADO" && (
                                 <>
                                   <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleEditPayable(payable)} title="Editar">
                                     <Edit className="h-3.5 w-3.5" />
                                   </Button>
                                   <Button variant="outline" size="sm" className="text-xs h-7 px-2" onClick={() => handlePay(payable)}>Pagar</Button>
                                 </>
+                              )}
+                              {payable.status === "PAGO" && (
+                                <Button variant="outline" size="sm" className="text-xs h-7 px-2 gap-1" onClick={() => handleReopenPayable(payable)} title="Reabrir como em aberto">
+                                  <Undo2 className="h-3 w-3" /> Reabrir
+                                </Button>
                               )}
                             </div>
                           </TableCell>
