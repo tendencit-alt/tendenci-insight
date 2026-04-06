@@ -518,7 +518,7 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
       {/* Sub-tabs */}
       <Tabs value={activeSubTab} onValueChange={setActiveSubTab} className="space-y-4">
         {/* Navigation Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {/* Lançamentos Card */}
           <button
             onClick={() => setActiveSubTab("ledger")}
@@ -554,32 +554,6 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
             )}
           </button>
 
-          {/* Extrato Bancário Card */}
-          <button
-            onClick={() => setActiveSubTab("bank")}
-            className={`text-left rounded-lg border p-4 transition-all ${
-              activeSubTab === "bank"
-                ? "ring-2 ring-primary bg-primary/5 border-primary/30"
-                : "bg-card hover:bg-muted/50 border-border"
-            }`}
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <div className={`p-1.5 rounded-md ${activeSubTab === "bank" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
-                <Link2 className="h-4 w-4" />
-              </div>
-              <span className="font-medium text-sm">Extrato Bancário</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-2xl font-bold">{transactions?.length || 0}</span>
-              {(transactions?.filter(t => t.status === "PENDENTE").length || 0) > 0 && (
-                <Badge variant="outline" className="text-xs gap-1 border-blue-500/50 text-blue-600 bg-blue-50">
-                  {transactions?.filter(t => t.status === "PENDENTE").length} não vinculadas
-                </Badge>
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">transações importadas</p>
-          </button>
-
           {/* Extrato por Conta Card */}
           <button
             onClick={() => setActiveSubTab("account-extract")}
@@ -595,8 +569,27 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
               </div>
               <span className="font-medium text-sm">Extrato por Conta</span>
             </div>
-            <p className="text-sm font-medium text-foreground">Saldo consolidado</p>
-            <p className="text-xs text-muted-foreground mt-1">movimentação por conta bancária</p>
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium text-foreground">Saldo & Transações</p>
+              {bankKpis.pendentes > 0 && (
+                <Badge variant="outline" className="text-xs gap-1 border-blue-500/50 text-blue-600 bg-blue-50">
+                  {bankKpis.pendentes} não vinculadas
+                </Badge>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              movimentação, importações OFX e conciliação por conta
+            </p>
+            {bankKpis.total > 0 && (
+              <div className="mt-2 pt-2 border-t border-border/50">
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>{bankKpis.total} transações importadas</span>
+                  <span className={`font-medium ${conciliationPercent === 100 ? 'text-green-600' : 'text-yellow-600'}`}>
+                    {conciliationPercent}% conciliado
+                  </span>
+                </div>
+              </div>
+            )}
           </button>
         </div>
 
@@ -781,110 +774,6 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
           </Card>
         </TabsContent>
 
-        {/* Bank Transactions Tab Content */}
-        <TabsContent value="bank" className="space-y-4">
-          {/* Bank KPIs */}
-          <div className="grid gap-3 grid-cols-2 md:grid-cols-5">
-            <Card className="bg-muted/30">
-              <CardContent className="pt-3 pb-3">
-                <p className="text-xs text-muted-foreground">Total Importadas</p>
-                <p className="text-xl font-bold">{bankKpis.total}</p>
-              </CardContent>
-            </Card>
-            <Card className="bg-muted/30">
-              <CardContent className="pt-3 pb-3">
-                <p className="text-xs text-muted-foreground">Pendentes</p>
-                <p className="text-xl font-bold text-yellow-600">{bankKpis.pendentes}</p>
-              </CardContent>
-            </Card>
-            <Card className="bg-muted/30">
-              <CardContent className="pt-3 pb-3">
-                <p className="text-xs text-muted-foreground">Sugestões</p>
-                <p className="text-xl font-bold text-blue-600">{bankKpis.sugeridas}</p>
-              </CardContent>
-            </Card>
-            <Card className="bg-muted/30">
-              <CardContent className="pt-3 pb-3">
-                <p className="text-xs text-muted-foreground">Conciliadas</p>
-                <p className="text-xl font-bold text-green-600">{bankKpis.conciliadas}</p>
-              </CardContent>
-            </Card>
-            <Card className="bg-muted/30">
-              <CardContent className="pt-3 pb-3">
-                <p className="text-xs text-muted-foreground">% Conciliação</p>
-                <p className="text-xl font-bold">{conciliationPercent}%</p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Bank transactions table */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base font-medium">Transações do Extrato</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isLoadingTransactions ? (
-                <div className="space-y-2">
-                  {[...Array(5)].map((_, i) => (
-                    <Skeleton key={i} className="h-12 w-full" />
-                  ))}
-                </div>
-              ) : transactions?.length === 0 ? (
-                <div className="text-center py-12">
-                  <RefreshCw className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">Nenhuma transação importada</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Importe um arquivo OFX para começar a conciliação
-                  </p>
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="text-xs">Data</TableHead>
-                      <TableHead className="text-xs">Conta</TableHead>
-                      <TableHead className="text-xs">Descrição (Memo)</TableHead>
-                      <TableHead className="text-xs text-right">Valor</TableHead>
-                      <TableHead className="text-xs">Status</TableHead>
-                      <TableHead className="text-xs">Lançamento</TableHead>
-                      <TableHead className="text-xs">Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {transactions?.map((tx) => (
-                      <TableRow key={tx.id}>
-                        <TableCell className="font-medium text-xs">
-                          {format(new Date(tx.date), "dd/MM/yyyy", { locale: ptBR })}
-                        </TableCell>
-                        <TableCell className="text-xs">{tx.bank_account?.nickname || "-"}</TableCell>
-                        <TableCell className="text-xs max-w-[200px] truncate">{tx.bank_memo || "-"}</TableCell>
-                        <TableCell className="text-right font-medium text-xs">
-                          {formatCurrency(Number(tx.amount), tx.direction)}
-                        </TableCell>
-                        <TableCell className="text-xs">{getBankStatusBadge(tx.status)}</TableCell>
-                        <TableCell className="text-xs">
-                          {tx.reconciliation_links?.[0]?.ledger_entry?.description || "-"}
-                        </TableCell>
-                        <TableCell>
-                          {tx.status !== "CONCILIADA" && tx.status !== "IGNORADA" && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleReconcileBankTx(tx.id)}
-                              className="text-xs"
-                            >
-                              Conciliar
-                            </Button>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
 
         {/* Account Extract Tab Content */}
         <TabsContent value="account-extract" className="space-y-4">
