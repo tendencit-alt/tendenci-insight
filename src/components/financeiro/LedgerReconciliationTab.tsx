@@ -518,7 +518,7 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
       {/* Sub-tabs */}
       <Tabs value={activeSubTab} onValueChange={setActiveSubTab} className="space-y-4">
         {/* Navigation Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {/* Lançamentos Card */}
           <button
             onClick={() => setActiveSubTab("ledger")}
@@ -554,32 +554,6 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
             )}
           </button>
 
-          {/* Extrato Bancário Card */}
-          <button
-            onClick={() => setActiveSubTab("bank")}
-            className={`text-left rounded-lg border p-4 transition-all ${
-              activeSubTab === "bank"
-                ? "ring-2 ring-primary bg-primary/5 border-primary/30"
-                : "bg-card hover:bg-muted/50 border-border"
-            }`}
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <div className={`p-1.5 rounded-md ${activeSubTab === "bank" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
-                <Link2 className="h-4 w-4" />
-              </div>
-              <span className="font-medium text-sm">Extrato Bancário</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-2xl font-bold">{transactions?.length || 0}</span>
-              {(transactions?.filter(t => t.status === "PENDENTE").length || 0) > 0 && (
-                <Badge variant="outline" className="text-xs gap-1 border-blue-500/50 text-blue-600 bg-blue-50">
-                  {transactions?.filter(t => t.status === "PENDENTE").length} não vinculadas
-                </Badge>
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">transações importadas</p>
-          </button>
-
           {/* Extrato por Conta Card */}
           <button
             onClick={() => setActiveSubTab("account-extract")}
@@ -595,8 +569,27 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
               </div>
               <span className="font-medium text-sm">Extrato por Conta</span>
             </div>
-            <p className="text-sm font-medium text-foreground">Saldo consolidado</p>
-            <p className="text-xs text-muted-foreground mt-1">movimentação por conta bancária</p>
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium text-foreground">Saldo & Transações</p>
+              {bankKpis.pendentes > 0 && (
+                <Badge variant="outline" className="text-xs gap-1 border-blue-500/50 text-blue-600 bg-blue-50">
+                  {bankKpis.pendentes} não vinculadas
+                </Badge>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              movimentação, importações OFX e conciliação por conta
+            </p>
+            {bankKpis.total > 0 && (
+              <div className="mt-2 pt-2 border-t border-border/50">
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>{bankKpis.total} transações importadas</span>
+                  <span className={`font-medium ${conciliationPercent === 100 ? 'text-green-600' : 'text-yellow-600'}`}>
+                    {conciliationPercent}% conciliado
+                  </span>
+                </div>
+              </div>
+            )}
           </button>
         </div>
 
