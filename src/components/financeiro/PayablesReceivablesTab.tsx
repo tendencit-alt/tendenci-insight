@@ -419,7 +419,7 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
       }
 
       toast.success("Conta reaberta com sucesso");
-      refetch();
+      refetchPayables();
     } catch (err) {
       toast.error("Erro ao reabrir conta");
     }
@@ -441,7 +441,7 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
       }
 
       toast.success("Conta reaberta com sucesso");
-      refetch();
+      refetchReceivables();
     } catch (err) {
       toast.error("Erro ao reabrir conta");
     }
