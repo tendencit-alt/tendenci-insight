@@ -707,7 +707,7 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
                                 />
                               </TableCell>
                             <TableCell className="font-medium text-xs py-3">
-                              {entry[dateField] && format(new Date(entry[dateField]), "dd/MM/yy", { locale: ptBR })}
+                              {(entry.cash_date || entry.competence_date) && format(new Date(entry.cash_date || entry.competence_date), "dd/MM/yy", { locale: ptBR })}
                             </TableCell>
                             <TableCell className="text-xs py-3">
                               <span className="sm:hidden">{getTypeBadge(entry.type, true)}</span>
