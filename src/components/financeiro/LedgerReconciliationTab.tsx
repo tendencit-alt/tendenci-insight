@@ -60,6 +60,7 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
   const [alertOpen, setAlertOpen] = useState(true);
   const [selectedForReconcile, setSelectedForReconcile] = useState<Set<string>>(new Set());
   const [reconcileDialogOpen, setReconcileDialogOpen] = useState(false);
+  const [selectedLedgerIds, setSelectedLedgerIds] = useState<Set<string>>(new Set());
   const [splitDialogOpen, setSplitDialogOpen] = useState(false);
   const [selectedForSplit, setSelectedForSplit] = useState<any>(null);
   const [importing, setImporting] = useState(false);
@@ -323,7 +324,29 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
 
   const selectedEntries = unreconciledEntries.filter(e => selectedForReconcile.has(e.id));
 
-  // Bank transactions helpers
+  // Ledger selection helpers
+  const toggleLedgerSelect = (id: string) => {
+    setSelectedLedgerIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleLedgerSelectAll = () => {
+    if (!entries) return;
+    const active = entries.filter(e => e.status !== "CANCELADO");
+    if (selectedLedgerIds.size === active.length) {
+      setSelectedLedgerIds(new Set());
+    } else {
+      setSelectedLedgerIds(new Set(active.map(e => e.id)));
+    }
+  };
+
+  const selectedLedgerTotal = entries
+    ?.filter(e => selectedLedgerIds.has(e.id))
+    .reduce((sum, e) => sum + Math.abs(Number(e.amount) || 0), 0) || 0;
+
   const bankKpis = transactions?.reduce(
     (acc, t) => {
       acc.total++;
@@ -614,31 +637,53 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
                   ))}
                 </div>
               ) : (
-                <div className="overflow-x-auto -mx-4 sm:mx-0">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="hover:bg-transparent">
-                        <TableHead className="text-xs w-[80px]">Data</TableHead>
-                        <TableHead className="text-xs w-[100px]">Tipo</TableHead>
-                        <TableHead className="text-xs min-w-[150px]">Descrição</TableHead>
-                        <TableHead className="text-xs hidden md:table-cell w-[120px]">Conta</TableHead>
-                        <TableHead className="text-xs hidden lg:table-cell w-[150px]">Categoria</TableHead>
-                        <TableHead className="text-xs text-right w-[120px]">Valor</TableHead>
-                        <TableHead className="text-xs hidden sm:table-cell w-[90px] text-center">Status</TableHead>
-                        <TableHead className="text-xs w-[70px] text-center">Concil.</TableHead>
-                        <TableHead className="text-xs w-[50px] text-center">Ações</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {entries?.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={9} className="text-center text-muted-foreground py-8 text-sm">
-                            Nenhum lançamento encontrado no período
-                          </TableCell>
+                <>
+                  {selectedLedgerIds.size > 0 && (
+                    <div className="flex items-center gap-2 p-3 mb-3 bg-muted/50 rounded-lg">
+                      <span className="text-sm font-medium">{selectedLedgerIds.size} selecionado(s)</span>
+                      <span className="text-sm font-semibold text-primary">
+                        Total: {selectedLedgerTotal.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                      </span>
+                    </div>
+                  )}
+                  <div className="overflow-x-auto -mx-4 sm:mx-0">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="hover:bg-transparent">
+                          <TableHead className="text-xs w-[40px]">
+                            <Checkbox
+                              checked={entries && entries.filter(e => e.status !== "CANCELADO").length > 0 && selectedLedgerIds.size === entries.filter(e => e.status !== "CANCELADO").length}
+                              onCheckedChange={toggleLedgerSelectAll}
+                            />
+                          </TableHead>
+                          <TableHead className="text-xs w-[80px]">Data</TableHead>
+                          <TableHead className="text-xs w-[100px]">Tipo</TableHead>
+                          <TableHead className="text-xs min-w-[150px]">Descrição</TableHead>
+                          <TableHead className="text-xs hidden md:table-cell w-[120px]">Conta</TableHead>
+                          <TableHead className="text-xs hidden lg:table-cell w-[150px]">Categoria</TableHead>
+                          <TableHead className="text-xs text-right w-[120px]">Valor</TableHead>
+                          <TableHead className="text-xs hidden sm:table-cell w-[90px] text-center">Status</TableHead>
+                          <TableHead className="text-xs w-[70px] text-center">Concil.</TableHead>
+                          <TableHead className="text-xs w-[50px] text-center">Ações</TableHead>
                         </TableRow>
-                      ) : (
-                        entries?.map((entry) => (
-                          <TableRow key={entry.id} className={entry.status === "CANCELADO" ? "opacity-50" : ""}>
+                      </TableHeader>
+                      <TableBody>
+                        {entries?.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={10} className="text-center text-muted-foreground py-8 text-sm">
+                              Nenhum lançamento encontrado no período
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          entries?.map((entry) => (
+                            <TableRow key={entry.id} className={`${entry.status === "CANCELADO" ? "opacity-50" : ""} ${selectedLedgerIds.has(entry.id) ? "bg-muted/50" : ""}`}>
+                              <TableCell className="py-3">
+                                <Checkbox
+                                  checked={selectedLedgerIds.has(entry.id)}
+                                  onCheckedChange={() => toggleLedgerSelect(entry.id)}
+                                  disabled={entry.status === "CANCELADO"}
+                                />
+                              </TableCell>
                             <TableCell className="font-medium text-xs py-3">
                               {entry[dateField] && format(new Date(entry[dateField]), "dd/MM/yy", { locale: ptBR })}
                             </TableCell>
@@ -718,7 +763,7 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
                     {entries && entries.length > 0 && (
                       <tfoot>
                         <TableRow className="bg-muted/50 font-medium border-t-2">
-                          <TableCell colSpan={5} className="text-right text-xs py-4 pr-4">
+                          <TableCell colSpan={6} className="text-right text-xs py-4 pr-4">
                             <span className="text-muted-foreground">Totais:</span>
                           </TableCell>
                           <TableCell className="text-right text-xs py-4">
@@ -736,6 +781,7 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
                     )}
                   </Table>
                 </div>
+                </>
               )}
             </CardContent>
           </Card>
