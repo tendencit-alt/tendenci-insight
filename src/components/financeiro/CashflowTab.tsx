@@ -360,6 +360,10 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
         pontoEquilibrioCaixa,
         pontoEquilibrioMeta,
         metaEntradas,
+        compReceitas,
+        compDespesas,
+        compReceitasRealizadas,
+        compDespesasRealizadas,
       };
     },
   });
