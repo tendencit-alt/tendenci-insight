@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Sheet,
@@ -11,6 +10,7 @@ import {
 } from "@/components/ui/sheet";
 import { ArrowDownCircle, ArrowUpCircle, DollarSign, Clock, ExternalLink, FileText } from "lucide-react";
 import { EntryDetailsDialog } from "./EntryDetailsDialog";
+import { OrderDetailSheet } from "@/components/orders/OrderDetailSheet";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -42,7 +42,7 @@ export function CostCenterEntriesDialog({
 }: CostCenterEntriesDialogProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [viewEntryId, setViewEntryId] = useState<string | null>(null);
-  const navigate = useNavigate();
+  const [viewOrderId, setViewOrderId] = useState<string | null>(null);
 
   const { data: entries, isLoading } = useQuery({
     queryKey: ["cc-drilldown", filter.costCenterId, filter.type, dateFrom, dateTo],
@@ -341,8 +341,7 @@ export function CostCenterEntriesDialog({
                           title={`Ver Pedido #${entry._order_number}`}
                           onClick={(e) => {
                             e.stopPropagation();
-                            onClose();
-                            navigate(`/pedidos?orderId=${entry._order_id}`);
+                            setViewOrderId(entry._order_id);
                           }}
                         >
                           <ExternalLink className="h-3.5 w-3.5 text-primary" />
@@ -374,6 +373,13 @@ export function CostCenterEntriesDialog({
         entryId={viewEntryId}
         open={!!viewEntryId}
         onOpenChange={(open) => !open && setViewEntryId(null)}
+      />
+
+      <OrderDetailSheet
+        orderId={viewOrderId}
+        open={!!viewOrderId}
+        onOpenChange={(open) => !open && setViewOrderId(null)}
+        onUpdate={() => {}}
       />
     </>
   );
