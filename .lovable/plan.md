@@ -1,36 +1,28 @@
 
 
-## Plano: Redesign das Sub-abas de Lançamentos & Conciliação
+## Plano: Unificar "Extrato Bancário" no "Extrato por Conta"
 
 ### Problema
-As 3 sub-abas ("Lançamentos", "Extrato Bancário", "Extrato por Conta") aparecem como botões genéricos sem contexto, poluindo a interface e confundindo o usuário sobre a finalidade de cada uma.
+Existem 3 cards de navegação, sendo que "Extrato Bancário" (transações importadas via OFX) e "Extrato por Conta" (lançamentos realizados por conta) são visões complementares da mesma informação por conta bancária. Isso confunde o usuário.
 
 ### Solução
-Substituir os tabs genéricos por **cards informativos clicáveis** com métricas resumidas, transformando a navegação em algo útil por si só.
-
-```text
-┌─────────────────────┐  ┌─────────────────────┐  ┌─────────────────────┐
-│ 📖 Lançamentos      │  │ 🔗 Extrato Bancário │  │ 🏛 Extrato por Conta│
-│                     │  │                     │  │                     │
-│ 42 registros        │  │ 15 transações       │  │ Saldo consolidado   │
-│ 3 não conciliados   │  │ 8 não vinculadas    │  │ por conta bancária  │
-│ ─────────────────── │  │ ─────────────────── │  │ ─────────────────── │
-│ [ativo: borda azul] │  │                     │  │                     │
-└─────────────────────┘  └─────────────────────┘  └─────────────────────┘
-```
+Remover o card e a sub-aba "Extrato Bancário" e incorporar suas funcionalidades no "Extrato por Conta", que passa a mostrar tanto os lançamentos realizados quanto as transações importadas (OFX) da conta selecionada.
 
 ### Alterações
 
-**1. `src/components/financeiro/LedgerReconciliationTab.tsx`** (linhas 641-655)
-- Substituir o `TabsList` com `grid-cols-3` por 3 cards clicáveis lado a lado
-- Cada card mostra: ícone, título, descrição contextual e métricas dinâmicas
-  - **Lançamentos**: total de registros no período + quantidade não conciliados (badge de alerta)
-  - **Extrato Bancário**: total de transações importadas + não vinculadas
-  - **Extrato por Conta**: texto descritivo "Saldo e movimentação por conta"
-- Card ativo recebe `ring-2 ring-primary bg-primary/5`, inativos ficam com `hover:bg-muted/50`
-- Manter a lógica de `activeSubTab` e `setActiveSubTab` — os cards apenas substituem visualmente os TabsTriggers
-- Usar contagem real dos dados já carregados (`entries?.length`, `entries?.filter(e => !e.reconciled).length`, `transactions?.length`, etc.)
+**1. `src/components/financeiro/LedgerReconciliationTab.tsx`**
+- Remover o card clicável "Extrato Bancário" (linhas 557-581)
+- Mudar grid de `grid-cols-3` para `grid-cols-2`
+- Remover toda a `TabsContent value="bank"` (linhas 784-887) com KPIs e tabela de transações bancárias
+- Atualizar o card "Extrato por Conta" para exibir métricas dinâmicas: total de transações importadas + pendentes (dados que antes estavam no card "Extrato Bancário")
+- Passar dados de transações bancárias (`transactions`, `bankKpis`, handlers) como props para `BankAccountExtractTab`
+
+**2. `src/components/financeiro/BankAccountExtractTab.tsx`**
+- Adicionar nova seção abaixo do extrato de lançamentos: **"Transações Importadas (OFX)"** filtrada pela conta selecionada
+- Buscar `fin_bank_transactions` da conta selecionada no período
+- Exibir tabela com: Data, Memo, Valor, Status de conciliação, Lançamento vinculado, botão Conciliar
+- Adicionar KPIs compactos da conciliação bancária (importadas, pendentes, conciliadas, %) integrados aos cards de resumo já existentes
 
 ### Resultado
-Os "botões" viram cards informativos que mostram métricas úteis, orientam o usuário sobre o que cada seção contém e destacam pendências — tornando a navegação mais intuitiva e produtiva.
+De 3 cards → 2 cards (Lançamentos + Extrato por Conta). O "Extrato por Conta" se torna a visão completa de cada conta bancária: lançamentos realizados com saldo acumulado + transações importadas OFX e status de conciliação.
 
