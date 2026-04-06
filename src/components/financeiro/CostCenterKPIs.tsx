@@ -470,6 +470,7 @@ export function CostCenterKPIs({ filters }: CostCenterKPIsProps) {
 
       {drillDown && (
         <CostCenterEntriesDialog
+          key={`${drillDown.costCenterId}-${drillDown.type}`}
           filter={drillDown}
           dateFrom={filters.dateFrom ? format(filters.dateFrom, "yyyy-MM-dd") : null}
           dateTo={filters.dateTo ? format(filters.dateTo, "yyyy-MM-dd") : null}
