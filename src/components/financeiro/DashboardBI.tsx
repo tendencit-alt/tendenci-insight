@@ -480,46 +480,6 @@ export function DashboardBI({ filters }: DashboardBIProps) {
   return (
     <TooltipProvider>
       <div className="space-y-6">
-        {/* Status View Toggle */}
-        <div className="flex items-center justify-end gap-1">
-          <span className="text-sm text-muted-foreground mr-2">Visão:</span>
-          <div className="inline-flex rounded-lg border border-border bg-card p-0.5">
-            <button
-              onClick={() => setStatusView("all")}
-              className={cn(
-                "px-3 py-1.5 text-xs font-medium rounded-md transition-colors",
-                statusView === "all"
-                  ? "bg-foreground text-background shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              Ambos
-            </button>
-            <button
-              onClick={() => setStatusView("lancado")}
-              className={cn(
-                "px-3 py-1.5 text-xs font-medium rounded-md transition-colors",
-                statusView === "lancado"
-                  ? "bg-foreground text-background shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              Lançado
-            </button>
-            <button
-              onClick={() => setStatusView("executado")}
-              className={cn(
-                "px-3 py-1.5 text-xs font-medium rounded-md transition-colors",
-                statusView === "executado"
-                  ? "bg-foreground text-background shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              Executado
-            </button>
-          </div>
-        </div>
-
         {/* New unified KPIs */}
         <FinanceiroKPIs
           metrics={metrics}
