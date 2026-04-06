@@ -1,31 +1,44 @@
 
 
-## Plano: Auto-conciliação ao registrar pagamento/recebimento
+## Plano: Extrato por Conta Bancária
 
-### Problema atual
-Quando um título é pago/recebido, o lançamento no Livro Razão fica com status `PAGO_RECEBIDO` mas `reconciled = false`. A conciliação é um passo manual separado. Isso gera inconsistência: 2 lançamentos "Realizados" estão sem conciliação no banco.
+### Situação Atual
+A aba "Lançamentos & Conciliação" já possui o filtro de conta bancária nos filtros globais, mas não há uma visão dedicada de **extrato por conta** que mostre claramente entradas/saídas e saldo acumulado de cada conta.
 
 ### Solução
-Tornar a conciliação automática no momento do pagamento/recebimento, já que a conta bancária é informada nesse momento (o que é suficiente para conciliar).
+Adicionar uma terceira sub-aba **"Extrato por Conta"** dentro de "Lançamentos & Conciliação" (ao lado de "Lançamentos" e "Extrato Bancário"). Esta sub-aba mostrará:
+
+### Estrutura da nova sub-aba
+
+1. **Seletor de conta bancária** no topo (dropdown com todas as contas ativas)
+2. **Cards de resumo**: Saldo anterior, Total Entradas, Total Saídas, Saldo Final
+3. **Tabela de extrato** com:
+   - Data (cash_date)
+   - Descrição
+   - Tipo (Receita/Despesa badge)
+   - Categoria (chart_account)
+   - Entrada (valor se RECEITA)
+   - Saída (valor se DESPESA)
+   - Saldo Acumulado (calculado linha a linha)
+   - Status de conciliação
+
+A query buscará apenas lançamentos com `status = 'PAGO_RECEBIDO'` e `bank_account_id` da conta selecionada, ordenados por `cash_date` ascendente para calcular o saldo progressivo.
 
 ### Alterações
 
-**1. `src/lib/financeiroIntegration.ts`** — Nas funções `payPayableWithLedgerSync` e `receivePaymentWithLedgerSync`:
-- Adicionar `reconciled: true` ao update/insert do `fin_ledger_entries` junto com `status: PAGO_RECEBIDO`
-- Adicionar `reconciled: true` ao update do `fin_payables` / `fin_receivables`
+**1. `src/components/financeiro/LedgerReconciliationTab.tsx`**
+- Adicionar a sub-aba "Extrato por Conta" no TabsList (grid-cols-2 → grid-cols-3)
+- Adicionar o estado `selectedAccountId` para o seletor dentro da sub-aba
+- Criar query dedicada `fin-account-extract` que busca lançamentos realizados da conta selecionada
+- Renderizar a tabela de extrato com cálculo de saldo acumulado progressivo
 
-**2. `src/lib/financeiroIntegration.ts`** — Nas funções `bulkUpdatePayablesWithSync` e `bulkUpdateReceivablesWithSync`:
-- Quando o novo status for `PAGO` ou `RECEBIDO`, incluir `reconciled: true` no update do ledger entry
-
-**3. Corrigir dados existentes** — Usar insert tool para:
-```sql
-UPDATE fin_ledger_entries SET reconciled = true WHERE status = 'PAGO_RECEBIDO' AND reconciled = false;
-UPDATE fin_payables SET reconciled = true WHERE status = 'PAGO' AND reconciled = false;
-UPDATE fin_receivables SET reconciled = true WHERE status = 'RECEBIDO' AND reconciled = false;
-```
-
-**4. Função `reopenPayableWithLedgerSync` / `reopenReceivableWithLedgerSync`** (se existirem) — Ao reabrir, setar `reconciled = false` junto com o status `ABERTO`.
+**2. Componente `BankAccountExtractTab`** (novo arquivo)
+- Componente separado para manter o `LedgerReconciliationTab` organizado
+- Props: `filters` (para período) 
+- Lógica: seletor de conta, query de lançamentos realizados, cálculo de saldo acumulado
+- Cards de resumo (saldo anterior, entradas, saídas, saldo final)
+- Tabela com colunas separadas de Entrada/Saída e saldo progressivo
 
 ### Resultado
-Todo pagamento/recebimento será automaticamente marcado como conciliado, eliminando o estado intermediário de "Realizado sem conciliação".
+O usuário poderá selecionar qualquer conta bancária e ver o extrato completo com entradas, saídas e saldo acumulado — como um extrato bancário real.
 
