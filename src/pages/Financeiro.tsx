@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FinanceiroFilters, FinanceiroFiltersState } from "@/components/financeiro/FinanceiroFilters";
 import { PayablesReceivablesTab } from "@/components/financeiro/PayablesReceivablesTab";
 import { LedgerReconciliationTab } from "@/components/financeiro/LedgerReconciliationTab";
-import { PendingAlertsCard } from "@/components/financeiro/PendingAlertsCard";
+
 import { OrphanEntriesAlert } from "@/components/financeiro/OrphanEntriesAlert";
 import { PurchasesTab } from "@/components/financeiro/PurchasesTab";
 
@@ -86,8 +86,6 @@ export default function Financeiro() {
           {/* Orphan Entries Alert */}
           <OrphanEntriesAlert />
 
-          {/* Global Pending Alerts */}
-          <PendingAlertsCard />
 
           <TabsContent value="payables-receivables" forceMount className={activeTab === "payables-receivables" ? "space-y-4" : "hidden"}>
             <PayablesReceivablesTab filters={filters} />
