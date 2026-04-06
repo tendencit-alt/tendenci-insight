@@ -27,7 +27,8 @@ import {
   Clock,
   Link2,
   Split,
-  MoreHorizontal
+  MoreHorizontal,
+  Undo2
 } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -753,6 +754,28 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
                                     Desdobrar
                                     {entry.has_splits && <Badge variant="secondary" className="ml-auto text-[10px]">Já possui</Badge>}
                                   </DropdownMenuItem>
+                                  {entry.status === "PAGO_RECEBIDO" && (
+                                    <DropdownMenuItem
+                                      onClick={async () => {
+                                        try {
+                                          await supabase.from("fin_ledger_entries").update({ status: "ABERTO", cash_date: null }).eq("id", entry.id);
+                                          // Also revert linked payable/receivable
+                                          if (entry.type === "DESPESA") {
+                                            await supabase.from("fin_payables").update({ status: "ABERTO", paid_amount: 0, payment_date: null }).eq("ledger_entry_id", entry.id);
+                                          } else {
+                                            await supabase.from("fin_receivables").update({ status: "ABERTO", received_amount: 0 }).eq("ledger_entry_id", entry.id);
+                                          }
+                                          toast.success("Lançamento reaberto com sucesso");
+                                          // Trigger refetch
+                                          refetchEntries();
+                                        } catch { toast.error("Erro ao estornar lançamento"); }
+                                      }}
+                                      className="gap-2 text-yellow-600"
+                                    >
+                                      <Undo2 className="h-4 w-4" />
+                                      Estornar (Reabrir)
+                                    </DropdownMenuItem>
+                                  )}
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             </TableCell>
