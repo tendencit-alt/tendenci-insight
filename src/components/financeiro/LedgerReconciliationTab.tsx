@@ -637,31 +637,53 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
                   ))}
                 </div>
               ) : (
-                <div className="overflow-x-auto -mx-4 sm:mx-0">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="hover:bg-transparent">
-                        <TableHead className="text-xs w-[80px]">Data</TableHead>
-                        <TableHead className="text-xs w-[100px]">Tipo</TableHead>
-                        <TableHead className="text-xs min-w-[150px]">Descrição</TableHead>
-                        <TableHead className="text-xs hidden md:table-cell w-[120px]">Conta</TableHead>
-                        <TableHead className="text-xs hidden lg:table-cell w-[150px]">Categoria</TableHead>
-                        <TableHead className="text-xs text-right w-[120px]">Valor</TableHead>
-                        <TableHead className="text-xs hidden sm:table-cell w-[90px] text-center">Status</TableHead>
-                        <TableHead className="text-xs w-[70px] text-center">Concil.</TableHead>
-                        <TableHead className="text-xs w-[50px] text-center">Ações</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {entries?.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={9} className="text-center text-muted-foreground py-8 text-sm">
-                            Nenhum lançamento encontrado no período
-                          </TableCell>
+                <>
+                  {selectedLedgerIds.size > 0 && (
+                    <div className="flex items-center gap-2 p-3 mb-3 bg-muted/50 rounded-lg">
+                      <span className="text-sm font-medium">{selectedLedgerIds.size} selecionado(s)</span>
+                      <span className="text-sm font-semibold text-primary">
+                        Total: {selectedLedgerTotal.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                      </span>
+                    </div>
+                  )}
+                  <div className="overflow-x-auto -mx-4 sm:mx-0">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="hover:bg-transparent">
+                          <TableHead className="text-xs w-[40px]">
+                            <Checkbox
+                              checked={entries && entries.filter(e => e.status !== "CANCELADO").length > 0 && selectedLedgerIds.size === entries.filter(e => e.status !== "CANCELADO").length}
+                              onCheckedChange={toggleLedgerSelectAll}
+                            />
+                          </TableHead>
+                          <TableHead className="text-xs w-[80px]">Data</TableHead>
+                          <TableHead className="text-xs w-[100px]">Tipo</TableHead>
+                          <TableHead className="text-xs min-w-[150px]">Descrição</TableHead>
+                          <TableHead className="text-xs hidden md:table-cell w-[120px]">Conta</TableHead>
+                          <TableHead className="text-xs hidden lg:table-cell w-[150px]">Categoria</TableHead>
+                          <TableHead className="text-xs text-right w-[120px]">Valor</TableHead>
+                          <TableHead className="text-xs hidden sm:table-cell w-[90px] text-center">Status</TableHead>
+                          <TableHead className="text-xs w-[70px] text-center">Concil.</TableHead>
+                          <TableHead className="text-xs w-[50px] text-center">Ações</TableHead>
                         </TableRow>
-                      ) : (
-                        entries?.map((entry) => (
-                          <TableRow key={entry.id} className={entry.status === "CANCELADO" ? "opacity-50" : ""}>
+                      </TableHeader>
+                      <TableBody>
+                        {entries?.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={10} className="text-center text-muted-foreground py-8 text-sm">
+                              Nenhum lançamento encontrado no período
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          entries?.map((entry) => (
+                            <TableRow key={entry.id} className={`${entry.status === "CANCELADO" ? "opacity-50" : ""} ${selectedLedgerIds.has(entry.id) ? "bg-muted/50" : ""}`}>
+                              <TableCell className="py-3">
+                                <Checkbox
+                                  checked={selectedLedgerIds.has(entry.id)}
+                                  onCheckedChange={() => toggleLedgerSelect(entry.id)}
+                                  disabled={entry.status === "CANCELADO"}
+                                />
+                              </TableCell>
                             <TableCell className="font-medium text-xs py-3">
                               {entry[dateField] && format(new Date(entry[dateField]), "dd/MM/yy", { locale: ptBR })}
                             </TableCell>
