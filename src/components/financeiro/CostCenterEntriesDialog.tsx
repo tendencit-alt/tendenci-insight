@@ -15,7 +15,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+
 import { OrderDetailSheet } from "@/components/orders/OrderDetailSheet";
 
 export interface CostCenterDrillDownFilter {
@@ -211,8 +211,8 @@ export function CostCenterEntriesDialog({
 
   return (
     <>
-      <Dialog open onOpenChange={(open) => !open && onClose()}>
-        <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
+      <Dialog open modal={true} onOpenChange={(open) => !open && onClose()}>
+        <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base">
               {iconMap[filter.type]}
@@ -329,31 +329,22 @@ export function CostCenterEntriesDialog({
                     </div>
                     <div className="flex items-center justify-center">
                       {entry._order_id ? (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedOrderId(entry._order_id);
-                              }}
-                            >
-                              <ExternalLink className="h-3.5 w-3.5 text-primary" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent side="left">Ver Pedido #{entry._order_number}</TooltipContent>
-                        </Tooltip>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          title={`Ver Pedido #${entry._order_number}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedOrderId(entry._order_id);
+                          }}
+                        >
+                          <ExternalLink className="h-3.5 w-3.5 text-primary" />
+                        </Button>
                       ) : (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className="h-6 w-6 flex items-center justify-center text-muted-foreground/40">
-                              <ExternalLink className="h-3 w-3" />
-                            </span>
-                          </TooltipTrigger>
-                          <TooltipContent side="left">Lançamento manual</TooltipContent>
-                        </Tooltip>
+                        <span className="h-6 w-6 flex items-center justify-center text-muted-foreground/40" title="Lançamento manual">
+                          <ExternalLink className="h-3 w-3" />
+                        </span>
                       )}
                     </div>
                   </div>
