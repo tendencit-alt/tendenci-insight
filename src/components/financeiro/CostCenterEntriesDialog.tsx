@@ -379,6 +379,7 @@ export function CostCenterEntriesDialog({
         orderId={viewOrderId}
         open={!!viewOrderId}
         onOpenChange={(open) => !open && setViewOrderId(null)}
+        onUpdate={() => {}}
       />
     </>
   );
