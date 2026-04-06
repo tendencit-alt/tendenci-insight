@@ -303,6 +303,10 @@ export function CostCenterKPIs({ filters }: CostCenterKPIsProps) {
               <div>
                 <p className="text-xs text-muted-foreground">Receitas Total</p>
                 <p className="text-sm sm:text-lg font-bold text-green-600">{formatCurrency(data?.totals.receitas || 0)}</p>
+                <p className="text-[10px] text-muted-foreground">
+                  Realizado: <span className="font-semibold text-foreground">{(data?.totals.receitas ? ((data.totals.receitasRealizadas / data.totals.receitas) * 100) : 0).toFixed(1)}%</span>
+                  <span className="ml-1 text-muted-foreground/70">({formatCurrency(data?.totals.receitasRealizadas || 0)})</span>
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -312,6 +316,10 @@ export function CostCenterKPIs({ filters }: CostCenterKPIsProps) {
               <div>
                 <p className="text-xs text-muted-foreground">Despesas Total</p>
                 <p className="text-sm sm:text-lg font-bold text-red-600">{formatCurrency(data?.totals.despesas || 0)}</p>
+                <p className="text-[10px] text-muted-foreground">
+                  Realizado: <span className="font-semibold text-foreground">{(data?.totals.despesas ? ((data.totals.despesasRealizadas / data.totals.despesas) * 100) : 0).toFixed(1)}%</span>
+                  <span className="ml-1 text-muted-foreground/70">({formatCurrency(data?.totals.despesasRealizadas || 0)})</span>
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-3">
