@@ -214,7 +214,7 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
       case "RECEITA":
         return <ArrowUpCircle className="h-4 w-4 text-green-600" />;
       case "DESPESA":
-        return <ArrowDownCircle className="h-4 w-4 text-red-600" />;
+        return <ArrowDownCircle className="h-4 w-4 text-primary" />;
       case "TRANSFERENCIA":
         return <RefreshCw className="h-4 w-4 text-blue-600" />;
       default:
@@ -228,7 +228,7 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
         case "RECEITA":
           return <Badge className="bg-green-600 px-1.5">{getTypeIcon(type)}</Badge>;
         case "DESPESA":
-          return <Badge variant="destructive" className="px-1.5">{getTypeIcon(type)}</Badge>;
+          return <Badge className="bg-red-600 text-destructive-foreground hover:bg-red-600/90 px-1.5">{getTypeIcon(type)}</Badge>;
         case "TRANSFERENCIA":
           return <Badge variant="secondary" className="px-1.5">{getTypeIcon(type)}</Badge>;
         case "AJUSTE":
@@ -241,7 +241,7 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
       case "RECEITA":
         return <Badge className="bg-green-600 gap-1">{getTypeIcon(type)} Receita</Badge>;
       case "DESPESA":
-        return <Badge variant="destructive" className="gap-1">{getTypeIcon(type)} Despesa</Badge>;
+        return <Badge className="bg-red-600 text-destructive-foreground hover:bg-red-600/90 gap-1">{getTypeIcon(type)} Despesa</Badge>;
       case "TRANSFERENCIA":
         return <Badge variant="secondary" className="gap-1">{getTypeIcon(type)} Transferência</Badge>;
       case "AJUSTE":
