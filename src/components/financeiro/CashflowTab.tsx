@@ -250,11 +250,19 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
 
       const { data: compEntries } = await compQuery;
 
-      // Calculate competence totals and realized from competence
+      // Calculate competence totals and per-account competence map
+      const competenceAmounts = new Map<string, number>();
       const compReceitas = compEntries?.filter(e => e.type === "RECEITA").reduce((s, e) => s + Number(e.amount), 0) || 0;
       const compDespesas = compEntries?.filter(e => e.type === "DESPESA").reduce((s, e) => s + Number(e.amount), 0) || 0;
       const compReceitasRealizadas = compEntries?.filter(e => e.type === "RECEITA" && e.status === "PAGO_RECEBIDO").reduce((s, e) => s + Number(e.amount), 0) || 0;
       const compDespesasRealizadas = compEntries?.filter(e => e.type === "DESPESA" && e.status === "PAGO_RECEBIDO").reduce((s, e) => s + Number(e.amount), 0) || 0;
+      
+      compEntries?.forEach(e => {
+        if (e.chart_account_id) {
+          const current = competenceAmounts.get(e.chart_account_id) || 0;
+          competenceAmounts.set(e.chart_account_id, current + Number(e.amount));
+        }
+      });
 
       // Resolve split entries when filtering by cost center
       let entries = rawEntries;
