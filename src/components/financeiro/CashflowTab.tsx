@@ -455,6 +455,12 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
     return format(new Date(dateStr + 'T12:00:00'), "dd/MM/yyyy");
   };
 
+  const getParentValue = (line: CashflowLine): number | null => {
+    if (!line.parentId || !cashflowData?.lines) return null;
+    const parent = cashflowData.lines.find(l => l.id === line.parentId);
+    return parent ? parent.value : null;
+  };
+
   const renderLine = (line: CashflowLine) => {
     const isExpanded = expandedAccounts.has(line.id);
     const isEntriesExpanded = expandedEntries.has(line.id);
@@ -463,6 +469,11 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
     const isFinanciamento = line.nature === "FINANCIAMENTO";
     const hasEntries = line.entries.length > 0;
     const canExpand = line.hasChildren || hasEntries;
+    
+    const parentValue = getParentValue(line);
+    const percentage = parentValue && parentValue !== 0 && line.value !== 0
+      ? Math.abs((line.value / parentValue) * 100)
+      : null;
     
     const rows: JSX.Element[] = [];
     
