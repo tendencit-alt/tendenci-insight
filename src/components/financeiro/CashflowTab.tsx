@@ -481,6 +481,9 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
           onClick={() => {
             if (line.hasChildren) {
               toggleExpand(line.id);
+              if (hasEntries) {
+                toggleEntries(line.id);
+              }
             } else if (hasEntries) {
               toggleEntries(line.id);
             }
@@ -498,7 +501,7 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
             )}
             <span className="text-muted-foreground font-mono text-[11px] shrink-0">{line.code}</span>
             <span className="truncate">{line.name}</span>
-            {hasEntries && !line.hasChildren && (
+            {hasEntries && (
               <span className="text-xs text-muted-foreground ml-1">
                 ({line.entries.length} lançamento{line.entries.length !== 1 ? 's' : ''})
               </span>
@@ -529,8 +532,8 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
       </TableRow>
     );
     
-    // Entry rows
-    if (isEntriesExpanded && !line.hasChildren && hasEntries) {
+    // Entry rows (show direct entries even on parent accounts)
+    if (isEntriesExpanded && hasEntries) {
       line.entries.forEach((entry) => {
         rows.push(
           <TableRow 
