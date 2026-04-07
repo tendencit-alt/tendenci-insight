@@ -674,6 +674,11 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
                   <FileText className="h-3 w-3 text-muted-foreground hover:text-primary" />
                 </button>
                 <span className="text-foreground/80 truncate">{entry.description}</span>
+                {line.value !== 0 && (
+                  <span className="text-[10px] text-muted-foreground/50 font-mono shrink-0">
+                    {((entry.amount / Math.abs(line.value)) * 100).toFixed(1)}%
+                  </span>
+                )}
                 {entry.document_number && (
                   <span className="text-xs text-muted-foreground">
                     Doc: {entry.document_number}
