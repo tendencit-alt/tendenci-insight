@@ -221,7 +221,7 @@ export function DashboardBI({ filters }: DashboardBIProps) {
           id: entry.id,
           description: entry.description,
           amount: Number(entry.amount),
-          date: entry.cash_date || entry.competence_date,
+          date: entry.competence_date || entry.cash_date,
           document: entry.document_number,
         });
       });
