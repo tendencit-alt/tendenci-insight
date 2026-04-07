@@ -43,6 +43,7 @@ interface CashflowLine {
   name: string;
   nature: string | null;
   value: number;
+  competenceValue: number;
   level: number;
   hasChildren: boolean;
   parentId: string | null;
@@ -103,6 +104,7 @@ function flattenTree(
   tree: Map<string | null, ChartAccount[]>,
   accountValues: Map<string, number>,
   entriesByAccount: Map<string, LedgerEntry[]>,
+  competenceAmounts: Map<string, number>,
   parentId: string | null,
   level: number,
   lines: CashflowLine[]
@@ -114,6 +116,11 @@ function flattenTree(
     const directValue = accountValues.get(account.id) || 0;
     const childrenTotal = hasChildren ? calculateTotals(tree, accountValues, account.id) : 0;
     const totalValue = directValue + childrenTotal;
+    
+    const directComp = competenceAmounts.get(account.id) || 0;
+    const childrenComp = hasChildren ? calculateTotals(tree, competenceAmounts, account.id) : 0;
+    const competenceValue = directComp + childrenComp;
+    
     const entries = entriesByAccount.get(account.id) || [];
     
     lines.push({
@@ -122,6 +129,7 @@ function flattenTree(
       name: account.name,
       nature: account.nature,
       value: totalValue,
+      competenceValue,
       level,
       hasChildren,
       parentId: account.parent_id,
@@ -129,7 +137,7 @@ function flattenTree(
     });
     
     if (hasChildren) {
-      flattenTree(tree, accountValues, entriesByAccount, account.id, level + 1, lines);
+      flattenTree(tree, accountValues, entriesByAccount, competenceAmounts, account.id, level + 1, lines);
     }
   });
 }
@@ -219,7 +227,7 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
       // Fetch competence-based totals for the same period (to show realized %)
       let compQuery = supabase
         .from("fin_ledger_entries")
-        .select("type, amount, status")
+        .select("type, amount, status, chart_account_id")
         .neq("status", "CANCELADO")
         .gte("competence_date", dateFrom)
         .lte("competence_date", dateTo)
@@ -242,11 +250,19 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
 
       const { data: compEntries } = await compQuery;
 
-      // Calculate competence totals and realized from competence
+      // Calculate competence totals and per-account competence map
+      const competenceAmounts = new Map<string, number>();
       const compReceitas = compEntries?.filter(e => e.type === "RECEITA").reduce((s, e) => s + Number(e.amount), 0) || 0;
       const compDespesas = compEntries?.filter(e => e.type === "DESPESA").reduce((s, e) => s + Number(e.amount), 0) || 0;
       const compReceitasRealizadas = compEntries?.filter(e => e.type === "RECEITA" && e.status === "PAGO_RECEBIDO").reduce((s, e) => s + Number(e.amount), 0) || 0;
       const compDespesasRealizadas = compEntries?.filter(e => e.type === "DESPESA" && e.status === "PAGO_RECEBIDO").reduce((s, e) => s + Number(e.amount), 0) || 0;
+      
+      compEntries?.forEach(e => {
+        if (e.chart_account_id) {
+          const current = competenceAmounts.get(e.chart_account_id) || 0;
+          competenceAmounts.set(e.chart_account_id, current + Number(e.amount));
+        }
+      });
 
       // Resolve split entries when filtering by cost center
       let entries = rawEntries;
@@ -309,7 +325,7 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
       // Build tree and flatten
       const tree = buildTree(chartAccounts || []);
       const lines: CashflowLine[] = [];
-      flattenTree(tree, accountValues, entriesByAccount, null, 0, lines);
+      flattenTree(tree, accountValues, entriesByAccount, competenceAmounts, null, 0, lines);
 
       // Calculate totals
       let totalEntradas = 0;
@@ -490,18 +506,25 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
           </div>
         </TableCell>
         <TableCell className="text-right p-1">
-          <span className={cn(
-            "font-mono text-xs",
-            isReceita && "text-green-600",
-            isDespesa && "text-red-600",
-            isFinanciamento && "text-orange-500"
-          )}>
-            {isDespesa && line.value > 0 ? (
-              `(${formatCurrency(line.value)})`
-            ) : (
-              formatCurrency(line.value)
+          <div className="flex flex-col items-end">
+            <span className={cn(
+              "font-mono text-xs",
+              isReceita && "text-green-600",
+              isDespesa && "text-red-600",
+              isFinanciamento && "text-orange-500"
+            )}>
+              {isDespesa && line.value > 0 ? (
+                `(${formatCurrency(line.value)})`
+              ) : (
+                formatCurrency(line.value)
+              )}
+            </span>
+            {line.competenceValue !== 0 && line.value !== 0 && (
+              <span className="text-[9px] text-muted-foreground/60 font-mono leading-tight">
+                {((line.value / Math.abs(line.competenceValue)) * 100).toFixed(0)}% de {formatCurrency(Math.abs(line.competenceValue))}
+              </span>
             )}
-          </span>
+          </div>
         </TableCell>
       </TableRow>
     );

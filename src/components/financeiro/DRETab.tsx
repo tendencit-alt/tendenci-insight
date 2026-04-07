@@ -47,6 +47,7 @@ interface DRELine {
   name: string;
   nature: string | null;
   value: number;
+  realizedValue: number;
   level: number;
   hasChildren: boolean;
   parentId: string | null;
@@ -110,6 +111,7 @@ function flattenTree(
   accountValues: Map<string, number>,
   calculatedValues: Map<string, number>,
   entriesByAccount: Map<string, LedgerEntry[]>,
+  realizedAmounts: Map<string, number>,
   parentId: string | null,
   level: number,
   lines: DRELine[]
@@ -129,6 +131,16 @@ function flattenTree(
       totalValue = directValue + childrenTotal;
     }
     
+    // Calculate realized value (direct + children)
+    let realizedValue: number;
+    if (isCalculated) {
+      realizedValue = 0; // Will be set from summary
+    } else {
+      const directRealized = realizedAmounts.get(account.id) || 0;
+      const childrenRealized = hasChildren ? calculateTotals(tree, realizedAmounts, account.id) : 0;
+      realizedValue = directRealized + childrenRealized;
+    }
+    
     // Get entries for this account
     const entries = entriesByAccount.get(account.id) || [];
     
@@ -138,6 +150,7 @@ function flattenTree(
       name: account.name,
       nature: account.nature,
       value: totalValue,
+      realizedValue,
       level,
       hasChildren,
       parentId: account.parent_id,
@@ -146,7 +159,7 @@ function flattenTree(
     });
     
     if (hasChildren) {
-      flattenTree(tree, accountValues, calculatedValues, entriesByAccount, account.id, level + 1, lines);
+      flattenTree(tree, accountValues, calculatedValues, entriesByAccount, realizedAmounts, account.id, level + 1, lines);
     }
   });
 }
@@ -251,6 +264,7 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
 
       // Group entries by account and calculate values
       const accountValues = new Map<string, number>();
+      const realizedAmounts = new Map<string, number>();
       const entriesByAccount = new Map<string, LedgerEntry[]>();
       let receitasRealizadas = 0;
       let despesasRealizadas = 0;
@@ -261,9 +275,11 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
           const current = accountValues.get(entry.chart_account_id) || 0;
           accountValues.set(entry.chart_account_id, current + Number(entry.amount));
 
-          // Track realized amounts
+          // Track realized amounts per account and globally
           if (entry.status === "PAGO_RECEBIDO") {
-            // Determine type from chart account
+            const currentRealized = realizedAmounts.get(entry.chart_account_id) || 0;
+            realizedAmounts.set(entry.chart_account_id, currentRealized + Number(entry.amount));
+            
             const account = chartAccounts?.find(a => a.id === entry.chart_account_id);
             if (account) {
               const mainCode = parseFloat(account.code.split('.')[0]);
@@ -393,7 +409,7 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
 
       // Flatten tree
       const lines: DRELine[] = [];
-      flattenTree(tree, accountValues, calculatedValues, entriesByAccount, null, 0, lines);
+      flattenTree(tree, accountValues, calculatedValues, entriesByAccount, realizedAmounts, null, 0, lines);
 
       // Fetch goals for breakeven meta
       const month = new Date().getMonth() + 1;
@@ -578,31 +594,38 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
           </div>
         </TableCell>
         <TableCell className="text-right p-1">
-          {isResultado ? (
-            <div className={cn(
-              "inline-flex items-center justify-end px-1.5 py-0.5 rounded font-bold font-mono text-[11px]",
-              "bg-background shadow-sm border",
-              line.value >= 0 
-                ? "border-green-300 dark:border-green-700 text-green-700 dark:text-green-400" 
-                : "border-red-300 dark:border-red-700 text-red-700 dark:text-red-400"
-            )}>
-              {line.value >= 0 ? "▲ " : "▼ "}
-              {formatCurrency(Math.abs(line.value))}
-            </div>
-          ) : (
-            <span className={cn(
-              "font-mono text-xs",
-              isReceita && "text-green-600",
-              isDespesa && "text-red-600",
-              isFinanciamento && "text-orange-500"
-            )}>
-              {isDespesa && line.value > 0 ? (
-                `(${formatCurrency(line.value)})`
-              ) : (
-                formatCurrency(line.value)
-              )}
-            </span>
-          )}
+          <div className="flex flex-col items-end">
+            {isResultado ? (
+              <div className={cn(
+                "inline-flex items-center justify-end px-1.5 py-0.5 rounded font-bold font-mono text-[11px]",
+                "bg-background shadow-sm border",
+                line.value >= 0 
+                  ? "border-green-300 dark:border-green-700 text-green-700 dark:text-green-400" 
+                  : "border-red-300 dark:border-red-700 text-red-700 dark:text-red-400"
+              )}>
+                {line.value >= 0 ? "▲ " : "▼ "}
+                {formatCurrency(Math.abs(line.value))}
+              </div>
+            ) : (
+              <span className={cn(
+                "font-mono text-xs",
+                isReceita && "text-green-600",
+                isDespesa && "text-red-600",
+                isFinanciamento && "text-orange-500"
+              )}>
+                {isDespesa && line.value > 0 ? (
+                  `(${formatCurrency(line.value)})`
+                ) : (
+                  formatCurrency(line.value)
+                )}
+              </span>
+            )}
+            {line.value !== 0 && !line.isCalculated && (
+              <span className="text-[9px] text-muted-foreground/60 font-mono leading-tight">
+                {((line.realizedValue / Math.abs(line.value)) * 100).toFixed(0)}% ({formatCurrency(line.realizedValue)})
+              </span>
+            )}
+          </div>
         </TableCell>
       </TableRow>
     );
