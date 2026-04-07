@@ -566,6 +566,10 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
           onClick={() => {
             if (line.hasChildren) {
               toggleExpand(line.id);
+              // Also toggle entries if the parent has direct entries
+              if (hasEntries) {
+                toggleEntries(line.id);
+              }
             } else if (hasEntries) {
               toggleEntries(line.id);
             }
