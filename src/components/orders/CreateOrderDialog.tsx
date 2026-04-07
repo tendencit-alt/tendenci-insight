@@ -1661,7 +1661,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                           vendedor: { ...prev.vendedor, habilitado: checked }
                         }))}
                       />
-                      <span className="text-sm font-medium w-28">Vendedor</span>
+                      <span className="text-sm font-medium w-28">{resourceDefaults.vendedor.label}</span>
                       {comissoes.vendedor.habilitado && (
                         <>
                           <div className="flex items-center gap-1">
@@ -1716,7 +1716,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                           orcamentista: { ...prev.orcamentista, habilitado: checked }
                         }))}
                       />
-                      <span className="text-sm font-medium w-28">Orçamentista</span>
+                      <span className="text-sm font-medium w-28">{resourceDefaults.orcamentista.label}</span>
                       {comissoes.orcamentista.habilitado && (
                         <>
                           <div className="flex items-center gap-1">
@@ -1771,7 +1771,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                           projetista: { ...prev.projetista, habilitado: checked }
                         }))}
                       />
-                      <span className="text-sm font-medium w-28">Projetista</span>
+                      <span className="text-sm font-medium w-28">{resourceDefaults.projetista.label}</span>
                       {comissoes.projetista.habilitado && (
                         <>
                           <div className="flex items-center gap-1">
@@ -1826,7 +1826,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                           montador: { ...prev.montador, habilitado: checked }
                         }))}
                       />
-                      <span className="text-sm font-medium w-28">Montador</span>
+                      <span className="text-sm font-medium w-28">{resourceDefaults.montador.label}</span>
                       {comissoes.montador.habilitado && (
                         <>
                           <div className="flex items-center gap-1">
@@ -1881,7 +1881,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                           producao: { ...prev.producao, habilitado: checked }
                         }))}
                       />
-                      <span className="text-sm font-medium w-28">Produção</span>
+                      <span className="text-sm font-medium w-28">{resourceDefaults.producao.label}</span>
                       {comissoes.producao.habilitado && (
                         <>
                           <div className="flex items-center gap-1">
