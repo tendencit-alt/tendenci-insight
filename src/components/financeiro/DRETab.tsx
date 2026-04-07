@@ -47,6 +47,7 @@ interface DRELine {
   name: string;
   nature: string | null;
   value: number;
+  realizedValue: number;
   level: number;
   hasChildren: boolean;
   parentId: string | null;
