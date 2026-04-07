@@ -586,7 +586,7 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
               "truncate",
               isResultado && "font-semibold"
             )}>{line.name}</span>
-            {hasEntries && !line.hasChildren && (
+            {hasEntries && (
               <span className="text-xs text-muted-foreground ml-1">
                 ({line.entries.length} lançamento{line.entries.length !== 1 ? 's' : ''})
               </span>
