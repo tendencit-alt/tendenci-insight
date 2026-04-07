@@ -43,6 +43,7 @@ interface CashflowLine {
   name: string;
   nature: string | null;
   value: number;
+  competenceValue: number;
   level: number;
   hasChildren: boolean;
   parentId: string | null;
