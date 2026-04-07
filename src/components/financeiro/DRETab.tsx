@@ -409,7 +409,7 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
 
       // Flatten tree
       const lines: DRELine[] = [];
-      flattenTree(tree, accountValues, calculatedValues, entriesByAccount, null, 0, lines);
+      flattenTree(tree, accountValues, calculatedValues, entriesByAccount, realizedAmounts, null, 0, lines);
 
       // Fetch goals for breakeven meta
       const month = new Date().getMonth() + 1;
