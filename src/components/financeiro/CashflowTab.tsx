@@ -227,7 +227,7 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
       // Fetch competence-based totals for the same period (to show realized %)
       let compQuery = supabase
         .from("fin_ledger_entries")
-        .select("type, amount, status")
+        .select("type, amount, status, chart_account_id")
         .neq("status", "CANCELADO")
         .gte("competence_date", dateFrom)
         .lte("competence_date", dateTo)
