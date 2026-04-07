@@ -116,6 +116,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
   const [showCreateDeal, setShowCreateDeal] = useState(false);
   const [showCreateArchitect, setShowCreateArchitect] = useState(false);
   const hasMountedRef = useRef(false);
+  const hasAppliedResourceDefaultsRef = useRef(false);
 
   interface PagamentoParcela {
     id: string;
@@ -185,26 +186,34 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
   // Estado unificado para comissões (incluindo RT)
   const [comissoes, setComissoes] = useState({
     rt: { habilitado: false, percentual: resourceDefaults.rt.percentage, valor: 0, responsavel_id: '' },
-    vendedor: { habilitado: false, percentual: resourceDefaults.vendedor.percentage, valor: 0, responsavel_id: '' },
-    orcamentista: { habilitado: false, percentual: resourceDefaults.orcamentista.percentage, valor: 0, responsavel_id: '' },
-    projetista: { habilitado: false, percentual: resourceDefaults.projetista.percentage, valor: 0, responsavel_id: '' },
-    montador: { habilitado: false, percentual: resourceDefaults.montador.percentage, valor: 0, responsavel_id: '' },
-    producao: { habilitado: false, percentual: resourceDefaults.producao.percentage, valor: 0, responsavel_id: '' },
+    vendedor: { habilitado: resourceDefaults.vendedor.active, percentual: resourceDefaults.vendedor.percentage, valor: 0, responsavel_id: '' },
+    orcamentista: { habilitado: resourceDefaults.orcamentista.active, percentual: resourceDefaults.orcamentista.percentage, valor: 0, responsavel_id: '' },
+    projetista: { habilitado: resourceDefaults.projetista.active, percentual: resourceDefaults.projetista.percentage, valor: 0, responsavel_id: '' },
+    montador: { habilitado: resourceDefaults.montador.active, percentual: resourceDefaults.montador.percentage, valor: 0, responsavel_id: '' },
+    producao: { habilitado: resourceDefaults.producao.active, percentual: resourceDefaults.producao.percentage, valor: 0, responsavel_id: '' },
   });
 
-  // Sync percentuais dos cadastros quando carregam
   useEffect(() => {
-    if (resourceDefaultsLoaded) {
-      setComissoes(prev => ({
-        rt: { ...prev.rt, percentual: prev.rt.percentual || resourceDefaults.rt.percentage },
-        vendedor: { ...prev.vendedor, percentual: prev.vendedor.percentual || resourceDefaults.vendedor.percentage },
-        orcamentista: { ...prev.orcamentista, percentual: prev.orcamentista.percentual || resourceDefaults.orcamentista.percentage },
-        projetista: { ...prev.projetista, percentual: prev.projetista.percentual || resourceDefaults.projetista.percentage },
-        montador: { ...prev.montador, percentual: prev.montador.percentual || resourceDefaults.montador.percentage },
-        producao: { ...prev.producao, percentual: prev.producao.percentual || resourceDefaults.producao.percentage },
-      }));
+    if (!open) {
+      hasAppliedResourceDefaultsRef.current = false;
     }
-  }, [resourceDefaultsLoaded, resourceDefaults]);
+  }, [open]);
+
+  // Sync dos cadastros quando o dialog abre
+  useEffect(() => {
+    if (!open || !resourceDefaultsLoaded || hasAppliedResourceDefaultsRef.current) return;
+
+    setComissoes((prev) => ({
+      rt: { ...prev.rt, percentual: resourceDefaults.rt.percentage },
+      vendedor: { ...prev.vendedor, habilitado: resourceDefaults.vendedor.active, percentual: resourceDefaults.vendedor.percentage },
+      orcamentista: { ...prev.orcamentista, habilitado: resourceDefaults.orcamentista.active, percentual: resourceDefaults.orcamentista.percentage },
+      projetista: { ...prev.projetista, habilitado: resourceDefaults.projetista.active, percentual: resourceDefaults.projetista.percentage },
+      montador: { ...prev.montador, habilitado: resourceDefaults.montador.active, percentual: resourceDefaults.montador.percentage },
+      producao: { ...prev.producao, habilitado: resourceDefaults.producao.active, percentual: resourceDefaults.producao.percentage },
+    }));
+
+    hasAppliedResourceDefaultsRef.current = true;
+  }, [open, resourceDefaultsLoaded, resourceDefaults]);
 
   const clearDraftStorage = useCallback(() => {
     if (typeof window === 'undefined') return;
@@ -458,7 +467,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
 
       const nextPercentual = architect?.commission_percent
         ? Number(architect.commission_percent)
-        : prev.rt.percentual;
+        : resourceDefaults.rt.percentage;
 
       const shouldUpdate =
         !prev.rt.habilitado ||
@@ -1608,7 +1617,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                     <div className="flex items-center gap-3">
                       <Switch checked={comissoes.rt.habilitado} disabled />
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium w-28">RT</span>
+                        <span className="text-sm font-medium w-28">{resourceDefaults.rt.label}</span>
                         <Badge variant={hasSelectedArchitect ? "secondary" : "outline"}>
                           {hasSelectedArchitect ? "Obrigatório" : "Selecione arquiteto"}
                         </Badge>
