@@ -4039,6 +4039,7 @@ export type Database = {
           architect_id: string | null
           carencia_boleto: number | null
           centro_custo: string | null
+          chart_account_id: string | null
           client_id: string | null
           comissao_montador_percentual: number | null
           comissao_montador_responsavel_id: string | null
@@ -4124,6 +4125,7 @@ export type Database = {
           architect_id?: string | null
           carencia_boleto?: number | null
           centro_custo?: string | null
+          chart_account_id?: string | null
           client_id?: string | null
           comissao_montador_percentual?: number | null
           comissao_montador_responsavel_id?: string | null
@@ -4209,6 +4211,7 @@ export type Database = {
           architect_id?: string | null
           carencia_boleto?: number | null
           centro_custo?: string | null
+          chart_account_id?: string | null
           client_id?: string | null
           comissao_montador_percentual?: number | null
           comissao_montador_responsavel_id?: string | null
@@ -4302,6 +4305,13 @@ export type Database = {
             columns: ["architect_id"]
             isOneToOne: false
             referencedRelation: "architects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_chart_account_id_fkey"
+            columns: ["chart_account_id"]
+            isOneToOne: false
+            referencedRelation: "fin_chart_accounts"
             referencedColumns: ["id"]
           },
           {

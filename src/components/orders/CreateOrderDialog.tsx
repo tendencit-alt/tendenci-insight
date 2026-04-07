@@ -131,6 +131,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     deal_id: dealId || '',
     architect_id: '',
     project_id: '',
+    chart_account_id: '',
     observacao_pagamento: '',
     data_entrega_prevista: '',
     tipo_entrega: '',
@@ -396,9 +397,31 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     },
   });
 
-  const hasSelectedArchitect = !!formData.architect_id;
+  const { data: revenueAccounts } = useQuery({
+    queryKey: ['revenue-accounts-for-order'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('fin_chart_accounts')
+        .select('id, code, name, parent_id')
+        .like('code', '1.%')
+        .eq('active', true)
+        .order('code');
+      return data || [];
+    },
+  });
 
-  // RT fica obrigatório e vinculado ao arquiteto selecionado
+  // Set default chart_account_id to '1.1' when accounts load
+  useEffect(() => {
+    if (revenueAccounts && revenueAccounts.length > 0 && !formData.chart_account_id) {
+      const defaultAccount = revenueAccounts.find(a => a.code === '1.1');
+      if (defaultAccount) {
+        setFormData(prev => ({ ...prev, chart_account_id: defaultAccount.id }));
+      }
+    }
+  }, [revenueAccounts]);
+
+
+  const hasSelectedArchitect = !!formData.architect_id;
   useEffect(() => {
     const architect = architects?.find((a) => a.id === formData.architect_id);
 
@@ -819,6 +842,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
           valor_total: total,
           centro_custo: null,
           project_id: formData.project_id || null,
+          chart_account_id: formData.chart_account_id || null,
           status: 'rascunho',
           taxa_cartao_percentual: taxaCartao.percentual,
           taxa_cartao_valor: taxaCartao.valor,
@@ -1084,6 +1108,26 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                   )}
                 </div>
 
+
+                <div className="space-y-2 col-span-2">
+                  <Label>Categoria de Receita</Label>
+                  <Select
+                    value={formData.chart_account_id || "_placeholder"}
+                    onValueChange={(v) => setFormData({ ...formData, chart_account_id: v === "_placeholder" ? "" : v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione a categoria" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="_placeholder" disabled>Selecione a categoria</SelectItem>
+                      {revenueAccounts?.map((account) => (
+                        <SelectItem key={account.id} value={account.id}>
+                          {account.code.length > 3 ? '\u00A0\u00A0\u00A0' : ''}{account.code} - {account.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
               </div>
 

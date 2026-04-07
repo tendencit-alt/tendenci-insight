@@ -200,6 +200,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
     deal_id: '',
     architect_id: '',
     project_id: '',
+    chart_account_id: '',
     observacao_pagamento: '',
     data_entrega_prevista: '',
     tipo_entrega: '',
@@ -427,6 +428,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
         deal_id: order.deal_id || '',
         architect_id: order.architect_id || '',
         project_id: (order as any).project_id || '',
+        chart_account_id: (order as any).chart_account_id || '',
         observacao_pagamento: typeof order.observacao_pagamento === 'string' && !order.observacao_pagamento.startsWith('[') 
           ? order.observacao_pagamento : '',
         data_entrega_prevista: order.data_entrega_prevista?.split('T')[0] || '',
@@ -507,6 +509,19 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
     queryKey: ['architects-for-order'],
     queryFn: async () => {
       const { data } = await supabase.from('architects').select('id, name, company, commission_percent').eq('active', true).order('name');
+      return data || [];
+    },
+  });
+
+  const { data: revenueAccounts } = useQuery({
+    queryKey: ['revenue-accounts-for-order'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('fin_chart_accounts')
+        .select('id, code, name, parent_id')
+        .like('code', '1.%')
+        .eq('active', true)
+        .order('code');
       return data || [];
     },
   });
@@ -950,6 +965,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
           valor_total: total,
           centro_custo: null,
           project_id: formData.project_id || null,
+          chart_account_id: formData.chart_account_id || null,
           status: shouldBeAtivo ? 'ativo' : order.status,
           taxa_cartao_percentual: taxaCartao.percentual,
           taxa_cartao_valor: taxaCartao.valor,
@@ -1247,6 +1263,27 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                   </Button>
                 </div>
               </div>
+
+                <div className="space-y-2 col-span-2">
+                  <Label>Categoria de Receita</Label>
+                  <Select
+                    value={formData.chart_account_id || "_placeholder"}
+                    onValueChange={(v) => setFormData({ ...formData, chart_account_id: v === "_placeholder" ? "" : v })}
+                    disabled={!isEditable}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione a categoria" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="_placeholder" disabled>Selecione a categoria</SelectItem>
+                      {revenueAccounts?.map((account) => (
+                        <SelectItem key={account.id} value={account.id}>
+                          {account.code.length > 3 ? '\u00A0\u00A0\u00A0' : ''}{account.code} - {account.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
             </div>
 
