@@ -513,6 +513,19 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
     },
   });
 
+  const { data: revenueAccounts } = useQuery({
+    queryKey: ['revenue-accounts-for-order'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('fin_chart_accounts')
+        .select('id, code, name, parent_id')
+        .like('code', '1.%')
+        .eq('active', true)
+        .order('code');
+      return data || [];
+    },
+  });
+
   // Carregar RT e comissões do order existente (unificado)
   useEffect(() => {
     if (order) {
