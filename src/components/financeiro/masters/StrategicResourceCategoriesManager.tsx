@@ -1,12 +1,11 @@
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { SearchableSelect } from "@/components/financeiro/SearchableSelect";
 import { CreateChartAccountDialog } from "./CreateChartAccountDialog";
@@ -33,12 +32,12 @@ type ChartAccountOption = {
 const TABLE_NAME = "fin_strategic_resource_account_configs";
 
 const RESOURCE_DEFAULTS: Record<StrategicResourceType, { label: string; description: string }> = {
-  rt: { label: "RT", description: "Responsável técnico do pedido." },
-  vendedor: { label: "Vendedor", description: "Comissão comercial vinculada ao pedido." },
-  orcamentista: { label: "Orçamentista", description: "Recurso de apoio à precificação e orçamento." },
-  projetista: { label: "Projetista", description: "Responsável pelo projeto técnico/comercial." },
-  montador: { label: "Montador", description: "Equipe ou responsável de montagem." },
-  producao: { label: "Produção", description: "Comissão/recurso ligado à produção." },
+  rt: { label: "RT", description: "Responsável técnico" },
+  vendedor: { label: "Vendedor", description: "Comissão comercial" },
+  orcamentista: { label: "Orçamentista", description: "Apoio à precificação" },
+  projetista: { label: "Projetista", description: "Projeto técnico" },
+  montador: { label: "Montador", description: "Equipe de montagem" },
+  producao: { label: "Produção", description: "Comissão de produção" },
 };
 
 const RESOURCE_TYPES: StrategicResourceType[] = ["rt", "vendedor", "orcamentista", "projetista", "montador", "producao"];
@@ -154,23 +153,17 @@ export function StrategicResourceCategoriesManager() {
   return (
     <>
       <Card>
-        <CardHeader className="flex flex-row items-start justify-between gap-4">
-          <div className="space-y-1">
-            <CardTitle className="flex items-center gap-2 text-base font-medium">
-              <FolderCog className="h-5 w-5" />
-              Categorias dos Compromissos Sobre Venda
-            </CardTitle>
-            <CardDescription>
-              Defina a categoria contábil usada automaticamente no contas a pagar e no razão para cada compromisso. Edite nomes e descrições livremente.
-            </CardDescription>
-          </div>
-          <Badge variant="outline">Configuração automática</Badge>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base font-medium">
+            <FolderCog className="h-4 w-4" />
+            Compromissos Sobre Venda
+          </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-2">
           {isLoading ? (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {[...Array(4)].map((_, i) => (
-                <Skeleton key={i} className="h-32 w-full" />
+                <Skeleton key={i} className="h-14 w-full" />
               ))}
             </div>
           ) : (
@@ -180,89 +173,75 @@ export function StrategicResourceCategoriesManager() {
               const hasEdits = !!localEdits[type];
 
               return (
-                <div key={type} className="rounded-lg border bg-card p-4 shadow-sm space-y-4">
-                  {/* Header row */}
-                  <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary" className="text-xs uppercase">{type}</Badge>
-                      <Badge variant={currentConfig?.active === false ? "secondary" : "default"}>
-                        {currentConfig?.active === false ? "Inativo" : "Ativo"}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <Label htmlFor={`active-${type}`} className="text-sm text-muted-foreground">
-                        Usar automação
-                      </Label>
+                <div key={type} className="rounded-md border bg-card px-3 py-2.5 space-y-2">
+                  {/* Row 1: badge + name + description + toggle */}
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary" className="text-[10px] uppercase shrink-0 px-1.5 py-0">
+                      {type}
+                    </Badge>
+                    <Input
+                      value={getDisplayName(type)}
+                      onChange={(e) => updateLocalEdit(type, "display_name", e.target.value)}
+                      disabled={isSaving}
+                      className="h-7 text-sm flex-1 max-w-[160px]"
+                      placeholder="Nome..."
+                    />
+                    <Input
+                      value={getDescription(type)}
+                      onChange={(e) => updateLocalEdit(type, "description", e.target.value)}
+                      disabled={isSaving}
+                      className="h-7 text-sm flex-1 max-w-[200px] text-muted-foreground"
+                      placeholder="Descrição..."
+                    />
+                    <div className="ml-auto flex items-center gap-2 shrink-0">
                       <Switch
-                        id={`active-${type}`}
                         checked={currentConfig?.active ?? true}
                         disabled={isSaving}
                         onCheckedChange={(checked) => handleSave(type, { active: checked })}
+                        className="scale-90"
                       />
                     </div>
                   </div>
 
-                  {/* Editable name & description */}
-                  <div className="grid gap-3 md:grid-cols-2">
-                    <div className="space-y-1">
-                      <Label className="text-xs text-muted-foreground">Nome de exibição</Label>
-                      <Input
-                        value={getDisplayName(type)}
-                        onChange={(e) => updateLocalEdit(type, "display_name", e.target.value)}
-                        disabled={isSaving}
-                        placeholder="Nome..."
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs text-muted-foreground">Descrição</Label>
-                      <Input
-                        value={getDescription(type)}
-                        onChange={(e) => updateLocalEdit(type, "description", e.target.value)}
-                        disabled={isSaving}
-                        placeholder="Descrição..."
-                      />
-                    </div>
-                  </div>
-
-                  {/* Category selector + create + save */}
-                  <div className="flex flex-col gap-3 md:flex-row md:items-end">
-                    <div className="flex-1 space-y-1">
-                      <Label className="text-xs text-muted-foreground">Categoria do Plano de Contas</Label>
+                  {/* Row 2: category selector + actions */}
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1">
                       <SearchableSelect
                         options={[{ value: EMPTY_OPTION, label: "Sem categoria" }, ...accountOptions]}
                         value={currentConfig?.chart_account_id ?? EMPTY_OPTION}
                         onChange={(value) =>
                           handleSave(type, { chart_account_id: value === EMPTY_OPTION ? null : value })
                         }
-                        placeholder="Selecione a categoria..."
-                        searchPlaceholder="Buscar categoria..."
-                        emptyMessage="Nenhuma categoria encontrada."
+                        placeholder="Categoria..."
+                        searchPlaceholder="Buscar..."
+                        emptyMessage="Nenhuma encontrada."
                       />
                     </div>
                     <Button
                       type="button"
-                      variant="outline"
+                      variant="ghost"
                       size="sm"
-                      className="gap-1"
+                      className="h-7 px-2 text-xs"
                       disabled={isSaving}
                       onClick={() => {
                         setCreateForType(type);
                         setCreateDialogOpen(true);
                       }}
                     >
-                      <Plus className="h-4 w-4" />
-                      Criar Categoria
+                      <Plus className="h-3.5 w-3.5" />
                     </Button>
-                    <Button
-                      type="button"
-                      variant={hasEdits ? "default" : "outline"}
-                      className="gap-2"
-                      disabled={isSaving}
-                      onClick={() => handleSave(type)}
-                    >
-                      {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                      Salvar
-                    </Button>
+                    {hasEdits && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        className="h-7 px-2 text-xs gap-1"
+                        disabled={isSaving}
+                        onClick={() => handleSave(type)}
+                      >
+                        {isSaving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
+                        Salvar
+                      </Button>
+                    )}
                   </div>
                 </div>
               );
