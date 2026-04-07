@@ -200,6 +200,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
     deal_id: '',
     architect_id: '',
     project_id: '',
+    chart_account_id: '',
     observacao_pagamento: '',
     data_entrega_prevista: '',
     tipo_entrega: '',
