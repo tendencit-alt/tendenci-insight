@@ -438,8 +438,10 @@ export function DashboardBI({ filters }: DashboardBIProps) {
                       <TableCell className="py-1.5 pl-8" colSpan={1}>
                         <div className="flex items-center gap-2 text-sm">
                           <FileText className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-muted-foreground">
-                            {entry.date ? format(new Date(entry.date), "dd/MM/yy", { locale: ptBR }) : "-"}
+                          <span className="text-muted-foreground min-w-[60px]">
+                            {entry.date ? format(new Date(entry.date), "dd/MM/yy", { locale: ptBR }) : (
+                              <Badge variant="outline" className="text-[10px] px-1 py-0 font-normal text-muted-foreground/60">Sem data</Badge>
+                            )}
                           </span>
                           <span>{entry.description}</span>
                           {entry.document && (
