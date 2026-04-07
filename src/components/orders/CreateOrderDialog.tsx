@@ -665,13 +665,13 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
   const isItensValid = items.length > 0 && allItemsHaveCentroCusto && allItemsHaveProject;
   const totalPercentual = parcelas.reduce((sum, p) => sum + p.percentual, 0);
   const strategicResourceLabels = {
-    rt: 'RT',
-    vendedor: 'Vendedor',
-    orcamentista: 'Orçamentista',
-    projetista: 'Projetista',
-    montador: 'Montador',
-    producao: 'Produção',
-  } as const;
+    rt: resourceDefaults.rt.label,
+    vendedor: resourceDefaults.vendedor.label,
+    orcamentista: resourceDefaults.orcamentista.label,
+    projetista: resourceDefaults.projetista.label,
+    montador: resourceDefaults.montador.label,
+    producao: resourceDefaults.producao.label,
+  };
   const allMissingStrategicResponsibles = (Object.entries(comissoes) as Array<[
     keyof typeof comissoes,
     (typeof comissoes)[keyof typeof comissoes]
