@@ -54,7 +54,12 @@ export function StrategicResourceCategoriesManager() {
   const configByAccount = useMemo(() => {
     const map = new Map<string, ConfigRow>();
     (configs ?? []).forEach((c) => {
-      if (c.chart_account_id) map.set(c.chart_account_id, c);
+      if (!c.chart_account_id) return;
+      const existing = map.get(c.chart_account_id);
+      // Prefer the config that has a resource_type (legacy) over orphan null ones
+      if (!existing || (c.id && !existing.id) || (c.chart_account_id && !existing.chart_account_id)) {
+        map.set(c.chart_account_id, c);
+      }
     });
     return map;
   }, [configs]);
