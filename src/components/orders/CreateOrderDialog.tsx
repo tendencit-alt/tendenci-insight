@@ -101,7 +101,7 @@ const CREATE_ORDER_ITEMS_DRAFT_KEY = 'orders:create-order:draft:items-table';
 export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clientId }: CreateOrderDialogProps) {
   const { user } = useAuth();
   const linkRatesDb = usePaymentLinkRates();
-  const resourceDefaults = useStrategicResourceDefaults();
+  const { defaults: resourceDefaults, isLoaded: resourceDefaultsLoaded } = useStrategicResourceDefaults();
   const {
     minimize: minimizeDialog,
     remove: removeMinimized,
@@ -191,6 +191,20 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     montador: { habilitado: false, percentual: resourceDefaults.montador.percentage, valor: 0, responsavel_id: '' },
     producao: { habilitado: false, percentual: resourceDefaults.producao.percentage, valor: 0, responsavel_id: '' },
   });
+
+  // Sync percentuais dos cadastros quando carregam
+  useEffect(() => {
+    if (resourceDefaultsLoaded) {
+      setComissoes(prev => ({
+        rt: { ...prev.rt, percentual: prev.rt.percentual || resourceDefaults.rt.percentage },
+        vendedor: { ...prev.vendedor, percentual: prev.vendedor.percentual || resourceDefaults.vendedor.percentage },
+        orcamentista: { ...prev.orcamentista, percentual: prev.orcamentista.percentual || resourceDefaults.orcamentista.percentage },
+        projetista: { ...prev.projetista, percentual: prev.projetista.percentual || resourceDefaults.projetista.percentage },
+        montador: { ...prev.montador, percentual: prev.montador.percentual || resourceDefaults.montador.percentage },
+        producao: { ...prev.producao, percentual: prev.producao.percentual || resourceDefaults.producao.percentage },
+      }));
+    }
+  }, [resourceDefaultsLoaded, resourceDefaults]);
 
   const clearDraftStorage = useCallback(() => {
     if (typeof window === 'undefined') return;
@@ -651,13 +665,13 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
   const isItensValid = items.length > 0 && allItemsHaveCentroCusto && allItemsHaveProject;
   const totalPercentual = parcelas.reduce((sum, p) => sum + p.percentual, 0);
   const strategicResourceLabels = {
-    rt: 'RT',
-    vendedor: 'Vendedor',
-    orcamentista: 'Orçamentista',
-    projetista: 'Projetista',
-    montador: 'Montador',
-    producao: 'Produção',
-  } as const;
+    rt: resourceDefaults.rt.label,
+    vendedor: resourceDefaults.vendedor.label,
+    orcamentista: resourceDefaults.orcamentista.label,
+    projetista: resourceDefaults.projetista.label,
+    montador: resourceDefaults.montador.label,
+    producao: resourceDefaults.producao.label,
+  };
   const allMissingStrategicResponsibles = (Object.entries(comissoes) as Array<[
     keyof typeof comissoes,
     (typeof comissoes)[keyof typeof comissoes]
@@ -1647,7 +1661,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                           vendedor: { ...prev.vendedor, habilitado: checked }
                         }))}
                       />
-                      <span className="text-sm font-medium w-28">Vendedor</span>
+                      <span className="text-sm font-medium w-28">{resourceDefaults.vendedor.label}</span>
                       {comissoes.vendedor.habilitado && (
                         <>
                           <div className="flex items-center gap-1">
@@ -1702,7 +1716,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                           orcamentista: { ...prev.orcamentista, habilitado: checked }
                         }))}
                       />
-                      <span className="text-sm font-medium w-28">Orçamentista</span>
+                      <span className="text-sm font-medium w-28">{resourceDefaults.orcamentista.label}</span>
                       {comissoes.orcamentista.habilitado && (
                         <>
                           <div className="flex items-center gap-1">
@@ -1757,7 +1771,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                           projetista: { ...prev.projetista, habilitado: checked }
                         }))}
                       />
-                      <span className="text-sm font-medium w-28">Projetista</span>
+                      <span className="text-sm font-medium w-28">{resourceDefaults.projetista.label}</span>
                       {comissoes.projetista.habilitado && (
                         <>
                           <div className="flex items-center gap-1">
@@ -1812,7 +1826,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                           montador: { ...prev.montador, habilitado: checked }
                         }))}
                       />
-                      <span className="text-sm font-medium w-28">Montador</span>
+                      <span className="text-sm font-medium w-28">{resourceDefaults.montador.label}</span>
                       {comissoes.montador.habilitado && (
                         <>
                           <div className="flex items-center gap-1">
@@ -1867,7 +1881,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                           producao: { ...prev.producao, habilitado: checked }
                         }))}
                       />
-                      <span className="text-sm font-medium w-28">Produção</span>
+                      <span className="text-sm font-medium w-28">{resourceDefaults.producao.label}</span>
                       {comissoes.producao.habilitado && (
                         <>
                           <div className="flex items-center gap-1">
