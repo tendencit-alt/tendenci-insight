@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { usePaymentLinkRates } from '@/hooks/usePaymentLinkRates';
+import { useStrategicResourceDefaults } from '@/hooks/useStrategicResourceDefaults';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -100,6 +101,7 @@ const CREATE_ORDER_ITEMS_DRAFT_KEY = 'orders:create-order:draft:items-table';
 export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clientId }: CreateOrderDialogProps) {
   const { user } = useAuth();
   const linkRatesDb = usePaymentLinkRates();
+  const resourceDefaults = useStrategicResourceDefaults();
   const {
     minimize: minimizeDialog,
     remove: removeMinimized,
@@ -182,12 +184,12 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
 
   // Estado unificado para comissões (incluindo RT)
   const [comissoes, setComissoes] = useState({
-    rt: { habilitado: false, percentual: 10, valor: 0, responsavel_id: '' },
-    vendedor: { habilitado: false, percentual: 3, valor: 0, responsavel_id: '' },
-    orcamentista: { habilitado: false, percentual: 0.2, valor: 0, responsavel_id: '' },
-    projetista: { habilitado: false, percentual: 0.2, valor: 0, responsavel_id: '' },
-    montador: { habilitado: false, percentual: 10, valor: 0, responsavel_id: '' },
-    producao: { habilitado: false, percentual: 0.3, valor: 0, responsavel_id: '' },
+    rt: { habilitado: false, percentual: resourceDefaults.rt.percentage, valor: 0, responsavel_id: '' },
+    vendedor: { habilitado: false, percentual: resourceDefaults.vendedor.percentage, valor: 0, responsavel_id: '' },
+    orcamentista: { habilitado: false, percentual: resourceDefaults.orcamentista.percentage, valor: 0, responsavel_id: '' },
+    projetista: { habilitado: false, percentual: resourceDefaults.projetista.percentage, valor: 0, responsavel_id: '' },
+    montador: { habilitado: false, percentual: resourceDefaults.montador.percentage, valor: 0, responsavel_id: '' },
+    producao: { habilitado: false, percentual: resourceDefaults.producao.percentage, valor: 0, responsavel_id: '' },
   });
 
   const clearDraftStorage = useCallback(() => {

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { usePaymentLinkRates } from '@/hooks/usePaymentLinkRates';
+import { useStrategicResourceDefaults } from '@/hooks/useStrategicResourceDefaults';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -161,6 +162,7 @@ const initialClientData: ClientData = {
 export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: EditOrderDialogProps) {
   const { user } = useAuth();
   const linkRatesDb = usePaymentLinkRates();
+  const resourceDefaults = useStrategicResourceDefaults();
   const { isMaster } = usePermissions();
   const { minimize: minimizeDialog, remove: removeMinimized } = useMinimizedDialogs();
   const [isMinimized, setIsMinimized] = useState(false);
@@ -533,37 +535,37 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
       setComissoes({
         rt: {
           habilitado: orderAny.rt_habilitado || false,
-          percentual: Number(orderAny.rt_percentual) || 10,
+          percentual: Number(orderAny.rt_percentual) || resourceDefaults.rt.percentage,
           valor: Number(orderAny.rt_valor) || 0,
           responsavel_id: ''
         },
         vendedor: {
           habilitado: (orderAny.comissao_vendedor_valor || 0) > 0 || (orderAny.comissao_vendedor_percentual || 0) > 0,
-          percentual: Number(orderAny.comissao_vendedor_percentual) || 3,
+          percentual: Number(orderAny.comissao_vendedor_percentual) || resourceDefaults.vendedor.percentage,
           valor: Number(orderAny.comissao_vendedor_valor) || 0,
           responsavel_id: orderAny.comissao_vendedor_responsible_id || orderAny.comissao_vendedor_responsavel_id || orderAny.seller_responsible_id || ''
         },
         orcamentista: {
           habilitado: (orderAny.comissao_orcamentista_valor || 0) > 0 || (orderAny.comissao_orcamentista_percentual || 0) > 0,
-          percentual: Number(orderAny.comissao_orcamentista_percentual) || 0.2,
+          percentual: Number(orderAny.comissao_orcamentista_percentual) || resourceDefaults.orcamentista.percentage,
           valor: Number(orderAny.comissao_orcamentista_valor) || 0,
           responsavel_id: orderAny.comissao_orcamentista_responsible_id || orderAny.comissao_orcamentista_responsavel_id || ''
         },
         projetista: {
           habilitado: (orderAny.comissao_projetista_valor || 0) > 0 || (orderAny.comissao_projetista_percentual || 0) > 0,
-          percentual: Number(orderAny.comissao_projetista_percentual) || 0.2,
+          percentual: Number(orderAny.comissao_projetista_percentual) || resourceDefaults.projetista.percentage,
           valor: Number(orderAny.comissao_projetista_valor) || 0,
           responsavel_id: orderAny.comissao_projetista_responsible_id || orderAny.comissao_projetista_responsavel_id || ''
         },
         montador: {
           habilitado: (orderAny.comissao_montador_valor || 0) > 0 || (orderAny.comissao_montador_percentual || 0) > 0,
-          percentual: Number(orderAny.comissao_montador_percentual) || 10,
+          percentual: Number(orderAny.comissao_montador_percentual) || resourceDefaults.montador.percentage,
           valor: Number(orderAny.comissao_montador_valor) || 0,
           responsavel_id: orderAny.comissao_montador_responsible_id || orderAny.comissao_montador_responsavel_id || orderAny.montador_responsible_id || ''
         },
         producao: {
           habilitado: (orderAny.comissao_producao_valor || 0) > 0 || (orderAny.comissao_producao_percentual || 0) > 0,
-          percentual: Number(orderAny.comissao_producao_percentual) || 0.3,
+          percentual: Number(orderAny.comissao_producao_percentual) || resourceDefaults.producao.percentage,
           valor: Number(orderAny.comissao_producao_valor) || 0,
           responsavel_id: orderAny.comissao_producao_responsible_id || orderAny.comissao_producao_responsavel_id || ''
         },
