@@ -104,6 +104,7 @@ function flattenTree(
   tree: Map<string | null, ChartAccount[]>,
   accountValues: Map<string, number>,
   entriesByAccount: Map<string, LedgerEntry[]>,
+  competenceAmounts: Map<string, number>,
   parentId: string | null,
   level: number,
   lines: CashflowLine[]
@@ -115,6 +116,11 @@ function flattenTree(
     const directValue = accountValues.get(account.id) || 0;
     const childrenTotal = hasChildren ? calculateTotals(tree, accountValues, account.id) : 0;
     const totalValue = directValue + childrenTotal;
+    
+    const directComp = competenceAmounts.get(account.id) || 0;
+    const childrenComp = hasChildren ? calculateTotals(tree, competenceAmounts, account.id) : 0;
+    const competenceValue = directComp + childrenComp;
+    
     const entries = entriesByAccount.get(account.id) || [];
     
     lines.push({
@@ -123,6 +129,7 @@ function flattenTree(
       name: account.name,
       nature: account.nature,
       value: totalValue,
+      competenceValue,
       level,
       hasChildren,
       parentId: account.parent_id,
@@ -130,7 +137,7 @@ function flattenTree(
     });
     
     if (hasChildren) {
-      flattenTree(tree, accountValues, entriesByAccount, account.id, level + 1, lines);
+      flattenTree(tree, accountValues, entriesByAccount, competenceAmounts, account.id, level + 1, lines);
     }
   });
 }
