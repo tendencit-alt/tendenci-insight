@@ -111,6 +111,7 @@ function flattenTree(
   accountValues: Map<string, number>,
   calculatedValues: Map<string, number>,
   entriesByAccount: Map<string, LedgerEntry[]>,
+  realizedAmounts: Map<string, number>,
   parentId: string | null,
   level: number,
   lines: DRELine[]
@@ -130,6 +131,16 @@ function flattenTree(
       totalValue = directValue + childrenTotal;
     }
     
+    // Calculate realized value (direct + children)
+    let realizedValue: number;
+    if (isCalculated) {
+      realizedValue = 0; // Will be set from summary
+    } else {
+      const directRealized = realizedAmounts.get(account.id) || 0;
+      const childrenRealized = hasChildren ? calculateTotals(tree, realizedAmounts, account.id) : 0;
+      realizedValue = directRealized + childrenRealized;
+    }
+    
     // Get entries for this account
     const entries = entriesByAccount.get(account.id) || [];
     
@@ -139,6 +150,7 @@ function flattenTree(
       name: account.name,
       nature: account.nature,
       value: totalValue,
+      realizedValue,
       level,
       hasChildren,
       parentId: account.parent_id,
@@ -147,7 +159,7 @@ function flattenTree(
     });
     
     if (hasChildren) {
-      flattenTree(tree, accountValues, calculatedValues, entriesByAccount, account.id, level + 1, lines);
+      flattenTree(tree, accountValues, calculatedValues, entriesByAccount, realizedAmounts, account.id, level + 1, lines);
     }
   });
 }
