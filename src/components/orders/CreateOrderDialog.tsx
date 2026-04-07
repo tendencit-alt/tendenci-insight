@@ -1108,6 +1108,26 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                 </div>
 
 
+                <div className="space-y-2 col-span-2">
+                  <Label>Categoria de Receita</Label>
+                  <Select
+                    value={formData.chart_account_id || "_placeholder"}
+                    onValueChange={(v) => setFormData({ ...formData, chart_account_id: v === "_placeholder" ? "" : v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione a categoria" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="_placeholder" disabled>Selecione a categoria</SelectItem>
+                      {revenueAccounts?.map((account) => (
+                        <SelectItem key={account.id} value={account.id}>
+                          {account.code.length > 3 ? '\u00A0\u00A0\u00A0' : ''}{account.code} - {account.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
               </div>
 
               {selectedClient && (
