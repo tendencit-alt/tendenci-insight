@@ -738,7 +738,7 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
                     <CardHeader className="py-3">
                       <CardTitle className="text-sm flex items-center gap-2">
                         <User className="h-4 w-4" />
-                        Recursos Estratégicos
+                        Compromissos Sobre Venda
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="py-2 space-y-2 text-sm">

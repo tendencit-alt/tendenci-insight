@@ -738,7 +738,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
   // Valor líquido Tendenci (deduz taxas de cartão, boleto e link)
   const valorLiquidoTendenci = totalSemTaxa - taxaCartao.valor - taxaBoleto.valor - taxaLink.valor;
 
-  // Valor líquido após recursos estratégicos (deduz taxas + comissões)
+  // Valor líquido após compromissos sobre venda (deduz taxas + comissões)
   const valorLiquidoRecursos = valorLiquidoTendenci - totalComissoes;
 
   // Função para atualizar comissão por percentual (recalcula valor)
@@ -1918,11 +1918,11 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                 )})}
               </div>
 
-              {/* Seção de Recursos Estratégicos (RT + Vendedor + Orçamentista + Projetista) */}
+              {/* Seção de Compromissos Sobre Venda (RT + Vendedor + Orçamentista + Projetista) */}
               <Card className="p-4 border-orange-200 dark:border-orange-800 bg-orange-50/50 dark:bg-orange-950/20">
                 <div className="flex items-center justify-between mb-3">
                   <Label className="font-medium flex items-center gap-2">
-                    💰 Recursos Estratégicos
+                    💰 Compromissos Sobre Venda
                   </Label>
                 </div>
                 
@@ -2350,7 +2350,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                   </div>
                 )}
                 <div className="flex items-center justify-between">
-                   <span className="text-sm font-semibold text-blue-600">Valor Líquido - Recursos Estratégicos:</span>
+                   <span className="text-sm font-semibold text-blue-600">Valor Líquido - Compromissos Sobre Venda:</span>
                    <span className={`text-base font-bold text-blue-600`}>
                      {formatCurrency(valorLiquidoRecursos)}
                    </span>

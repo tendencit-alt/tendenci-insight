@@ -617,7 +617,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
   // Valor líquido Tendenci (deduz taxas de cartão, boleto e link)
   const valorLiquidoTendenci = totalSemTaxa - taxaCartao.valor - taxaBoleto.valor - taxaLink.valor;
 
-  // Valor líquido após recursos estratégicos (deduz taxas + comissões)
+  // Valor líquido após compromissos sobre venda (deduz taxas + comissões)
   const valorLiquidoRecursos = valorLiquidoTendenci - totalComissoes;
 
   // Função para atualizar comissão por percentual (recalcula valor)
