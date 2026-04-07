@@ -594,31 +594,38 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
           </div>
         </TableCell>
         <TableCell className="text-right p-1">
-          {isResultado ? (
-            <div className={cn(
-              "inline-flex items-center justify-end px-1.5 py-0.5 rounded font-bold font-mono text-[11px]",
-              "bg-background shadow-sm border",
-              line.value >= 0 
-                ? "border-green-300 dark:border-green-700 text-green-700 dark:text-green-400" 
-                : "border-red-300 dark:border-red-700 text-red-700 dark:text-red-400"
-            )}>
-              {line.value >= 0 ? "▲ " : "▼ "}
-              {formatCurrency(Math.abs(line.value))}
-            </div>
-          ) : (
-            <span className={cn(
-              "font-mono text-xs",
-              isReceita && "text-green-600",
-              isDespesa && "text-red-600",
-              isFinanciamento && "text-orange-500"
-            )}>
-              {isDespesa && line.value > 0 ? (
-                `(${formatCurrency(line.value)})`
-              ) : (
-                formatCurrency(line.value)
-              )}
-            </span>
-          )}
+          <div className="flex flex-col items-end">
+            {isResultado ? (
+              <div className={cn(
+                "inline-flex items-center justify-end px-1.5 py-0.5 rounded font-bold font-mono text-[11px]",
+                "bg-background shadow-sm border",
+                line.value >= 0 
+                  ? "border-green-300 dark:border-green-700 text-green-700 dark:text-green-400" 
+                  : "border-red-300 dark:border-red-700 text-red-700 dark:text-red-400"
+              )}>
+                {line.value >= 0 ? "▲ " : "▼ "}
+                {formatCurrency(Math.abs(line.value))}
+              </div>
+            ) : (
+              <span className={cn(
+                "font-mono text-xs",
+                isReceita && "text-green-600",
+                isDespesa && "text-red-600",
+                isFinanciamento && "text-orange-500"
+              )}>
+                {isDespesa && line.value > 0 ? (
+                  `(${formatCurrency(line.value)})`
+                ) : (
+                  formatCurrency(line.value)
+                )}
+              </span>
+            )}
+            {line.value !== 0 && !line.isCalculated && (
+              <span className="text-[9px] text-muted-foreground/60 font-mono leading-tight">
+                {((line.realizedValue / Math.abs(line.value)) * 100).toFixed(0)}% ({formatCurrency(line.realizedValue)})
+              </span>
+            )}
+          </div>
         </TableCell>
       </TableRow>
     );
