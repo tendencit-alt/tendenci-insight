@@ -325,7 +325,7 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
       // Build tree and flatten
       const tree = buildTree(chartAccounts || []);
       const lines: CashflowLine[] = [];
-      flattenTree(tree, accountValues, entriesByAccount, null, 0, lines);
+      flattenTree(tree, accountValues, entriesByAccount, competenceAmounts, null, 0, lines);
 
       // Calculate totals
       let totalEntradas = 0;
