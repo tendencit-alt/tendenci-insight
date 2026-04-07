@@ -1997,7 +1997,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                       }))}
                       disabled={!isEditable}
                     />
-                    <span className="text-sm font-medium w-28">Vendedor</span>
+                    <span className="text-sm font-medium w-28">{resourceDefaults.vendedor.label}</span>
                     {comissoes.vendedor.habilitado && (
                       <>
                         <div className="flex items-center gap-1">
@@ -2055,7 +2055,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                       }))}
                       disabled={!isEditable}
                     />
-                    <span className="text-sm font-medium w-28">Orçamentista</span>
+                    <span className="text-sm font-medium w-28">{resourceDefaults.orcamentista.label}</span>
                     {comissoes.orcamentista.habilitado && (
                       <>
                         <div className="flex items-center gap-1">
@@ -2113,7 +2113,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                       }))}
                       disabled={!isEditable}
                     />
-                    <span className="text-sm font-medium w-28">Projetista</span>
+                    <span className="text-sm font-medium w-28">{resourceDefaults.projetista.label}</span>
                     {comissoes.projetista.habilitado && (
                       <>
                         <div className="flex items-center gap-1">
@@ -2171,7 +2171,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                       }))}
                       disabled={!isEditable}
                     />
-                    <span className="text-sm font-medium w-28">Montador</span>
+                    <span className="text-sm font-medium w-28">{resourceDefaults.montador.label}</span>
                     {comissoes.montador.habilitado && (
                       <>
                         <div className="flex items-center gap-1">
@@ -2229,7 +2229,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                       }))}
                       disabled={!isEditable}
                     />
-                    <span className="text-sm font-medium w-28">Produção</span>
+                    <span className="text-sm font-medium w-28">{resourceDefaults.producao.label}</span>
                     {comissoes.producao.habilitado && (
                       <>
                         <div className="flex items-center gap-1">
