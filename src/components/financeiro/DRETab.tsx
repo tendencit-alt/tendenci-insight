@@ -264,6 +264,7 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
 
       // Group entries by account and calculate values
       const accountValues = new Map<string, number>();
+      const realizedAmounts = new Map<string, number>();
       const entriesByAccount = new Map<string, LedgerEntry[]>();
       let receitasRealizadas = 0;
       let despesasRealizadas = 0;
