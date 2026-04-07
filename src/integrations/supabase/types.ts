@@ -2996,6 +2996,8 @@ export type Database = {
           active: boolean
           chart_account_id: string | null
           created_at: string
+          description: string | null
+          display_name: string | null
           id: string
           resource_type: Database["public"]["Enums"]["fin_strategic_resource_type"]
           updated_at: string
@@ -3004,6 +3006,8 @@ export type Database = {
           active?: boolean
           chart_account_id?: string | null
           created_at?: string
+          description?: string | null
+          display_name?: string | null
           id?: string
           resource_type: Database["public"]["Enums"]["fin_strategic_resource_type"]
           updated_at?: string
@@ -3012,6 +3016,8 @@ export type Database = {
           active?: boolean
           chart_account_id?: string | null
           created_at?: string
+          description?: string | null
+          display_name?: string | null
           id?: string
           resource_type?: Database["public"]["Enums"]["fin_strategic_resource_type"]
           updated_at?: string
