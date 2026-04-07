@@ -657,9 +657,6 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
                 >
                   <FileText className="h-3 w-3 text-muted-foreground hover:text-primary" />
                 </button>
-                <span className="text-muted-foreground font-mono text-xs">
-                  {entryDate ? formatDate(entryDate) : '-'}
-                </span>
                 <span className="text-foreground/80 truncate">{entry.description}</span>
                 {entry.document_number && (
                   <span className="text-xs text-muted-foreground">
