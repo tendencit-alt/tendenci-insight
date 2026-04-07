@@ -397,7 +397,29 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     },
   });
 
-  const hasSelectedArchitect = !!formData.architect_id;
+  const { data: revenueAccounts } = useQuery({
+    queryKey: ['revenue-accounts-for-order'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('fin_chart_accounts')
+        .select('id, code, name, parent_id')
+        .like('code', '1.%')
+        .eq('active', true)
+        .order('code');
+      return data || [];
+    },
+  });
+
+  // Set default chart_account_id to '1.1' when accounts load
+  useEffect(() => {
+    if (revenueAccounts && revenueAccounts.length > 0 && !formData.chart_account_id) {
+      const defaultAccount = revenueAccounts.find(a => a.code === '1.1');
+      if (defaultAccount) {
+        setFormData(prev => ({ ...prev, chart_account_id: defaultAccount.id }));
+      }
+    }
+  }, [revenueAccounts]);
+
 
   // RT fica obrigatório e vinculado ao arquiteto selecionado
   useEffect(() => {
