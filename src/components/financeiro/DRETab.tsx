@@ -536,6 +536,12 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
     return format(new Date(dateStr + 'T12:00:00'), "dd/MM/yyyy");
   };
 
+  const getParentValue = (line: DRELine): number | null => {
+    if (!line.parentId || !dreData?.lines) return null;
+    const parent = dreData.lines.find(l => l.id === line.parentId);
+    return parent ? parent.value : null;
+  };
+
   const renderLine = (line: DRELine) => {
     const isExpanded = expandedAccounts.has(line.id);
     const isEntriesExpanded = expandedEntries.has(line.id);
@@ -547,6 +553,12 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
     const isCapital = mainCode === 9;
     const hasEntries = line.entries.length > 0;
     const canExpand = line.hasChildren || hasEntries;
+    
+    // Calculate percentage composition
+    const parentValue = getParentValue(line);
+    const percentage = parentValue && parentValue !== 0 && line.value !== 0
+      ? Math.abs((line.value / parentValue) * 100)
+      : null;
     
     const rows: JSX.Element[] = [];
     
@@ -566,7 +578,6 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
           onClick={() => {
             if (line.hasChildren) {
               toggleExpand(line.id);
-              // Also toggle entries if the parent has direct entries
               if (hasEntries) {
                 toggleEntries(line.id);
               }
@@ -590,6 +601,11 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
               "truncate",
               isResultado && "font-semibold"
             )}>{line.name}</span>
+            {percentage !== null && line.level > 0 && (
+              <span className="text-[10px] text-muted-foreground/50 font-mono shrink-0">
+                {percentage.toFixed(1)}%
+              </span>
+            )}
             {hasEntries && (
               <span className="text-xs text-muted-foreground ml-1">
                 ({line.entries.length} lançamento{line.entries.length !== 1 ? 's' : ''})
