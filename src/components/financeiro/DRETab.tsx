@@ -275,9 +275,11 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
           const current = accountValues.get(entry.chart_account_id) || 0;
           accountValues.set(entry.chart_account_id, current + Number(entry.amount));
 
-          // Track realized amounts
+          // Track realized amounts per account and globally
           if (entry.status === "PAGO_RECEBIDO") {
-            // Determine type from chart account
+            const currentRealized = realizedAmounts.get(entry.chart_account_id) || 0;
+            realizedAmounts.set(entry.chart_account_id, currentRealized + Number(entry.amount));
+            
             const account = chartAccounts?.find(a => a.id === entry.chart_account_id);
             if (account) {
               const mainCode = parseFloat(account.code.split('.')[0]);
