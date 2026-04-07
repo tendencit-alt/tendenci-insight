@@ -428,6 +428,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
         deal_id: order.deal_id || '',
         architect_id: order.architect_id || '',
         project_id: (order as any).project_id || '',
+        chart_account_id: (order as any).chart_account_id || '',
         observacao_pagamento: typeof order.observacao_pagamento === 'string' && !order.observacao_pagamento.startsWith('[') 
           ? order.observacao_pagamento : '',
         data_entrega_prevista: order.data_entrega_prevista?.split('T')[0] || '',
