@@ -421,7 +421,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
   }, [revenueAccounts]);
 
 
-  // RT fica obrigatório e vinculado ao arquiteto selecionado
+  const hasSelectedArchitect = !!formData.architect_id;
   useEffect(() => {
     const architect = architects?.find((a) => a.id === formData.architect_id);
 
