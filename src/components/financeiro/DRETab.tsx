@@ -566,6 +566,10 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
           onClick={() => {
             if (line.hasChildren) {
               toggleExpand(line.id);
+              // Also toggle entries if the parent has direct entries
+              if (hasEntries) {
+                toggleEntries(line.id);
+              }
             } else if (hasEntries) {
               toggleEntries(line.id);
             }
@@ -586,7 +590,7 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
               "truncate",
               isResultado && "font-semibold"
             )}>{line.name}</span>
-            {hasEntries && !line.hasChildren && (
+            {hasEntries && (
               <span className="text-xs text-muted-foreground ml-1">
                 ({line.entries.length} lançamento{line.entries.length !== 1 ? 's' : ''})
               </span>
@@ -630,8 +634,8 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
       </TableRow>
     );
     
-    // Entry rows (when expanded and no children - leaf accounts)
-    if (isEntriesExpanded && !line.hasChildren && hasEntries) {
+    // Entry rows (when expanded - show direct entries even on parent accounts)
+    if (isEntriesExpanded && hasEntries) {
       line.entries.forEach((entry, idx) => {
         const entryDate = entry.cash_date;
         rows.push(
