@@ -506,18 +506,25 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
           </div>
         </TableCell>
         <TableCell className="text-right p-1">
-          <span className={cn(
-            "font-mono text-xs",
-            isReceita && "text-green-600",
-            isDespesa && "text-red-600",
-            isFinanciamento && "text-orange-500"
-          )}>
-            {isDespesa && line.value > 0 ? (
-              `(${formatCurrency(line.value)})`
-            ) : (
-              formatCurrency(line.value)
+          <div className="flex flex-col items-end">
+            <span className={cn(
+              "font-mono text-xs",
+              isReceita && "text-green-600",
+              isDespesa && "text-red-600",
+              isFinanciamento && "text-orange-500"
+            )}>
+              {isDespesa && line.value > 0 ? (
+                `(${formatCurrency(line.value)})`
+              ) : (
+                formatCurrency(line.value)
+              )}
+            </span>
+            {line.competenceValue !== 0 && line.value !== 0 && (
+              <span className="text-[9px] text-muted-foreground/60 font-mono leading-tight">
+                {((line.value / Math.abs(line.competenceValue)) * 100).toFixed(0)}% de {formatCurrency(Math.abs(line.competenceValue))}
+              </span>
             )}
-          </span>
+          </div>
         </TableCell>
       </TableRow>
     );
