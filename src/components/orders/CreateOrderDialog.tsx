@@ -131,6 +131,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     deal_id: dealId || '',
     architect_id: '',
     project_id: '',
+    chart_account_id: '',
     observacao_pagamento: '',
     data_entrega_prevista: '',
     tipo_entrega: '',
