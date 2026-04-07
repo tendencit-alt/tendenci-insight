@@ -354,12 +354,12 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
 
   // Estado unificado para comissões (incluindo RT)
   const [comissoes, setComissoes] = useState({
-    rt: { habilitado: false, percentual: 10, valor: 0, responsavel_id: '' },
-    vendedor: { habilitado: false, percentual: 3, valor: 0, responsavel_id: '' },
-    orcamentista: { habilitado: false, percentual: 0.2, valor: 0, responsavel_id: '' },
-    projetista: { habilitado: false, percentual: 0.2, valor: 0, responsavel_id: '' },
-    montador: { habilitado: false, percentual: 10, valor: 0, responsavel_id: '' },
-    producao: { habilitado: false, percentual: 0.3, valor: 0, responsavel_id: '' },
+    rt: { habilitado: false, percentual: resourceDefaults.rt.percentage, valor: 0, responsavel_id: '' },
+    vendedor: { habilitado: resourceDefaults.vendedor.active, percentual: resourceDefaults.vendedor.percentage, valor: 0, responsavel_id: '' },
+    orcamentista: { habilitado: resourceDefaults.orcamentista.active, percentual: resourceDefaults.orcamentista.percentage, valor: 0, responsavel_id: '' },
+    projetista: { habilitado: resourceDefaults.projetista.active, percentual: resourceDefaults.projetista.percentage, valor: 0, responsavel_id: '' },
+    montador: { habilitado: resourceDefaults.montador.active, percentual: resourceDefaults.montador.percentage, valor: 0, responsavel_id: '' },
+    producao: { habilitado: resourceDefaults.producao.active, percentual: resourceDefaults.producao.percentage, valor: 0, responsavel_id: '' },
   });
 
   const { data: order, refetch } = useQuery({
@@ -573,18 +573,25 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
     }
   }, [order, resourceDefaults]);
 
-  // Auto-preencher RT quando arquiteto muda (apenas se RT não estiver habilitado)
+  // Auto-preencher RT quando arquiteto muda
   useEffect(() => {
-    if (formData.architect_id && !comissoes.rt.habilitado) {
-      const selectedArchitect = architects?.find(a => a.id === formData.architect_id);
-      if (selectedArchitect?.commission_percent) {
-        setComissoes(prev => ({
-          ...prev,
-          rt: { ...prev.rt, percentual: Number(selectedArchitect.commission_percent) }
-        }));
+    if (!formData.architect_id) return;
+
+    const selectedArchitect = architects?.find(a => a.id === formData.architect_id);
+    const nextPercentual = selectedArchitect?.commission_percent
+      ? Number(selectedArchitect.commission_percent)
+      : resourceDefaults.rt.percentage;
+
+    setComissoes(prev => ({
+      ...prev,
+      rt: {
+        ...prev.rt,
+        habilitado: true,
+        responsavel_id: formData.architect_id,
+        percentual: nextPercentual,
       }
-    }
-  }, [formData.architect_id, architects, comissoes.rt.habilitado]);
+    }));
+  }, [formData.architect_id, architects, resourceDefaults.rt.percentage]);
 
   // Query de paymentConditions removida - agora usamos CONDICOES_PAGAMENTO constante
 
@@ -1939,7 +1946,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                       }))}
                       disabled={!isEditable}
                     />
-                    <span className="text-sm font-medium w-28">RT</span>
+                    <span className="text-sm font-medium w-28">{resourceDefaults.rt.label}</span>
                     {comissoes.rt.habilitado && (
                       <>
                         <div className="flex items-center gap-1">
