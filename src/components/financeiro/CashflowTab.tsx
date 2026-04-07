@@ -570,9 +570,6 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
                 >
                   <FileText className="h-3 w-3 text-muted-foreground hover:text-primary" />
                 </button>
-                <span className="text-muted-foreground font-mono text-xs">
-                  {formatDate(entry.cash_date)}
-                </span>
                 <span className="text-foreground/80 truncate">{entry.description}</span>
                 {line.value !== 0 && (
                   <span className="text-[10px] text-muted-foreground/50 font-mono shrink-0">
