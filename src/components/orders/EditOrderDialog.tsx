@@ -965,6 +965,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
           valor_total: total,
           centro_custo: null,
           project_id: formData.project_id || null,
+          chart_account_id: formData.chart_account_id || null,
           status: shouldBeAtivo ? 'ativo' : order.status,
           taxa_cartao_percentual: taxaCartao.percentual,
           taxa_cartao_valor: taxaCartao.valor,
