@@ -455,6 +455,12 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
     return format(new Date(dateStr + 'T12:00:00'), "dd/MM/yyyy");
   };
 
+  const getParentValue = (line: CashflowLine): number | null => {
+    if (!line.parentId || !cashflowData?.lines) return null;
+    const parent = cashflowData.lines.find(l => l.id === line.parentId);
+    return parent ? parent.value : null;
+  };
+
   const renderLine = (line: CashflowLine) => {
     const isExpanded = expandedAccounts.has(line.id);
     const isEntriesExpanded = expandedEntries.has(line.id);
@@ -463,6 +469,11 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
     const isFinanciamento = line.nature === "FINANCIAMENTO";
     const hasEntries = line.entries.length > 0;
     const canExpand = line.hasChildren || hasEntries;
+    
+    const parentValue = getParentValue(line);
+    const percentage = parentValue && parentValue !== 0 && line.value !== 0
+      ? Math.abs((line.value / parentValue) * 100)
+      : null;
     
     const rows: JSX.Element[] = [];
     
@@ -501,6 +512,11 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
             )}
             <span className="text-muted-foreground font-mono text-[11px] shrink-0">{line.code}</span>
             <span className="truncate">{line.name}</span>
+            {percentage !== null && line.level > 0 && (
+              <span className="text-[10px] text-muted-foreground/50 font-mono shrink-0">
+                {percentage.toFixed(1)}%
+              </span>
+            )}
             {hasEntries && (
               <span className="text-xs text-muted-foreground ml-1">
                 ({line.entries.length} lançamento{line.entries.length !== 1 ? 's' : ''})
@@ -558,6 +574,11 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
                   {formatDate(entry.cash_date)}
                 </span>
                 <span className="text-foreground/80 truncate">{entry.description}</span>
+                {line.value !== 0 && (
+                  <span className="text-[10px] text-muted-foreground/50 font-mono shrink-0">
+                    {((entry.amount / Math.abs(line.value)) * 100).toFixed(1)}%
+                  </span>
+                )}
                 {entry.document_number && (
                   <span className="text-xs text-muted-foreground">
                     Doc: {entry.document_number}
