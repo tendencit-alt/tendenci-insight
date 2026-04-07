@@ -2996,6 +2996,7 @@ export type Database = {
           active: boolean
           chart_account_id: string | null
           created_at: string
+          default_percentage: number | null
           description: string | null
           display_name: string | null
           id: string
@@ -3006,6 +3007,7 @@ export type Database = {
           active?: boolean
           chart_account_id?: string | null
           created_at?: string
+          default_percentage?: number | null
           description?: string | null
           display_name?: string | null
           id?: string
@@ -3016,6 +3018,7 @@ export type Database = {
           active?: boolean
           chart_account_id?: string | null
           created_at?: string
+          default_percentage?: number | null
           description?: string | null
           display_name?: string | null
           id?: string
