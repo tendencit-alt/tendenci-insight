@@ -192,7 +192,20 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     producao: { habilitado: false, percentual: resourceDefaults.producao.percentage, valor: 0, responsavel_id: '' },
   });
 
-  const clearDraftStorage = useCallback(() => {
+  // Sync percentuais dos cadastros quando carregam
+  useEffect(() => {
+    if (resourceDefaultsLoaded) {
+      setComissoes(prev => ({
+        rt: { ...prev.rt, percentual: prev.rt.percentual || resourceDefaults.rt.percentage },
+        vendedor: { ...prev.vendedor, percentual: prev.vendedor.percentual || resourceDefaults.vendedor.percentage },
+        orcamentista: { ...prev.orcamentista, percentual: prev.orcamentista.percentual || resourceDefaults.orcamentista.percentage },
+        projetista: { ...prev.projetista, percentual: prev.projetista.percentual || resourceDefaults.projetista.percentage },
+        montador: { ...prev.montador, percentual: prev.montador.percentual || resourceDefaults.montador.percentage },
+        producao: { ...prev.producao, percentual: prev.producao.percentual || resourceDefaults.producao.percentage },
+      }));
+    }
+  }, [resourceDefaultsLoaded, resourceDefaults]);
+
     if (typeof window === 'undefined') return;
     window.localStorage.removeItem(CREATE_ORDER_DRAFT_KEY);
     window.localStorage.removeItem(CREATE_ORDER_ITEMS_DRAFT_KEY);
