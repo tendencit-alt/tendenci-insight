@@ -206,6 +206,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     }
   }, [resourceDefaultsLoaded, resourceDefaults]);
 
+  const clearDraftStorage = useCallback(() => {
     if (typeof window === 'undefined') return;
     window.localStorage.removeItem(CREATE_ORDER_DRAFT_KEY);
     window.localStorage.removeItem(CREATE_ORDER_ITEMS_DRAFT_KEY);
