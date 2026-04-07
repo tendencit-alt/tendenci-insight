@@ -22,7 +22,7 @@ export default function CadastrosFinanceiros() {
             <h1 className="text-2xl font-bold">Cadastros Financeiros</h1>
           </div>
           <p className="text-muted-foreground">
-            Gerencie contas bancárias, plano de contas, centros de custo, projetos, responsáveis avulsos e categorias dos recursos estratégicos.
+            Gerencie contas bancárias, plano de contas, centros de custo, projetos, responsáveis avulsos e categorias dos compromissos sobre venda.
           </p>
         </div>
 
@@ -46,7 +46,7 @@ export default function CadastrosFinanceiros() {
             </TabsTrigger>
             <TabsTrigger value="strategic_resource_categories" className="flex items-center gap-2 px-4 py-2">
               <FolderCog className="h-4 w-4" />
-              Recursos Estratégicos
+              Compromissos Sobre Venda
             </TabsTrigger>
             <TabsTrigger value="responsibles" className="flex items-center gap-2 px-4 py-2">
               <BriefcaseBusiness className="h-4 w-4" />

@@ -1103,7 +1103,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                   </div>
                   {!hasSelectedArchitect && (
                     <p className="text-sm text-muted-foreground">
-                      Selecione um arquiteto para liberar o recurso estratégico RT na etapa de pagamento.
+                      Selecione um arquiteto para liberar o compromisso sobre venda RT na etapa de pagamento.
                     </p>
                   )}
                 </div>
@@ -1574,7 +1574,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                 <Card className="p-4 border-orange-200 dark:border-orange-800 bg-orange-50/50 dark:bg-orange-950/20">
                   <div className="flex items-center justify-between mb-3">
                     <Label className="font-medium flex items-center gap-2">
-                      💰 Recursos Estratégicos
+                      💰 Compromissos Sobre Venda
                     </Label>
                   </div>
                   
@@ -1986,7 +1986,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                     </div>
                   )}
                    <div className="flex items-center justify-between">
-                     <span className="text-sm font-semibold text-blue-600">Valor Líquido - Recursos Estratégicos:</span>
+                     <span className="text-sm font-semibold text-blue-600">Valor Líquido - Compromissos Sobre Venda:</span>
                      <span className={`text-base font-bold text-blue-600`}>
                        {formatCurrency(valorLiquidoRecursos)}
                      </span>
