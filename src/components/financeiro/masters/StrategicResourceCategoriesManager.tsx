@@ -130,7 +130,7 @@ export function StrategicResourceCategoriesManager() {
         <div className="space-y-1">
           <CardTitle className="flex items-center gap-2 text-base font-medium">
             <FolderCog className="h-5 w-5" />
-            Categorias dos Recursos Estratégicos
+            Categorias dos Compromissos Sobre Venda
           </CardTitle>
           <CardDescription>
             Defina a categoria contábil usada automaticamente no contas a pagar e no razão para cada recurso.

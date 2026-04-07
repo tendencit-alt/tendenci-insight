@@ -17,7 +17,7 @@ export function MastersTab() {
       <div>
         <h2 className="text-lg font-semibold">Cadastros do Financeiro</h2>
         <p className="text-sm text-muted-foreground">
-          Gerencie contas bancárias, plano de contas, centros de custo, projetos, responsáveis avulsos e categorias dos recursos estratégicos
+          Gerencie contas bancárias, plano de contas, centros de custo, projetos, responsáveis avulsos e categorias dos compromissos sobre venda
         </p>
       </div>
 
@@ -41,7 +41,7 @@ export function MastersTab() {
           </TabsTrigger>
           <TabsTrigger value="strategic_resource_categories" className="gap-2">
             <FolderCog className="h-4 w-4" />
-            Recursos Estratégicos
+            Compromissos Sobre Venda
           </TabsTrigger>
           <TabsTrigger value="responsibles" className="gap-2">
             <BriefcaseBusiness className="h-4 w-4" />
