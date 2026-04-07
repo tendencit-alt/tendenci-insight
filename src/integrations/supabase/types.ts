@@ -3000,7 +3000,9 @@ export type Database = {
           description: string | null
           display_name: string | null
           id: string
-          resource_type: Database["public"]["Enums"]["fin_strategic_resource_type"]
+          resource_type:
+            | Database["public"]["Enums"]["fin_strategic_resource_type"]
+            | null
           updated_at: string
         }
         Insert: {
@@ -3011,7 +3013,9 @@ export type Database = {
           description?: string | null
           display_name?: string | null
           id?: string
-          resource_type: Database["public"]["Enums"]["fin_strategic_resource_type"]
+          resource_type?:
+            | Database["public"]["Enums"]["fin_strategic_resource_type"]
+            | null
           updated_at?: string
         }
         Update: {
@@ -3022,7 +3026,9 @@ export type Database = {
           description?: string | null
           display_name?: string | null
           id?: string
-          resource_type?: Database["public"]["Enums"]["fin_strategic_resource_type"]
+          resource_type?:
+            | Database["public"]["Enums"]["fin_strategic_resource_type"]
+            | null
           updated_at?: string
         }
         Relationships: [
