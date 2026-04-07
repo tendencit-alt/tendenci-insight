@@ -1,36 +1,57 @@
 
 
-## Plano: Unificar Alertas de Pendências em um único painel
+## Plano: Adicionar seleção de Categoria de Receita no Pedido
 
 ### Problema
-Existem dois componentes de alerta separados na tela Financeiro:
-1. **PendingAlertsCard** — card grande vermelho no topo da página (contas a pagar/receber vencidas), muito chamativo e poluindo a interface
-2. **FinanceiroAlerts** — painel colapsável dentro da aba Lançamentos & Conciliação (alertas de conciliação, extrato, etc.)
-
-Ambos mostram "Alertas de Pendências" mas de forma redundante e inconsistente.
-
-### Solução
-Remover o `PendingAlertsCard` e incorporar os dados de contas vencidas (payables/receivables) como uma nova seção dentro do `FinanceiroAlerts`, mantendo tudo em um único painel colapsável e clean.
+O trigger `create_receivable_from_order` hardcoda `WHERE code = '1'` (conta raiz) para a categoria contábil. O correto é permitir que o usuário escolha entre as subcontas de receita (1.1 - Vendas de Produto, 1.2 - Prestação de Serviços e suas subcategorias) durante a criação/edição do pedido.
 
 ### Alterações
 
-**1. `src/components/financeiro/FinanceiroAlerts.tsx`**
-- Adicionar nova prop opcional: `pendingItems` (contas vencidas a pagar/receber)
-- Ou adicionar query interna para buscar contas vencidas (payables + receivables com status ABERTO/VENCIDO e due_date <= hoje)
-- Criar nova seção colapsável **"Contas vencidas"** com ícone vermelho, mostrando:
-  - Total pendente/vencido no header da seção
-  - Lista compacta: nome da parte, descrição, badge Pagar/Receber, dias de atraso, valor
-  - Botão de dismiss individual (mantendo funcionalidade atual)
-- Esta seção aparece como primeira na lista de alertas (prioridade mais alta)
-- O badge total no header do painel passa a somar também as contas vencidas
+**1. Migration SQL — adicionar coluna + corrigir trigger**
+- Adicionar coluna `chart_account_id UUID REFERENCES fin_chart_accounts(id)` na tabela `orders`
+- Corrigir dados existentes: mover lançamentos de `code = '1'` para `code = '1.1'`
+- Recriar trigger `create_receivable_from_order`: usar `NEW.chart_account_id` se preenchido, senão fallback para `code = '1.1'`
+- Recriar trigger `update_financial_entries_on_order_edit`: mesma lógica
 
-**2. `src/pages/Financeiro.tsx`**
-- Remover import e uso do `PendingAlertsCard`
-- Remover linhas 8 e 90
+**2. `src/components/orders/CreateOrderDialog.tsx`**
+- Adicionar campo `chart_account_id` ao formulário (na aba de identificação ou itens)
+- Buscar contas de receita filhas de `code = '1'` (1.1, 1.2, 1.2.1, 1.2.2, etc.) com Select hierárquico
+- Default: `1.1 - Vendas de Produto`
+- Salvar `chart_account_id` no INSERT do pedido
 
-**3. `src/components/financeiro/LedgerReconciliationTab.tsx`**
-- Nenhuma alteração necessária (já usa FinanceiroAlerts)
+**3. `src/components/orders/EditOrderDialog.tsx`**
+- Replicar o mesmo campo de categoria de receita (paridade funcional)
+- Carregar valor atual do pedido
+
+### Detalhes técnicos
+
+```sql
+-- Coluna nova
+ALTER TABLE orders ADD COLUMN chart_account_id uuid REFERENCES fin_chart_accounts(id);
+
+-- Corrigir dados existentes
+UPDATE fin_ledger_entries 
+SET chart_account_id = (SELECT id FROM fin_chart_accounts WHERE code = '1.1')
+WHERE chart_account_id = (SELECT id FROM fin_chart_accounts WHERE code = '1');
+
+UPDATE fin_receivables 
+SET chart_account_id = (SELECT id FROM fin_chart_accounts WHERE code = '1.1')
+WHERE chart_account_id = (SELECT id FROM fin_chart_accounts WHERE code = '1');
+
+-- Trigger usa NEW.chart_account_id com fallback
+v_chart_account_id := COALESCE(
+  NEW.chart_account_id, 
+  (SELECT id FROM fin_chart_accounts WHERE code = '1.1' LIMIT 1)
+);
+```
+
+O Select exibirá as contas agrupadas:
+- 1.1 - Vendas de Produto
+- 1.2 - Prestação de Serviços
+  - 1.2.1 - Projetos
+  - 1.2.2 - Manutenção / Assistência
+- 1.3 - Frete Sobre Venda
 
 ### Resultado
-Um único painel colapsável "Alertas de Pendências" concentra todos os tipos de alerta: contas vencidas, conciliação pendente, extrato desatualizado, sem plano de contas e divergências. Interface limpa sem o card vermelho grande no topo.
+O pedido passa a carregar a categoria contábil correta para o financeiro, sem hardcode. Dados existentes são corrigidos para `1.1`.
 
