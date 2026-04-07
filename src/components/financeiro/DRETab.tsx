@@ -630,8 +630,8 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
       </TableRow>
     );
     
-    // Entry rows (when expanded and no children - leaf accounts)
-    if (isEntriesExpanded && !line.hasChildren && hasEntries) {
+    // Entry rows (when expanded - show direct entries even on parent accounts)
+    if (isEntriesExpanded && hasEntries) {
       line.entries.forEach((entry, idx) => {
         const entryDate = entry.cash_date;
         rows.push(
