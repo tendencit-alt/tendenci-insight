@@ -571,7 +571,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
         },
       });
     }
-  }, [order]);
+  }, [order, resourceDefaults]);
 
   // Auto-preencher RT quando arquiteto muda (apenas se RT não estiver habilitado)
   useEffect(() => {
