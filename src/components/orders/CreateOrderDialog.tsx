@@ -101,7 +101,7 @@ const CREATE_ORDER_ITEMS_DRAFT_KEY = 'orders:create-order:draft:items-table';
 export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clientId }: CreateOrderDialogProps) {
   const { user } = useAuth();
   const linkRatesDb = usePaymentLinkRates();
-  const resourceDefaults = useStrategicResourceDefaults();
+  const { defaults: resourceDefaults, isLoaded: resourceDefaultsLoaded } = useStrategicResourceDefaults();
   const {
     minimize: minimizeDialog,
     remove: removeMinimized,

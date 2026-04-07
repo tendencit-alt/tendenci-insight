@@ -162,7 +162,7 @@ const initialClientData: ClientData = {
 export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: EditOrderDialogProps) {
   const { user } = useAuth();
   const linkRatesDb = usePaymentLinkRates();
-  const resourceDefaults = useStrategicResourceDefaults();
+  const { defaults: resourceDefaults, isLoaded: resourceDefaultsLoaded } = useStrategicResourceDefaults();
   const { isMaster } = usePermissions();
   const { minimize: minimizeDialog, remove: removeMinimized } = useMinimizedDialogs();
   const [isMinimized, setIsMinimized] = useState(false);
