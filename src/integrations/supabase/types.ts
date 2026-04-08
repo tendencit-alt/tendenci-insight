@@ -958,6 +958,60 @@ export type Database = {
         }
         Relationships: []
       }
+      company_settings: {
+        Row: {
+          accent_color: string | null
+          address: string | null
+          cnpj: string | null
+          company_name: string
+          created_at: string
+          email: string | null
+          id: string
+          inscricao_estadual: string | null
+          logo_url: string | null
+          phone: string | null
+          primary_color: string | null
+          razao_social: string | null
+          trade_name: string | null
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          accent_color?: string | null
+          address?: string | null
+          cnpj?: string | null
+          company_name?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          inscricao_estadual?: string | null
+          logo_url?: string | null
+          phone?: string | null
+          primary_color?: string | null
+          razao_social?: string | null
+          trade_name?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          accent_color?: string | null
+          address?: string | null
+          cnpj?: string | null
+          company_name?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          inscricao_estadual?: string | null
+          logo_url?: string | null
+          phone?: string | null
+          primary_color?: string | null
+          razao_social?: string | null
+          trade_name?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
       cost_center_tags: {
         Row: {
           active: boolean | null
