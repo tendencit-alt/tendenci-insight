@@ -24,9 +24,9 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import tendenciLogo from "@/assets/tendenci-logo-new.png";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCompanySettings } from "@/hooks/useCompanySettings";
 
 const menuItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard, module: "dashboard" },
@@ -48,6 +48,9 @@ export function AppSidebar() {
   const isCollapsed = state === "collapsed";
   const { hasModuleAccess, loading } = usePermissions();
   const { profile } = useAuth();
+  const { data: companySettings } = useCompanySettings();
+  const companyLogo = companySettings?.logo_url;
+  const companyName = companySettings?.trade_name || companySettings?.company_name || 'Sistema';
 
   const isMaster = profile?.role === 'admin';
 
@@ -78,11 +81,19 @@ export function AppSidebar() {
         <div className="px-4 py-6 border-b border-sidebar-border/50">
           {isCollapsed ? (
             <div className="flex items-center justify-center">
-              <img src={tendenciLogo} alt="Tendenci" className="h-12 w-12 object-contain" />
+              {companyLogo ? (
+                <img src={companyLogo} alt={companyName} className="h-12 w-12 object-contain" />
+              ) : (
+                <span className="font-bold text-sm text-sidebar-foreground">{companyName.charAt(0)}</span>
+              )}
             </div>
           ) : (
             <div className="space-y-2">
-              <img src={tendenciLogo} alt="Tendenci" className="h-16 w-auto object-contain" />
+              {companyLogo ? (
+                <img src={companyLogo} alt={companyName} className="h-16 w-auto object-contain" />
+              ) : (
+                <span className="font-bold text-lg text-sidebar-foreground">{companyName}</span>
+              )}
               <p className="text-xs text-sidebar-foreground/60 font-semibold tracking-wider uppercase">
                 System
               </p>

@@ -22,7 +22,7 @@ import {
   SheetContent,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import tendenciLogo from "@/assets/tendenci-logo-new.png";
+import { useCompanySettings } from "@/hooks/useCompanySettings";
 import { supabase } from "@/integrations/supabase/client";
 import { EditMenuItemDialog } from "./EditMenuItemDialog";
 
@@ -59,6 +59,9 @@ export function AppNavbar() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const { hasModuleAccess, loading, isMaster } = usePermissions();
   const { profile, user, signOut } = useAuth();
+  const { data: companySettings } = useCompanySettings();
+  const companyLogo = companySettings?.logo_url;
+  const companyName = companySettings?.trade_name || companySettings?.company_name || 'Sistema';
 
   useEffect(() => {
     fetchMenuItems();
@@ -189,7 +192,11 @@ export function AppNavbar() {
   return (
     <nav className="sticky top-0 z-50 h-14 border-b border-border/40 bg-card/95 text-card-foreground backdrop-blur-[12px] supports-[backdrop-filter]:bg-card/95 shadow-sm">
       <div className="flex items-center h-full px-3 max-w-[1800px] mx-auto gap-2">
-        <img src={tendenciLogo} alt="Tendenci" className="h-7 w-auto flex-shrink-0" />
+        {companyLogo ? (
+          <img src={companyLogo} alt={companyName} className="h-7 w-auto flex-shrink-0" />
+        ) : (
+          <span className="font-bold text-sm flex-shrink-0">{companyName}</span>
+        )}
 
         {/* Desktop Menu */}
         <div className="hidden xl:flex items-center gap-1 flex-1 ml-4">
@@ -213,7 +220,11 @@ export function AppNavbar() {
           <SheetContent side="left" className="w-64 p-0">
             <div className="flex flex-col h-full">
               <div className="p-4 border-b border-border/50">
-                <img src={tendenciLogo} alt="Tendenci" className="h-12 w-auto" />
+                {companyLogo ? (
+                  <img src={companyLogo} alt={companyName} className="h-12 w-auto" />
+                ) : (
+                  <span className="font-bold text-lg">{companyName}</span>
+                )}
                 <p className="text-xs text-muted-foreground font-semibold tracking-wider uppercase mt-2">System</p>
               </div>
               <div className="flex-1 overflow-y-auto p-4">

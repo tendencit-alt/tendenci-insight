@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { Loader2, Lock } from 'lucide-react';
-import tendenciLogo from '@/assets/tendenci-logo-new.png';
+import { useCompanySettings } from '@/hooks/useCompanySettings';
 import { supabase } from '@/integrations/supabase/client';
 import { getFirstAllowedRoute } from '@/hooks/useFirstAllowedRoute';
 import { ForgotPasswordDialog } from '@/components/auth/ForgotPasswordDialog';
@@ -16,6 +16,9 @@ import { ForgotPasswordDialog } from '@/components/auth/ForgotPasswordDialog';
 const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
+  const { data: companySettings } = useCompanySettings();
+  const companyLogo = companySettings?.logo_url;
+  const companyName = companySettings?.trade_name || companySettings?.company_name || 'Sistema';
   const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
   const [loginData, setLoginData] = useState({
     email: '',
@@ -159,7 +162,11 @@ const Auth = () => {
       <Card className="w-full max-w-md shadow-2xl animate-fade-in animate-scale-in">
         <CardHeader className="space-y-4 border-0 bg-popover">
           <div className="flex justify-center">
-            <img src={tendenciLogo} alt="Tendenci" className="h-32 w-auto" />
+            {companyLogo ? (
+              <img src={companyLogo} alt={companyName} className="h-32 w-auto" />
+            ) : (
+              <span className="text-3xl font-bold">{companyName}</span>
+            )}
           </div>
           <div className="text-center space-y-2">
             

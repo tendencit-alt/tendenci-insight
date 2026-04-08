@@ -4,9 +4,10 @@ import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { UsersTab } from "@/components/settings/UsersTab";
 import { ProfileTypesManager } from "@/components/settings/ProfileTypesManager";
+import { CompanySettingsTab } from "@/components/settings/CompanySettingsTab";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { usePermissions } from "@/hooks/usePermissions";
-import { Users, Tags } from "lucide-react";
+import { Users, Tags, Building2 } from "lucide-react";
 
 const ProjectSettings = () => {
   const navigate = useNavigate();
@@ -31,7 +32,7 @@ const ProjectSettings = () => {
         </div>
 
         <Tabs defaultValue="users" className="w-full">
-          <TabsList className={`grid w-full ${isMaster ? 'grid-cols-2' : 'grid-cols-1'}`}>
+          <TabsList className={`grid w-full ${isMaster ? 'grid-cols-3' : 'grid-cols-1'}`}>
             <TabsTrigger value="users" className="flex items-center gap-1.5">
               <Users className="h-4 w-4" />
               Usuários
@@ -40,6 +41,12 @@ const ProjectSettings = () => {
               <TabsTrigger value="types" className="flex items-center gap-1.5">
                 <Tags className="h-4 w-4" />
                 Tipos de Perfil
+              </TabsTrigger>
+            )}
+            {isMaster && (
+              <TabsTrigger value="empresa" className="flex items-center gap-1.5">
+                <Building2 className="h-4 w-4" />
+                Empresa
               </TabsTrigger>
             )}
           </TabsList>
@@ -51,6 +58,12 @@ const ProjectSettings = () => {
           {isMaster && (
             <TabsContent value="types" className="space-y-6 pt-6">
               <ProfileTypesManager />
+            </TabsContent>
+          )}
+
+          {isMaster && (
+            <TabsContent value="empresa" className="space-y-6 pt-6">
+              <CompanySettingsTab />
             </TabsContent>
           )}
         </Tabs>

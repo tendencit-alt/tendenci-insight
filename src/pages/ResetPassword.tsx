@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { Loader2, KeyRound, CheckCircle } from 'lucide-react';
-import tendenciLogo from '@/assets/tendenci-logo-new.png';
+import { useCompanySettings } from '@/hooks/useCompanySettings';
 
 const ResetPassword = () => {
   const [password, setPassword] = useState('');
@@ -16,6 +16,9 @@ const ResetPassword = () => {
   const [success, setSuccess] = useState(false);
   const [isRecovery, setIsRecovery] = useState(false);
   const navigate = useNavigate();
+  const { data: companySettings } = useCompanySettings();
+  const companyLogo = companySettings?.logo_url;
+  const companyName = companySettings?.trade_name || companySettings?.company_name || 'Sistema';
 
   useEffect(() => {
     // Check for recovery token in URL hash
@@ -70,7 +73,11 @@ const ResetPassword = () => {
         <Card className="w-full max-w-md shadow-2xl">
           <CardHeader className="space-y-4 bg-popover">
             <div className="flex justify-center">
-              <img src={tendenciLogo} alt="Tendenci" className="h-32 w-auto" />
+              {companyLogo ? (
+                <img src={companyLogo} alt={companyName} className="h-32 w-auto" />
+              ) : (
+                <span className="text-3xl font-bold">{companyName}</span>
+              )}
             </div>
             <div className="text-center space-y-2">
               <CardTitle className="text-xl">Link inválido</CardTitle>
@@ -94,7 +101,11 @@ const ResetPassword = () => {
       <Card className="w-full max-w-md shadow-2xl animate-fade-in">
         <CardHeader className="space-y-4 bg-popover">
           <div className="flex justify-center">
-            <img src={tendenciLogo} alt="Tendenci" className="h-32 w-auto" />
+              {companyLogo ? (
+                <img src={companyLogo} alt={companyName} className="h-32 w-auto" />
+              ) : (
+                <span className="text-3xl font-bold">{companyName}</span>
+              )}
           </div>
           <div className="text-center space-y-2">
             <CardTitle className="text-xl flex items-center justify-center gap-2">
