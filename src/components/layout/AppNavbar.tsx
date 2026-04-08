@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { LogOut, User, Menu, Edit2, ChevronDown, Settings, Sun, Moon } from "lucide-react";
+import { LogOut, User, Menu, Edit2, ChevronDown, Settings, Sun, Moon, Building2 } from "lucide-react";
 import { useTheme } from "next-themes";
 import {
   DropdownMenu,
@@ -57,7 +57,7 @@ export function AppNavbar() {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const { hasModuleAccess, loading, isMaster } = usePermissions();
+  const { hasModuleAccess, loading, isMaster, isOwner } = usePermissions();
   const { profile, user, signOut } = useAuth();
   const { data: companySettings } = useCompanySettings();
   const companyLogo = companySettings?.logo_url;
@@ -253,13 +253,37 @@ export function AppNavbar() {
                 ))}
               </div>
             </div>
+            {isOwner && (
+              <div className="mb-4">
+                <p className="text-xs text-muted-foreground font-semibold tracking-wider uppercase mb-2 px-3">Owner</p>
+                <NavLink
+                  to="/super-admin"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-300 hover:bg-muted"
+                  activeClassName="bg-primary text-primary-foreground font-semibold shadow-[0_0_12px_rgba(212,30,30,0.6)]"
+                >
+                  <Building2 className="h-5 w-5 flex-shrink-0" />
+                  <span>Painel Owner</span>
+                </NavLink>
+              </div>
+            )}
           </SheetContent>
         </Sheet>
 
         <div className="flex-1 xl:flex-none" />
 
-        {/* Right side: Theme + Notifications + Settings gear + User */}
+        {/* Right side: Owner + Theme + Notifications + Settings gear + User */}
         <div className="flex items-center gap-1.5">
+          {isOwner && (
+            <NavLink
+              to="/super-admin"
+              className="hidden xl:flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md hover:bg-muted/50 font-medium transition-colors"
+              activeClassName="bg-primary/10 text-primary font-semibold"
+            >
+              <Building2 className="h-4 w-4 flex-shrink-0" />
+              <span className="whitespace-nowrap">Painel Owner</span>
+            </NavLink>
+          )}
           <ThemeToggle />
           <NotificationBell />
 
