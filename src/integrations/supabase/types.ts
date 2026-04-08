@@ -972,6 +972,7 @@ export type Database = {
           phone: string | null
           primary_color: string | null
           razao_social: string | null
+          tenant_id: string | null
           trade_name: string | null
           updated_at: string
           website: string | null
@@ -989,6 +990,7 @@ export type Database = {
           phone?: string | null
           primary_color?: string | null
           razao_social?: string | null
+          tenant_id?: string | null
           trade_name?: string | null
           updated_at?: string
           website?: string | null
@@ -1006,11 +1008,20 @@ export type Database = {
           phone?: string | null
           primary_color?: string | null
           razao_social?: string | null
+          tenant_id?: string | null
           trade_name?: string | null
           updated_at?: string
           website?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "company_settings_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cost_center_tags: {
         Row: {
@@ -5841,8 +5852,10 @@ export type Database = {
           especializacao: string | null
           full_name: string | null
           id: string
+          is_super_admin: boolean | null
           profile_type_id: string | null
           role: Database["public"]["Enums"]["user_role"]
+          tenant_id: string | null
           updated_at: string | null
           username: string
         }
@@ -5853,8 +5866,10 @@ export type Database = {
           especializacao?: string | null
           full_name?: string | null
           id: string
+          is_super_admin?: boolean | null
           profile_type_id?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          tenant_id?: string | null
           updated_at?: string | null
           username: string
         }
@@ -5865,12 +5880,21 @@ export type Database = {
           especializacao?: string | null
           full_name?: string | null
           id?: string
+          is_super_admin?: boolean | null
           profile_type_id?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          tenant_id?: string | null
           updated_at?: string | null
           username?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_profiles_tenant"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "profiles_profile_type_id_fkey"
             columns: ["profile_type_id"]
@@ -6796,6 +6820,80 @@ export type Database = {
           original_phone?: string | null
         }
         Relationships: []
+      }
+      tenant_plans: {
+        Row: {
+          active: boolean | null
+          created_at: string
+          features: Json | null
+          id: string
+          max_users: number
+          name: string
+          price: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string
+          features?: Json | null
+          id?: string
+          max_users?: number
+          name: string
+          price?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string
+          features?: Json | null
+          id?: string
+          max_users?: number
+          name?: string
+          price?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      tenants: {
+        Row: {
+          active: boolean | null
+          created_at: string
+          id: string
+          max_users: number
+          name: string
+          plan_id: string | null
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string
+          id?: string
+          max_users?: number
+          name: string
+          plan_id?: string | null
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string
+          id?: string
+          max_users?: number
+          name?: string
+          plan_id?: string | null
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenants_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_plans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tendenci_badges: {
         Row: {
@@ -8781,6 +8879,7 @@ export type Database = {
         Args: { user_id: string }
         Returns: Database["public"]["Enums"]["user_role"]
       }
+      get_user_tenant_id: { Args: never; Returns: string }
       get_weekly_architect_goal_progress: {
         Args: { p_vendedor_id: string }
         Returns: Json
@@ -8806,6 +8905,7 @@ export type Database = {
       }
       is_admin: { Args: never; Returns: boolean }
       is_admin_safe: { Args: never; Returns: boolean }
+      is_super_admin: { Args: never; Returns: boolean }
       is_user_admin: { Args: { _user_id: string }; Returns: boolean }
       is_user_master: { Args: { _user_id: string }; Returns: boolean }
       leads_aggregates: { Args: never; Returns: Json }
