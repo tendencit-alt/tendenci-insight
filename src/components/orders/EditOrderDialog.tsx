@@ -2357,7 +2357,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                 </div>
                 {(taxaCartao.valor > 0 || taxaBoleto.valor > 0 || taxaLink.valor > 0 || totalComissoes > 0) && (
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold text-green-600">Valor Líquido Tendenci:</span>
+                    <span className="text-sm font-semibold text-green-600">Valor Líquido {companyName}:</span>
                     <span className="text-base font-bold text-green-600">{formatCurrency(valorLiquidoTendenci)}</span>
                   </div>
                 )}
