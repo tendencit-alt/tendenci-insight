@@ -22,10 +22,10 @@ const SuperAdmin = () => {
           </Button>
           <div className="space-y-2">
             <h1 className="text-4xl font-bold bg-gradient-to-r from-primary via-primary/80 to-accent bg-clip-text text-transparent">
-              🏢 Gestão de Empresas
+              👑 Painel Owner
             </h1>
             <p className="text-muted-foreground text-lg">
-              Gerencie empresas, planos e administradores do sistema
+              Controle total do sistema — empresas, planos, técnico e financeiro
             </p>
           </div>
         </div>
