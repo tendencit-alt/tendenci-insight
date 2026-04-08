@@ -7400,6 +7400,7 @@ export type Database = {
         Row: {
           active: boolean | null
           created_at: string
+          extra_user_price: number | null
           features: Json | null
           id: string
           max_users: number
@@ -7410,6 +7411,7 @@ export type Database = {
         Insert: {
           active?: boolean | null
           created_at?: string
+          extra_user_price?: number | null
           features?: Json | null
           id?: string
           max_users?: number
@@ -7420,6 +7422,7 @@ export type Database = {
         Update: {
           active?: boolean | null
           created_at?: string
+          extra_user_price?: number | null
           features?: Json | null
           id?: string
           max_users?: number
