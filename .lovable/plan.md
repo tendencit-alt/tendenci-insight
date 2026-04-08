@@ -1,19 +1,23 @@
 
-## Plano: Papel OWNER do Sistema
 
-### Hierarquia Final
-- **OWNER**: Dono do sistema, vê tudo de todos os tenants, controle técnico e financeiro
-- **Admin**: Administrador da empresa (tenant), gerencia sua própria empresa
-- **Outros**: Papéis dentro do tenant
+## Problem
 
-### Alterações:
+The "Painel Owner" link was added to `AppSidebar.tsx`, but the app actually uses `AppNavbar.tsx` (top navbar) for navigation. The navbar loads menu items dynamically from the `menu_items` database table and has no logic for `ownerOnly` items. That's why the link doesn't appear.
 
-1. **Banco de dados**: Renomear `is_super_admin` para `is_owner` na tabela `profiles` e atualizar funções SQL (`is_super_admin()` → `is_owner()`, `tenant_rls_check()`)
+## Solution
 
-2. **PermissionsContext**: Renomear `isSuperAdmin` → `isOwner`, atualizar lógica
+Add the "Painel Owner" link directly in `AppNavbar.tsx` as a hardcoded item (not from the database), visible only when `isOwner === true`. It will appear as a distinct icon button or link in the navbar, separate from the dynamic menu system.
 
-3. **Sidebar**: Renomear "Gestão de Empresas" → usar flag `ownerOnly` em vez de `superAdminOnly`
+### Changes
 
-4. **SuperAdmin page**: Renomear para painel OWNER, adicionar abas de controle técnico e financeiro dos usuários
+1. **`src/components/layout/AppNavbar.tsx`**
+   - Import `isOwner` from `usePermissions()`
+   - Add a "Painel Owner" link (with `Building2` icon) in the desktop navbar, positioned before the right-side controls (theme/notifications/user)
+   - Add the same link in the mobile menu as a separate section labeled "Owner" at the bottom, only when `isOwner` is true
+   - The link routes to `/super-admin`
 
-5. **UserManagement**: Configurações do sistema pertencem ao Admin da empresa (sem mudança, já funciona assim)
+2. **`src/components/layout/AppSidebar.tsx`** (cleanup)
+   - Remove the "Painel Owner" entry from the sidebar since it's not used
+
+This is a small, focused change — just adding a conditional nav link in the component that actually renders the navigation.
+
