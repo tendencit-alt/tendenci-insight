@@ -41,6 +41,7 @@ const menuItems = [
   { title: "Central de Automações", url: "/automacoes", icon: Zap, module: null, masterOnly: true },
   { title: "Dashboards Personalizados", url: "/dashboards", icon: PanelTop, module: null, masterOnly: true },
   { title: "Configurações", url: "/settings", icon: Settings, module: "configuracoes" },
+  { title: "Gestão de Empresas", url: "/super-admin", icon: Building2, module: null, superAdminOnly: true },
 ];
 
 export function AppSidebar() {
