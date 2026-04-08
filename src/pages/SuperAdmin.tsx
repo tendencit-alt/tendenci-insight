@@ -1,13 +1,12 @@
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Building2, CreditCard, Users, ArrowLeft, Wrench, DollarSign, LayoutDashboard } from 'lucide-react';
+import { Building2, CreditCard, ArrowLeft, Wrench, LayoutDashboard } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { TenantsManager } from '@/components/superadmin/TenantsManager';
 import { PlansManager } from '@/components/superadmin/PlansManager';
 import { SuperAdminDashboard } from '@/components/superadmin/SuperAdminDashboard';
 import { OwnerTechnicalPanel } from '@/components/superadmin/OwnerTechnicalPanel';
-import { OwnerFinancialPanel } from '@/components/superadmin/OwnerFinancialPanel';
 
 const SuperAdmin = () => {
   const navigate = useNavigate();
@@ -25,13 +24,13 @@ const SuperAdmin = () => {
               👑 Painel Owner
             </h1>
             <p className="text-muted-foreground text-lg">
-              Controle total do sistema — empresas, planos, técnico e financeiro
+              Gestão de empresas, planos e usuários do sistema
             </p>
           </div>
         </div>
 
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="dashboard" className="flex items-center gap-1.5">
               <LayoutDashboard className="h-4 w-4" />
               Visão Geral
@@ -47,10 +46,6 @@ const SuperAdmin = () => {
             <TabsTrigger value="technical" className="flex items-center gap-1.5">
               <Wrench className="h-4 w-4" />
               Técnico
-            </TabsTrigger>
-            <TabsTrigger value="financial" className="flex items-center gap-1.5">
-              <DollarSign className="h-4 w-4" />
-              Financeiro
             </TabsTrigger>
           </TabsList>
 
@@ -70,9 +65,6 @@ const SuperAdmin = () => {
             <OwnerTechnicalPanel />
           </TabsContent>
 
-          <TabsContent value="financial" className="space-y-6 pt-6">
-            <OwnerFinancialPanel />
-          </TabsContent>
         </Tabs>
       </div>
     </DashboardLayout>
