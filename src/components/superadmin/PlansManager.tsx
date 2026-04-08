@@ -16,6 +16,7 @@ interface PlanForm {
   name: string;
   max_users: number;
   price: number;
+  extra_user_price: number;
   active: boolean;
 }
 
@@ -23,7 +24,7 @@ export function PlansManager() {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<any>(null);
-  const [form, setForm] = useState<PlanForm>({ name: '', max_users: 5, price: 0, active: true });
+  const [form, setForm] = useState<PlanForm>({ name: '', max_users: 5, price: 0, extra_user_price: 99, active: true });
 
   const { data: plans, isLoading } = useQuery({
     queryKey: ['tenant-plans-all'],
@@ -54,14 +55,14 @@ export function PlansManager() {
   });
 
   const resetForm = () => {
-    setForm({ name: '', max_users: 5, price: 0, active: true });
+    setForm({ name: '', max_users: 5, price: 0, extra_user_price: 99, active: true });
     setEditingPlan(null);
     setDialogOpen(false);
   };
 
   const openEdit = (plan: any) => {
     setEditingPlan(plan);
-    setForm({ name: plan.name, max_users: plan.max_users, price: plan.price, active: plan.active });
+    setForm({ name: plan.name, max_users: plan.max_users, price: plan.price, extra_user_price: plan.extra_user_price ?? 99, active: plan.active });
     setDialogOpen(true);
   };
 
@@ -82,7 +83,7 @@ export function PlansManager() {
                 <Label>Nome do Plano</Label>
                 <Input value={form.name} onChange={e => setForm(prev => ({ ...prev, name: e.target.value }))} required />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label>Limite de Usuários</Label>
                   <Input type="number" value={form.max_users} onChange={e => setForm(prev => ({ ...prev, max_users: parseInt(e.target.value) || 5 }))} min={1} />
@@ -90,6 +91,10 @@ export function PlansManager() {
                 <div className="space-y-2">
                   <Label>Preço Mensal (R$)</Label>
                   <Input type="number" step="0.01" value={form.price} onChange={e => setForm(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))} min={0} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Acréscimo/Usuário (R$)</Label>
+                  <Input type="number" step="0.01" value={form.extra_user_price} onChange={e => setForm(prev => ({ ...prev, extra_user_price: parseFloat(e.target.value) || 0 }))} min={0} />
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -113,13 +118,14 @@ export function PlansManager() {
                 <TableHead>Plano</TableHead>
                 <TableHead>Limite de Usuários</TableHead>
                 <TableHead>Preço Mensal</TableHead>
+                <TableHead>Acréscimo/Usuário</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="w-[80px]">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={5} className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>
+                <TableRow><TableCell colSpan={6} className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>
               ) : plans?.map(plan => (
                 <TableRow key={plan.id}>
                   <TableCell className="font-medium">
@@ -130,6 +136,7 @@ export function PlansManager() {
                   </TableCell>
                   <TableCell>{plan.max_users}</TableCell>
                   <TableCell>R$ {Number(plan.price).toFixed(2)}</TableCell>
+                  <TableCell>R$ {Number((plan as any).extra_user_price ?? 99).toFixed(2)}</TableCell>
                   <TableCell>
                     <Badge variant={plan.active ? 'default' : 'secondary'}>{plan.active ? 'Ativo' : 'Inativo'}</Badge>
                   </TableCell>
