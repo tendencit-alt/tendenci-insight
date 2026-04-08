@@ -1,39 +1,89 @@
 
 
-## Plano: Compromissos Sobre Venda espelham o Plano de Contas
+## Plano: Tornar o Sistema Universal e Comercializável
 
-### Mudança de Lógica
-Atualmente o cadastro lista 6 tipos fixos (enum) com campos editáveis de nome, descrição e seletor de categoria. A nova lógica inverte a origem: **os compromissos vêm diretamente das subcategorias filhas de "3.1 - Compromissos Sobre Vendas" no Plano de Contas**. O cadastro apenas exibe essas categorias (read-only) e permite editar o **percentual padrão** de cada uma.
+### Visão Geral
+O sistema hoje tem referências hardcoded à "Tendenci" em logos, textos, labels e lógica. Para comercializar para outras empresas, precisamos criar uma **camada de configuração da empresa** que permita personalização sem alterar código.
 
-### O que muda
+---
 
-#### 1. Migration: Adicionar coluna `default_percentage` à tabela de configs
-```sql
-ALTER TABLE fin_strategic_resource_account_configs
-  ADD COLUMN IF NOT EXISTS default_percentage NUMERIC(5,2) DEFAULT 0;
-```
-Preencher valores iniciais baseados nos percentuais atuais mais comuns (RT=10, Vendedor=5, etc.) se desejado.
+### 1. Tabela de Configuração da Empresa (Migration)
 
-#### 2. Refatorar `StrategicResourceCategoriesManager.tsx`
-- **Origem dos dados**: Query busca subcategorias filhas de `parent_id = 'd2982e7d-...'` (3.1 Compromissos Sobre Vendas) no `fin_chart_accounts`
-- **Exibição**: Para cada subcategoria (RT, Comissão Vendedor, Premio Orçamentista, etc.), mostra:
-  - Código e nome da categoria (read-only, vindo do Plano de Contas)
-  - Input editável de **percentual padrão** (%)
-  - Switch de ativo/inativo
-- **Informativo**: Texto explicativo no header: *"Os compromissos refletem as categorias cadastradas no Plano de Contas (3.1). Para adicionar ou renomear compromissos, edite o Plano de Contas."*
-- **Remover**: Inputs de nome/descrição editáveis, seletor de categoria e botão "Criar Categoria" (tudo isso passa a ser gerido no Plano de Contas)
-- **Salvar**: Ao alterar percentual ou ativar/desativar, persiste em `fin_strategic_resource_account_configs` vinculando pelo `chart_account_id`
+Criar tabela `company_settings` com campos editáveis:
 
-#### 3. Lógica de sincronização
-- A tabela `fin_strategic_resource_account_configs` continua existindo mas agora é indexada por `chart_account_id` (já existente), não mais apenas pelo `resource_type` enum
-- Cada subcategoria do Plano de Contas terá uma linha correspondente na config com `active` e `default_percentage`
-- Se uma subcategoria não tiver config, exibe com percentual 0% e inativa por padrão
+| Campo | Tipo | Exemplo | Descrição |
+|---|---|---|---|
+| `company_name` | text | "Tendenci" | Nome da empresa |
+| `trade_name` | text | "Tendenci Insight" | Nome fantasia |
+| `cnpj` | text | "00.000.000/0001-00" | CNPJ |
+| `razao_social` | text | "Tendenci LTDA" | Razão social |
+| `inscricao_estadual` | text | "" | IE |
+| `logo_url` | text | null | Logo (upload) |
+| `primary_color` | text | "#D41E1E" | Cor primária do tema |
+| `accent_color` | text | "#E85D3A" | Cor de destaque |
+| `phone` | text | "" | Telefone |
+| `email` | text | "" | Email de contato |
+| `address` | text | "" | Endereço |
+| `website` | text | "" | Site |
 
-### Arquivos Afetados
-- **1 migration SQL** — adicionar `default_percentage`
-- **`StrategicResourceCategoriesManager.tsx`** — refatorar completo para nova lógica
-- **Remover** `CreateChartAccountDialog.tsx` (ou mantê-lo apenas no Plano de Contas se usado lá)
+---
 
-### Impacto nos Pedidos
-O percentual padrão configurado aqui será pré-preenchido automaticamente nos campos de comissão ao criar/editar pedidos — essa integração pode ser feita em etapa futura se ainda não existir.
+### 2. Hook `useCompanySettings`
+
+Hook global que carrega as configurações uma vez e disponibiliza em todo o sistema com cache via React Query.
+
+---
+
+### 3. Substituições no Código (Principais Pontos)
+
+**Onde "Tendenci" aparece hardcoded e será substituído por `company_settings`:**
+
+- **Logo** (4 arquivos): `AppNavbar.tsx`, `AppSidebar.tsx`, `Auth.tsx`, `ResetPassword.tsx` — usar `logo_url` ou fallback para nome
+- **"Valor Líquido Tendenci"** (2 arquivos): `CreateOrderDialog.tsx`, `EditOrderDialog.tsx` — trocar por `"Valor Líquido " + companyName`
+- **"Entrega Tendenci"** (3 arquivos): `CreateOrderDialog.tsx`, `EditOrderDialog.tsx`, `BulkEditOrdersDialog.tsx` — trocar por `"Entrega " + companyName`
+- **Dados do emitente NF** (`OrderExportDialog.tsx`): puxar CNPJ, razão social, etc. da tabela
+- **Triggers SQL** com textos "Tendenci": manter como estão (são internos), o `display_name` já resolve no front
+
+---
+
+### 4. Tela de Configurações da Empresa
+
+Nova aba **"Empresa"** na página de Configurações (`/configuracoes`) — acessível apenas para Master:
+
+- Upload de logo
+- Nome da empresa / Nome fantasia
+- CNPJ, Razão Social, IE
+- Telefone, Email, Endereço, Site
+- Cores primária e destaque (color picker)
+- Preview em tempo real
+
+---
+
+### 5. Campos que já são editáveis (não precisam mudar)
+
+- **Menu items** — já dinâmicos via banco
+- **Compromissos sobre venda** — já configuráveis
+- **Plano de Contas** — já editável
+- **Centros de Custo** — já editáveis
+- **Tipos de produção** — já editáveis
+- **Perfis/Roles** — já configuráveis
+- **Taxas de cartão/boleto/link** — já editáveis
+
+---
+
+### 6. Resumo dos Arquivos Afetados
+
+- **1 migration SQL** — criar `company_settings`
+- **1 novo hook** — `useCompanySettings.ts`
+- **1 nova aba de config** — `CompanySettingsTab.tsx`
+- **~10 arquivos editados** — substituir referências hardcoded por dados dinâmicos
+- **`ProjectSettings.tsx`** — adicionar aba "Empresa"
+
+### Resultado Final
+
+Qualquer empresa que usar o sistema poderá, nas Configurações:
+1. Colocar seu logo
+2. Definir nome, CNPJ e dados fiscais
+3. Escolher cores do tema
+4. Todo o sistema refletirá automaticamente a identidade da empresa
 
