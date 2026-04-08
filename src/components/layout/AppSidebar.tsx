@@ -42,13 +42,13 @@ const menuItems = [
   { title: "Central de Automações", url: "/automacoes", icon: Zap, module: null, masterOnly: true },
   { title: "Dashboards Personalizados", url: "/dashboards", icon: PanelTop, module: null, masterOnly: true },
   { title: "Configurações", url: "/settings", icon: Settings, module: "configuracoes" },
-  { title: "Gestão de Empresas", url: "/super-admin", icon: Building2, module: null, superAdminOnly: true },
+  { title: "Painel Owner", url: "/super-admin", icon: Building2, module: null, ownerOnly: true },
 ];
 
 export function AppSidebar() {
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
-  const { hasModuleAccess, loading, isSuperAdmin } = usePermissions();
+  const { hasModuleAccess, loading, isOwner } = usePermissions();
   const { profile } = useAuth();
   const { data: companySettings } = useCompanySettings();
   const companyLogo = companySettings?.logo_url;
@@ -57,10 +57,10 @@ export function AppSidebar() {
   const isMaster = profile?.role === 'admin';
 
   const visibleMenuItems = menuItems.filter((item) => {
-    if (loading) return !(item as any).superAdminOnly; // Hide super admin items while loading
+    if (loading) return !(item as any).ownerOnly;
     
-    // Super admin only items
-    if ((item as any).superAdminOnly && !isSuperAdmin) return false;
+    // Owner only items
+    if ((item as any).ownerOnly && !isOwner) return false;
     
     // Para itens masterOnly, verificar se é admin
     if ((item as any).masterOnly && !isMaster) return false;
