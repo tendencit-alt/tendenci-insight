@@ -1,13 +1,13 @@
-import { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Building2, CreditCard, Users, Plus, ArrowLeft } from 'lucide-react';
+import { Building2, CreditCard, Users, ArrowLeft, Wrench, DollarSign, LayoutDashboard } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { TenantsManager } from '@/components/superadmin/TenantsManager';
 import { PlansManager } from '@/components/superadmin/PlansManager';
 import { SuperAdminDashboard } from '@/components/superadmin/SuperAdminDashboard';
+import { OwnerTechnicalPanel } from '@/components/superadmin/OwnerTechnicalPanel';
+import { OwnerFinancialPanel } from '@/components/superadmin/OwnerFinancialPanel';
 
 const SuperAdmin = () => {
   const navigate = useNavigate();
@@ -31,9 +31,9 @@ const SuperAdmin = () => {
         </div>
 
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="dashboard" className="flex items-center gap-1.5">
-              <Users className="h-4 w-4" />
+              <LayoutDashboard className="h-4 w-4" />
               Visão Geral
             </TabsTrigger>
             <TabsTrigger value="tenants" className="flex items-center gap-1.5">
@@ -43,6 +43,14 @@ const SuperAdmin = () => {
             <TabsTrigger value="plans" className="flex items-center gap-1.5">
               <CreditCard className="h-4 w-4" />
               Planos
+            </TabsTrigger>
+            <TabsTrigger value="technical" className="flex items-center gap-1.5">
+              <Wrench className="h-4 w-4" />
+              Técnico
+            </TabsTrigger>
+            <TabsTrigger value="financial" className="flex items-center gap-1.5">
+              <DollarSign className="h-4 w-4" />
+              Financeiro
             </TabsTrigger>
           </TabsList>
 
@@ -56,6 +64,14 @@ const SuperAdmin = () => {
 
           <TabsContent value="plans" className="space-y-6 pt-6">
             <PlansManager />
+          </TabsContent>
+
+          <TabsContent value="technical" className="space-y-6 pt-6">
+            <OwnerTechnicalPanel />
+          </TabsContent>
+
+          <TabsContent value="financial" className="space-y-6 pt-6">
+            <OwnerFinancialPanel />
           </TabsContent>
         </Tabs>
       </div>
