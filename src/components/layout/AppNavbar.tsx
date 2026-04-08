@@ -251,22 +251,22 @@ export function AppNavbar() {
                     </div>
                   </div>
                 ))}
+                {isOwner && (
+                  <div className="mb-4">
+                    <p className="text-xs text-muted-foreground font-semibold tracking-wider uppercase mb-2 px-3">Owner</p>
+                    <NavLink
+                      to="/super-admin"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-300 hover:bg-muted"
+                      activeClassName="bg-primary text-primary-foreground font-semibold shadow-[0_0_12px_rgba(212,30,30,0.6)]"
+                    >
+                      <Building2 className="h-5 w-5 flex-shrink-0" />
+                      <span>Painel Owner</span>
+                    </NavLink>
+                  </div>
+                )}
               </div>
             </div>
-            {isOwner && (
-              <div className="mb-4">
-                <p className="text-xs text-muted-foreground font-semibold tracking-wider uppercase mb-2 px-3">Owner</p>
-                <NavLink
-                  to="/super-admin"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-300 hover:bg-muted"
-                  activeClassName="bg-primary text-primary-foreground font-semibold shadow-[0_0_12px_rgba(212,30,30,0.6)]"
-                >
-                  <Building2 className="h-5 w-5 flex-shrink-0" />
-                  <span>Painel Owner</span>
-                </NavLink>
-              </div>
-            )}
           </SheetContent>
         </Sheet>
 
