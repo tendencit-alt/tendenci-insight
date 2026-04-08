@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
+import { useCompanyName } from '@/hooks/useCompanySettings';
 
 const STATUS_OPTIONS = [
   { value: 'rascunho', label: 'Rascunho' },
@@ -22,9 +23,9 @@ const STATUS_OPTIONS = [
   { value: 'cancelado', label: 'Cancelado' },
 ];
 
-const DELIVERY_OPTIONS = [
+const getDeliveryOptions = (companyName: string) => [
   { value: 'A combinar', label: 'A combinar' },
-  { value: 'Entrega Tendenci', label: 'Entrega Tendenci' },
+  { value: 'Entrega Tendenci', label: `Entrega ${companyName}` },
   { value: 'Transportadora', label: 'Transportadora' },
   { value: 'Retirada', label: 'Retirada' },
   { value: 'Terceirizada', label: 'Terceirizada' },
@@ -39,6 +40,8 @@ interface BulkEditOrdersDialogProps {
 
 export function BulkEditOrdersDialog({ open, onOpenChange, selectedIds, onSuccess }: BulkEditOrdersDialogProps) {
   const queryClient = useQueryClient();
+  const companyName = useCompanyName();
+  const DELIVERY_OPTIONS = getDeliveryOptions(companyName);
   const [fields, setFields] = useState<{
     status?: string;
     vendedor_id?: string;

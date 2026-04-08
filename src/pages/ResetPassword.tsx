@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { toast } from 'sonner';
 import { Loader2, KeyRound, CheckCircle } from 'lucide-react';
 import tendenciLogo from '@/assets/tendenci-logo-new.png';
+import { useCompanySettings } from '@/hooks/useCompanySettings';
 
 const ResetPassword = () => {
   const [password, setPassword] = useState('');

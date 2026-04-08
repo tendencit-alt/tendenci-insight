@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { Loader2, Lock } from 'lucide-react';
 import tendenciLogo from '@/assets/tendenci-logo-new.png';
+import { useCompanySettings } from '@/hooks/useCompanySettings';
 import { supabase } from '@/integrations/supabase/client';
 import { getFirstAllowedRoute } from '@/hooks/useFirstAllowedRoute';
 import { ForgotPasswordDialog } from '@/components/auth/ForgotPasswordDialog';
