@@ -25,7 +25,6 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { usePermissions } from "@/hooks/usePermissions";
-import { usePermissions } from "@/hooks/usePermissions";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
 
