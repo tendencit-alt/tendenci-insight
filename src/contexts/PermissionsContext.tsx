@@ -31,6 +31,7 @@ interface PermissionsContextType {
   permissions: UserPermissions | null;
   loading: boolean;
   isMaster: boolean;
+  isSuperAdmin: boolean;
   hasModuleAccess: (module: AppModule, action?: 'view' | 'create' | 'edit' | 'delete') => boolean;
   refetch: () => Promise<void>;
 }
@@ -54,6 +55,7 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
   const [permissions, setPermissions] = useState<UserPermissions | null>(null);
   const [loading, setLoading] = useState(true);
   const [isMaster, setIsMaster] = useState(false);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
 
   const fetchPermissions = useCallback(async () => {
     console.log('[Permissions] Fetching for user:', user?.id, user?.email);
@@ -62,6 +64,7 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
       console.log('[Permissions] No user, clearing permissions');
       setPermissions(null);
       setIsMaster(false);
+      setIsSuperAdmin(false);
       setLoading(false);
       return;
     }
@@ -70,7 +73,7 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
       // Buscar perfil do usuário
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('role')
+        .select('role, is_super_admin')
         .eq('id', user.id)
         .single();
 
@@ -81,7 +84,9 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
 
       console.log('[Permissions] Profile loaded:', profile);
       const isAdmin = profile?.role === 'admin';
+      const superAdmin = profile?.is_super_admin === true;
       setIsMaster(isAdmin);
+      setIsSuperAdmin(superAdmin);
 
       // Se for admin, tem todas as permissões
       if (isAdmin) {
@@ -189,7 +194,7 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
   }, [fetchPermissions]);
 
   return (
-    <PermissionsContext.Provider value={{ permissions, loading, isMaster, hasModuleAccess, refetch }}>
+    <PermissionsContext.Provider value={{ permissions, loading, isMaster, isSuperAdmin, hasModuleAccess, refetch }}>
       {children}
     </PermissionsContext.Provider>
   );
