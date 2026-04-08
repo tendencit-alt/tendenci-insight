@@ -26,6 +26,7 @@ import DashboardBI from "./pages/DashboardBI";
 import CadastrosFinanceiros from "./pages/CadastrosFinanceiros";
 
 import ResetPassword from "./pages/ResetPassword";
+import SuperAdmin from "./pages/SuperAdmin";
 
 const queryClient = new QueryClient();
 
