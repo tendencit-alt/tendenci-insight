@@ -1,89 +1,133 @@
 
-
-## Plano: Tornar o Sistema Universal e Comercializável
+## Plano: Sistema Multi-Tenant SaaS
 
 ### Visão Geral
-O sistema hoje tem referências hardcoded à "Tendenci" em logos, textos, labels e lógica. Para comercializar para outras empresas, precisamos criar uma **camada de configuração da empresa** que permita personalização sem alterar código.
+Transformar o sistema atual (single-tenant) em uma plataforma SaaS multi-tenant onde:
+- **Super Admin** (você/Pablo): dono do sistema, gerencia todas as empresas e pode ver todos os dados
+- **Admin de Empresa**: cada empresa contratante tem seu admin que gerencia seus próprios usuários
+- **Isolamento total**: cada empresa vê apenas seus próprios dados
+- **Planos com limites**: controle de quantidade de usuários por empresa
 
 ---
 
-### 1. Tabela de Configuração da Empresa (Migration)
+### Fase 1 — Estrutura de Dados (Migrations)
 
-Criar tabela `company_settings` com campos editáveis:
+#### 1.1 Tabela `tenants` (Empresas contratantes)
+| Campo | Tipo | Descrição |
+|---|---|---|
+| `id` | uuid | ID da empresa |
+| `name` | text | Nome da empresa |
+| `slug` | text | Identificador único (URL-friendly) |
+| `plan` | text | Plano contratado (basic/pro/enterprise) |
+| `max_users` | int | Limite de usuários do plano |
+| `active` | boolean | Empresa ativa/inativa |
+| `created_at` / `updated_at` | timestamp | Datas |
 
-| Campo | Tipo | Exemplo | Descrição |
-|---|---|---|---|
-| `company_name` | text | "Tendenci" | Nome da empresa |
-| `trade_name` | text | "Tendenci Insight" | Nome fantasia |
-| `cnpj` | text | "00.000.000/0001-00" | CNPJ |
-| `razao_social` | text | "Tendenci LTDA" | Razão social |
-| `inscricao_estadual` | text | "" | IE |
-| `logo_url` | text | null | Logo (upload) |
-| `primary_color` | text | "#D41E1E" | Cor primária do tema |
-| `accent_color` | text | "#E85D3A" | Cor de destaque |
-| `phone` | text | "" | Telefone |
-| `email` | text | "" | Email de contato |
-| `address` | text | "" | Endereço |
-| `website` | text | "" | Site |
+#### 1.2 Tabela `tenant_plans` (Definição dos planos)
+| Campo | Tipo | Descrição |
+|---|---|---|
+| `id` | uuid | ID do plano |
+| `name` | text | Nome (Básico, Pro, Enterprise) |
+| `max_users` | int | Limite de usuários |
+| `price` | numeric | Valor mensal |
+| `features` | jsonb | Features incluídas |
 
----
+#### 1.3 Alteração na tabela `profiles`
+- Adicionar coluna `tenant_id` (uuid, FK → tenants)
+- Adicionar coluna `is_super_admin` (boolean, default false)
+- O Pablo atual receberá `is_super_admin = true` e `tenant_id` de uma empresa "Sistema"
 
-### 2. Hook `useCompanySettings`
-
-Hook global que carrega as configurações uma vez e disponibiliza em todo o sistema com cache via React Query.
-
----
-
-### 3. Substituições no Código (Principais Pontos)
-
-**Onde "Tendenci" aparece hardcoded e será substituído por `company_settings`:**
-
-- **Logo** (4 arquivos): `AppNavbar.tsx`, `AppSidebar.tsx`, `Auth.tsx`, `ResetPassword.tsx` — usar `logo_url` ou fallback para nome
-- **"Valor Líquido Tendenci"** (2 arquivos): `CreateOrderDialog.tsx`, `EditOrderDialog.tsx` — trocar por `"Valor Líquido " + companyName`
-- **"Entrega Tendenci"** (3 arquivos): `CreateOrderDialog.tsx`, `EditOrderDialog.tsx`, `BulkEditOrdersDialog.tsx` — trocar por `"Entrega " + companyName`
-- **Dados do emitente NF** (`OrderExportDialog.tsx`): puxar CNPJ, razão social, etc. da tabela
-- **Triggers SQL** com textos "Tendenci": manter como estão (são internos), o `display_name` já resolve no front
+#### 1.4 Alteração na tabela `company_settings`
+- Adicionar coluna `tenant_id` (uuid, FK → tenants)
+- Cada empresa terá sua própria configuração de branding
 
 ---
 
-### 4. Tela de Configurações da Empresa
+### Fase 2 — Isolamento de Dados (RLS por tenant)
 
-Nova aba **"Empresa"** na página de Configurações (`/configuracoes`) — acessível apenas para Master:
+Todas as tabelas principais receberão a coluna `tenant_id` e políticas RLS:
+- `orders`, `order_items`, `clients`, `suppliers`, `architects`
+- `crm_deals`, `crm_pipelines`, `crm_stages`, `leads`
+- `fin_*` (todas as tabelas financeiras)
+- `production_*`, `stock_*`
 
-- Upload de logo
-- Nome da empresa / Nome fantasia
-- CNPJ, Razão Social, IE
-- Telefone, Email, Endereço, Site
-- Cores primária e destaque (color picker)
-- Preview em tempo real
+**Política padrão**: 
+- Usuários comuns: `tenant_id = (SELECT tenant_id FROM profiles WHERE id = auth.uid())`
+- Super Admin: acesso a todos os tenants
+
+**Função helper**:
+```sql
+CREATE FUNCTION get_user_tenant_id() RETURNS uuid AS $$
+  SELECT tenant_id FROM profiles WHERE id = auth.uid()
+$$ LANGUAGE sql STABLE SECURITY DEFINER;
+
+CREATE FUNCTION is_super_admin() RETURNS boolean AS $$
+  SELECT is_super_admin FROM profiles WHERE id = auth.uid()
+$$ LANGUAGE sql STABLE SECURITY DEFINER;
+```
 
 ---
 
-### 5. Campos que já são editáveis (não precisam mudar)
+### Fase 3 — Interface do Super Admin
 
-- **Menu items** — já dinâmicos via banco
-- **Compromissos sobre venda** — já configuráveis
-- **Plano de Contas** — já editável
-- **Centros de Custo** — já editáveis
-- **Tipos de produção** — já editáveis
-- **Perfis/Roles** — já configuráveis
-- **Taxas de cartão/boleto/link** — já editáveis
+#### 3.1 Painel de Empresas (`/admin/tenants`)
+- Lista todas as empresas cadastradas
+- Criar/editar/desativar empresas
+- Atribuir plano e limite de usuários
+- Ver quantidade de usuários ativos vs limite
+
+#### 3.2 Gerenciamento de Admins
+- Criar admin para cada empresa
+- Resetar senha de admins
+- Visualizar dados de qualquer empresa (switch de contexto)
+
+#### 3.3 Dashboard do Super Admin
+- Total de empresas ativas
+- Total de usuários no sistema
+- Receita por plano
+- Empresas criadas recentemente
 
 ---
 
-### 6. Resumo dos Arquivos Afetados
+### Fase 4 — Adaptação do Fluxo Existente
 
-- **1 migration SQL** — criar `company_settings`
-- **1 novo hook** — `useCompanySettings.ts`
-- **1 nova aba de config** — `CompanySettingsTab.tsx`
-- **~10 arquivos editados** — substituir referências hardcoded por dados dinâmicos
-- **`ProjectSettings.tsx`** — adicionar aba "Empresa"
+#### 4.1 Cadastro de nova empresa
+1. Super Admin cria tenant + admin
+2. Admin da empresa faz login e configura branding (company_settings)
+3. Admin cria seus usuários dentro do limite do plano
 
-### Resultado Final
+#### 4.2 Login
+- Após login, o sistema identifica o `tenant_id` do usuário
+- Super Admin vê menu extra "Gestão de Empresas"
+- Admin de empresa vê o sistema normal (isolado)
 
-Qualquer empresa que usar o sistema poderá, nas Configurações:
-1. Colocar seu logo
-2. Definir nome, CNPJ e dados fiscais
-3. Escolher cores do tema
-4. Todo o sistema refletirá automaticamente a identidade da empresa
+#### 4.3 Verificação de limites
+- Ao criar usuário, verificar `COUNT(profiles WHERE tenant_id = X) < tenant.max_users`
+- Bloquear criação se limite atingido
 
+---
+
+### Fase 5 — Migração dos Dados Existentes
+
+1. Criar tenant "Tendenci" (ou nome atual)
+2. Atribuir `tenant_id` a todos os registros existentes
+3. Marcar Pablo como `is_super_admin = true`
+4. Todos os usuários existentes recebem o tenant_id da empresa atual
+
+---
+
+### ⚠️ Escopo e Riscos
+
+**Esta é a maior mudança arquitetural do sistema.** Envolve:
+- ~50+ tabelas precisam de `tenant_id`
+- ~50+ políticas RLS precisam ser reescritas
+- Todas as queries do sistema precisam considerar tenant
+- Triggers existentes precisam propagar `tenant_id`
+
+**Recomendação**: Implementar em fases incrementais:
+1. **Fase 1**: Criar estrutura base (tenants, plans, profiles alterado) + Super Admin UI
+2. **Fase 2**: Adicionar `tenant_id` nas tabelas principais + RLS
+3. **Fase 3**: Adaptar triggers e lógica de negócio
+4. **Fase 4**: Testes e refinamentos
+
+Devo começar pela **Fase 1** (estrutura base + tela do Super Admin)?
