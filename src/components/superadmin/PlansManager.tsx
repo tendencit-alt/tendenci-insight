@@ -24,7 +24,7 @@ export function PlansManager() {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<any>(null);
-  const [form, setForm] = useState<PlanForm>({ name: '', max_users: 5, price: 0, active: true });
+  const [form, setForm] = useState<PlanForm>({ name: '', max_users: 5, price: 0, extra_user_price: 99, active: true });
 
   const { data: plans, isLoading } = useQuery({
     queryKey: ['tenant-plans-all'],
@@ -55,14 +55,14 @@ export function PlansManager() {
   });
 
   const resetForm = () => {
-    setForm({ name: '', max_users: 5, price: 0, active: true });
+    setForm({ name: '', max_users: 5, price: 0, extra_user_price: 99, active: true });
     setEditingPlan(null);
     setDialogOpen(false);
   };
 
   const openEdit = (plan: any) => {
     setEditingPlan(plan);
-    setForm({ name: plan.name, max_users: plan.max_users, price: plan.price, active: plan.active });
+    setForm({ name: plan.name, max_users: plan.max_users, price: plan.price, extra_user_price: plan.extra_user_price ?? 99, active: plan.active });
     setDialogOpen(true);
   };
 
