@@ -22,7 +22,6 @@ import {
   SheetContent,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import tendenciLogo from "@/assets/tendenci-logo-new.png";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
 import { supabase } from "@/integrations/supabase/client";
 import { EditMenuItemDialog } from "./EditMenuItemDialog";
@@ -60,6 +59,9 @@ export function AppNavbar() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const { hasModuleAccess, loading, isMaster } = usePermissions();
   const { profile, user, signOut } = useAuth();
+  const { data: companySettings } = useCompanySettings();
+  const companyLogo = companySettings?.logo_url;
+  const companyName = companySettings?.trade_name || companySettings?.company_name || 'Sistema';
 
   useEffect(() => {
     fetchMenuItems();
