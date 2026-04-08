@@ -48,7 +48,7 @@ const menuItems = [
 export function AppSidebar() {
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
-  const { hasModuleAccess, loading } = usePermissions();
+  const { hasModuleAccess, loading, isSuperAdmin } = usePermissions();
   const { profile } = useAuth();
   const { data: companySettings } = useCompanySettings();
   const companyLogo = companySettings?.logo_url;
@@ -57,10 +57,13 @@ export function AppSidebar() {
   const isMaster = profile?.role === 'admin';
 
   const visibleMenuItems = menuItems.filter((item) => {
-    if (loading) return true; // Show all while loading
+    if (loading) return !(item as any).superAdminOnly; // Hide super admin items while loading
+    
+    // Super admin only items
+    if ((item as any).superAdminOnly && !isSuperAdmin) return false;
     
     // Para itens masterOnly, verificar se é admin
-    if (item.masterOnly && !isMaster) return false;
+    if ((item as any).masterOnly && !isMaster) return false;
     
     // Se tem módulo definido, verificar permissão
     if (item.module) {
