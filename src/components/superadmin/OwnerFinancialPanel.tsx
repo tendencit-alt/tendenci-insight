@@ -4,8 +4,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { DollarSign, TrendingUp, TrendingDown, Wallet, Loader2 } from 'lucide-react';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -42,7 +40,7 @@ export function OwnerFinancialPanel() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('orders')
-        .select('id, tenant_id, total_price, status, created_at');
+        .select('id, tenant_id, valor_total, status, created_at');
       if (error) throw error;
       return data;
     },
@@ -93,7 +91,7 @@ export function OwnerFinancialPanel() {
     const receivables = receivablesData?.filter(r => r.tenant_id === tenantId) || [];
     const payables = payablesData?.filter(p => p.tenant_id === tenantId) || [];
 
-    const totalOrders = orders.reduce((sum, o) => sum + (o.total_price || 0), 0);
+    const totalOrders = orders.reduce((sum, o) => sum + (o.valor_total || 0), 0);
     const totalReceivables = receivables.reduce((sum, r) => sum + (r.amount || 0), 0);
     const totalPayables = payables.reduce((sum, p) => sum + (p.amount || 0), 0);
     const pendingReceivables = receivables.filter(r => r.status === 'pending').reduce((sum, r) => sum + (r.amount || 0), 0);
@@ -111,7 +109,7 @@ export function OwnerFinancialPanel() {
   };
 
   // Global totals
-  const globalTotalOrders = ordersData?.reduce((sum, o) => sum + (o.total_price || 0), 0) || 0;
+  const globalTotalOrders = ordersData?.reduce((sum, o) => sum + (o.valor_total || 0), 0) || 0;
   const globalTotalReceivables = receivablesData?.reduce((sum, r) => sum + (r.amount || 0), 0) || 0;
   const globalTotalPayables = payablesData?.reduce((sum, p) => sum + (p.amount || 0), 0) || 0;
   const mrrTotal = tenants?.reduce((sum, t) => sum + getPlanPrice(t.plan_id), 0) || 0;
