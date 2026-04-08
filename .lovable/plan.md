@@ -1,23 +1,36 @@
+## Plano de Execução
 
+### Parte 1: Limpar dados operacionais existentes
+Deletar todos os dados de demonstração das tabelas operacionais, mantendo apenas:
+- Tabelas de configuração do SaaS: `tenants`, `tenant_plans`, `profiles`
+- Tabelas de permissão: `menu_items`, `module_permissions`, `user_permissions`
 
-## Problem
+Tabelas que serão limpas (dados operacionais):
+- `clients`, `orders`, `order_items`, `order_commissions`
+- `architects`, `architect_*` (files, history, indications, projects, timeline)
+- `crm_deals`, `crm_activities`, `crm_timeline`, `crm_tasks`, `crm_deal_files`, `crm_deal_history`
+- `leads`, `deals`, `activities`
+- `fin_ledger_entries`, `fin_payables`, `fin_receivables`, `fin_attachments`, `fin_audit_logs`
+- `budget_*` (products, product_lines, global_costs, templates)
+- `company_settings`
+- `dashboards_personalizados`
+- `dispatch_sessions`, `dispatch_session_items`
+- `deleted_records`
+- `ai_conversations`, `ai_messages`
+- Demais tabelas operacionais com dados de tenant
 
-The "Painel Owner" link was added to `AppSidebar.tsx`, but the app actually uses `AppNavbar.tsx` (top navbar) for navigation. The navbar loads menu items dynamically from the `menu_items` database table and has no logic for `ownerOnly` items. That's why the link doesn't appear.
+### Parte 2: Simplificar o Painel Owner
+O Painel Owner (`/super-admin`) passará a ter apenas:
+- **Visão Geral**: Total de empresas, usuários, planos (sem dados financeiros/operacionais)
+- **Gestão de Empresas** (Tenants): Criar, editar, ativar/desativar
+- **Gestão de Planos**: Configurar planos e preços
+- **Usuários**: Visualizar usuários por tenant
 
-## Solution
+Remover do painel:
+- Aba "Oversight Financeiro" (MRR, receitas, etc.)
+- Dados operacionais do monitoramento técnico
 
-Add the "Painel Owner" link directly in `AppNavbar.tsx` as a hardcoded item (not from the database), visible only when `isOwner === true`. It will appear as a distinct icon button or link in the navbar, separate from the dynamic menu system.
-
-### Changes
-
-1. **`src/components/layout/AppNavbar.tsx`**
-   - Import `isOwner` from `usePermissions()`
-   - Add a "Painel Owner" link (with `Building2` icon) in the desktop navbar, positioned before the right-side controls (theme/notifications/user)
-   - Add the same link in the mobile menu as a separate section labeled "Owner" at the bottom, only when `isOwner` is true
-   - The link routes to `/super-admin`
-
-2. **`src/components/layout/AppSidebar.tsx`** (cleanup)
-   - Remove the "Painel Owner" entry from the sidebar since it's not used
-
-This is a small, focused change — just adding a conditional nav link in the component that actually renders the navigation.
-
+### Parte 3: Atualizar componentes
+- Remover `OwnerFinancialPanel` 
+- Simplificar `OwnerTechnicalPanel` para apenas contagem de usuários/status
+- Atualizar a página SuperAdmin para refletir as mudanças
