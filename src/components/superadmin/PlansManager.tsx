@@ -16,6 +16,7 @@ interface PlanForm {
   name: string;
   max_users: number;
   price: number;
+  extra_user_price: number;
   active: boolean;
 }
 
