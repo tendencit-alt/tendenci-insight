@@ -10,8 +10,7 @@ import {
   Activity,
   Zap,
   Bot,
-  Wallet,
-  Building2
+  Wallet
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
