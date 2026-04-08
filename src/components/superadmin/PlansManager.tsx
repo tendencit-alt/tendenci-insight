@@ -136,6 +136,7 @@ export function PlansManager() {
                   </TableCell>
                   <TableCell>{plan.max_users}</TableCell>
                   <TableCell>R$ {Number(plan.price).toFixed(2)}</TableCell>
+                  <TableCell>R$ {Number((plan as any).extra_user_price ?? 99).toFixed(2)}</TableCell>
                   <TableCell>
                     <Badge variant={plan.active ? 'default' : 'secondary'}>{plan.active ? 'Ativo' : 'Inativo'}</Badge>
                   </TableCell>
