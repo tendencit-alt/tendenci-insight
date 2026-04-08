@@ -6334,7 +6334,7 @@ export type Database = {
           especializacao: string | null
           full_name: string | null
           id: string
-          is_super_admin: boolean | null
+          is_owner: boolean | null
           profile_type_id: string | null
           role: Database["public"]["Enums"]["user_role"]
           tenant_id: string | null
@@ -6348,7 +6348,7 @@ export type Database = {
           especializacao?: string | null
           full_name?: string | null
           id: string
-          is_super_admin?: boolean | null
+          is_owner?: boolean | null
           profile_type_id?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           tenant_id?: string | null
@@ -6362,7 +6362,7 @@ export type Database = {
           especializacao?: string | null
           full_name?: string | null
           id?: string
-          is_super_admin?: boolean | null
+          is_owner?: boolean | null
           profile_type_id?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           tenant_id?: string | null
@@ -9605,7 +9605,7 @@ export type Database = {
       }
       is_admin: { Args: never; Returns: boolean }
       is_admin_safe: { Args: never; Returns: boolean }
-      is_super_admin: { Args: never; Returns: boolean }
+      is_owner: { Args: never; Returns: boolean }
       is_user_admin: { Args: { _user_id: string }; Returns: boolean }
       is_user_master: { Args: { _user_id: string }; Returns: boolean }
       leads_aggregates: { Args: never; Returns: Json }
