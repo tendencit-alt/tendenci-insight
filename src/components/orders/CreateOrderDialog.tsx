@@ -86,13 +86,7 @@ const TAXAS_BOLETO: Record<number, Record<number, number>> = {
         7: 11.68, 8: 12.74, 9: 13.79, 10: 14.82, 11: 15.84, 12: 16.84 }
 };
 
-const TIPOS_ENTREGA = [
-  { value: 'a_combinar', label: 'A combinar' },
-  { value: 'entrega_tendenci', label: 'Entrega Tendenci' },
-  { value: 'transportadora', label: 'Transportadora' },
-  { value: 'retirada', label: 'Retirada' },
-  { value: 'terceirizada', label: 'Terceirizada' },
-];
+// TIPOS_ENTREGA is now dynamic - see getDeliveryOptions()
 
 // Centro de custo agora é por item, não mais no pedido
 const CREATE_ORDER_DRAFT_KEY = 'orders:create-order:draft';
@@ -100,6 +94,14 @@ const CREATE_ORDER_ITEMS_DRAFT_KEY = 'orders:create-order:draft:items-table';
 
 export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clientId }: CreateOrderDialogProps) {
   const { user } = useAuth();
+  const companyName = useCompanyName();
+  const TIPOS_ENTREGA = [
+    { value: 'a_combinar', label: 'A combinar' },
+    { value: 'entrega_tendenci', label: `Entrega ${companyName}` },
+    { value: 'transportadora', label: 'Transportadora' },
+    { value: 'retirada', label: 'Retirada' },
+    { value: 'terceirizada', label: 'Terceirizada' },
+  ];
   const linkRatesDb = usePaymentLinkRates();
   const { defaults: resourceDefaults, isLoaded: resourceDefaultsLoaded } = useStrategicResourceDefaults();
   const {
