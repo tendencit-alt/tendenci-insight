@@ -64,18 +64,20 @@ export function AppNavbar() {
   const companyName = companySettings?.trade_name || companySettings?.company_name || 'Sistema';
 
   useEffect(() => {
-    fetchMenuItems();
+    if (!profile?.tenant_id) return;
+    fetchMenuItems(profile.tenant_id);
     const channel = supabase
       .channel('menu_items_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'menu_items' }, () => fetchMenuItems())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'menu_items' }, () => fetchMenuItems(profile.tenant_id))
       .subscribe();
     return () => { channel.unsubscribe(); };
-  }, []);
+  }, [profile?.tenant_id]);
 
-  const fetchMenuItems = async () => {
+  const fetchMenuItems = async (tenantId: string) => {
     const { data, error } = await supabase
       .from('menu_items')
       .select('*')
+      .eq('tenant_id', tenantId)
       .eq('visible', true)
       .order('position', { ascending: true });
     if (!error && data) setMenuItems(data as MenuItem[]);
@@ -345,7 +347,7 @@ export function AppNavbar() {
         </div>
       </div>
 
-      <EditMenuItemDialog open={editDialogOpen} onOpenChange={setEditDialogOpen} menuItem={editingItem} onSuccess={fetchMenuItems} />
+      <EditMenuItemDialog open={editDialogOpen} onOpenChange={setEditDialogOpen} menuItem={editingItem} onSuccess={() => profile?.tenant_id && fetchMenuItems(profile.tenant_id)} />
     </nav>
   );
 }
