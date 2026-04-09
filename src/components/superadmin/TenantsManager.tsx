@@ -301,6 +301,8 @@ export function TenantsManager() {
               ) : tenants?.length === 0 ? (
                 <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Nenhuma empresa cadastrada</TableCell></TableRow>
               ) : tenants?.map(tenant => {
+                const admin = getAdminForTenant(tenant.id);
+                return (
                 <TableRow key={tenant.id}>
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-2">
@@ -309,6 +311,19 @@ export function TenantsManager() {
                     </div>
                   </TableCell>
                   <TableCell className="text-muted-foreground">{tenant.slug}</TableCell>
+                  <TableCell>
+                    {admin ? (
+                      <div className="text-sm">
+                        <div className="font-medium flex items-center gap-1">
+                          <Mail className="h-3 w-3 text-muted-foreground" />
+                          {admin.email}
+                        </div>
+                        {admin.full_name && <div className="text-muted-foreground text-xs">{admin.full_name}</div>}
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">Sem admin</span>
+                    )}
+                  </TableCell>
                   <TableCell>
                     <Badge variant="outline">{(tenant as any).tenant_plans?.name || '—'}</Badge>
                   </TableCell>
@@ -334,7 +349,8 @@ export function TenantsManager() {
                     </div>
                   </TableCell>
                 </TableRow>
-              ))}
+                );
+              })}
             </TableBody>
           </Table>
         </CardContent>
