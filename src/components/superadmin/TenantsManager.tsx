@@ -288,6 +288,7 @@ export function TenantsManager() {
               <TableRow>
                 <TableHead>Empresa</TableHead>
                 <TableHead>Slug</TableHead>
+                <TableHead>Admin</TableHead>
                 <TableHead>Plano</TableHead>
                 <TableHead>Usuários</TableHead>
                 <TableHead>Status</TableHead>
