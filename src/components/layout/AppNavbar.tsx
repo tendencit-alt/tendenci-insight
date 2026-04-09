@@ -347,7 +347,7 @@ export function AppNavbar() {
         </div>
       </div>
 
-      <EditMenuItemDialog open={editDialogOpen} onOpenChange={setEditDialogOpen} menuItem={editingItem} onSuccess={fetchMenuItems} />
+      <EditMenuItemDialog open={editDialogOpen} onOpenChange={setEditDialogOpen} menuItem={editingItem} onSuccess={() => profile?.tenant_id && fetchMenuItems(profile.tenant_id)} />
     </nav>
   );
 }
