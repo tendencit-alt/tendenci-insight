@@ -1,24 +1,22 @@
 
 
-## Plano: Criar Usuário OWNER no Sistema
+## Problema
 
-### Problema Identificado
+Os itens de menu estão aparecendo **triplicados** porque a query de `menu_items` no `AppNavbar.tsx` não filtra por `tenant_id`. Como o usuário Owner tem bypass de RLS, ele vê os itens de **todos** os tenants (3 empresas = 3x cada módulo).
 
-Existe um **bug crítico** que impede a criação de qualquer usuário: a trigger `set_default_permissions_for_new_user` referencia uma coluna `permission_key` que **não existe mais** na tabela `user_permissions`. Isso causa erro 500 no signup (confirmado nos logs de autenticação).
+## Solução
 
-### Etapas
+Alterar o `fetchMenuItems` no `AppNavbar.tsx` para filtrar pelo `tenant_id` do perfil do usuário logado:
 
-1. **Corrigir trigger quebrada** — Recriar a função `set_default_permissions_for_new_user` para usar as colunas atuais (`module`, `can_view`, `can_create`, `can_edit`, `can_delete`) em vez da antiga `permission_key`/`granted`. Ou simplesmente removê-la, já que existem outras triggers (`trigger_apply_default_permissions` e `initialize_user_permissions`) que já fazem o mesmo trabalho corretamente.
+1. **`AppNavbar.tsx`** — Adicionar filtro `.eq('tenant_id', profile.tenant_id)` na query de menu_items
+2. Aguardar o `profile` estar carregado antes de buscar os itens (adicionar `profile?.tenant_id` como dependência do `useEffect`)
+3. Para o Owner (que pode não ter tenant_id), usar o `tenant_id` do primeiro tenant ativo ou exibir um seletor de empresa
 
-2. **Criar o usuário OWNER via edge function** — Usar a API admin do backend para criar o usuário com:
-   - Email: `pablo@tendenci.com.br`
-   - Senha: `tendenci123`
-   - Nome: Pablo
-   - Marcar `is_owner: true` e `role: admin` no perfil
+## Detalhes Técnicos
 
-### Detalhes Técnicos
+- Modificar `fetchMenuItems` para receber `tenantId` como parâmetro
+- Atualizar o `useEffect` para re-buscar quando `profile?.tenant_id` mudar
+- Garantir que o Owner veja apenas os itens do seu próprio tenant (campo `tenant_id` do profile)
 
-- **Migration SQL**: `DROP TRIGGER on_user_created_initialize_permissions ON profiles; DROP FUNCTION set_default_permissions_for_new_user;`
-- **Criação do usuário**: Via `supabase.auth.admin.createUser()` seguido de `UPDATE profiles SET is_owner = true, role = 'admin'` para o novo user ID
-- O email será confirmado automaticamente (`email_confirm: true`)
+**Arquivo alterado:** `src/components/layout/AppNavbar.tsx`
 
