@@ -58,22 +58,27 @@ export function TenantsManager() {
     },
   });
 
-  const { data: userCounts } = useQuery({
-    queryKey: ['tenant-user-counts'],
+  const { data: tenantProfiles } = useQuery({
+    queryKey: ['tenant-profiles-admin'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('profiles')
-        .select('tenant_id');
+        .select('tenant_id, full_name, email, role');
       if (error) throw error;
-      const counts: Record<string, number> = {};
-      data?.forEach(p => {
-        if (p.tenant_id) {
-          counts[p.tenant_id] = (counts[p.tenant_id] || 0) + 1;
-        }
-      });
-      return counts;
+      return data;
     },
   });
+
+  const userCounts: Record<string, number> = {};
+  tenantProfiles?.forEach(p => {
+    if (p.tenant_id) {
+      userCounts[p.tenant_id] = (userCounts[p.tenant_id] || 0) + 1;
+    }
+  });
+
+  const getAdminForTenant = (tenantId: string) => {
+    return tenantProfiles?.find(p => p.tenant_id === tenantId && p.role === 'admin');
+  };
 
   const saveMutation = useMutation({
     mutationFn: async (data: TenantForm) => {
