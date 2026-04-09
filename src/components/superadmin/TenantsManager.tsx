@@ -136,6 +136,15 @@ export function TenantsManager() {
         } else {
           await supabase.from('company_settings').insert({ ...settingsPayload, tenant_id: editingTenant.id });
         }
+
+        // Update admin name if changed
+        if (data.admin_name) {
+          await supabase
+            .from('profiles')
+            .update({ full_name: data.admin_name })
+            .eq('tenant_id', editingTenant.id)
+            .eq('role', 'admin');
+        }
       } else {
         if (!data.admin_email || !data.admin_password) {
           throw new Error('Email e senha do administrador são obrigatórios');
