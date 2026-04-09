@@ -12,8 +12,10 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
-import { Plus, Building2, Users, Edit, Loader2, Mail, Lock, User, Trash2 } from 'lucide-react';
+import { Plus, Building2, Users, Edit, Loader2, Mail, Lock, User, Trash2, Phone, Globe, Palette, Upload } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
 
 interface TenantForm {
   name: string;
@@ -24,7 +26,27 @@ interface TenantForm {
   admin_email: string;
   admin_name: string;
   admin_password: string;
+  // Company settings fields
+  trade_name: string;
+  cnpj: string;
+  razao_social: string;
+  inscricao_estadual: string;
+  phone: string;
+  email: string;
+  address: string;
+  website: string;
+  primary_color: string;
+  accent_color: string;
+  logo_url: string;
 }
+
+const defaultForm: TenantForm = {
+  name: '', slug: '', plan_id: '', max_users: 5, active: true,
+  admin_email: '', admin_name: '', admin_password: '',
+  trade_name: '', cnpj: '', razao_social: '', inscricao_estadual: '',
+  phone: '', email: '', address: '', website: '',
+  primary_color: '#D41E1E', accent_color: '#E85D3A', logo_url: '',
+};
 
 export function TenantsManager() {
   const queryClient = useQueryClient();
@@ -32,10 +54,8 @@ export function TenantsManager() {
   const [editingTenant, setEditingTenant] = useState<any>(null);
   const [deletingTenant, setDeletingTenant] = useState<any>(null);
   const [deleteReason, setDeleteReason] = useState('');
-  const [form, setForm] = useState<TenantForm>({
-    name: '', slug: '', plan_id: '', max_users: 5, active: true,
-    admin_email: '', admin_name: '', admin_password: '',
-  });
+  const [form, setForm] = useState<TenantForm>({ ...defaultForm });
+  const [loadingSettings, setLoadingSettings] = useState(false);
 
   const { data: tenants, isLoading } = useQuery({
     queryKey: ['tenants'],
@@ -89,11 +109,33 @@ export function TenantsManager() {
           .eq('id', editingTenant.id);
         if (error) throw error;
 
-        // Update company_settings name too
-        await supabase
+        // Upsert company_settings
+        const settingsPayload = {
+          company_name: data.name,
+          trade_name: data.trade_name || data.name,
+          cnpj: data.cnpj,
+          razao_social: data.razao_social,
+          inscricao_estadual: data.inscricao_estadual,
+          phone: data.phone,
+          email: data.email,
+          address: data.address,
+          website: data.website,
+          primary_color: data.primary_color,
+          accent_color: data.accent_color,
+          logo_url: data.logo_url || null,
+        };
+
+        const { data: existing } = await supabase
           .from('company_settings')
-          .update({ company_name: data.name, trade_name: data.name })
-          .eq('tenant_id', editingTenant.id);
+          .select('id')
+          .eq('tenant_id', editingTenant.id)
+          .maybeSingle();
+
+        if (existing) {
+          await supabase.from('company_settings').update(settingsPayload).eq('id', existing.id);
+        } else {
+          await supabase.from('company_settings').insert({ ...settingsPayload, tenant_id: editingTenant.id });
+        }
       } else {
         if (!data.admin_email || !data.admin_password) {
           throw new Error('Email e senha do administrador são obrigatórios');
@@ -130,7 +172,6 @@ export function TenantsManager() {
     mutationFn: async ({ tenant, reason }: { tenant: any; reason: string }) => {
       if (!reason.trim()) throw new Error('Motivo da exclusão é obrigatório');
 
-      // Record deletion in deleted_records for audit
       const { error: auditError } = await supabase.from('deleted_records').insert({
         original_table: 'tenants',
         original_id: tenant.id,
@@ -141,7 +182,6 @@ export function TenantsManager() {
       });
       if (auditError) console.error('Audit error:', auditError);
 
-      // Deactivate instead of hard delete to preserve data integrity
       const { error } = await supabase
         .from('tenants')
         .update({ active: false })
@@ -161,19 +201,43 @@ export function TenantsManager() {
   });
 
   const resetForm = () => {
-    setForm({ name: '', slug: '', plan_id: '', max_users: 5, active: true, admin_email: '', admin_name: '', admin_password: '' });
+    setForm({ ...defaultForm });
     setEditingTenant(null);
     setDialogOpen(false);
   };
 
-  const openEdit = (tenant: any) => {
+  const openEdit = async (tenant: any) => {
     setEditingTenant(tenant);
-    setForm({
-      name: tenant.name, slug: tenant.slug, plan_id: tenant.plan_id || '',
-      max_users: tenant.max_users, active: tenant.active,
-      admin_email: '', admin_name: '', admin_password: '',
-    });
+    setLoadingSettings(true);
     setDialogOpen(true);
+
+    // Load company_settings for this tenant
+    const { data: settings } = await supabase
+      .from('company_settings')
+      .select('*')
+      .eq('tenant_id', tenant.id)
+      .maybeSingle();
+
+    setForm({
+      name: tenant.name,
+      slug: tenant.slug,
+      plan_id: tenant.plan_id || '',
+      max_users: tenant.max_users,
+      active: tenant.active,
+      admin_email: '', admin_name: '', admin_password: '',
+      trade_name: settings?.trade_name || '',
+      cnpj: settings?.cnpj || '',
+      razao_social: settings?.razao_social || '',
+      inscricao_estadual: settings?.inscricao_estadual || '',
+      phone: settings?.phone || '',
+      email: settings?.email || '',
+      address: settings?.address || '',
+      website: settings?.website || '',
+      primary_color: settings?.primary_color || '#D41E1E',
+      accent_color: settings?.accent_color || '#E85D3A',
+      logo_url: settings?.logo_url || '',
+    });
+    setLoadingSettings(false);
   };
 
   const handlePlanChange = (planId: string) => {
@@ -183,6 +247,26 @@ export function TenantsManager() {
 
   const generateSlug = (name: string) => {
     return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  };
+
+  const handleUploadLogo = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !editingTenant) return;
+
+    try {
+      const ext = file.name.split('.').pop();
+      const path = `${editingTenant.id}/logo.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from('company-assets')
+        .upload(path, file, { upsert: true, contentType: file.type });
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage.from('company-assets').getPublicUrl(path);
+      setForm(prev => ({ ...prev, logo_url: urlData.publicUrl }));
+      toast.success('Logo enviado');
+    } catch (err: any) {
+      toast.error('Erro ao enviar logo: ' + err.message);
+    }
   };
 
   const isCreating = !editingTenant;
@@ -195,88 +279,216 @@ export function TenantsManager() {
           <DialogTrigger asChild>
             <Button className="gap-2"><Plus className="h-4 w-4" /> Nova Empresa</Button>
           </DialogTrigger>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-2xl max-h-[90vh]">
             <DialogHeader>
               <DialogTitle>{editingTenant ? 'Editar Empresa' : 'Nova Empresa'}</DialogTitle>
               <DialogDescription>
                 {editingTenant
-                  ? 'Atualize os dados da empresa.'
+                  ? 'Atualize todos os dados cadastrais da empresa.'
                   : 'Preencha os dados da empresa e do usuário administrador.'}
               </DialogDescription>
             </DialogHeader>
-            <form onSubmit={(e) => { e.preventDefault(); saveMutation.mutate(form); }} className="space-y-4">
-              <div className="space-y-3">
-                <p className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
-                  <Building2 className="h-4 w-4" /> Dados da Empresa
-                </p>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Nome da Empresa *</Label>
-                    <Input value={form.name} onChange={e => {
-                      const name = e.target.value;
-                      setForm(prev => ({ ...prev, name, slug: editingTenant ? prev.slug : generateSlug(name) }));
-                    }} required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Slug (URL) *</Label>
-                    <Input value={form.slug} onChange={e => setForm(prev => ({ ...prev, slug: e.target.value }))} required />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Plano</Label>
-                    <Select value={form.plan_id} onValueChange={handlePlanChange}>
-                      <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                      <SelectContent>
-                        {plans?.map(p => (
-                          <SelectItem key={p.id} value={p.id}>{p.name} ({p.max_users} users)</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Limite de Usuários</Label>
-                    <Input type="number" value={form.max_users} onChange={e => setForm(prev => ({ ...prev, max_users: parseInt(e.target.value) || 5 }))} min={1} />
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Switch checked={form.active} onCheckedChange={v => setForm(prev => ({ ...prev, active: v }))} />
-                  <Label>Empresa Ativa</Label>
-                </div>
-              </div>
 
-              {isCreating && (
-                <div className="space-y-3 border-t pt-4">
-                  <p className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
-                    <User className="h-4 w-4" /> Usuário Administrador (obrigatório)
-                  </p>
+            {loadingSettings ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              </div>
+            ) : (
+              <ScrollArea className="max-h-[65vh] pr-4">
+                <form onSubmit={(e) => { e.preventDefault(); saveMutation.mutate(form); }} className="space-y-5">
+                  {/* Dados da Empresa */}
                   <div className="space-y-3">
-                    <div className="space-y-2">
-                      <Label className="flex items-center gap-1.5"><Mail className="h-3.5 w-3.5" /> Email do Admin *</Label>
-                      <Input type="email" value={form.admin_email} onChange={e => setForm(prev => ({ ...prev, admin_email: e.target.value }))} placeholder="admin@empresa.com.br" required />
+                    <p className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
+                      <Building2 className="h-4 w-4" /> Dados da Empresa
+                    </p>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Nome da Empresa *</Label>
+                        <Input value={form.name} onChange={e => {
+                          const name = e.target.value;
+                          setForm(prev => ({ ...prev, name, slug: editingTenant ? prev.slug : generateSlug(name) }));
+                        }} required />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Nome Fantasia</Label>
+                        <Input value={form.trade_name} onChange={e => setForm(prev => ({ ...prev, trade_name: e.target.value }))} />
+                      </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label>Nome do Admin</Label>
-                        <Input value={form.admin_name} onChange={e => setForm(prev => ({ ...prev, admin_name: e.target.value }))} placeholder="Nome completo" />
+                        <Label>Slug (URL) *</Label>
+                        <Input value={form.slug} onChange={e => setForm(prev => ({ ...prev, slug: e.target.value }))} required />
+                      </div>
+                      <div className="flex items-center gap-2 pt-6">
+                        <Switch checked={form.active} onCheckedChange={v => setForm(prev => ({ ...prev, active: v }))} />
+                        <Label>Empresa Ativa</Label>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Plano</Label>
+                        <Select value={form.plan_id} onValueChange={handlePlanChange}>
+                          <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                          <SelectContent>
+                            {plans?.map(p => (
+                              <SelectItem key={p.id} value={p.id}>{p.name} ({p.max_users} users)</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                       <div className="space-y-2">
-                        <Label className="flex items-center gap-1.5"><Lock className="h-3.5 w-3.5" /> Senha *</Label>
-                        <Input type="password" value={form.admin_password} onChange={e => setForm(prev => ({ ...prev, admin_password: e.target.value }))} placeholder="Mínimo 6 caracteres" minLength={6} required />
+                        <Label>Limite de Usuários</Label>
+                        <Input type="number" value={form.max_users} onChange={e => setForm(prev => ({ ...prev, max_users: parseInt(e.target.value) || 5 }))} min={1} />
                       </div>
                     </div>
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    O administrador receberá acesso total ao sistema da empresa e poderá gerenciar outros usuários.
-                  </p>
-                </div>
-              )}
 
-              <Button type="submit" className="w-full" disabled={saveMutation.isPending}>
-                {saveMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {editingTenant ? 'Atualizar Empresa' : 'Criar Empresa + Admin'}
-              </Button>
-            </form>
+                  {/* Dados Fiscais */}
+                  {editingTenant && (
+                    <>
+                      <Separator />
+                      <div className="space-y-3">
+                        <p className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
+                          <Building2 className="h-4 w-4" /> Dados Fiscais
+                        </p>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>CNPJ</Label>
+                            <Input value={form.cnpj} onChange={e => setForm(prev => ({ ...prev, cnpj: e.target.value }))} placeholder="00.000.000/0001-00" />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Razão Social</Label>
+                            <Input value={form.razao_social} onChange={e => setForm(prev => ({ ...prev, razao_social: e.target.value }))} />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Inscrição Estadual</Label>
+                          <Input value={form.inscricao_estadual} onChange={e => setForm(prev => ({ ...prev, inscricao_estadual: e.target.value }))} />
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Logo */}
+                  {editingTenant && (
+                    <>
+                      <Separator />
+                      <div className="space-y-3">
+                        <p className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
+                          <Upload className="h-4 w-4" /> Logo da Empresa
+                        </p>
+                        <div className="flex items-center gap-4">
+                          <div className="w-20 h-20 rounded-lg border-2 border-dashed border-border flex items-center justify-center overflow-hidden bg-muted/30">
+                            {form.logo_url ? (
+                              <img src={form.logo_url} alt="Logo" className="w-full h-full object-contain p-1" />
+                            ) : (
+                              <Upload className="h-6 w-6 text-muted-foreground" />
+                            )}
+                          </div>
+                          <Input type="file" accept="image/*" onChange={handleUploadLogo} className="w-64" />
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Contato */}
+                  {editingTenant && (
+                    <>
+                      <Separator />
+                      <div className="space-y-3">
+                        <p className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
+                          <Phone className="h-4 w-4" /> Contato
+                        </p>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>Telefone</Label>
+                            <Input value={form.phone} onChange={e => setForm(prev => ({ ...prev, phone: e.target.value }))} />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Email</Label>
+                            <Input value={form.email} onChange={e => setForm(prev => ({ ...prev, email: e.target.value }))} type="email" />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>Endereço</Label>
+                            <Input value={form.address} onChange={e => setForm(prev => ({ ...prev, address: e.target.value }))} />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Website</Label>
+                            <Input value={form.website} onChange={e => setForm(prev => ({ ...prev, website: e.target.value }))} placeholder="https://" />
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Cores */}
+                  {editingTenant && (
+                    <>
+                      <Separator />
+                      <div className="space-y-3">
+                        <p className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
+                          <Palette className="h-4 w-4" /> Cores do Tema
+                        </p>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>Cor Primária</Label>
+                            <div className="flex items-center gap-2">
+                              <input type="color" value={form.primary_color} onChange={e => setForm(prev => ({ ...prev, primary_color: e.target.value }))} className="w-10 h-10 rounded cursor-pointer border-0" />
+                              <Input value={form.primary_color} onChange={e => setForm(prev => ({ ...prev, primary_color: e.target.value }))} className="flex-1" />
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Cor de Destaque</Label>
+                            <div className="flex items-center gap-2">
+                              <input type="color" value={form.accent_color} onChange={e => setForm(prev => ({ ...prev, accent_color: e.target.value }))} className="w-10 h-10 rounded cursor-pointer border-0" />
+                              <Input value={form.accent_color} onChange={e => setForm(prev => ({ ...prev, accent_color: e.target.value }))} className="flex-1" />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Admin (only on create) */}
+                  {isCreating && (
+                    <>
+                      <Separator />
+                      <div className="space-y-3">
+                        <p className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
+                          <User className="h-4 w-4" /> Usuário Administrador (obrigatório)
+                        </p>
+                        <div className="space-y-3">
+                          <div className="space-y-2">
+                            <Label className="flex items-center gap-1.5"><Mail className="h-3.5 w-3.5" /> Email do Admin *</Label>
+                            <Input type="email" value={form.admin_email} onChange={e => setForm(prev => ({ ...prev, admin_email: e.target.value }))} placeholder="admin@empresa.com.br" required />
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label>Nome do Admin</Label>
+                              <Input value={form.admin_name} onChange={e => setForm(prev => ({ ...prev, admin_name: e.target.value }))} placeholder="Nome completo" />
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="flex items-center gap-1.5"><Lock className="h-3.5 w-3.5" /> Senha *</Label>
+                              <Input type="password" value={form.admin_password} onChange={e => setForm(prev => ({ ...prev, admin_password: e.target.value }))} placeholder="Mínimo 6 caracteres" minLength={6} required />
+                            </div>
+                          </div>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          O administrador receberá acesso total ao sistema da empresa e poderá gerenciar outros usuários.
+                        </p>
+                      </div>
+                    </>
+                  )}
+
+                  <Button type="submit" className="w-full" disabled={saveMutation.isPending}>
+                    {saveMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {editingTenant ? 'Atualizar Empresa' : 'Criar Empresa + Admin'}
+                  </Button>
+                </form>
+              </ScrollArea>
+            )}
           </DialogContent>
         </Dialog>
       </div>
