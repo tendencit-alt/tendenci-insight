@@ -136,6 +136,15 @@ export function TenantsManager() {
         } else {
           await supabase.from('company_settings').insert({ ...settingsPayload, tenant_id: editingTenant.id });
         }
+
+        // Update admin name if changed
+        if (data.admin_name) {
+          await supabase
+            .from('profiles')
+            .update({ full_name: data.admin_name })
+            .eq('tenant_id', editingTenant.id)
+            .eq('role', 'admin');
+        }
       } else {
         if (!data.admin_email || !data.admin_password) {
           throw new Error('Email e senha do administrador são obrigatórios');
@@ -211,12 +220,13 @@ export function TenantsManager() {
     setLoadingSettings(true);
     setDialogOpen(true);
 
-    // Load company_settings for this tenant
-    const { data: settings } = await supabase
-      .from('company_settings')
-      .select('*')
-      .eq('tenant_id', tenant.id)
-      .maybeSingle();
+    // Load company_settings and admin profile for this tenant
+    const [settingsRes, adminRes] = await Promise.all([
+      supabase.from('company_settings').select('*').eq('tenant_id', tenant.id).maybeSingle(),
+      supabase.from('profiles').select('full_name, email').eq('tenant_id', tenant.id).eq('role', 'admin').maybeSingle(),
+    ]);
+    const settings = settingsRes.data;
+    const admin = adminRes.data;
 
     setForm({
       name: tenant.name,
@@ -224,7 +234,9 @@ export function TenantsManager() {
       plan_id: tenant.plan_id || '',
       max_users: tenant.max_users,
       active: tenant.active,
-      admin_email: '', admin_name: '', admin_password: '',
+      admin_email: admin?.email || '',
+      admin_name: admin?.full_name || '',
+      admin_password: '',
       trade_name: settings?.trade_name || '',
       cnpj: settings?.cnpj || '',
       razao_social: settings?.razao_social || '',
@@ -451,36 +463,48 @@ export function TenantsManager() {
                     </>
                   )}
 
-                  {/* Admin (only on create) */}
-                  {isCreating && (
-                    <>
-                      <Separator />
-                      <div className="space-y-3">
-                        <p className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
-                          <User className="h-4 w-4" /> Usuário Administrador (obrigatório)
-                        </p>
-                        <div className="space-y-3">
-                          <div className="space-y-2">
-                            <Label className="flex items-center gap-1.5"><Mail className="h-3.5 w-3.5" /> Email do Admin *</Label>
-                            <Input type="email" value={form.admin_email} onChange={e => setForm(prev => ({ ...prev, admin_email: e.target.value }))} placeholder="admin@empresa.com.br" required />
-                          </div>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <Label>Nome do Admin</Label>
-                              <Input value={form.admin_name} onChange={e => setForm(prev => ({ ...prev, admin_name: e.target.value }))} placeholder="Nome completo" />
-                            </div>
-                            <div className="space-y-2">
-                              <Label className="flex items-center gap-1.5"><Lock className="h-3.5 w-3.5" /> Senha *</Label>
-                              <Input type="password" value={form.admin_password} onChange={e => setForm(prev => ({ ...prev, admin_password: e.target.value }))} placeholder="Mínimo 6 caracteres" minLength={6} required />
-                            </div>
-                          </div>
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          O administrador receberá acesso total ao sistema da empresa e poderá gerenciar outros usuários.
-                        </p>
+                  {/* Admin section */}
+                  <Separator />
+                  <div className="space-y-3">
+                    <p className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
+                      <User className="h-4 w-4" /> Usuário Administrador {isCreating && '(obrigatório)'}
+                    </p>
+                    <div className="space-y-3">
+                      <div className="space-y-2">
+                        <Label className="flex items-center gap-1.5"><Mail className="h-3.5 w-3.5" /> Email do Admin {isCreating && '*'}</Label>
+                        <Input
+                          type="email"
+                          value={form.admin_email}
+                          onChange={e => setForm(prev => ({ ...prev, admin_email: e.target.value }))}
+                          placeholder="admin@empresa.com.br"
+                          required={isCreating}
+                          disabled={!!editingTenant}
+                          className={editingTenant ? 'bg-muted' : ''}
+                        />
                       </div>
-                    </>
-                  )}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Nome do Admin</Label>
+                          <Input
+                            value={form.admin_name}
+                            onChange={e => setForm(prev => ({ ...prev, admin_name: e.target.value }))}
+                            placeholder="Nome completo"
+                          />
+                        </div>
+                        {isCreating && (
+                          <div className="space-y-2">
+                            <Label className="flex items-center gap-1.5"><Lock className="h-3.5 w-3.5" /> Senha *</Label>
+                            <Input type="password" value={form.admin_password} onChange={e => setForm(prev => ({ ...prev, admin_password: e.target.value }))} placeholder="Mínimo 6 caracteres" minLength={6} required />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {isCreating
+                        ? 'O administrador receberá acesso total ao sistema da empresa e poderá gerenciar outros usuários.'
+                        : 'O email do admin não pode ser alterado. Para alterar o nome, edite e salve.'}
+                    </p>
+                  </div>
 
                   <Button type="submit" className="w-full" disabled={saveMutation.isPending}>
                     {saveMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
