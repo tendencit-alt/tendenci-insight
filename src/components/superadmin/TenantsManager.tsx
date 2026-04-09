@@ -117,7 +117,7 @@ export function TenantsManager() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tenants'] });
       queryClient.invalidateQueries({ queryKey: ['super-admin-stats'] });
-      queryClient.invalidateQueries({ queryKey: ['tenant-user-counts'] });
+      queryClient.invalidateQueries({ queryKey: ['tenant-profiles-admin'] });
       toast.success(editingTenant ? 'Empresa atualizada!' : 'Empresa e administrador criados com sucesso!');
       resetForm();
     },
