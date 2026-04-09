@@ -58,22 +58,27 @@ export function TenantsManager() {
     },
   });
 
-  const { data: userCounts } = useQuery({
-    queryKey: ['tenant-user-counts'],
+  const { data: tenantProfiles } = useQuery({
+    queryKey: ['tenant-profiles-admin'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('profiles')
-        .select('tenant_id');
+        .select('tenant_id, full_name, email, role');
       if (error) throw error;
-      const counts: Record<string, number> = {};
-      data?.forEach(p => {
-        if (p.tenant_id) {
-          counts[p.tenant_id] = (counts[p.tenant_id] || 0) + 1;
-        }
-      });
-      return counts;
+      return data;
     },
   });
+
+  const userCounts: Record<string, number> = {};
+  tenantProfiles?.forEach(p => {
+    if (p.tenant_id) {
+      userCounts[p.tenant_id] = (userCounts[p.tenant_id] || 0) + 1;
+    }
+  });
+
+  const getAdminForTenant = (tenantId: string) => {
+    return tenantProfiles?.find(p => p.tenant_id === tenantId && p.role === 'admin');
+  };
 
   const saveMutation = useMutation({
     mutationFn: async (data: TenantForm) => {
@@ -112,7 +117,7 @@ export function TenantsManager() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tenants'] });
       queryClient.invalidateQueries({ queryKey: ['super-admin-stats'] });
-      queryClient.invalidateQueries({ queryKey: ['tenant-user-counts'] });
+      queryClient.invalidateQueries({ queryKey: ['tenant-profiles-admin'] });
       toast.success(editingTenant ? 'Empresa atualizada!' : 'Empresa e administrador criados com sucesso!');
       resetForm();
     },
@@ -283,6 +288,7 @@ export function TenantsManager() {
               <TableRow>
                 <TableHead>Empresa</TableHead>
                 <TableHead>Slug</TableHead>
+                <TableHead>Admin</TableHead>
                 <TableHead>Plano</TableHead>
                 <TableHead>Usuários</TableHead>
                 <TableHead>Status</TableHead>
@@ -291,10 +297,12 @@ export function TenantsManager() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>
               ) : tenants?.length === 0 ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Nenhuma empresa cadastrada</TableCell></TableRow>
-              ) : tenants?.map(tenant => (
+                <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Nenhuma empresa cadastrada</TableCell></TableRow>
+              ) : tenants?.map(tenant => {
+                const admin = getAdminForTenant(tenant.id);
+                return (
                 <TableRow key={tenant.id}>
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-2">
@@ -303,6 +311,19 @@ export function TenantsManager() {
                     </div>
                   </TableCell>
                   <TableCell className="text-muted-foreground">{tenant.slug}</TableCell>
+                  <TableCell>
+                    {admin ? (
+                      <div className="text-sm">
+                        <div className="font-medium flex items-center gap-1">
+                          <Mail className="h-3 w-3 text-muted-foreground" />
+                          {admin.email}
+                        </div>
+                        {admin.full_name && <div className="text-muted-foreground text-xs">{admin.full_name}</div>}
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">Sem admin</span>
+                    )}
+                  </TableCell>
                   <TableCell>
                     <Badge variant="outline">{(tenant as any).tenant_plans?.name || '—'}</Badge>
                   </TableCell>
@@ -328,7 +349,8 @@ export function TenantsManager() {
                     </div>
                   </TableCell>
                 </TableRow>
-              ))}
+                );
+              })}
             </TableBody>
           </Table>
         </CardContent>
