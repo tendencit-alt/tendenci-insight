@@ -5,12 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
-import { Plus, Building2, Users, Edit, Loader2, Mail, Lock, User } from 'lucide-react';
+import { Plus, Building2, Users, Edit, Loader2, Mail, Lock, User, Trash2 } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 interface TenantForm {
@@ -28,6 +30,8 @@ export function TenantsManager() {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTenant, setEditingTenant] = useState<any>(null);
+  const [deletingTenant, setDeletingTenant] = useState<any>(null);
+  const [deleteReason, setDeleteReason] = useState('');
   const [form, setForm] = useState<TenantForm>({
     name: '', slug: '', plan_id: '', max_users: 5, active: true,
     admin_email: '', admin_name: '', admin_password: '',
@@ -74,14 +78,18 @@ export function TenantsManager() {
   const saveMutation = useMutation({
     mutationFn: async (data: TenantForm) => {
       if (editingTenant) {
-        // Update existing tenant (no admin creation)
         const { error } = await supabase
           .from('tenants')
           .update({ name: data.name, slug: data.slug, plan_id: data.plan_id || null, max_users: data.max_users, active: data.active })
           .eq('id', editingTenant.id);
         if (error) throw error;
+
+        // Update company_settings name too
+        await supabase
+          .from('company_settings')
+          .update({ company_name: data.name, trade_name: data.name })
+          .eq('tenant_id', editingTenant.id);
       } else {
-        // Create tenant + admin via edge function
         if (!data.admin_email || !data.admin_password) {
           throw new Error('Email e senha do administrador são obrigatórios');
         }
@@ -91,14 +99,9 @@ export function TenantsManager() {
 
         const { data: result, error } = await supabase.functions.invoke('create-tenant-with-admin', {
           body: {
-            name: data.name,
-            slug: data.slug,
-            plan_id: data.plan_id || null,
-            max_users: data.max_users,
-            active: data.active,
-            admin_email: data.admin_email,
-            admin_name: data.admin_name,
-            admin_password: data.admin_password,
+            name: data.name, slug: data.slug, plan_id: data.plan_id || null,
+            max_users: data.max_users, active: data.active,
+            admin_email: data.admin_email, admin_name: data.admin_name, admin_password: data.admin_password,
           },
         });
 
@@ -118,6 +121,40 @@ export function TenantsManager() {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: async ({ tenant, reason }: { tenant: any; reason: string }) => {
+      if (!reason.trim()) throw new Error('Motivo da exclusão é obrigatório');
+
+      // Record deletion in deleted_records for audit
+      const { error: auditError } = await supabase.from('deleted_records').insert({
+        original_table: 'tenants',
+        original_id: tenant.id,
+        record_type: 'empresa',
+        record_identifier: tenant.name,
+        original_data: tenant,
+        deletion_reason: reason,
+      });
+      if (auditError) console.error('Audit error:', auditError);
+
+      // Deactivate instead of hard delete to preserve data integrity
+      const { error } = await supabase
+        .from('tenants')
+        .update({ active: false })
+        .eq('id', tenant.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tenants'] });
+      queryClient.invalidateQueries({ queryKey: ['super-admin-stats'] });
+      toast.success('Empresa desativada com sucesso');
+      setDeletingTenant(null);
+      setDeleteReason('');
+    },
+    onError: (err: any) => {
+      toast.error(err.message || 'Erro ao excluir empresa');
+    },
+  });
+
   const resetForm = () => {
     setForm({ name: '', slug: '', plan_id: '', max_users: 5, active: true, admin_email: '', admin_name: '', admin_password: '' });
     setEditingTenant(null);
@@ -127,25 +164,16 @@ export function TenantsManager() {
   const openEdit = (tenant: any) => {
     setEditingTenant(tenant);
     setForm({
-      name: tenant.name,
-      slug: tenant.slug,
-      plan_id: tenant.plan_id || '',
-      max_users: tenant.max_users,
-      active: tenant.active,
-      admin_email: '',
-      admin_name: '',
-      admin_password: '',
+      name: tenant.name, slug: tenant.slug, plan_id: tenant.plan_id || '',
+      max_users: tenant.max_users, active: tenant.active,
+      admin_email: '', admin_name: '', admin_password: '',
     });
     setDialogOpen(true);
   };
 
   const handlePlanChange = (planId: string) => {
     const plan = plans?.find(p => p.id === planId);
-    setForm(prev => ({
-      ...prev,
-      plan_id: planId,
-      max_users: plan?.max_users || prev.max_users,
-    }));
+    setForm(prev => ({ ...prev, plan_id: planId, max_users: plan?.max_users || prev.max_users }));
   };
 
   const generateSlug = (name: string) => {
@@ -160,26 +188,21 @@ export function TenantsManager() {
         <h2 className="text-xl font-semibold">Empresas Cadastradas</h2>
         <Dialog open={dialogOpen} onOpenChange={(open) => { if (!open) resetForm(); setDialogOpen(open); }}>
           <DialogTrigger asChild>
-            <Button className="gap-2">
-              <Plus className="h-4 w-4" />
-              Nova Empresa
-            </Button>
+            <Button className="gap-2"><Plus className="h-4 w-4" /> Nova Empresa</Button>
           </DialogTrigger>
           <DialogContent className="max-w-lg">
             <DialogHeader>
               <DialogTitle>{editingTenant ? 'Editar Empresa' : 'Nova Empresa'}</DialogTitle>
               <DialogDescription>
-                {editingTenant 
-                  ? 'Atualize os dados da empresa.' 
-                  : 'Preencha os dados da empresa e do usuário administrador. O admin terá acesso total ao sistema da empresa.'}
+                {editingTenant
+                  ? 'Atualize os dados da empresa.'
+                  : 'Preencha os dados da empresa e do usuário administrador.'}
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={(e) => { e.preventDefault(); saveMutation.mutate(form); }} className="space-y-4">
-              {/* Company Info */}
               <div className="space-y-3">
                 <p className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
-                  <Building2 className="h-4 w-4" />
-                  Dados da Empresa
+                  <Building2 className="h-4 w-4" /> Dados da Empresa
                 </p>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -194,7 +217,6 @@ export function TenantsManager() {
                     <Input value={form.slug} onChange={e => setForm(prev => ({ ...prev, slug: e.target.value }))} required />
                   </div>
                 </div>
-
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Plano</Label>
@@ -212,56 +234,30 @@ export function TenantsManager() {
                     <Input type="number" value={form.max_users} onChange={e => setForm(prev => ({ ...prev, max_users: parseInt(e.target.value) || 5 }))} min={1} />
                   </div>
                 </div>
-
                 <div className="flex items-center gap-2">
                   <Switch checked={form.active} onCheckedChange={v => setForm(prev => ({ ...prev, active: v }))} />
                   <Label>Empresa Ativa</Label>
                 </div>
               </div>
 
-              {/* Admin User - only for new tenants */}
               {isCreating && (
                 <div className="space-y-3 border-t pt-4">
                   <p className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
-                    <User className="h-4 w-4" />
-                    Usuário Administrador (obrigatório)
+                    <User className="h-4 w-4" /> Usuário Administrador (obrigatório)
                   </p>
                   <div className="space-y-3">
                     <div className="space-y-2">
-                      <Label className="flex items-center gap-1.5">
-                        <Mail className="h-3.5 w-3.5" />
-                        Email do Admin *
-                      </Label>
-                      <Input 
-                        type="email" 
-                        value={form.admin_email} 
-                        onChange={e => setForm(prev => ({ ...prev, admin_email: e.target.value }))} 
-                        placeholder="admin@empresa.com.br"
-                        required 
-                      />
+                      <Label className="flex items-center gap-1.5"><Mail className="h-3.5 w-3.5" /> Email do Admin *</Label>
+                      <Input type="email" value={form.admin_email} onChange={e => setForm(prev => ({ ...prev, admin_email: e.target.value }))} placeholder="admin@empresa.com.br" required />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label>Nome do Admin</Label>
-                        <Input 
-                          value={form.admin_name} 
-                          onChange={e => setForm(prev => ({ ...prev, admin_name: e.target.value }))} 
-                          placeholder="Nome completo"
-                        />
+                        <Input value={form.admin_name} onChange={e => setForm(prev => ({ ...prev, admin_name: e.target.value }))} placeholder="Nome completo" />
                       </div>
                       <div className="space-y-2">
-                        <Label className="flex items-center gap-1.5">
-                          <Lock className="h-3.5 w-3.5" />
-                          Senha *
-                        </Label>
-                        <Input 
-                          type="password" 
-                          value={form.admin_password} 
-                          onChange={e => setForm(prev => ({ ...prev, admin_password: e.target.value }))} 
-                          placeholder="Mínimo 6 caracteres"
-                          minLength={6}
-                          required 
-                        />
+                        <Label className="flex items-center gap-1.5"><Lock className="h-3.5 w-3.5" /> Senha *</Label>
+                        <Input type="password" value={form.admin_password} onChange={e => setForm(prev => ({ ...prev, admin_password: e.target.value }))} placeholder="Mínimo 6 caracteres" minLength={6} required />
                       </div>
                     </div>
                   </div>
@@ -273,7 +269,7 @@ export function TenantsManager() {
 
               <Button type="submit" className="w-full" disabled={saveMutation.isPending}>
                 {saveMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {editingTenant ? 'Atualizar' : 'Criar Empresa + Admin'}
+                {editingTenant ? 'Atualizar Empresa' : 'Criar Empresa + Admin'}
               </Button>
             </form>
           </DialogContent>
@@ -290,7 +286,7 @@ export function TenantsManager() {
                 <TableHead>Plano</TableHead>
                 <TableHead>Usuários</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="w-[80px]">Ações</TableHead>
+                <TableHead className="w-[100px]">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -322,9 +318,14 @@ export function TenantsManager() {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Button variant="ghost" size="icon" onClick={() => openEdit(tenant)}>
-                      <Edit className="h-4 w-4" />
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="icon" onClick={() => openEdit(tenant)} title="Editar">
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => setDeletingTenant(tenant)} title="Excluir" className="text-destructive hover:text-destructive">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -332,6 +333,35 @@ export function TenantsManager() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={!!deletingTenant} onOpenChange={(open) => { if (!open) { setDeletingTenant(null); setDeleteReason(''); } }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Desativar empresa "{deletingTenant?.name}"?</AlertDialogTitle>
+            <AlertDialogDescription>
+              A empresa será desativada e seus usuários perderão acesso ao sistema. Esta ação será registrada no log de auditoria. Informe o motivo:
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <Textarea
+            value={deleteReason}
+            onChange={e => setDeleteReason(e.target.value)}
+            placeholder="Motivo da exclusão (obrigatório)"
+            className="min-h-[80px]"
+          />
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deletingTenant && deleteMutation.mutate({ tenant: deletingTenant, reason: deleteReason })}
+              disabled={!deleteReason.trim() || deleteMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Desativar Empresa
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
