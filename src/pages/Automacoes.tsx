@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, Search, Zap, History, AlertCircle, CheckCircle2, XCircle, Clock, Play } from "lucide-react";
+import { Plus, Search, Zap, History, CheckCircle2, XCircle, Clock, Play } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -23,8 +23,6 @@ import {
   MODULE_LABELS,
   type AutomationRule,
   type AutomationExecutionLog,
-  type EventModule,
-  type EventType,
   type AutomationActionType,
 } from "@/lib/automation-engine/types";
 
@@ -43,7 +41,7 @@ export default function AutomacoesPage() {
   const [formPriority, setFormPriority] = useState(100);
   const [formActions, setFormActions] = useState<AutomationActionType[]>([]);
 
-  const { data: rules = [], isLoading } = useQuery({
+  const { data: rules = [] } = useQuery({
     queryKey: ["automation_rules"],
     queryFn: async () => {
       const { data, error } = await (supabase
