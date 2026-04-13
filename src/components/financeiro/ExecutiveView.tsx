@@ -17,9 +17,7 @@ interface ExecutiveData {
     receitaLiquida: number;
     margemContribuicao: number;
     resultadoOperacionalEBITDA: number;
-    resultadoEconomicoEBIT: number;
-    resultadoAntesCapital: number;
-    lucroLiquido: number | null;
+    resultadoLiquido: number;
   };
   cashflow: {
     entradasOperacionais: number;
@@ -190,23 +188,11 @@ export function ExecutiveView({ filters }: ExecutiveViewProps) {
         }
       });
 
-      // Fetch tax regime
-      const { data: companySettings } = await supabase
-        .from("company_settings")
-        .select("tax_regime")
-        .limit(1)
-        .maybeSingle();
-      
-      const taxRegime = companySettings?.tax_regime || 'simples_nacional';
-      const showImpostos = taxRegime !== 'simples_nacional';
-
       const resultadoFinanceiro = receitasFinanceiras - despesasFinanceiras;
       const receitaLiquida = totalReceitas - deducoesReceita;
       const margemContribuicao = receitaLiquida - custosVariaveis - compromissosVenda;
       const resultadoOperacionalEBITDA = margemContribuicao - despesasOperacionais;
-      const resultadoEconomicoEBIT = resultadoOperacionalEBITDA - depreciacao;
-      const resultadoAntesCapital = resultadoEconomicoEBIT + resultadoFinanceiro;
-      const lucroLiquido = showImpostos ? resultadoAntesCapital - impostosResultado : resultadoAntesCapital;
+      const resultadoLiquido = resultadoOperacionalEBITDA - depreciacao + resultadoFinanceiro - impostosResultado;
 
       // Calculate Cashflow values
       let entradasOperacionais = 0;
@@ -244,9 +230,7 @@ export function ExecutiveView({ filters }: ExecutiveViewProps) {
           receitaLiquida,
           margemContribuicao,
           resultadoOperacionalEBITDA,
-          resultadoEconomicoEBIT,
-          resultadoAntesCapital,
-          lucroLiquido: showImpostos ? lucroLiquido : null,
+          resultadoLiquido,
         },
         cashflow: {
           entradasOperacionais,
@@ -305,25 +289,12 @@ export function ExecutiveView({ filters }: ExecutiveViewProps) {
       isCalculated: true 
     },
     { 
-      label: "Resultado Econômico (EBIT)", 
-      key: "resultado_economico_ebit",
-      value: dre?.resultadoEconomicoEBIT || 0, 
-      isCalculated: true 
-    },
-    { 
-      label: "Resultado Antes do Capital", 
-      key: "resultado_antes_capital",
-      value: dre?.resultadoAntesCapital || 0, 
+      label: "Resultado Líquido", 
+      key: "resultado_liquido",
+      value: dre?.resultadoLiquido || 0, 
       isCalculated: true,
-      highlight: dre?.lucroLiquido == null
+      highlight: true
     },
-    ...(dre?.lucroLiquido != null ? [{
-      label: "Lucro Líquido",
-      key: "lucro_liquido",
-      value: dre.lucroLiquido,
-      isCalculated: true,
-      highlight: true,
-    }] : []),
   ];
 
   const cashflowRows = [
@@ -496,9 +467,9 @@ export function ExecutiveView({ filters }: ExecutiveViewProps) {
             {/* Summary badges */}
             <div className="pt-4 space-y-2">
               <TrafficLightBadge 
-                label="Meta principal: Resultado Antes Capital"
-                actual={dre?.resultadoAntesCapital || 0} 
-                target={goals?.dre.resultado_antes_capital || 0} 
+                label="Meta principal: Resultado Líquido"
+                actual={dre?.resultadoLiquido || 0} 
+                target={goals?.dre.resultado_liquido || 0} 
               />
             </div>
           </CardContent>
