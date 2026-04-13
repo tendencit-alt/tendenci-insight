@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -24,6 +24,8 @@ import {
 import { useFinanceiroSync } from "@/hooks/useFinanceiroSync";
 import { createLedgerEntryWithIntegration } from "@/lib/financeiroIntegration";
 import { validateAndShowErrors, ValidationRule } from "@/lib/formValidation";
+import { useClassifyEntry } from "@/hooks/useClassifyEntry";
+import { ClassificationSuggestionPanel } from "./ClassificationSuggestionPanel";
 
 interface CreateLedgerEntryDialogProps {
   open: boolean;
