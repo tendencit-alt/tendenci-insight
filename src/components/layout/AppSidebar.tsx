@@ -1,14 +1,12 @@
-import { useState } from "react";
 import { useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Users, FileText, ShoppingCart, Wallet, BarChart3,
   Target, PieChart, FolderOpen, Zap, Settings, Building2,
-  ChevronDown, Factory, Package, CreditCard, BookOpen, TrendingUp,
-  ClipboardList, Receipt, Landmark, ArrowLeftRight, DollarSign,
-  LineChart, Banknote, FolderKanban, ListChecks, Bell, Shield,
-  History, Plug, UserCog, ScrollText, Truck, Wrench, AlertTriangle,
-  Calculator, CalendarRange, Activity, Bot, Layers, FileCheck,
-  GitBranch, Workflow, SquareStack
+  ChevronDown, Factory, Package, BookOpen,
+  ClipboardList, Truck, ListChecks, Bell, Shield,
+  History, UserCog, Layers,
+  Activity, GitBranch, Inbox, CheckSquare, AlertCircle,
+  TrendingUp, DollarSign, ArrowLeftRight, Landmark, LineChart
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
@@ -37,24 +35,36 @@ interface MenuGroup {
   label: string;
   icon: any;
   items: MenuItem[];
+  separator?: boolean; // visual separator after group
 }
 
 const menuGroups: MenuGroup[] = [
+  // ── Visão Geral ──
   {
     label: "Dashboard",
     icon: LayoutDashboard,
     items: [
-      { title: "Dashboard Executivo", url: "/bi-dashboard", icon: LayoutDashboard, module: "dashboard" },
+      { title: "Visão Geral", url: "/bi-dashboard", icon: LayoutDashboard, module: "dashboard" },
     ],
   },
+  // ── Centro de Trabalho ──
   {
-    label: "CRM e Comercial",
-    icon: Users,
+    label: "Central Operacional",
+    icon: Inbox,
+    separator: true,
     items: [
-      { title: "Clientes", url: "/pedidos", icon: Users, module: "pedidos" },
+      { title: "Minhas Tarefas", url: "/tarefas", icon: CheckSquare },
+      { title: "Aprovações", url: "/aprovacoes", icon: GitBranch },
+      { title: "Notificações", url: "/atividades", icon: Bell, module: null, masterOnly: true },
+    ],
+  },
+  // ── Execução ──
+  {
+    label: "Comercial",
+    icon: ShoppingCart,
+    items: [
       { title: "Pedidos", url: "/pedidos", icon: ShoppingCart, module: "pedidos" },
-      { title: "Orçamentos", url: "/pedidos", icon: FileText, module: "pedidos" },
-      { title: "Contratos", url: "/pedidos", icon: ScrollText, module: "pedidos" },
+      { title: "Documentos", url: "/documentos", icon: FolderOpen },
     ],
   },
   {
@@ -62,8 +72,6 @@ const menuGroups: MenuGroup[] = [
     icon: Factory,
     items: [
       { title: "Produção", url: "/producao", icon: Factory, module: "producao" },
-      { title: "Ordens de Produção", url: "/producao", icon: ClipboardList, module: "producao" },
-      { title: "Entregas", url: "/producao", icon: Truck, module: "producao" },
     ],
   },
   {
@@ -71,22 +79,23 @@ const menuGroups: MenuGroup[] = [
     icon: Package,
     items: [
       { title: "Fornecedores", url: "/fornecedores", icon: Package, module: "fornecedores" },
-      { title: "Produtos / Matéria-Prima", url: "/estoque", icon: Layers, module: "estoque" },
+      { title: "Materiais", url: "/estoque", icon: Layers, module: "estoque" },
     ],
   },
   {
     label: "Financeiro",
     icon: Wallet,
+    separator: true,
     items: [
-      { title: "Painel Financeiro", url: "/financeiro", icon: Wallet, module: "financeiro" },
-      { title: "Cadastros Financeiros", url: "/cadastros-financeiros", icon: BookOpen, module: "cadastros_financeiros" },
+      { title: "Movimento", url: "/financeiro", icon: Wallet, module: "financeiro" },
     ],
   },
+  // ── Análise ──
   {
-    label: "Controladoria",
-    icon: Calculator,
+    label: "Resultados e Análises",
+    icon: LineChart,
     items: [
-      { title: "Cadastros Financeiros", url: "/cadastros-financeiros", icon: BookOpen, module: "cadastros_financeiros" },
+      { title: "Controladoria", url: "/cadastros-financeiros", icon: BookOpen, module: "cadastros_financeiros" },
     ],
   },
   {
@@ -99,35 +108,39 @@ const menuGroups: MenuGroup[] = [
   {
     label: "BI e Indicadores",
     icon: PieChart,
+    separator: true,
     items: [
-      { title: "BI Dashboard", url: "/bi-dashboard", icon: PieChart, module: "dashboard" },
-      { title: "Dashboards Personalizados", url: "/dashboards", icon: BarChart3, module: null, masterOnly: true },
+      { title: "Análise BI", url: "/bi-dashboard", icon: PieChart, module: "dashboard" },
+      { title: "Dashboards", url: "/dashboards", icon: BarChart3, module: null, masterOnly: true },
     ],
   },
+  // ── Cadastros ──
   {
-    label: "Documentos",
-    icon: FolderOpen,
+    label: "Cadastros",
+    icon: Users,
     items: [
-      { title: "Gestão Documental", url: "/documentos", icon: FolderOpen },
+      { title: "Clientes", url: "/pedidos", icon: Users, module: "pedidos" },
+      { title: "Fornecedores", url: "/fornecedores", icon: Package, module: "fornecedores" },
+      { title: "Materiais", url: "/estoque", icon: Layers, module: "estoque" },
     ],
   },
+  // ── Governança ──
   {
-    label: "Automações",
-    icon: Zap,
+    label: "Regras e Auditoria",
+    icon: Shield,
+    separator: true,
     items: [
-      { title: "Central de Automações", url: "/automacoes", icon: Zap, module: null, masterOnly: true },
-      { title: "Workflow Aprovações", url: "/aprovacoes", icon: GitBranch },
+      { title: "Regras Automáticas", url: "/automacoes", icon: Zap, module: null, masterOnly: true },
+      { title: "Auditoria", url: "/auditoria", icon: History },
     ],
   },
+  // ── Administração ──
   {
     label: "Sistema",
     icon: Settings,
     items: [
       { title: "Configurações", url: "/settings", icon: Settings, module: "configuracoes" },
       { title: "Usuários", url: "/settings/users", icon: UserCog, module: "configuracoes" },
-      { title: "Auditoria", url: "/auditoria", icon: History },
-      { title: "Central de Tarefas", url: "/tarefas", icon: ListChecks },
-      { title: "Central de Atividades", url: "/atividades", icon: Activity, module: null, masterOnly: true },
     ],
   },
   {
@@ -149,7 +162,6 @@ export function AppSidebar() {
   const companyName = companySettings?.trade_name || companySettings?.company_name || 'Sistema';
   const location = useLocation();
   const currentPath = location.pathname;
-
   const isMaster = profile?.role === 'admin';
 
   const isItemVisible = (item: MenuItem) => {
@@ -161,111 +173,87 @@ export function AppSidebar() {
   };
 
   const visibleGroups = menuGroups
-    .map(group => ({
-      ...group,
-      items: group.items.filter(isItemVisible),
-    }))
+    .map(group => ({ ...group, items: group.items.filter(isItemVisible) }))
     .filter(group => group.items.length > 0);
-
-  // Deduplicate items with same URL within visible groups
-  const seenUrls = new Set<string>();
-  const deduplicatedGroups = visibleGroups.map(group => ({
-    ...group,
-    items: group.items.filter(item => {
-      const key = `${group.label}:${item.url}`;
-      if (seenUrls.has(key)) return false;
-      seenUrls.add(key);
-      return true;
-    }),
-  })).filter(g => g.items.length > 0);
 
   return (
     <Sidebar
       collapsible="icon"
       className="border-r border-sidebar-border"
-      style={{
-        backgroundImage: 'linear-gradient(180deg, hsl(0, 0%, 9%) 0%, hsl(0, 0%, 6%) 100%)'
-      }}
+      style={{ backgroundImage: 'linear-gradient(180deg, hsl(0,0%,9%) 0%, hsl(0,0%,6%) 100%)' }}
     >
       <SidebarContent className="overflow-y-auto overflow-x-hidden">
         {/* Logo */}
-        <div className="px-4 py-5 border-b border-sidebar-border/50">
+        <div className="px-4 py-4 border-b border-sidebar-border/40">
           {isCollapsed ? (
             <div className="flex items-center justify-center">
               {companyLogo ? (
-                <img src={companyLogo} alt={companyName} className="h-10 w-10 object-contain" />
+                <img src={companyLogo} alt={companyName} className="h-9 w-9 object-contain" />
               ) : (
                 <span className="font-bold text-sm text-sidebar-foreground">{companyName.charAt(0)}</span>
               )}
             </div>
           ) : (
-            <div className="space-y-1">
+            <div className="space-y-0.5">
               {companyLogo ? (
-                <img src={companyLogo} alt={companyName} className="h-14 w-auto object-contain" />
+                <img src={companyLogo} alt={companyName} className="h-12 w-auto object-contain" />
               ) : (
                 <span className="font-bold text-base text-sidebar-foreground">{companyName}</span>
               )}
-              <p className="text-[10px] text-sidebar-foreground/50 font-semibold tracking-widest uppercase">
-                ERP System
-              </p>
+              <p className="text-[10px] text-sidebar-foreground/40 font-semibold tracking-widest uppercase">ERP</p>
             </div>
           )}
         </div>
 
-        {/* Menu Groups */}
-        <div className="py-2 space-y-0.5">
-          {deduplicatedGroups.map((group) => {
-            const isGroupActive = group.items.some(item => currentPath === item.url || currentPath.startsWith(item.url + '/'));
+        {/* Menu */}
+        <nav className="py-1.5">
+          {visibleGroups.map((group) => {
+            const isGroupActive = group.items.some(
+              item => currentPath === item.url || currentPath.startsWith(item.url + '/')
+            );
             const isSingleItem = group.items.length === 1;
 
-            // Single item groups render flat
-            if (isSingleItem) {
-              const item = group.items[0];
-              return (
-                <SidebarGroup key={group.label} className="py-0">
-                  <SidebarGroupContent>
-                    <SidebarMenu>
-                      <SidebarMenuItem>
-                        <SidebarMenuButton asChild>
-                          <NavLink
-                            to={item.url}
-                            end={item.url === "/" || item.url === "/bi-dashboard"}
-                            className="flex items-center gap-3 px-3 py-2 mx-2 rounded-lg transition-all duration-200 hover:bg-sidebar-accent/60 text-sidebar-foreground/80 hover:text-sidebar-foreground"
-                            activeClassName="bg-primary/15 text-primary font-medium border-l-2 border-primary"
-                          >
-                            <item.icon className="h-4 w-4 flex-shrink-0" />
-                            <span className="truncate text-sm">{item.title}</span>
-                          </NavLink>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    </SidebarMenu>
-                  </SidebarGroupContent>
-                </SidebarGroup>
-              );
-            }
-
-            // Multi-item groups render collapsible
-            return (
+            const content = isSingleItem ? (
+              <SidebarGroup key={group.label} className="py-0">
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton asChild>
+                        <NavLink
+                          to={group.items[0].url}
+                          end={group.items[0].url === "/bi-dashboard"}
+                          className="flex items-center gap-3 px-3 py-2 mx-2 rounded-md transition-colors hover:bg-sidebar-accent/50 text-sidebar-foreground/75 hover:text-sidebar-foreground"
+                          activeClassName="bg-primary/15 text-primary font-medium"
+                        >
+                          <group.icon className="h-4 w-4 flex-shrink-0" />
+                          <span className="truncate text-[13px]">{group.label}</span>
+                        </NavLink>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            ) : (
               <Collapsible key={group.label} defaultOpen={isGroupActive}>
                 <SidebarGroup className="py-0">
                   <CollapsibleTrigger className="w-full">
-                    <SidebarGroupLabel className="flex items-center justify-between w-full px-4 py-2 cursor-pointer hover:bg-sidebar-accent/30 rounded-lg mx-1 transition-colors">
+                    <SidebarGroupLabel className="flex items-center justify-between w-full px-4 py-1.5 cursor-pointer hover:bg-sidebar-accent/20 rounded-md mx-1 transition-colors">
                       <div className="flex items-center gap-2.5">
                         <group.icon className={cn(
                           "h-4 w-4 flex-shrink-0",
-                          isGroupActive ? "text-primary" : "text-sidebar-foreground/50"
+                          isGroupActive ? "text-primary" : "text-sidebar-foreground/45"
                         )} />
                         {!isCollapsed && (
                           <span className={cn(
-                            "text-xs font-semibold tracking-wide uppercase",
-                            isGroupActive ? "text-primary" : "text-sidebar-foreground/50"
+                            "text-[11px] font-semibold tracking-wide uppercase",
+                            isGroupActive ? "text-primary" : "text-sidebar-foreground/45"
                           )}>
                             {group.label}
                           </span>
                         )}
                       </div>
                       {!isCollapsed && (
-                        <ChevronDown className="h-3.5 w-3.5 text-sidebar-foreground/40 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                        <ChevronDown className="h-3 w-3 text-sidebar-foreground/30 transition-transform duration-200 group-data-[state=open]:rotate-180" />
                       )}
                     </SidebarGroupLabel>
                   </CollapsibleTrigger>
@@ -278,9 +266,9 @@ export function AppSidebar() {
                             <SidebarMenuButton asChild>
                               <NavLink
                                 to={item.url}
-                                end={item.url === "/"}
-                                className="flex items-center gap-3 px-3 py-1.5 ml-5 mr-2 rounded-lg transition-all duration-200 hover:bg-sidebar-accent/40 text-sidebar-foreground/70 hover:text-sidebar-foreground text-sm"
-                                activeClassName="bg-primary/15 text-primary font-medium"
+                                end
+                                className="flex items-center gap-2.5 px-3 py-1 ml-5 mr-2 rounded-md transition-colors hover:bg-sidebar-accent/30 text-sidebar-foreground/60 hover:text-sidebar-foreground text-[13px]"
+                                activeClassName="bg-primary/10 text-primary font-medium"
                               >
                                 <item.icon className="h-3.5 w-3.5 flex-shrink-0" />
                                 <span className="truncate">{item.title}</span>
@@ -294,8 +282,17 @@ export function AppSidebar() {
                 </SidebarGroup>
               </Collapsible>
             );
+
+            return (
+              <div key={group.label}>
+                {content}
+                {group.separator && !isCollapsed && (
+                  <div className="mx-4 my-1.5 border-t border-sidebar-border/20" />
+                )}
+              </div>
+            );
           })}
-        </div>
+        </nav>
       </SidebarContent>
     </Sidebar>
   );
