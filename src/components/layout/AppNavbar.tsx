@@ -80,13 +80,14 @@ const ERP_MODULES: ModuleGroup[] = [
     icon: Wallet,
     requiredModules: ["financeiro"],
     items: [
-      { label: "Contas a Pagar", route: "/financeiro?tab=payables", icon: "ArrowDownCircle", module: "financeiro", available: true },
       { label: "Contas a Receber", route: "/financeiro?tab=receivables", icon: "ArrowUpCircle", module: "financeiro", available: true },
+      { label: "Contas a Pagar", route: "/financeiro?tab=payables", icon: "ArrowDownCircle", module: "financeiro", available: true },
       { label: "Tesouraria", route: "/financeiro?tab=treasury", icon: "Landmark", module: "financeiro", available: true },
       { label: "Conciliação Bancária", route: "/financeiro?tab=reconciliation", icon: "GitCompare", module: "financeiro", available: true },
       { label: "Fluxo de Caixa", route: "/financeiro?tab=cashflow", icon: "TrendingUp", module: "financeiro", available: true },
-      { label: "DRE", route: "/financeiro?tab=dre", icon: "BarChart2", module: "financeiro", available: true },
-      { label: "Financiamentos", route: "/financeiro?tab=loans", icon: "Banknote", module: "financeiro", available: true },
+      { label: "DRE Gerencial", route: "/financeiro?tab=dre", icon: "BarChart2", module: "financeiro", available: true },
+      { label: "Resultado Financeiro", route: "/financeiro?tab=financial-result", icon: "DollarSign", module: "financeiro", available: true },
+      { label: "Capital e Financiamentos", route: "/financeiro?tab=capital", icon: "Banknote", module: "financeiro", available: true },
     ],
   },
   {
