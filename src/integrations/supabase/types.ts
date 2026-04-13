@@ -8120,34 +8120,49 @@ export type Database = {
       }
       profile_type_permissions: {
         Row: {
+          can_admin: boolean
+          can_approve: boolean
+          can_conciliate: boolean
           can_create: boolean | null
           can_delete: boolean | null
           can_edit: boolean | null
+          can_export: boolean
           can_view: boolean | null
           created_at: string | null
           id: string
           module: string
           profile_type_id: string
+          tenant_id: string | null
         }
         Insert: {
+          can_admin?: boolean
+          can_approve?: boolean
+          can_conciliate?: boolean
           can_create?: boolean | null
           can_delete?: boolean | null
           can_edit?: boolean | null
+          can_export?: boolean
           can_view?: boolean | null
           created_at?: string | null
           id?: string
           module: string
           profile_type_id: string
+          tenant_id?: string | null
         }
         Update: {
+          can_admin?: boolean
+          can_approve?: boolean
+          can_conciliate?: boolean
           can_create?: boolean | null
           can_delete?: boolean | null
           can_edit?: boolean | null
+          can_export?: boolean
           can_view?: boolean | null
           created_at?: string | null
           id?: string
           module?: string
           profile_type_id?: string
+          tenant_id?: string | null
         }
         Relationships: [
           {
@@ -8155,6 +8170,13 @@ export type Database = {
             columns: ["profile_type_id"]
             isOneToOne: false
             referencedRelation: "profile_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profile_type_permissions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
@@ -8891,6 +8913,102 @@ export type Database = {
           },
           {
             foreignKeyName: "quotes_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rbac_critical_permissions: {
+        Row: {
+          allowed: boolean
+          created_at: string | null
+          id: string
+          permission_group: string
+          permission_key: string
+          permission_label: string
+          profile_type_id: string
+          tenant_id: string | null
+        }
+        Insert: {
+          allowed?: boolean
+          created_at?: string | null
+          id?: string
+          permission_group?: string
+          permission_key: string
+          permission_label: string
+          profile_type_id: string
+          tenant_id?: string | null
+        }
+        Update: {
+          allowed?: boolean
+          created_at?: string | null
+          id?: string
+          permission_group?: string
+          permission_key?: string
+          permission_label?: string
+          profile_type_id?: string
+          tenant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rbac_critical_permissions_profile_type_id_fkey"
+            columns: ["profile_type_id"]
+            isOneToOne: false
+            referencedRelation: "profile_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rbac_critical_permissions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rbac_segregation_rules: {
+        Row: {
+          active: boolean
+          blocked_action: string
+          blocked_module: string
+          created_at: string | null
+          id: string
+          profile_type_id: string
+          reason: string | null
+          tenant_id: string | null
+        }
+        Insert: {
+          active?: boolean
+          blocked_action: string
+          blocked_module: string
+          created_at?: string | null
+          id?: string
+          profile_type_id: string
+          reason?: string | null
+          tenant_id?: string | null
+        }
+        Update: {
+          active?: boolean
+          blocked_action?: string
+          blocked_module?: string
+          created_at?: string | null
+          id?: string
+          profile_type_id?: string
+          reason?: string | null
+          tenant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rbac_segregation_rules_profile_type_id_fkey"
+            columns: ["profile_type_id"]
+            isOneToOne: false
+            referencedRelation: "profile_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rbac_segregation_rules_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
