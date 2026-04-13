@@ -22,7 +22,7 @@ import { useProjects } from '@/hooks/useProjects';
 import { useOrderResponsibles } from '@/hooks/useOrderResponsibles';
 
 import { CreateClientDialog } from '@/components/crm/CreateClientDialog';
-import { CreateArchitectDialog } from '@/components/architects/CreateArchitectDialog';
+
 import { CreateWonDealDialog } from './CreateWonDealDialog';
 import { Loader2, AlertTriangle, Link, Plus, ChevronRight, Check, Trash2 } from 'lucide-react';
 import { useMinimizedDialogs } from '@/contexts/MinimizedDialogsContext';
@@ -117,7 +117,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
   const [activeTab, setActiveTab] = useState('cliente');
   const [showCreateClient, setShowCreateClient] = useState(false);
   const [showCreateDeal, setShowCreateDeal] = useState(false);
-  const [showCreateArchitect, setShowCreateArchitect] = useState(false);
+  
   const hasMountedRef = useRef(false);
   const hasAppliedResourceDefaultsRef = useRef(false);
 
@@ -135,7 +135,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
   const [formData, setFormData] = useState({
     client_id: clientId || '',
     deal_id: dealId || '',
-    architect_id: '',
+    
     project_id: '',
     chart_account_id: '',
     observacao_pagamento: '',
@@ -380,7 +380,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
       const { data } = await supabase
         .from('crm_deals')
         .select(`
-          id, title, value, architect_id,
+          id, title, value,
           lead:leads(client_id)
         `)
         .eq('id', dealId)
@@ -397,7 +397,6 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
         ...prev,
         deal_id: linkedDeal.id,
         client_id: linkedDeal.lead?.client_id || clientId || prev.client_id,
-        architect_id: linkedDeal.architect_id || prev.architect_id,
       }));
     }
   }, [linkedDeal, open, clientId]);
@@ -413,7 +412,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     },
   });
 
-  const { data: architects, refetch: refetchArchitects } = useQuery({
+  const { data: architects } = useQuery({
     queryKey: ['architects-for-order'],
     queryFn: async () => {
       const { data } = await supabase
@@ -452,47 +451,6 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
   }, [revenueAccounts]);
 
 
-  const hasSelectedArchitect = !!formData.architect_id;
-  useEffect(() => {
-    const architect = architects?.find((a) => a.id === formData.architect_id);
-
-    setComissoes((prev) => {
-      if (!formData.architect_id) {
-        if (!prev.rt.habilitado && !prev.rt.responsavel_id && prev.rt.valor === 0) return prev;
-
-        return {
-          ...prev,
-          rt: {
-            ...prev.rt,
-            habilitado: false,
-            responsavel_id: '',
-            valor: 0,
-          },
-        };
-      }
-
-      const nextPercentual = architect?.commission_percent
-        ? Number(architect.commission_percent)
-        : resourceDefaults.rt.percentage;
-
-      const shouldUpdate =
-        !prev.rt.habilitado ||
-        prev.rt.responsavel_id !== formData.architect_id ||
-        prev.rt.percentual !== nextPercentual;
-
-      if (!shouldUpdate) return prev;
-
-      return {
-        ...prev,
-        rt: {
-          ...prev.rt,
-          habilitado: true,
-          responsavel_id: formData.architect_id,
-          percentual: nextPercentual,
-        },
-      };
-    });
-  }, [formData.architect_id, architects]);
 
   const { data: deals, refetch: refetchDeals } = useQuery({
     queryKey: ['deals-for-order'],
@@ -522,7 +480,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
   const producoes = producoesAll.filter((item) => item.is_active);
 
   const selectedClient = clients?.find(c => c.id === formData.client_id);
-  const selectedArchitect = architects?.find(arch => arch.id === formData.architect_id);
+  
 
   // Validação de dados fiscais para PJ
   const hasFiscalWarning = selectedClient?.tipo_pessoa === 'pj' && (
@@ -699,9 +657,8 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
   const diferencaPagamento = Math.abs(valorTotalPagamento - total);
   // Se total é 0 ou negativo, não permite validar como correto
   const isPagamentoValorCorreto = total > 0 ? diferencaPagamento < 0.01 : false;
-  const isRtValid = !hasSelectedArchitect || (comissoes.rt.habilitado && comissoes.rt.responsavel_id === formData.architect_id);
   
-  const isPagamentoValid = parcelas.length > 0 && parcelas.every(p => p.forma_pagamento) && totalPercentual === 100 && isPagamentoValorCorreto && isRtValid && hasAllStrategicResponsibles;
+  const isPagamentoValid = parcelas.length > 0 && parcelas.every(p => p.forma_pagamento) && totalPercentual === 100 && isPagamentoValorCorreto && hasAllStrategicResponsibles;
   const isEntregaValid = !!formData.tipo_entrega;
   const isFormValid = isClienteValid && isItensValid && isPagamentoValid && isEntregaValid;
 
@@ -729,10 +686,6 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     } else if (activeTab === 'pagamento') {
       if (allMissingStrategicResponsibles.length > 0) {
         toast.error(`Selecione o responsável para: ${allMissingStrategicResponsibles.map(key => strategicResourceLabels[key]).join(', ')}`);
-        return;
-      }
-      if (!isRtValid) {
-        toast.error('O responsável de RT deve ser o arquiteto selecionado');
         return;
       }
       if (parcelas.length === 0) {
@@ -841,7 +794,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
         .insert({
           client_id: formData.client_id,
           deal_id: formData.deal_id || null,
-          architect_id: formData.architect_id || null,
+          architect_id: null,
           vendedor_id: user?.id,
           created_by: user?.id,
           forma_pagamento: parcelasPrincipal?.forma_pagamento || '',
@@ -1011,13 +964,8 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     setShowCreateClient(false);
   };
 
-  const handleArchitectCreated = async (architectId?: string) => {
-    await refetchArchitects();
-    if (architectId) {
-      setFormData(prev => ({ ...prev, architect_id: architectId }));
-    }
-    setShowCreateArchitect(false);
-  };
+
+
 
   const handleDealCreated = (dealId: string) => {
     refetchDeals();
@@ -1104,40 +1052,8 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                   </div>
                 </div>
 
-              <div className="space-y-2">
-                  <Label>Arquiteto</Label>
-                  <div className="flex gap-2">
-                    <Select
-                      value={formData.architect_id || "_none"}
-                      onValueChange={(v) => setFormData({ ...formData, architect_id: v === "_none" ? "" : v })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="-" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="_none">-</SelectItem>
-                        {architects?.map((arch) => (
-                          <SelectItem key={arch.id} value={arch.id}>
-                            {arch.name} {arch.company && `- ${arch.company}`}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      size="icon"
-                      onClick={() => setShowCreateArchitect(true)}
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  {!hasSelectedArchitect && (
-                    <p className="text-sm text-muted-foreground">
-                      Selecione um arquiteto para liberar o compromisso sobre venda RT na etapa de pagamento.
-                    </p>
-                  )}
-                </div>
+
+
 
 
                 <div className="space-y-2 col-span-2">
@@ -1626,24 +1542,17 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                   </div>
                   
                   <div className="space-y-3">
-                    {!hasSelectedArchitect && (
-                      <Alert>
-                        <AlertTriangle className="h-4 w-4" />
-                        <AlertDescription>
-                          Selecione um arquiteto na aba Cliente para habilitar o RT neste pedido.
-                        </AlertDescription>
-                      </Alert>
-                    )}
 
                     {/* RT - Repasse Técnico */}
                     <div className="flex items-center gap-3">
-                      <Switch checked={comissoes.rt.habilitado} disabled />
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium w-28">{resourceDefaults.rt.label}</span>
-                        <Badge variant={hasSelectedArchitect ? "secondary" : "outline"}>
-                          {hasSelectedArchitect ? "Obrigatório" : "Selecione arquiteto"}
-                        </Badge>
-                      </div>
+                      <Switch
+                        checked={comissoes.rt.habilitado}
+                        onCheckedChange={(checked) => setComissoes(prev => ({
+                          ...prev,
+                          rt: { ...prev.rt, habilitado: checked }
+                        }))}
+                      />
+                      <span className="text-sm font-medium w-28">{resourceDefaults.rt.label}</span>
                       {comissoes.rt.habilitado && (
                         <>
                           <div className="flex items-center gap-1">
@@ -1668,15 +1577,21 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                               disabled
                             />
                           </div>
-                          <Select value={comissoes.rt.responsavel_id || "_none"} disabled>
+                          <Select
+                            value={comissoes.rt.responsavel_id || "_none"}
+                            onValueChange={(v) => setComissoes(prev => ({
+                              ...prev,
+                              rt: { ...prev.rt, responsavel_id: v === "_none" ? "" : v }
+                            }))}
+                          >
                             <SelectTrigger className="h-8 w-52">
                               <SelectValue placeholder="Responsável" />
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="_none">-</SelectItem>
-                              {selectedArchitect && (
-                                <SelectItem value={selectedArchitect.id}>{selectedArchitect.name}</SelectItem>
-                              )}
+                              {architects?.map((a) => (
+                                <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                         </>
@@ -2236,13 +2151,6 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
         onOpenChange={setShowCreateDeal}
         onSuccess={handleDealCreated}
         prefilledClientId={formData.client_id}
-        prefilledArchitectId={formData.architect_id}
-      />
-
-      <CreateArchitectDialog
-        open={showCreateArchitect}
-        onOpenChange={setShowCreateArchitect}
-        onSuccess={handleArchitectCreated}
       />
     </>
   );
