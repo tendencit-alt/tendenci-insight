@@ -5789,9 +5789,13 @@ export type Database = {
           created_at: string | null
           created_by: string | null
           data_aprovacao: string | null
+          data_cancelamento: string | null
           data_emissao: string | null
+          data_encerramento: string | null
           data_entrega_prevista: string | null
+          data_entrega_real: string | null
           data_entrega_realizada: string | null
+          data_faturamento: string | null
           data_primeiro_vencimento: string | null
           deal_id: string | null
           desconto_percentual: number | null
@@ -5879,9 +5883,13 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           data_aprovacao?: string | null
+          data_cancelamento?: string | null
           data_emissao?: string | null
+          data_encerramento?: string | null
           data_entrega_prevista?: string | null
+          data_entrega_real?: string | null
           data_entrega_realizada?: string | null
+          data_faturamento?: string | null
           data_primeiro_vencimento?: string | null
           deal_id?: string | null
           desconto_percentual?: number | null
@@ -5969,9 +5977,13 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           data_aprovacao?: string | null
+          data_cancelamento?: string | null
           data_emissao?: string | null
+          data_encerramento?: string | null
           data_entrega_prevista?: string | null
+          data_entrega_real?: string | null
           data_entrega_realizada?: string | null
+          data_faturamento?: string | null
           data_primeiro_vencimento?: string | null
           deal_id?: string | null
           desconto_percentual?: number | null
