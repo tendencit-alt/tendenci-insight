@@ -377,9 +377,15 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
   const getPayableStatusBadge = (status: string) => {
     switch (status) {
       case "ABERTO": return <Badge variant="outline" className="gap-1"><Clock className="h-3 w-3" /> Aberto</Badge>;
+      case "PROVISIONADO": return <Badge variant="outline" className="gap-1 border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-400"><Clock className="h-3 w-3" /> Provisionado</Badge>;
+      case "CONFIRMADO": return <Badge variant="outline" className="gap-1 border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-700 dark:bg-blue-950 dark:text-blue-400"><CheckCircle className="h-3 w-3" /> Confirmado</Badge>;
       case "VENCIDO": return <Badge variant="destructive" className="gap-1"><AlertTriangle className="h-3 w-3" /> Vencido</Badge>;
+      case "PARCIALMENTE_PAGO": return <Badge variant="secondary" className="gap-1 border-orange-300 bg-orange-50 text-orange-700">Parcial</Badge>;
       case "PAGO": return <Badge className="bg-green-600 gap-1"><CheckCircle className="h-3 w-3" /> Pago</Badge>;
-      case "PARCIAL": return <Badge variant="secondary" className="gap-1">Parcial</Badge>;
+      case "CONCILIADO": return <Badge className="bg-emerald-700 gap-1"><CheckCircle className="h-3 w-3" /> Conciliado</Badge>;
+      case "EM_DISPUTA": return <Badge variant="secondary" className="gap-1 border-red-300 bg-red-50 text-red-700">Em Disputa</Badge>;
+      case "RENEGOCIADO": return <Badge variant="secondary" className="gap-1 border-purple-300 bg-purple-50 text-purple-700">Renegociado</Badge>;
+      case "CANCELADO": return <Badge className="bg-gray-500 gap-1">Cancelado</Badge>;
       default: return <Badge variant="outline">{status}</Badge>;
     }
   };
@@ -387,9 +393,15 @@ export function PayablesReceivablesTab({ filters }: PayablesReceivablesTabProps)
   const getReceivableStatusBadge = (status: string) => {
     switch (status) {
       case "ABERTO": return <Badge variant="outline" className="gap-1"><Clock className="h-3 w-3" /> Aberto</Badge>;
+      case "PROVISIONADO": return <Badge variant="outline" className="gap-1 border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-400"><Clock className="h-3 w-3" /> Provisionado</Badge>;
+      case "CONFIRMADO": return <Badge variant="outline" className="gap-1 border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-700 dark:bg-blue-950 dark:text-blue-400"><CheckCircle className="h-3 w-3" /> Confirmado</Badge>;
       case "VENCIDO": return <Badge variant="destructive" className="gap-1"><AlertTriangle className="h-3 w-3" /> Vencido</Badge>;
+      case "PARCIALMENTE_RECEBIDO": return <Badge variant="secondary" className="gap-1 border-orange-300 bg-orange-50 text-orange-700">Parcial</Badge>;
       case "RECEBIDO": return <Badge className="bg-green-600 gap-1"><CheckCircle className="h-3 w-3" /> Recebido</Badge>;
-      case "PARCIAL": return <Badge variant="secondary" className="gap-1">Parcial</Badge>;
+      case "CONCILIADO": return <Badge className="bg-emerald-700 gap-1"><CheckCircle className="h-3 w-3" /> Conciliado</Badge>;
+      case "EM_DISPUTA": return <Badge variant="secondary" className="gap-1 border-red-300 bg-red-50 text-red-700">Em Disputa</Badge>;
+      case "RENEGOCIADO": return <Badge variant="secondary" className="gap-1 border-purple-300 bg-purple-50 text-purple-700">Renegociado</Badge>;
+      case "CANCELADO": return <Badge className="bg-gray-500 gap-1">Cancelado</Badge>;
       default: return <Badge variant="outline">{status}</Badge>;
     }
   };

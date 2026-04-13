@@ -532,7 +532,7 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
                 <span className="text-foreground/80 truncate">{entry.description}</span>
                 {entry.status && (
                   <Badge variant="outline" className="text-[9px] h-4 px-1">
-                    {entry.status === "PAGO_RECEBIDO" ? "✓" : entry.status === "VENCIDO" ? "!" : "○"}
+                    {entry.status === "PAGO_RECEBIDO" ? "✓" : entry.status === "CONCILIADO" ? "✓✓" : entry.status === "VENCIDO" ? "!" : "○"}
                   </Badge>
                 )}
               </div>
