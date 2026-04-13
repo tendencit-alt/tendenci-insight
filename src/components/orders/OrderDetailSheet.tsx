@@ -88,7 +88,7 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
           *,
           client:clients(*),
           vendedor:profiles!orders_vendedor_id_fkey(id, full_name, email),
-          architect:architects(id, name, company, phone),
+          
           deal:crm_deals(id, title, value),
           approved_by_user:profiles!orders_approved_by_fkey(id, full_name)
         `)
@@ -263,8 +263,7 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
         .from('orders')
         .insert({
           client_id: order.client_id,
-          deal_id: null, // Don't duplicate deal link
-          architect_id: order.architect_id,
+          deal_id: null,
           vendedor_id: order.vendedor_id,
           created_by: (await supabase.auth.getUser()).data.user?.id,
           forma_pagamento: order.forma_pagamento,
@@ -394,44 +393,6 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
                 </CardContent>
               </Card>
 
-              {/* Arquiteto */}
-              {order.architect && (
-                <Card>
-                  <CardHeader className="py-3">
-                    <CardTitle className="text-sm flex items-center gap-2">
-                      <Building2 className="h-4 w-4" />
-                      Arquiteto
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="py-2 space-y-1 text-sm">
-                    <p className="font-medium">{order.architect.name}</p>
-                    {order.architect.company && <p className="text-muted-foreground">{order.architect.company}</p>}
-                    {order.architect.phone && (
-                      <a href={`https://wa.me/55${order.architect.phone.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-primary hover:underline">
-                        <Phone className="h-3 w-3" />
-                        {order.architect.phone}
-                      </a>
-                    )}
-                    
-                    {/* RT - Repasse Técnico */}
-                    {(order as any).rt_habilitado && (
-                      <div className="mt-3 pt-3 border-t">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <Badge variant="secondary" className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-                              RT {(order as any).rt_percentual}%
-                            </Badge>
-                            <span className="text-xs text-muted-foreground">Repasse Técnico</span>
-                          </div>
-                          <span className="font-semibold text-amber-600 dark:text-amber-400">
-                            {formatCurrency((order as any).rt_valor)}
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
 
               {/* Vendedor */}
               <Card>

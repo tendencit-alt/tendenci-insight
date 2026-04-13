@@ -24,7 +24,7 @@ import { useProjects } from '@/hooks/useProjects';
 import { AddressForm } from './AddressForm';
 import { User, Calendar, Trash2 } from 'lucide-react';
 import { Loader2, AlertTriangle, Plus, Search } from 'lucide-react';
-import { CreateArchitectDialog } from '@/components/architects/CreateArchitectDialog';
+
 import { useMinimizedDialogs } from '@/contexts/MinimizedDialogsContext';
 import { MinimizeButton } from '@/components/ui/MinimizeButton';
 
@@ -172,7 +172,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('cliente');
   const [loadingCep, setLoadingCep] = useState(false);
-  const [showCreateArchitect, setShowCreateArchitect] = useState(false);
+  
 
   const dialogId = `edit-order-${orderId}`;
 
@@ -576,25 +576,6 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
     }
   }, [order, resourceDefaults]);
 
-  // Auto-preencher RT quando arquiteto muda
-  useEffect(() => {
-    if (!formData.architect_id) return;
-
-    const selectedArchitect = architects?.find(a => a.id === formData.architect_id);
-    const nextPercentual = selectedArchitect?.commission_percent
-      ? Number(selectedArchitect.commission_percent)
-      : resourceDefaults.rt.percentage;
-
-    setComissoes(prev => ({
-      ...prev,
-      rt: {
-        ...prev.rt,
-        habilitado: true,
-        responsavel_id: formData.architect_id,
-        percentual: nextPercentual,
-      }
-    }));
-  }, [formData.architect_id, architects, resourceDefaults.rt.percentage]);
 
   // Query de paymentConditions removida - agora usamos CONDICOES_PAGAMENTO constante
 
@@ -799,9 +780,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
   const valorTotalPagamento = parcelas.reduce((sum, p) => sum + (total * (p.percentual / 100)), 0);
   const diferencaPagamento = Math.abs(valorTotalPagamento - total);
   const isPagamentoValorCorreto = total > 0 ? diferencaPagamento < 0.01 : false;
-  const hasSelectedArchitect = !!formData.architect_id;
-  const isRtValid = !hasSelectedArchitect || (comissoes.rt.habilitado && comissoes.rt.responsavel_id === formData.architect_id);
-  const isPagamentoValid = parcelas.length > 0 && parcelas.every((p) => p.forma_pagamento) && totalPercentual === 100 && isPagamentoValorCorreto && isRtValid && hasAllStrategicResponsibles;
+  const isPagamentoValid = parcelas.length > 0 && parcelas.every((p) => p.forma_pagamento) && totalPercentual === 100 && isPagamentoValorCorreto && hasAllStrategicResponsibles;
   const isEntregaValid = !!formData.tipo_entrega;
   const isFormValid = isClienteValid && isItensValid && isPagamentoValid && isEntregaValid;
   const isEditable = order?.status === 'rascunho' || order?.status === 'ativo' || order?.status === 'aguardando_aprovacao' || order?.status === 'em_producao';
@@ -883,10 +862,6 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
     if (!order) return;
     if (allMissingStrategicResponsibles.length > 0) {
       toast.error(`Selecione o responsável para: ${allMissingStrategicResponsibles.map(key => strategicResourceLabels[key]).join(', ')}`);
-      return;
-    }
-    if (!isRtValid) {
-      toast.error('O responsável de RT deve ser o arquiteto selecionado');
       return;
     }
 
@@ -1248,33 +1223,6 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label>Arquiteto</Label>
-                <div className="flex gap-2">
-                  <Select value={formData.architect_id || "_none"} onValueChange={(v) => setFormData({ ...formData, architect_id: v === "_none" ? "" : v })} disabled={!isEditable}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="-" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="_none">-</SelectItem>
-                      {architects?.map((arch) => (
-                        <SelectItem key={arch.id} value={arch.id}>
-                          {arch.name} {arch.company && `- ${arch.company}`}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    size="icon"
-                    onClick={() => setShowCreateArchitect(true)}
-                    disabled={!isEditable}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
 
                 <div className="space-y-2 col-span-2">
                   <Label>Categoria de Receita</Label>
@@ -2523,17 +2471,6 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
         </div>
       </DialogContent>
 
-      <CreateArchitectDialog
-        open={showCreateArchitect}
-        onOpenChange={setShowCreateArchitect}
-        onSuccess={async (architectId?: string) => {
-          await refetchArchitects();
-          if (architectId) {
-            setFormData(prev => ({ ...prev, architect_id: architectId }));
-          }
-          setShowCreateArchitect(false);
-        }}
-      />
     </Dialog>
   );
 }
