@@ -1,7 +1,6 @@
 import React from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { supabase } from "@/integrations/supabase/client";
 import { FinanceiroFiltersState } from "./FinanceiroFilters";
 import { CostCenterSubFilter } from "./CostCenterSubFilter";
 import { EntryDetailsDialog } from "./EntryDetailsDialog";
