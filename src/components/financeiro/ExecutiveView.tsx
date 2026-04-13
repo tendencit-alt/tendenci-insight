@@ -299,25 +299,12 @@ export function ExecutiveView({ filters }: ExecutiveViewProps) {
       isCalculated: true 
     },
     { 
-      label: "Resultado Econômico (EBIT)", 
-      key: "resultado_economico_ebit",
-      value: dre?.resultadoEconomicoEBIT || 0, 
-      isCalculated: true 
-    },
-    { 
-      label: "Resultado Antes do Capital", 
-      key: "resultado_antes_capital",
-      value: dre?.resultadoAntesCapital || 0, 
+      label: "Resultado Líquido", 
+      key: "resultado_liquido",
+      value: dre?.resultadoLiquido || 0, 
       isCalculated: true,
-      highlight: dre?.lucroLiquido == null
+      highlight: true
     },
-    ...(dre?.lucroLiquido != null ? [{
-      label: "Lucro Líquido",
-      key: "lucro_liquido",
-      value: dre.lucroLiquido,
-      isCalculated: true,
-      highlight: true,
-    }] : []),
   ];
 
   const cashflowRows = [
