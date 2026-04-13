@@ -246,6 +246,7 @@ export function ExecutiveView({ filters }: ExecutiveViewProps) {
           resultadoOperacionalEBITDA,
           resultadoEconomicoEBIT,
           resultadoAntesCapital,
+          lucroLiquido: showImpostos ? lucroLiquido : null,
         },
         cashflow: {
           entradasOperacionais,
