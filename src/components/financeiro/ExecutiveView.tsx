@@ -202,12 +202,10 @@ export function ExecutiveView({ filters }: ExecutiveViewProps) {
         const category = account.category_type;
         const nature = account.nature;
 
-        if (nature === "RECEITA" || category === "receita_operacional") {
+        if (nature === "RECEITA" || category === "receita_operacional" || category === "receita_financeira") {
           entradasOperacionais += amount;
-        } else if ((nature === "DESPESA") && !["resultado_financeiro", "depreciacao"].includes(category)) {
+        } else if ((nature === "DESPESA" || category === "despesa_financeira") && !["depreciacao"].includes(category)) {
           saidasOperacionais += amount;
-        } else if (category === "resultado_financeiro") {
-          jurosLiquidos += amount;
         } else if (category === "capital_entrada") {
           capitalEntrada += amount;
         } else if (category === "capital_saida") {
