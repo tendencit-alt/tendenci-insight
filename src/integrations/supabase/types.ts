@@ -1034,6 +1034,7 @@ export type Database = {
           inscricao_estadual: string | null
           logo_url: string | null
           min_safety_balance: number | null
+          onboarding_completed: boolean
           phone: string | null
           primary_color: string | null
           razao_social: string | null
@@ -1054,6 +1055,7 @@ export type Database = {
           inscricao_estadual?: string | null
           logo_url?: string | null
           min_safety_balance?: number | null
+          onboarding_completed?: boolean
           phone?: string | null
           primary_color?: string | null
           razao_social?: string | null
@@ -1074,6 +1076,7 @@ export type Database = {
           inscricao_estadual?: string | null
           logo_url?: string | null
           min_safety_balance?: number | null
+          onboarding_completed?: boolean
           phone?: string | null
           primary_color?: string | null
           razao_social?: string | null
@@ -5920,6 +5923,50 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      onboarding_progress: {
+        Row: {
+          completed: boolean
+          completed_at: string | null
+          created_at: string | null
+          data: Json | null
+          id: string
+          skipped: boolean
+          step_key: string
+          tenant_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string | null
+          data?: Json | null
+          id?: string
+          skipped?: boolean
+          step_key: string
+          tenant_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string | null
+          data?: Json | null
+          id?: string
+          skipped?: boolean
+          step_key?: string
+          tenant_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_progress_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
