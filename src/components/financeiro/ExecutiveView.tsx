@@ -477,9 +477,9 @@ export function ExecutiveView({ filters }: ExecutiveViewProps) {
             {/* Summary badges */}
             <div className="pt-4 space-y-2">
               <TrafficLightBadge 
-                label="Meta principal: Resultado Antes Capital"
-                actual={dre?.resultadoAntesCapital || 0} 
-                target={goals?.dre.resultado_antes_capital || 0} 
+                label="Meta principal: Resultado Líquido"
+                actual={dre?.resultadoLiquido || 0} 
+                target={goals?.dre.resultado_liquido || 0} 
               />
             </div>
           </CardContent>
