@@ -110,7 +110,7 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
 
       console.log('[Permissions] Profile loaded:', profile);
       const ownerFlag = profile?.is_owner === true;
-      const role = profile?.role;
+      const role = profile?.role as string;
       const tenantOwnerFlag = role === 'tenant_owner';
       const tenantAdminFlag = role === 'tenant_admin' || role === 'admin';
       const isAdmin = tenantAdminFlag || tenantOwnerFlag || ownerFlag;
