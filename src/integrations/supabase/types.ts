@@ -2713,6 +2713,142 @@ export type Database = {
           },
         ]
       }
+      erp_notifications: {
+        Row: {
+          category: string
+          channel: string | null
+          created_at: string | null
+          entity_id: string | null
+          entity_table: string | null
+          generated_by: string | null
+          id: string
+          is_read: boolean | null
+          link_path: string | null
+          message: string | null
+          module: string
+          priority: string | null
+          read_at: string | null
+          tenant_id: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          category: string
+          channel?: string | null
+          created_at?: string | null
+          entity_id?: string | null
+          entity_table?: string | null
+          generated_by?: string | null
+          id?: string
+          is_read?: boolean | null
+          link_path?: string | null
+          message?: string | null
+          module: string
+          priority?: string | null
+          read_at?: string | null
+          tenant_id?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          channel?: string | null
+          created_at?: string | null
+          entity_id?: string | null
+          entity_table?: string | null
+          generated_by?: string | null
+          id?: string
+          is_read?: boolean | null
+          link_path?: string | null
+          message?: string | null
+          module?: string
+          priority?: string | null
+          read_at?: string | null
+          tenant_id?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_notifications_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_tasks: {
+        Row: {
+          assignee_id: string
+          category: string
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string | null
+          created_by_id: string | null
+          description: string | null
+          due_date: string | null
+          entity_id: string | null
+          entity_table: string | null
+          id: string
+          link_path: string | null
+          module: string
+          priority: string | null
+          status: string | null
+          tenant_id: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          assignee_id: string
+          category: string
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string | null
+          created_by_id?: string | null
+          description?: string | null
+          due_date?: string | null
+          entity_id?: string | null
+          entity_table?: string | null
+          id?: string
+          link_path?: string | null
+          module: string
+          priority?: string | null
+          status?: string | null
+          tenant_id?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          assignee_id?: string
+          category?: string
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string | null
+          created_by_id?: string | null
+          description?: string | null
+          due_date?: string | null
+          entity_id?: string | null
+          entity_table?: string | null
+          id?: string
+          link_path?: string | null
+          module?: string
+          priority?: string | null
+          status?: string | null
+          tenant_id?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_tasks_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fee_supplier_configs: {
         Row: {
           created_at: string | null
