@@ -315,8 +315,15 @@ export function ExecutiveView({ filters }: ExecutiveViewProps) {
       key: "resultado_antes_capital",
       value: dre?.resultadoAntesCapital || 0, 
       isCalculated: true,
-      highlight: true 
+      highlight: dre?.lucroLiquido == null
     },
+    ...(dre?.lucroLiquido != null ? [{
+      label: "Lucro Líquido",
+      key: "lucro_liquido",
+      value: dre.lucroLiquido,
+      isCalculated: true,
+      highlight: true,
+    }] : []),
   ];
 
   const cashflowRows = [
