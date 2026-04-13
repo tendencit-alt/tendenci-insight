@@ -188,12 +188,6 @@ export function ExecutiveView({ filters }: ExecutiveViewProps) {
         }
       });
 
-      const { data: companySettings } = await supabase
-        .from("company_settings")
-        .select("tax_regime")
-        .limit(1)
-        .maybeSingle();
-
       const resultadoFinanceiro = receitasFinanceiras - despesasFinanceiras;
       const receitaLiquida = totalReceitas - deducoesReceita;
       const margemContribuicao = receitaLiquida - custosVariaveis - compromissosVenda;
