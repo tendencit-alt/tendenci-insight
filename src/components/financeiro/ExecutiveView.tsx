@@ -188,15 +188,11 @@ export function ExecutiveView({ filters }: ExecutiveViewProps) {
         }
       });
 
-      // Fetch tax regime
       const { data: companySettings } = await supabase
         .from("company_settings")
         .select("tax_regime")
         .limit(1)
         .maybeSingle();
-      
-      const taxRegime = companySettings?.tax_regime || 'simples_nacional';
-      const showImpostos = taxRegime !== 'simples_nacional';
 
       const resultadoFinanceiro = receitasFinanceiras - despesasFinanceiras;
       const receitaLiquida = totalReceitas - deducoesReceita;
