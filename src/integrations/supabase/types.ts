@@ -3981,43 +3981,92 @@ export type Database = {
         Row: {
           budget: number | null
           budget_percent: number
+          chart_account_id: string | null
+          client_id: string | null
           code: string | null
+          cost_center_id: string | null
           created_at: string | null
+          description: string | null
           end_date: string | null
           id: string
           name: string
+          order_id: string | null
           owner_id: string | null
+          project_type: string | null
           start_date: string | null
           status: string | null
           tenant_id: string | null
+          vendedor_id: string | null
         }
         Insert: {
           budget?: number | null
           budget_percent?: number
+          chart_account_id?: string | null
+          client_id?: string | null
           code?: string | null
+          cost_center_id?: string | null
           created_at?: string | null
+          description?: string | null
           end_date?: string | null
           id?: string
           name: string
+          order_id?: string | null
           owner_id?: string | null
+          project_type?: string | null
           start_date?: string | null
           status?: string | null
           tenant_id?: string | null
+          vendedor_id?: string | null
         }
         Update: {
           budget?: number | null
           budget_percent?: number
+          chart_account_id?: string | null
+          client_id?: string | null
           code?: string | null
+          cost_center_id?: string | null
           created_at?: string | null
+          description?: string | null
           end_date?: string | null
           id?: string
           name?: string
+          order_id?: string | null
           owner_id?: string | null
+          project_type?: string | null
           start_date?: string | null
           status?: string | null
           tenant_id?: string | null
+          vendedor_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "fin_projects_chart_account_id_fkey"
+            columns: ["chart_account_id"]
+            isOneToOne: false
+            referencedRelation: "fin_chart_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_projects_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_projects_cost_center_id_fkey"
+            columns: ["cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "fin_cost_centers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_projects_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "fin_projects_owner_id_fkey"
             columns: ["owner_id"]
@@ -4030,6 +4079,13 @@ export type Database = {
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_projects_vendedor_id_fkey"
+            columns: ["vendedor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
