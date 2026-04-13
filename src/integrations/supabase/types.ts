@@ -2457,6 +2457,69 @@ export type Database = {
           },
         ]
       }
+      fin_automation_logs: {
+        Row: {
+          action_result: Json | null
+          action_type: string
+          created_at: string | null
+          error_message: string | null
+          event_type: string
+          execution_time_ms: number | null
+          id: string
+          rule_id: string | null
+          source_id: string | null
+          source_table: string | null
+          status: string
+          tenant_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action_result?: Json | null
+          action_type: string
+          created_at?: string | null
+          error_message?: string | null
+          event_type: string
+          execution_time_ms?: number | null
+          id?: string
+          rule_id?: string | null
+          source_id?: string | null
+          source_table?: string | null
+          status?: string
+          tenant_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action_result?: Json | null
+          action_type?: string
+          created_at?: string | null
+          error_message?: string | null
+          event_type?: string
+          execution_time_ms?: number | null
+          id?: string
+          rule_id?: string | null
+          source_id?: string | null
+          source_table?: string | null
+          status?: string
+          tenant_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fin_automation_logs_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "fin_event_automation_rules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_automation_logs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fin_bank_accounts: {
         Row: {
           account_number: string | null
@@ -3152,6 +3215,98 @@ export type Database = {
           },
           {
             foreignKeyName: "fin_depreciation_schedule_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fin_event_automation_rules: {
+        Row: {
+          action_config: Json
+          action_type: string
+          active: boolean
+          chart_account_id: string | null
+          condition_field: string | null
+          condition_operator: string | null
+          condition_value: string | null
+          cost_center_id: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          event_type: string
+          id: string
+          notes: string | null
+          priority: number
+          project_id: string | null
+          tenant_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          action_config?: Json
+          action_type: string
+          active?: boolean
+          chart_account_id?: string | null
+          condition_field?: string | null
+          condition_operator?: string | null
+          condition_value?: string | null
+          cost_center_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          event_type: string
+          id?: string
+          notes?: string | null
+          priority?: number
+          project_id?: string | null
+          tenant_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          action_config?: Json
+          action_type?: string
+          active?: boolean
+          chart_account_id?: string | null
+          condition_field?: string | null
+          condition_operator?: string | null
+          condition_value?: string | null
+          cost_center_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          event_type?: string
+          id?: string
+          notes?: string | null
+          priority?: number
+          project_id?: string | null
+          tenant_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fin_event_automation_rules_chart_account_id_fkey"
+            columns: ["chart_account_id"]
+            isOneToOne: false
+            referencedRelation: "fin_chart_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_event_automation_rules_cost_center_id_fkey"
+            columns: ["cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "fin_cost_centers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_event_automation_rules_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "fin_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_event_automation_rules_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
