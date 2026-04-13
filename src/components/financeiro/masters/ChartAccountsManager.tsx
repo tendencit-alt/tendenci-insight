@@ -47,6 +47,81 @@ import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 
 type BulkEditField = "nature" | "in_dre" | "in_cashflow" | "active" | null;
 
+const CALCULATED_CHART_LINES = [
+  {
+    id: "__calc__receita-liquida",
+    code: "=RL",
+    name: "Receita Líquida",
+    nature: "RESULTADO",
+    afterCode: "2",
+    in_dre: true,
+    in_cashflow: false,
+  },
+  {
+    id: "__calc__margem-contribuicao",
+    code: "=MC",
+    name: "Margem de Contribuição",
+    nature: "RESULTADO",
+    afterCode: "3",
+    in_dre: true,
+    in_cashflow: false,
+  },
+  {
+    id: "__calc__ebitda",
+    code: "=EBITDA",
+    name: "Resultado Operacional (EBITDA)",
+    nature: "RESULTADO",
+    afterCode: "4",
+    in_dre: true,
+    in_cashflow: false,
+  },
+  {
+    id: "__calc__ebit",
+    code: "=EBIT",
+    name: "Resultado Econômico (EBIT)",
+    nature: "RESULTADO",
+    afterCode: "5",
+    in_dre: true,
+    in_cashflow: false,
+  },
+  {
+    id: "__calc__resultado-antes-capital",
+    code: "=RAC",
+    name: "Resultado Antes do Capital",
+    nature: "RESULTADO",
+    afterCode: "6",
+    in_dre: true,
+    in_cashflow: false,
+  },
+  {
+    id: "__calc__entradas-totais",
+    code: "=ENT",
+    name: "Entradas Totais",
+    nature: "RESULTADO",
+    afterCode: "7",
+    in_dre: false,
+    in_cashflow: true,
+  },
+  {
+    id: "__calc__saidas-totais",
+    code: "=SAI",
+    name: "Saídas Totais",
+    nature: "RESULTADO",
+    afterCode: "7",
+    in_dre: false,
+    in_cashflow: true,
+  },
+  {
+    id: "__calc__variacao-liquida-caixa",
+    code: "=VLC",
+    name: "Variação Líquida de Caixa",
+    nature: "RESULTADO",
+    afterCode: "7",
+    in_dre: false,
+    in_cashflow: true,
+  },
+] as const;
+
 // Draggable Row Component
 function DraggableAccountRow({
   account,
@@ -71,6 +146,8 @@ function DraggableAccountRow({
   getLevelBadge: (depth: number) => React.ReactNode;
   getNatureBadge: (nature: string) => React.ReactNode;
 }) {
+  const isCalculated = Boolean(account.isCalculated);
+
   const {
     attributes,
     listeners,
@@ -78,7 +155,7 @@ function DraggableAccountRow({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: account.id });
+  } = useSortable({ id: account.id, disabled: isCalculated });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -94,7 +171,8 @@ function DraggableAccountRow({
       className={cn(
         isSelected && "bg-muted/50",
         hasChildren && "bg-muted/30",
-        isDragging && "opacity-50 bg-muted"
+        isDragging && "opacity-50 bg-muted",
+        isCalculated && "bg-accent/20"
       )}
     >
       <TableCell className="w-8 p-0">
@@ -102,8 +180,10 @@ function DraggableAccountRow({
           {...attributes}
           {...listeners}
           className={cn(
-            "flex items-center justify-center h-full w-8 cursor-grab active:cursor-grabbing",
-            "text-muted-foreground hover:text-foreground transition-colors"
+            "flex items-center justify-center h-full w-8 transition-colors",
+            isCalculated
+              ? "cursor-not-allowed text-muted-foreground/40"
+              : "cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground"
           )}
         >
           <GripVertical className="h-4 w-4" />
@@ -112,6 +192,7 @@ function DraggableAccountRow({
       <TableCell>
         <Checkbox
           checked={isSelected}
+          disabled={isCalculated}
           onCheckedChange={(checked) => onSelect(account.id, !!checked)}
           aria-label={`Selecionar ${account.name}`}
         />
@@ -141,20 +222,28 @@ function DraggableAccountRow({
             className={cn(
               account.depth === 0 && "text-foreground font-bold",
               account.depth === 1 && "text-foreground/90 font-semibold",
-              account.depth >= 2 && "text-muted-foreground"
+              account.depth >= 2 && "text-muted-foreground",
+              isCalculated && "text-primary"
             )}
           >
             {account.code}
           </span>
         </div>
       </TableCell>
-      <TableCell>{getLevelBadge(account.depth)}</TableCell>
+      <TableCell>
+        {isCalculated ? (
+          <Badge variant="secondary" className="text-xs">Automática</Badge>
+        ) : (
+          getLevelBadge(account.depth)
+        )}
+      </TableCell>
       <TableCell>
         <span
           className={cn(
             account.depth === 0 && "font-bold",
             account.depth === 1 && "font-semibold",
-            account.depth >= 2 && "text-muted-foreground"
+            account.depth >= 2 && "text-muted-foreground",
+            isCalculated && "text-primary"
           )}
         >
           {account.name}
@@ -180,26 +269,32 @@ function DraggableAccountRow({
         )}
       </TableCell>
       <TableCell>
-        {account.active ? (
+        {isCalculated ? (
+          <Badge variant="secondary">Automática</Badge>
+        ) : account.active ? (
           <Badge className="bg-green-600">Ativa</Badge>
         ) : (
           <Badge variant="secondary">Inativa</Badge>
         )}
       </TableCell>
       <TableCell>
-        <div className="flex items-center gap-1">
-          <Button variant="ghost" size="sm" onClick={() => onEdit(account)}>
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onDelete(account)}
-            className="text-destructive hover:text-destructive"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
+        {isCalculated ? (
+          <span className="text-xs text-muted-foreground">Não editável</span>
+        ) : (
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="sm" onClick={() => onEdit(account)}>
+              <Pencil className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onDelete(account)}
+              className="text-destructive hover:text-destructive"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
       </TableCell>
     </TableRow>
   );
@@ -339,7 +434,7 @@ export function ChartAccountsManager() {
   // Allow Raiz (depth 0) and Grupo (depth 1) as parent accounts - max 3 levels
   const parentAccounts = accounts?.filter((a) => {
     const depth = getDepthFromCode(a.code);
-    return depth < 2; // Only Raiz and Grupo can be parents
+    return depth < 2;
   }) || [];
 
   // Build hierarchical tree structure
@@ -347,12 +442,10 @@ export function ChartAccountsManager() {
     const map = new Map<string, any>();
     const roots: any[] = [];
 
-    // First pass: create map of all items
     items.forEach((item) => {
       map.set(item.id, { ...item, children: [] });
     });
 
-    // Second pass: build parent-child relationships
     items.forEach((item) => {
       const node = map.get(item.id);
       if (item.parent_id && map.has(item.parent_id)) {
@@ -362,7 +455,6 @@ export function ChartAccountsManager() {
       }
     });
 
-    // Sort children by code numerically
     const sortChildren = (nodes: any[]) => {
       nodes.sort((a, b) => {
         const aParts = a.code.split('.').map((p: string) => parseFloat(p) || 0);
@@ -400,8 +492,49 @@ export function ChartAccountsManager() {
     return result;
   };
 
+  const injectCalculatedRows = useCallback((items: any[]) => {
+    const result = [...items];
+
+    const insertAfterCode = (afterCode: string, account: any) => {
+      let idx = -1;
+      for (let i = result.length - 1; i >= 0; i--) {
+        if (result[i].code === afterCode || result[i].code.startsWith(`${afterCode}.`)) {
+          idx = i;
+          break;
+        }
+      }
+
+      if (idx >= 0) {
+        result.splice(idx + 1, 0, account);
+      } else {
+        result.push(account);
+      }
+    };
+
+    CALCULATED_CHART_LINES.forEach((line) => {
+      insertAfterCode(line.afterCode, {
+        id: line.id,
+        code: line.code,
+        name: line.name,
+        nature: line.nature,
+        parent_id: null,
+        active: true,
+        in_dre: line.in_dre,
+        in_cashflow: line.in_cashflow,
+        depth: 0,
+        children: [],
+        isCalculated: true,
+      });
+    });
+
+    return result;
+  }, []);
+
   const treeData = useMemo(() => accounts ? buildTree(accounts) : [], [accounts]);
-  const hierarchicalAccounts = useMemo(() => flattenTree(treeData), [treeData, expandedIds]);
+  const hierarchicalAccounts = useMemo(() => {
+    const flattenedAccounts = flattenTree(treeData);
+    return injectCalculatedRows(flattenedAccounts);
+  }, [treeData, expandedIds, injectCalculatedRows]);
 
   // Get all descendants of an account (for preventing invalid drops)
   const getDescendantIds = useCallback((accountId: string, accountsList: any[]): Set<string> => {
