@@ -394,7 +394,7 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
       const resultadoOperacionalEBITDA = margemContribuicao - totalDespesasOp;
       const resultadoEconomicoEBIT = resultadoOperacionalEBITDA - totalDepreciacao;
       const totalResultadoFinanceiro = totalReceitasFinanceiras - totalDespesasFinanceiras;
-      const resultadoAntesCapital = resultadoEconomicoEBIT - totalResultadoFinanceiro;
+      const resultadoAntesCapital = resultadoEconomicoEBIT + totalResultadoFinanceiro;
       const variacaoLiquidaCaixa = resultadoAntesCapital + totalCapitalEntrada - totalCapitalSaida;
 
       // Calculate breakeven point correctly

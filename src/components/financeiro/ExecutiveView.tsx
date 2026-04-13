@@ -185,7 +185,7 @@ export function ExecutiveView({ filters }: ExecutiveViewProps) {
       const margemContribuicao = receitaLiquida - custosVariaveis;
       const resultadoOperacionalEBITDA = margemContribuicao - despesasOperacionais;
       const resultadoEconomicoEBIT = resultadoOperacionalEBITDA - depreciacao;
-      const resultadoAntesCapital = resultadoEconomicoEBIT - resultadoFinanceiro;
+      const resultadoAntesCapital = resultadoEconomicoEBIT + resultadoFinanceiro;
 
       // Calculate Cashflow values
       let entradasOperacionais = 0;
