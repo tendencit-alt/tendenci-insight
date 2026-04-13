@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
-import { TrafficLight, TrafficLightBadge } from "./TrafficLight";
+import { TrafficLight } from "./TrafficLight";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
@@ -22,11 +22,11 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import {
-  Target, Plus, Pencil, Trash2, Loader2, TrendingUp, TrendingDown,
+  Target, Plus, Pencil, Trash2, Loader2, TrendingUp,
   BarChart3, Wallet, AlertTriangle, CheckCircle, ShieldAlert, Gauge,
-  Calendar, ArrowUpRight, ArrowDownRight,
+  Calendar,
 } from "lucide-react";
-import { format, getDaysInMonth, getDate } from "date-fns";
+import { getDaysInMonth, getDate } from "date-fns";
 import { cn } from "@/lib/utils";
 
 interface PlanejamentoFinanceiroProps {
