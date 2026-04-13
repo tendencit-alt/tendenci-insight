@@ -556,6 +556,118 @@ export type Database = {
           },
         ]
       }
+      audit_import_logs: {
+        Row: {
+          created_at: string
+          error_count: number | null
+          errors: Json | null
+          file_name: string
+          file_type: string | null
+          id: string
+          metadata: Json | null
+          record_count: number | null
+          status: string
+          success_count: number | null
+          tenant_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          error_count?: number | null
+          errors?: Json | null
+          file_name: string
+          file_type?: string | null
+          id?: string
+          metadata?: Json | null
+          record_count?: number | null
+          status?: string
+          success_count?: number | null
+          tenant_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          error_count?: number | null
+          errors?: Json | null
+          file_name?: string
+          file_type?: string | null
+          id?: string
+          metadata?: Json | null
+          record_count?: number | null
+          status?: string
+          success_count?: number | null
+          tenant_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_import_logs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_log: {
+        Row: {
+          created_at: string
+          event_source: string
+          event_type: string
+          field_name: string | null
+          id: string
+          ip_address: string | null
+          metadata: Json | null
+          new_value: string | null
+          old_value: string | null
+          record_id: string
+          table_name: string
+          tenant_id: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_source?: string
+          event_type?: string
+          field_name?: string | null
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          new_value?: string | null
+          old_value?: string | null
+          record_id: string
+          table_name: string
+          tenant_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_source?: string
+          event_type?: string
+          field_name?: string | null
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          new_value?: string | null
+          old_value?: string | null
+          record_id?: string
+          table_name?: string
+          tenant_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_log_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       boleto_rates: {
         Row: {
           active: boolean | null
