@@ -18,5 +18,4 @@ export type {
   StatusEvent,
   StatusEventAction,
   AutoApprovalRule,
-  FormValidationError,
 } from "./types";
