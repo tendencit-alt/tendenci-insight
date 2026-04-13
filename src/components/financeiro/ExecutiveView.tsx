@@ -63,6 +63,8 @@ export function ExecutiveView({ filters }: ExecutiveViewProps) {
         if (mainCode === 3) return "custo_variavel";
         if (mainCode === 4) return "despesa_operacional";
         if (mainCode === 5) return "depreciacao";
+        if (mainCode === 6 && nature === "RECEITA") return "receita_financeira";
+        if (mainCode === 6 && nature === "DESPESA") return "despesa_financeira";
         if (mainCode === 6) return "resultado_financeiro";
         if (mainCode === 7 && subCode === 1) return "capital_entrada";
         if (mainCode === 7 && subCode === 2) return "capital_saida";
@@ -151,7 +153,8 @@ export function ExecutiveView({ filters }: ExecutiveViewProps) {
       let custosVariaveis = 0;
       let despesasOperacionais = 0;
       let depreciacao = 0;
-      let resultadoFinanceiro = 0;
+      let receitasFinanceiras = 0;
+      let despesasFinanceiras = 0;
 
       dreEntries?.forEach(entry => {
         const account = accountMap.get(entry.chart_account_id || "");
@@ -170,11 +173,14 @@ export function ExecutiveView({ filters }: ExecutiveViewProps) {
           despesasOperacionais += amount;
         } else if (category === "depreciacao") {
           depreciacao += amount;
-        } else if (category === "resultado_financeiro") {
-          resultadoFinanceiro += amount;
+        } else if (category === "receita_financeira") {
+          receitasFinanceiras += amount;
+        } else if (category === "despesa_financeira") {
+          despesasFinanceiras += amount;
         }
       });
 
+      const resultadoFinanceiro = receitasFinanceiras - despesasFinanceiras;
       const receitaLiquida = totalReceitas - deducoesReceita;
       const margemContribuicao = receitaLiquida - custosVariaveis;
       const resultadoOperacionalEBITDA = margemContribuicao - despesasOperacionais;
@@ -196,12 +202,10 @@ export function ExecutiveView({ filters }: ExecutiveViewProps) {
         const category = account.category_type;
         const nature = account.nature;
 
-        if (nature === "RECEITA" || category === "receita_operacional") {
+        if (nature === "RECEITA" || category === "receita_operacional" || category === "receita_financeira") {
           entradasOperacionais += amount;
-        } else if ((nature === "DESPESA") && !["resultado_financeiro", "depreciacao"].includes(category)) {
+        } else if ((nature === "DESPESA" || category === "despesa_financeira") && !["depreciacao"].includes(category)) {
           saidasOperacionais += amount;
-        } else if (category === "resultado_financeiro") {
-          jurosLiquidos += amount;
         } else if (category === "capital_entrada") {
           capitalEntrada += amount;
         } else if (category === "capital_saida") {

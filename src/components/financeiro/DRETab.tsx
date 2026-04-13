@@ -322,26 +322,44 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
       const tree = buildTree(chartAccounts || []);
 
       // Calculate totals for root-level accounts
-      // New structure: 1=Receitas, 2=Deduções, 3=CustosVar, 4=DespOp, 5=Deprec, 6=ResultFin, 7=Capital, 8=Variação
+      // Structure: 1=Receitas, 2=Deduções, 3=CustosVar, 4=DespOp, 5=Deprec, 6=ResultFin(RESULTADO), 7=Capital, 8=Variação
       let totalReceitas = 0;
       let totalDeducoes = 0;
       let totalCustosVariaveis = 0;
       let totalDespesasOp = 0;
       let totalDepreciacao = 0;
-      let totalResultadoFinanceiro = 0;
+      let totalReceitasFinanceiras = 0;
+      let totalDespesasFinanceiras = 0;
       let totalCapitalEntrada = 0;
       let totalCapitalSaida = 0;
 
       const rootAccounts = chartAccounts?.filter(a => !a.parent_id) || [];
       
       rootAccounts.forEach(account => {
+        const mainCode = parseFloat(account.code.split('.')[0]);
+        
+        // Code 6 is RESULTADO - handle its children separately
+        if (mainCode === 6) {
+          const children = tree.get(account.id) || [];
+          children.forEach(child => {
+            const childValue = accountValues.get(child.id) || 0;
+            const childChildrenTotal = calculateTotals(tree, accountValues, child.id);
+            const childTotal = childValue + childChildrenTotal;
+            
+            if (child.nature === "RECEITA") {
+              totalReceitasFinanceiras += childTotal;
+            } else if (child.nature === "DESPESA") {
+              totalDespesasFinanceiras += childTotal;
+            }
+          });
+          return;
+        }
+        
         if (account.nature === "RESULTADO") return;
         
         const directValue = accountValues.get(account.id) || 0;
         const childrenTotal = calculateTotals(tree, accountValues, account.id);
         const total = directValue + childrenTotal;
-        
-        const mainCode = parseFloat(account.code.split('.')[0]);
         
         if (mainCode === 1) {
           totalReceitas += total;
@@ -353,8 +371,6 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
           totalDespesasOp += total;
         } else if (mainCode === 5) {
           totalDepreciacao += total;
-        } else if (mainCode === 6) {
-          totalResultadoFinanceiro += total;
         } else if (mainCode === 7) {
           const children = tree.get(account.id) || [];
           children.forEach(child => {
@@ -377,6 +393,7 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
       const margemContribuicao = receitaLiquida - totalCustosVariaveis;
       const resultadoOperacionalEBITDA = margemContribuicao - totalDespesasOp;
       const resultadoEconomicoEBIT = resultadoOperacionalEBITDA - totalDepreciacao;
+      const totalResultadoFinanceiro = totalReceitasFinanceiras - totalDespesasFinanceiras;
       const resultadoAntesCapital = resultadoEconomicoEBIT - totalResultadoFinanceiro;
       const variacaoLiquidaCaixa = resultadoAntesCapital + totalCapitalEntrada - totalCapitalSaida;
 
@@ -399,8 +416,9 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
         pontoEquilibrioRealizado = Number.MAX_SAFE_INTEGER;
       }
 
-      // No calculated values from DB - all RESULTADO accounts removed except Variação
+      // Calculated values for RESULTADO accounts
       const calculatedValues = new Map<string, number>();
+      calculatedValues.set("6", totalResultadoFinanceiro);
       calculatedValues.set("8", variacaoLiquidaCaixa);
 
       // Flatten tree from DB accounts
