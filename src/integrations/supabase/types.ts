@@ -2425,6 +2425,211 @@ export type Database = {
           },
         ]
       }
+      fin_classification_history: {
+        Row: {
+          amount_range: string | null
+          bank_account_id: string | null
+          chart_account_id: string | null
+          confirmation_count: number | null
+          cost_center_id: string | null
+          created_at: string | null
+          entry_type: string | null
+          id: string
+          in_cashflow: boolean | null
+          in_dre: boolean | null
+          last_confirmed_at: string | null
+          last_confirmed_by: string | null
+          nature: string | null
+          normalized_description: string
+          origin: string | null
+          original_description: string
+          party_id: string | null
+          party_name: string | null
+          party_type: string | null
+          project_id: string | null
+          strength: string | null
+          tenant_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          amount_range?: string | null
+          bank_account_id?: string | null
+          chart_account_id?: string | null
+          confirmation_count?: number | null
+          cost_center_id?: string | null
+          created_at?: string | null
+          entry_type?: string | null
+          id?: string
+          in_cashflow?: boolean | null
+          in_dre?: boolean | null
+          last_confirmed_at?: string | null
+          last_confirmed_by?: string | null
+          nature?: string | null
+          normalized_description: string
+          origin?: string | null
+          original_description: string
+          party_id?: string | null
+          party_name?: string | null
+          party_type?: string | null
+          project_id?: string | null
+          strength?: string | null
+          tenant_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          amount_range?: string | null
+          bank_account_id?: string | null
+          chart_account_id?: string | null
+          confirmation_count?: number | null
+          cost_center_id?: string | null
+          created_at?: string | null
+          entry_type?: string | null
+          id?: string
+          in_cashflow?: boolean | null
+          in_dre?: boolean | null
+          last_confirmed_at?: string | null
+          last_confirmed_by?: string | null
+          nature?: string | null
+          normalized_description?: string
+          origin?: string | null
+          original_description?: string
+          party_id?: string | null
+          party_name?: string | null
+          party_type?: string | null
+          project_id?: string | null
+          strength?: string | null
+          tenant_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fin_classification_history_chart_account_id_fkey"
+            columns: ["chart_account_id"]
+            isOneToOne: false
+            referencedRelation: "fin_chart_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_classification_history_cost_center_id_fkey"
+            columns: ["cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "fin_cost_centers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_classification_history_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "fin_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_classification_history_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fin_classification_rules: {
+        Row: {
+          active: boolean | null
+          auto_promoted: boolean | null
+          chart_account_id: string | null
+          confidence_base: number
+          confirmation_count: number | null
+          cost_center_id: string | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          in_cashflow: boolean | null
+          in_dre: boolean | null
+          match_field: string
+          match_operator: string
+          match_value: string
+          nature: string | null
+          priority: number
+          project_id: string | null
+          rule_type: string
+          tenant_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          auto_promoted?: boolean | null
+          chart_account_id?: string | null
+          confidence_base?: number
+          confirmation_count?: number | null
+          cost_center_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          in_cashflow?: boolean | null
+          in_dre?: boolean | null
+          match_field?: string
+          match_operator?: string
+          match_value: string
+          nature?: string | null
+          priority?: number
+          project_id?: string | null
+          rule_type?: string
+          tenant_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          auto_promoted?: boolean | null
+          chart_account_id?: string | null
+          confidence_base?: number
+          confirmation_count?: number | null
+          cost_center_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          in_cashflow?: boolean | null
+          in_dre?: boolean | null
+          match_field?: string
+          match_operator?: string
+          match_value?: string
+          nature?: string | null
+          priority?: number
+          project_id?: string | null
+          rule_type?: string
+          tenant_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fin_classification_rules_chart_account_id_fkey"
+            columns: ["chart_account_id"]
+            isOneToOne: false
+            referencedRelation: "fin_chart_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_classification_rules_cost_center_id_fkey"
+            columns: ["cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "fin_cost_centers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_classification_rules_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "fin_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_classification_rules_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fin_cost_centers: {
         Row: {
           active: boolean | null
@@ -2556,6 +2761,10 @@ export type Database = {
           bank_account_id: string | null
           cash_date: string | null
           chart_account_id: string | null
+          classification_rule_id: string | null
+          classification_score: number | null
+          classification_source: string | null
+          classification_status: string | null
           competence_date: string
           cost_center_id: string | null
           created_at: string | null
@@ -2591,6 +2800,10 @@ export type Database = {
           bank_account_id?: string | null
           cash_date?: string | null
           chart_account_id?: string | null
+          classification_rule_id?: string | null
+          classification_score?: number | null
+          classification_source?: string | null
+          classification_status?: string | null
           competence_date: string
           cost_center_id?: string | null
           created_at?: string | null
@@ -2626,6 +2839,10 @@ export type Database = {
           bank_account_id?: string | null
           cash_date?: string | null
           chart_account_id?: string | null
+          classification_rule_id?: string | null
+          classification_score?: number | null
+          classification_source?: string | null
+          classification_status?: string | null
           competence_date?: string
           cost_center_id?: string | null
           created_at?: string | null
@@ -2669,6 +2886,13 @@ export type Database = {
             columns: ["chart_account_id"]
             isOneToOne: false
             referencedRelation: "fin_chart_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_ledger_entries_classification_rule_id_fkey"
+            columns: ["classification_rule_id"]
+            isOneToOne: false
+            referencedRelation: "fin_classification_rules"
             referencedColumns: ["id"]
           },
           {
