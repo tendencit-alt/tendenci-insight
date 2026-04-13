@@ -38,6 +38,34 @@ export function CreateLedgerEntryDialog({ open, onOpenChange, onSuccess }: Creat
   const { minimize: minimizeDialog, remove: removeMinimized } = useMinimizedDialogs();
   const [isMinimized, setIsMinimized] = useState(false);
   const { invalidateLedger } = useFinanceiroSync();
+  const { classify, result: classificationResult, loading: classifying, clearResult } = useClassifyEntry();
+  const classifyTimer = useRef<ReturnType<typeof setTimeout>>();
+
+  // Debounced classification trigger
+  const triggerClassification = useCallback((desc: string, type: string, partyId?: string) => {
+    clearResult();
+    if (classifyTimer.current) clearTimeout(classifyTimer.current);
+    if (desc.length < 4) return;
+    classifyTimer.current = setTimeout(() => {
+      classify({
+        description: desc,
+        amount: 0,
+        type,
+        party_id: partyId || undefined,
+        origin: "manual",
+      });
+    }, 600);
+  }, [classify, clearResult]);
+
+  const handleApplySuggestion = useCallback((suggestion: any) => {
+    setForm(prev => ({
+      ...prev,
+      chart_account_id: suggestion.chart_account_id || prev.chart_account_id,
+      cost_center_id: suggestion.cost_center_id || prev.cost_center_id,
+      project_id: suggestion.project_id || prev.project_id,
+    }));
+    toast.success("Sugestão aplicada");
+  }, []);
 
   const handleMinimize = useCallback(() => {
     setIsMinimized(true);
