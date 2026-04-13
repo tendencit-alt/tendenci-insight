@@ -1,12 +1,13 @@
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Building2, CreditCard, ArrowLeft, Wrench, LayoutDashboard } from 'lucide-react';
+import { Building2, CreditCard, ArrowLeft, Wrench, LayoutDashboard, Shield } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { TenantsManager } from '@/components/superadmin/TenantsManager';
 import { PlansManager } from '@/components/superadmin/PlansManager';
 import { SuperAdminDashboard } from '@/components/superadmin/SuperAdminDashboard';
 import { OwnerTechnicalPanel } from '@/components/superadmin/OwnerTechnicalPanel';
+import { SupportAccessPanel } from '@/components/superadmin/SupportAccessPanel';
 
 const SuperAdmin = () => {
   const navigate = useNavigate();
@@ -30,7 +31,7 @@ const SuperAdmin = () => {
         </div>
 
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="dashboard" className="flex items-center gap-1.5">
               <LayoutDashboard className="h-4 w-4" />
               Visão Geral
@@ -42,6 +43,10 @@ const SuperAdmin = () => {
             <TabsTrigger value="plans" className="flex items-center gap-1.5">
               <CreditCard className="h-4 w-4" />
               Planos
+            </TabsTrigger>
+            <TabsTrigger value="support" className="flex items-center gap-1.5">
+              <Shield className="h-4 w-4" />
+              Suporte
             </TabsTrigger>
             <TabsTrigger value="technical" className="flex items-center gap-1.5">
               <Wrench className="h-4 w-4" />
@@ -59,6 +64,10 @@ const SuperAdmin = () => {
 
           <TabsContent value="plans" className="space-y-6 pt-6">
             <PlansManager />
+          </TabsContent>
+
+          <TabsContent value="support" className="space-y-6 pt-6">
+            <SupportAccessPanel />
           </TabsContent>
 
           <TabsContent value="technical" className="space-y-6 pt-6">
