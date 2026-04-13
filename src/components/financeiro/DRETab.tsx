@@ -522,7 +522,7 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
           margemContribuicaoPercent,
           resultadoOperacional: resultadoOperacionalEBITDA,
           resultadoFinanceiro: totalResultadoFinanceiro,
-          resultadoAntesCapital,
+          resultadoLiquido,
           variacaoLiquidaCaixa,
           custosFixos,
           custosVariaveis,
