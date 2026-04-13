@@ -333,10 +333,11 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
 
       // Calculate totals for root-level accounts
       let totalReceitas = 0;
-      let totalDeducoes = 0;
-      let totalCustosVariaveis = 0;
-      let totalCompromissosVenda = 0;
-      let totalAntecipacaoRecebiveis = 0;
+      let totalImpostosVenda = 0;  // 2.1
+      let totalTaxasVenda = 0;     // 2.2
+      let totalCustosDiretos = 0;  // 2.3
+      let totalComissoes = 0;      // 2.4
+      let totalAntecipacao = 0;    // 2.5
       let totalDespesasOp = 0;
       let totalDepreciacao = 0;
       let totalReceitasFinanceiras = 0;
@@ -382,15 +383,11 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
             const childChildrenTotal = calculateTotals(tree, accountValues, child.id);
             const childTotal = childValue + childChildrenTotal;
             const subCode = parseFloat(child.code.split('.')[1] || '0');
-            if (subCode === 1) {
-              totalDeducoes += childTotal;
-            } else if (subCode === 2) {
-              totalCustosVariaveis += childTotal;
-            } else if (subCode === 3) {
-              totalCompromissosVenda += childTotal;
-            } else if (subCode === 4) {
-              totalAntecipacaoRecebiveis += childTotal;
-            }
+            if (subCode === 1) totalImpostosVenda += childTotal;
+            else if (subCode === 2) totalTaxasVenda += childTotal;
+            else if (subCode === 3) totalCustosDiretos += childTotal;
+            else if (subCode === 4) totalComissoes += childTotal;
+            else if (subCode === 5) totalAntecipacao += childTotal;
           });
         } else if (mainCode === 3) {
           totalDespesasOp += total;
@@ -402,30 +399,27 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
             const childValue = accountValues.get(child.id) || 0;
             const childChildrenTotal = calculateTotals(tree, accountValues, child.id);
             const childTotal = childValue + childChildrenTotal;
-            
             const subCode = parseFloat(child.code.split('.')[1] || '0');
-            if (subCode === 1) {
-              totalCapitalEntrada += childTotal;
-            } else if (subCode === 2) {
-              totalCapitalSaida += childTotal;
-            }
+            if (subCode === 1) totalCapitalEntrada += childTotal;
+            else if (subCode === 2) totalCapitalSaida += childTotal;
           });
         } else if (mainCode === 7) {
           totalImpostos += total;
         }
       });
 
-      // Calculate derived values - professional DRE structure
-      const receitaLiquida = totalReceitas - totalDeducoes;
-      const margemContribuicao = receitaLiquida - totalCustosVariaveis - totalCompromissosVenda - totalAntecipacaoRecebiveis;
+      // Calculate derived values - clean managerial DRE
+      const totalDespesasSobreVendas = totalImpostosVenda + totalTaxasVenda + totalCustosDiretos + totalComissoes + totalAntecipacao;
+      const receitaLiquida = totalReceitas - totalDespesasSobreVendas;
+      const margemContribuicao = receitaLiquida - totalCustosDiretos - totalComissoes;
       const resultadoOperacionalEBITDA = margemContribuicao - totalDespesasOp;
       const totalResultadoFinanceiro = totalReceitasFinanceiras - totalDespesasFinanceiras;
       const resultadoAntesImpostos = resultadoOperacionalEBITDA - totalDepreciacao + totalResultadoFinanceiro;
       const resultadoLiquido = resultadoAntesImpostos - totalImpostos;
       const variacaoLiquidaCaixa = resultadoLiquido + totalCapitalEntrada - totalCapitalSaida;
 
-      // Calculate breakeven point correctly
-      const custosVariaveis = Math.abs(totalCustosVariaveis);
+      // Calculate breakeven point
+      const custosVariaveis = Math.abs(totalCustosDiretos + totalComissoes);
       const custosFixos = Math.abs(totalDespesasOp);
       
       const margemContribuicaoValor = receitaLiquida - custosVariaveis;
@@ -442,10 +436,9 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
 
       // Calculated values for RESULTADO accounts
       const calculatedValues = new Map<string, number>();
-      calculatedValues.set("6", totalResultadoFinanceiro);
-      calculatedValues.set("8", variacaoLiquidaCaixa);
+      calculatedValues.set("5", totalResultadoFinanceiro);
 
-      // Filter out root 7 if Simples Nacional
+      // Filter out root 7 if Simples Nacional (root 7 is deactivated but kept for safety)
       const filteredAccounts = showImpostos 
         ? (chartAccounts || [])
         : (chartAccounts || []).filter(a => {
@@ -480,13 +473,15 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
       });
 
       // Insert in reverse order so indices don't shift
-      const lastGroupCode = showImpostos ? "7" : "5";
-      injectAfterCode(lastGroupCode, makeCalcLine("calc-resultado-liquido", "=RL²", "= Resultado Líquido", resultadoLiquido));
+      // Final: Resultado Líquido after impostos (or after root 5 if no impostos)
       if (showImpostos) {
+        injectAfterCode("7", makeCalcLine("calc-resultado-liquido", "=RL²", "= Resultado Líquido", resultadoLiquido));
         injectAfterCode("5", makeCalcLine("calc-resultado-antes-impostos", "=RAI", "= Resultado Antes dos Impostos", resultadoAntesImpostos));
+      } else {
+        injectAfterCode("5", makeCalcLine("calc-resultado-liquido", "=RL²", "= Resultado Líquido", resultadoLiquido));
       }
-      injectAfterCode("3", makeCalcLine("calc-ebitda", "=EBITDA", "= Resultado Operacional (EBITDA)", resultadoOperacionalEBITDA));
-      injectAfterCode("3", makeCalcLine("calc-margem", "=MC", "= Margem de Contribuição", margemContribuicao));
+      injectAfterCode("3", makeCalcLine("calc-ebitda", "=EBITDA", "= EBITDA", resultadoOperacionalEBITDA));
+      injectAfterCode("2", makeCalcLine("calc-margem", "=MC", "= Margem de Contribuição", margemContribuicao));
       injectAfterCode("2", makeCalcLine("calc-receita-liquida", "=RL", "= Receita Líquida", receitaLiquida));
 
       // Fetch goals for breakeven meta
