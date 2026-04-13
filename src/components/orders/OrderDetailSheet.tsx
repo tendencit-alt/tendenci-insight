@@ -46,6 +46,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }>
 
 export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: OrderDetailSheetProps) {
   const { isMaster } = usePermissions();
+  const { defaults: resourceDefaults } = useStrategicResourceDefaults();
   const { minimize: minimizeDialog, remove: removeMinimized } = useMinimizedDialogs();
   const [isMinimized, setIsMinimized] = useState(false);
   const [loading, setLoading] = useState(false);
