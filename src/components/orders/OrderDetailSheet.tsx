@@ -766,26 +766,109 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
                   <CardTitle className="text-sm">Ações</CardTitle>
                 </CardHeader>
                 <CardContent className="py-2 space-y-2">
+                  {/* Rascunho → Negociação ou Aprovação direta */}
                   {order.status === 'rascunho' && (
-                    <Button className="w-full" onClick={() => handleStatusChange('aguardando_aprovacao')} disabled={loading}>
-                      {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                      Enviar para Aprovação
-                    </Button>
-                  )}
-
-                  {order.status === 'aguardando_aprovacao' && isMaster && (
                     <div className="flex gap-2">
-                      <Button className="flex-1" onClick={() => handleStatusChange('aprovado')} disabled={loading}>
+                      <Button className="flex-1" onClick={() => handleStatusChange('em_negociacao')} disabled={loading}>
                         {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                        Aprovar
+                        Iniciar Negociação
                       </Button>
-                      <Button variant="destructive" className="flex-1" onClick={() => setCancelOpen(true)} disabled={loading}>
-                        Rejeitar
+                      <Button variant="outline" className="flex-1" onClick={() => handleStatusChange('aprovado')} disabled={loading}>
+                        Aprovar Direto
                       </Button>
                     </div>
                   )}
 
-                  {(order.status === 'rascunho' || order.status === 'aguardando_aprovacao') && (
+                  {/* Em Negociação → Aprovar */}
+                  {order.status === 'em_negociacao' && (
+                    <Button className="w-full" onClick={() => handleStatusChange('aprovado')} disabled={loading}>
+                      {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Aprovar Pedido
+                    </Button>
+                  )}
+
+                  {/* Aprovado → Liberar Produção ou Criar OPs */}
+                  {order.status === 'aprovado' && (
+                    <div className="space-y-2">
+                      <Button className="w-full" onClick={() => handleStatusChange('liberado_producao')} disabled={loading}>
+                        {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                        <Factory className="h-4 w-4 mr-2" />
+                        Liberar para Produção
+                      </Button>
+                      <Button variant="outline" className="w-full" onClick={handleCreateProductionOrders} disabled={loading}>
+                        <Factory className="h-4 w-4 mr-2" />
+                        Criar Ordens de Produção
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Liberado Produção → Iniciar Produção */}
+                  {order.status === 'liberado_producao' && (
+                    <Button className="w-full" onClick={() => handleStatusChange('em_producao')} disabled={loading}>
+                      {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                      <Factory className="h-4 w-4 mr-2" />
+                      Iniciar Produção
+                    </Button>
+                  )}
+
+                  {/* Em Produção → Concluir Produção */}
+                  {order.status === 'em_producao' && (
+                    <Button className="w-full" onClick={() => handleStatusChange('producao_concluida')} disabled={loading}>
+                      {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Concluir Produção
+                    </Button>
+                  )}
+
+                  {/* Produção Concluída → Liberar Faturamento ou Faturar direto */}
+                  {order.status === 'producao_concluida' && (
+                    <div className="flex gap-2">
+                      <Button className="flex-1" onClick={() => handleStatusChange('liberado_faturamento')} disabled={loading}>
+                        Liberar Faturamento
+                      </Button>
+                      <Button variant="outline" className="flex-1" onClick={() => handleStatusChange('faturado')} disabled={loading}>
+                        Faturar Direto
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Liberado Faturamento → Faturar */}
+                  {order.status === 'liberado_faturamento' && (
+                    <Button className="w-full" onClick={() => handleStatusChange('faturado')} disabled={loading}>
+                      {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                      <FileText className="h-4 w-4 mr-2" />
+                      Registrar Faturamento
+                    </Button>
+                  )}
+
+                  {/* Faturado → Entregue */}
+                  {order.status === 'faturado' && (
+                    <Button className="w-full" onClick={() => handleStatusChange('entregue')} disabled={loading}>
+                      {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                      <Truck className="h-4 w-4 mr-2" />
+                      Marcar como Entregue
+                    </Button>
+                  )}
+
+                  {/* Entregue → Encerrar */}
+                  {order.status === 'entregue' && (
+                    <Button className="w-full" onClick={() => handleStatusChange('encerrado')} disabled={loading}>
+                      {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Encerrar Pedido
+                    </Button>
+                  )}
+
+                  {/* Cancelado → Reabrir como Rascunho */}
+                  {order.status === 'cancelado' && isMaster && (
+                    <Button variant="outline" className="w-full" onClick={() => handleStatusChange('rascunho')} disabled={loading}>
+                      Reabrir como Rascunho
+                    </Button>
+                  )}
+
+                  {/* Cancelar (disponível até aprovado) */}
+                  {['rascunho', 'em_negociacao', 'aprovado', 'liberado_producao'].includes(order.status) && (
                     <Button 
                       variant="outline" 
                       className="w-full mt-3 text-destructive border-destructive/50 hover:bg-destructive/10"
@@ -803,27 +886,6 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
                     >
                       <Trash2 className="h-4 w-4 mr-2" />
                       Excluir Pedido
-                    </Button>
-                  )}
-
-                  {order.status === 'aprovado' && (
-                    <Button className="w-full" onClick={handleCreateProductionOrders} disabled={loading}>
-                      {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                      <Factory className="h-4 w-4 mr-2" />
-                      Criar Ordens de Produção
-                    </Button>
-                  )}
-
-                  {order.status === 'em_producao' && (
-                    <Button className="w-full" onClick={() => handleStatusChange('faturado')} disabled={loading}>
-                      Marcar como Faturado
-                    </Button>
-                  )}
-
-                  {order.status === 'faturado' && (
-                    <Button className="w-full" onClick={() => handleStatusChange('entregue')} disabled={loading}>
-                      <Truck className="h-4 w-4 mr-2" />
-                      Marcar como Entregue
                     </Button>
                   )}
                 </CardContent>
