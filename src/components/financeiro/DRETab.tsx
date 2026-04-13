@@ -326,6 +326,7 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
       let totalReceitas = 0;
       let totalDeducoes = 0;
       let totalCustosVariaveis = 0;
+      let totalCompromissosVenda = 0;
       let totalDespesasOp = 0;
       let totalDepreciacao = 0;
       let totalReceitasFinanceiras = 0;
@@ -375,6 +376,8 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
               totalDeducoes += childTotal;
             } else if (subCode === 2) {
               totalCustosVariaveis += childTotal;
+            } else if (subCode === 3) {
+              totalCompromissosVenda += childTotal;
             }
           });
         } else if (mainCode === 3) {
@@ -400,7 +403,7 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
 
       // Calculate derived values - professional DRE structure
       const receitaLiquida = totalReceitas - totalDeducoes;
-      const margemContribuicao = receitaLiquida - totalCustosVariaveis;
+      const margemContribuicao = receitaLiquida - totalCustosVariaveis - totalCompromissosVenda;
       const resultadoOperacionalEBITDA = margemContribuicao - totalDespesasOp;
       const resultadoEconomicoEBIT = resultadoOperacionalEBITDA - totalDepreciacao;
       const totalResultadoFinanceiro = totalReceitasFinanceiras - totalDespesasFinanceiras;

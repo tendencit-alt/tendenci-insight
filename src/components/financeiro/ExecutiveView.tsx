@@ -61,6 +61,7 @@ export function ExecutiveView({ filters }: ExecutiveViewProps) {
         if (mainCode === 1) return "receita_operacional";
         if (mainCode === 2 && subCode === 1) return "deducao_receita";
         if (mainCode === 2 && subCode === 2) return "custo_variavel";
+        if (mainCode === 2 && subCode === 3) return "compromisso_venda";
         if (mainCode === 2) return "deducao_receita"; // fallback for root 2
         if (mainCode === 3) return "despesa_operacional";
         if (mainCode === 4) return "depreciacao";
@@ -152,6 +153,7 @@ export function ExecutiveView({ filters }: ExecutiveViewProps) {
       let totalReceitas = 0;
       let deducoesReceita = 0;
       let custosVariaveis = 0;
+      let compromissosVenda = 0;
       let despesasOperacionais = 0;
       let depreciacao = 0;
       let receitasFinanceiras = 0;
@@ -170,6 +172,8 @@ export function ExecutiveView({ filters }: ExecutiveViewProps) {
           deducoesReceita += amount;
         } else if (category === "custo_variavel") {
           custosVariaveis += amount;
+        } else if (category === "compromisso_venda") {
+          compromissosVenda += amount;
         } else if (category === "despesa_operacional") {
           despesasOperacionais += amount;
         } else if (category === "depreciacao") {
@@ -183,7 +187,7 @@ export function ExecutiveView({ filters }: ExecutiveViewProps) {
 
       const resultadoFinanceiro = receitasFinanceiras - despesasFinanceiras;
       const receitaLiquida = totalReceitas - deducoesReceita;
-      const margemContribuicao = receitaLiquida - custosVariaveis;
+      const margemContribuicao = receitaLiquida - custosVariaveis - compromissosVenda;
       const resultadoOperacionalEBITDA = margemContribuicao - despesasOperacionais;
       const resultadoEconomicoEBIT = resultadoOperacionalEBITDA - depreciacao;
       const resultadoAntesCapital = resultadoEconomicoEBIT + resultadoFinanceiro;
