@@ -223,6 +223,15 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
       if (filters.projectId) {
         query = query.eq("project_id", filters.projectId);
       }
+      if (filters.clientId) {
+        query = query.eq("client_id", filters.clientId);
+      }
+      if (filters.vendedorId) {
+        query = query.eq("vendedor_id", filters.vendedorId);
+      }
+      if (filters.orderId) {
+        query = query.eq("order_id", filters.orderId);
+      }
       // Subcategoria tem prioridade sobre categoria
       if (filters.subcategoryId) {
         query = query.eq("chart_account_id", filters.subcategoryId);
