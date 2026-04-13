@@ -29,7 +29,11 @@ import {
   Split,
   MoreHorizontal,
   Undo2,
-  Landmark
+  Landmark,
+  Brain,
+  Loader2,
+  Sparkles,
+  Copy,
 } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
