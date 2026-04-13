@@ -29,7 +29,7 @@ export function CostCentersManager() {
       const { data } = await supabase
         .from("fin_cost_centers")
         .select("*")
-        .order("name");
+        .order("code");
       return data || [];
     },
   });
