@@ -2093,6 +2093,117 @@ export type Database = {
           },
         ]
       }
+      fin_assets: {
+        Row: {
+          acquisition_date: string
+          acquisition_value: number
+          category: string | null
+          chart_account_id: string | null
+          cost_center_id: string | null
+          created_at: string | null
+          created_by: string | null
+          current_book_value: number | null
+          depreciation_method: string | null
+          description: string | null
+          id: string
+          ledger_entry_id: string | null
+          name: string
+          notes: string | null
+          payable_id: string | null
+          project_id: string | null
+          residual_value: number | null
+          status: string | null
+          supplier_id: string | null
+          tenant_id: string | null
+          updated_at: string | null
+          useful_life_months: number
+        }
+        Insert: {
+          acquisition_date: string
+          acquisition_value: number
+          category?: string | null
+          chart_account_id?: string | null
+          cost_center_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          current_book_value?: number | null
+          depreciation_method?: string | null
+          description?: string | null
+          id?: string
+          ledger_entry_id?: string | null
+          name: string
+          notes?: string | null
+          payable_id?: string | null
+          project_id?: string | null
+          residual_value?: number | null
+          status?: string | null
+          supplier_id?: string | null
+          tenant_id?: string | null
+          updated_at?: string | null
+          useful_life_months?: number
+        }
+        Update: {
+          acquisition_date?: string
+          acquisition_value?: number
+          category?: string | null
+          chart_account_id?: string | null
+          cost_center_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          current_book_value?: number | null
+          depreciation_method?: string | null
+          description?: string | null
+          id?: string
+          ledger_entry_id?: string | null
+          name?: string
+          notes?: string | null
+          payable_id?: string | null
+          project_id?: string | null
+          residual_value?: number | null
+          status?: string | null
+          supplier_id?: string | null
+          tenant_id?: string | null
+          updated_at?: string | null
+          useful_life_months?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fin_assets_chart_account_id_fkey"
+            columns: ["chart_account_id"]
+            isOneToOne: false
+            referencedRelation: "fin_chart_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_assets_cost_center_id_fkey"
+            columns: ["cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "fin_cost_centers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_assets_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "fin_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_assets_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_assets_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fin_attachments: {
         Row: {
           created_at: string | null
@@ -2436,6 +2547,59 @@ export type Database = {
           },
         ]
       }
+      fin_business_events: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          error_message: string | null
+          event_data: Json | null
+          event_type: string
+          id: string
+          processed_at: string | null
+          processing_result: Json | null
+          processing_status: string | null
+          source_id: string
+          source_table: string
+          tenant_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          error_message?: string | null
+          event_data?: Json | null
+          event_type: string
+          id?: string
+          processed_at?: string | null
+          processing_result?: Json | null
+          processing_status?: string | null
+          source_id: string
+          source_table: string
+          tenant_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          error_message?: string | null
+          event_data?: Json | null
+          event_type?: string
+          id?: string
+          processed_at?: string | null
+          processing_result?: Json | null
+          processing_status?: string | null
+          source_id?: string
+          source_table?: string
+          tenant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fin_business_events_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fin_chart_accounts: {
         Row: {
           active: boolean | null
@@ -2739,6 +2903,57 @@ export type Database = {
           },
           {
             foreignKeyName: "fin_cost_centers_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fin_depreciation_schedule: {
+        Row: {
+          accumulated: number
+          amount: number
+          asset_id: string
+          created_at: string | null
+          id: string
+          ledger_entry_id: string | null
+          period_date: string
+          status: string | null
+          tenant_id: string | null
+        }
+        Insert: {
+          accumulated?: number
+          amount: number
+          asset_id: string
+          created_at?: string | null
+          id?: string
+          ledger_entry_id?: string | null
+          period_date: string
+          status?: string | null
+          tenant_id?: string | null
+        }
+        Update: {
+          accumulated?: number
+          amount?: number
+          asset_id?: string
+          created_at?: string | null
+          id?: string
+          ledger_entry_id?: string | null
+          period_date?: string
+          status?: string | null
+          tenant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fin_depreciation_schedule_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "fin_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_depreciation_schedule_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -3141,6 +3356,84 @@ export type Database = {
           },
           {
             foreignKeyName: "fin_loan_contracts_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fin_loan_installments: {
+        Row: {
+          created_at: string | null
+          due_date: string
+          id: string
+          installment_number: number
+          interest_amount: number
+          iof_amount: number | null
+          ledger_entry_interest_id: string | null
+          ledger_entry_iof_id: string | null
+          ledger_entry_principal_id: string | null
+          loan_id: string
+          other_charges: number | null
+          paid_amount: number | null
+          paid_date: string | null
+          payable_id: string | null
+          principal_amount: number
+          status: string | null
+          tenant_id: string | null
+          total_amount: number
+        }
+        Insert: {
+          created_at?: string | null
+          due_date: string
+          id?: string
+          installment_number: number
+          interest_amount?: number
+          iof_amount?: number | null
+          ledger_entry_interest_id?: string | null
+          ledger_entry_iof_id?: string | null
+          ledger_entry_principal_id?: string | null
+          loan_id: string
+          other_charges?: number | null
+          paid_amount?: number | null
+          paid_date?: string | null
+          payable_id?: string | null
+          principal_amount?: number
+          status?: string | null
+          tenant_id?: string | null
+          total_amount?: number
+        }
+        Update: {
+          created_at?: string | null
+          due_date?: string
+          id?: string
+          installment_number?: number
+          interest_amount?: number
+          iof_amount?: number | null
+          ledger_entry_interest_id?: string | null
+          ledger_entry_iof_id?: string | null
+          ledger_entry_principal_id?: string | null
+          loan_id?: string
+          other_charges?: number | null
+          paid_amount?: number | null
+          paid_date?: string | null
+          payable_id?: string | null
+          principal_amount?: number
+          status?: string | null
+          tenant_id?: string | null
+          total_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fin_loan_installments_loan_id_fkey"
+            columns: ["loan_id"]
+            isOneToOne: false
+            referencedRelation: "fin_loan_contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_loan_installments_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -3632,6 +3925,114 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fin_recurring_contracts: {
+        Row: {
+          adjustment_rate: number | null
+          amount: number
+          auto_generate: boolean | null
+          bank_account_id: string | null
+          chart_account_id: string | null
+          cost_center_id: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string
+          end_date: string | null
+          frequency: string
+          id: string
+          next_generation_date: string
+          notes: string | null
+          party_id: string | null
+          party_type: string
+          project_id: string | null
+          start_date: string
+          status: string | null
+          tenant_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          adjustment_rate?: number | null
+          amount?: number
+          auto_generate?: boolean | null
+          bank_account_id?: string | null
+          chart_account_id?: string | null
+          cost_center_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description: string
+          end_date?: string | null
+          frequency?: string
+          id?: string
+          next_generation_date: string
+          notes?: string | null
+          party_id?: string | null
+          party_type?: string
+          project_id?: string | null
+          start_date: string
+          status?: string | null
+          tenant_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          adjustment_rate?: number | null
+          amount?: number
+          auto_generate?: boolean | null
+          bank_account_id?: string | null
+          chart_account_id?: string | null
+          cost_center_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string
+          end_date?: string | null
+          frequency?: string
+          id?: string
+          next_generation_date?: string
+          notes?: string | null
+          party_id?: string | null
+          party_type?: string
+          project_id?: string | null
+          start_date?: string
+          status?: string | null
+          tenant_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fin_recurring_contracts_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "fin_bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_recurring_contracts_chart_account_id_fkey"
+            columns: ["chart_account_id"]
+            isOneToOne: false
+            referencedRelation: "fin_chart_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_recurring_contracts_cost_center_id_fkey"
+            columns: ["cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "fin_cost_centers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_recurring_contracts_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "fin_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_recurring_contracts_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
