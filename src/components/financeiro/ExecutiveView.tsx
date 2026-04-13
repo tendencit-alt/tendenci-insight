@@ -59,16 +59,17 @@ export function ExecutiveView({ filters }: ExecutiveViewProps) {
         const subCode = code.includes('.') ? parseFloat(code.split('.')[1]) : 0;
         
         if (mainCode === 1) return "receita_operacional";
-        if (mainCode === 2) return "deducao_receita";
-        if (mainCode === 3) return "custo_variavel";
-        if (mainCode === 4) return "despesa_operacional";
-        if (mainCode === 5) return "depreciacao";
-        if (mainCode === 6 && nature === "RECEITA") return "receita_financeira";
-        if (mainCode === 6 && nature === "DESPESA") return "despesa_financeira";
-        if (mainCode === 6) return "resultado_financeiro";
-        if (mainCode === 7 && subCode === 1) return "capital_entrada";
-        if (mainCode === 7 && subCode === 2) return "capital_saida";
-        if (mainCode === 7) return "capital_entrada";
+        if (mainCode === 2 && subCode === 1) return "deducao_receita";
+        if (mainCode === 2 && subCode === 2) return "custo_variavel";
+        if (mainCode === 2) return "deducao_receita"; // fallback for root 2
+        if (mainCode === 3) return "despesa_operacional";
+        if (mainCode === 4) return "depreciacao";
+        if (mainCode === 5 && nature === "RECEITA") return "receita_financeira";
+        if (mainCode === 5 && nature === "DESPESA") return "despesa_financeira";
+        if (mainCode === 5) return "resultado_financeiro";
+        if (mainCode === 6 && subCode === 1) return "capital_entrada";
+        if (mainCode === 6 && subCode === 2) return "capital_saida";
+        if (mainCode === 6) return "capital_entrada";
         
         return nature === "RECEITA" ? "receita_operacional" : "despesa_operacional";
       };
