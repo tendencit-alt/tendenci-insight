@@ -62,6 +62,10 @@ export default function CadastrosFinanceiros() {
               <Zap className="h-4 w-4" />
               Automação por Origem
             </TabsTrigger>
+            <TabsTrigger value="permissions" className="flex items-center gap-2 px-4 py-2">
+              <Shield className="h-4 w-4" />
+              Permissões
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="bank_accounts" className="mt-6">
@@ -94,6 +98,10 @@ export default function CadastrosFinanceiros() {
 
           <TabsContent value="origin_rules" className="mt-6">
             <OriginRulesMatrix />
+          </TabsContent>
+
+          <TabsContent value="permissions" className="mt-6">
+            <FinancePermissionsMatrix />
           </TabsContent>
         </Tabs>
       </div>
