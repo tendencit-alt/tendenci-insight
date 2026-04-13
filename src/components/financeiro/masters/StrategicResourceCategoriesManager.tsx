@@ -10,7 +10,7 @@ import { FolderCog, Info, Loader2, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
-const PARENT_ACCOUNT_CODE = "3.1";
+const PARENT_ACCOUNT_CODE = "2.3";
 const TABLE_NAME = "fin_strategic_resource_account_configs";
 
 type ChartChild = { id: string; code: string; name: string };
@@ -126,7 +126,7 @@ export function StrategicResourceCategoriesManager() {
         </CardTitle>
         <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
           <Info className="h-3 w-3 shrink-0" />
-          Espelha as categorias do Plano de Contas (3.1). Para adicionar ou renomear, edite o Plano de Contas.
+          Espelha as categorias do Plano de Contas (2.3). Para adicionar ou renomear, edite o Plano de Contas.
         </p>
       </CardHeader>
       <CardContent className="space-y-1.5">
@@ -136,7 +136,7 @@ export function StrategicResourceCategoriesManager() {
           </div>
         ) : !children?.length ? (
           <p className="text-sm text-muted-foreground py-4 text-center">
-            Nenhuma subcategoria encontrada em 3.1 - Compromissos Sobre Vendas.
+            Nenhuma subcategoria encontrada em 2.3 - Compromissos Sobre Vendas.
           </p>
         ) : (
           children.map((child) => {
