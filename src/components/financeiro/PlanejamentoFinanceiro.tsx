@@ -116,7 +116,7 @@ const TARGET_TYPES = [
   { value: "limite_max", label: "Limite Máximo" },
 ];
 
-const MONTHS = [
+const _MONTHS = [
   { value: 1, label: "Jan" }, { value: 2, label: "Fev" }, { value: 3, label: "Mar" },
   { value: 4, label: "Abr" }, { value: 5, label: "Mai" }, { value: 6, label: "Jun" },
   { value: 7, label: "Jul" }, { value: 8, label: "Ago" }, { value: 9, label: "Set" },
@@ -396,7 +396,7 @@ export function PlanejamentoFinanceiro({ filters }: PlanejamentoFinanceiroProps)
     },
   });
 
-  const { data: allYearGoals } = useQuery({
+  const { data: _allYearGoals } = useQuery({
     queryKey: ["fin-planning-goals-year", filterYear],
     queryFn: async () => {
       const { data } = await supabase
@@ -986,7 +986,7 @@ interface MetaTableProps {
   goalsList2?: FinancialGoal[];
 }
 
-function MetaTable({ title, goalType, metrics, realized, projections, goalsMap, forecastMap, goalsList, onAdd, onEdit, onDelete, isLoading, isCurrency, dimensionLabel, dimensionOptions, goalsList2 }: MetaTableProps) {
+function MetaTable({ title, metrics, realized, projections, goalsMap, forecastMap, goalsList, onAdd, onEdit, onDelete, isLoading, isCurrency }: MetaTableProps) {
   const fmt = (v: number, key?: string) => {
     if (!isCurrency) {
       const m = metrics.find((x) => x.key === key);
@@ -1218,7 +1218,7 @@ interface ExecutiveSummaryProps {
   minSafetyBalance: number;
 }
 
-function ExecutiveSummary({ dre, cashflow, indicators, projections, dreGoals, cashGoals, indicatorGoals, forecastMap, minSafetyBalance }: ExecutiveSummaryProps) {
+function ExecutiveSummary({ dre, cashflow, projections, dreGoals, cashGoals, minSafetyBalance }: ExecutiveSummaryProps) {
   const pctMes = projections?.pctMes || 0;
   
   const kpiCards = [
