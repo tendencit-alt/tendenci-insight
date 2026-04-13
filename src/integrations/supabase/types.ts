@@ -12433,6 +12433,8 @@ export type Database = {
       is_admin: { Args: never; Returns: boolean }
       is_admin_safe: { Args: never; Returns: boolean }
       is_owner: { Args: never; Returns: boolean }
+      is_tenant_admin_or_above: { Args: never; Returns: boolean }
+      is_tenant_owner: { Args: never; Returns: boolean }
       is_user_admin: { Args: { _user_id: string }; Returns: boolean }
       is_user_master: { Args: { _user_id: string }; Returns: boolean }
       leads_aggregates: { Args: never; Returns: Json }
