@@ -1148,11 +1148,27 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="_placeholder" disabled>Selecione a categoria</SelectItem>
-                      {revenueAccounts?.map((account) => (
-                        <SelectItem key={account.id} value={account.id}>
-                          {account.code.length > 3 ? '\u00A0\u00A0\u00A0' : ''}{account.code} - {account.name}
-                        </SelectItem>
-                      ))}
+                      {(() => {
+                        const groups = revenueAccounts?.filter(a => {
+                          const dotCount = (a.code.match(/\./g) || []).length;
+                          return dotCount === 1;
+                        }) || [];
+                        return groups.map(group => {
+                          const children = revenueAccounts?.filter(a => a.parent_id === group.id) || [];
+                          return (
+                            <SelectGroup key={group.id}>
+                              <SelectLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-2 py-1.5">
+                                {group.code} - {group.name}
+                              </SelectLabel>
+                              {children.map(child => (
+                                <SelectItem key={child.id} value={child.id}>
+                                  {'\u00A0\u00A0\u00A0'}{child.code} - {child.name}
+                                </SelectItem>
+                              ))}
+                            </SelectGroup>
+                          );
+                        });
+                      })()}
                     </SelectContent>
                   </Select>
                 </div>
