@@ -3681,6 +3681,101 @@ export type Database = {
           },
         ]
       }
+      fin_permission_profiles: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          description: string | null
+          id: string
+          is_default: boolean | null
+          label: string
+          position: number | null
+          profile_key: string
+          tenant_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_default?: boolean | null
+          label: string
+          position?: number | null
+          profile_key: string
+          tenant_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_default?: boolean | null
+          label?: string
+          position?: number | null
+          profile_key?: string
+          tenant_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fin_permission_profiles_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fin_profile_permissions: {
+        Row: {
+          allowed: boolean | null
+          created_at: string | null
+          id: string
+          permission_group: string
+          permission_key: string
+          permission_label: string
+          profile_id: string
+          tenant_id: string | null
+        }
+        Insert: {
+          allowed?: boolean | null
+          created_at?: string | null
+          id?: string
+          permission_group: string
+          permission_key: string
+          permission_label: string
+          profile_id: string
+          tenant_id?: string | null
+        }
+        Update: {
+          allowed?: boolean | null
+          created_at?: string | null
+          id?: string
+          permission_group?: string
+          permission_key?: string
+          permission_label?: string
+          profile_id?: string
+          tenant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fin_profile_permissions_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "fin_permission_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_profile_permissions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fin_projects: {
         Row: {
           budget: number | null
@@ -4185,6 +4280,48 @@ export type Database = {
           },
           {
             foreignKeyName: "fin_strategic_resource_account_configs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fin_user_finance_profiles: {
+        Row: {
+          assigned_by: string | null
+          created_at: string | null
+          finance_profile_id: string
+          id: string
+          tenant_id: string | null
+          user_id: string
+        }
+        Insert: {
+          assigned_by?: string | null
+          created_at?: string | null
+          finance_profile_id: string
+          id?: string
+          tenant_id?: string | null
+          user_id: string
+        }
+        Update: {
+          assigned_by?: string | null
+          created_at?: string | null
+          finance_profile_id?: string
+          id?: string
+          tenant_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fin_user_finance_profiles_finance_profile_id_fkey"
+            columns: ["finance_profile_id"]
+            isOneToOne: false
+            referencedRelation: "fin_permission_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_user_finance_profiles_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
