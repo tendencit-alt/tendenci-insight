@@ -1036,6 +1036,7 @@ export type Database = {
           phone: string | null
           primary_color: string | null
           razao_social: string | null
+          tax_regime: string
           tenant_id: string | null
           trade_name: string | null
           updated_at: string
@@ -1054,6 +1055,7 @@ export type Database = {
           phone?: string | null
           primary_color?: string | null
           razao_social?: string | null
+          tax_regime?: string
           tenant_id?: string | null
           trade_name?: string | null
           updated_at?: string
@@ -1072,6 +1074,7 @@ export type Database = {
           phone?: string | null
           primary_color?: string | null
           razao_social?: string | null
+          tax_regime?: string
           tenant_id?: string | null
           trade_name?: string | null
           updated_at?: string
