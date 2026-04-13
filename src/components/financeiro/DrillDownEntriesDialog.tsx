@@ -36,16 +36,32 @@ const formatCurrency = (value: number) =>
   value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 function getStatusColor(status: string) {
-  if (status === "PAGO" || status === "RECEBIDO") return "text-green-600";
+  if (status === "PAGO" || status === "RECEBIDO" || status === "CONCILIADO") return "text-green-600";
   if (status === "VENCIDO") return "text-red-600";
+  if (status === "PROVISIONADO") return "text-amber-600";
+  if (status === "CONFIRMADO") return "text-blue-600";
+  if (status === "EM_DISPUTA") return "text-red-500";
+  if (status === "PARCIALMENTE_PAGO" || status === "PARCIALMENTE_RECEBIDO") return "text-orange-600";
+  if (status === "CANCELADO") return "text-gray-500";
   return "text-yellow-600";
 }
 
 function getStatusLabel(status: string, type: "payables" | "receivables") {
-  if (status === "PAGO") return "Paga";
-  if (status === "RECEBIDO") return "Recebida";
-  if (status === "VENCIDO") return "Vencida";
-  return "A vencer";
+  const labels: Record<string, string> = {
+    ABERTO: "Aberto",
+    PROVISIONADO: "Provisionado",
+    CONFIRMADO: "Confirmado",
+    VENCIDO: "Vencido",
+    PAGO: "Pago",
+    RECEBIDO: "Recebido",
+    CONCILIADO: "Conciliado",
+    PARCIALMENTE_PAGO: "Parcial",
+    PARCIALMENTE_RECEBIDO: "Parcial",
+    EM_DISPUTA: "Em Disputa",
+    RENEGOCIADO: "Renegociado",
+    CANCELADO: "Cancelado",
+  };
+  return labels[status] || status;
 }
 
 interface DrillDownEntriesDialogProps {
