@@ -409,7 +409,13 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
       
       // Inject calculated intermediate lines after specific groups
       const injectAfterCode = (afterCode: string, calcLine: DRELine) => {
-        const idx = lines.findLastIndex(l => l.code.startsWith(afterCode + '.') || l.code === afterCode);
+        let idx = -1;
+        for (let i = lines.length - 1; i >= 0; i--) {
+          if (lines[i].code.startsWith(afterCode + '.') || lines[i].code === afterCode) {
+            idx = i;
+            break;
+          }
+        }
         if (idx >= 0) {
           lines.splice(idx + 1, 0, calcLine);
         } else {
@@ -463,10 +469,10 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
         lines,
         summary: {
           totalReceitas,
-          totalDespesas: totalDespesasSobreVenda + totalCMV + totalDespesasOp,
+          totalDespesas: totalDeducoes + totalCustosVariaveis + totalDespesasOp + totalDepreciacao + totalResultadoFinanceiro,
           margemContribuicao,
           margemContribuicaoPercent,
-          resultadoOperacional,
+          resultadoOperacional: resultadoOperacionalEBITDA,
           resultadoFinanceiro: totalResultadoFinanceiro,
           resultadoAntesCapital,
           variacaoLiquidaCaixa,
