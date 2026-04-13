@@ -32,6 +32,7 @@ import Auditoria from "./pages/Auditoria";
 import Aprovacoes from "./pages/Aprovacoes";
 import Documentos from "./pages/Documentos";
 import Tarefas from "./pages/Tarefas";
+import Automacoes from "./pages/Automacoes";
 
 const queryClient = new QueryClient();
 
@@ -57,6 +58,7 @@ const App = () => (
                <Route path="/aprovacoes" element={<ProtectedRoute><Aprovacoes /></ProtectedRoute>} />
                <Route path="/documentos" element={<ProtectedRoute><Documentos /></ProtectedRoute>} />
                <Route path="/tarefas" element={<ProtectedRoute><Tarefas /></ProtectedRoute>} />
+               <Route path="/automacoes" element={<ProtectedRoute><Automacoes /></ProtectedRoute>} />
                <Route path="/bi-dashboard" element={<ProtectedRoute><PermissionGuard module="dashboard"><DashboardBI /></PermissionGuard></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><PermissionGuard module="configuracoes"><ProjectSettings /></PermissionGuard></ProtectedRoute>} />
               <Route path="/settings/users" element={<ProtectedRoute><PermissionGuard module="configuracoes"><UserManagement /></PermissionGuard></ProtectedRoute>} />
