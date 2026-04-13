@@ -725,12 +725,12 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
               {(() => {
                 const o = order as any;
                 const recursos = [
-                  { label: 'RT', perc: o.rt_percentual, valor: o.rt_valor, respId: null, habilitado: o.rt_habilitado },
-                  { label: 'Vendedor', perc: o.comissao_vendedor_percentual, valor: o.comissao_vendedor_valor, respId: o.comissao_vendedor_responsible_id || o.comissao_vendedor_responsavel_id },
-                  { label: 'Orçamentista', perc: o.comissao_orcamentista_percentual, valor: o.comissao_orcamentista_valor, respId: o.comissao_orcamentista_responsible_id || o.comissao_orcamentista_responsavel_id },
-                  { label: 'Projetista', perc: o.comissao_projetista_percentual, valor: o.comissao_projetista_valor, respId: o.comissao_projetista_responsible_id || o.comissao_projetista_responsavel_id },
-                  { label: 'Montador', perc: o.comissao_montador_percentual, valor: o.comissao_montador_valor, respId: o.comissao_montador_responsible_id || o.comissao_montador_responsavel_id },
-                  { label: 'Produção', perc: o.comissao_producao_percentual, valor: o.comissao_producao_valor, respId: o.comissao_producao_responsible_id || o.comissao_producao_responsavel_id },
+                  { label: resourceDefaults.rt.label, perc: o.rt_percentual, valor: o.rt_valor, respId: null, habilitado: o.rt_habilitado },
+                  { label: resourceDefaults.vendedor.label, perc: o.comissao_vendedor_percentual, valor: o.comissao_vendedor_valor, respId: o.comissao_vendedor_responsible_id || o.comissao_vendedor_responsavel_id },
+                  { label: resourceDefaults.orcamentista.label, perc: o.comissao_orcamentista_percentual, valor: o.comissao_orcamentista_valor, respId: o.comissao_orcamentista_responsible_id || o.comissao_orcamentista_responsavel_id },
+                  { label: resourceDefaults.projetista.label, perc: o.comissao_projetista_percentual, valor: o.comissao_projetista_valor, respId: o.comissao_projetista_responsible_id || o.comissao_projetista_responsavel_id },
+                  { label: resourceDefaults.montador.label, perc: o.comissao_montador_percentual, valor: o.comissao_montador_valor, respId: o.comissao_montador_responsible_id || o.comissao_montador_responsavel_id },
+                  { label: resourceDefaults.producao.label, perc: o.comissao_producao_percentual, valor: o.comissao_producao_valor, respId: o.comissao_producao_responsible_id || o.comissao_producao_responsavel_id },
                 ];
                 const ativos = recursos.filter(r => (r.valor > 0 || r.perc > 0) || r.habilitado);
                 if (ativos.length === 0) return null;
@@ -953,12 +953,12 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
               {(() => {
                 const o = order as any;
                 const recursos = [
-                  { label: 'RT', perc: o.rt_percentual, valor: o.rt_valor, respId: null, habilitado: o.rt_habilitado },
-                  { label: 'Vendedor', perc: o.comissao_vendedor_percentual, valor: o.comissao_vendedor_valor, respId: o.comissao_vendedor_responsible_id || o.comissao_vendedor_responsavel_id },
-                  { label: 'Orçamentista', perc: o.comissao_orcamentista_percentual, valor: o.comissao_orcamentista_valor, respId: o.comissao_orcamentista_responsible_id || o.comissao_orcamentista_responsavel_id },
-                  { label: 'Projetista', perc: o.comissao_projetista_percentual, valor: o.comissao_projetista_valor, respId: o.comissao_projetista_responsible_id || o.comissao_projetista_responsavel_id },
-                  { label: 'Montador', perc: o.comissao_montador_percentual, valor: o.comissao_montador_valor, respId: o.comissao_montador_responsible_id || o.comissao_montador_responsavel_id },
-                  { label: 'Produção', perc: o.comissao_producao_percentual, valor: o.comissao_producao_valor, respId: o.comissao_producao_responsible_id || o.comissao_producao_responsavel_id },
+                  { label: resourceDefaults.rt.label, perc: o.rt_percentual, valor: o.rt_valor, respId: null, habilitado: o.rt_habilitado },
+                  { label: resourceDefaults.vendedor.label, perc: o.comissao_vendedor_percentual, valor: o.comissao_vendedor_valor, respId: o.comissao_vendedor_responsible_id || o.comissao_vendedor_responsavel_id },
+                  { label: resourceDefaults.orcamentista.label, perc: o.comissao_orcamentista_percentual, valor: o.comissao_orcamentista_valor, respId: o.comissao_orcamentista_responsible_id || o.comissao_orcamentista_responsavel_id },
+                  { label: resourceDefaults.projetista.label, perc: o.comissao_projetista_percentual, valor: o.comissao_projetista_valor, respId: o.comissao_projetista_responsible_id || o.comissao_projetista_responsavel_id },
+                  { label: resourceDefaults.montador.label, perc: o.comissao_montador_percentual, valor: o.comissao_montador_valor, respId: o.comissao_montador_responsible_id || o.comissao_montador_responsavel_id },
+                  { label: resourceDefaults.producao.label, perc: o.comissao_producao_percentual, valor: o.comissao_producao_valor, respId: o.comissao_producao_responsible_id || o.comissao_producao_responsavel_id },
                 ];
                 const ativos = recursos.filter(r => (Number(r.valor || 0) > 0 || Number(r.perc || 0) > 0) || r.habilitado);
                 if (ativos.length === 0) return null;
