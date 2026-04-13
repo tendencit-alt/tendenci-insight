@@ -153,9 +153,11 @@ export function ExecutiveView({ filters }: ExecutiveViewProps) {
 
       // Calculate DRE values
       let totalReceitas = 0;
-      let deducoesReceita = 0;
-      let custosVariaveis = 0;
-      let compromissosVenda = 0;
+      let impostosVenda = 0;
+      let taxasVenda = 0;
+      let custosDiretos = 0;
+      let comissoesVenda = 0;
+      let antecipacao = 0;
       let despesasOperacionais = 0;
       let depreciacao = 0;
       let receitasFinanceiras = 0;
@@ -169,30 +171,23 @@ export function ExecutiveView({ filters }: ExecutiveViewProps) {
         const amount = Number(entry.amount);
         const category = account.category_type;
 
-        if (category === "receita_operacional") {
-          totalReceitas += amount;
-        } else if (category === "deducao_receita") {
-          deducoesReceita += amount;
-        } else if (category === "custo_variavel") {
-          custosVariaveis += amount;
-        } else if (category === "compromisso_venda") {
-          compromissosVenda += amount;
-        } else if (category === "despesa_operacional") {
-          despesasOperacionais += amount;
-        } else if (category === "depreciacao") {
-          depreciacao += amount;
-        } else if (category === "receita_financeira") {
-          receitasFinanceiras += amount;
-        } else if (category === "despesa_financeira") {
-          despesasFinanceiras += amount;
-        } else if (category === "impostos_resultado") {
-          impostosResultado += amount;
-        }
+        if (category === "receita_operacional") totalReceitas += amount;
+        else if (category === "impostos_venda") impostosVenda += amount;
+        else if (category === "taxas_venda") taxasVenda += amount;
+        else if (category === "custos_diretos") custosDiretos += amount;
+        else if (category === "comissoes_venda") comissoesVenda += amount;
+        else if (category === "antecipacao") antecipacao += amount;
+        else if (category === "despesa_operacional") despesasOperacionais += amount;
+        else if (category === "depreciacao") depreciacao += amount;
+        else if (category === "receita_financeira") receitasFinanceiras += amount;
+        else if (category === "despesa_financeira") despesasFinanceiras += amount;
+        else if (category === "impostos_resultado") impostosResultado += amount;
       });
 
+      const totalDespesasSobreVendas = impostosVenda + taxasVenda + custosDiretos + comissoesVenda + antecipacao;
       const resultadoFinanceiro = receitasFinanceiras - despesasFinanceiras;
-      const receitaLiquida = totalReceitas - deducoesReceita;
-      const margemContribuicao = receitaLiquida - custosVariaveis - compromissosVenda;
+      const receitaLiquida = totalReceitas - totalDespesasSobreVendas;
+      const margemContribuicao = receitaLiquida - custosDiretos - comissoesVenda;
       const resultadoOperacionalEBITDA = margemContribuicao - despesasOperacionais;
       const resultadoAntesImpostos = resultadoOperacionalEBITDA - depreciacao + resultadoFinanceiro;
       const resultadoLiquido = resultadoAntesImpostos - impostosResultado;
