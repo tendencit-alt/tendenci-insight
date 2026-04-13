@@ -1033,6 +1033,7 @@ export type Database = {
           id: string
           inscricao_estadual: string | null
           logo_url: string | null
+          min_safety_balance: number | null
           phone: string | null
           primary_color: string | null
           razao_social: string | null
@@ -1052,6 +1053,7 @@ export type Database = {
           id?: string
           inscricao_estadual?: string | null
           logo_url?: string | null
+          min_safety_balance?: number | null
           phone?: string | null
           primary_color?: string | null
           razao_social?: string | null
@@ -1071,6 +1073,7 @@ export type Database = {
           id?: string
           inscricao_estadual?: string | null
           logo_url?: string | null
+          min_safety_balance?: number | null
           phone?: string | null
           primary_color?: string | null
           razao_social?: string | null
@@ -2477,6 +2480,7 @@ export type Database = {
           metric_key: string
           month: number
           notes: string | null
+          period_type: string | null
           project_id: string | null
           target_amount: number
           tenant_id: string | null
@@ -2492,6 +2496,7 @@ export type Database = {
           metric_key: string
           month: number
           notes?: string | null
+          period_type?: string | null
           project_id?: string | null
           target_amount: number
           tenant_id?: string | null
@@ -2507,6 +2512,7 @@ export type Database = {
           metric_key?: string
           month?: number
           notes?: string | null
+          period_type?: string | null
           project_id?: string | null
           target_amount?: number
           tenant_id?: string | null
