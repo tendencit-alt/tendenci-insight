@@ -204,6 +204,9 @@ export function FinanceiroFilters({ filters, onChange }: FinanceiroFiltersProps)
       subcategoryId: null,
       sortField: null,
       sortDirection: null,
+      clientId: null,
+      vendedorId: null,
+      orderId: null,
     });
   };
 
