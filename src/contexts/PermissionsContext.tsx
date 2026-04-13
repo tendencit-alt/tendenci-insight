@@ -41,7 +41,8 @@ interface PermissionsContextType {
   loading: boolean;
   isMaster: boolean;
   isOwner: boolean;
-  hasModuleAccess: (module: AppModule, action?: 'view' | 'create' | 'edit' | 'delete') => boolean;
+  hasModuleAccess: (module: AppModule | string, action?: PermissionAction) => boolean;
+  hasCriticalPermission: (key: string) => boolean;
   refetch: () => Promise<void>;
 }
 
