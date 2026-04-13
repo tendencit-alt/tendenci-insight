@@ -518,7 +518,7 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
         lines,
         summary: {
           totalReceitas,
-          totalDespesas: totalDeducoes + totalCustosVariaveis + totalDespesasOp + totalDepreciacao + totalResultadoFinanceiro,
+          totalDespesas: totalDespesasSobreVendas + totalDespesasOp + totalDepreciacao + totalResultadoFinanceiro,
           margemContribuicao,
           margemContribuicaoPercent,
           resultadoOperacional: resultadoOperacionalEBITDA,
