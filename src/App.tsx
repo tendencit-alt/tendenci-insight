@@ -31,6 +31,7 @@ import Onboarding from "./pages/Onboarding";
 import Auditoria from "./pages/Auditoria";
 import Aprovacoes from "./pages/Aprovacoes";
 import Documentos from "./pages/Documentos";
+import Tarefas from "./pages/Tarefas";
 
 const queryClient = new QueryClient();
 
