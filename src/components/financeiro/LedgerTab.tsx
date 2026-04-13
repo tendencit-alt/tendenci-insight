@@ -115,10 +115,14 @@ export function LedgerTab({ filters }: LedgerTabProps) {
     switch (status) {
       case "PAGO_RECEBIDO":
         return <Badge className="bg-green-600">Realizado</Badge>;
+      case "CONCILIADO":
+        return <Badge className="bg-emerald-700">Conciliado</Badge>;
       case "ABERTO":
         return <Badge variant="outline">Aberto</Badge>;
+      case "VENCIDO":
+        return <Badge variant="destructive">Vencido</Badge>;
       case "CANCELADO":
-        return <Badge variant="destructive">Cancelado</Badge>;
+        return <Badge variant="destructive" className="bg-gray-500">Cancelado</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
