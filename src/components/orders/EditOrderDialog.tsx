@@ -783,7 +783,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
   const isPagamentoValid = parcelas.length > 0 && parcelas.every((p) => p.forma_pagamento) && totalPercentual === 100 && isPagamentoValorCorreto && hasAllStrategicResponsibles;
   const isEntregaValid = !!formData.tipo_entrega;
   const isFormValid = isClienteValid && isItensValid && isPagamentoValid && isEntregaValid;
-  const isEditable = order?.status === 'rascunho' || order?.status === 'ativo' || order?.status === 'aguardando_aprovacao' || order?.status === 'em_producao';
+  const isEditable = order?.status === 'rascunho' || order?.status === 'em_negociacao';
 
   const handleCepSearch = async (cepValue: string) => {
     const cep = cepValue.replace(/\D/g, '');
@@ -953,7 +953,7 @@ export function EditOrderDialog({ orderId, open, onOpenChange, onSuccess }: Edit
           centro_custo: null,
           project_id: formData.project_id || null,
           chart_account_id: formData.chart_account_id || null,
-          status: shouldBeAtivo ? 'ativo' : order.status,
+          status: shouldBeAtivo ? 'em_negociacao' : order.status,
           taxa_cartao_percentual: taxaCartao.percentual,
           taxa_cartao_valor: taxaCartao.valor,
           taxa_cartao_responsavel: taxaCartao.responsavel,
