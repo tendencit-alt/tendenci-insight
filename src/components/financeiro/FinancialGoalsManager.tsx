@@ -48,6 +48,7 @@ const DRE_METRICS = [
   { key: "receita_liquida", label: "Receita Líquida" },
   { key: "margem_contribuicao", label: "Margem de Contribuição" },
   { key: "resultado_operacional_ebitda", label: "Resultado Operacional (EBITDA)" },
+  { key: "resultado_antes_impostos", label: "Resultado Antes dos Impostos" },
   { key: "resultado_liquido", label: "Resultado Líquido" },
 ];
 
