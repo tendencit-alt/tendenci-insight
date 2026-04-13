@@ -150,6 +150,9 @@ export function FinanceiroFilters({ filters, onChange }: FinanceiroFiltersProps)
     filters.search,
     filters.categoryId,
     filters.subcategoryId,
+    filters.clientId,
+    filters.vendedorId,
+    filters.orderId,
   ].filter(Boolean).length;
 
   const handlePresetPeriod = (preset: string) => {
