@@ -2155,6 +2155,3 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     </>
   );
 }
-    </>
-  );
-}
