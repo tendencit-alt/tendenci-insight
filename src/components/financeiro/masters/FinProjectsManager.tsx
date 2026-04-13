@@ -53,7 +53,7 @@ export function FinProjectsManager() {
       const { data } = await supabase
         .from("fin_projects")
         .select("*")
-        .order("code");
+        .order("name");
       return data || [];
     },
   });
