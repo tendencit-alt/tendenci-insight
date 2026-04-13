@@ -353,19 +353,19 @@ export const ROADMAP_SUMMARY = {
   mvp: {
     label: "MVP",
     total: MVP_ITEMS.length,
-    modules: [...new Set(MVP_ITEMS.map((i) => i.module))],
+    modules: Array.from(new Set(MVP_ITEMS.map((i) => i.module))),
     focus: "Ciclo completo: Cliente → Pedido → Produção → Faturamento → Financeiro → DRE → Fluxo",
   },
   fase_2: {
     label: "Fase 2",
     total: FASE2_ITEMS.length,
-    modules: [...new Set(FASE2_ITEMS.map((i) => i.module))],
+    modules: Array.from(new Set(FASE2_ITEMS.map((i) => i.module))),
     focus: "Refinamento, automações condicionais, relatórios analíticos, multi-visão DRE",
   },
   fase_3: {
     label: "Fase 3",
     total: FASE3_ITEMS.length,
-    modules: [...new Set(FASE3_ITEMS.map((i) => i.module))],
+    modules: Array.from(new Set(FASE3_ITEMS.map((i) => i.module))),
     focus: "IA, predição, simulações, consolidação multiempresa, analytics premium",
   },
 } as const;
