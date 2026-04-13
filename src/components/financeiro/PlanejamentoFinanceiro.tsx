@@ -24,7 +24,7 @@ import { toast } from "sonner";
 import {
   Target, Plus, Pencil, Trash2, Loader2, TrendingUp,
   BarChart3, Wallet, AlertTriangle, CheckCircle, ShieldAlert, Gauge,
-  Calendar,
+  Calendar, Users, ShoppingCart, FolderOpen, Building2, ArrowUpDown,
 } from "lucide-react";
 import { getDaysInMonth, getDate } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -40,9 +40,13 @@ interface FinancialGoal {
   goal_type: string;
   metric_key: string;
   target_amount: number;
+  target_type: string;
   period_type: string;
   cost_center_id: string | null;
   project_id: string | null;
+  client_id: string | null;
+  vendedor_id: string | null;
+  order_id: string | null;
   notes: string | null;
 }
 
@@ -77,6 +81,41 @@ const INDICATOR_METRICS = [
   { key: "ponto_equilibrio", label: "Ponto de Equilíbrio Mensal", unit: "R$" },
 ];
 
+const VENDEDOR_METRICS = [
+  { key: "receita_vendedor", label: "Receita Meta" },
+  { key: "margem_vendedor", label: "Margem Meta" },
+  { key: "ticket_medio_vendedor", label: "Ticket Médio Meta" },
+  { key: "taxa_conversao_vendedor", label: "Taxa Conversão Meta", unit: "%" },
+];
+
+const PEDIDO_METRICS = [
+  { key: "margem_minima_pedido", label: "Margem Mínima Aceitável", unit: "%" },
+  { key: "ticket_medio_minimo", label: "Ticket Médio Mínimo" },
+  { key: "prazo_max_execucao", label: "Prazo Máximo Execução", unit: "dias" },
+  { key: "prazo_max_recebimento", label: "Prazo Máximo Recebimento", unit: "dias" },
+];
+
+const PROJETO_METRICS = [
+  { key: "custo_maximo_projeto", label: "Custo Máximo Permitido" },
+  { key: "prazo_execucao_projeto", label: "Prazo Execução", unit: "dias" },
+  { key: "margem_minima_projeto", label: "Margem Mínima Projeto", unit: "%" },
+];
+
+const CC_METRICS = [
+  { key: "limite_mensal_cc", label: "Limite Mensal" },
+  { key: "limite_percentual_receita_cc", label: "Limite % Receita", unit: "%" },
+  { key: "limite_anual_cc", label: "Limite Anual" },
+];
+
+const TARGET_TYPES = [
+  { value: "absoluto", label: "Absoluto" },
+  { value: "percentual", label: "Percentual" },
+  { value: "acumulado", label: "Acumulado" },
+  { value: "progressivo", label: "Progressivo" },
+  { value: "limite_min", label: "Limite Mínimo" },
+  { value: "limite_max", label: "Limite Máximo" },
+];
+
 const MONTHS = [
   { value: 1, label: "Jan" }, { value: 2, label: "Fev" }, { value: 3, label: "Mar" },
   { value: 4, label: "Abr" }, { value: 5, label: "Mai" }, { value: 6, label: "Jun" },
@@ -91,6 +130,17 @@ const MONTHS_FULL = [
   { value: 10, label: "Outubro" }, { value: 11, label: "Novembro" }, { value: 12, label: "Dezembro" },
 ];
 
+const GOAL_TYPE_TABS = [
+  { value: "dre", label: "Meta DRE", icon: BarChart3 },
+  { value: "cashflow", label: "Meta Fluxo", icon: Wallet },
+  { value: "indicator", label: "Indicadores", icon: Gauge },
+  { value: "vendedor", label: "Vendedor", icon: Users },
+  { value: "pedido", label: "Pedido", icon: ShoppingCart },
+  { value: "projeto", label: "Projeto", icon: FolderOpen },
+  { value: "centro_custo", label: "Centro Custo", icon: Building2 },
+  { value: "forecast", label: "Forecast", icon: ArrowUpDown },
+];
+
 function formatCurrency(value: number) {
   return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
@@ -101,8 +151,7 @@ function formatPercent(value: number) {
 
 function getAlertColor(pct: number) {
   if (pct >= 100) return "green";
-  if (pct >= 80) return "yellow";
-  if (pct >= 60) return "orange";
+  if (pct >= 85) return "yellow";
   return "red";
 }
 
@@ -110,14 +159,26 @@ function getAlertBadge(pct: number) {
   const color = getAlertColor(pct);
   if (color === "green") return <Badge className="bg-green-600 text-white text-[10px]">✓ Atingida</Badge>;
   if (color === "yellow") return <Badge className="bg-yellow-500 text-white text-[10px]">⚠ Próximo</Badge>;
-  if (color === "orange") return <Badge className="bg-orange-500 text-white text-[10px]">⚠ Atenção</Badge>;
-  return <Badge className="bg-red-600 text-white text-[10px]">✗ Crítico</Badge>;
+  return <Badge className="bg-red-600 text-white text-[10px]">✗ Abaixo</Badge>;
+}
+
+function getMetricsForType(goalType: string) {
+  switch (goalType) {
+    case "dre": return DRE_METRICS;
+    case "cashflow": return CASHFLOW_METRICS;
+    case "indicator": return INDICATOR_METRICS;
+    case "vendedor": return VENDEDOR_METRICS;
+    case "pedido": return PEDIDO_METRICS;
+    case "projeto": return PROJETO_METRICS;
+    case "centro_custo": return CC_METRICS;
+    default: return DRE_METRICS;
+  }
 }
 
 // ============ HOOK: Realized DRE & Cashflow data ============
 function useRealizedData(filters: FinanceiroFiltersState, year: number, month: number) {
   return useQuery({
-    queryKey: ["planning-realized", year, month, filters.costCenterId, filters.projectId],
+    queryKey: ["planning-realized", year, month, filters.costCenterId, filters.projectId, filters.clientId, filters.vendedorId, filters.orderId],
     queryFn: async () => {
       const dateFrom = `${year}-${String(month).padStart(2, "0")}-01`;
       const lastDay = getDaysInMonth(new Date(year, month - 1));
@@ -165,6 +226,9 @@ function useRealizedData(filters: FinanceiroFiltersState, year: number, month: n
         .not("competence_date", "is", null);
       if (filters.costCenterId) dreQ = dreQ.eq("cost_center_id", filters.costCenterId);
       if (filters.projectId) dreQ = dreQ.eq("project_id", filters.projectId);
+      if (filters.clientId) dreQ = dreQ.eq("client_id", filters.clientId);
+      if (filters.vendedorId) dreQ = dreQ.eq("vendedor_id", filters.vendedorId);
+      if (filters.orderId) dreQ = dreQ.eq("order_id", filters.orderId);
       const { data: dreEntries } = await dreQ;
 
       // Cashflow (cash_date)
@@ -177,6 +241,9 @@ function useRealizedData(filters: FinanceiroFiltersState, year: number, month: n
         .not("cash_date", "is", null);
       if (filters.costCenterId) cashQ = cashQ.eq("cost_center_id", filters.costCenterId);
       if (filters.projectId) cashQ = cashQ.eq("project_id", filters.projectId);
+      if (filters.clientId) cashQ = cashQ.eq("client_id", filters.clientId);
+      if (filters.vendedorId) cashQ = cashQ.eq("vendedor_id", filters.vendedorId);
+      if (filters.orderId) cashQ = cashQ.eq("order_id", filters.orderId);
       if (filters.bankAccountId) cashQ = cashQ.eq("bank_account_id", filters.bankAccountId);
       const { data: cashEntries } = await cashQ;
 
@@ -274,9 +341,7 @@ function useRealizedData(filters: FinanceiroFiltersState, year: number, month: n
           saldo_minimo_caixa: saldoFinal, ponto_equilibrio: peq,
         },
         projections: {
-          pctMes,
-          diasCorridos,
-          diasTotais,
+          pctMes, diasCorridos, diasTotais,
           ebitdaProjetado: pctMes > 0 ? ebitda / pctMes : 0,
           resLiqProjetado: pctMes > 0 ? resultadoLiquido / pctMes : 0,
           saldoProjetado30: saldoFinal + (variacaoLiquida > 0 ? variacaoLiquida : 0),
@@ -291,7 +356,7 @@ function useRealizedData(filters: FinanceiroFiltersState, year: number, month: n
 // ============ MAIN COMPONENT ============
 export function PlanejamentoFinanceiro({ filters }: PlanejamentoFinanceiroProps) {
   const queryClient = useQueryClient();
-  const [subTab, setSubTab] = useState("meta-dre");
+  const [subTab, setSubTab] = useState("dre");
   const [filterYear, setFilterYear] = useState(new Date().getFullYear());
   const [filterMonth, setFilterMonth] = useState(new Date().getMonth() + 1);
   const [executiveMode, setExecutiveMode] = useState(false);
@@ -304,9 +369,13 @@ export function PlanejamentoFinanceiro({ filters }: PlanejamentoFinanceiroProps)
     goal_type: "dre" as string,
     metric_key: "",
     target_amount: "",
+    target_type: "absoluto",
     period_type: "monthly",
     cost_center_id: "",
     project_id: "",
+    client_id: "",
+    vendedor_id: "",
+    order_id: "",
     notes: "",
   });
 
@@ -323,7 +392,7 @@ export function PlanejamentoFinanceiro({ filters }: PlanejamentoFinanceiroProps)
         .order("goal_type")
         .order("metric_key");
       if (error) throw error;
-      return data as FinancialGoal[];
+      return (data || []) as FinancialGoal[];
     },
   });
 
@@ -336,7 +405,20 @@ export function PlanejamentoFinanceiro({ filters }: PlanejamentoFinanceiroProps)
         .eq("year", filterYear)
         .order("month")
         .order("metric_key");
-      return data as FinancialGoal[];
+      return (data || []) as FinancialGoal[];
+    },
+  });
+
+  // Forecasts
+  const { data: forecasts } = useQuery({
+    queryKey: ["fin-forecasts", filterYear, filterMonth],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("fin_forecasts")
+        .select("*")
+        .eq("year", filterYear)
+        .eq("month", filterMonth);
+      return data || [];
     },
   });
 
@@ -356,6 +438,30 @@ export function PlanejamentoFinanceiro({ filters }: PlanejamentoFinanceiroProps)
     },
   });
 
+  const { data: clients } = useQuery({
+    queryKey: ["fin-clients-planning"],
+    queryFn: async () => {
+      const { data } = await supabase.from("clients").select("id, name").order("name").limit(500);
+      return data || [];
+    },
+  });
+
+  const { data: vendedores } = useQuery({
+    queryKey: ["fin-vendedores-planning"],
+    queryFn: async () => {
+      const { data } = await supabase.from("profiles").select("id, full_name").order("full_name");
+      return data || [];
+    },
+  });
+
+  const { data: orders } = useQuery({
+    queryKey: ["fin-orders-planning"],
+    queryFn: async () => {
+      const { data } = await supabase.from("orders").select("id, order_number").order("order_number", { ascending: false }).limit(200);
+      return data || [];
+    },
+  });
+
   const { data: companySettings } = useQuery({
     queryKey: ["company-settings-safety"],
     queryFn: async () => {
@@ -370,10 +476,21 @@ export function PlanejamentoFinanceiro({ filters }: PlanejamentoFinanceiroProps)
   const dreGoals = new Map<string, number>();
   const cashGoals = new Map<string, number>();
   const indicatorGoals = new Map<string, number>();
+  const vendedorGoals = new Map<string, number>();
+  const pedidoGoals = new Map<string, number>();
+  const projetoGoals = new Map<string, number>();
+  const ccGoals = new Map<string, number>();
+  
   goals?.forEach((g) => {
-    if (g.goal_type === "dre") dreGoals.set(g.metric_key, g.target_amount);
-    else if (g.goal_type === "cashflow") cashGoals.set(g.metric_key, g.target_amount);
-    else if (g.goal_type === "indicator") indicatorGoals.set(g.metric_key, g.target_amount);
+    const map = g.goal_type === "dre" ? dreGoals
+      : g.goal_type === "cashflow" ? cashGoals
+      : g.goal_type === "indicator" ? indicatorGoals
+      : g.goal_type === "vendedor" ? vendedorGoals
+      : g.goal_type === "pedido" ? pedidoGoals
+      : g.goal_type === "projeto" ? projetoGoals
+      : g.goal_type === "centro_custo" ? ccGoals
+      : dreGoals;
+    map.set(g.metric_key, g.target_amount);
   });
 
   const handleOpenDialog = (goalType: string, goal?: FinancialGoal) => {
@@ -382,16 +499,19 @@ export function PlanejamentoFinanceiro({ filters }: PlanejamentoFinanceiroProps)
       setForm({
         year: goal.year, month: goal.month, goal_type: goal.goal_type,
         metric_key: goal.metric_key, target_amount: goal.target_amount.toString(),
+        target_type: goal.target_type || "absoluto",
         period_type: goal.period_type || "monthly",
         cost_center_id: goal.cost_center_id || "", project_id: goal.project_id || "",
-        notes: goal.notes || "",
+        client_id: goal.client_id || "", vendedor_id: goal.vendedor_id || "",
+        order_id: goal.order_id || "", notes: goal.notes || "",
       });
     } else {
       setSelectedGoal(null);
       setForm({
         year: filterYear, month: filterMonth, goal_type: goalType,
-        metric_key: "", target_amount: "", period_type: "monthly",
-        cost_center_id: "", project_id: "", notes: "",
+        metric_key: "", target_amount: "", target_type: "absoluto",
+        period_type: "monthly", cost_center_id: "", project_id: "",
+        client_id: "", vendedor_id: "", order_id: "", notes: "",
       });
     }
     setDialogOpen(true);
@@ -408,9 +528,13 @@ export function PlanejamentoFinanceiro({ filters }: PlanejamentoFinanceiroProps)
         year: form.year, month: form.month, goal_type: form.goal_type,
         metric_key: form.metric_key,
         target_amount: parseFloat(form.target_amount.replace(",", ".")),
+        target_type: form.target_type,
         period_type: form.period_type,
         cost_center_id: form.cost_center_id || null,
         project_id: form.project_id || null,
+        client_id: form.client_id || null,
+        vendedor_id: form.vendedor_id || null,
+        order_id: form.order_id || null,
         notes: form.notes || null,
       };
 
@@ -425,6 +549,7 @@ export function PlanejamentoFinanceiro({ filters }: PlanejamentoFinanceiroProps)
       }
       queryClient.invalidateQueries({ queryKey: ["fin-planning-goals"] });
       queryClient.invalidateQueries({ queryKey: ["fin-planning-goals-year"] });
+      queryClient.invalidateQueries({ queryKey: ["fin-forecasts"] });
       setDialogOpen(false);
     } catch (error: any) {
       toast.error("Erro: " + error.message);
@@ -442,11 +567,7 @@ export function PlanejamentoFinanceiro({ filters }: PlanejamentoFinanceiroProps)
     queryClient.invalidateQueries({ queryKey: ["fin-planning-goals-year"] });
   };
 
-  const currentMetrics =
-    form.goal_type === "dre" ? DRE_METRICS :
-    form.goal_type === "cashflow" ? CASHFLOW_METRICS :
-    INDICATOR_METRICS;
-
+  const currentMetrics = getMetricsForType(form.goal_type);
   const rd = realized.data;
 
   // ============ ALERTS ============
@@ -459,7 +580,7 @@ export function PlanejamentoFinanceiro({ filters }: PlanejamentoFinanceiroProps)
       if (t > 0) {
         const p = (val / t) * 100;
         if (p < 60) alerts.push({ type: "red", message: `${label}: ${formatPercent(p)} da meta` });
-        else if (p < 80) alerts.push({ type: "yellow", message: `${label}: ${formatPercent(p)} da meta` });
+        else if (p < 85) alerts.push({ type: "yellow", message: `${label}: ${formatPercent(p)} da meta` });
       }
     };
     checkDre("receitas", dreM.receitas, "Receita");
@@ -470,6 +591,10 @@ export function PlanejamentoFinanceiro({ filters }: PlanejamentoFinanceiroProps)
     if (minSafetyBalance > 0 && rd.cashflow.saldo_final < minSafetyBalance) alerts.push({ type: "red", message: `Saldo caixa (${formatCurrency(rd.cashflow.saldo_final)}) abaixo do mínimo (${formatCurrency(minSafetyBalance)})` });
     if (dreM.margem_contribuicao < 0) alerts.push({ type: "red", message: "Margem de contribuição negativa" });
   }
+
+  // Forecast data map
+  const forecastMap = new Map<string, number>();
+  forecasts?.forEach((f: any) => forecastMap.set(f.metric_key, Number(f.forecast_amount)));
 
   // ============ RENDER ============
   return (
@@ -526,6 +651,7 @@ export function PlanejamentoFinanceiro({ filters }: PlanejamentoFinanceiroProps)
           dreGoals={dreGoals}
           cashGoals={cashGoals}
           indicatorGoals={indicatorGoals}
+          forecastMap={forecastMap}
           minSafetyBalance={minSafetyBalance}
         />
       )}
@@ -533,19 +659,18 @@ export function PlanejamentoFinanceiro({ filters }: PlanejamentoFinanceiroProps)
       {/* Sub-tabs */}
       {!executiveMode && (
         <Tabs value={subTab} onValueChange={setSubTab}>
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="meta-dre" className="gap-2 text-xs sm:text-sm">
-              <BarChart3 className="h-3.5 w-3.5" />Meta DRE
-            </TabsTrigger>
-            <TabsTrigger value="meta-cashflow" className="gap-2 text-xs sm:text-sm">
-              <Wallet className="h-3.5 w-3.5" />Meta Fluxo
-            </TabsTrigger>
-            <TabsTrigger value="meta-indicators" className="gap-2 text-xs sm:text-sm">
-              <Gauge className="h-3.5 w-3.5" />Meta Indicadores
-            </TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto">
+            <TabsList className="inline-flex h-auto gap-1 bg-muted/50 p-1">
+              {GOAL_TYPE_TABS.map((tab) => (
+                <TabsTrigger key={tab.value} value={tab.value} className="gap-1.5 text-xs px-3 py-1.5">
+                  <tab.icon className="h-3.5 w-3.5" />{tab.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </div>
 
-          <TabsContent value="meta-dre" className="space-y-4 mt-4">
+          {/* DRE */}
+          <TabsContent value="dre" className="space-y-4 mt-4">
             <MetaTable
               title="Meta DRE (Competência)"
               goalType="dre"
@@ -553,6 +678,7 @@ export function PlanejamentoFinanceiro({ filters }: PlanejamentoFinanceiroProps)
               realized={rd?.dre || {}}
               projections={rd?.projections}
               goalsMap={dreGoals}
+              forecastMap={forecastMap}
               goalsList={goals?.filter((g) => g.goal_type === "dre") || []}
               onAdd={() => handleOpenDialog("dre")}
               onEdit={(g) => handleOpenDialog("dre", g)}
@@ -562,7 +688,8 @@ export function PlanejamentoFinanceiro({ filters }: PlanejamentoFinanceiroProps)
             />
           </TabsContent>
 
-          <TabsContent value="meta-cashflow" className="space-y-4 mt-4">
+          {/* Cashflow */}
+          <TabsContent value="cashflow" className="space-y-4 mt-4">
             <MetaTable
               title="Meta Fluxo de Caixa (Realizado)"
               goalType="cashflow"
@@ -570,6 +697,7 @@ export function PlanejamentoFinanceiro({ filters }: PlanejamentoFinanceiroProps)
               realized={rd?.cashflow || {}}
               projections={rd?.projections}
               goalsMap={cashGoals}
+              forecastMap={forecastMap}
               goalsList={goals?.filter((g) => g.goal_type === "cashflow") || []}
               onAdd={() => handleOpenDialog("cashflow")}
               onEdit={(g) => handleOpenDialog("cashflow", g)}
@@ -579,13 +707,15 @@ export function PlanejamentoFinanceiro({ filters }: PlanejamentoFinanceiroProps)
             />
           </TabsContent>
 
-          <TabsContent value="meta-indicators" className="space-y-4 mt-4">
+          {/* Indicators */}
+          <TabsContent value="indicator" className="space-y-4 mt-4">
             <MetaTable
               title="Meta Indicadores Executivos"
               goalType="indicator"
               metrics={INDICATOR_METRICS}
               realized={rd?.indicators || {}}
               goalsMap={indicatorGoals}
+              forecastMap={forecastMap}
               goalsList={goals?.filter((g) => g.goal_type === "indicator") || []}
               onAdd={() => handleOpenDialog("indicator")}
               onEdit={(g) => handleOpenDialog("indicator", g)}
@@ -594,12 +724,102 @@ export function PlanejamentoFinanceiro({ filters }: PlanejamentoFinanceiroProps)
               isCurrency={false}
             />
           </TabsContent>
+
+          {/* Vendedor */}
+          <TabsContent value="vendedor" className="space-y-4 mt-4">
+            <MetaTable
+              title="Meta por Vendedor"
+              goalType="vendedor"
+              metrics={VENDEDOR_METRICS}
+              realized={{}}
+              goalsMap={vendedorGoals}
+              forecastMap={forecastMap}
+              goalsList={goals?.filter((g) => g.goal_type === "vendedor") || []}
+              onAdd={() => handleOpenDialog("vendedor")}
+              onEdit={(g) => handleOpenDialog("vendedor", g)}
+              onDelete={handleDelete}
+              isLoading={goalsLoading}
+              isCurrency
+              dimensionLabel="vendedor"
+              dimensionOptions={vendedores?.map((v) => ({ id: v.id, name: v.full_name || "" })) || []}
+              goalsList2={goals?.filter((g) => g.goal_type === "vendedor") || []}
+            />
+          </TabsContent>
+
+          {/* Pedido */}
+          <TabsContent value="pedido" className="space-y-4 mt-4">
+            <MetaTable
+              title="Meta por Pedido"
+              goalType="pedido"
+              metrics={PEDIDO_METRICS}
+              realized={{}}
+              goalsMap={pedidoGoals}
+              forecastMap={forecastMap}
+              goalsList={goals?.filter((g) => g.goal_type === "pedido") || []}
+              onAdd={() => handleOpenDialog("pedido")}
+              onEdit={(g) => handleOpenDialog("pedido", g)}
+              onDelete={handleDelete}
+              isLoading={goalsLoading}
+              isCurrency={false}
+            />
+          </TabsContent>
+
+          {/* Projeto */}
+          <TabsContent value="projeto" className="space-y-4 mt-4">
+            <MetaTable
+              title="Meta por Projeto Financeiro"
+              goalType="projeto"
+              metrics={PROJETO_METRICS}
+              realized={{}}
+              goalsMap={projetoGoals}
+              forecastMap={forecastMap}
+              goalsList={goals?.filter((g) => g.goal_type === "projeto") || []}
+              onAdd={() => handleOpenDialog("projeto")}
+              onEdit={(g) => handleOpenDialog("projeto", g)}
+              onDelete={handleDelete}
+              isLoading={goalsLoading}
+              isCurrency={false}
+            />
+          </TabsContent>
+
+          {/* Centro de Custo */}
+          <TabsContent value="centro_custo" className="space-y-4 mt-4">
+            <MetaTable
+              title="Meta por Centro de Custo"
+              goalType="centro_custo"
+              metrics={CC_METRICS}
+              realized={{}}
+              goalsMap={ccGoals}
+              forecastMap={forecastMap}
+              goalsList={goals?.filter((g) => g.goal_type === "centro_custo") || []}
+              onAdd={() => handleOpenDialog("centro_custo")}
+              onEdit={(g) => handleOpenDialog("centro_custo", g)}
+              onDelete={handleDelete}
+              isLoading={goalsLoading}
+              isCurrency
+            />
+          </TabsContent>
+
+          {/* Forecast */}
+          <TabsContent value="forecast" className="space-y-4 mt-4">
+            <ForecastPanel
+              year={filterYear}
+              month={filterMonth}
+              dre={rd?.dre || {}}
+              cashflow={rd?.cashflow || {}}
+              projections={rd?.projections}
+              dreGoals={dreGoals}
+              cashGoals={cashGoals}
+              forecastMap={forecastMap}
+              isLoading={realized.isLoading}
+            />
+          </TabsContent>
         </Tabs>
       )}
 
       {/* Goal Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{selectedGoal ? "Editar Meta" : "Nova Meta"}</DialogTitle>
           </DialogHeader>
@@ -644,6 +864,10 @@ export function PlanejamentoFinanceiro({ filters }: PlanejamentoFinanceiroProps)
                     <SelectItem value="dre">DRE</SelectItem>
                     <SelectItem value="cashflow">Fluxo de Caixa</SelectItem>
                     <SelectItem value="indicator">Indicador</SelectItem>
+                    <SelectItem value="vendedor">Vendedor</SelectItem>
+                    <SelectItem value="pedido">Pedido</SelectItem>
+                    <SelectItem value="projeto">Projeto</SelectItem>
+                    <SelectItem value="centro_custo">Centro de Custo</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -657,10 +881,23 @@ export function PlanejamentoFinanceiro({ filters }: PlanejamentoFinanceiroProps)
                 </Select>
               </div>
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Valor da Meta</Label>
-              <Input value={form.target_amount} onChange={(e) => setForm({ ...form, target_amount: e.target.value })} placeholder="0,00" />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Valor da Meta</Label>
+                <Input value={form.target_amount} onChange={(e) => setForm({ ...form, target_amount: e.target.value })} placeholder="0,00" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Tipo de Meta</Label>
+                <Select value={form.target_type} onValueChange={(v) => setForm({ ...form, target_type: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {TARGET_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
+
+            {/* Dimensional filters */}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs">Centro de Custo</Label>
@@ -682,6 +919,38 @@ export function PlanejamentoFinanceiro({ filters }: PlanejamentoFinanceiroProps)
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Cliente</Label>
+                <Select value={form.client_id} onValueChange={(v) => setForm({ ...form, client_id: v })}>
+                  <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Todos</SelectItem>
+                    {clients?.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Vendedor</Label>
+                <Select value={form.vendedor_id} onValueChange={(v) => setForm({ ...form, vendedor_id: v })}>
+                  <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Todos</SelectItem>
+                    {vendedores?.map((v) => <SelectItem key={v.id} value={v.id}>{v.full_name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Pedido</Label>
+              <Select value={form.order_id} onValueChange={(v) => setForm({ ...form, order_id: v })}>
+                <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Todos</SelectItem>
+                  {orders?.map((o) => <SelectItem key={o.id} value={o.id}>#{o.order_number}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <DialogFooter>
@@ -705,20 +974,25 @@ interface MetaTableProps {
   realized: Record<string, number>;
   projections?: any;
   goalsMap: Map<string, number>;
+  forecastMap: Map<string, number>;
   goalsList: FinancialGoal[];
   onAdd: () => void;
   onEdit: (g: FinancialGoal) => void;
   onDelete: (id: string) => void;
   isLoading: boolean;
   isCurrency: boolean;
+  dimensionLabel?: string;
+  dimensionOptions?: { id: string; name: string }[];
+  goalsList2?: FinancialGoal[];
 }
 
-function MetaTable({ title, goalType, metrics, realized, projections, goalsMap, goalsList, onAdd, onEdit, onDelete, isLoading, isCurrency }: MetaTableProps) {
+function MetaTable({ title, goalType, metrics, realized, projections, goalsMap, forecastMap, goalsList, onAdd, onEdit, onDelete, isLoading, isCurrency, dimensionLabel, dimensionOptions, goalsList2 }: MetaTableProps) {
   const fmt = (v: number, key?: string) => {
     if (!isCurrency) {
       const m = metrics.find((x) => x.key === key);
       if (m?.unit === "%") return formatPercent(v);
       if (m?.unit === "meses") return `${v.toFixed(1)} meses`;
+      if (m?.unit === "dias") return `${v.toFixed(0)} dias`;
     }
     return formatCurrency(v);
   };
@@ -742,7 +1016,8 @@ function MetaTable({ title, goalType, metrics, realized, projections, goalsMap, 
               <TableHead>Métrica</TableHead>
               <TableHead className="text-right">Meta</TableHead>
               <TableHead className="text-right">Realizado</TableHead>
-              <TableHead className="text-right">Diferença</TableHead>
+              <TableHead className="text-right">Forecast</TableHead>
+              <TableHead className="text-right">Gap</TableHead>
               <TableHead className="text-right">% Atingido</TableHead>
               {projections && <TableHead className="text-right">Projeção Mês</TableHead>}
               <TableHead className="text-center">Status</TableHead>
@@ -753,6 +1028,7 @@ function MetaTable({ title, goalType, metrics, realized, projections, goalsMap, 
             {metrics.map((metric) => {
               const target = goalsMap.get(metric.key) || 0;
               const actual = realized[metric.key] || 0;
+              const forecast = forecastMap.get(metric.key) || 0;
               const diff = actual - target;
               const pct = target !== 0 ? (actual / target) * 100 : 0;
               const goal = goalsList.find((g) => g.metric_key === metric.key);
@@ -770,7 +1046,10 @@ function MetaTable({ title, goalType, metrics, realized, projections, goalsMap, 
                     {target > 0 ? fmt(target, metric.key) : <span className="text-muted-foreground text-xs">—</span>}
                   </TableCell>
                   <TableCell className={cn("text-right font-mono text-sm", actual >= 0 ? "text-green-600" : "text-red-600")}>
-                    {fmt(actual, metric.key)}
+                    {actual !== 0 ? fmt(actual, metric.key) : <span className="text-muted-foreground text-xs">—</span>}
+                  </TableCell>
+                  <TableCell className={cn("text-right font-mono text-xs", forecast > 0 ? "text-blue-600" : "text-muted-foreground")}>
+                    {forecast > 0 ? fmt(forecast, metric.key) : "—"}
                   </TableCell>
                   <TableCell className={cn("text-right font-mono text-xs", diff >= 0 ? "text-green-600" : "text-red-600")}>
                     {target > 0 ? fmt(diff, metric.key) : "—"}
@@ -798,7 +1077,7 @@ function MetaTable({ title, goalType, metrics, realized, projections, goalsMap, 
                           </Button>
                         </>
                       ) : (
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" onClick={() => { /* will open dialog via onAdd */ }}>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" onClick={onAdd}>
                           <Plus className="h-3.5 w-3.5" />
                         </Button>
                       )}
@@ -808,17 +1087,117 @@ function MetaTable({ title, goalType, metrics, realized, projections, goalsMap, 
               );
             })}
 
+            {/* Existing goals not in standard metrics (dimensional goals) */}
+            {goalsList.filter((g) => !metrics.find((m) => m.key === g.metric_key)).map((goal) => (
+              <TableRow key={goal.id} className="bg-muted/20">
+                <TableCell className="text-sm">{goal.metric_key}</TableCell>
+                <TableCell className="text-right font-mono text-sm">{fmt(goal.target_amount)}</TableCell>
+                <TableCell colSpan={projections ? 6 : 5} className="text-right">
+                  <div className="flex items-center justify-end gap-1">
+                    <Badge variant="outline" className="text-[10px]">{goal.target_type}</Badge>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(goal)}>
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onDelete(goal.id)}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+
             {/* Projection lines */}
             {projections && isCurrency && (
-              <>
-                <TableRow className="bg-muted/30">
-                  <TableCell colSpan={projections ? 8 : 7} className="text-xs text-muted-foreground py-1.5">
-                    <Calendar className="h-3 w-3 inline mr-1" />
-                    Evolução mês: {formatPercent(projections.pctMes * 100)} ({projections.diasCorridos}/{projections.diasTotais} dias)
+              <TableRow className="bg-muted/30">
+                <TableCell colSpan={projections ? 9 : 8} className="text-xs text-muted-foreground py-1.5">
+                  <Calendar className="h-3 w-3 inline mr-1" />
+                  Evolução mês: {formatPercent(projections.pctMes * 100)} ({projections.diasCorridos}/{projections.diasTotais} dias)
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ============ FORECAST PANEL ============
+interface ForecastPanelProps {
+  year: number;
+  month: number;
+  dre: Record<string, number>;
+  cashflow: Record<string, number>;
+  projections?: any;
+  dreGoals: Map<string, number>;
+  cashGoals: Map<string, number>;
+  forecastMap: Map<string, number>;
+  isLoading: boolean;
+}
+
+function ForecastPanel({ year, month, dre, cashflow, projections, dreGoals, cashGoals, forecastMap, isLoading }: ForecastPanelProps) {
+  if (isLoading) return <Skeleton className="h-[400px]" />;
+
+  const pctMes = projections?.pctMes || 0;
+  const allMetrics = [
+    ...DRE_METRICS.map((m) => ({ ...m, group: "DRE", actual: dre[m.key] || 0, target: dreGoals.get(m.key) || 0 })),
+    ...CASHFLOW_METRICS.map((m) => ({ ...m, group: "Fluxo", actual: cashflow[m.key] || 0, target: cashGoals.get(m.key) || 0 })),
+  ];
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base flex items-center gap-2">
+          <ArrowUpDown className="h-4 w-4" />
+          Forecast Dinâmico — {MONTHS_FULL.find((m) => m.value === month)?.label} {year}
+        </CardTitle>
+        <p className="text-xs text-muted-foreground">
+          Projeção automática baseada no realizado ({projections?.diasCorridos || 0}/{projections?.diasTotais || 0} dias = {formatPercent((pctMes || 0) * 100)})
+        </p>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Grupo</TableHead>
+              <TableHead>Métrica</TableHead>
+              <TableHead className="text-right">Realizado</TableHead>
+              <TableHead className="text-right">Forecast (Projeção)</TableHead>
+              <TableHead className="text-right">Meta</TableHead>
+              <TableHead className="text-right">Gap da Meta</TableHead>
+              <TableHead className="text-center">Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {allMetrics.map((m) => {
+              const forecastVal = forecastMap.get(m.key) || (pctMes > 0 ? m.actual / pctMes : 0);
+              const gap = m.target > 0 ? forecastVal - m.target : 0;
+              const pct = m.target > 0 ? (forecastVal / m.target) * 100 : 0;
+
+              return (
+                <TableRow key={m.key}>
+                  <TableCell>
+                    <Badge variant="outline" className="text-[10px]">{m.group}</Badge>
+                  </TableCell>
+                  <TableCell className="font-medium text-sm">{m.label}</TableCell>
+                  <TableCell className={cn("text-right font-mono text-sm", m.actual >= 0 ? "text-green-600" : "text-red-600")}>
+                    {formatCurrency(m.actual)}
+                  </TableCell>
+                  <TableCell className="text-right font-mono text-sm text-blue-600">
+                    {formatCurrency(forecastVal)}
+                  </TableCell>
+                  <TableCell className="text-right font-mono text-sm text-muted-foreground">
+                    {m.target > 0 ? formatCurrency(m.target) : "—"}
+                  </TableCell>
+                  <TableCell className={cn("text-right font-mono text-xs", gap >= 0 ? "text-green-600" : "text-red-600")}>
+                    {m.target > 0 ? formatCurrency(gap) : "—"}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {m.target > 0 ? getAlertBadge(pct) : <span className="text-xs text-muted-foreground">—</span>}
                   </TableCell>
                 </TableRow>
-              </>
-            )}
+              );
+            })}
           </TableBody>
         </Table>
       </CardContent>
@@ -835,17 +1214,20 @@ interface ExecutiveSummaryProps {
   dreGoals: Map<string, number>;
   cashGoals: Map<string, number>;
   indicatorGoals: Map<string, number>;
+  forecastMap: Map<string, number>;
   minSafetyBalance: number;
 }
 
-function ExecutiveSummary({ dre, cashflow, indicators, projections, dreGoals, cashGoals, indicatorGoals, minSafetyBalance }: ExecutiveSummaryProps) {
+function ExecutiveSummary({ dre, cashflow, indicators, projections, dreGoals, cashGoals, indicatorGoals, forecastMap, minSafetyBalance }: ExecutiveSummaryProps) {
+  const pctMes = projections?.pctMes || 0;
+  
   const kpiCards = [
-    { label: "Receita", actual: dre.receitas, target: dreGoals.get("receitas") || 0, icon: TrendingUp },
-    { label: "Margem Contribuição", actual: dre.margem_contribuicao, target: dreGoals.get("margem_contribuicao") || 0, icon: BarChart3 },
-    { label: "EBITDA", actual: dre.resultado_operacional_ebitda, target: dreGoals.get("resultado_operacional_ebitda") || 0, icon: Target },
-    { label: "Resultado Líquido", actual: dre.resultado_liquido, target: dreGoals.get("resultado_liquido") || 0, icon: CheckCircle },
-    { label: "Geração Caixa", actual: cashflow.geracao_operacional, target: cashGoals.get("geracao_operacional") || 0, icon: Wallet },
-    { label: "Saldo Caixa", actual: cashflow.saldo_final, target: minSafetyBalance || cashGoals.get("saldo_final") || 0, icon: ShieldAlert },
+    { label: "Receita", actual: dre.receitas, target: dreGoals.get("receitas") || 0, forecast: pctMes > 0 ? dre.receitas / pctMes : 0, icon: TrendingUp },
+    { label: "Margem Contribuição", actual: dre.margem_contribuicao, target: dreGoals.get("margem_contribuicao") || 0, forecast: pctMes > 0 ? dre.margem_contribuicao / pctMes : 0, icon: BarChart3 },
+    { label: "EBITDA", actual: dre.resultado_operacional_ebitda, target: dreGoals.get("resultado_operacional_ebitda") || 0, forecast: pctMes > 0 ? dre.resultado_operacional_ebitda / pctMes : 0, icon: Target },
+    { label: "Resultado Líquido", actual: dre.resultado_liquido, target: dreGoals.get("resultado_liquido") || 0, forecast: pctMes > 0 ? dre.resultado_liquido / pctMes : 0, icon: CheckCircle },
+    { label: "Geração Caixa", actual: cashflow.geracao_operacional, target: cashGoals.get("geracao_operacional") || 0, forecast: pctMes > 0 ? cashflow.geracao_operacional / pctMes : 0, icon: Wallet },
+    { label: "Saldo Caixa", actual: cashflow.saldo_final, target: minSafetyBalance || cashGoals.get("saldo_final") || 0, forecast: cashflow.saldo_final, icon: ShieldAlert },
   ];
 
   const projectionCards = [
@@ -858,7 +1240,7 @@ function ExecutiveSummary({ dre, cashflow, indicators, projections, dreGoals, ca
 
   return (
     <div className="space-y-4">
-      {/* KPI Cards */}
+      {/* KPI Cards with Meta + Forecast */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         {kpiCards.map((kpi, i) => {
           const pct = kpi.target > 0 ? (kpi.actual / kpi.target) * 100 : 0;
@@ -875,10 +1257,7 @@ function ExecutiveSummary({ dre, cashflow, indicators, projections, dreGoals, ca
                   <span className="text-[10px] text-muted-foreground uppercase tracking-wide truncate">{kpi.label}</span>
                   <kpi.icon className="h-3.5 w-3.5 text-muted-foreground" />
                 </div>
-                <div className={cn(
-                  "text-lg font-bold font-mono",
-                  kpi.actual >= 0 ? "text-green-600" : "text-red-600"
-                )}>
+                <div className={cn("text-lg font-bold font-mono", kpi.actual >= 0 ? "text-green-600" : "text-red-600")}>
                   {formatCurrency(kpi.actual)}
                 </div>
                 {kpi.target > 0 && (
@@ -887,7 +1266,11 @@ function ExecutiveSummary({ dre, cashflow, indicators, projections, dreGoals, ca
                     <TrafficLight actual={kpi.actual} target={kpi.target} size="sm" />
                   </div>
                 )}
-                {/* Progress bar */}
+                {kpi.forecast > 0 && kpi.forecast !== kpi.actual && (
+                  <div className="text-[10px] text-blue-600 mt-0.5">
+                    Forecast: {formatCurrency(kpi.forecast)}
+                  </div>
+                )}
                 {kpi.target > 0 && (
                   <div className="mt-1.5 h-1 rounded-full bg-muted overflow-hidden">
                     <div
@@ -895,7 +1278,6 @@ function ExecutiveSummary({ dre, cashflow, indicators, projections, dreGoals, ca
                         "h-full rounded-full transition-all",
                         color === "green" && "bg-green-500",
                         color === "yellow" && "bg-yellow-500",
-                        color === "orange" && "bg-orange-500",
                         color === "red" && "bg-red-500",
                       )}
                       style={{ width: `${Math.min(pct, 100)}%` }}
@@ -925,12 +1307,12 @@ function ExecutiveSummary({ dre, cashflow, indicators, projections, dreGoals, ca
         ))}
       </div>
 
-      {/* Side-by-side DRE vs Meta */}
+      {/* Side-by-side DRE vs Meta vs Forecast */}
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader className="pb-2 bg-purple-50 dark:bg-purple-950/20 rounded-t-lg">
             <CardTitle className="text-sm flex items-center gap-2">
-              <BarChart3 className="h-4 w-4 text-purple-600" />DRE: Realizado vs Meta
+              <BarChart3 className="h-4 w-4 text-purple-600" />DRE: Realizado vs Meta vs Forecast
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-3">
@@ -940,6 +1322,7 @@ function ExecutiveSummary({ dre, cashflow, indicators, projections, dreGoals, ca
                   <TableHead className="text-xs">Linha</TableHead>
                   <TableHead className="text-xs text-right">Realizado</TableHead>
                   <TableHead className="text-xs text-right">Meta</TableHead>
+                  <TableHead className="text-xs text-right">Forecast</TableHead>
                   <TableHead className="text-xs text-right">%</TableHead>
                 </TableRow>
               </TableHeader>
@@ -947,12 +1330,13 @@ function ExecutiveSummary({ dre, cashflow, indicators, projections, dreGoals, ca
                 {DRE_METRICS.map((m) => {
                   const actual = dre[m.key] || 0;
                   const target = dreGoals.get(m.key) || 0;
-                  const pct = target > 0 ? (actual / target) * 100 : 0;
+                  const forecast = pctMes > 0 ? actual / pctMes : 0;
                   return (
                     <TableRow key={m.key}>
                       <TableCell className="text-xs font-medium">{m.label}</TableCell>
                       <TableCell className={cn("text-right font-mono text-xs", actual >= 0 ? "text-green-600" : "text-red-600")}>{formatCurrency(actual)}</TableCell>
                       <TableCell className="text-right font-mono text-xs text-muted-foreground">{target > 0 ? formatCurrency(target) : "—"}</TableCell>
+                      <TableCell className="text-right font-mono text-xs text-blue-600">{formatCurrency(forecast)}</TableCell>
                       <TableCell className="text-right">{target > 0 ? <TrafficLight actual={actual} target={target} size="sm" /> : <span className="text-[10px] text-muted-foreground">—</span>}</TableCell>
                     </TableRow>
                   );
@@ -965,7 +1349,7 @@ function ExecutiveSummary({ dre, cashflow, indicators, projections, dreGoals, ca
         <Card>
           <CardHeader className="pb-2 bg-cyan-50 dark:bg-cyan-950/20 rounded-t-lg">
             <CardTitle className="text-sm flex items-center gap-2">
-              <Wallet className="h-4 w-4 text-cyan-600" />Fluxo Caixa: Realizado vs Meta
+              <Wallet className="h-4 w-4 text-cyan-600" />Fluxo Caixa: Realizado vs Meta vs Forecast
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-3">
@@ -975,6 +1359,7 @@ function ExecutiveSummary({ dre, cashflow, indicators, projections, dreGoals, ca
                   <TableHead className="text-xs">Linha</TableHead>
                   <TableHead className="text-xs text-right">Realizado</TableHead>
                   <TableHead className="text-xs text-right">Meta</TableHead>
+                  <TableHead className="text-xs text-right">Forecast</TableHead>
                   <TableHead className="text-xs text-right">%</TableHead>
                 </TableRow>
               </TableHeader>
@@ -982,12 +1367,13 @@ function ExecutiveSummary({ dre, cashflow, indicators, projections, dreGoals, ca
                 {CASHFLOW_METRICS.map((m) => {
                   const actual = cashflow[m.key] || 0;
                   const target = cashGoals.get(m.key) || 0;
-                  const pct = target > 0 ? (actual / target) * 100 : 0;
+                  const forecast = pctMes > 0 ? actual / pctMes : 0;
                   return (
                     <TableRow key={m.key}>
                       <TableCell className="text-xs font-medium">{m.label}</TableCell>
                       <TableCell className={cn("text-right font-mono text-xs", actual >= 0 ? "text-green-600" : "text-red-600")}>{formatCurrency(actual)}</TableCell>
                       <TableCell className="text-right font-mono text-xs text-muted-foreground">{target > 0 ? formatCurrency(target) : "—"}</TableCell>
+                      <TableCell className="text-right font-mono text-xs text-blue-600">{formatCurrency(forecast)}</TableCell>
                       <TableCell className="text-right">{target > 0 ? <TrafficLight actual={actual} target={target} size="sm" /> : <span className="text-[10px] text-muted-foreground">—</span>}</TableCell>
                     </TableRow>
                   );
