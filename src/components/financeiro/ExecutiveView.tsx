@@ -19,6 +19,7 @@ interface ExecutiveData {
     resultadoOperacionalEBITDA: number;
     resultadoEconomicoEBIT: number;
     resultadoAntesCapital: number;
+    lucroLiquido: number | null;
   };
   cashflow: {
     entradasOperacionais: number;
