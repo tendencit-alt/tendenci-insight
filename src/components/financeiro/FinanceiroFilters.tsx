@@ -26,6 +26,9 @@ export interface FinanceiroFiltersState {
   subcategoryId: string | null;
   sortField: SortField;
   sortDirection: SortDirection;
+  clientId: string | null;
+  vendedorId: string | null;
+  orderId: string | null;
 }
 
 interface FinanceiroFiltersProps {
@@ -70,6 +73,44 @@ export function FinanceiroFilters({ filters, onChange }: FinanceiroFiltersProps)
         .order("name");
       return data || [];
     },
+  });
+
+  const { data: clients } = useQuery({
+    queryKey: ["fin-filter-clients"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("clients")
+        .select("id, name")
+        .order("name")
+        .limit(500);
+      return data || [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: vendedores } = useQuery({
+    queryKey: ["fin-filter-vendedores"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .order("full_name");
+      return data || [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: orders } = useQuery({
+    queryKey: ["fin-filter-orders"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("orders")
+        .select("id, order_number, client:clients(name)")
+        .order("order_number", { ascending: false })
+        .limit(200);
+      return data || [];
+    },
+    staleTime: 5 * 60 * 1000,
   });
 
   // Busca apenas categorias pai (parent_id = null)
