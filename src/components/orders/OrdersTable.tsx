@@ -38,12 +38,15 @@ interface OrdersTableProps {
 
 const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
   rascunho: { label: 'Rascunho', className: 'border-border bg-muted text-muted-foreground' },
-  ativo: { label: 'Ativo', className: 'border-primary/20 bg-primary/10 text-primary' },
-  aguardando_aprovacao: { label: 'Aguardando', className: 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-400' },
+  em_negociacao: { label: 'Negociação', className: 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-400' },
   aprovado: { label: 'Aprovado', className: 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-400' },
+  liberado_producao: { label: 'Lib. Produção', className: 'border-cyan-200 bg-cyan-50 text-cyan-700 dark:border-cyan-800 dark:bg-cyan-950 dark:text-cyan-400' },
   em_producao: { label: 'Produção', className: 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-400' },
+  producao_concluida: { label: 'Prod. Concluída', className: 'border-indigo-200 bg-indigo-50 text-indigo-700 dark:border-indigo-800 dark:bg-indigo-950 dark:text-indigo-400' },
+  liberado_faturamento: { label: 'Lib. Faturamento', className: 'border-purple-200 bg-purple-50 text-purple-700 dark:border-purple-800 dark:bg-purple-950 dark:text-purple-400' },
   faturado: { label: 'Faturado', className: 'border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-800 dark:bg-violet-950 dark:text-violet-400' },
-  entregue: { label: 'Entregue', className: 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-400' },
+  entregue: { label: 'Entregue', className: 'border-teal-200 bg-teal-50 text-teal-700 dark:border-teal-800 dark:bg-teal-950 dark:text-teal-400' },
+  encerrado: { label: 'Encerrado', className: 'border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400' },
   cancelado: { label: 'Cancelado', className: 'border-destructive/20 bg-destructive/10 text-destructive' },
 };
 
@@ -51,7 +54,7 @@ const ITEMS_PER_PAGE = 20;
 
 export function OrdersTable({ orders, isLoading, onSelectOrder, onEditOrder, onDeleteOrder, selectedIds = [], onSelectedIdsChange, onBulkEdit }: OrdersTableProps) {
   const { isMaster } = usePermissions();
-  const isEditable = (status: string) => ['rascunho', 'ativo', 'aguardando_aprovacao', 'em_producao'].includes(status);
+  const isEditable = (status: string) => ['rascunho', 'em_negociacao'].includes(status);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
 
