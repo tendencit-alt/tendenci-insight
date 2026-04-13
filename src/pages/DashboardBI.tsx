@@ -5,7 +5,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FinanceiroFilters, FinanceiroFiltersState } from "@/components/financeiro/FinanceiroFilters";
 import { DashboardBI as DashboardBIComponent } from "@/components/financeiro/DashboardBI";
 import { DRECashflowView } from "@/components/financeiro/DRECashflowView";
-import { LayoutDashboard, BarChart3 } from "lucide-react";
+import { PlanejamentoFinanceiro } from "@/components/financeiro/PlanejamentoFinanceiro";
+import { LayoutDashboard, BarChart3, Target } from "lucide-react";
 
 export default function DashboardBI() {
   useFinanceiroRealtime();
@@ -55,6 +56,13 @@ export default function DashboardBI() {
                 <BarChart3 className="h-4 w-4 flex-shrink-0" />
                 <span>DRE / Fluxo de Caixa</span>
               </TabsTrigger>
+              <TabsTrigger
+                value="planejamento"
+                className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-muted-foreground transition-all hover:text-foreground data-[state=active]:bg-foreground data-[state=active]:text-background data-[state=active]:shadow-sm"
+              >
+                <Target className="h-4 w-4 flex-shrink-0" />
+                <span>Planejamento Financeiro</span>
+              </TabsTrigger>
             </TabsList>
           </div>
 
@@ -67,6 +75,10 @@ export default function DashboardBI() {
 
           <TabsContent value="dre-cashflow" forceMount className={activeTab === "dre-cashflow" ? "space-y-4" : "hidden"}>
             <DRECashflowView filters={filters} onFiltersChange={setFilters} />
+          </TabsContent>
+
+          <TabsContent value="planejamento" forceMount className={activeTab === "planejamento" ? "space-y-4" : "hidden"}>
+            <PlanejamentoFinanceiro filters={filters} />
           </TabsContent>
         </Tabs>
       </div>
