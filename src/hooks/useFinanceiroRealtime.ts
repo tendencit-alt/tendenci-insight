@@ -111,9 +111,33 @@ export function useFinanceiroRealtime() {
       )
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "fin_loan_contracts" },
+        { event: "*", schema: "public", table: "fin_loan_installments" },
         (payload) => {
-          console.log("[Realtime] fin_loan_contracts changed:", payload.eventType);
+          console.log("[Realtime] fin_loan_installments changed:", payload.eventType);
+          invalidateFinanceiroQueries();
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "fin_recurring_contracts" },
+        (payload) => {
+          console.log("[Realtime] fin_recurring_contracts changed:", payload.eventType);
+          invalidateFinanceiroQueries();
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "fin_assets" },
+        (payload) => {
+          console.log("[Realtime] fin_assets changed:", payload.eventType);
+          invalidateFinanceiroQueries();
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "fin_business_events" },
+        (payload) => {
+          console.log("[Realtime] fin_business_events changed:", payload.eventType);
           invalidateFinanceiroQueries();
         }
       )
