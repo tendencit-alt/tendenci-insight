@@ -55,9 +55,9 @@ const ERP_MODULES: ModuleGroup[] = [
     icon: ShoppingCart,
     requiredModules: ["pedidos"],
     items: [
-      { label: "Pedidos", route: "/pedidos", icon: "ClipboardList", module: "pedidos", available: true },
       { label: "Clientes", route: "/clientes", icon: "Users", available: false },
       { label: "Orçamentos", route: "/orcamentos", icon: "FileText", available: false },
+      { label: "Pedidos", route: "/pedidos", icon: "ClipboardList", module: "pedidos", available: true },
       { label: "Contratos", route: "/contratos", icon: "FileSignature", available: false },
       { label: "Comissões", route: "/comissoes", icon: "Percent", available: false },
     ],
@@ -68,10 +68,10 @@ const ERP_MODULES: ModuleGroup[] = [
     icon: Factory,
     requiredModules: ["producao"],
     items: [
-      { label: "Produção", route: "/producao", icon: "Factory", module: "producao", available: true },
-      { label: "Fase Produtiva", route: "/fase-produtiva", icon: "Workflow", available: false },
       { label: "Projetos", route: "/projetos-op", icon: "FolderKanban", available: false },
-      { label: "Entregas", route: "/entregas", icon: "Truck", available: false },
+      { label: "Produção", route: "/producao", icon: "Factory", module: "producao", available: true },
+      { label: "Ordens de Produção", route: "/ordens-producao", icon: "ListChecks", available: false },
+      { label: "Execução / Obras", route: "/execucao-obras", icon: "HardHat", available: false },
     ],
   },
   {
@@ -100,6 +100,7 @@ const ERP_MODULES: ModuleGroup[] = [
       { label: "Centros de Custo", route: "/cadastros-financeiros?tab=cost-centers", icon: "Building", module: "cadastros_financeiros", available: true },
       { label: "Projetos Financeiros", route: "/cadastros-financeiros?tab=projects", icon: "Briefcase", module: "cadastros_financeiros", available: true },
       { label: "Classificação Automática", route: "/cadastros-financeiros?tab=classification", icon: "Sparkles", module: "cadastros_financeiros", available: true },
+      { label: "Auditoria", route: "/cadastros-financeiros?tab=audit", icon: "ShieldCheck", module: "cadastros_financeiros", available: true },
     ],
   },
   {
@@ -120,16 +121,19 @@ const ERP_MODULES: ModuleGroup[] = [
     requiredModules: ["fornecedores", "estoque"],
     items: [
       { label: "Fornecedores", route: "/fornecedores", icon: "Truck", module: "fornecedores", available: true },
+      { label: "Clientes", route: "/cadastros-clientes", icon: "UserCircle", available: false },
       { label: "Produtos", route: "/estoque", icon: "Package", module: "estoque", available: true },
+      { label: "Contas Bancárias", route: "/financeiro?tab=treasury", icon: "Landmark", module: "financeiro", available: true },
+      { label: "Estrutura Organizacional", route: "/estrutura-organizacional", icon: "Network", available: false },
     ],
   },
   {
     key: "relatorios",
-    label: "Relatórios",
+    label: "Relatórios e BI",
     icon: BarChart3,
     requiredModules: ["dashboard"],
     items: [
-      { label: "BI Executivo", route: "/bi-dashboard", icon: "LayoutDashboard", module: "dashboard", available: true },
+      { label: "BI Analítico", route: "/bi-dashboard", icon: "LayoutDashboard", module: "dashboard", available: true },
       { label: "Relatórios Financeiros", route: "/relatorios-financeiros", icon: "FileSpreadsheet", available: false },
       { label: "Relatórios Operacionais", route: "/relatorios-operacionais", icon: "ClipboardCheck", available: false },
     ],
