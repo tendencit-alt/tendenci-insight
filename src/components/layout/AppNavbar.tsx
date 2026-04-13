@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import * as LucideIcons from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -27,7 +27,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
-import { cn } from "@/lib/utils";
+
 
 // ── ERP Module Structure ──
 interface ModuleItem {
