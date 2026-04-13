@@ -3213,6 +3213,8 @@ export type Database = {
         Row: {
           amount: number
           bank_account_id: string | null
+          cancelado_em: string | null
+          cancelado_por: string | null
           cash_date: string | null
           chart_account_id: string | null
           classification_rule_id: string | null
@@ -3220,6 +3222,7 @@ export type Database = {
           classification_source: string | null
           classification_status: string | null
           competence_date: string
+          conciliado_em: string | null
           cost_center_id: string | null
           created_at: string | null
           created_by: string | null
@@ -3231,7 +3234,9 @@ export type Database = {
           is_recurring: boolean | null
           juros_atraso: number | null
           loan_contract_id: string | null
+          motivo_cancelamento: string | null
           notes: string | null
+          origem: string | null
           parent_entry_id: string | null
           party_id: string | null
           party_type: string | null
@@ -3252,6 +3257,8 @@ export type Database = {
         Insert: {
           amount: number
           bank_account_id?: string | null
+          cancelado_em?: string | null
+          cancelado_por?: string | null
           cash_date?: string | null
           chart_account_id?: string | null
           classification_rule_id?: string | null
@@ -3259,6 +3266,7 @@ export type Database = {
           classification_source?: string | null
           classification_status?: string | null
           competence_date: string
+          conciliado_em?: string | null
           cost_center_id?: string | null
           created_at?: string | null
           created_by?: string | null
@@ -3270,7 +3278,9 @@ export type Database = {
           is_recurring?: boolean | null
           juros_atraso?: number | null
           loan_contract_id?: string | null
+          motivo_cancelamento?: string | null
           notes?: string | null
+          origem?: string | null
           parent_entry_id?: string | null
           party_id?: string | null
           party_type?: string | null
@@ -3291,6 +3301,8 @@ export type Database = {
         Update: {
           amount?: number
           bank_account_id?: string | null
+          cancelado_em?: string | null
+          cancelado_por?: string | null
           cash_date?: string | null
           chart_account_id?: string | null
           classification_rule_id?: string | null
@@ -3298,6 +3310,7 @@ export type Database = {
           classification_source?: string | null
           classification_status?: string | null
           competence_date?: string
+          conciliado_em?: string | null
           cost_center_id?: string | null
           created_at?: string | null
           created_by?: string | null
@@ -3309,7 +3322,9 @@ export type Database = {
           is_recurring?: boolean | null
           juros_atraso?: number | null
           loan_contract_id?: string | null
+          motivo_cancelamento?: string | null
           notes?: string | null
+          origem?: string | null
           parent_entry_id?: string | null
           party_id?: string | null
           party_type?: string | null
@@ -3708,8 +3723,12 @@ export type Database = {
         Row: {
           amount: number
           bank_account_id: string | null
+          cancelado_em: string | null
+          cancelado_por: string | null
           chart_account_id: string | null
           competence_date: string | null
+          conciliado_em: string | null
+          conciliado_por: string | null
           cost_center_id: string | null
           created_at: string | null
           created_by: string | null
@@ -3719,8 +3738,10 @@ export type Database = {
           id: string
           installment: number | null
           ledger_entry_id: string | null
+          motivo_cancelamento: string | null
           notes: string | null
           order_id: string | null
+          origem: string | null
           paid_amount: number | null
           payment_date: string | null
           project_id: string | null
@@ -3734,8 +3755,12 @@ export type Database = {
         Insert: {
           amount: number
           bank_account_id?: string | null
+          cancelado_em?: string | null
+          cancelado_por?: string | null
           chart_account_id?: string | null
           competence_date?: string | null
+          conciliado_em?: string | null
+          conciliado_por?: string | null
           cost_center_id?: string | null
           created_at?: string | null
           created_by?: string | null
@@ -3745,8 +3770,10 @@ export type Database = {
           id?: string
           installment?: number | null
           ledger_entry_id?: string | null
+          motivo_cancelamento?: string | null
           notes?: string | null
           order_id?: string | null
+          origem?: string | null
           paid_amount?: number | null
           payment_date?: string | null
           project_id?: string | null
@@ -3760,8 +3787,12 @@ export type Database = {
         Update: {
           amount?: number
           bank_account_id?: string | null
+          cancelado_em?: string | null
+          cancelado_por?: string | null
           chart_account_id?: string | null
           competence_date?: string | null
+          conciliado_em?: string | null
+          conciliado_por?: string | null
           cost_center_id?: string | null
           created_at?: string | null
           created_by?: string | null
@@ -3771,8 +3802,10 @@ export type Database = {
           id?: string
           installment?: number | null
           ledger_entry_id?: string | null
+          motivo_cancelamento?: string | null
           notes?: string | null
           order_id?: string | null
+          origem?: string | null
           paid_amount?: number | null
           payment_date?: string | null
           project_id?: string | null
@@ -4005,8 +4038,12 @@ export type Database = {
         Row: {
           amount: number
           bank_account_id: string | null
+          cancelado_em: string | null
+          cancelado_por: string | null
           chart_account_id: string | null
           competence_date: string | null
+          conciliado_em: string | null
+          conciliado_por: string | null
           cost_center_id: string | null
           created_at: string | null
           created_by: string | null
@@ -4018,8 +4055,10 @@ export type Database = {
           id: string
           installment: number | null
           ledger_entry_id: string | null
+          motivo_cancelamento: string | null
           notes: string | null
           order_id: string | null
+          origem: string | null
           project_id: string | null
           receipt_date: string | null
           received_amount: number | null
@@ -4032,8 +4071,12 @@ export type Database = {
         Insert: {
           amount: number
           bank_account_id?: string | null
+          cancelado_em?: string | null
+          cancelado_por?: string | null
           chart_account_id?: string | null
           competence_date?: string | null
+          conciliado_em?: string | null
+          conciliado_por?: string | null
           cost_center_id?: string | null
           created_at?: string | null
           created_by?: string | null
@@ -4045,8 +4088,10 @@ export type Database = {
           id?: string
           installment?: number | null
           ledger_entry_id?: string | null
+          motivo_cancelamento?: string | null
           notes?: string | null
           order_id?: string | null
+          origem?: string | null
           project_id?: string | null
           receipt_date?: string | null
           received_amount?: number | null
@@ -4059,8 +4104,12 @@ export type Database = {
         Update: {
           amount?: number
           bank_account_id?: string | null
+          cancelado_em?: string | null
+          cancelado_por?: string | null
           chart_account_id?: string | null
           competence_date?: string | null
+          conciliado_em?: string | null
+          conciliado_por?: string | null
           cost_center_id?: string | null
           created_at?: string | null
           created_by?: string | null
@@ -4072,8 +4121,10 @@ export type Database = {
           id?: string
           installment?: number | null
           ledger_entry_id?: string | null
+          motivo_cancelamento?: string | null
           notes?: string | null
           order_id?: string | null
+          origem?: string | null
           project_id?: string | null
           receipt_date?: string | null
           received_amount?: number | null
