@@ -22,7 +22,6 @@ export function OnboardingStepMetas({ onComplete, completed }: Props) {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const { data: tenantId } = await supabase.rpc("get_user_tenant_id");
       const now = new Date();
       const year = now.getFullYear();
       const month = now.getMonth() + 1;
@@ -30,28 +29,26 @@ export function OnboardingStepMetas({ onComplete, completed }: Props) {
       // Create revenue goal
       if (form.metaReceita) {
         await supabase.from("fin_financial_goals").insert({
-          tenant_id: tenantId,
-          dimension: "dre",
-          metric: "receita_operacional",
+          goal_type: "dre",
+          metric_key: "receita_operacional",
           target_type: "absolute",
-          target_value: parseFloat(form.metaReceita),
+          target_amount: parseFloat(form.metaReceita),
           period_type: "monthly",
-          period_year: year,
-          period_month: month,
+          year,
+          month,
         });
       }
 
       // Create margin goal
       if (form.margemMinima) {
         await supabase.from("fin_financial_goals").insert({
-          tenant_id: tenantId,
-          dimension: "indicator",
-          metric: "margem_contribuicao",
+          goal_type: "indicator",
+          metric_key: "margem_contribuicao",
           target_type: "percentage",
-          target_value: parseFloat(form.margemMinima),
+          target_amount: parseFloat(form.margemMinima),
           period_type: "monthly",
-          period_year: year,
-          period_month: month,
+          year,
+          month,
         });
       }
 

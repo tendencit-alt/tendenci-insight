@@ -27,6 +27,7 @@ import CadastrosFinanceiros from "./pages/CadastrosFinanceiros";
 
 import ResetPassword from "./pages/ResetPassword";
 import SuperAdmin from "./pages/SuperAdmin";
+import Onboarding from "./pages/Onboarding";
 
 const queryClient = new QueryClient();
 
