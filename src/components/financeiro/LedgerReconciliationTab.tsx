@@ -468,6 +468,41 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
     toast.info("Use a aba 'Lançamentos' para conciliar com transações bancárias");
   };
 
+  const handleSmartReconcile = async () => {
+    const pendingTxIds = transactions?.filter(t => t.status === "PENDENTE" || t.status === "SUGERIDA").map(t => t.id) || [];
+    if (pendingTxIds.length === 0) {
+      toast.info("Nenhuma transação pendente para conciliar");
+      return;
+    }
+
+    setSmartReconciling(true);
+    try {
+      // Get tenant_id
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Não autenticado");
+      const { data: profile } = await supabase.from("profiles").select("tenant_id").eq("id", user.id).single();
+      if (!profile?.tenant_id) throw new Error("Tenant não encontrado");
+
+      const { data, error } = await supabase.functions.invoke("smart-reconcile", {
+        body: { transaction_ids: pendingTxIds, tenant_id: profile.tenant_id },
+      });
+
+      if (error) throw error;
+
+      setSmartReconcileResults(data?.summary);
+      const s = data?.summary;
+      toast.success(
+        `Conciliação inteligente: ${s?.auto_reconciled || 0} automáticas, ${s?.suggested || 0} sugeridas, ${s?.duplicates || 0} duplicadas`
+      );
+      refetchTransactions();
+      refetchEntries();
+    } catch (e: any) {
+      toast.error("Erro na conciliação inteligente: " + (e.message || "Erro desconhecido"));
+    } finally {
+      setSmartReconciling(false);
+    }
+  };
+
   // Summary KPIs for unified header
   const totalLancamentos = entries?.length || 0;
   const totalConciliados = entries?.filter(e => e.reconciled).length || 0;
