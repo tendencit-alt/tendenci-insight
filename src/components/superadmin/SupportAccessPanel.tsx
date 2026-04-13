@@ -3,12 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -37,12 +37,12 @@ export function SupportAccessPanel() {
     queryKey: ['support-sessions'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('support_access_sessions')
+        .from('support_access_sessions' as any)
         .select('*, tenant:tenants(name)')
         .order('created_at', { ascending: false })
         .limit(50);
       if (error) throw error;
-      return data;
+      return data as any[];
     },
   });
 
@@ -52,13 +52,13 @@ export function SupportAccessPanel() {
       const durationMinutes = parseInt(duration);
       const expiresAt = new Date(Date.now() + durationMinutes * 60 * 1000).toISOString();
       
-      const { error } = await supabase.from('support_access_sessions').insert({
+      const { error } = await supabase.from('support_access_sessions' as any).insert({
         owner_user_id: user.id,
         tenant_id: selectedTenant,
         reason,
         expires_at: expiresAt,
         status: 'active',
-      });
+      } as any);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -74,8 +74,8 @@ export function SupportAccessPanel() {
   const endSession = useMutation({
     mutationFn: async (sessionId: string) => {
       const { error } = await supabase
-        .from('support_access_sessions')
-        .update({ status: 'ended', ended_at: new Date().toISOString() })
+        .from('support_access_sessions' as any)
+        .update({ status: 'ended', ended_at: new Date().toISOString() } as any)
         .eq('id', sessionId);
       if (error) throw error;
     },
