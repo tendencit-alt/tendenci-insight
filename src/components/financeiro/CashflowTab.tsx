@@ -1,5 +1,6 @@
+import React from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { AccountsStatusTooltip } from "./AccountsStatusTooltip";
+import { supabase } from "@/integrations/supabase/client";
 import { supabase } from "@/integrations/supabase/client";
 import { FinanceiroFiltersState } from "./FinanceiroFilters";
 import { CostCenterSubFilter } from "./CostCenterSubFilter";
@@ -16,7 +17,7 @@ import {
 } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { cn } from "@/lib/utils";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 
 interface CashflowTabProps {
   filters: FinanceiroFiltersState;
