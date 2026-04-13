@@ -218,7 +218,8 @@ export function ExecutiveView({ filters }: ExecutiveViewProps) {
         dre: {
           receitaLiquida,
           margemContribuicao,
-          resultadoOperacional,
+          resultadoOperacionalEBITDA,
+          resultadoEconomicoEBIT,
           resultadoAntesCapital,
         },
         cashflow: {
@@ -272,9 +273,15 @@ export function ExecutiveView({ filters }: ExecutiveViewProps) {
       isCalculated: true 
     },
     { 
-      label: "Resultado Operacional", 
-      key: "resultado_operacional",
-      value: dre?.resultadoOperacional || 0, 
+      label: "Resultado Operacional (EBITDA)", 
+      key: "resultado_operacional_ebitda",
+      value: dre?.resultadoOperacionalEBITDA || 0, 
+      isCalculated: true 
+    },
+    { 
+      label: "Resultado Econômico (EBIT)", 
+      key: "resultado_economico_ebit",
+      value: dre?.resultadoEconomicoEBIT || 0, 
       isCalculated: true 
     },
     { 
