@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { GitBranch, Clock, CheckCircle2, XCircle } from "lucide-react";
+import { GitBranch, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
 

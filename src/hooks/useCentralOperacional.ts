@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { differenceInDays, format, startOfDay, endOfDay } from "date-fns";
+import { differenceInDays, format } from "date-fns";
 
 export interface CriticalAlert {
   id: string;
@@ -303,7 +303,7 @@ export function useQuickIndicators() {
   });
 }
 
-function formatEventType(type: string, payload: any): string {
+function formatEventType(type: string, _payload?: any): string {
   const map: Record<string, string> = {
     "order.approved": "Pedido aprovado",
     "order.cancelled": "Pedido cancelado",
