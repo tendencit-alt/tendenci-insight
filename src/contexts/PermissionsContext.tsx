@@ -76,6 +76,9 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [isMaster, setIsMaster] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
+  const [isTenantOwner, setIsTenantOwner] = useState(false);
+  const [isTenantAdmin, setIsTenantAdmin] = useState(false);
+  const [userLevel, setUserLevel] = useState<'system_owner' | 'tenant_owner' | 'tenant_admin' | 'operational'>('operational');
 
   const fetchPermissions = useCallback(async () => {
     console.log('[Permissions] Fetching for user:', user?.id, user?.email);
