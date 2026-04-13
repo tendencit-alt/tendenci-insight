@@ -46,6 +46,8 @@ interface PermissionsContextType {
   userLevel: 'system_owner' | 'tenant_owner' | 'tenant_admin' | 'operational';
   hasModuleAccess: (module: AppModule | string, action?: PermissionAction) => boolean;
   hasCriticalPermission: (key: string) => boolean;
+  checkValueLimit: (module: string, value: number) => Promise<{ allowed: boolean; reason: string; requires_approval?: boolean; max_value?: number }>;
+  checkStatusRule: (module: string, status: string, action?: string) => Promise<boolean>;
   refetch: () => Promise<void>;
 }
 
