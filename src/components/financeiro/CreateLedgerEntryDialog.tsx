@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -24,6 +24,8 @@ import {
 import { useFinanceiroSync } from "@/hooks/useFinanceiroSync";
 import { createLedgerEntryWithIntegration } from "@/lib/financeiroIntegration";
 import { validateAndShowErrors, ValidationRule } from "@/lib/formValidation";
+import { useClassifyEntry } from "@/hooks/useClassifyEntry";
+import { ClassificationSuggestionPanel } from "./ClassificationSuggestionPanel";
 
 interface CreateLedgerEntryDialogProps {
   open: boolean;
@@ -36,6 +38,34 @@ export function CreateLedgerEntryDialog({ open, onOpenChange, onSuccess }: Creat
   const { minimize: minimizeDialog, remove: removeMinimized } = useMinimizedDialogs();
   const [isMinimized, setIsMinimized] = useState(false);
   const { invalidateLedger } = useFinanceiroSync();
+  const { classify, result: classificationResult, loading: classifying, clearResult } = useClassifyEntry();
+  const classifyTimer = useRef<ReturnType<typeof setTimeout>>();
+
+  // Debounced classification trigger
+  const triggerClassification = useCallback((desc: string, type: string, partyId?: string) => {
+    clearResult();
+    if (classifyTimer.current) clearTimeout(classifyTimer.current);
+    if (desc.length < 4) return;
+    classifyTimer.current = setTimeout(() => {
+      classify({
+        description: desc,
+        amount: 0,
+        type,
+        party_id: partyId || undefined,
+        origin: "manual",
+      });
+    }, 600);
+  }, [classify, clearResult]);
+
+  const handleApplySuggestion = useCallback((suggestion: any) => {
+    setForm(prev => ({
+      ...prev,
+      chart_account_id: suggestion.chart_account_id || prev.chart_account_id,
+      cost_center_id: suggestion.cost_center_id || prev.cost_center_id,
+      project_id: suggestion.project_id || prev.project_id,
+    }));
+    toast.success("Sugestão aplicada");
+  }, []);
 
   const handleMinimize = useCallback(() => {
     setIsMinimized(true);
@@ -354,9 +384,25 @@ export function CreateLedgerEntryDialog({ open, onOpenChange, onSuccess }: Creat
             <Input
               placeholder="Descrição do lançamento..."
               value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              onChange={(e) => {
+                const desc = e.target.value;
+                setForm({ ...form, description: desc });
+                triggerClassification(desc, form.type, form.party_id || undefined);
+              }}
             />
           </div>
+
+          {/* Classification suggestion */}
+          {(classifying || classificationResult) && (
+            <ClassificationSuggestionPanel
+              suggestions={classificationResult?.suggestions || []}
+              bestSuggestion={classificationResult?.best_suggestion || null}
+              status={classificationResult?.status || "pending"}
+              loading={classifying}
+              onApply={handleApplySuggestion}
+              onDismiss={clearResult}
+            />
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
