@@ -162,6 +162,9 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
       if (filters.bankAccountId) query = query.eq("bank_account_id", filters.bankAccountId);
       if (filters.costCenterId) query = query.or(`cost_center_id.eq.${filters.costCenterId},has_splits.eq.true`);
       if (filters.projectId) query = query.eq("project_id", filters.projectId);
+      if (filters.clientId) query = query.eq("client_id", filters.clientId);
+      if (filters.vendedorId) query = query.eq("vendedor_id", filters.vendedorId);
+      if (filters.orderId) query = query.eq("order_id", filters.orderId);
       if (filters.subcategoryId) query = query.eq("chart_account_id", filters.subcategoryId);
       else if (filters.categoryId) query = query.eq("chart_account_id", filters.categoryId);
 
@@ -179,6 +182,9 @@ export function CashflowTab({ filters, onFiltersChange }: CashflowTabProps) {
       if (filters.bankAccountId) compQuery = compQuery.eq("bank_account_id", filters.bankAccountId);
       if (filters.costCenterId) compQuery = compQuery.or(`cost_center_id.eq.${filters.costCenterId},has_splits.eq.true`);
       if (filters.projectId) compQuery = compQuery.eq("project_id", filters.projectId);
+      if (filters.clientId) compQuery = compQuery.eq("client_id", filters.clientId);
+      if (filters.vendedorId) compQuery = compQuery.eq("vendedor_id", filters.vendedorId);
+      if (filters.orderId) compQuery = compQuery.eq("order_id", filters.orderId);
       if (filters.subcategoryId) compQuery = compQuery.eq("chart_account_id", filters.subcategoryId);
       else if (filters.categoryId) compQuery = compQuery.eq("chart_account_id", filters.categoryId);
 

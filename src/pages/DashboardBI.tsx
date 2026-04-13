@@ -22,6 +22,9 @@ export default function DashboardBI() {
     subcategoryId: null,
     sortField: null,
     sortDirection: null,
+    clientId: null,
+    vendedorId: null,
+    orderId: null,
   });
 
   return (

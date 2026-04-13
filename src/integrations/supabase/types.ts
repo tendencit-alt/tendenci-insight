@@ -3221,6 +3221,7 @@ export type Database = {
           classification_score: number | null
           classification_source: string | null
           classification_status: string | null
+          client_id: string | null
           competence_date: string
           conciliado_em: string | null
           cost_center_id: string | null
@@ -3236,6 +3237,7 @@ export type Database = {
           loan_contract_id: string | null
           motivo_cancelamento: string | null
           notes: string | null
+          order_id: string | null
           origem: string | null
           parent_entry_id: string | null
           party_id: string | null
@@ -3253,6 +3255,7 @@ export type Database = {
           total_installments: number | null
           type: string | null
           updated_at: string | null
+          vendedor_id: string | null
         }
         Insert: {
           amount: number
@@ -3265,6 +3268,7 @@ export type Database = {
           classification_score?: number | null
           classification_source?: string | null
           classification_status?: string | null
+          client_id?: string | null
           competence_date: string
           conciliado_em?: string | null
           cost_center_id?: string | null
@@ -3280,6 +3284,7 @@ export type Database = {
           loan_contract_id?: string | null
           motivo_cancelamento?: string | null
           notes?: string | null
+          order_id?: string | null
           origem?: string | null
           parent_entry_id?: string | null
           party_id?: string | null
@@ -3297,6 +3302,7 @@ export type Database = {
           total_installments?: number | null
           type?: string | null
           updated_at?: string | null
+          vendedor_id?: string | null
         }
         Update: {
           amount?: number
@@ -3309,6 +3315,7 @@ export type Database = {
           classification_score?: number | null
           classification_source?: string | null
           classification_status?: string | null
+          client_id?: string | null
           competence_date?: string
           conciliado_em?: string | null
           cost_center_id?: string | null
@@ -3324,6 +3331,7 @@ export type Database = {
           loan_contract_id?: string | null
           motivo_cancelamento?: string | null
           notes?: string | null
+          order_id?: string | null
           origem?: string | null
           parent_entry_id?: string | null
           party_id?: string | null
@@ -3341,6 +3349,7 @@ export type Database = {
           total_installments?: number | null
           type?: string | null
           updated_at?: string | null
+          vendedor_id?: string | null
         }
         Relationships: [
           {
@@ -3365,6 +3374,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "fin_ledger_entries_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "fin_ledger_entries_cost_center_id_fkey"
             columns: ["cost_center_id"]
             isOneToOne: false
@@ -3383,6 +3399,13 @@ export type Database = {
             columns: ["loan_contract_id"]
             isOneToOne: false
             referencedRelation: "fin_loan_contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_ledger_entries_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
             referencedColumns: ["id"]
           },
           {
@@ -3411,6 +3434,13 @@ export type Database = {
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_ledger_entries_vendedor_id_fkey"
+            columns: ["vendedor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]

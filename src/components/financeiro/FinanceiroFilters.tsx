@@ -26,6 +26,9 @@ export interface FinanceiroFiltersState {
   subcategoryId: string | null;
   sortField: SortField;
   sortDirection: SortDirection;
+  clientId: string | null;
+  vendedorId: string | null;
+  orderId: string | null;
 }
 
 interface FinanceiroFiltersProps {
@@ -72,6 +75,44 @@ export function FinanceiroFilters({ filters, onChange }: FinanceiroFiltersProps)
     },
   });
 
+  const { data: clients } = useQuery({
+    queryKey: ["fin-filter-clients"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("clients")
+        .select("id, name")
+        .order("name")
+        .limit(500);
+      return data || [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: vendedores } = useQuery({
+    queryKey: ["fin-filter-vendedores"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .order("full_name");
+      return data || [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: orders } = useQuery({
+    queryKey: ["fin-filter-orders"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("orders")
+        .select("id, order_number, client:clients(name)")
+        .order("order_number", { ascending: false })
+        .limit(200);
+      return data || [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
   // Busca apenas categorias pai (parent_id = null)
   const { data: categories } = useQuery({
     queryKey: ["fin-chart-accounts-categories"],
@@ -109,6 +150,9 @@ export function FinanceiroFilters({ filters, onChange }: FinanceiroFiltersProps)
     filters.search,
     filters.categoryId,
     filters.subcategoryId,
+    filters.clientId,
+    filters.vendedorId,
+    filters.orderId,
   ].filter(Boolean).length;
 
   const handlePresetPeriod = (preset: string) => {
@@ -160,6 +204,9 @@ export function FinanceiroFilters({ filters, onChange }: FinanceiroFiltersProps)
       subcategoryId: null,
       sortField: null,
       sortDirection: null,
+      clientId: null,
+      vendedorId: null,
+      orderId: null,
     });
   };
 
@@ -376,7 +423,60 @@ export function FinanceiroFilters({ filters, onChange }: FinanceiroFiltersProps)
                 </SelectContent>
               </Select>
 
-              {/* Sort Buttons */}
+              {/* Cliente */}
+              <Select
+                value={filters.clientId || "all"}
+                onValueChange={(value) => onChange({ ...filters, clientId: value === "all" ? null : value })}
+              >
+                <SelectTrigger className="h-8 w-[130px]">
+                  <SelectValue placeholder="Cliente" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Clientes</SelectItem>
+                  {clients?.map((client) => (
+                    <SelectItem key={client.id} value={client.id}>
+                      {client.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Vendedor */}
+              <Select
+                value={filters.vendedorId || "all"}
+                onValueChange={(value) => onChange({ ...filters, vendedorId: value === "all" ? null : value })}
+              >
+                <SelectTrigger className="h-8 w-[130px]">
+                  <SelectValue placeholder="Vendedor" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Vendedores</SelectItem>
+                  {vendedores?.map((v) => (
+                    <SelectItem key={v.id} value={v.id}>
+                      {v.full_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Pedido */}
+              <Select
+                value={filters.orderId || "all"}
+                onValueChange={(value) => onChange({ ...filters, orderId: value === "all" ? null : value })}
+              >
+                <SelectTrigger className="h-8 w-[130px]">
+                  <SelectValue placeholder="Pedido" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Pedidos</SelectItem>
+                  {orders?.map((order: any) => (
+                    <SelectItem key={order.id} value={order.id}>
+                      #{order.order_number} {order.client?.name ? `- ${order.client.name}` : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
               <div className="flex items-center gap-1 ml-auto">
                 <Button
                   variant={filters.sortField === "date" ? "default" : "ghost"}
