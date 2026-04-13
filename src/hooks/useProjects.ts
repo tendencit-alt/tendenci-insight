@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 export interface ProjectOption {
   value: string;
   label: string;
+  projectType?: string;
 }
 
 export function useProjects() {
@@ -12,11 +13,11 @@ export function useProjects() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('fin_projects')
-        .select('id, name')
+        .select('id, name, project_type')
         .eq('status', 'ativo')
         .order('name');
       if (error) throw error;
-      return data?.map(p => ({ value: p.id, label: p.name })) || [];
+      return data?.map(p => ({ value: p.id, label: p.name, projectType: p.project_type })) || [];
     },
     staleTime: 5 * 60 * 1000,
   });
