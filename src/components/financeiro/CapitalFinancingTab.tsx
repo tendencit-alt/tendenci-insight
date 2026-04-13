@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Banknote, CalendarClock, TrendingDown, TrendingUp, DollarSign } from "lucide-react";
+import { Banknote, TrendingDown, TrendingUp, DollarSign } from "lucide-react";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 
 interface CapitalFinancingTabProps {
@@ -29,7 +29,6 @@ export function CapitalFinancingTab({ filters }: CapitalFinancingTabProps) {
 
       if (!root6) return [];
 
-      // Buscar todas as contas filhas recursivamente
       const { data: accounts } = await supabase
         .from("fin_chart_accounts")
         .select("id, code, name, nature")
@@ -38,7 +37,6 @@ export function CapitalFinancingTab({ filters }: CapitalFinancingTabProps) {
       if (!accounts) return [];
       const accountIds = accounts.map(a => a.id);
 
-      // Buscar subcategorias (nível 3)
       const { data: subAccounts } = await supabase
         .from("fin_chart_accounts")
         .select("id, code, name, nature, parent_id")
@@ -65,20 +63,6 @@ export function CapitalFinancingTab({ filters }: CapitalFinancingTabProps) {
     },
   });
 
-  // Buscar empréstimos ativos
-  const { data: loans, isLoading: loansLoading } = useQuery({
-    queryKey: ["fin-active-loans"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("fin_loans")
-        .select("*")
-        .in("status", ["active", "pending"])
-        .order("created_at", { ascending: false });
-      if (error) return [];
-      return data || [];
-    },
-  });
-
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 
@@ -95,7 +79,6 @@ export function CapitalFinancingTab({ filters }: CapitalFinancingTabProps) {
 
   return (
     <div className="space-y-4">
-      {/* KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="pt-6">
@@ -145,52 +128,14 @@ export function CapitalFinancingTab({ filters }: CapitalFinancingTabProps) {
                 <Banknote className="h-5 w-5 text-amber-500" />
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Empréstimos Ativos</p>
-                <p className="text-lg font-bold">{loans?.length || 0}</p>
+                <p className="text-xs text-muted-foreground">Financiamentos</p>
+                <Badge variant="outline" className="text-xs">Raiz 6</Badge>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Empréstimos ativos */}
-      {loans && loans.length > 0 && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base font-semibold">Empréstimos e Financiamentos Ativos</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Descrição</TableHead>
-                  <TableHead>Valor Original</TableHead>
-                  <TableHead>Parcelas</TableHead>
-                  <TableHead>Taxa</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loans.map((loan: any) => (
-                  <TableRow key={loan.id}>
-                    <TableCell className="font-medium">{loan.description || "-"}</TableCell>
-                    <TableCell className="font-mono">{formatCurrency(loan.principal_amount || 0)}</TableCell>
-                    <TableCell>{loan.total_installments || "-"}</TableCell>
-                    <TableCell>{loan.interest_rate ? `${loan.interest_rate}%` : "-"}</TableCell>
-                    <TableCell>
-                      <Badge variant={loan.status === "active" ? "default" : "secondary"} className="text-xs capitalize">
-                        {loan.status === "active" ? "Ativo" : loan.status}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Movimentações do período */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base font-semibold">Movimentações de Capital no Período</CardTitle>
