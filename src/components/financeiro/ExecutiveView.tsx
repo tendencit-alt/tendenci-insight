@@ -17,9 +17,7 @@ interface ExecutiveData {
     receitaLiquida: number;
     margemContribuicao: number;
     resultadoOperacionalEBITDA: number;
-    resultadoEconomicoEBIT: number;
-    resultadoAntesCapital: number;
-    lucroLiquido: number | null;
+    resultadoLiquido: number;
   };
   cashflow: {
     entradasOperacionais: number;
@@ -204,9 +202,7 @@ export function ExecutiveView({ filters }: ExecutiveViewProps) {
       const receitaLiquida = totalReceitas - deducoesReceita;
       const margemContribuicao = receitaLiquida - custosVariaveis - compromissosVenda;
       const resultadoOperacionalEBITDA = margemContribuicao - despesasOperacionais;
-      const resultadoEconomicoEBIT = resultadoOperacionalEBITDA - depreciacao;
-      const resultadoAntesCapital = resultadoEconomicoEBIT + resultadoFinanceiro;
-      const lucroLiquido = showImpostos ? resultadoAntesCapital - impostosResultado : resultadoAntesCapital;
+      const resultadoLiquido = resultadoOperacionalEBITDA - depreciacao + resultadoFinanceiro - impostosResultado;
 
       // Calculate Cashflow values
       let entradasOperacionais = 0;
@@ -244,9 +240,7 @@ export function ExecutiveView({ filters }: ExecutiveViewProps) {
           receitaLiquida,
           margemContribuicao,
           resultadoOperacionalEBITDA,
-          resultadoEconomicoEBIT,
-          resultadoAntesCapital,
-          lucroLiquido: showImpostos ? lucroLiquido : null,
+          resultadoLiquido,
         },
         cashflow: {
           entradasOperacionais,
