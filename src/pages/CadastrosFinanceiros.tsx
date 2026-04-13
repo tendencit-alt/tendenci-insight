@@ -8,7 +8,8 @@ import { OrderResponsiblesManager } from "@/components/financeiro/masters/OrderR
 import { StrategicResourceCategoriesManager } from "@/components/financeiro/masters/StrategicResourceCategoriesManager";
 import { CardRatesManager } from "@/components/financeiro/masters/CardRatesManager";
 import { OriginRulesMatrix } from "@/components/financeiro/masters/OriginRulesMatrix";
-import { Building2, FileSpreadsheet, Landmark, FolderKanban, Database, BriefcaseBusiness, FolderCog, CreditCard, Zap } from "lucide-react";
+import { FinancePermissionsMatrix } from "@/components/financeiro/masters/FinancePermissionsMatrix";
+import { Building2, FileSpreadsheet, Landmark, FolderKanban, Database, BriefcaseBusiness, FolderCog, CreditCard, Zap, Shield } from "lucide-react";
 import { useState } from "react";
 
 export default function CadastrosFinanceiros() {
