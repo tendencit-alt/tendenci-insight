@@ -27,6 +27,10 @@ export function useFinanceiroSync() {
     queryClient.invalidateQueries({ queryKey: ["fin-orphan-entries"] });
     queryClient.invalidateQueries({ queryKey: ["fin-bank-balance-unified"] });
     queryClient.invalidateQueries({ queryKey: ["fin-bank-accounts-balance"] });
+    queryClient.invalidateQueries({ queryKey: ["fin-business-events"] });
+    queryClient.invalidateQueries({ queryKey: ["fin-recurring-contracts"] });
+    queryClient.invalidateQueries({ queryKey: ["fin-assets"] });
+    queryClient.invalidateQueries({ queryKey: ["fin-loan-installments"] });
   };
 
   /**
