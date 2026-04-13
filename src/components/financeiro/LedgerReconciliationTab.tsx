@@ -48,7 +48,14 @@ import { FinanceiroAlerts } from "./FinanceiroAlerts";
 import { toast } from "sonner";
 import { parseOFX, OFXTransaction } from "@/lib/ofx-parser";
 import { BankAccountExtractTab } from "./BankAccountExtractTab";
+import { ClassificationSuggestionBadge } from "./ClassificationSuggestionBadge";
+import { useClassifyEntry } from "@/hooks/useClassifyEntry";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
