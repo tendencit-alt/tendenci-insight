@@ -21,7 +21,7 @@ interface Order {
   data_entrega_prevista: string | null;
   client: { id: string; name: string; cpf_cnpj: string | null; phone: string | null } | null;
   vendedor: { id: string; full_name: string } | null;
-  architect: { id: string; name: string } | null;
+  
   deal: { id: string; title: string } | null;
 }
 
@@ -72,7 +72,7 @@ export function OrdersTable({ orders, isLoading, onSelectOrder, onEditOrder, onD
       order.client?.name?.toLowerCase().includes(search) ||
       order.client?.cpf_cnpj?.includes(search) ||
       order.vendedor?.full_name?.toLowerCase().includes(search) ||
-      order.architect?.name?.toLowerCase().includes(search) ||
+      
       order.deal?.title?.toLowerCase().includes(search)
     );
   });
