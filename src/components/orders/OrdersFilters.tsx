@@ -25,12 +25,15 @@ interface OrdersFiltersProps {
 
 const ORDER_STATUSES = [
   { value: 'rascunho', label: 'Rascunho' },
-  { value: 'ativo', label: 'Ativo' },
-  { value: 'aguardando_aprovacao', label: 'Aguardando' },
+  { value: 'em_negociacao', label: 'Em Negociação' },
   { value: 'aprovado', label: 'Aprovado' },
+  { value: 'liberado_producao', label: 'Lib. Produção' },
   { value: 'em_producao', label: 'Em Produção' },
+  { value: 'producao_concluida', label: 'Prod. Concluída' },
+  { value: 'liberado_faturamento', label: 'Lib. Faturamento' },
   { value: 'faturado', label: 'Faturado' },
   { value: 'entregue', label: 'Entregue' },
+  { value: 'encerrado', label: 'Encerrado' },
   { value: 'cancelado', label: 'Cancelado' },
 ];
 
