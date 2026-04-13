@@ -522,6 +522,20 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
           </p>
         </div>
         <div className="flex gap-2">
+          <Button
+            variant="default"
+            size="sm"
+            className="gap-1.5 text-xs sm:text-sm"
+            onClick={handleSmartReconcile}
+            disabled={smartReconciling || !transactions?.length}
+          >
+            {smartReconciling ? (
+              <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Brain className="h-3.5 w-3.5" />
+            )}
+            {smartReconciling ? "Conciliando..." : "Conciliação Inteligente"}
+          </Button>
           <input
             type="file"
             accept=".ofx"
