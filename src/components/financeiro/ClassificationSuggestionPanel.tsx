@@ -1,7 +1,6 @@
 import { ClassificationSuggestion } from "@/hooks/useClassifyEntry";
 import { Button } from "@/components/ui/button";
 import { Brain, CheckCircle2, ChevronDown, ChevronUp, Lightbulb, ShieldCheck } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 
 interface ClassificationSuggestionPanelProps {

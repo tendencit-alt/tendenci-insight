@@ -115,8 +115,8 @@ export function useClassifyEntry() {
         .eq("id", entryId);
 
       // Upsert learning history
-      const { data: existing } = await supabase
-        .from("fin_classification_history" as any)
+      const { data: existing } = await (supabase as any)
+        .from("fin_classification_history")
         .select("id, confirmation_count")
         .eq("tenant_id", profile.tenant_id)
         .eq("normalized_description", normalizedDesc)
@@ -124,11 +124,11 @@ export function useClassifyEntry() {
         .maybeSingle();
 
       if (existing) {
-        const newCount = (existing.confirmation_count || 0) + 1;
+        const newCount = ((existing as any).confirmation_count || 0) + 1;
         const strength = newCount >= 5 ? "strong" : newCount >= 3 ? "moderate" : "weak";
         
-        await supabase
-          .from("fin_classification_history" as any)
+        await (supabase as any)
+          .from("fin_classification_history")
           .update({
             confirmation_count: newCount,
             strength,
@@ -136,12 +136,12 @@ export function useClassifyEntry() {
             last_confirmed_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           })
-          .eq("id", existing.id);
+          .eq("id", (existing as any).id);
 
         // Auto-promote to rule at 5 confirmations
         if (newCount >= 5) {
-          const { data: existingRule } = await supabase
-            .from("fin_classification_rules" as any)
+          const { data: existingRule } = await (supabase as any)
+            .from("fin_classification_rules")
             .select("id")
             .eq("tenant_id", profile.tenant_id)
             .eq("match_value", normalizedDesc)
@@ -149,8 +149,8 @@ export function useClassifyEntry() {
             .maybeSingle();
 
           if (!existingRule) {
-            await supabase
-              .from("fin_classification_rules" as any)
+            await (supabase as any)
+              .from("fin_classification_rules")
               .insert({
                 tenant_id: profile.tenant_id,
                 rule_type: "keyword",
@@ -172,8 +172,8 @@ export function useClassifyEntry() {
           }
         }
       } else {
-        await supabase
-          .from("fin_classification_history" as any)
+        await (supabase as any)
+          .from("fin_classification_history")
           .insert({
             tenant_id: profile.tenant_id,
             original_description: originalDescription,
