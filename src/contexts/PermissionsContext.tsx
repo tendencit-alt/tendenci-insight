@@ -50,6 +50,9 @@ const PermissionsContext = createContext<PermissionsContextType | undefined>(und
 
 const ALL_MODULES: AppModule[] = [
   'dashboard',
+  'dashboard_executivo',
+  'comercial',
+  'operacional',
   'configuracoes',
   'gestao_usuarios',
   'producao',
@@ -58,6 +61,10 @@ const ALL_MODULES: AppModule[] = [
   'pedidos',
   'financeiro',
   'cadastros_financeiros',
+  'controladoria',
+  'planejamento',
+  'cadastros',
+  'relatorios_bi',
 ];
 
 export function PermissionsProvider({ children }: { children: ReactNode }) {
