@@ -321,8 +321,17 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
       // Build tree
       const tree = buildTree(chartAccounts || []);
 
+      // Fetch tax regime to determine if root 7 should be visible
+      const { data: companySettings } = await supabase
+        .from("company_settings")
+        .select("tax_regime")
+        .limit(1)
+        .maybeSingle();
+      
+      const taxRegime = companySettings?.tax_regime || 'simples_nacional';
+      const showImpostos = taxRegime !== 'simples_nacional';
+
       // Calculate totals for root-level accounts
-      // Structure: 1=Receitas, 2=Deduções, 3=CustosVar, 4=DespOp, 5=Deprec, 6=ResultFin(RESULTADO), 7=Capital, 8=Variação
       let totalReceitas = 0;
       let totalDeducoes = 0;
       let totalCustosVariaveis = 0;
@@ -333,6 +342,7 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
       let totalDespesasFinanceiras = 0;
       let totalCapitalEntrada = 0;
       let totalCapitalSaida = 0;
+      let totalImpostos = 0;
 
       const rootAccounts = chartAccounts?.filter(a => !a.parent_id) || [];
       
@@ -365,7 +375,6 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
         if (mainCode === 1) {
           totalReceitas += total;
         } else if (mainCode === 2) {
-          // Root 2 "Despesas sobre Vendas" contains both deduções (2.1) and custos (2.2)
           const children = tree.get(account.id) || [];
           children.forEach(child => {
             const childValue = accountValues.get(child.id) || 0;
@@ -398,6 +407,8 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
               totalCapitalSaida += childTotal;
             }
           });
+        } else if (mainCode === 7) {
+          totalImpostos += total;
         }
       });
 
@@ -408,16 +419,14 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
       const resultadoEconomicoEBIT = resultadoOperacionalEBITDA - totalDepreciacao;
       const totalResultadoFinanceiro = totalReceitasFinanceiras - totalDespesasFinanceiras;
       const resultadoAntesCapital = resultadoEconomicoEBIT + totalResultadoFinanceiro;
+      const lucroLiquido = showImpostos ? resultadoAntesCapital - totalImpostos : resultadoAntesCapital;
       const variacaoLiquidaCaixa = resultadoAntesCapital + totalCapitalEntrada - totalCapitalSaida;
 
       // Calculate breakeven point correctly
       const custosVariaveis = Math.abs(totalCustosVariaveis);
       const custosFixos = Math.abs(totalDespesasOp);
       
-      // Margem de contribuição em valor absoluto
       const margemContribuicaoValor = receitaLiquida - custosVariaveis;
-      
-      // Margem de contribuição em percentual
       const margemContribuicaoPercent = receitaLiquida > 0 
         ? (margemContribuicaoValor / receitaLiquida) * 100 
         : 0;
@@ -434,9 +443,18 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
       calculatedValues.set("6", totalResultadoFinanceiro);
       calculatedValues.set("8", variacaoLiquidaCaixa);
 
-      // Flatten tree from DB accounts
+      // Filter out root 7 if Simples Nacional
+      const filteredAccounts = showImpostos 
+        ? (chartAccounts || [])
+        : (chartAccounts || []).filter(a => {
+            const mainCode = parseFloat(a.code.split('.')[0]);
+            return mainCode !== 7;
+          });
+
+      // Flatten tree from filtered accounts
+      const filteredTree = buildTree(filteredAccounts);
       const lines: DRELine[] = [];
-      flattenTree(tree, accountValues, calculatedValues, entriesByAccount, realizedAmounts, null, 0, lines);
+      flattenTree(filteredTree, accountValues, calculatedValues, entriesByAccount, realizedAmounts, null, 0, lines);
       
       // Inject calculated intermediate lines after specific groups
       const injectAfterCode = (afterCode: string, calcLine: DRELine) => {
@@ -460,6 +478,9 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
       });
 
       // Insert in reverse order so indices don't shift
+      if (showImpostos) {
+        injectAfterCode("7", makeCalcLine("calc-lucro-liquido", "=LL", "= Lucro Líquido", lucroLiquido));
+      }
       injectAfterCode("6", makeCalcLine("calc-resultado-antes-capital", "=RAC", "= Resultado Antes do Capital", resultadoAntesCapital));
       injectAfterCode("5", makeCalcLine("calc-ebit", "=EBIT", "= Resultado Econômico (EBIT)", resultadoEconomicoEBIT));
       injectAfterCode("4", makeCalcLine("calc-ebitda", "=EBITDA", "= Resultado Operacional (EBITDA)", resultadoOperacionalEBITDA));

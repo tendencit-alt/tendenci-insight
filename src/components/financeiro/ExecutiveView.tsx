@@ -19,6 +19,7 @@ interface ExecutiveData {
     resultadoOperacionalEBITDA: number;
     resultadoEconomicoEBIT: number;
     resultadoAntesCapital: number;
+    lucroLiquido: number | null;
   };
   cashflow: {
     entradasOperacionais: number;
@@ -62,7 +63,7 @@ export function ExecutiveView({ filters }: ExecutiveViewProps) {
         if (mainCode === 2 && subCode === 1) return "deducao_receita";
         if (mainCode === 2 && subCode === 2) return "custo_variavel";
         if (mainCode === 2 && subCode === 3) return "compromisso_venda";
-        if (mainCode === 2) return "deducao_receita"; // fallback for root 2
+        if (mainCode === 2) return "deducao_receita";
         if (mainCode === 3) return "despesa_operacional";
         if (mainCode === 4) return "depreciacao";
         if (mainCode === 5 && nature === "RECEITA") return "receita_financeira";
@@ -71,6 +72,7 @@ export function ExecutiveView({ filters }: ExecutiveViewProps) {
         if (mainCode === 6 && subCode === 1) return "capital_entrada";
         if (mainCode === 6 && subCode === 2) return "capital_saida";
         if (mainCode === 6) return "capital_entrada";
+        if (mainCode === 7) return "impostos_resultado";
         
         return nature === "RECEITA" ? "receita_operacional" : "despesa_operacional";
       };
@@ -158,6 +160,7 @@ export function ExecutiveView({ filters }: ExecutiveViewProps) {
       let depreciacao = 0;
       let receitasFinanceiras = 0;
       let despesasFinanceiras = 0;
+      let impostosResultado = 0;
 
       dreEntries?.forEach(entry => {
         const account = accountMap.get(entry.chart_account_id || "");
@@ -182,8 +185,20 @@ export function ExecutiveView({ filters }: ExecutiveViewProps) {
           receitasFinanceiras += amount;
         } else if (category === "despesa_financeira") {
           despesasFinanceiras += amount;
+        } else if (category === "impostos_resultado") {
+          impostosResultado += amount;
         }
       });
+
+      // Fetch tax regime
+      const { data: companySettings } = await supabase
+        .from("company_settings")
+        .select("tax_regime")
+        .limit(1)
+        .maybeSingle();
+      
+      const taxRegime = companySettings?.tax_regime || 'simples_nacional';
+      const showImpostos = taxRegime !== 'simples_nacional';
 
       const resultadoFinanceiro = receitasFinanceiras - despesasFinanceiras;
       const receitaLiquida = totalReceitas - deducoesReceita;
@@ -191,6 +206,7 @@ export function ExecutiveView({ filters }: ExecutiveViewProps) {
       const resultadoOperacionalEBITDA = margemContribuicao - despesasOperacionais;
       const resultadoEconomicoEBIT = resultadoOperacionalEBITDA - depreciacao;
       const resultadoAntesCapital = resultadoEconomicoEBIT + resultadoFinanceiro;
+      const lucroLiquido = showImpostos ? resultadoAntesCapital - impostosResultado : resultadoAntesCapital;
 
       // Calculate Cashflow values
       let entradasOperacionais = 0;
@@ -230,6 +246,7 @@ export function ExecutiveView({ filters }: ExecutiveViewProps) {
           resultadoOperacionalEBITDA,
           resultadoEconomicoEBIT,
           resultadoAntesCapital,
+          lucroLiquido: showImpostos ? lucroLiquido : null,
         },
         cashflow: {
           entradasOperacionais,
@@ -298,8 +315,15 @@ export function ExecutiveView({ filters }: ExecutiveViewProps) {
       key: "resultado_antes_capital",
       value: dre?.resultadoAntesCapital || 0, 
       isCalculated: true,
-      highlight: true 
+      highlight: dre?.lucroLiquido == null
     },
+    ...(dre?.lucroLiquido != null ? [{
+      label: "Lucro Líquido",
+      key: "lucro_liquido",
+      value: dre.lucroLiquido,
+      isCalculated: true,
+      highlight: true,
+    }] : []),
   ];
 
   const cashflowRows = [
