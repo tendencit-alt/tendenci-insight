@@ -8,7 +8,8 @@ import { OrderResponsiblesManager } from "@/components/financeiro/masters/OrderR
 import { StrategicResourceCategoriesManager } from "@/components/financeiro/masters/StrategicResourceCategoriesManager";
 import { CardRatesManager } from "@/components/financeiro/masters/CardRatesManager";
 import { OriginRulesMatrix } from "@/components/financeiro/masters/OriginRulesMatrix";
-import { Building2, FileSpreadsheet, Landmark, FolderKanban, Database, BriefcaseBusiness, FolderCog, CreditCard, Zap } from "lucide-react";
+import { FinancePermissionsMatrix } from "@/components/financeiro/masters/FinancePermissionsMatrix";
+import { Building2, FileSpreadsheet, Landmark, FolderKanban, Database, BriefcaseBusiness, FolderCog, CreditCard, Zap, Shield } from "lucide-react";
 import { useState } from "react";
 
 export default function CadastrosFinanceiros() {
@@ -61,6 +62,10 @@ export default function CadastrosFinanceiros() {
               <Zap className="h-4 w-4" />
               Automação por Origem
             </TabsTrigger>
+            <TabsTrigger value="permissions" className="flex items-center gap-2 px-4 py-2">
+              <Shield className="h-4 w-4" />
+              Permissões
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="bank_accounts" className="mt-6">
@@ -93,6 +98,10 @@ export default function CadastrosFinanceiros() {
 
           <TabsContent value="origin_rules" className="mt-6">
             <OriginRulesMatrix />
+          </TabsContent>
+
+          <TabsContent value="permissions" className="mt-6">
+            <FinancePermissionsMatrix />
           </TabsContent>
         </Tabs>
       </div>
