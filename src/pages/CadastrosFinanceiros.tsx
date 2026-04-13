@@ -9,7 +9,8 @@ import { StrategicResourceCategoriesManager } from "@/components/financeiro/mast
 import { CardRatesManager } from "@/components/financeiro/masters/CardRatesManager";
 import { OriginRulesMatrix } from "@/components/financeiro/masters/OriginRulesMatrix";
 import { FinancePermissionsMatrix } from "@/components/financeiro/masters/FinancePermissionsMatrix";
-import { Building2, FileSpreadsheet, Landmark, FolderKanban, Database, BriefcaseBusiness, FolderCog, CreditCard, Zap, Shield } from "lucide-react";
+import { EventAutomationRulesPanel } from "@/components/financeiro/masters/EventAutomationRulesPanel";
+import { Building2, FileSpreadsheet, Landmark, FolderKanban, Database, BriefcaseBusiness, FolderCog, CreditCard, Zap, Shield, Bot } from "lucide-react";
 import { useState } from "react";
 
 export default function CadastrosFinanceiros() {
@@ -62,6 +63,10 @@ export default function CadastrosFinanceiros() {
               <Zap className="h-4 w-4" />
               Automação por Origem
             </TabsTrigger>
+            <TabsTrigger value="event_automations" className="flex items-center gap-2 px-4 py-2">
+              <Bot className="h-4 w-4" />
+              Automações por Evento
+            </TabsTrigger>
             <TabsTrigger value="permissions" className="flex items-center gap-2 px-4 py-2">
               <Shield className="h-4 w-4" />
               Permissões
@@ -98,6 +103,10 @@ export default function CadastrosFinanceiros() {
 
           <TabsContent value="origin_rules" className="mt-6">
             <OriginRulesMatrix />
+          </TabsContent>
+
+          <TabsContent value="event_automations" className="mt-6">
+            <EventAutomationRulesPanel />
           </TabsContent>
 
           <TabsContent value="permissions" className="mt-6">
