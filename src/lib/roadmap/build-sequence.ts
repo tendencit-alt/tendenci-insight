@@ -496,7 +496,7 @@ export function getItemDependencyChain(itemId: string): BuildItem[] {
       deps.push(...getItemDependencyChain(dep.id), dep);
     }
   }
-  return [...new Map(deps.map((d) => [d.id, d])).values()];
+  return Array.from(new Map(deps.map((d) => [d.id, d] as [string, BuildItem])).values());
 }
 
 export const BUILD_SUMMARY = {
