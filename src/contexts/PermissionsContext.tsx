@@ -41,6 +41,9 @@ interface PermissionsContextType {
   loading: boolean;
   isMaster: boolean;
   isOwner: boolean;
+  isTenantOwner: boolean;
+  isTenantAdmin: boolean;
+  userLevel: 'system_owner' | 'tenant_owner' | 'tenant_admin' | 'operational';
   hasModuleAccess: (module: AppModule | string, action?: PermissionAction) => boolean;
   hasCriticalPermission: (key: string) => boolean;
   refetch: () => Promise<void>;
@@ -82,6 +85,9 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
       setPermissions(null);
       setIsMaster(false);
       setIsOwner(false);
+      setIsTenantOwner(false);
+      setIsTenantAdmin(false);
+      setUserLevel('operational');
       setLoading(false);
       return;
     }
@@ -100,10 +106,22 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
       }
 
       console.log('[Permissions] Profile loaded:', profile);
-      const isAdmin = profile?.role === 'admin';
       const ownerFlag = profile?.is_owner === true;
+      const role = profile?.role;
+      const tenantOwnerFlag = role === 'tenant_owner';
+      const tenantAdminFlag = role === 'tenant_admin' || role === 'admin';
+      const isAdmin = tenantAdminFlag || tenantOwnerFlag || ownerFlag;
+      
       setIsMaster(isAdmin);
       setIsOwner(ownerFlag);
+      setIsTenantOwner(tenantOwnerFlag);
+      setIsTenantAdmin(tenantAdminFlag);
+      setUserLevel(
+        ownerFlag ? 'system_owner' :
+        tenantOwnerFlag ? 'tenant_owner' :
+        tenantAdminFlag ? 'tenant_admin' :
+        'operational'
+      );
 
       // Se for admin, tem todas as permissões
       if (isAdmin) {
@@ -192,7 +210,7 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
   }, [fetchPermissions]);
 
   return (
-    <PermissionsContext.Provider value={{ permissions, loading, isMaster, isOwner, hasModuleAccess, hasCriticalPermission, refetch }}>
+    <PermissionsContext.Provider value={{ permissions, loading, isMaster, isOwner, isTenantOwner, isTenantAdmin, userLevel, hasModuleAccess, hasCriticalPermission, refetch }}>
       {children}
     </PermissionsContext.Provider>
   );
