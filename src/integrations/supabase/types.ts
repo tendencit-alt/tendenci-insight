@@ -1093,6 +1093,105 @@ export type Database = {
           },
         ]
       }
+      contracts: {
+        Row: {
+          client_id: string | null
+          contract_number: number
+          contract_type: string
+          created_at: string
+          created_by: string | null
+          end_date: string | null
+          id: string
+          notes: string | null
+          order_id: string | null
+          payment_condition: string | null
+          quote_id: string | null
+          signed_at: string | null
+          start_date: string | null
+          status: string
+          tenant_id: string | null
+          title: string
+          total_value: number | null
+          updated_at: string
+        }
+        Insert: {
+          client_id?: string | null
+          contract_number?: number
+          contract_type?: string
+          created_at?: string
+          created_by?: string | null
+          end_date?: string | null
+          id?: string
+          notes?: string | null
+          order_id?: string | null
+          payment_condition?: string | null
+          quote_id?: string | null
+          signed_at?: string | null
+          start_date?: string | null
+          status?: string
+          tenant_id?: string | null
+          title: string
+          total_value?: number | null
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string | null
+          contract_number?: number
+          contract_type?: string
+          created_at?: string
+          created_by?: string | null
+          end_date?: string | null
+          id?: string
+          notes?: string | null
+          order_id?: string | null
+          payment_condition?: string | null
+          quote_id?: string | null
+          signed_at?: string | null
+          start_date?: string | null
+          status?: string
+          tenant_id?: string | null
+          title?: string
+          total_value?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contracts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracts_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracts_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracts_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cost_center_tags: {
         Row: {
           active: boolean | null
@@ -1770,6 +1869,75 @@ export type Database = {
             columns: ["timeline_id"]
             isOneToOne: false
             referencedRelation: "crm_timeline"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cross_module_events: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          error_message: string | null
+          event_type: string
+          id: string
+          payload: Json | null
+          processed_at: string | null
+          source_entity: string
+          source_entity_id: string
+          source_module: string
+          status: string
+          target_entity: string | null
+          target_entity_id: string | null
+          target_module: string
+          tenant_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          error_message?: string | null
+          event_type: string
+          id?: string
+          payload?: Json | null
+          processed_at?: string | null
+          source_entity: string
+          source_entity_id: string
+          source_module: string
+          status?: string
+          target_entity?: string | null
+          target_entity_id?: string | null
+          target_module: string
+          tenant_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          payload?: Json | null
+          processed_at?: string | null
+          source_entity?: string
+          source_entity_id?: string
+          source_module?: string
+          status?: string
+          target_entity?: string | null
+          target_entity_id?: string | null
+          target_module?: string
+          tenant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cross_module_events_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cross_module_events_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
@@ -5223,6 +5391,126 @@ export type Database = {
           },
         ]
       }
+      operational_projects: {
+        Row: {
+          actual_end: string | null
+          actual_start: string | null
+          client_id: string | null
+          contract_id: string | null
+          cost_center_id: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          notes: string | null
+          order_id: string | null
+          planned_end: string | null
+          planned_start: string | null
+          project_id: string | null
+          responsible_id: string | null
+          status: string
+          tenant_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          actual_end?: string | null
+          actual_start?: string | null
+          client_id?: string | null
+          contract_id?: string | null
+          cost_center_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          order_id?: string | null
+          planned_end?: string | null
+          planned_start?: string | null
+          project_id?: string | null
+          responsible_id?: string | null
+          status?: string
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          actual_end?: string | null
+          actual_start?: string | null
+          client_id?: string | null
+          contract_id?: string | null
+          cost_center_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          order_id?: string | null
+          planned_end?: string | null
+          planned_start?: string | null
+          project_id?: string | null
+          responsible_id?: string | null
+          status?: string
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "operational_projects_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "operational_projects_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "operational_projects_cost_center_id_fkey"
+            columns: ["cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "fin_cost_centers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "operational_projects_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "operational_projects_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "operational_projects_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "fin_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "operational_projects_responsible_id_fkey"
+            columns: ["responsible_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "operational_projects_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_history: {
         Row: {
           action_type: string
@@ -5497,6 +5785,7 @@ export type Database = {
           comissao_vendedor_responsible_id: string | null
           comissao_vendedor_valor: number | null
           condicao_pagamento: string | null
+          contract_id: string | null
           created_at: string | null
           created_by: string | null
           data_aprovacao: string | null
@@ -5526,11 +5815,13 @@ export type Database = {
           observacao_pagamento: string | null
           observacoes_internas: string | null
           observacoes_nf: string | null
+          operational_project_id: string | null
           order_number: number
           parcelas: number | null
           percentual_forma_1: number | null
           percentual_forma_2: number | null
           project_id: string | null
+          quote_id: string | null
           rt_habilitado: boolean | null
           rt_percentual: number | null
           rt_valor: number | null
@@ -5584,6 +5875,7 @@ export type Database = {
           comissao_vendedor_responsible_id?: string | null
           comissao_vendedor_valor?: number | null
           condicao_pagamento?: string | null
+          contract_id?: string | null
           created_at?: string | null
           created_by?: string | null
           data_aprovacao?: string | null
@@ -5613,11 +5905,13 @@ export type Database = {
           observacao_pagamento?: string | null
           observacoes_internas?: string | null
           observacoes_nf?: string | null
+          operational_project_id?: string | null
           order_number?: number
           parcelas?: number | null
           percentual_forma_1?: number | null
           percentual_forma_2?: number | null
           project_id?: string | null
+          quote_id?: string | null
           rt_habilitado?: boolean | null
           rt_percentual?: number | null
           rt_valor?: number | null
@@ -5671,6 +5965,7 @@ export type Database = {
           comissao_vendedor_responsible_id?: string | null
           comissao_vendedor_valor?: number | null
           condicao_pagamento?: string | null
+          contract_id?: string | null
           created_at?: string | null
           created_by?: string | null
           data_aprovacao?: string | null
@@ -5700,11 +5995,13 @@ export type Database = {
           observacao_pagamento?: string | null
           observacoes_internas?: string | null
           observacoes_nf?: string | null
+          operational_project_id?: string | null
           order_number?: number
           parcelas?: number | null
           percentual_forma_1?: number | null
           percentual_forma_2?: number | null
           project_id?: string | null
+          quote_id?: string | null
           rt_habilitado?: boolean | null
           rt_percentual?: number | null
           rt_valor?: number | null
@@ -5830,6 +6127,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "orders_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "orders_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
@@ -5844,10 +6148,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "orders_operational_project_id_fkey"
+            columns: ["operational_project_id"]
+            isOneToOne: false
+            referencedRelation: "operational_projects"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "orders_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "fin_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
             referencedColumns: ["id"]
           },
           {
@@ -7879,6 +8197,155 @@ export type Database = {
           },
           {
             foreignKeyName: "purchase_orders_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quote_items: {
+        Row: {
+          cost_center: string | null
+          created_at: string
+          description: string | null
+          id: string
+          position: number | null
+          product_name: string
+          quantity: number | null
+          quote_id: string
+          total_price: number | null
+          unit_price: number | null
+        }
+        Insert: {
+          cost_center?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          position?: number | null
+          product_name: string
+          quantity?: number | null
+          quote_id: string
+          total_price?: number | null
+          unit_price?: number | null
+        }
+        Update: {
+          cost_center?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          position?: number | null
+          product_name?: string
+          quantity?: number | null
+          quote_id?: string
+          total_price?: number | null
+          unit_price?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_items_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quotes: {
+        Row: {
+          client_id: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          discount_percent: number | null
+          discount_value: number | null
+          final_value: number | null
+          id: string
+          notes: string | null
+          order_id: string | null
+          payment_condition: string | null
+          quote_number: number
+          seller_id: string | null
+          status: string
+          tenant_id: string | null
+          title: string
+          total_value: number | null
+          updated_at: string
+          validity_date: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          discount_percent?: number | null
+          discount_value?: number | null
+          final_value?: number | null
+          id?: string
+          notes?: string | null
+          order_id?: string | null
+          payment_condition?: string | null
+          quote_number?: number
+          seller_id?: string | null
+          status?: string
+          tenant_id?: string | null
+          title: string
+          total_value?: number | null
+          updated_at?: string
+          validity_date?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          discount_percent?: number | null
+          discount_value?: number | null
+          final_value?: number | null
+          id?: string
+          notes?: string | null
+          order_id?: string | null
+          payment_condition?: string | null
+          quote_number?: number
+          seller_id?: string | null
+          status?: string
+          tenant_id?: string | null
+          title?: string
+          total_value?: number | null
+          updated_at?: string
+          validity_date?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quotes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotes_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotes_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotes_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -10811,6 +11278,19 @@ export type Database = {
       purchases_metrics: { Args: never; Returns: Json }
       reactivate_lost_deals_to_followup: { Args: never; Returns: Json }
       recalculate_all_goal_progress: { Args: never; Returns: undefined }
+      register_cross_module_event: {
+        Args: {
+          p_event_type: string
+          p_payload?: Json
+          p_source_entity: string
+          p_source_entity_id: string
+          p_source_module: string
+          p_target_entity?: string
+          p_target_entity_id?: string
+          p_target_module: string
+        }
+        Returns: string
+      }
       require_strategic_resource_chart_account: {
         Args: {
           _resource_type: Database["public"]["Enums"]["fin_strategic_resource_type"]
