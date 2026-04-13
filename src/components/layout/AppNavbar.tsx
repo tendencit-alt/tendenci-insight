@@ -100,6 +100,7 @@ const ERP_MODULES: ModuleGroup[] = [
       { label: "Centros de Custo", route: "/cadastros-financeiros?tab=cost-centers", icon: "Building", module: "cadastros_financeiros", available: true },
       { label: "Projetos Financeiros", route: "/cadastros-financeiros?tab=projects", icon: "Briefcase", module: "cadastros_financeiros", available: true },
       { label: "Classificação Automática", route: "/cadastros-financeiros?tab=classification", icon: "Sparkles", module: "cadastros_financeiros", available: true },
+      { label: "Automações por Evento", route: "/cadastros-financeiros?tab=event_automations", icon: "Bot", module: "cadastros_financeiros", available: true },
       { label: "Auditoria", route: "/cadastros-financeiros?tab=audit", icon: "ShieldCheck", module: "cadastros_financeiros", available: true },
     ],
   },

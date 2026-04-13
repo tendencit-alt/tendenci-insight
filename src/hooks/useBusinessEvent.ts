@@ -6,6 +6,9 @@ import { useFinanceiroSync } from "./useFinanceiroSync";
 export type BusinessEventType =
   | "order_approved"
   | "order_invoiced"
+  | "order_created"
+  | "order_cancelled"
+  | "order_delivered"
   | "payment_received"
   | "payable_created"
   | "supplier_paid"
@@ -16,7 +19,12 @@ export type BusinessEventType =
   | "asset_purchased"
   | "depreciation_post"
   | "reconciliation"
-  | "goal_created";
+  | "goal_created"
+  | "production_started"
+  | "production_completed"
+  | "statement_reconciled"
+  | "goal_missed"
+  | "expense_limit_exceeded";
 
 interface BusinessEventPayload {
   event_type: BusinessEventType;
