@@ -2365,6 +2365,7 @@ export type Database = {
       fin_chart_accounts: {
         Row: {
           active: boolean | null
+          auto_generate_payable: boolean
           code: string
           created_at: string | null
           dre_order: number | null
@@ -2378,6 +2379,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean | null
+          auto_generate_payable?: boolean
           code: string
           created_at?: string | null
           dre_order?: number | null
@@ -2391,6 +2393,7 @@ export type Database = {
         }
         Update: {
           active?: boolean | null
+          auto_generate_payable?: boolean
           code?: string
           created_at?: string | null
           dre_order?: number | null
