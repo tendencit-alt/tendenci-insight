@@ -62,7 +62,7 @@ export function ExecutiveView({ filters }: ExecutiveViewProps) {
         if (mainCode === 2 && subCode === 1) return "deducao_receita";
         if (mainCode === 2 && subCode === 2) return "custo_variavel";
         if (mainCode === 2 && subCode === 3) return "compromisso_venda";
-        if (mainCode === 2) return "deducao_receita"; // fallback for root 2
+        if (mainCode === 2) return "deducao_receita";
         if (mainCode === 3) return "despesa_operacional";
         if (mainCode === 4) return "depreciacao";
         if (mainCode === 5 && nature === "RECEITA") return "receita_financeira";
@@ -71,6 +71,7 @@ export function ExecutiveView({ filters }: ExecutiveViewProps) {
         if (mainCode === 6 && subCode === 1) return "capital_entrada";
         if (mainCode === 6 && subCode === 2) return "capital_saida";
         if (mainCode === 6) return "capital_entrada";
+        if (mainCode === 7) return "impostos_resultado";
         
         return nature === "RECEITA" ? "receita_operacional" : "despesa_operacional";
       };
