@@ -438,12 +438,15 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     },
   });
 
-  // Set default chart_account_id to '1.1' when accounts load
+  // Set default chart_account_id to first leaf account (subgroup) when accounts load
   useEffect(() => {
     if (revenueAccounts && revenueAccounts.length > 0 && !formData.chart_account_id) {
-      const defaultAccount = revenueAccounts.find(a => a.code === '1.1');
-      if (defaultAccount) {
-        setFormData(prev => ({ ...prev, chart_account_id: defaultAccount.id }));
+      const firstLeaf = revenueAccounts.find(a => {
+        const dotCount = (a.code.match(/\./g) || []).length;
+        return dotCount >= 2;
+      });
+      if (firstLeaf) {
+        setFormData(prev => ({ ...prev, chart_account_id: firstLeaf.id }));
       }
     }
   }, [revenueAccounts]);
