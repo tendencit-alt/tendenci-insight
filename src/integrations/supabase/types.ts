@@ -2635,45 +2635,54 @@ export type Database = {
         Row: {
           amount: number
           chart_account_id: string | null
+          client_id: string | null
           cost_center_id: string | null
           created_at: string | null
           created_by: string | null
           id: string
           month: number
           notes: string | null
+          order_id: string | null
           project_id: string | null
           tenant_id: string | null
           updated_at: string | null
+          vendedor_id: string | null
           version: number | null
           year: number
         }
         Insert: {
           amount: number
           chart_account_id?: string | null
+          client_id?: string | null
           cost_center_id?: string | null
           created_at?: string | null
           created_by?: string | null
           id?: string
           month: number
           notes?: string | null
+          order_id?: string | null
           project_id?: string | null
           tenant_id?: string | null
           updated_at?: string | null
+          vendedor_id?: string | null
           version?: number | null
           year: number
         }
         Update: {
           amount?: number
           chart_account_id?: string | null
+          client_id?: string | null
           cost_center_id?: string | null
           created_at?: string | null
           created_by?: string | null
           id?: string
           month?: number
           notes?: string | null
+          order_id?: string | null
           project_id?: string | null
           tenant_id?: string | null
           updated_at?: string | null
+          vendedor_id?: string | null
           version?: number | null
           year?: number
         }
@@ -2683,6 +2692,13 @@ export type Database = {
             columns: ["chart_account_id"]
             isOneToOne: false
             referencedRelation: "fin_chart_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_budgets_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
             referencedColumns: ["id"]
           },
           {
@@ -2700,6 +2716,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "fin_budgets_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "fin_budgets_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
@@ -2711,6 +2734,13 @@ export type Database = {
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_budgets_vendedor_id_fkey"
+            columns: ["vendedor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -3131,6 +3161,7 @@ export type Database = {
       }
       fin_financial_goals: {
         Row: {
+          client_id: string | null
           cost_center_id: string | null
           created_at: string | null
           created_by: string | null
@@ -3139,14 +3170,18 @@ export type Database = {
           metric_key: string
           month: number
           notes: string | null
+          order_id: string | null
           period_type: string | null
           project_id: string | null
           target_amount: number
+          target_type: string
           tenant_id: string | null
           updated_at: string | null
+          vendedor_id: string | null
           year: number
         }
         Insert: {
+          client_id?: string | null
           cost_center_id?: string | null
           created_at?: string | null
           created_by?: string | null
@@ -3155,14 +3190,18 @@ export type Database = {
           metric_key: string
           month: number
           notes?: string | null
+          order_id?: string | null
           period_type?: string | null
           project_id?: string | null
           target_amount: number
+          target_type?: string
           tenant_id?: string | null
           updated_at?: string | null
+          vendedor_id?: string | null
           year: number
         }
         Update: {
+          client_id?: string | null
           cost_center_id?: string | null
           created_at?: string | null
           created_by?: string | null
@@ -3171,14 +3210,24 @@ export type Database = {
           metric_key?: string
           month?: number
           notes?: string | null
+          order_id?: string | null
           period_type?: string | null
           project_id?: string | null
           target_amount?: number
+          target_type?: string
           tenant_id?: string | null
           updated_at?: string | null
+          vendedor_id?: string | null
           year?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "fin_financial_goals_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "fin_financial_goals_cost_center_id_fkey"
             columns: ["cost_center_id"]
@@ -3194,6 +3243,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "fin_financial_goals_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "fin_financial_goals_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
@@ -3202,6 +3258,191 @@ export type Database = {
           },
           {
             foreignKeyName: "fin_financial_goals_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_financial_goals_vendedor_id_fkey"
+            columns: ["vendedor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fin_forecasts: {
+        Row: {
+          auto_calculated: boolean | null
+          client_id: string | null
+          cost_center_id: string | null
+          created_at: string | null
+          created_by: string | null
+          forecast_amount: number
+          gap_amount: number | null
+          gap_percent: number | null
+          id: string
+          metric_key: string
+          month: number
+          notes: string | null
+          order_id: string | null
+          project_id: string | null
+          realized_amount: number
+          target_amount: number | null
+          tenant_id: string | null
+          updated_at: string | null
+          vendedor_id: string | null
+          year: number
+        }
+        Insert: {
+          auto_calculated?: boolean | null
+          client_id?: string | null
+          cost_center_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          forecast_amount?: number
+          gap_amount?: number | null
+          gap_percent?: number | null
+          id?: string
+          metric_key: string
+          month: number
+          notes?: string | null
+          order_id?: string | null
+          project_id?: string | null
+          realized_amount?: number
+          target_amount?: number | null
+          tenant_id?: string | null
+          updated_at?: string | null
+          vendedor_id?: string | null
+          year: number
+        }
+        Update: {
+          auto_calculated?: boolean | null
+          client_id?: string | null
+          cost_center_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          forecast_amount?: number
+          gap_amount?: number | null
+          gap_percent?: number | null
+          id?: string
+          metric_key?: string
+          month?: number
+          notes?: string | null
+          order_id?: string | null
+          project_id?: string | null
+          realized_amount?: number
+          target_amount?: number | null
+          tenant_id?: string | null
+          updated_at?: string | null
+          vendedor_id?: string | null
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fin_forecasts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_forecasts_cost_center_id_fkey"
+            columns: ["cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "fin_cost_centers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_forecasts_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_forecasts_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "fin_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_forecasts_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_forecasts_vendedor_id_fkey"
+            columns: ["vendedor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fin_goal_alerts: {
+        Row: {
+          alert_type: string
+          created_at: string | null
+          current_value: number | null
+          deviation_percent: number | null
+          goal_id: string | null
+          id: string
+          message: string
+          metric_key: string
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
+          status: string
+          target_value: number | null
+          tenant_id: string | null
+        }
+        Insert: {
+          alert_type: string
+          created_at?: string | null
+          current_value?: number | null
+          deviation_percent?: number | null
+          goal_id?: string | null
+          id?: string
+          message: string
+          metric_key: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          status?: string
+          target_value?: number | null
+          tenant_id?: string | null
+        }
+        Update: {
+          alert_type?: string
+          created_at?: string | null
+          current_value?: number | null
+          deviation_percent?: number | null
+          goal_id?: string | null
+          id?: string
+          message?: string
+          metric_key?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          status?: string
+          target_value?: number | null
+          tenant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fin_goal_alerts_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "fin_financial_goals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_goal_alerts_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
