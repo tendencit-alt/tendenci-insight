@@ -1,12 +1,12 @@
 import { useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
 import {
-  LayoutDashboard, Users, FileText, ShoppingCart, Wallet, BarChart3,
+  LayoutDashboard, Users, ShoppingCart, Wallet, BarChart3,
   Target, PieChart, FolderOpen, Zap, Settings, Building2,
   ChevronDown, Factory, Package, BookOpen,
-  ClipboardList, Truck, ListChecks, Bell, Shield,
+  ListChecks, Bell, Shield,
   History, UserCog, Layers,
-  Activity, GitBranch, Inbox, CheckSquare, AlertCircle,
-  TrendingUp, DollarSign, ArrowLeftRight, Landmark, LineChart
+  GitBranch, Inbox, CheckSquare, LineChart
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
@@ -17,10 +17,13 @@ import {
 import { usePermissions } from "@/hooks/usePermissions";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
+import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import {
   Collapsible, CollapsibleContent, CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+
+// ── Types ──
 
 interface MenuItem {
   title: string;
@@ -35,33 +38,51 @@ interface MenuGroup {
   label: string;
   icon: any;
   items: MenuItem[];
-  separator?: boolean; // visual separator after group
+  separator?: boolean;
+  /** Which profile types can see this group. Empty = all profiles. */
+  profiles?: string[];
 }
 
+// ── Profile → Group visibility map ──
+// If a group has no `profiles` array, it's visible to all.
+// "system_owner" / "tenant_owner" / "tenant_admin" are resolved from userLevel.
+
+const P = {
+  ALL_TENANT: ["tenant_owner", "tenant_admin", "financeiro", "comercial", "operacional", "producao", "contador", "auditor"],
+  EXEC: ["tenant_owner", "tenant_admin"],
+  FIN: ["tenant_owner", "tenant_admin", "financeiro", "contador"],
+  COM: ["tenant_owner", "tenant_admin", "comercial"],
+  OPS: ["tenant_owner", "tenant_admin", "operacional", "producao"],
+  AUD: ["tenant_owner", "tenant_admin", "auditor"],
+  ADM: ["tenant_owner", "tenant_admin"],
+};
+
+// ── Menu definition ──
+
 const menuGroups: MenuGroup[] = [
-  // ── Visão Geral ──
   {
     label: "Dashboard",
     icon: LayoutDashboard,
+    profiles: [...P.EXEC, "financeiro", "comercial", "contador"],
     items: [
       { title: "Visão Geral", url: "/bi-dashboard", icon: LayoutDashboard, module: "dashboard" },
     ],
   },
-  // ── Centro de Trabalho ──
   {
     label: "Central Operacional",
     icon: Inbox,
     separator: true,
+    // visible to all tenant profiles
     items: [
       { title: "Minhas Tarefas", url: "/tarefas", icon: CheckSquare },
       { title: "Aprovações", url: "/aprovacoes", icon: GitBranch },
       { title: "Notificações", url: "/atividades", icon: Bell, module: null, masterOnly: true },
     ],
   },
-  // ── Execução ──
   {
     label: "Comercial",
     icon: ShoppingCart,
+    profiles: [...P.COM, "operacional", "producao"],
     items: [
       { title: "Pedidos", url: "/pedidos", icon: ShoppingCart, module: "pedidos" },
       { title: "Documentos", url: "/documentos", icon: FolderOpen },
@@ -70,6 +91,7 @@ const menuGroups: MenuGroup[] = [
   {
     label: "Operações",
     icon: Factory,
+    profiles: P.OPS,
     items: [
       { title: "Produção", url: "/producao", icon: Factory, module: "producao" },
     ],
@@ -77,6 +99,7 @@ const menuGroups: MenuGroup[] = [
   {
     label: "Compras",
     icon: Package,
+    profiles: [...P.EXEC, "financeiro", "operacional"],
     items: [
       { title: "Fornecedores", url: "/fornecedores", icon: Package, module: "fornecedores" },
       { title: "Materiais", url: "/estoque", icon: Layers, module: "estoque" },
@@ -86,14 +109,15 @@ const menuGroups: MenuGroup[] = [
     label: "Financeiro",
     icon: Wallet,
     separator: true,
+    profiles: P.FIN,
     items: [
       { title: "Movimento", url: "/financeiro", icon: Wallet, module: "financeiro" },
     ],
   },
-  // ── Análise ──
   {
     label: "Resultados e Análises",
     icon: LineChart,
+    profiles: [...P.FIN, "auditor"],
     items: [
       { title: "Controladoria", url: "/cadastros-financeiros", icon: BookOpen, module: "cadastros_financeiros" },
     ],
@@ -101,6 +125,7 @@ const menuGroups: MenuGroup[] = [
   {
     label: "Planejamento",
     icon: Target,
+    profiles: P.EXEC,
     items: [
       { title: "Metas", url: "/metas", icon: Target, module: "metas" },
     ],
@@ -109,35 +134,36 @@ const menuGroups: MenuGroup[] = [
     label: "BI e Indicadores",
     icon: PieChart,
     separator: true,
+    profiles: [...P.EXEC, "contador", "auditor"],
     items: [
       { title: "Análise BI", url: "/bi-dashboard", icon: PieChart, module: "dashboard" },
       { title: "Dashboards", url: "/dashboards", icon: BarChart3, module: null, masterOnly: true },
     ],
   },
-  // ── Cadastros ──
   {
     label: "Cadastros",
     icon: Users,
+    profiles: [...P.EXEC, "comercial", "financeiro"],
     items: [
       { title: "Clientes", url: "/pedidos", icon: Users, module: "pedidos" },
       { title: "Fornecedores", url: "/fornecedores", icon: Package, module: "fornecedores" },
       { title: "Materiais", url: "/estoque", icon: Layers, module: "estoque" },
     ],
   },
-  // ── Governança ──
   {
     label: "Regras e Auditoria",
     icon: Shield,
     separator: true,
+    profiles: [...P.ADM, "auditor"],
     items: [
       { title: "Regras Automáticas", url: "/automacoes", icon: Zap, module: null, masterOnly: true },
       { title: "Auditoria", url: "/auditoria", icon: History },
     ],
   },
-  // ── Administração ──
   {
     label: "Sistema",
     icon: Settings,
+    profiles: P.ADM,
     items: [
       { title: "Configurações", url: "/settings", icon: Settings, module: "configuracoes" },
       { title: "Usuários", url: "/settings/users", icon: UserCog, module: "configuracoes" },
@@ -146,23 +172,71 @@ const menuGroups: MenuGroup[] = [
   {
     label: "Owner",
     icon: Building2,
+    profiles: ["system_owner"],
     items: [
       { title: "Painel Owner", url: "/super-admin", icon: Building2, module: null, ownerOnly: true },
     ],
   },
 ];
 
+// ── Component ──
+
 export function AppSidebar() {
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
-  const { hasModuleAccess, loading, isOwner } = usePermissions();
-  const { profile } = useAuth();
+  const { hasModuleAccess, loading, isOwner, userLevel } = usePermissions();
+  const { profile, user } = useAuth();
   const { data: companySettings } = useCompanySettings();
   const companyLogo = companySettings?.logo_url;
   const companyName = companySettings?.trade_name || companySettings?.company_name || 'Sistema';
   const location = useLocation();
   const currentPath = location.pathname;
   const isMaster = profile?.role === 'admin';
+
+  // Fetch profile type name for adaptive menu
+  const [profileTypeName, setProfileTypeName] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user) { setProfileTypeName(null); return; }
+    const fetchProfileType = async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('profile_type_id, profile_types(name)')
+        .eq('id', user.id)
+        .single();
+      const ptName = (data as any)?.profile_types?.name as string | null;
+      setProfileTypeName(ptName || null);
+    };
+    fetchProfileType();
+  }, [user]);
+
+  // Resolve effective profile key for menu filtering
+  const effectiveProfile = (): string => {
+    if (userLevel === 'system_owner') return 'system_owner';
+    if (userLevel === 'tenant_owner') return 'tenant_owner';
+    if (userLevel === 'tenant_admin') return 'tenant_admin';
+    // Map profile_type name to our keys
+    if (profileTypeName) {
+      const normalized = profileTypeName.toLowerCase().replace(/\s+/g, '_');
+      const knownProfiles = ['financeiro', 'comercial', 'operacional', 'producao', 'contador', 'auditor'];
+      // Try exact match
+      if (knownProfiles.includes(normalized)) return normalized;
+      // Try partial match
+      const match = knownProfiles.find(p => normalized.includes(p));
+      if (match) return match;
+    }
+    // Fallback: tenant_admin for admin role, otherwise show everything
+    if (isMaster) return 'tenant_admin';
+    return 'tenant_admin'; // default: show all tenant items
+  };
+
+  const currentProfile = effectiveProfile();
+
+  const isGroupVisibleForProfile = (group: MenuGroup): boolean => {
+    // No profile restriction = visible to everyone
+    if (!group.profiles || group.profiles.length === 0) return true;
+    return group.profiles.includes(currentProfile);
+  };
 
   const isItemVisible = (item: MenuItem) => {
     if (loading) return !(item as any).ownerOnly;
@@ -173,6 +247,7 @@ export function AppSidebar() {
   };
 
   const visibleGroups = menuGroups
+    .filter(isGroupVisibleForProfile)
     .map(group => ({ ...group, items: group.items.filter(isItemVisible) }))
     .filter(group => group.items.length > 0);
 
