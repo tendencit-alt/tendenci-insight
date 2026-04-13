@@ -285,7 +285,7 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
               const mainCode = parseFloat(account.code.split('.')[0]);
               if (mainCode === 1) {
                 receitasRealizadas += Number(entry.amount);
-              } else if ([2, 3, 4, 5, 6].includes(mainCode)) {
+              } else if ([2, 3, 5, 7].includes(mainCode)) {
                 despesasRealizadas += Number(entry.amount);
               }
             }
@@ -322,12 +322,10 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
       const tree = buildTree(chartAccounts || []);
 
       // Calculate totals for root-level accounts
-      // New structure: 1=Receitas, 2=Deduções, 3=CustosVar, 4=DespOp, 5=Deprec, 6=ResultFin, 7=Capital, 8=Variação
       let totalReceitas = 0;
-      let totalDeducoes = 0;
-      let totalCustosVariaveis = 0;
+      let totalDespesasSobreVenda = 0;
+      let totalCMV = 0;
       let totalDespesasOp = 0;
-      let totalDepreciacao = 0;
       let totalResultadoFinanceiro = 0;
       let totalCapitalEntrada = 0;
       let totalCapitalSaida = 0;
@@ -346,16 +344,14 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
         if (mainCode === 1) {
           totalReceitas += total;
         } else if (mainCode === 2) {
-          totalDeducoes += total;
+          totalCMV += total;
         } else if (mainCode === 3) {
-          totalCustosVariaveis += total;
-        } else if (mainCode === 4) {
-          totalDespesasOp += total;
+          totalDespesasSobreVenda += total;
         } else if (mainCode === 5) {
-          totalDepreciacao += total;
-        } else if (mainCode === 6) {
-          totalResultadoFinanceiro += total;
+          totalDespesasOp += total;
         } else if (mainCode === 7) {
+          totalResultadoFinanceiro += total;
+        } else if (mainCode === 9) {
           const children = tree.get(account.id) || [];
           children.forEach(child => {
             const childValue = accountValues.get(child.id) || 0;
@@ -372,68 +368,48 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
         }
       });
 
-      // Calculate derived values - professional DRE structure
-      const receitaLiquida = totalReceitas - totalDeducoes;
-      const margemContribuicao = receitaLiquida - totalCustosVariaveis;
-      const resultadoOperacionalEBITDA = margemContribuicao - totalDespesasOp;
-      const resultadoEconomicoEBIT = resultadoOperacionalEBITDA - totalDepreciacao;
-      const resultadoAntesCapital = resultadoEconomicoEBIT - totalResultadoFinanceiro;
+      // Calculate derived values
+      const margemContribuicao = totalReceitas - totalDespesasSobreVenda - totalCMV;
+      const resultadoOperacional = margemContribuicao - totalDespesasOp;
+      const resultadoAntesCapital = resultadoOperacional - totalResultadoFinanceiro;
       const variacaoLiquidaCaixa = resultadoAntesCapital + totalCapitalEntrada - totalCapitalSaida;
 
       // Calculate breakeven point correctly
-      const custosVariaveis = Math.abs(totalCustosVariaveis);
+      // Ponto de Equilíbrio = Custos Fixos / (Margem de Contribuição / Receitas)
+      // Onde Margem de Contribuição % = (Receitas - Custos Variáveis) / Receitas
+      const custosVariaveis = Math.abs(totalDespesasSobreVenda) + Math.abs(totalCMV);
       const custosFixos = Math.abs(totalDespesasOp);
       
       // Margem de contribuição em valor absoluto
-      const margemContribuicaoValor = receitaLiquida - custosVariaveis;
+      const margemContribuicaoValor = totalReceitas - custosVariaveis;
       
       // Margem de contribuição em percentual
-      const margemContribuicaoPercent = receitaLiquida > 0 
-        ? (margemContribuicaoValor / receitaLiquida) * 100 
+      const margemContribuicaoPercent = totalReceitas > 0 
+        ? (margemContribuicaoValor / totalReceitas) * 100 
         : 0;
       
+      // Ponto de Equilíbrio Realizado = Custos Fixos / Margem de Contribuição %
+      // Fórmula: PE = CF / MC%  onde MC% está em decimal (ex: 0.40 para 40%)
+      // Se não há custos fixos, PE = 0 (não precisa vender nada para cobrir)
+      // Se não há margem, PE = infinito (impossível cobrir custos fixos)
       let pontoEquilibrioRealizado = 0;
       if (custosFixos > 0 && margemContribuicaoPercent > 0) {
         pontoEquilibrioRealizado = custosFixos / (margemContribuicaoPercent / 100);
       } else if (custosFixos > 0 && margemContribuicaoPercent <= 0) {
+        // Margem negativa ou zero - impossível atingir equilíbrio
         pontoEquilibrioRealizado = Number.MAX_SAFE_INTEGER;
       }
+      // Se custosFixos = 0, pontoEquilibrioRealizado = 0 (já está em equilíbrio)
 
-      // No calculated values from DB - all RESULTADO accounts removed except Variação
       const calculatedValues = new Map<string, number>();
-      calculatedValues.set("8", variacaoLiquidaCaixa);
+      calculatedValues.set("4", margemContribuicao);
+      calculatedValues.set("6", resultadoOperacional);
+      calculatedValues.set("8", resultadoAntesCapital);
+      calculatedValues.set("10", variacaoLiquidaCaixa);
 
-      // Flatten tree from DB accounts
+      // Flatten tree
       const lines: DRELine[] = [];
       flattenTree(tree, accountValues, calculatedValues, entriesByAccount, realizedAmounts, null, 0, lines);
-      
-      // Inject calculated intermediate lines after specific groups
-      const injectAfterCode = (afterCode: string, calcLine: DRELine) => {
-        let idx = -1;
-        for (let i = lines.length - 1; i >= 0; i--) {
-          if (lines[i].code.startsWith(afterCode + '.') || lines[i].code === afterCode) {
-            idx = i;
-            break;
-          }
-        }
-        if (idx >= 0) {
-          lines.splice(idx + 1, 0, calcLine);
-        } else {
-          lines.push(calcLine);
-        }
-      };
-
-      const makeCalcLine = (id: string, code: string, name: string, value: number): DRELine => ({
-        id, code, name, nature: "RESULTADO", value, realizedValue: 0,
-        level: 0, hasChildren: false, parentId: null, isCalculated: true, entries: [],
-      });
-
-      // Insert in reverse order so indices don't shift
-      injectAfterCode("6", makeCalcLine("calc-resultado-antes-capital", "=RAC", "= Resultado Antes do Capital", resultadoAntesCapital));
-      injectAfterCode("5", makeCalcLine("calc-ebit", "=EBIT", "= Resultado Econômico (EBIT)", resultadoEconomicoEBIT));
-      injectAfterCode("4", makeCalcLine("calc-ebitda", "=EBITDA", "= Resultado Operacional (EBITDA)", resultadoOperacionalEBITDA));
-      injectAfterCode("3", makeCalcLine("calc-margem", "=MC", "= Margem de Contribuição", margemContribuicao));
-      injectAfterCode("2", makeCalcLine("calc-receita-liquida", "=RL", "= Receita Líquida", receitaLiquida));
 
       // Fetch goals for breakeven meta
       const month = new Date().getMonth() + 1;
@@ -469,10 +445,10 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
         lines,
         summary: {
           totalReceitas,
-          totalDespesas: totalDeducoes + totalCustosVariaveis + totalDespesasOp + totalDepreciacao + totalResultadoFinanceiro,
+          totalDespesas: totalDespesasSobreVenda + totalCMV + totalDespesasOp,
           margemContribuicao,
           margemContribuicaoPercent,
-          resultadoOperacional: resultadoOperacionalEBITDA,
+          resultadoOperacional,
           resultadoFinanceiro: totalResultadoFinanceiro,
           resultadoAntesCapital,
           variacaoLiquidaCaixa,
@@ -574,7 +550,7 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
     const isResultado = line.nature === "RESULTADO";
     const isFinanciamento = line.nature === "FINANCIAMENTO";
     const mainCode = parseFloat(line.code.split('.')[0]);
-    const isCapital = mainCode === 7;
+    const isCapital = mainCode === 9;
     const hasEntries = line.entries.length > 0;
     const canExpand = line.hasChildren || hasEntries;
     

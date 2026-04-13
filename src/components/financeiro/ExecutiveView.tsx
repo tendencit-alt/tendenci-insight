@@ -16,8 +16,7 @@ interface ExecutiveData {
   dre: {
     receitaLiquida: number;
     margemContribuicao: number;
-    resultadoOperacionalEBITDA: number;
-    resultadoEconomicoEBIT: number;
+    resultadoOperacional: number;
     resultadoAntesCapital: number;
   };
   cashflow: {
@@ -53,21 +52,29 @@ export function ExecutiveView({ filters }: ExecutiveViewProps) {
         .eq("active", true);
 
       // Helper to classify accounts by numeric code ranges
-      // New structure: 1=Receitas, 2=Deduções, 3=CustosVar, 4=DespOp, 5=Deprec, 6=ResultFin, 7=Capital, 8=Variação
       const classifyAccount = (code: string, nature: string | null) => {
         const mainCode = parseFloat(code.split('.')[0]);
         const subCode = code.includes('.') ? parseFloat(code.split('.')[1]) : 0;
         
-        if (mainCode === 1) return "receita_operacional";
-        if (mainCode === 2) return "deducao_receita";
-        if (mainCode === 3) return "custo_variavel";
-        if (mainCode === 4) return "despesa_operacional";
-        if (mainCode === 5) return "depreciacao";
-        if (mainCode === 6) return "resultado_financeiro";
-        if (mainCode === 7 && subCode === 1) return "capital_entrada";
-        if (mainCode === 7 && subCode === 2) return "capital_saida";
-        if (mainCode === 7) return "capital_entrada";
+        // Faixa 4: Receitas Operacionais
+        if (mainCode === 4) return "receita_operacional";
         
+        // Faixa 5.1: Custos Variáveis
+        if (mainCode === 5 && subCode === 1) return "custo_variavel";
+        
+        // Faixa 5.2+ e 6: Despesas Operacionais
+        if ((mainCode === 5 && subCode >= 2) || mainCode === 6) return "despesa_operacional";
+        
+        // Faixa 7: Resultado Financeiro
+        if (mainCode === 7) return "resultado_financeiro";
+        
+        // Faixa 8.1: Capital Entrada
+        if (mainCode === 8 && subCode === 1) return "capital_entrada";
+        
+        // Faixa 8.2: Capital Saída
+        if (mainCode === 8 && subCode === 2) return "capital_saida";
+        
+        // Fallback baseado na natureza
         return nature === "RECEITA" ? "receita_operacional" : "despesa_operacional";
       };
 
@@ -147,10 +154,8 @@ export function ExecutiveView({ filters }: ExecutiveViewProps) {
 
       // Calculate DRE values
       let totalReceitas = 0;
-      let deducoesReceita = 0;
       let custosVariaveis = 0;
       let despesasOperacionais = 0;
-      let depreciacao = 0;
       let resultadoFinanceiro = 0;
 
       dreEntries?.forEach(entry => {
@@ -159,27 +164,23 @@ export function ExecutiveView({ filters }: ExecutiveViewProps) {
 
         const amount = Number(entry.amount);
         const category = account.category_type;
+        const nature = account.nature;
 
-        if (category === "receita_operacional") {
+        if (nature === "RECEITA" && category !== "resultado_financeiro") {
           totalReceitas += amount;
-        } else if (category === "deducao_receita") {
-          deducoesReceita += amount;
         } else if (category === "custo_variavel") {
           custosVariaveis += amount;
         } else if (category === "despesa_operacional") {
           despesasOperacionais += amount;
-        } else if (category === "depreciacao") {
-          depreciacao += amount;
         } else if (category === "resultado_financeiro") {
           resultadoFinanceiro += amount;
         }
       });
 
-      const receitaLiquida = totalReceitas - deducoesReceita;
+      const receitaLiquida = totalReceitas;
       const margemContribuicao = receitaLiquida - custosVariaveis;
-      const resultadoOperacionalEBITDA = margemContribuicao - despesasOperacionais;
-      const resultadoEconomicoEBIT = resultadoOperacionalEBITDA - depreciacao;
-      const resultadoAntesCapital = resultadoEconomicoEBIT - resultadoFinanceiro;
+      const resultadoOperacional = margemContribuicao - despesasOperacionais;
+      const resultadoAntesCapital = resultadoOperacional - resultadoFinanceiro;
 
       // Calculate Cashflow values
       let entradasOperacionais = 0;
@@ -196,9 +197,9 @@ export function ExecutiveView({ filters }: ExecutiveViewProps) {
         const category = account.category_type;
         const nature = account.nature;
 
-        if (nature === "RECEITA" || category === "receita_operacional") {
+        if (nature === "RECEITA" && category !== "resultado_financeiro") {
           entradasOperacionais += amount;
-        } else if ((nature === "DESPESA") && !["resultado_financeiro", "depreciacao"].includes(category)) {
+        } else if (nature === "DESPESA" && category !== "resultado_financeiro") {
           saidasOperacionais += amount;
         } else if (category === "resultado_financeiro") {
           jurosLiquidos += amount;
@@ -218,8 +219,7 @@ export function ExecutiveView({ filters }: ExecutiveViewProps) {
         dre: {
           receitaLiquida,
           margemContribuicao,
-          resultadoOperacionalEBITDA,
-          resultadoEconomicoEBIT,
+          resultadoOperacional,
           resultadoAntesCapital,
         },
         cashflow: {
@@ -273,15 +273,9 @@ export function ExecutiveView({ filters }: ExecutiveViewProps) {
       isCalculated: true 
     },
     { 
-      label: "Resultado Operacional (EBITDA)", 
-      key: "resultado_operacional_ebitda",
-      value: dre?.resultadoOperacionalEBITDA || 0, 
-      isCalculated: true 
-    },
-    { 
-      label: "Resultado Econômico (EBIT)", 
-      key: "resultado_economico_ebit",
-      value: dre?.resultadoEconomicoEBIT || 0, 
+      label: "Resultado Operacional", 
+      key: "resultado_operacional",
+      value: dre?.resultadoOperacional || 0, 
       isCalculated: true 
     },
     { 
