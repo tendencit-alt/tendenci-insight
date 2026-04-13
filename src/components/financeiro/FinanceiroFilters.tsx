@@ -423,7 +423,60 @@ export function FinanceiroFilters({ filters, onChange }: FinanceiroFiltersProps)
                 </SelectContent>
               </Select>
 
-              {/* Sort Buttons */}
+              {/* Cliente */}
+              <Select
+                value={filters.clientId || "all"}
+                onValueChange={(value) => onChange({ ...filters, clientId: value === "all" ? null : value })}
+              >
+                <SelectTrigger className="h-8 w-[130px]">
+                  <SelectValue placeholder="Cliente" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Clientes</SelectItem>
+                  {clients?.map((client) => (
+                    <SelectItem key={client.id} value={client.id}>
+                      {client.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Vendedor */}
+              <Select
+                value={filters.vendedorId || "all"}
+                onValueChange={(value) => onChange({ ...filters, vendedorId: value === "all" ? null : value })}
+              >
+                <SelectTrigger className="h-8 w-[130px]">
+                  <SelectValue placeholder="Vendedor" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Vendedores</SelectItem>
+                  {vendedores?.map((v) => (
+                    <SelectItem key={v.id} value={v.id}>
+                      {v.full_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Pedido */}
+              <Select
+                value={filters.orderId || "all"}
+                onValueChange={(value) => onChange({ ...filters, orderId: value === "all" ? null : value })}
+              >
+                <SelectTrigger className="h-8 w-[130px]">
+                  <SelectValue placeholder="Pedido" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Pedidos</SelectItem>
+                  {orders?.map((order: any) => (
+                    <SelectItem key={order.id} value={order.id}>
+                      #{order.order_number} {order.client?.name ? `- ${order.client.name}` : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
               <div className="flex items-center gap-1 ml-auto">
                 <Button
                   variant={filters.sortField === "date" ? "default" : "ghost"}
