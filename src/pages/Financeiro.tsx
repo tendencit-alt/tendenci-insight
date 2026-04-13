@@ -41,6 +41,9 @@ export default function Financeiro() {
     subcategoryId: null,
     sortField: null,
     sortDirection: null,
+    clientId: null,
+    vendedorId: null,
+    orderId: null,
   });
 
   const tabClass = "flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium text-muted-foreground transition-all hover:text-foreground data-[state=active]:bg-foreground data-[state=active]:text-background data-[state=active]:shadow-sm";
