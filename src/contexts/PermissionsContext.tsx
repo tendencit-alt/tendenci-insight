@@ -11,7 +11,16 @@ export type AppModule =
   | 'estoque'
   | 'pedidos'
   | 'financeiro'
-  | 'cadastros_financeiros';
+  | 'cadastros_financeiros'
+  | 'dashboard_executivo'
+  | 'comercial'
+  | 'operacional'
+  | 'controladoria'
+  | 'planejamento'
+  | 'cadastros'
+  | 'relatorios_bi';
+
+export type PermissionAction = 'view' | 'create' | 'edit' | 'delete' | 'approve' | 'conciliate' | 'export' | 'admin';
 
 export interface ModulePermission {
   module: AppModule;
