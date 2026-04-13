@@ -104,7 +104,7 @@ export function CreateOrderDialog({ open, onOpenChange, onSuccess, dealId, clien
     { value: 'terceirizada', label: 'Terceirizada' },
   ];
   const linkRatesDb = usePaymentLinkRates();
-  const { data: compromissosCategories = [], isSuccess: categoriesLoaded, isLoading: categoriesLoading } = useCompromissosVendaCategories(open);
+  const { defaults: resourceDefaults, isLoaded: resourceDefaultsLoaded } = useStrategicResourceDefaults();
   const {
     minimize: minimizeDialog,
     remove: removeMinimized,
