@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { FinanceiroFiltersState } from "./FinanceiroFilters";
+import { ClassificationSuggestionBadge } from "./ClassificationSuggestionBadge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -335,10 +336,20 @@ export function LedgerTab({ filters }: LedgerTabProps) {
                           <span className="hidden sm:inline">{getTypeBadge(entry.type)}</span>
                         </TableCell>
                         <TableCell className="text-xs py-3 max-w-[200px] lg:max-w-none">
-                          <div className="truncate">
-                            {entry.description}
-                            {entry.reversal_of_id && (
-                              <span className="text-xs text-muted-foreground ml-1">(Estorno)</span>
+                          <div className="flex items-center gap-1.5 truncate">
+                            <span className="truncate">
+                              {entry.description}
+                              {entry.reversal_of_id && (
+                                <span className="text-xs text-muted-foreground ml-1">(Estorno)</span>
+                              )}
+                            </span>
+                            {entry.classification_status && entry.classification_status !== "pending" && (
+                              <ClassificationSuggestionBadge
+                                status={entry.classification_status}
+                                score={entry.classification_score}
+                                source={entry.classification_source}
+                                compact
+                              />
                             )}
                           </div>
                         </TableCell>
