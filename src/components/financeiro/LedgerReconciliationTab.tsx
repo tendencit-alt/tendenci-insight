@@ -386,16 +386,19 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
     .reduce((sum, e) => sum + Math.abs(Number(e.amount) || 0), 0) || 0;
 
   const bankKpis = transactions?.reduce(
-    (acc, t) => {
+    (acc, t: any) => {
       acc.total++;
       if (t.status === "PENDENTE") acc.pendentes++;
       if (t.status === "SUGERIDA") acc.sugeridas++;
       if (t.status === "CONCILIADA") acc.conciliadas++;
       if (t.status === "DIVERGENTE") acc.divergentes++;
+      if (t.status === "DUPLICADA" || t.is_duplicate) acc.duplicadas++;
+      if (t.classification_status === "auto_classified") acc.autoClassificados++;
+      if (t.classification_status === "pending" || !t.classification_status) acc.pendentesCategoria++;
       return acc;
     },
-    { total: 0, pendentes: 0, sugeridas: 0, conciliadas: 0, divergentes: 0 }
-  ) || { total: 0, pendentes: 0, sugeridas: 0, conciliadas: 0, divergentes: 0 };
+    { total: 0, pendentes: 0, sugeridas: 0, conciliadas: 0, divergentes: 0, duplicadas: 0, autoClassificados: 0, pendentesCategoria: 0 }
+  ) || { total: 0, pendentes: 0, sugeridas: 0, conciliadas: 0, divergentes: 0, duplicadas: 0, autoClassificados: 0, pendentesCategoria: 0 };
 
   const conciliationPercent = bankKpis.total > 0 
     ? Math.round((bankKpis.conciliadas / bankKpis.total) * 100) 
