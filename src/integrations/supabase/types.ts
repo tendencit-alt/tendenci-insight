@@ -2231,45 +2231,81 @@ export type Database = {
       fin_bank_transactions: {
         Row: {
           amount: number
+          balance_after: number | null
           bank_account_id: string
           bank_memo: string | null
           bank_transaction_id: string
+          classification_reason: string | null
+          classification_score: number | null
+          classification_status: string | null
           created_at: string | null
           date: string
           direction: string
+          duplicate_of_id: string | null
           file_hash: string | null
           id: string
           import_batch_id: string | null
+          is_duplicate: boolean | null
           raw_data: Json | null
+          reconciliation_method: string | null
+          reconciliation_score: number | null
           status: string | null
+          suggested_chart_account_id: string | null
+          suggested_cost_center_id: string | null
+          suggested_project_id: string | null
+          tenant_id: string | null
         }
         Insert: {
           amount: number
+          balance_after?: number | null
           bank_account_id: string
           bank_memo?: string | null
           bank_transaction_id: string
+          classification_reason?: string | null
+          classification_score?: number | null
+          classification_status?: string | null
           created_at?: string | null
           date: string
           direction: string
+          duplicate_of_id?: string | null
           file_hash?: string | null
           id?: string
           import_batch_id?: string | null
+          is_duplicate?: boolean | null
           raw_data?: Json | null
+          reconciliation_method?: string | null
+          reconciliation_score?: number | null
           status?: string | null
+          suggested_chart_account_id?: string | null
+          suggested_cost_center_id?: string | null
+          suggested_project_id?: string | null
+          tenant_id?: string | null
         }
         Update: {
           amount?: number
+          balance_after?: number | null
           bank_account_id?: string
           bank_memo?: string | null
           bank_transaction_id?: string
+          classification_reason?: string | null
+          classification_score?: number | null
+          classification_status?: string | null
           created_at?: string | null
           date?: string
           direction?: string
+          duplicate_of_id?: string | null
           file_hash?: string | null
           id?: string
           import_batch_id?: string | null
+          is_duplicate?: boolean | null
           raw_data?: Json | null
+          reconciliation_method?: string | null
+          reconciliation_score?: number | null
           status?: string | null
+          suggested_chart_account_id?: string | null
+          suggested_cost_center_id?: string | null
+          suggested_project_id?: string | null
+          tenant_id?: string | null
         }
         Relationships: [
           {
@@ -2277,6 +2313,41 @@ export type Database = {
             columns: ["bank_account_id"]
             isOneToOne: false
             referencedRelation: "fin_bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_bank_transactions_duplicate_of_id_fkey"
+            columns: ["duplicate_of_id"]
+            isOneToOne: false
+            referencedRelation: "fin_bank_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_bank_transactions_suggested_chart_account_id_fkey"
+            columns: ["suggested_chart_account_id"]
+            isOneToOne: false
+            referencedRelation: "fin_chart_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_bank_transactions_suggested_cost_center_id_fkey"
+            columns: ["suggested_cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "fin_cost_centers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_bank_transactions_suggested_project_id_fkey"
+            columns: ["suggested_project_id"]
+            isOneToOne: false
+            referencedRelation: "fin_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_bank_transactions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
@@ -3442,6 +3513,10 @@ export type Database = {
           id: string
           ledger_entry_id: string | null
           match_type: string | null
+          notes: string | null
+          payable_id: string | null
+          receivable_id: string | null
+          reconciliation_status: string | null
           score: number | null
         }
         Insert: {
@@ -3451,6 +3526,10 @@ export type Database = {
           id?: string
           ledger_entry_id?: string | null
           match_type?: string | null
+          notes?: string | null
+          payable_id?: string | null
+          receivable_id?: string | null
+          reconciliation_status?: string | null
           score?: number | null
         }
         Update: {
@@ -3460,6 +3539,10 @@ export type Database = {
           id?: string
           ledger_entry_id?: string | null
           match_type?: string | null
+          notes?: string | null
+          payable_id?: string | null
+          receivable_id?: string | null
+          reconciliation_status?: string | null
           score?: number | null
         }
         Relationships: [
