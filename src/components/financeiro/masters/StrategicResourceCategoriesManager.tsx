@@ -10,7 +10,7 @@ import { FolderCog, Info, Loader2, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
-const PARENT_ACCOUNT_CODE = "3.1";
+const PARENT_ACCOUNT_ID = "d2982e7d-df48-49af-ba6c-6d6f322a6fc3";
 const TABLE_NAME = "fin_strategic_resource_account_configs";
 
 type ChartChild = { id: string; code: string; name: string };
@@ -26,37 +26,20 @@ export function StrategicResourceCategoriesManager() {
   const [savingId, setSavingId] = useState<string | null>(null);
   const [localPct, setLocalPct] = useState<Record<string, string>>({});
 
-  // First find the parent account by code
-  const { data: parentAccount } = useQuery({
-    queryKey: ["fin-chart-parent-compromissos"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("fin_chart_accounts")
-        .select("id")
-        .eq("code", PARENT_ACCOUNT_CODE)
-        .eq("active", true)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    staleTime: 10 * 60 * 1000,
-  });
-
   const { data: children, isLoading: loadingChildren } = useQuery({
-    queryKey: ["fin-chart-children-compromissos", parentAccount?.id],
+    queryKey: ["fin-chart-children-compromissos"],
     queryFn: async () => {
-      if (!parentAccount?.id) return [];
       const { data, error } = await supabase
         .from("fin_chart_accounts")
         .select("id, code, name")
-        .eq("parent_id", parentAccount.id)
+        .eq("parent_id", PARENT_ACCOUNT_ID)
         .eq("active", true)
         .order("code");
       if (error) throw error;
       return (data ?? []) as ChartChild[];
     },
-    enabled: !!parentAccount?.id,
   });
+
   const { data: configs, isLoading: loadingConfigs } = useQuery({
     queryKey: ["fin-strategic-resource-account-configs"],
     queryFn: async () => {
