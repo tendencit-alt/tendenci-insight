@@ -9,124 +9,81 @@ import {
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
 
-interface Notification {
-  id: string;
-  type: string;
-  title: string;
-  message: string;
-  link: string | null;
-  read: boolean;
-  created_at: string;
-}
+const MODULE_ICONS: Record<string, string> = {
+  comercial: "🛒",
+  financeiro: "💰",
+  operacional: "🏭",
+  aprovacao: "✅",
+  planejamento: "📊",
+  sistema: "⚙️",
+};
+
+const PRIORITY_COLORS: Record<string, string> = {
+  critica: "border-l-red-500",
+  alta: "border-l-orange-500",
+  media: "border-l-blue-500",
+  baixa: "border-l-muted",
+};
 
 export function NotificationBell() {
-  const { toast } = useToast();
   const navigate = useNavigate();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    initNotifications();
+    const init = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      setUserId(user.id);
+      fetchNotifications(user.id);
+
+      const channel = supabase
+        .channel("erp-notifications-bell")
+        .on("postgres_changes", {
+          event: "INSERT",
+          schema: "public",
+          table: "erp_notifications",
+          filter: `user_id=eq.${user.id}`,
+        }, () => fetchNotifications(user.id))
+        .subscribe();
+
+      return () => { supabase.removeChannel(channel); };
+    };
+    init();
   }, []);
 
-  const initNotifications = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    setUserId(user.id);
-    fetchNotifications(user.id);
-
-    // Realtime subscription
-    const channel = supabase
-      .channel('notifications-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${user.id}`,
-        },
-        () => {
-          fetchNotifications(user.id);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  };
-
   const fetchNotifications = async (uid: string) => {
-    const { data, error } = await supabase
-      .from('notifications')
-      .select('*')
-      .eq('user_id', uid)
-      .order('created_at', { ascending: false })
-      .limit(20);
-
-    if (error) {
-      console.error('Error fetching notifications:', error);
-      return;
-    }
+    const { data } = await supabase
+      .from("erp_notifications")
+      .select("*")
+      .eq("user_id", uid)
+      .order("created_at", { ascending: false })
+      .limit(30);
 
     setNotifications(data || []);
-    setUnreadCount((data || []).filter(n => !n.read).length);
+    setUnreadCount((data || []).filter((n: any) => !n.is_read).length);
   };
 
-  const markAsRead = async (notificationId: string) => {
+  const markAsRead = async (id: string) => {
     if (!userId) return;
-
-    const { error } = await supabase
-      .from('notifications')
-      .update({ read: true })
-      .eq('id', notificationId);
-
-    if (error) {
-      toast({
-        title: "Erro ao marcar como lida",
-        description: error.message,
-        variant: "destructive",
-      });
-      return;
-    }
-
+    await supabase.from("erp_notifications").update({ is_read: true, read_at: new Date().toISOString() }).eq("id", id);
     fetchNotifications(userId);
   };
 
   const markAllAsRead = async () => {
     if (!userId) return;
-
-    const { error } = await supabase
-      .from('notifications')
-      .update({ read: true })
-      .eq('user_id', userId)
-      .eq('read', false);
-
-    if (error) {
-      toast({
-        title: "Erro ao marcar todas como lidas",
-        description: error.message,
-        variant: "destructive",
-      });
-      return;
-    }
-
+    await supabase.from("erp_notifications").update({ is_read: true, read_at: new Date().toISOString() }).eq("user_id", userId).eq("is_read", false);
     fetchNotifications(userId);
   };
 
-  const handleNotificationClick = (notification: Notification) => {
-    markAsRead(notification.id);
-    if (notification.link) {
-      navigate(notification.link);
-    }
+  const handleClick = (n: any) => {
+    markAsRead(n.id);
+    if (n.link_path) navigate(n.link_path);
   };
 
   return (
@@ -135,59 +92,54 @@ export function NotificationBell() {
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
-            <Badge 
-              variant="destructive" 
-              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
-            >
-              {unreadCount > 9 ? '9+' : unreadCount}
+            <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs">
+              {unreadCount > 9 ? "9+" : unreadCount}
             </Badge>
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-0" align="end">
-        <div className="flex items-center justify-between p-4 border-b">
-          <h3 className="font-semibold">Notificações</h3>
-          {unreadCount > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={markAllAsRead}
-              className="text-xs"
-            >
-              Marcar todas como lidas
+      <PopoverContent className="w-96 p-0" align="end">
+        <div className="flex items-center justify-between p-3 border-b">
+          <h3 className="font-semibold text-sm">Notificações</h3>
+          <div className="flex gap-2">
+            {unreadCount > 0 && (
+              <Button variant="ghost" size="sm" onClick={markAllAsRead} className="text-xs h-7">
+                Marcar todas como lidas
+              </Button>
+            )}
+            <Button variant="ghost" size="sm" onClick={() => navigate("/tarefas")} className="text-xs h-7">
+              Ver tarefas
             </Button>
-          )}
+          </div>
         </div>
-        <ScrollArea className="h-[400px]">
+        <ScrollArea className="h-[420px]">
           {notifications.length === 0 ? (
             <div className="p-8 text-center text-muted-foreground">
-              <Bell className="h-12 w-12 mx-auto mb-2 opacity-50" />
-              <p>Nenhuma notificação</p>
+              <Bell className="h-10 w-10 mx-auto mb-2 opacity-30" />
+              <p className="text-sm">Nenhuma notificação</p>
             </div>
           ) : (
             <div className="divide-y">
-              {notifications.map((notification) => (
+              {notifications.map((n) => (
                 <div
-                  key={notification.id}
-                  className={`p-4 cursor-pointer hover:bg-muted transition-colors ${
-                    !notification.read ? 'bg-blue-50 dark:bg-blue-950' : ''
-                  }`}
-                  onClick={() => handleNotificationClick(notification)}
+                  key={n.id}
+                  className={`p-3 cursor-pointer hover:bg-muted/50 transition-colors border-l-2 ${PRIORITY_COLORS[n.priority] || ""} ${!n.is_read ? "bg-accent/30" : ""}`}
+                  onClick={() => handleClick(n)}
                 >
-                  <div className="flex items-start gap-3">
-                    {!notification.read && (
-                      <div className="h-2 w-2 rounded-full bg-blue-500 mt-2 flex-shrink-0" />
-                    )}
-                    <div className="flex-1 space-y-1">
-                      <p className="font-medium text-sm">{notification.title}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {notification.message}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {format(new Date(notification.created_at), "dd/MM/yyyy 'às' HH:mm", {
-                          locale: ptBR,
-                        })}
-                      </p>
+                  <div className="flex items-start gap-2">
+                    <span className="text-base mt-0.5">{MODULE_ICONS[n.module] || "📌"}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-sm truncate">{n.title}</p>
+                        {!n.is_read && <div className="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />}
+                      </div>
+                      {n.message && <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{n.message}</p>}
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge variant="outline" className="text-[10px] h-4">{n.module}</Badge>
+                        <span className="text-[10px] text-muted-foreground">
+                          {format(new Date(n.created_at), "dd/MM HH:mm", { locale: ptBR })}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
