@@ -285,7 +285,7 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
               const mainCode = parseFloat(account.code.split('.')[0]);
               if (mainCode === 1) {
                 receitasRealizadas += Number(entry.amount);
-              } else if ([2, 3, 5, 6, 7].includes(mainCode)) {
+              } else if ([2, 3, 4, 5, 6].includes(mainCode)) {
                 despesasRealizadas += Number(entry.amount);
               }
             }
@@ -322,7 +322,7 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
       const tree = buildTree(chartAccounts || []);
 
       // Calculate totals for root-level accounts
-      // Structure: 1=Receitas, 2=Deduções, 3=CustosVar, 4=MC(calc), 5=DespOp, 6=Deprec, 7=ResultFin, 8=Capital, 9=Variação
+      // Structure: 1=Receitas, 2=Deduções, 3=CustosVar, 4=DespOp, 5=Deprec, 6=ResultFin(RESULTADO), 7=Capital, 8=Variação
       let totalReceitas = 0;
       let totalDeducoes = 0;
       let totalCustosVariaveis = 0;
@@ -338,8 +338,8 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
       rootAccounts.forEach(account => {
         const mainCode = parseFloat(account.code.split('.')[0]);
         
-        // Code 7 is RESULTADO FINANCEIRO - handle its children separately
-        if (mainCode === 7) {
+        // Code 6 is RESULTADO FINANCEIRO - handle its children separately
+        if (mainCode === 6) {
           const children = tree.get(account.id) || [];
           children.forEach(child => {
             const childValue = accountValues.get(child.id) || 0;
@@ -367,11 +367,11 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
           totalDeducoes += total;
         } else if (mainCode === 3) {
           totalCustosVariaveis += total;
-        } else if (mainCode === 5) {
+        } else if (mainCode === 4) {
           totalDespesasOp += total;
-        } else if (mainCode === 6) {
+        } else if (mainCode === 5) {
           totalDepreciacao += total;
-        } else if (mainCode === 8) {
+        } else if (mainCode === 7) {
           const children = tree.get(account.id) || [];
           children.forEach(child => {
             const childValue = accountValues.get(child.id) || 0;
@@ -418,9 +418,8 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
 
       // Calculated values for RESULTADO accounts
       const calculatedValues = new Map<string, number>();
-      calculatedValues.set("4", margemContribuicao);
-      calculatedValues.set("7", totalResultadoFinanceiro);
-      calculatedValues.set("9", variacaoLiquidaCaixa);
+      calculatedValues.set("6", totalResultadoFinanceiro);
+      calculatedValues.set("8", variacaoLiquidaCaixa);
 
       // Flatten tree from DB accounts
       const lines: DRELine[] = [];
@@ -448,9 +447,10 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
       });
 
       // Insert in reverse order so indices don't shift
-      injectAfterCode("7", makeCalcLine("calc-resultado-antes-capital", "=RAC", "= Resultado Antes do Capital", resultadoAntesCapital));
-      injectAfterCode("6", makeCalcLine("calc-ebit", "=EBIT", "= Resultado Econômico (EBIT)", resultadoEconomicoEBIT));
-      injectAfterCode("5", makeCalcLine("calc-ebitda", "=EBITDA", "= Resultado Operacional (EBITDA)", resultadoOperacionalEBITDA));
+      injectAfterCode("6", makeCalcLine("calc-resultado-antes-capital", "=RAC", "= Resultado Antes do Capital", resultadoAntesCapital));
+      injectAfterCode("5", makeCalcLine("calc-ebit", "=EBIT", "= Resultado Econômico (EBIT)", resultadoEconomicoEBIT));
+      injectAfterCode("4", makeCalcLine("calc-ebitda", "=EBITDA", "= Resultado Operacional (EBITDA)", resultadoOperacionalEBITDA));
+      injectAfterCode("3", makeCalcLine("calc-margem", "=MC", "= Margem de Contribuição", margemContribuicao));
       injectAfterCode("2", makeCalcLine("calc-receita-liquida", "=RL", "= Receita Líquida", receitaLiquida));
 
       // Fetch goals for breakeven meta
@@ -592,7 +592,7 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
     const isResultado = line.nature === "RESULTADO";
     const isFinanciamento = line.nature === "FINANCIAMENTO";
     const mainCode = parseFloat(line.code.split('.')[0]);
-    const isCapital = mainCode === 8;
+    const isCapital = mainCode === 7;
     const hasEntries = line.entries.length > 0;
     const canExpand = line.hasChildren || hasEntries;
     
