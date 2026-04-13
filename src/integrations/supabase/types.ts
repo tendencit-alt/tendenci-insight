@@ -4448,6 +4448,74 @@ export type Database = {
           },
         ]
       }
+      order_strategic_commitments: {
+        Row: {
+          chart_account_id: string
+          created_at: string
+          habilitado: boolean
+          id: string
+          order_id: string
+          percentual: number
+          responsavel_id: string | null
+          tenant_id: string | null
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          chart_account_id: string
+          created_at?: string
+          habilitado?: boolean
+          id?: string
+          order_id: string
+          percentual?: number
+          responsavel_id?: string | null
+          tenant_id?: string | null
+          updated_at?: string
+          valor?: number
+        }
+        Update: {
+          chart_account_id?: string
+          created_at?: string
+          habilitado?: boolean
+          id?: string
+          order_id?: string
+          percentual?: number
+          responsavel_id?: string | null
+          tenant_id?: string | null
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_strategic_commitments_chart_account_id_fkey"
+            columns: ["chart_account_id"]
+            isOneToOne: false
+            referencedRelation: "fin_chart_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_strategic_commitments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_strategic_commitments_responsavel_id_fkey"
+            columns: ["responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "order_responsibles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_strategic_commitments_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orders: {
         Row: {
           approved_by: string | null
