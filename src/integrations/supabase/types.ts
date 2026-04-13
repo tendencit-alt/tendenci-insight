@@ -9642,6 +9642,102 @@ export type Database = {
           },
         ]
       }
+      rbac_permission_audit: {
+        Row: {
+          change_detail: Json | null
+          changed_by: string
+          created_at: string
+          event_type: string
+          id: string
+          profile_type_id: string | null
+          profile_type_name: string | null
+          target_user_id: string | null
+          tenant_id: string | null
+        }
+        Insert: {
+          change_detail?: Json | null
+          changed_by: string
+          created_at?: string
+          event_type: string
+          id?: string
+          profile_type_id?: string | null
+          profile_type_name?: string | null
+          target_user_id?: string | null
+          tenant_id?: string | null
+        }
+        Update: {
+          change_detail?: Json | null
+          changed_by?: string
+          created_at?: string
+          event_type?: string
+          id?: string
+          profile_type_id?: string | null
+          profile_type_name?: string | null
+          target_user_id?: string | null
+          tenant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rbac_permission_audit_profile_type_id_fkey"
+            columns: ["profile_type_id"]
+            isOneToOne: false
+            referencedRelation: "profile_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rbac_permission_audit_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rbac_scope_restrictions: {
+        Row: {
+          allowed_ids: string[] | null
+          created_at: string | null
+          id: string
+          profile_type_id: string
+          scope_mode: string
+          scope_type: string
+          tenant_id: string | null
+        }
+        Insert: {
+          allowed_ids?: string[] | null
+          created_at?: string | null
+          id?: string
+          profile_type_id: string
+          scope_mode?: string
+          scope_type: string
+          tenant_id?: string | null
+        }
+        Update: {
+          allowed_ids?: string[] | null
+          created_at?: string | null
+          id?: string
+          profile_type_id?: string
+          scope_mode?: string
+          scope_type?: string
+          tenant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rbac_scope_restrictions_profile_type_id_fkey"
+            columns: ["profile_type_id"]
+            isOneToOne: false
+            referencedRelation: "profile_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rbac_scope_restrictions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rbac_segregation_rules: {
         Row: {
           active: boolean
@@ -9683,6 +9779,102 @@ export type Database = {
           },
           {
             foreignKeyName: "rbac_segregation_rules_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rbac_status_rules: {
+        Row: {
+          active: boolean | null
+          blocked_action: string
+          blocked_status: string
+          created_at: string | null
+          id: string
+          module: string
+          profile_type_id: string
+          reason: string | null
+          tenant_id: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          blocked_action?: string
+          blocked_status: string
+          created_at?: string | null
+          id?: string
+          module: string
+          profile_type_id: string
+          reason?: string | null
+          tenant_id?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          blocked_action?: string
+          blocked_status?: string
+          created_at?: string | null
+          id?: string
+          module?: string
+          profile_type_id?: string
+          reason?: string | null
+          tenant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rbac_status_rules_profile_type_id_fkey"
+            columns: ["profile_type_id"]
+            isOneToOne: false
+            referencedRelation: "profile_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rbac_status_rules_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rbac_value_limits: {
+        Row: {
+          created_at: string | null
+          id: string
+          max_value: number | null
+          module: string
+          profile_type_id: string
+          requires_approval_above: number | null
+          tenant_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          max_value?: number | null
+          module: string
+          profile_type_id: string
+          requires_approval_above?: number | null
+          tenant_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          max_value?: number | null
+          module?: string
+          profile_type_id?: string
+          requires_approval_above?: number | null
+          tenant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rbac_value_limits_profile_type_id_fkey"
+            columns: ["profile_type_id"]
+            isOneToOne: false
+            referencedRelation: "profile_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rbac_value_limits_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -12030,6 +12222,19 @@ export type Database = {
           production_type_name: string
           title: string
         }[]
+      }
+      check_rbac_status_rule: {
+        Args: {
+          p_action?: string
+          p_module: string
+          p_status: string
+          p_user_id: string
+        }
+        Returns: boolean
+      }
+      check_rbac_value_limit: {
+        Args: { p_module: string; p_user_id: string; p_value: number }
+        Returns: Json
       }
       cleanup_old_pending_messages: { Args: never; Returns: undefined }
       create_daily_architect_goals: { Args: never; Returns: undefined }
