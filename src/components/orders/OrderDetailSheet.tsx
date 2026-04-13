@@ -35,13 +35,31 @@ interface OrderDetailSheetProps {
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
   rascunho: { label: 'Rascunho', color: 'bg-gray-500', icon: FileText },
-  ativo: { label: 'Ativo', color: 'bg-blue-500', icon: CheckCircle },
-  aguardando_aprovacao: { label: 'Aguardando Aprovação', color: 'bg-yellow-500', icon: Clock },
+  em_negociacao: { label: 'Em Negociação', color: 'bg-amber-500', icon: Clock },
   aprovado: { label: 'Aprovado', color: 'bg-green-500', icon: CheckCircle },
-  em_producao: { label: 'Em Produção', color: 'bg-purple-500', icon: Factory },
-  faturado: { label: 'Faturado', color: 'bg-blue-500', icon: FileText },
+  liberado_producao: { label: 'Lib. Produção', color: 'bg-cyan-500', icon: Factory },
+  em_producao: { label: 'Em Produção', color: 'bg-blue-500', icon: Factory },
+  producao_concluida: { label: 'Prod. Concluída', color: 'bg-indigo-500', icon: CheckCircle },
+  liberado_faturamento: { label: 'Lib. Faturamento', color: 'bg-purple-500', icon: FileText },
+  faturado: { label: 'Faturado', color: 'bg-violet-500', icon: FileText },
   entregue: { label: 'Entregue', color: 'bg-teal-500', icon: Truck },
+  encerrado: { label: 'Encerrado', color: 'bg-slate-500', icon: CheckCircle },
   cancelado: { label: 'Cancelado', color: 'bg-red-500', icon: AlertCircle },
+};
+
+// Transições válidas por status (espelha o trigger do banco)
+const VALID_TRANSITIONS: Record<string, string[]> = {
+  rascunho: ['em_negociacao', 'aprovado', 'cancelado'],
+  em_negociacao: ['aprovado', 'rascunho', 'cancelado'],
+  aprovado: ['liberado_producao', 'em_producao', 'cancelado'],
+  liberado_producao: ['em_producao', 'cancelado'],
+  em_producao: ['producao_concluida'],
+  producao_concluida: ['liberado_faturamento', 'faturado'],
+  liberado_faturamento: ['faturado'],
+  faturado: ['entregue'],
+  entregue: ['encerrado'],
+  encerrado: [],
+  cancelado: ['rascunho'],
 };
 
 export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: OrderDetailSheetProps) {
@@ -321,7 +339,8 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
 
   const statusConfig = STATUS_CONFIG[order.status] || { label: order.status, color: 'bg-gray-500', icon: FileText };
   const StatusIcon = statusConfig.icon;
-  const canEdit = order.status === 'rascunho' || order.status === 'ativo' || order.status === 'aguardando_aprovacao' || order.status === 'em_producao';
+  const canEdit = ['rascunho', 'em_negociacao'].includes(order.status);
+  const allowedTransitions = VALID_TRANSITIONS[order.status] || [];
 
   return (
     <>
