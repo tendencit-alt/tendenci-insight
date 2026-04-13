@@ -3441,6 +3441,101 @@ export type Database = {
           },
         ]
       }
+      fin_origin_rules: {
+        Row: {
+          active: boolean | null
+          allowed_roles: string[] | null
+          allows_auto_classification: boolean | null
+          allows_recurrence: boolean | null
+          allows_split: boolean | null
+          audit_level: string | null
+          cashflow_trigger: string | null
+          created_at: string | null
+          description: string | null
+          dre_trigger: string | null
+          generates_immediate_cash: boolean | null
+          generates_provision: boolean | null
+          id: string
+          inherits_cost_center: boolean | null
+          inherits_project: boolean | null
+          origin_key: string
+          origin_label: string
+          position: number | null
+          requires_category: boolean | null
+          requires_client: boolean | null
+          requires_document_link: boolean | null
+          requires_justification: boolean | null
+          requires_reconciliation: boolean | null
+          requires_supplier: boolean | null
+          tenant_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          allowed_roles?: string[] | null
+          allows_auto_classification?: boolean | null
+          allows_recurrence?: boolean | null
+          allows_split?: boolean | null
+          audit_level?: string | null
+          cashflow_trigger?: string | null
+          created_at?: string | null
+          description?: string | null
+          dre_trigger?: string | null
+          generates_immediate_cash?: boolean | null
+          generates_provision?: boolean | null
+          id?: string
+          inherits_cost_center?: boolean | null
+          inherits_project?: boolean | null
+          origin_key: string
+          origin_label: string
+          position?: number | null
+          requires_category?: boolean | null
+          requires_client?: boolean | null
+          requires_document_link?: boolean | null
+          requires_justification?: boolean | null
+          requires_reconciliation?: boolean | null
+          requires_supplier?: boolean | null
+          tenant_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          allowed_roles?: string[] | null
+          allows_auto_classification?: boolean | null
+          allows_recurrence?: boolean | null
+          allows_split?: boolean | null
+          audit_level?: string | null
+          cashflow_trigger?: string | null
+          created_at?: string | null
+          description?: string | null
+          dre_trigger?: string | null
+          generates_immediate_cash?: boolean | null
+          generates_provision?: boolean | null
+          id?: string
+          inherits_cost_center?: boolean | null
+          inherits_project?: boolean | null
+          origin_key?: string
+          origin_label?: string
+          position?: number | null
+          requires_category?: boolean | null
+          requires_client?: boolean | null
+          requires_document_link?: boolean | null
+          requires_justification?: boolean | null
+          requires_reconciliation?: boolean | null
+          requires_supplier?: boolean | null
+          tenant_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fin_origin_rules_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fin_payables: {
         Row: {
           amount: number
