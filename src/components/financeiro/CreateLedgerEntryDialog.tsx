@@ -384,9 +384,25 @@ export function CreateLedgerEntryDialog({ open, onOpenChange, onSuccess }: Creat
             <Input
               placeholder="Descrição do lançamento..."
               value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              onChange={(e) => {
+                const desc = e.target.value;
+                setForm({ ...form, description: desc });
+                triggerClassification(desc, form.type, form.party_id || undefined);
+              }}
             />
           </div>
+
+          {/* Classification suggestion */}
+          {(classifying || classificationResult) && (
+            <ClassificationSuggestionPanel
+              suggestions={classificationResult?.suggestions || []}
+              bestSuggestion={classificationResult?.best_suggestion || null}
+              status={classificationResult?.status || "pending"}
+              loading={classifying}
+              onApply={handleApplySuggestion}
+              onDismiss={clearResult}
+            />
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
