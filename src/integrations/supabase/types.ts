@@ -910,6 +910,140 @@ export type Database = {
           },
         ]
       }
+      automation_execution_logs: {
+        Row: {
+          actions_executed: Json | null
+          created_at: string | null
+          error_message: string | null
+          event_payload: Json | null
+          event_type: string
+          execution_time_ms: number | null
+          id: string
+          rule_id: string | null
+          rule_name: string | null
+          source_id: string | null
+          source_table: string | null
+          status: string | null
+          tenant_id: string | null
+          triggered_by: string | null
+        }
+        Insert: {
+          actions_executed?: Json | null
+          created_at?: string | null
+          error_message?: string | null
+          event_payload?: Json | null
+          event_type: string
+          execution_time_ms?: number | null
+          id?: string
+          rule_id?: string | null
+          rule_name?: string | null
+          source_id?: string | null
+          source_table?: string | null
+          status?: string | null
+          tenant_id?: string | null
+          triggered_by?: string | null
+        }
+        Update: {
+          actions_executed?: Json | null
+          created_at?: string | null
+          error_message?: string | null
+          event_payload?: Json | null
+          event_type?: string
+          execution_time_ms?: number | null
+          id?: string
+          rule_id?: string | null
+          rule_name?: string | null
+          source_id?: string | null
+          source_table?: string | null
+          status?: string | null
+          tenant_id?: string | null
+          triggered_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_execution_logs_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "automation_rules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automation_execution_logs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      automation_rules: {
+        Row: {
+          actions: Json | null
+          active: boolean | null
+          conditions: Json | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          error_count: number | null
+          event_module: string
+          event_type: string
+          execution_count: number | null
+          id: string
+          is_system: boolean | null
+          last_executed_at: string | null
+          name: string
+          priority: number | null
+          tenant_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          actions?: Json | null
+          active?: boolean | null
+          conditions?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          error_count?: number | null
+          event_module: string
+          event_type: string
+          execution_count?: number | null
+          id?: string
+          is_system?: boolean | null
+          last_executed_at?: string | null
+          name: string
+          priority?: number | null
+          tenant_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          actions?: Json | null
+          active?: boolean | null
+          conditions?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          error_count?: number | null
+          event_module?: string
+          event_type?: string
+          execution_count?: number | null
+          id?: string
+          is_system?: boolean | null
+          last_executed_at?: string | null
+          name?: string
+          priority?: number | null
+          tenant_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_rules_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       boleto_rates: {
         Row: {
           active: boolean | null
