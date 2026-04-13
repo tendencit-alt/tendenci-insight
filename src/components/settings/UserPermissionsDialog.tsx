@@ -26,7 +26,7 @@ interface ModulePermissions {
   can_delete: boolean;
 }
 
-const MODULE_LABELS: Record<AppModule, string> = {
+const MODULE_LABELS: Record<string, string> = {
   'dashboard': 'Dashboard',
   'configuracoes': 'Configurações',
   'gestao_usuarios': 'Gestão de Usuários',
@@ -36,16 +36,30 @@ const MODULE_LABELS: Record<AppModule, string> = {
   'pedidos': 'Pedidos',
   'financeiro': 'Financeiro',
   'cadastros_financeiros': 'Cadastros Financeiros',
+  'dashboard_executivo': 'Dashboard Executivo',
+  'comercial': 'Comercial',
+  'operacional': 'Operacional',
+  'controladoria': 'Controladoria',
+  'planejamento': 'Planejamento',
+  'cadastros': 'Cadastros',
+  'relatorios_bi': 'Relatórios & BI',
 };
 
 const ALL_MODULES: AppModule[] = [
   'dashboard',
+  'dashboard_executivo',
+  'comercial',
+  'operacional',
   'producao',
   'pedidos',
   'financeiro',
+  'controladoria',
+  'planejamento',
+  'cadastros',
+  'cadastros_financeiros',
+  'relatorios_bi',
   'fornecedores',
   'estoque',
-  'cadastros_financeiros',
   'configuracoes',
   'gestao_usuarios',
 ];
