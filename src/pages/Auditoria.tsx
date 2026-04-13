@@ -1,5 +1,5 @@
 import { AuditCenter } from "@/components/auditoria/AuditCenter";
-import AppNavbar from "@/components/layout/AppNavbar";
+import { AppNavbar } from "@/components/layout/AppNavbar";
 
 export default function Auditoria() {
   return (
