@@ -46,6 +46,8 @@ interface PermissionsContextType {
   userLevel: 'system_owner' | 'tenant_owner' | 'tenant_admin' | 'operational';
   hasModuleAccess: (module: AppModule | string, action?: PermissionAction) => boolean;
   hasCriticalPermission: (key: string) => boolean;
+  checkValueLimit: (module: string, value: number) => Promise<{ allowed: boolean; reason: string; requires_approval?: boolean; max_value?: number }>;
+  checkStatusRule: (module: string, status: string, action?: string) => Promise<boolean>;
   refetch: () => Promise<void>;
 }
 
@@ -199,13 +201,37 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
     return Boolean((modulePermission as any)[actionMap[action]]);
   }, [loading, permissions, isMaster]);
 
-  const hasCriticalPermission = useCallback((key: string): boolean => {
+  const hasCriticalPermission = useCallback((_key: string): boolean => {
     if (loading) return false;
     if (isMaster) return true;
-    // Critical permissions are checked from rbac_critical_permissions table
-    // For now, non-admin users default to false; will be loaded via profile_type
     return false;
   }, [loading, isMaster]);
+
+  const checkValueLimit = useCallback(async (module: string, value: number) => {
+    if (isMaster) return { allowed: true, reason: 'admin_bypass' };
+    if (!user) return { allowed: false, reason: 'no_user' };
+    try {
+      const { data } = await supabase.rpc('check_rbac_value_limit', {
+        p_user_id: user.id, p_module: module, p_value: value,
+      });
+      return data as any || { allowed: true, reason: 'no_limit_defined' };
+    } catch {
+      return { allowed: true, reason: 'error_checking' };
+    }
+  }, [isMaster, user]);
+
+  const checkStatusRule = useCallback(async (module: string, status: string, action: string = 'edit') => {
+    if (isMaster) return false;
+    if (!user) return false;
+    try {
+      const { data } = await supabase.rpc('check_rbac_status_rule', {
+        p_user_id: user.id, p_module: module, p_status: status, p_action: action,
+      });
+      return data as boolean || false;
+    } catch {
+      return false;
+    }
+  }, [isMaster, user]);
 
   const refetch = useCallback(async () => {
     setLoading(true);
@@ -213,7 +239,7 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
   }, [fetchPermissions]);
 
   return (
-    <PermissionsContext.Provider value={{ permissions, loading, isMaster, isOwner, isTenantOwner, isTenantAdmin, userLevel, hasModuleAccess, hasCriticalPermission, refetch }}>
+    <PermissionsContext.Provider value={{ permissions, loading, isMaster, isOwner, isTenantOwner, isTenantAdmin, userLevel, hasModuleAccess, hasCriticalPermission, checkValueLimit, checkStatusRule, refetch }}>
       {children}
     </PermissionsContext.Provider>
   );
