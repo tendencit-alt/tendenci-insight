@@ -2576,6 +2576,143 @@ export type Database = {
           },
         ]
       }
+      erp_document_rules: {
+        Row: {
+          active: boolean | null
+          condition_field: string | null
+          condition_operator: string | null
+          condition_value: string | null
+          created_at: string | null
+          description: string | null
+          document_type: string
+          entity_table: string
+          id: string
+          is_mandatory: boolean | null
+          module: string
+          tenant_id: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          condition_field?: string | null
+          condition_operator?: string | null
+          condition_value?: string | null
+          created_at?: string | null
+          description?: string | null
+          document_type: string
+          entity_table: string
+          id?: string
+          is_mandatory?: boolean | null
+          module: string
+          tenant_id?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          condition_field?: string | null
+          condition_operator?: string | null
+          condition_value?: string | null
+          created_at?: string | null
+          description?: string | null
+          document_type?: string
+          entity_table?: string
+          id?: string
+          is_mandatory?: boolean | null
+          module?: string
+          tenant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_document_rules_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      erp_documents: {
+        Row: {
+          created_at: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          document_type: string
+          entity_id: string
+          entity_table: string
+          file_name: string
+          file_path: string
+          file_size: number | null
+          id: string
+          is_deleted: boolean | null
+          is_required: boolean | null
+          mime_type: string | null
+          module: string
+          notes: string | null
+          replaced_by: string | null
+          tenant_id: string | null
+          updated_at: string | null
+          uploaded_by: string
+          version: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          document_type: string
+          entity_id: string
+          entity_table: string
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          id?: string
+          is_deleted?: boolean | null
+          is_required?: boolean | null
+          mime_type?: string | null
+          module: string
+          notes?: string | null
+          replaced_by?: string | null
+          tenant_id?: string | null
+          updated_at?: string | null
+          uploaded_by: string
+          version?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          document_type?: string
+          entity_id?: string
+          entity_table?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          id?: string
+          is_deleted?: boolean | null
+          is_required?: boolean | null
+          mime_type?: string | null
+          module?: string
+          notes?: string | null
+          replaced_by?: string | null
+          tenant_id?: string | null
+          updated_at?: string | null
+          uploaded_by?: string
+          version?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "erp_documents_replaced_by_fkey"
+            columns: ["replaced_by"]
+            isOneToOne: false
+            referencedRelation: "erp_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "erp_documents_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fee_supplier_configs: {
         Row: {
           created_at: string | null
