@@ -53,7 +53,7 @@ export function ExecutiveView({ filters }: ExecutiveViewProps) {
         .eq("active", true);
 
       // Helper to classify accounts by numeric code ranges
-      // Structure: 1=Receitas, 2=Deduções, 3=CustosVar, 4=MC(calc), 5=DespOp, 6=Deprec, 7=ResultFin, 8=Capital, 9=Variação
+      // Structure: 1=Receitas, 2=Deduções, 3=CustosVar, 4=DespOp, 5=Deprec, 6=ResultFin, 7=Capital, 8=Variação
       const classifyAccount = (code: string, nature: string | null) => {
         const mainCode = parseFloat(code.split('.')[0]);
         const subCode = code.includes('.') ? parseFloat(code.split('.')[1]) : 0;
@@ -61,15 +61,14 @@ export function ExecutiveView({ filters }: ExecutiveViewProps) {
         if (mainCode === 1) return "receita_operacional";
         if (mainCode === 2) return "deducao_receita";
         if (mainCode === 3) return "custo_variavel";
-        if (mainCode === 4) return "margem_contribuicao";
-        if (mainCode === 5) return "despesa_operacional";
-        if (mainCode === 6) return "depreciacao";
-        if (mainCode === 7 && nature === "RECEITA") return "receita_financeira";
-        if (mainCode === 7 && nature === "DESPESA") return "despesa_financeira";
-        if (mainCode === 7) return "resultado_financeiro";
-        if (mainCode === 8 && subCode === 1) return "capital_entrada";
-        if (mainCode === 8 && subCode === 2) return "capital_saida";
-        if (mainCode === 8) return "capital_entrada";
+        if (mainCode === 4) return "despesa_operacional";
+        if (mainCode === 5) return "depreciacao";
+        if (mainCode === 6 && nature === "RECEITA") return "receita_financeira";
+        if (mainCode === 6 && nature === "DESPESA") return "despesa_financeira";
+        if (mainCode === 6) return "resultado_financeiro";
+        if (mainCode === 7 && subCode === 1) return "capital_entrada";
+        if (mainCode === 7 && subCode === 2) return "capital_saida";
+        if (mainCode === 7) return "capital_entrada";
         
         return nature === "RECEITA" ? "receita_operacional" : "despesa_operacional";
       };
