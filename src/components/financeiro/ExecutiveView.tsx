@@ -192,7 +192,8 @@ export function ExecutiveView({ filters }: ExecutiveViewProps) {
       const receitaLiquida = totalReceitas - deducoesReceita;
       const margemContribuicao = receitaLiquida - custosVariaveis - compromissosVenda;
       const resultadoOperacionalEBITDA = margemContribuicao - despesasOperacionais;
-      const resultadoLiquido = resultadoOperacionalEBITDA - depreciacao + resultadoFinanceiro - impostosResultado;
+      const resultadoAntesImpostos = resultadoOperacionalEBITDA - depreciacao + resultadoFinanceiro;
+      const resultadoLiquido = resultadoAntesImpostos - impostosResultado;
 
       // Calculate Cashflow values
       let entradasOperacionais = 0;

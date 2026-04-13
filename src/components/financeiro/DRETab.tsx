@@ -336,6 +336,7 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
       let totalDeducoes = 0;
       let totalCustosVariaveis = 0;
       let totalCompromissosVenda = 0;
+      let totalAntecipacaoRecebiveis = 0;
       let totalDespesasOp = 0;
       let totalDepreciacao = 0;
       let totalReceitasFinanceiras = 0;
@@ -387,6 +388,8 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
               totalCustosVariaveis += childTotal;
             } else if (subCode === 3) {
               totalCompromissosVenda += childTotal;
+            } else if (subCode === 4) {
+              totalAntecipacaoRecebiveis += childTotal;
             }
           });
         } else if (mainCode === 3) {
@@ -414,10 +417,11 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
 
       // Calculate derived values - professional DRE structure
       const receitaLiquida = totalReceitas - totalDeducoes;
-      const margemContribuicao = receitaLiquida - totalCustosVariaveis - totalCompromissosVenda;
+      const margemContribuicao = receitaLiquida - totalCustosVariaveis - totalCompromissosVenda - totalAntecipacaoRecebiveis;
       const resultadoOperacionalEBITDA = margemContribuicao - totalDespesasOp;
       const totalResultadoFinanceiro = totalReceitasFinanceiras - totalDespesasFinanceiras;
-      const resultadoLiquido = resultadoOperacionalEBITDA - totalDepreciacao + totalResultadoFinanceiro - totalImpostos;
+      const resultadoAntesImpostos = resultadoOperacionalEBITDA - totalDepreciacao + totalResultadoFinanceiro;
+      const resultadoLiquido = resultadoAntesImpostos - totalImpostos;
       const variacaoLiquidaCaixa = resultadoLiquido + totalCapitalEntrada - totalCapitalSaida;
 
       // Calculate breakeven point correctly
@@ -476,9 +480,11 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
       });
 
       // Insert in reverse order so indices don't shift
-      // After the last visible group, inject Resultado Líquido
-      const lastGroupCode = showImpostos ? "7" : "6";
+      const lastGroupCode = showImpostos ? "7" : "5";
       injectAfterCode(lastGroupCode, makeCalcLine("calc-resultado-liquido", "=RL²", "= Resultado Líquido", resultadoLiquido));
+      if (showImpostos) {
+        injectAfterCode("5", makeCalcLine("calc-resultado-antes-impostos", "=RAI", "= Resultado Antes dos Impostos", resultadoAntesImpostos));
+      }
       injectAfterCode("3", makeCalcLine("calc-ebitda", "=EBITDA", "= Resultado Operacional (EBITDA)", resultadoOperacionalEBITDA));
       injectAfterCode("3", makeCalcLine("calc-margem", "=MC", "= Margem de Contribuição", margemContribuicao));
       injectAfterCode("2", makeCalcLine("calc-receita-liquida", "=RL", "= Receita Líquida", receitaLiquida));
