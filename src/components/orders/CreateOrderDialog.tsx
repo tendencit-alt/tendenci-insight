@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { usePaymentLinkRates } from '@/hooks/usePaymentLinkRates';
-import { useCompromissosVendaCategories, buildInitialCompromissos, type CompromissoState } from '@/hooks/useCompromissosVendaCategories';
-import { OrderCompromissosCard } from './OrderCompromissosCard';
+import { useStrategicResourceDefaults } from '@/hooks/useStrategicResourceDefaults';
 import { useCompanyName } from '@/hooks/useCompanySettings';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
