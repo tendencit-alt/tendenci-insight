@@ -416,11 +416,9 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
       const receitaLiquida = totalReceitas - totalDeducoes;
       const margemContribuicao = receitaLiquida - totalCustosVariaveis - totalCompromissosVenda;
       const resultadoOperacionalEBITDA = margemContribuicao - totalDespesasOp;
-      const resultadoEconomicoEBIT = resultadoOperacionalEBITDA - totalDepreciacao;
       const totalResultadoFinanceiro = totalReceitasFinanceiras - totalDespesasFinanceiras;
-      const resultadoAntesCapital = resultadoEconomicoEBIT + totalResultadoFinanceiro;
-      const lucroLiquido = showImpostos ? resultadoAntesCapital - totalImpostos : resultadoAntesCapital;
-      const variacaoLiquidaCaixa = resultadoAntesCapital + totalCapitalEntrada - totalCapitalSaida;
+      const resultadoLiquido = resultadoOperacionalEBITDA - totalDepreciacao + totalResultadoFinanceiro - totalImpostos;
+      const variacaoLiquidaCaixa = resultadoLiquido + totalCapitalEntrada - totalCapitalSaida;
 
       // Calculate breakeven point correctly
       const custosVariaveis = Math.abs(totalCustosVariaveis);
@@ -478,12 +476,10 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
       });
 
       // Insert in reverse order so indices don't shift
-      if (showImpostos) {
-        injectAfterCode("7", makeCalcLine("calc-lucro-liquido", "=LL", "= Lucro Líquido", lucroLiquido));
-      }
-      injectAfterCode("6", makeCalcLine("calc-resultado-antes-capital", "=RAC", "= Resultado Antes do Capital", resultadoAntesCapital));
-      injectAfterCode("5", makeCalcLine("calc-ebit", "=EBIT", "= Resultado Econômico (EBIT)", resultadoEconomicoEBIT));
-      injectAfterCode("4", makeCalcLine("calc-ebitda", "=EBITDA", "= Resultado Operacional (EBITDA)", resultadoOperacionalEBITDA));
+      // After the last visible group, inject Resultado Líquido
+      const lastGroupCode = showImpostos ? "7" : "6";
+      injectAfterCode(lastGroupCode, makeCalcLine("calc-resultado-liquido", "=RL²", "= Resultado Líquido", resultadoLiquido));
+      injectAfterCode("3", makeCalcLine("calc-ebitda", "=EBITDA", "= Resultado Operacional (EBITDA)", resultadoOperacionalEBITDA));
       injectAfterCode("3", makeCalcLine("calc-margem", "=MC", "= Margem de Contribuição", margemContribuicao));
       injectAfterCode("2", makeCalcLine("calc-receita-liquida", "=RL", "= Receita Líquida", receitaLiquida));
 
