@@ -52,16 +52,18 @@ export function ExecutiveView({ filters }: ExecutiveViewProps) {
         .eq("active", true);
 
       // Helper to classify accounts by numeric code ranges
-      // Structure: 1=Receitas, 2=Deduções, 3=CustosVar, 4=DespOp, 5=Deprec, 6=ResultFin, 7=Capital, 8=Variação
+      // New structure: 2.1=Impostos, 2.2=Taxas, 2.3=CustosDiretos, 2.4=Comissões, 2.5=Antecipação
       const classifyAccount = (code: string, nature: string | null) => {
         const mainCode = parseFloat(code.split('.')[0]);
         const subCode = code.includes('.') ? parseFloat(code.split('.')[1]) : 0;
         
         if (mainCode === 1) return "receita_operacional";
-        if (mainCode === 2 && subCode === 1) return "deducao_receita";
-        if (mainCode === 2 && subCode === 2) return "custo_variavel";
-        if (mainCode === 2 && subCode === 3) return "compromisso_venda";
-        if (mainCode === 2) return "deducao_receita";
+        if (mainCode === 2 && subCode === 1) return "impostos_venda";
+        if (mainCode === 2 && subCode === 2) return "taxas_venda";
+        if (mainCode === 2 && subCode === 3) return "custos_diretos";
+        if (mainCode === 2 && subCode === 4) return "comissoes_venda";
+        if (mainCode === 2 && subCode === 5) return "antecipacao";
+        if (mainCode === 2) return "impostos_venda";
         if (mainCode === 3) return "despesa_operacional";
         if (mainCode === 4) return "depreciacao";
         if (mainCode === 5 && nature === "RECEITA") return "receita_financeira";
