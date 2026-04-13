@@ -1,6 +1,4 @@
 import { AppNavbar } from "./AppNavbar";
-import { TendenciAssistant } from "@/components/ai/TendenciAssistant";
-import { MasterIdeasNotepad } from "@/components/master/MasterIdeasNotepad";
 import { useGlobalRealtime } from "@/hooks/useGlobalRealtime";
 
 interface DashboardLayoutProps {
@@ -17,9 +15,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       <main className="flex-1 p-4 lg:p-6 bg-background min-h-screen max-w-[1800px] mx-auto w-full">
         {children}
       </main>
-      
-      <TendenciAssistant />
-      <MasterIdeasNotepad />
     </div>
   );
 }
