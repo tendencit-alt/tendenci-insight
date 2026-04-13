@@ -158,52 +158,33 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
     fetchPermissions();
   }, [user, authLoading, fetchPermissions]);
 
-  const hasModuleAccess = useCallback((module: AppModule, action: 'view' | 'create' | 'edit' | 'delete' = 'view'): boolean => {
-    // Durante loading, retornar true para permitir renderização do menu
-    if (loading) {
-      return true;
-    }
-    
-    // Se for admin, tem acesso total
-    if (isMaster) {
-      return true;
-    }
-    
-    // Se não tem permissões carregadas, bloquear
-    if (!permissions?.permissions?.length) {
-      console.warn('[Permissions] No permissions array for module:', module);
-      return false;
-    }
+  const hasModuleAccess = useCallback((module: AppModule | string, action: PermissionAction = 'view'): boolean => {
+    if (loading) return true;
+    if (isMaster) return true;
+    if (!permissions?.permissions?.length) return false;
 
-    // Buscar permissão do módulo - comparação case-insensitive e trim
     const normalizedModule = module.toLowerCase().trim();
     const modulePermission = permissions.permissions.find(p => 
       p.module?.toLowerCase().trim() === normalizedModule
     );
     
-    if (!modulePermission) {
-      console.log('[Permissions] Module not found:', module, 'Available:', permissions.permissions.map(p => p.module));
-      return false;
-    }
+    if (!modulePermission) return false;
 
-    let hasAccess = false;
-    switch (action) {
-      case 'view':
-        hasAccess = Boolean(modulePermission.can_view);
-        break;
-      case 'create':
-        hasAccess = Boolean(modulePermission.can_create);
-        break;
-      case 'edit':
-        hasAccess = Boolean(modulePermission.can_edit);
-        break;
-      case 'delete':
-        hasAccess = Boolean(modulePermission.can_delete);
-        break;
-    }
+    const actionMap: Record<PermissionAction, string> = {
+      view: 'can_view', create: 'can_create', edit: 'can_edit', delete: 'can_delete',
+      approve: 'can_approve', conciliate: 'can_conciliate', export: 'can_export', admin: 'can_admin',
+    };
     
-    return hasAccess;
+    return Boolean((modulePermission as any)[actionMap[action]]);
   }, [loading, permissions, isMaster]);
+
+  const hasCriticalPermission = useCallback((key: string): boolean => {
+    if (loading) return false;
+    if (isMaster) return true;
+    // Critical permissions are checked from rbac_critical_permissions table
+    // For now, non-admin users default to false; will be loaded via profile_type
+    return false;
+  }, [loading, isMaster]);
 
   const refetch = useCallback(async () => {
     setLoading(true);
@@ -211,7 +192,7 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
   }, [fetchPermissions]);
 
   return (
-    <PermissionsContext.Provider value={{ permissions, loading, isMaster, isOwner, hasModuleAccess, refetch }}>
+    <PermissionsContext.Provider value={{ permissions, loading, isMaster, isOwner, hasModuleAccess, hasCriticalPermission, refetch }}>
       {children}
     </PermissionsContext.Provider>
   );
