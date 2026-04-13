@@ -448,10 +448,9 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
       });
 
       // Insert in reverse order so indices don't shift
-      injectAfterCode("6", makeCalcLine("calc-resultado-antes-capital", "=RAC", "= Resultado Antes do Capital", resultadoAntesCapital));
-      injectAfterCode("5", makeCalcLine("calc-ebit", "=EBIT", "= Resultado Econômico (EBIT)", resultadoEconomicoEBIT));
-      injectAfterCode("4", makeCalcLine("calc-ebitda", "=EBITDA", "= Resultado Operacional (EBITDA)", resultadoOperacionalEBITDA));
-      injectAfterCode("3", makeCalcLine("calc-margem", "=MC", "= Margem de Contribuição", margemContribuicao));
+      injectAfterCode("7", makeCalcLine("calc-resultado-antes-capital", "=RAC", "= Resultado Antes do Capital", resultadoAntesCapital));
+      injectAfterCode("6", makeCalcLine("calc-ebit", "=EBIT", "= Resultado Econômico (EBIT)", resultadoEconomicoEBIT));
+      injectAfterCode("5", makeCalcLine("calc-ebitda", "=EBITDA", "= Resultado Operacional (EBITDA)", resultadoOperacionalEBITDA));
       injectAfterCode("2", makeCalcLine("calc-receita-liquida", "=RL", "= Receita Líquida", receitaLiquida));
 
       // Fetch goals for breakeven meta
@@ -593,7 +592,7 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
     const isResultado = line.nature === "RESULTADO";
     const isFinanciamento = line.nature === "FINANCIAMENTO";
     const mainCode = parseFloat(line.code.split('.')[0]);
-    const isCapital = mainCode === 7;
+    const isCapital = mainCode === 8;
     const hasEntries = line.entries.length > 0;
     const canExpand = line.hasChildren || hasEntries;
     
