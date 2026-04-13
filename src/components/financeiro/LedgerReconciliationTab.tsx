@@ -29,7 +29,11 @@ import {
   Split,
   MoreHorizontal,
   Undo2,
-  Landmark
+  Landmark,
+  Brain,
+  Loader2,
+  Sparkles,
+  Copy,
 } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -44,6 +48,14 @@ import { FinanceiroAlerts } from "./FinanceiroAlerts";
 import { toast } from "sonner";
 import { parseOFX, OFXTransaction } from "@/lib/ofx-parser";
 import { BankAccountExtractTab } from "./BankAccountExtractTab";
+import { ClassificationSuggestionBadge } from "./ClassificationSuggestionBadge";
+import { useClassifyEntry } from "@/hooks/useClassifyEntry";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -67,6 +79,8 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
   const [splitDialogOpen, setSplitDialogOpen] = useState(false);
   const [selectedForSplit, setSelectedForSplit] = useState<any>(null);
   const [importing, setImporting] = useState(false);
+  const [smartReconciling, setSmartReconciling] = useState(false);
+  const [smartReconcileResults, setSmartReconcileResults] = useState<any>(null);
   
   // OFX Import states
   const [ofxDialogOpen, setOfxDialogOpen] = useState(false);
@@ -372,16 +386,19 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
     .reduce((sum, e) => sum + Math.abs(Number(e.amount) || 0), 0) || 0;
 
   const bankKpis = transactions?.reduce(
-    (acc, t) => {
+    (acc, t: any) => {
       acc.total++;
       if (t.status === "PENDENTE") acc.pendentes++;
       if (t.status === "SUGERIDA") acc.sugeridas++;
       if (t.status === "CONCILIADA") acc.conciliadas++;
       if (t.status === "DIVERGENTE") acc.divergentes++;
+      if (t.status === "DUPLICADA" || t.is_duplicate) acc.duplicadas++;
+      if (t.classification_status === "auto_classified") acc.autoClassificados++;
+      if (t.classification_status === "pending" || !t.classification_status) acc.pendentesCategoria++;
       return acc;
     },
-    { total: 0, pendentes: 0, sugeridas: 0, conciliadas: 0, divergentes: 0 }
-  ) || { total: 0, pendentes: 0, sugeridas: 0, conciliadas: 0, divergentes: 0 };
+    { total: 0, pendentes: 0, sugeridas: 0, conciliadas: 0, divergentes: 0, duplicadas: 0, autoClassificados: 0, pendentesCategoria: 0 }
+  ) || { total: 0, pendentes: 0, sugeridas: 0, conciliadas: 0, divergentes: 0, duplicadas: 0, autoClassificados: 0, pendentesCategoria: 0 };
 
   const conciliationPercent = bankKpis.total > 0 
     ? Math.round((bankKpis.conciliadas / bankKpis.total) * 100) 
@@ -454,6 +471,41 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
     toast.info("Use a aba 'Lançamentos' para conciliar com transações bancárias");
   };
 
+  const handleSmartReconcile = async () => {
+    const pendingTxIds = transactions?.filter(t => t.status === "PENDENTE" || t.status === "SUGERIDA").map(t => t.id) || [];
+    if (pendingTxIds.length === 0) {
+      toast.info("Nenhuma transação pendente para conciliar");
+      return;
+    }
+
+    setSmartReconciling(true);
+    try {
+      // Get tenant_id
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Não autenticado");
+      const { data: profile } = await supabase.from("profiles").select("tenant_id").eq("id", user.id).single();
+      if (!profile?.tenant_id) throw new Error("Tenant não encontrado");
+
+      const { data, error } = await supabase.functions.invoke("smart-reconcile", {
+        body: { transaction_ids: pendingTxIds, tenant_id: profile.tenant_id },
+      });
+
+      if (error) throw error;
+
+      setSmartReconcileResults(data?.summary);
+      const s = data?.summary;
+      toast.success(
+        `Conciliação inteligente: ${s?.auto_reconciled || 0} automáticas, ${s?.suggested || 0} sugeridas, ${s?.duplicates || 0} duplicadas`
+      );
+      refetchTransactions();
+      refetchEntries();
+    } catch (e: any) {
+      toast.error("Erro na conciliação inteligente: " + (e.message || "Erro desconhecido"));
+    } finally {
+      setSmartReconciling(false);
+    }
+  };
+
   // Summary KPIs for unified header
   const totalLancamentos = entries?.length || 0;
   const totalConciliados = entries?.filter(e => e.reconciled).length || 0;
@@ -473,6 +525,20 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
           </p>
         </div>
         <div className="flex gap-2">
+          <Button
+            variant="default"
+            size="sm"
+            className="gap-1.5 text-xs sm:text-sm"
+            onClick={handleSmartReconcile}
+            disabled={smartReconciling || !transactions?.length}
+          >
+            {smartReconciling ? (
+              <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Brain className="h-3.5 w-3.5" />
+            )}
+            {smartReconciling ? "Conciliando..." : "Conciliação Inteligente"}
+          </Button>
           <input
             type="file"
             accept=".ofx"
