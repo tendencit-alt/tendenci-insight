@@ -79,6 +79,8 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
   const [splitDialogOpen, setSplitDialogOpen] = useState(false);
   const [selectedForSplit, setSelectedForSplit] = useState<any>(null);
   const [importing, setImporting] = useState(false);
+  const [smartReconciling, setSmartReconciling] = useState(false);
+  const [smartReconcileResults, setSmartReconcileResults] = useState<any>(null);
   
   // OFX Import states
   const [ofxDialogOpen, setOfxDialogOpen] = useState(false);
