@@ -102,6 +102,7 @@ const App = () => (
               <Route path="/planning" element={<ProtectedRoute><Planning /></ProtectedRoute>} />
               <Route path="/executive" element={<ProtectedRoute><ExecutiveCenter /></ProtectedRoute>} />
               <Route path="/governanca" element={<ProtectedRoute><AccessGovernance /></ProtectedRoute>} />
+              <Route path="/billing" element={<ProtectedRoute><Billing /></ProtectedRoute>} />
               <Route path="/dashboards" element={<Navigate to="/" replace />} />
               <Route path="/ia-configuracao" element={<Navigate to="/" replace />} />
               <Route path="/compras" element={<Navigate to="/suprimentos" replace />} />
