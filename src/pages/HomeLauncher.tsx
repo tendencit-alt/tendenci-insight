@@ -22,6 +22,7 @@ import {
   UserPlus, Zap, PlayCircle, GripVertical,
   Eye, EyeOff, Rocket, CheckCircle2,
   TrendingDown, Minus, HeartPulse,
+  Lightbulb, Calendar, DollarSign, Monitor,
 } from "lucide-react";
 import {
   useActionItems,
@@ -31,6 +32,9 @@ import {
 } from "@/hooks/useSmartLauncher";
 import { useModulePreviews } from "@/hooks/useModulePreviews";
 import { useCompanyStatus } from "@/hooks/useCompanyStatus";
+import { useDecisionSuggestions, useOperationalTimeline } from "@/hooks/useDecisionLayer";
+import { format, isToday } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 // ─── Module definitions ───
 const MODULES = [
