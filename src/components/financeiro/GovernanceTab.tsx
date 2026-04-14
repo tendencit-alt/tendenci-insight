@@ -66,7 +66,7 @@ export function GovernanceTab({ filters: _filters }: Props) {
     queryKey: ["fin-reliability"],
     queryFn: async () => {
       const countQuery = async (table: string, filters: Record<string, any> = {}, notFilters: Record<string, any> = {}) => {
-        let q = (supabase.from(table) as any).select("id", { count: "exact", head: true });
+        let q = (supabase as any).from(table).select("id", { count: "exact", head: true });
         Object.entries(filters).forEach(([k, v]) => { q = q.eq(k, v); });
         Object.entries(notFilters).forEach(([k, v]) => {
           if (v === null) q = q.not(k, "is", null);
