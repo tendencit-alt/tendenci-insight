@@ -145,6 +145,13 @@ export function CommandBar() {
       { id: "auto-regras", label: "Regras de Automação", keywords: ["automação", "regras", "motor", "engine"], icon: Zap, action: () => go("/automacoes"), group: "Automação" },
       { id: "auto-pedido", label: "Automação Pedido Aprovado", keywords: ["automação", "pedido", "aprovado", "comissão", "receber"], icon: Zap, action: () => go("/automacoes"), group: "Automação" },
       { id: "auto-fechamento", label: "Checklist Fechamento", keywords: ["fechamento", "mensal", "checklist", "verificação"], icon: ClipboardList, action: () => go("/automacoes"), group: "Automação" },
+
+      // Forecast & Scenarios
+      { id: "forecast-resultado", label: "Forecast Resultado Mensal", keywords: ["forecast", "resultado", "previsão", "lucro", "projeção"], icon: TrendingUp, action: () => go("/central-navegacao"), group: "Forecast" },
+      { id: "forecast-caixa", label: "Projeção Liquidez", keywords: ["caixa", "liquidez", "projeção", "saldo", "7 dias", "30 dias"], icon: BarChart, action: () => go("/central-navegacao"), group: "Forecast" },
+      { id: "forecast-cenarios", label: "Cenários Financeiros", keywords: ["cenários", "conservador", "agressivo", "realista", "simulação"], icon: BarChart3, action: () => go("/central-navegacao"), group: "Forecast" },
+      { id: "forecast-simulador", label: "Simulador de Custos", keywords: ["simulador", "custos", "comissão", "frete", "matéria-prima", "margem"], icon: Calculator, action: () => go("/central-navegacao"), group: "Forecast" },
+      { id: "forecast-emprestimo", label: "Simulador Empréstimo", keywords: ["empréstimo", "financiamento", "juros", "parcela"], icon: Landmark, action: () => go("/central-navegacao"), group: "Forecast" },
     ];
 
     // Apply role-based priority
