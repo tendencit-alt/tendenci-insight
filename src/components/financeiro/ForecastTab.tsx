@@ -20,8 +20,8 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import {
-  TrendingUp, TrendingDown, Activity, Target, Lock, Unlock,
-  Save, Play, Layers, BarChart3, Wallet, AlertTriangle, Zap,
+  Activity, Target, Lock, Unlock,
+  Play, Layers, BarChart3, AlertTriangle, Zap,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -38,14 +38,6 @@ const SCENARIO_LABELS: Record<ScenarioType, { label: string; color: string; icon
   agressivo: { label: "Agressivo", color: "text-green-600 border-green-300 bg-green-50", icon: Zap },
 };
 
-const ORIGIN_LABELS: Record<string, string> = {
-  automatica: "Automática",
-  pipeline: "Pipeline",
-  recorrencia: "Recorrência",
-  manual: "Manual",
-  tendencia_historica: "Tendência",
-};
-
 const MONTHS = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
 
 const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -55,7 +47,7 @@ const fmtCompact = (v: number) => {
   return fmt(v);
 };
 
-export function ForecastTab({ filters }: ForecastTabProps) {
+export function ForecastTab({ filters: _filters }: ForecastTabProps) {
   const queryClient = useQueryClient();
   const now = new Date();
   const currentYear = now.getFullYear();
@@ -191,7 +183,7 @@ export function ForecastTab({ filters }: ForecastTabProps) {
     const avgReceita = computeAvg("receita");
     const avgDeducao = computeAvg("deducao");
     const avgDespesa = computeAvg("despesa_op");
-    const avgDepreciacao = computeAvg("depreciacao");
+    const _avgDepreciacao = computeAvg("depreciacao");
 
     // Monthly recurring amounts
     let recurringReceita = 0, recurringDespesa = 0;

@@ -7,7 +7,8 @@ import { DashboardBI as DashboardBIComponent } from "@/components/financeiro/Das
 import { DRECashflowView } from "@/components/financeiro/DRECashflowView";
 import { PlanejamentoFinanceiro } from "@/components/financeiro/PlanejamentoFinanceiro";
 import { BudgetManagementTab } from "@/components/financeiro/BudgetManagementTab";
-import { LayoutDashboard, BarChart3, Target, FileSpreadsheet } from "lucide-react";
+import { ForecastTab } from "@/components/financeiro/ForecastTab";
+import { LayoutDashboard, BarChart3, Target, FileSpreadsheet, Activity } from "lucide-react";
 
 export default function DashboardBI() {
   useFinanceiroRealtime();
