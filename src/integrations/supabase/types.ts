@@ -4253,6 +4253,50 @@ export type Database = {
           },
         ]
       }
+      fin_financial_versions: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          entity_id: string | null
+          entity_type: string
+          id: string
+          reason: string | null
+          snapshot_data: Json
+          tenant_id: string | null
+          version_number: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          reason?: string | null
+          snapshot_data?: Json
+          tenant_id?: string | null
+          version_number?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          reason?: string | null
+          snapshot_data?: Json
+          tenant_id?: string | null
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fin_financial_versions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fin_forecast_entries: {
         Row: {
           chart_account_id: string | null
@@ -4551,6 +4595,59 @@ export type Database = {
           },
           {
             foreignKeyName: "fin_goal_alerts_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fin_impact_logs: {
+        Row: {
+          created_at: string
+          estimated_impact: number | null
+          event_type: string
+          field_changed: string | null
+          id: string
+          impact_description: string | null
+          new_value: string | null
+          old_value: string | null
+          record_id: string | null
+          source_table: string
+          tenant_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          estimated_impact?: number | null
+          event_type: string
+          field_changed?: string | null
+          id?: string
+          impact_description?: string | null
+          new_value?: string | null
+          old_value?: string | null
+          record_id?: string | null
+          source_table: string
+          tenant_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          estimated_impact?: number | null
+          event_type?: string
+          field_changed?: string | null
+          id?: string
+          impact_description?: string | null
+          new_value?: string | null
+          old_value?: string | null
+          record_id?: string | null
+          source_table?: string
+          tenant_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fin_impact_logs_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -5254,6 +5351,59 @@ export type Database = {
           },
           {
             foreignKeyName: "fin_payables_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fin_period_closings: {
+        Row: {
+          closed_at: string | null
+          closed_by: string | null
+          created_at: string
+          id: string
+          month: number
+          reopen_reason: string | null
+          reopened_at: string | null
+          reopened_by: string | null
+          status: string
+          tenant_id: string | null
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          closed_at?: string | null
+          closed_by?: string | null
+          created_at?: string
+          id?: string
+          month: number
+          reopen_reason?: string | null
+          reopened_at?: string | null
+          reopened_by?: string | null
+          status?: string
+          tenant_id?: string | null
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          closed_at?: string | null
+          closed_by?: string | null
+          created_at?: string
+          id?: string
+          month?: number
+          reopen_reason?: string | null
+          reopened_at?: string | null
+          reopened_by?: string | null
+          status?: string
+          tenant_id?: string | null
+          updated_at?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fin_period_closings_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
