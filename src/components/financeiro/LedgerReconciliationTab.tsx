@@ -640,27 +640,37 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
               </div>
               <span className="font-medium text-sm">Extrato por Conta</span>
             </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              movimentação e importações OFX por conta
+            </p>
+          </button>
+
+          {/* Conciliação Split View Card */}
+          <button
+            onClick={() => setActiveSubTab("reconcile-split")}
+            className={`text-left rounded-lg border p-4 transition-all ${
+              activeSubTab === "reconcile-split"
+                ? "ring-2 ring-primary bg-primary/5 border-primary/30"
+                : "bg-card hover:bg-muted/50 border-border"
+            }`}
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <div className={`p-1.5 rounded-md ${activeSubTab === "reconcile-split" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
+                <Link2 className="h-4 w-4" />
+              </div>
+              <span className="font-medium text-sm">Conciliação Bancária</span>
+            </div>
             <div className="flex items-center justify-between">
-              <p className="text-sm font-medium text-foreground">Saldo & Transações</p>
+              <p className="text-sm font-medium text-foreground">Banco vs ERP</p>
               {bankKpis.pendentes > 0 && (
-                <Badge variant="outline" className="text-xs gap-1 border-blue-500/50 text-blue-600 bg-blue-50">
-                  {bankKpis.pendentes} não vinculadas
+                <Badge variant="outline" className="text-xs gap-1 border-yellow-500/50 text-yellow-600 bg-yellow-50 dark:bg-yellow-950/20">
+                  {bankKpis.pendentes} pendentes
                 </Badge>
               )}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              movimentação, importações OFX e conciliação por conta
+              concilie transações bancárias com lançamentos do sistema
             </p>
-            {bankKpis.total > 0 && (
-              <div className="mt-2 pt-2 border-t border-border/50">
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>{bankKpis.total} transações importadas</span>
-                  <span className={`font-medium ${conciliationPercent === 100 ? 'text-green-600' : 'text-yellow-600'}`}>
-                    {conciliationPercent}% conciliado
-                  </span>
-                </div>
-              </div>
-            )}
           </button>
         </div>
 
