@@ -21,6 +21,7 @@ import {
   LayoutGrid, AlertTriangle, Plus, CreditCard,
   UserPlus, Zap, PlayCircle, GripVertical,
   Eye, EyeOff, Rocket, CheckCircle2,
+  TrendingDown, Minus, Heart, Popover,
 } from "lucide-react";
 import {
   useActionItems,
@@ -29,6 +30,7 @@ import {
   getModuleOrder,
 } from "@/hooks/useSmartLauncher";
 import { useModulePreviews } from "@/hooks/useModulePreviews";
+import { useCompanyStatus, type TrendDirection, type HealthStatus } from "@/hooks/useCompanyStatus";
 
 // ─── Module definitions ───
 const MODULES = [
