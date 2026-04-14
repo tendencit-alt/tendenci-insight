@@ -25,7 +25,6 @@ import {
   useActionItems,
   useContinueItems,
 } from "@/hooks/useSmartLauncher";
-import { useCompanyStatus } from "@/hooks/useCompanyStatus";
 import { useDecisionSuggestions, useOperationalTimeline } from "@/hooks/useDecisionLayer";
 import { format as fmtDate } from "date-fns";
 import { usePredictiveLayer, useSimulator } from "@/hooks/usePredictiveLayer";
