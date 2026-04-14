@@ -173,6 +173,7 @@ export function FormView({
             updatedAt={updatedAt}
             updatedBy={updatedBy}
             extra={sidePanelExtra}
+            tabs={sidePanelTabs}
           />
         )}
       </div>
