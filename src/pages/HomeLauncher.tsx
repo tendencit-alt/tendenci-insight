@@ -215,7 +215,10 @@ export default function HomeLauncher() {
   const moduleOrder = getModuleOrder(userProfile);
   const { data: modulePreviews } = useModulePreviews();
   const { data: companyStatus, isLoading: loadingStatus } = useCompanyStatus();
+  const { data: suggestions = [], isLoading: loadingSuggestions } = useDecisionSuggestions();
+  const { data: timeline = [], isLoading: loadingTimeline } = useOperationalTimeline();
   const [fabOpen, setFabOpen] = useState(false);
+  const [executiveMode, setExecutiveMode] = useState(false);
 
   const showOnboarding = onboardingDone.length < ONBOARDING_STEPS.length;
 
