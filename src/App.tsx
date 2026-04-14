@@ -22,7 +22,6 @@ import Inventory from "./pages/Inventory";
 import ActivityCenter from "./pages/ActivityCenter";
 import Catalogo from "./pages/Catalogo";
 import Financeiro from "./pages/Financeiro";
-import DashboardBI from "./pages/DashboardBI";
 import CadastrosFinanceiros from "./pages/CadastrosFinanceiros";
 
 import ResetPassword from "./pages/ResetPassword";
