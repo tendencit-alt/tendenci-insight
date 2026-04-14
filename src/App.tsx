@@ -38,6 +38,7 @@ import Relatorios from "./pages/Relatorios";
 import HomeLauncher from "./pages/HomeLauncher";
 import DashboardBI from "./pages/DashboardBI";
 import RecursosHumanos from "./pages/RecursosHumanos";
+import ProducaoOperacoes from "./pages/ProducaoOperacoes";
 
 const queryClient = new QueryClient();
 
