@@ -157,6 +157,12 @@ export function CommandBar() {
       { id: "perf-diagnostico", label: "Diagnóstico Performance", keywords: ["diagnóstico", "performance", "margem", "caixa", "crescimento"], icon: BarChart3, action: () => go("/central-navegacao"), group: "Performance" },
       { id: "perf-custos", label: "Ranking de Custos", keywords: ["ranking", "custos", "top", "maiores", "despesas"], icon: BarChart, action: () => go("/central-navegacao"), group: "Performance" },
       { id: "perf-recomendacoes", label: "Recomendações Gerenciais", keywords: ["recomendações", "sugestões", "melhoria", "gerencial"], icon: TrendingUp, action: () => go("/central-navegacao"), group: "Performance" },
+
+      // Governance
+      { id: "gov-auditoria", label: "Auditoria de Alterações", keywords: ["auditoria", "alterações", "log", "histórico", "governança"], icon: Shield, action: () => go("/auditoria"), group: "Governança" },
+      { id: "gov-permissoes", label: "Matriz de Permissões", keywords: ["permissões", "acesso", "níveis", "controle", "matriz"], icon: Shield, action: () => go("/central-navegacao"), group: "Governança" },
+      { id: "gov-aprovacoes", label: "Aprovações Pendentes", keywords: ["aprovações", "pendentes", "fluxo", "autorização"], icon: Shield, action: () => go("/aprovacoes"), group: "Governança" },
+      { id: "gov-bloqueios", label: "Bloqueios Estruturais", keywords: ["bloqueios", "trava", "conciliado", "fechado", "faturado"], icon: Shield, action: () => go("/central-navegacao"), group: "Governança" },
     ];
 
     // Apply role-based priority
