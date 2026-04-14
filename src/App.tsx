@@ -33,6 +33,7 @@ import Aprovacoes from "./pages/Aprovacoes";
 import Documentos from "./pages/Documentos";
 import Tarefas from "./pages/Tarefas";
 import Automacoes from "./pages/Automacoes";
+import Relatorios from "./pages/Relatorios";
 
 const queryClient = new QueryClient();
 
@@ -68,6 +69,7 @@ const App = () => (
               <Route path="/estoque" element={<ProtectedRoute><PermissionGuard module="estoque"><Inventory /></PermissionGuard></ProtectedRoute>} />
               <Route path="/financeiro" element={<ProtectedRoute><PermissionGuard module="financeiro"><Financeiro /></PermissionGuard></ProtectedRoute>} />
               <Route path="/cadastros-financeiros" element={<ProtectedRoute><PermissionGuard module="cadastros_financeiros"><CadastrosFinanceiros /></PermissionGuard></ProtectedRoute>} />
+              <Route path="/relatorios" element={<ProtectedRoute><Relatorios /></ProtectedRoute>} />
               <Route path="/atividades" element={<ProtectedRoute><ActivityCenter /></ProtectedRoute>} />
               <Route path="/system-errors" element={<Navigate to="/bi-dashboard" replace />} />
               <Route path="/excluidos" element={<Navigate to="/bi-dashboard" replace />} />
