@@ -47,6 +47,7 @@ import { useActionLayer } from "@/hooks/useActionLayer";
 import { useAutomationLayer } from "@/hooks/useAutomationLayer";
 import { useCollaborationLayer, type CollabFilter } from "@/hooks/useCollaborationLayer";
 import { useLearningLayer } from "@/hooks/useLearningLayer";
+import { MiniActivityFeed } from "@/components/activity/ActivityFeed";
 
 // ─── Module definitions ───
 const MODULES = [
@@ -1460,6 +1461,11 @@ export default function HomeLauncher() {
             )}
           </div>
         </div>
+        )}
+
+        {/* ── Global Activity Feed ── */}
+        {!executiveMode && !actionLayer.rapidMode && (
+          <MiniActivityFeed className="mt-2" />
         )}
 
         {!executiveMode && !actionLayer.rapidMode && (
