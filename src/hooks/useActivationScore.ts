@@ -55,7 +55,7 @@ export function useActivationScore() {
         supabase.from('onboarding_progress').select('step_key, completed, data'),
       ]);
 
-      const segmento = onboardingProgress?.find((p: any) => p.step_key === 'empresa')?.data?.segmento || '';
+      const segmento = (onboardingProgress?.find((p: any) => p.step_key === 'empresa')?.data as any)?.segmento || '';
 
       const checks: ActivationCheck[] = [
         { key: 'empresa', label: 'Empresa configurada', done: !!settings?.company_name, weight: 15, category: 'estrutura', route: '/settings' },
