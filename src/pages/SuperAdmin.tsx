@@ -1,7 +1,7 @@
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Building2, CreditCard, ArrowLeft, Wrench, LayoutDashboard, Shield, Activity, Rocket, BarChart3, GitBranch } from 'lucide-react';
+import { Building2, CreditCard, ArrowLeft, Wrench, LayoutDashboard, Shield, Activity, Rocket, BarChart3, GitBranch, Settings2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { TenantsManager } from '@/components/superadmin/TenantsManager';
 import { PlansManager } from '@/components/superadmin/PlansManager';
@@ -12,6 +12,7 @@ import { ObservabilityDashboard } from '@/components/superadmin/ObservabilityDas
 import { OwnerActivationPanel } from '@/components/superadmin/OwnerActivationPanel';
 import { ProductAnalyticsPanel } from '@/components/superadmin/ProductAnalyticsPanel';
 import { ReleaseManagementPanel } from '@/components/superadmin/ReleaseManagementPanel';
+import { ConfigGovernancePanel } from '@/components/superadmin/ConfigGovernancePanel';
 
 const SuperAdmin = () => {
   const navigate = useNavigate();
@@ -68,6 +69,10 @@ const SuperAdmin = () => {
               <Wrench className="h-4 w-4" />
               Técnico
             </TabsTrigger>
+            <TabsTrigger value="config-governance" className="flex items-center gap-1.5">
+              <Settings2 className="h-4 w-4" />
+              Governança Config
+            </TabsTrigger>
             <TabsTrigger value="observability" className="flex items-center gap-1.5">
               <Activity className="h-4 w-4" />
               Observabilidade
@@ -104,6 +109,10 @@ const SuperAdmin = () => {
 
           <TabsContent value="releases" className="space-y-6 pt-6">
             <ReleaseManagementPanel />
+          </TabsContent>
+
+          <TabsContent value="config-governance" className="space-y-6 pt-6">
+            <ConfigGovernancePanel />
           </TabsContent>
 
           <TabsContent value="observability" className="space-y-6 pt-6">
