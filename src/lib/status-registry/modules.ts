@@ -125,6 +125,24 @@ export const PRODUCTION_STATUS: ModuleStatusConfig = {
 };
 
 // ═══════════════════════════════════════════
+// CONCILIAÇÃO BANCÁRIA (Bank Reconciliation)
+// ═══════════════════════════════════════════
+import { Link2, Eye, EyeOff, Sparkles } from "lucide-react";
+
+export const RECONCILIATION_STATUS: ModuleStatusConfig = {
+  module: "reconciliation",
+  label: "Conciliação Bancária",
+  statuses: [
+    { key: "PENDENTE",     label: "Não Conciliado",          color: "yellow", icon: Clock,        transitions: ["CONCILIADA", "IGNORADA"] },
+    { key: "SUGERIDA",     label: "Sugestão Automática",     color: "blue",   icon: Sparkles,     transitions: ["CONCILIADA", "IGNORADA", "PENDENTE"] },
+    { key: "CONCILIADA",   label: "Conciliado",              color: "green",  icon: CheckCircle2, transitions: ["PENDENTE"], blockEdit: true },
+    { key: "IGNORADA",     label: "Ignorado",                color: "gray",   icon: EyeOff,       transitions: ["PENDENTE"] },
+    { key: "DUPLICADA",    label: "Duplicada",               color: "orange", icon: AlertTriangle, transitions: [], blockEdit: true },
+    { key: "DIVERGENTE",   label: "Divergente",              color: "red",    icon: AlertTriangle, transitions: ["CONCILIADA", "IGNORADA"] },
+  ],
+};
+
+// ═══════════════════════════════════════════
 // REGISTRY MAP
 // ═══════════════════════════════════════════
 const ALL_MODULES: ModuleStatusConfig[] = [
@@ -134,6 +152,7 @@ const ALL_MODULES: ModuleStatusConfig[] = [
   PURCHASES_STATUS,
   PROJECTS_STATUS,
   PRODUCTION_STATUS,
+  RECONCILIATION_STATUS,
 ];
 
 const MODULE_MAP = new Map(ALL_MODULES.map((m) => [m.module, m]));
