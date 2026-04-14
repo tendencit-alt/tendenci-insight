@@ -301,7 +301,7 @@ export function AppSidebar() {
 
             return (
               <div key={group.label}>
-                <Collapsible defaultOpen={isGroupActive}>
+                <Collapsible defaultOpen={isGroupActive || false}>
                   <SidebarGroup className="py-0">
                     <CollapsibleTrigger className="w-full">
                       <SidebarGroupLabel className="flex items-center justify-between w-full px-4 py-1.5 cursor-pointer hover:bg-sidebar-accent/20 rounded-md mx-1 transition-colors">
