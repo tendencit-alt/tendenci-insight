@@ -6173,6 +6173,65 @@ export type Database = {
           },
         ]
       }
+      fin_saved_reports: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          data_source: string
+          description: string | null
+          filters: Json
+          grouping_field: string | null
+          id: string
+          is_public: boolean
+          metrics: Json
+          name: string
+          report_group: string
+          tenant_id: string | null
+          updated_at: string
+          visualization: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          data_source: string
+          description?: string | null
+          filters?: Json
+          grouping_field?: string | null
+          id?: string
+          is_public?: boolean
+          metrics?: Json
+          name: string
+          report_group?: string
+          tenant_id?: string | null
+          updated_at?: string
+          visualization?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          data_source?: string
+          description?: string | null
+          filters?: Json
+          grouping_field?: string | null
+          id?: string
+          is_public?: boolean
+          metrics?: Json
+          name?: string
+          report_group?: string
+          tenant_id?: string | null
+          updated_at?: string
+          visualization?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fin_saved_reports_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fin_strategic_resource_account_configs: {
         Row: {
           active: boolean
