@@ -34,7 +34,7 @@ const SuperAdmin = () => {
         </div>
 
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-7">
+          <TabsList className="grid w-full grid-cols-8">
             <TabsTrigger value="dashboard" className="flex items-center gap-1.5">
               <LayoutDashboard className="h-4 w-4" />
               Visão Geral
@@ -42,6 +42,10 @@ const SuperAdmin = () => {
             <TabsTrigger value="activation" className="flex items-center gap-1.5">
               <Rocket className="h-4 w-4" />
               Ativação
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="flex items-center gap-1.5">
+              <BarChart3 className="h-4 w-4" />
+              Analytics
             </TabsTrigger>
             <TabsTrigger value="tenants" className="flex items-center gap-1.5">
               <Building2 className="h-4 w-4" />
