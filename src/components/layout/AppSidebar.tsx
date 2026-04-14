@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import {
   Home, ShoppingCart, Factory, Wallet, BookOpen, Target,
   Database, BarChart3, Settings, Building2, ChevronDown,
-  Users, FileText, Briefcase, DollarSign, HardHat,
+  Users, FileText, Briefcase, DollarSign,
   Package, Layers, CreditCard, ArrowLeftRight, BarChart,
   TrendingUp, Calculator, History, Zap, Shield,
   LineChart, PieChart, UserCog, Link2,
