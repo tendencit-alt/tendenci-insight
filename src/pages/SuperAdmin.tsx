@@ -10,6 +10,7 @@ import { OwnerTechnicalPanel } from '@/components/superadmin/OwnerTechnicalPanel
 import { SupportDashboard } from '@/components/superadmin/SupportDashboard';
 import { ObservabilityDashboard } from '@/components/superadmin/ObservabilityDashboard';
 import { OwnerActivationPanel } from '@/components/superadmin/OwnerActivationPanel';
+import { ProductAnalyticsPanel } from '@/components/superadmin/ProductAnalyticsPanel';
 
 const SuperAdmin = () => {
   const navigate = useNavigate();
