@@ -54,7 +54,7 @@ const MODULE_DEFAULTS: Record<string, SmartDefaultRule[]> = {
 };
 
 export function useSmartDefaults(moduleKey: string) {
-  const { user, tenantId } = useAuth();
+  const { user } = useAuth();
 
   const context = useMemo<SmartDefaultContext>(() => {
     const now = new Date();
