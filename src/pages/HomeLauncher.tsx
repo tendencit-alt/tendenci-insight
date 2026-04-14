@@ -978,38 +978,8 @@ export default function HomeLauncher() {
         )}
         {loadingTrust && <Skeleton className="h-28 rounded-xl" />}
 
-        {/* ── Onboarding Guide ── */}
-        {showOnboarding && (
-          <Card className="border-primary/20 bg-primary/5 dark:bg-primary/10">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <Rocket className="h-4 w-4 text-primary" />
-                <h2 className="text-sm font-semibold">Primeiros Passos</h2>
-                <Badge variant="outline" className="text-[10px] ml-auto">
-                  {onboardingDone.length}/{ONBOARDING_STEPS.length}
-                </Badge>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {ONBOARDING_STEPS.map((step) => {
-                  const done = onboardingDone.includes(step.key);
-                  return (
-                    <Button
-                      key={step.key}
-                      variant={done ? "ghost" : "outline"}
-                      size="sm"
-                      className={`h-9 text-xs gap-2 rounded-lg ${done ? "opacity-60 line-through" : "border-primary/30 hover:border-primary/60"}`}
-                      onClick={() => completeOnboardingStep(step.key, step.route)}
-                      disabled={done}
-                    >
-                      {done ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> : <step.icon className="h-3.5 w-3.5 text-primary" />}
-                      {step.label}
-                    </Button>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        {/* ── Onboarding & Activation ── */}
+        <OnboardingActivationWidget />
 
         {/* ── Hoje Preciso Fazer ── */}
         <div className="space-y-3">
