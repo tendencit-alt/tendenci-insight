@@ -8,7 +8,7 @@ import {
   TrendingUp, Calculator, History, Zap, Shield,
   LineChart, PieChart, UserCog, Link2,
   Landmark, ClipboardList, FolderOpen, Wrench,
-  Star, AlertTriangle, UserCheck, Clock
+  Star, AlertTriangle, UserCheck, Clock, Calendar, Play
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
