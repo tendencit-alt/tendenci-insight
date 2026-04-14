@@ -1522,6 +1522,12 @@ export default function HomeLauncher() {
           </div>
         )}
 
+        {!executiveMode && !actionLayer.rapidMode && (
+          <div className="mt-2">
+            <IntegrationLayerWidget />
+          </div>
+        )}
+
         {/* ── Global Activity Feed ── */}
         {!executiveMode && !actionLayer.rapidMode && (
           <MiniActivityFeed className="mt-2" />
