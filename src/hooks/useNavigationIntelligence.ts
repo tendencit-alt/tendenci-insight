@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react";
+import { useMemo } from "react";
 import { useLocation } from "react-router-dom";
 import { useNavigationUsage } from "./useNavigationUsage";
 
@@ -103,7 +103,7 @@ const BREADCRUMB_ACTIONS: Record<string, { label: string; route: string }[]> = {
 
 export function useNavigationIntelligence() {
   const { pathname } = useLocation();
-  const { getTopPaths, getTopGroups, usage, trackVisit } = useNavigationUsage();
+  const { getTopPaths, getTopGroups, trackVisit } = useNavigationUsage();
 
   const basePath = useMemo(() => {
     const parts = pathname.split("?")[0].split("/").filter(Boolean);

@@ -1,5 +1,4 @@
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent } from "@/components/ui/card";
 import { ArrowRight, Lightbulb } from "lucide-react";
 import { useNavigationIntelligence } from "@/hooks/useNavigationIntelligence";
 
