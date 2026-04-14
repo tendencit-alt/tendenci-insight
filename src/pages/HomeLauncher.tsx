@@ -24,7 +24,8 @@ import {
   TrendingDown, Minus, HeartPulse,
   Lightbulb, Calendar, DollarSign, Monitor,
   Gauge, ShieldAlert, ArrowUpRight, ArrowDownRight,
-  Sparkles, Calculator,
+  Sparkles, Calculator, Info, BookOpen,
+  ArrowDown, ArrowUp, Zap as ZapIcon2,
 } from "lucide-react";
 import {
   useActionItems,
@@ -38,6 +39,7 @@ import { useDecisionSuggestions, useOperationalTimeline } from "@/hooks/useDecis
 import { format as fmtDate } from "date-fns";
 import { usePredictiveLayer, useSimulator } from "@/hooks/usePredictiveLayer";
 import { Slider } from "@/components/ui/slider";
+import { useExplainabilityLayer } from "@/hooks/useExplainabilityLayer";
 
 // ─── Module definitions ───
 const MODULES = [
@@ -225,6 +227,7 @@ export default function HomeLauncher() {
   const { data: predictive, isLoading: loadingPredictive } = usePredictiveLayer();
   const simulator = useSimulator();
   const [showSimulator, setShowSimulator] = useState(false);
+  const { data: explainability, isLoading: loadingExplain, showBreakdown, setShowBreakdown } = useExplainabilityLayer();
 
   const showOnboarding = onboardingDone.length < ONBOARDING_STEPS.length;
 
