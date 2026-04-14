@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import type { StatusStep, StatusAction } from "@/components/ui/StatusBanner";
 
 // ── Field Definition ──
 export interface FormViewField {
@@ -78,6 +79,15 @@ export interface FormValidationError {
   message: string;
 }
 
+// ── Side Panel Tab ──
+export interface FormViewSidePanelTab {
+  key: string;
+  label: string;
+  icon?: any;
+  content: ReactNode;
+  badge?: string | number;
+}
+
 // ── Main Props ──
 export interface FormViewProps {
   // Header
@@ -85,6 +95,19 @@ export interface FormViewProps {
   subtitle?: string;
   status?: FormViewStatus;
   isNew?: boolean;
+
+  // Status Banner (dominant visual status)
+  statusBanner?: {
+    status: string;
+    statusLabel: string;
+    statusColor?: "gray" | "blue" | "yellow" | "green" | "red" | "orange" | "purple";
+    steps?: StatusStep[];
+    primaryAction?: StatusAction;
+    secondaryAction?: StatusAction;
+  };
+
+  // Side Panel Tabs
+  sidePanelTabs?: FormViewSidePanelTab[];
 
   // Data
   values: Record<string, any>;

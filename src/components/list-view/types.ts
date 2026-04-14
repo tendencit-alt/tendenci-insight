@@ -29,6 +29,8 @@ export interface ListViewAction<T = any> {
   variant?: "default" | "destructive" | "outline" | "ghost";
   onClick: (row: T) => void;
   visible?: (row: T) => boolean;
+  /** Show as inline button on row hover (max 2 recommended) */
+  inline?: boolean;
 }
 
 // ── Batch Action ──

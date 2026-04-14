@@ -1,7 +1,6 @@
-import { useState, useMemo, useCallback, ReactNode } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -9,8 +8,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowUpDown, ArrowUp, ArrowDown, MoreHorizontal, ChevronLeft, ChevronRight, Loader2, Inbox } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { ListViewProps, SortState, STATUS_COLORS as StatusColorsType } from "./types";
-import { STATUS_COLORS, BADGE_DOT_COLORS } from "./types";
+import type { ListViewProps } from "./types";
+import { BADGE_DOT_COLORS } from "./types";
 import { ListViewHeader } from "./ListViewHeader";
 
 export function ListView<T extends { id: string }>({
@@ -187,12 +186,14 @@ export function ListView<T extends { id: string }>({
                 </TableRow>
               ) : data.map((row, idx) => {
                 const status = getRowStatus?.(row);
-                const badges = getRowBadges?.(row);
+                const _badges = getRowBadges?.(row);
+                const inlineActions = actions?.filter((a) => a.inline && (!a.visible || a.visible(row))) || [];
+                const menuActions = actions?.filter((a) => !a.inline && (!a.visible || a.visible(row))) || [];
                 return (
                   <TableRow
                     key={row.id}
                     className={cn(
-                      "cursor-pointer",
+                      "cursor-pointer group/row",
                       selectedIds.has(row.id) && "bg-primary/5"
                     )}
                     onClick={() => handleRowClick(row)}
@@ -205,7 +206,7 @@ export function ListView<T extends { id: string }>({
                         />
                       </TableCell>
                     )}
-                    {visibleColumns.map((col) => {
+                    {visibleColumns.map((col, colIdx) => {
                       const value = (row as any)[col.key];
                       return (
                         <TableCell
@@ -216,32 +217,61 @@ export function ListView<T extends { id: string }>({
                             col.align === "center" && "text-center",
                           )}
                         >
-                          {col.render ? col.render(value, row, idx) : (
-                            <span className="truncate max-w-[250px] inline-block">{value ?? "—"}</span>
-                          )}
+                          <div className="flex items-center gap-2">
+                            {/* Status dot on first column */}
+                            {colIdx === 0 && status && (
+                              <span className={cn(
+                                "w-2 h-2 rounded-full flex-shrink-0",
+                                BADGE_DOT_COLORS[status.color] || "bg-gray-400"
+                              )} title={status.label} />
+                            )}
+                            {col.render ? col.render(value, row, idx) : (
+                              <span className="truncate max-w-[250px] inline-block">{value ?? "—"}</span>
+                            )}
+                          </div>
                         </TableCell>
                       );
                     })}
 
                     {actions && actions.length > 0 && (
                       <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-7 w-7">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            {actions
-                              .filter((a) => !a.visible || a.visible(row))
-                              .map((a) => (
-                                <DropdownMenuItem key={a.key} onClick={() => a.onClick(row)}>
-                                  {a.icon && <a.icon className="h-3.5 w-3.5 mr-2" />}
+                        <div className="flex items-center justify-end gap-1">
+                          {/* Inline actions visible on hover */}
+                          {inlineActions.length > 0 && (
+                            <div className="hidden group-hover/row:flex items-center gap-1">
+                              {inlineActions.slice(0, 2).map((a) => (
+                                <Button
+                                  key={a.key}
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 text-xs px-2"
+                                  onClick={() => a.onClick(row)}
+                                >
+                                  {a.icon && <a.icon className="h-3 w-3 mr-1" />}
                                   {a.label}
-                                </DropdownMenuItem>
+                                </Button>
                               ))}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                            </div>
+                          )}
+                          {/* Dropdown for remaining actions */}
+                          {menuActions.length > 0 && (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-7 w-7">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                {menuActions.map((a) => (
+                                  <DropdownMenuItem key={a.key} onClick={() => a.onClick(row)}>
+                                    {a.icon && <a.icon className="h-3.5 w-3.5 mr-2" />}
+                                    {a.label}
+                                  </DropdownMenuItem>
+                                ))}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          )}
+                        </div>
                       </TableCell>
                     )}
                   </TableRow>

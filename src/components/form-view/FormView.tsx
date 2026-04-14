@@ -8,15 +8,16 @@ import type { FormViewProps, FormValidationError } from "./types";
 import { FormViewHeader } from "./FormViewHeader";
 import { FormFieldRenderer } from "./FormFieldRenderer";
 import { FormViewSidePanel } from "./FormViewSidePanel";
+import { StatusBanner } from "@/components/ui/StatusBanner";
 
 export function FormView({
-  title, subtitle, status, isNew,
+  title, subtitle, status, statusBanner, isNew,
   values, onChange, onBatchChange,
   topFields, tabs, defaultTab,
   onSave, onSaveAndClose, onDuplicate, onDelete, extraActions, saving,
   errors: externalErrors, validate,
   autosave, autosaveDelay = 3000, onAutosave, lastSavedAt,
-  showSidePanel = true, timeline, relations, alerts, sidePanelExtra,
+  showSidePanel = true, timeline, relations, alerts, sidePanelExtra, sidePanelTabs,
   createdAt, createdBy, updatedAt, updatedBy,
   onBack, backLabel,
 }: FormViewProps) {
@@ -67,6 +68,18 @@ export function FormView({
 
   return (
     <div className="space-y-4">
+      {/* Status Banner */}
+      {statusBanner && (
+        <StatusBanner
+          status={statusBanner.status}
+          statusLabel={statusBanner.statusLabel}
+          statusColor={statusBanner.statusColor}
+          steps={statusBanner.steps}
+          primaryAction={statusBanner.primaryAction}
+          secondaryAction={statusBanner.secondaryAction}
+        />
+      )}
+
       {/* Header */}
       <FormViewHeader
         title={title}
@@ -160,6 +173,7 @@ export function FormView({
             updatedAt={updatedAt}
             updatedBy={updatedBy}
             extra={sidePanelExtra}
+            tabs={sidePanelTabs}
           />
         )}
       </div>
