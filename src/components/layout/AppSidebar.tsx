@@ -1,16 +1,14 @@
 import { useLocation } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
-  LayoutDashboard, Users, ShoppingCart, Wallet, BarChart3, Home,
-  Target, PieChart, FolderOpen, Zap, Settings, Building2,
-  ChevronDown, Factory, Package, BookOpen,
-  ListChecks, Bell, Shield, Clock,
-  History, UserCog, Layers,
-  GitBranch, Inbox, CheckSquare, LineChart,
-  FileText, Truck, ClipboardList, DollarSign,
-  TrendingUp, Briefcase, Mail, Link2, Globe,
-  HardHat, Calculator, BarChart, Wrench,
-  Receipt, CreditCard, Landmark, ArrowLeftRight
+  Home, ShoppingCart, Factory, Wallet, BookOpen, Target,
+  Database, BarChart3, Settings, Building2, ChevronDown,
+  Users, FileText, Briefcase, DollarSign, HardHat, Truck,
+  Package, Layers, CreditCard, ArrowLeftRight, BarChart,
+  TrendingUp, Calculator, Clock, History, Zap, Shield,
+  LineChart, PieChart, UserCog, Link2, Globe, Receipt,
+  Landmark, ClipboardList, FolderOpen, Wrench, Bell,
+  CheckSquare, GitBranch, Inbox, Mail
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
@@ -21,7 +19,6 @@ import {
 import { usePermissions } from "@/hooks/usePermissions";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
-import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import {
   Collapsible, CollapsibleContent, CollapsibleTrigger,
@@ -29,14 +26,10 @@ import {
 import { Badge } from "@/components/ui/badge";
 
 // ── Types ──
-
 interface MenuItem {
   title: string;
   url: string;
   icon: any;
-  module?: string | null;
-  masterOnly?: boolean;
-  ownerOnly?: boolean;
   comingSoon?: boolean;
 }
 
@@ -48,221 +41,211 @@ interface MenuGroup {
   profiles?: string[];
 }
 
-// ── Profile → Group visibility map ──
+// ── Storage keys ──
+const STORAGE_KEY_GROUP = "erp_sidebar_last_group";
+const STORAGE_KEY_PATH = "erp_sidebar_last_path";
 
-const P = {
-  ALL_TENANT: ["tenant_owner", "tenant_admin", "financeiro", "comercial", "operacional", "producao", "contador", "auditor"],
-  EXEC: ["tenant_owner", "tenant_admin"],
-  FIN: ["tenant_owner", "tenant_admin", "financeiro", "contador"],
-  COM: ["tenant_owner", "tenant_admin", "comercial"],
-  OPS: ["tenant_owner", "tenant_admin", "operacional", "producao"],
-  AUD: ["tenant_owner", "tenant_admin", "auditor"],
-  ADM: ["tenant_owner", "tenant_admin"],
-};
-
-// ── Menu definition ──
-
+// ── Menu definition (nova hierarquia) ──
 const menuGroups: MenuGroup[] = [
+  // 1. HOME
   {
-    label: "Início",
+    label: "Home",
     icon: Home,
     items: [
       { title: "Central de Navegação", url: "/central-navegacao", icon: Home },
-      { title: "BI Dashboard", url: "/bi-dashboard", icon: LayoutDashboard, module: "dashboard" },
     ],
   },
-  {
-    label: "Central Operacional",
-    icon: Inbox,
-    separator: true,
-    items: [
-      { title: "Minhas Tarefas", url: "/tarefas", icon: CheckSquare },
-      { title: "Aprovações", url: "/aprovacoes", icon: GitBranch },
-      { title: "Notificações", url: "/atividades", icon: Bell },
-      { title: "Pendências Executivas", url: "/pendencias", icon: ClipboardList, comingSoon: true },
-    ],
-  },
+
+  // 2. COMERCIAL
   {
     label: "Comercial",
     icon: ShoppingCart,
+    separator: true,
     items: [
-      { title: "Pedidos", url: "/pedidos", icon: ShoppingCart, module: "pedidos" },
+      { title: "Pedidos", url: "/pedidos", icon: ShoppingCart },
+      { title: "Orçamentos", url: "/propostas", icon: FileText, comingSoon: true },
       { title: "Clientes", url: "/clientes", icon: Users },
-      { title: "Propostas", url: "/propostas", icon: FileText, comingSoon: true },
       { title: "Contratos", url: "/contratos", icon: Briefcase, comingSoon: true },
       { title: "Comissões", url: "/comissoes", icon: DollarSign, comingSoon: true },
-      { title: "Documentos", url: "/documentos", icon: FolderOpen },
     ],
   },
+
+  // 3. OPERAÇÕES
   {
     label: "Operações",
     icon: Factory,
-    separator: true,
     items: [
-      { title: "Produção", url: "/producao", icon: Factory, module: "producao" },
-      { title: "Projetos", url: "/projetos-operacionais", icon: HardHat, comingSoon: true },
-      { title: "Entregas", url: "/entregas", icon: Truck, comingSoon: true },
+      { title: "Produção", url: "/producao", icon: Factory },
+      { title: "Ordens de Produção", url: "/ordens-producao", icon: ClipboardList, comingSoon: true },
+      { title: "Execução / Obras", url: "/execucao-obras", icon: HardHat, comingSoon: true },
+      { title: "Projetos", url: "/projetos-operacionais", icon: Briefcase, comingSoon: true },
     ],
   },
-  {
-    label: "Compras e Estoque",
-    icon: Package,
-    items: [
-      { title: "Fornecedores", url: "/fornecedores", icon: Package, module: "fornecedores" },
-      { title: "Materiais", url: "/estoque", icon: Layers, module: "estoque" },
-      { title: "Solicitações de Compra", url: "/solicitacoes-compra", icon: ClipboardList, comingSoon: true },
-      { title: "Cotações", url: "/cotacoes-compra", icon: FileText, comingSoon: true },
-      { title: "Pedidos de Compra", url: "/pedidos-compra", icon: ShoppingCart, comingSoon: true },
-      { title: "Recebimento", url: "/recebimento", icon: Truck, comingSoon: true },
-    ],
-  },
+
+  // 4. FINANCEIRO (Execução Financeira)
   {
     label: "Financeiro",
     icon: Wallet,
     separator: true,
     items: [
-      { title: "Movimento", url: "/financeiro", icon: Wallet, module: "financeiro" },
       { title: "Contas a Receber", url: "/contas-receber", icon: TrendingUp, comingSoon: true },
       { title: "Contas a Pagar", url: "/contas-pagar", icon: CreditCard, comingSoon: true },
-      { title: "Conciliação", url: "/conciliacao", icon: ArrowLeftRight, comingSoon: true },
-      { title: "Fluxo de Caixa", url: "/fluxo-caixa", icon: BarChart, comingSoon: true },
+      { title: "Tesouraria", url: "/financeiro", icon: Wallet },
+      { title: "Conciliação Bancária", url: "/conciliacao", icon: ArrowLeftRight, comingSoon: true },
     ],
   },
+
+  // 5. CONTROLADORIA (Inteligência Financeira)
   {
     label: "Controladoria",
     icon: BookOpen,
     items: [
-      { title: "Plano de Contas", url: "/cadastros-financeiros", icon: BookOpen, module: "cadastros_financeiros" },
-      { title: "DRE", url: "/dre", icon: LineChart, comingSoon: true },
-      { title: "Margem Contribuição", url: "/margem-contribuicao", icon: Calculator, comingSoon: true },
-      { title: "EBITDA", url: "/ebitda", icon: TrendingUp, comingSoon: true },
-      { title: "Orçado vs Realizado", url: "/orcado-realizado", icon: BarChart3, comingSoon: true },
+      { title: "Fluxo de Caixa", url: "/fluxo-caixa", icon: BarChart, comingSoon: true },
+      { title: "DRE Gerencial", url: "/dre", icon: LineChart, comingSoon: true },
+      { title: "Resultado Financeiro", url: "/resultado-financeiro", icon: Calculator, comingSoon: true },
+      { title: "Capital e Financiamentos", url: "/capital-financiamentos", icon: Landmark, comingSoon: true },
+      { title: "Plano de Contas", url: "/cadastros-financeiros", icon: BookOpen },
+      { title: "Centros de Custo", url: "/centros-custo", icon: FolderOpen, comingSoon: true },
+      { title: "Projetos Financeiros", url: "/projetos-financeiros", icon: Briefcase, comingSoon: true },
+      { title: "Classificação Automática", url: "/classificacao-automatica", icon: Zap, comingSoon: true },
+      { title: "Automações por Evento", url: "/automacoes", icon: Zap },
+      { title: "Auditoria", url: "/auditoria", icon: History },
     ],
   },
-  {
-    label: "RH e Custos",
-    icon: HardHat,
-    items: [
-      { title: "Colaboradores", url: "/colaboradores", icon: Users, comingSoon: true },
-      { title: "Equipes", url: "/equipes", icon: Users, comingSoon: true },
-      { title: "Apontamento Horas", url: "/apontamento-horas", icon: Clock, comingSoon: true },
-      { title: "Custo Real Projeto", url: "/custo-real", icon: Calculator, comingSoon: true },
-    ],
-  },
+
+  // 6. PLANEJAMENTO
   {
     label: "Planejamento",
     icon: Target,
+    separator: true,
     items: [
-      { title: "Metas", url: "/metas", icon: Target, module: "metas" },
+      { title: "Metas", url: "/metas", icon: Target },
       { title: "Orçamento", url: "/orcamento", icon: DollarSign, comingSoon: true },
       { title: "Forecast", url: "/forecast", icon: TrendingUp, comingSoon: true },
     ],
   },
+
+  // 7. CADASTROS
   {
-    label: "BI e Indicadores",
-    icon: PieChart,
+    label: "Cadastros",
+    icon: Database,
+    items: [
+      { title: "Clientes", url: "/clientes", icon: Users },
+      { title: "Fornecedores", url: "/fornecedores", icon: Package },
+      { title: "Produtos / Materiais", url: "/estoque", icon: Layers },
+      { title: "Contas Bancárias", url: "/contas-bancarias", icon: Landmark, comingSoon: true },
+      { title: "Estrutura Organizacional", url: "/estrutura-organizacional", icon: Building2, comingSoon: true },
+    ],
+  },
+
+  // 8. RELATÓRIOS & BI
+  {
+    label: "Relatórios & BI",
+    icon: BarChart3,
     separator: true,
     items: [
-      { title: "Análise BI", url: "/bi-dashboard", icon: PieChart, module: "dashboard" },
+      { title: "BI Analítico", url: "/bi-dashboard", icon: PieChart },
       { title: "Dashboards", url: "/dashboards", icon: BarChart3 },
-      { title: "Exportação BI", url: "/exportacao-bi", icon: FileText, comingSoon: true },
+      { title: "Relatórios Personalizados", url: "/relatorios-personalizados", icon: FileText, comingSoon: true },
+      { title: "Exportações Inteligentes", url: "/exportacao-bi", icon: FileText, comingSoon: true },
     ],
   },
+
+  // 9. CONFIGURAÇÕES
   {
-    label: "Integrações",
-    icon: Link2,
-    items: [
-      { title: "NF-e", url: "/nfe", icon: Receipt, comingSoon: true },
-      { title: "NFS-e", url: "/nfse", icon: Receipt, comingSoon: true },
-      { title: "Bancos / OFX", url: "/integracao-bancos", icon: Landmark, comingSoon: true },
-      { title: "WhatsApp", url: "/integracao-whatsapp", icon: Mail, comingSoon: true },
-      { title: "API Pública", url: "/api-publica", icon: Globe, comingSoon: true },
-      { title: "Webhooks", url: "/webhooks", icon: Zap, comingSoon: true },
-    ],
-  },
-  {
-    label: "Regras e Auditoria",
-    icon: Shield,
-    separator: true,
-    items: [
-      { title: "Regras Automáticas", url: "/automacoes", icon: Zap },
-      { title: "Auditoria", url: "/auditoria", icon: History },
-      { title: "SLA Operacional", url: "/sla", icon: Clock, comingSoon: true },
-    ],
-  },
-  {
-    label: "Sistema",
+    label: "Configurações",
     icon: Settings,
     items: [
-      { title: "Configurações", url: "/settings", icon: Settings, module: "configuracoes" },
-      { title: "Usuários", url: "/settings/users", icon: UserCog, module: "configuracoes" },
+      { title: "Geral", url: "/settings", icon: Settings },
+      { title: "Usuários", url: "/settings/users", icon: UserCog },
+      { title: "Permissões", url: "/settings/permissoes", icon: Shield, comingSoon: true },
+      { title: "Integrações", url: "/settings/integracoes", icon: Link2, comingSoon: true },
+      { title: "Preferências do Sistema", url: "/settings/preferencias", icon: Wrench, comingSoon: true },
+      { title: "Parâmetros Financeiros", url: "/settings/parametros-financeiros", icon: Calculator, comingSoon: true },
+      { title: "Logs do Sistema", url: "/settings/logs", icon: History, comingSoon: true },
     ],
   },
+
+  // 10. OWNER
   {
     label: "Owner",
     icon: Building2,
     profiles: ["system_owner"],
     items: [
-      { title: "Painel Owner", url: "/super-admin", icon: Building2, ownerOnly: true },
+      { title: "Painel Owner", url: "/super-admin", icon: Building2 },
     ],
   },
 ];
 
-// ── Component ──
+// ── Helper: find group index by current path ──
+function findActiveGroupIndex(path: string): number | null {
+  for (let i = 0; i < menuGroups.length; i++) {
+    const group = menuGroups[i];
+    if (group.items.some(item => !item.comingSoon && (path === item.url || path.startsWith(item.url + '/')))) {
+      return i;
+    }
+  }
+  return null;
+}
 
+// ── Component ──
 export function AppSidebar() {
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
-  const { hasModuleAccess, loading, isOwner, userLevel } = usePermissions();
+  const { userLevel } = usePermissions();
   const { profile, user } = useAuth();
   const { data: companySettings } = useCompanySettings();
   const companyLogo = companySettings?.logo_url;
-  const companyName = companySettings?.trade_name || companySettings?.company_name || 'Sistema';
+  const companyName = companySettings?.trade_name || companySettings?.company_name || 'Tendenci';
   const location = useLocation();
   const currentPath = location.pathname;
-  const isMaster = profile?.role === 'admin';
 
-  const [profileTypeName, setProfileTypeName] = useState<string | null>(null);
+  // ── Accordion: only one group open at a time ──
+  const [openGroupIndex, setOpenGroupIndex] = useState<number | null>(() => {
+    // Restore from localStorage or detect from current path
+    const saved = localStorage.getItem(STORAGE_KEY_GROUP);
+    if (saved !== null) {
+      const idx = parseInt(saved, 10);
+      if (!isNaN(idx) && idx >= 0 && idx < menuGroups.length) return idx;
+    }
+    return findActiveGroupIndex(currentPath) ?? 0;
+  });
 
+  // Auto-expand group when route changes
   useEffect(() => {
-    if (!user) { setProfileTypeName(null); return; }
-    const fetchProfileType = async () => {
-      const { data } = await supabase
-        .from('profiles')
-        .select('profile_type_id, profile_types(name)')
-        .eq('id', user.id)
-        .single();
-      const ptName = (data as any)?.profile_types?.name as string | null;
-      setProfileTypeName(ptName || null);
-    };
-    fetchProfileType();
-  }, [user]);
+    const activeIdx = findActiveGroupIndex(currentPath);
+    if (activeIdx !== null && activeIdx !== openGroupIndex) {
+      setOpenGroupIndex(activeIdx);
+    }
+    // Save last path
+    localStorage.setItem(STORAGE_KEY_PATH, currentPath);
+  }, [currentPath]);
 
+  // Persist open group
+  useEffect(() => {
+    if (openGroupIndex !== null) {
+      localStorage.setItem(STORAGE_KEY_GROUP, String(openGroupIndex));
+    }
+  }, [openGroupIndex]);
+
+  const handleToggleGroup = useCallback((idx: number) => {
+    setOpenGroupIndex(prev => prev === idx ? null : idx);
+  }, []);
+
+  // Profile-based visibility
   const effectiveProfile = (): string => {
     if (userLevel === 'system_owner') return 'system_owner';
     if (userLevel === 'tenant_owner') return 'tenant_owner';
     if (userLevel === 'tenant_admin') return 'tenant_admin';
-    if (profileTypeName) {
-      const normalized = profileTypeName.toLowerCase().replace(/\s+/g, '_');
-      const knownProfiles = ['financeiro', 'comercial', 'operacional', 'producao', 'contador', 'auditor'];
-      if (knownProfiles.includes(normalized)) return normalized;
-      const match = knownProfiles.find(p => normalized.includes(p));
-      if (match) return match;
-    }
-    if (isMaster) return 'tenant_admin';
     return 'tenant_admin';
   };
 
   const currentProfile = effectiveProfile();
 
-  const isGroupVisibleForProfile = (group: MenuGroup): boolean => {
+  const visibleGroups = menuGroups.filter(group => {
     if (!group.profiles || group.profiles.length === 0) return true;
     return group.profiles.includes(currentProfile);
-  };
-
-  const visibleGroups = menuGroups
-    .filter(isGroupVisibleForProfile)
-    .filter(group => group.items.length > 0);
+  });
 
   return (
     <Sidebar
@@ -296,13 +279,15 @@ export function AppSidebar() {
         {/* Menu */}
         <nav className="py-1.5">
           {visibleGroups.map((group) => {
+            const globalIdx = menuGroups.indexOf(group);
+            const isOpen = openGroupIndex === globalIdx;
             const isGroupActive = group.items.some(
               item => !item.comingSoon && (currentPath === item.url || currentPath.startsWith(item.url + '/'))
             );
 
             return (
               <div key={group.label}>
-                <Collapsible defaultOpen={isGroupActive || false}>
+                <Collapsible open={isOpen} onOpenChange={() => handleToggleGroup(globalIdx)}>
                   <SidebarGroup className="py-0">
                     <CollapsibleTrigger className="w-full">
                       <SidebarGroupLabel className="flex items-center justify-between w-full px-4 py-1.5 cursor-pointer hover:bg-sidebar-accent/20 rounded-md mx-1 transition-colors">
@@ -321,7 +306,10 @@ export function AppSidebar() {
                           )}
                         </div>
                         {!isCollapsed && (
-                          <ChevronDown className="h-3 w-3 text-sidebar-foreground/30 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                          <ChevronDown className={cn(
+                            "h-3 w-3 text-sidebar-foreground/30 transition-transform duration-200",
+                            isOpen && "rotate-180"
+                          )} />
                         )}
                       </SidebarGroupLabel>
                     </CollapsibleTrigger>
