@@ -330,8 +330,9 @@ export function AppNavbar() {
                     if (item.module && !loading) return hasModuleAccess(item.module as any);
                     return true;
                   });
+                  const comingSoonItems = mod.items.filter(i => !i.available);
 
-                  if (availableItems.length === 0) return null;
+                  if (availableItems.length === 0 && comingSoonItems.length === 0) return null;
 
                   return (
                     <div key={mod.key} className="mb-1">
@@ -353,6 +354,19 @@ export function AppNavbar() {
                               <IconComp className="h-4 w-4 flex-shrink-0" />
                               <span>{item.label}</span>
                             </NavLink>
+                          );
+                        })}
+                        {comingSoonItems.map((item) => {
+                          const IconComp = getIconComponent(item.icon);
+                          return (
+                            <div
+                              key={item.label}
+                              className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-muted-foreground/50 cursor-default select-none"
+                            >
+                              <IconComp className="h-4 w-4 flex-shrink-0" />
+                              <span>{item.label}</span>
+                              <Badge variant="outline" className="ml-auto text-[8px] h-4 px-1 border-muted-foreground/20 text-muted-foreground/40">Em breve</Badge>
+                            </div>
                           );
                         })}
                       </div>
