@@ -24,6 +24,7 @@ import {
 import {
   useActionItems,
   useContinueItems,
+  useUserProfile,
 } from "@/hooks/useSmartLauncher";
 import { useDecisionSuggestions, useOperationalTimeline } from "@/hooks/useDecisionLayer";
 import { format as fmtDate } from "date-fns";
