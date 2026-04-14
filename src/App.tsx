@@ -44,6 +44,7 @@ import Suprimentos from "./pages/Suprimentos";
 import CRMCommercial from "./pages/CRMCommercial";
 import Planning from "./pages/Planning";
 import ExecutiveCenter from "./pages/ExecutiveCenter";
+import AccessGovernance from "./pages/AccessGovernance";
 
 const queryClient = new QueryClient();
 
@@ -100,6 +101,7 @@ const App = () => (
               <Route path="/metas" element={<Navigate to="/planning" replace />} />
               <Route path="/planning" element={<ProtectedRoute><Planning /></ProtectedRoute>} />
               <Route path="/executive" element={<ProtectedRoute><ExecutiveCenter /></ProtectedRoute>} />
+              <Route path="/governanca" element={<ProtectedRoute><AccessGovernance /></ProtectedRoute>} />
               <Route path="/dashboards" element={<Navigate to="/" replace />} />
               <Route path="/ia-configuracao" element={<Navigate to="/" replace />} />
               <Route path="/compras" element={<Navigate to="/suprimentos" replace />} />
