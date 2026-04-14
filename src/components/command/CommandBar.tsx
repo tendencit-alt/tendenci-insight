@@ -124,6 +124,12 @@ export function CommandBar() {
       { id: "feed-financeiro", label: "Atividade Financeiro", keywords: ["atividade", "financeiro", "feed"], icon: Play, action: () => go("/atividades?sector=financeiro"), group: "Feed" },
       { id: "feed-comercial", label: "Atividade Comercial", keywords: ["atividade", "comercial", "feed"], icon: Play, action: () => go("/atividades?sector=comercial"), group: "Feed" },
       { id: "feed-operacoes", label: "Atividade Operações", keywords: ["atividade", "operações", "produção", "feed"], icon: Play, action: () => go("/atividades?sector=operacoes"), group: "Feed" },
+
+      // Notification commands
+      { id: "notif-criticas", label: "Notificações Críticas", keywords: ["notificações", "críticas", "alertas", "urgente"], icon: Search, action: () => go("/tarefas?filter=critica"), group: "Notificações" },
+      { id: "notif-contas", label: "Contas Vencidas", keywords: ["contas", "vencidas", "atraso", "inadimplência"], icon: CreditCard, action: () => go("/contas-pagar?filter=vencidas"), group: "Notificações" },
+      { id: "notif-aprovacoes", label: "Aprovações Pendentes", keywords: ["aprovações", "pendentes", "aprovar"], icon: Shield, action: () => go("/aprovacoes?status=pending"), group: "Notificações" },
+      { id: "notif-resumo", label: "Resumo do Dia", keywords: ["resumo", "dia", "diário", "pendências"], icon: Star, action: () => go("/central-navegacao"), group: "Notificações" },
     ];
 
     // Apply role-based priority
