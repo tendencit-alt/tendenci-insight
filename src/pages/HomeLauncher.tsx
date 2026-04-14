@@ -57,6 +57,7 @@ import { PerformanceIntelligenceWidget } from "@/components/performance/Performa
 import { GovernanceWidget } from "@/components/governance/GovernanceWidget";
 import { MasterDataWidget } from "@/components/masterdata/MasterDataWidget";
 import { IntegrationLayerWidget } from "@/components/integration/IntegrationLayerWidget";
+import { OnboardingActivationWidget } from "@/components/onboarding/OnboardingActivationWidget";
 
 // ─── Module definitions ───
 const MODULES = [
@@ -170,14 +171,6 @@ const ICON_MAP: Record<string, any> = {
   Package, Tags, FolderTree, Briefcase,
 };
 
-// ─── Onboarding steps ───
-const ONBOARDING_STEPS = [
-  { key: "empresa", label: "Cadastrar Empresa", route: "/settings", icon: Building2 },
-  { key: "cliente", label: "Cadastrar Cliente", route: "/pedidos", icon: Users },
-  { key: "pedido", label: "Criar Pedido", route: "/pedidos", icon: ShoppingCart },
-  { key: "conciliar", label: "Conciliar Banco", route: "/financeiro", icon: ArrowLeftRight },
-  { key: "dre", label: "Visualizar DRE", route: "/bi-dashboard", icon: BarChart3 },
-];
 
 // ─── Storage helpers ───
 function getFavoritesFromStorage(): typeof DEFAULT_FAVORITES {
@@ -206,10 +199,6 @@ function getWorkspacePrefs(): WorkspacePrefs {
   return { order: [], hidden: [], pinned: [] };
 }
 
-function getOnboardingDone(): string[] {
-  try { const s = localStorage.getItem("erp-onboarding-done"); if (s) return JSON.parse(s); } catch {}
-  return [];
-}
 
 // ─── Severity helpers ───
 const SEVERITY_STYLES = {
@@ -229,7 +218,7 @@ export default function HomeLauncher() {
   const [workspaceDialog, setWorkspaceDialog] = useState(false);
   const [tempFavorites, setTempFavorites] = useState<typeof DEFAULT_FAVORITES>([]);
   const [workspacePrefs, setWorkspacePrefs] = useState(getWorkspacePrefs);
-  const [onboardingDone, setOnboardingDone] = useState(getOnboardingDone);
+  
 
   const { data: actionItems = [], isLoading: loadingActions } = useActionItems();
   const continueItems = useContinueItems();
@@ -255,7 +244,7 @@ export default function HomeLauncher() {
   const [showCollabTimeline, setShowCollabTimeline] = useState(false);
   const learning = useLearningLayer();
 
-  const showOnboarding = onboardingDone.length < ONBOARDING_STEPS.length;
+  
 
   const orderedModules = useMemo(() => {
     const customOrder = workspacePrefs.order.length > 0 ? workspacePrefs.order : moduleOrder;
@@ -272,7 +261,7 @@ export default function HomeLauncher() {
 
   useEffect(() => { localStorage.setItem("erp-home-favorites", JSON.stringify(favorites)); }, [favorites]);
   useEffect(() => { localStorage.setItem("erp-workspace-prefs", JSON.stringify(workspacePrefs)); }, [workspacePrefs]);
-  useEffect(() => { localStorage.setItem("erp-onboarding-done", JSON.stringify(onboardingDone)); }, [onboardingDone]);
+  
 
   const searchResults = useMemo(() => {
     if (!search.trim()) return [];
@@ -288,13 +277,6 @@ export default function HomeLauncher() {
     navigate(route);
   }, [navigate, learning]);
 
-  const completeOnboardingStep = useCallback((key: string, route: string) => {
-    setOnboardingDone((prev) => {
-      const next = prev.includes(key) ? prev : [...prev, key];
-      return next;
-    });
-    navigate(route);
-  }, [navigate]);
 
   const toggleFavorite = (item: (typeof SEARCHABLE_ITEMS)[0]) => {
     const exists = tempFavorites.some((f) => f.label === item.label);
@@ -977,38 +959,8 @@ export default function HomeLauncher() {
         )}
         {loadingTrust && <Skeleton className="h-28 rounded-xl" />}
 
-        {/* ── Onboarding Guide ── */}
-        {showOnboarding && (
-          <Card className="border-primary/20 bg-primary/5 dark:bg-primary/10">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <Rocket className="h-4 w-4 text-primary" />
-                <h2 className="text-sm font-semibold">Primeiros Passos</h2>
-                <Badge variant="outline" className="text-[10px] ml-auto">
-                  {onboardingDone.length}/{ONBOARDING_STEPS.length}
-                </Badge>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {ONBOARDING_STEPS.map((step) => {
-                  const done = onboardingDone.includes(step.key);
-                  return (
-                    <Button
-                      key={step.key}
-                      variant={done ? "ghost" : "outline"}
-                      size="sm"
-                      className={`h-9 text-xs gap-2 rounded-lg ${done ? "opacity-60 line-through" : "border-primary/30 hover:border-primary/60"}`}
-                      onClick={() => completeOnboardingStep(step.key, step.route)}
-                      disabled={done}
-                    >
-                      {done ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> : <step.icon className="h-3.5 w-3.5 text-primary" />}
-                      {step.label}
-                    </Button>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        {/* ── Onboarding & Activation ── */}
+        <OnboardingActivationWidget />
 
         {/* ── Hoje Preciso Fazer ── */}
         <div className="space-y-3">
