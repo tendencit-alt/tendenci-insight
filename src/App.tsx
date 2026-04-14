@@ -50,6 +50,7 @@ const App = () => (
             <MinimizedDialogsProvider>
             <MinimizedDialogsBar />
             <PermissionsProvider>
+            <WorkspaceProvider>
               <CommandBar />
                <Routes>
               <Route path="/auth" element={<Auth />} />

@@ -412,6 +412,7 @@ export function AppNavbar() {
               <span className="whitespace-nowrap">Owner</span>
             </NavLink>
           )}
+          <WorkspaceSelector />
           <ThemeToggle />
           <NotificationBell />
 

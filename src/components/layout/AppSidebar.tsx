@@ -21,6 +21,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useCompanySettings } from "@/hooks/useCompanySettings";
 import { useNavigationUsage } from "@/hooks/useNavigationUsage";
 import { useAttentionLayer, type AttentionLevel } from "@/hooks/useAttentionLayer";
+import { useWorkspace } from "@/hooks/useWorkspace";
 import { cn } from "@/lib/utils";
 import {
   Collapsible, CollapsibleContent, CollapsibleTrigger,
