@@ -3368,6 +3368,69 @@ export type Database = {
           },
         ]
       }
+      diagnostic_rules: {
+        Row: {
+          active: boolean
+          condition: Json | null
+          created_at: string
+          description: string | null
+          detection_type: string
+          id: string
+          module: string
+          name: string
+          probable_cause: string | null
+          recommended_action: string | null
+          related_article_id: string | null
+          related_tutorial_id: string | null
+          trigger_count: number
+        }
+        Insert: {
+          active?: boolean
+          condition?: Json | null
+          created_at?: string
+          description?: string | null
+          detection_type: string
+          id?: string
+          module: string
+          name: string
+          probable_cause?: string | null
+          recommended_action?: string | null
+          related_article_id?: string | null
+          related_tutorial_id?: string | null
+          trigger_count?: number
+        }
+        Update: {
+          active?: boolean
+          condition?: Json | null
+          created_at?: string
+          description?: string | null
+          detection_type?: string
+          id?: string
+          module?: string
+          name?: string
+          probable_cause?: string | null
+          recommended_action?: string | null
+          related_article_id?: string | null
+          related_tutorial_id?: string | null
+          trigger_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "diagnostic_rules_related_article_id_fkey"
+            columns: ["related_article_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "diagnostic_rules_related_tutorial_id_fkey"
+            columns: ["related_tutorial_id"]
+            isOneToOne: false
+            referencedRelation: "guided_tutorials"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dispatch_session_items: {
         Row: {
           client_name: string
@@ -3805,6 +3868,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      faq_dynamic_items: {
+        Row: {
+          active: boolean
+          answer: string
+          category: string
+          created_at: string
+          frequency: number
+          id: string
+          question: string
+          source_reference: string | null
+          source_type: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          answer: string
+          category: string
+          created_at?: string
+          frequency?: number
+          id?: string
+          question: string
+          source_reference?: string | null
+          source_type?: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          answer?: string
+          category?: string
+          created_at?: string
+          frequency?: number
+          id?: string
+          question?: string
+          source_reference?: string | null
+          source_type?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       feature_flag_overrides: {
         Row: {
@@ -7340,6 +7442,90 @@ export type Database = {
           },
         ]
       }
+      guided_tutorials: {
+        Row: {
+          active: boolean
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          screen_key: string | null
+          steps: Json
+          title: string
+          total_steps: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          category: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          screen_key?: string | null
+          steps?: Json
+          title: string
+          total_steps?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          screen_key?: string | null
+          steps?: Json
+          title?: string
+          total_steps?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      help_search_logs: {
+        Row: {
+          clicked_article_id: string | null
+          created_at: string
+          id: string
+          query: string
+          results_count: number
+          tenant_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          clicked_article_id?: string | null
+          created_at?: string
+          id?: string
+          query: string
+          results_count?: number
+          tenant_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          clicked_article_id?: string | null
+          created_at?: string
+          id?: string
+          query?: string
+          results_count?: number
+          tenant_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "help_search_logs_clicked_article_id_fkey"
+            columns: ["clicked_article_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "help_search_logs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hr_departments: {
         Row: {
           active: boolean | null
@@ -8062,6 +8248,57 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      knowledge_articles: {
+        Row: {
+          active: boolean
+          category: string
+          content: string
+          created_at: string
+          difficulty: string
+          helpful_count: number
+          id: string
+          read_time_minutes: number | null
+          related_articles: string[] | null
+          screen_key: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string
+          view_count: number
+        }
+        Insert: {
+          active?: boolean
+          category: string
+          content: string
+          created_at?: string
+          difficulty?: string
+          helpful_count?: number
+          id?: string
+          read_time_minutes?: number | null
+          related_articles?: string[] | null
+          screen_key?: string | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+          view_count?: number
+        }
+        Update: {
+          active?: boolean
+          category?: string
+          content?: string
+          created_at?: string
+          difficulty?: string
+          helpful_count?: number
+          id?: string
+          read_time_minutes?: number | null
+          related_articles?: string[] | null
+          screen_key?: string | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+          view_count?: number
+        }
+        Relationships: []
       }
       labor_types: {
         Row: {
@@ -13266,6 +13503,47 @@ export type Database = {
         }
         Relationships: []
       }
+      self_service_events: {
+        Row: {
+          created_at: string
+          id: string
+          module: string | null
+          reference_id: string | null
+          resolution_type: string
+          resolved_without_ticket: boolean
+          tenant_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          module?: string | null
+          reference_id?: string | null
+          resolution_type: string
+          resolved_without_ticket?: boolean
+          tenant_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          module?: string | null
+          reference_id?: string | null
+          resolution_type?: string
+          resolved_without_ticket?: boolean
+          tenant_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "self_service_events_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stock_alerts_config: {
         Row: {
           alert_high_stock: boolean | null
@@ -16160,6 +16438,57 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tutorial_progress: {
+        Row: {
+          completed: boolean
+          completed_at: string | null
+          created_at: string
+          current_step: number
+          id: string
+          tenant_id: string | null
+          tutorial_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          current_step?: number
+          id?: string
+          tenant_id?: string | null
+          tutorial_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          current_step?: number
+          id?: string
+          tenant_id?: string | null
+          tutorial_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tutorial_progress_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tutorial_progress_tutorial_id_fkey"
+            columns: ["tutorial_id"]
+            isOneToOne: false
+            referencedRelation: "guided_tutorials"
             referencedColumns: ["id"]
           },
         ]
