@@ -49,6 +49,7 @@ import { useCollaborationLayer, type CollabFilter } from "@/hooks/useCollaborati
 import { useLearningLayer } from "@/hooks/useLearningLayer";
 import { MiniActivityFeed } from "@/components/activity/ActivityFeed";
 import { NotificationSummaryWidget } from "@/components/notifications/NotificationSummaryWidget";
+import { FlowWidget } from "@/components/flow/FlowPanel";
 
 // ─── Module definitions ───
 const MODULES = [
@@ -1467,6 +1468,13 @@ export default function HomeLauncher() {
         {/* ── Notification Summary Widget ── */}
         {!executiveMode && !actionLayer.rapidMode && (
           <NotificationSummaryWidget className="mt-2" />
+        )}
+
+        {/* ── Flow Layer Widget ── */}
+        {!executiveMode && !actionLayer.rapidMode && (
+          <div className="mt-2">
+            <FlowWidget />
+          </div>
         )}
 
         {/* ── Global Activity Feed ── */}
