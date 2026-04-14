@@ -56,11 +56,12 @@ export function useExecResultadoHoje() {
     queryFn: async (): Promise<ExecResultadoHoje> => {
       const today = format(new Date(), "yyyy-MM-dd");
 
-      const cashRes = await (supabase.from("fin_bank_accounts").select("opening_balance").eq("active", true) as any);
-      const recRes = await (supabase.from("fin_ledger_entries").select("amount").eq("entry_type", "credit").eq("competence_date", today) as any);
-      const expRes = await (supabase.from("fin_ledger_entries").select("amount").eq("entry_type", "debit").eq("competence_date", today) as any);
-      const recvRes = await (supabase.from("fin_receivables").select("amount").eq("due_date", today).in("status", ["ABERTO"]) as any);
-      const payRes = await (supabase.from("fin_payables").select("amount").eq("due_date", today).in("status", ["ABERTO"]) as any);
+      const q = (t: string) => (supabase.from(t) as any);
+      const cashRes = await q("fin_bank_accounts").select("opening_balance").eq("active", true);
+      const recRes = await q("fin_ledger_entries").select("amount").eq("entry_type", "credit").eq("competence_date", today);
+      const expRes = await q("fin_ledger_entries").select("amount").eq("entry_type", "debit").eq("competence_date", today);
+      const recvRes = await q("fin_receivables").select("amount").eq("due_date", today).in("status", ["ABERTO"]);
+      const payRes = await q("fin_payables").select("amount").eq("due_date", today).in("status", ["ABERTO"]);
 
       const saldoCaixa = (cashRes.data as any[])?.reduce((s, r) => s + Number(r.opening_balance || 0), 0) || 0;
       const faturamentoHoje = (recRes.data as any[])?.reduce((s, r) => s + Number(r.amount || 0), 0) || 0;
