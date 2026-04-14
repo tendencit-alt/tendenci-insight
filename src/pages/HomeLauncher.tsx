@@ -27,6 +27,7 @@ import {
   Sparkles, Calculator, MessageSquareText, BarChart,
   ShieldCheck, RefreshCw, Database,
   Undo2, ListChecks, Play, CheckSquare,
+  MessageCircle, UserCheck, Filter,
 } from "lucide-react";
 import {
   useActionItems,
@@ -44,6 +45,7 @@ import { useExplainabilityLayer } from "@/hooks/useExplainabilityLayer";
 import { useTrustLayer } from "@/hooks/useTrustLayer";
 import { useActionLayer } from "@/hooks/useActionLayer";
 import { useAutomationLayer } from "@/hooks/useAutomationLayer";
+import { useCollaborationLayer, type CollabFilter } from "@/hooks/useCollaborationLayer";
 
 // ─── Module definitions ───
 const MODULES = [
@@ -237,6 +239,9 @@ export default function HomeLauncher() {
   const actionLayer = useActionLayer();
   const { summary: autoSummary, suggestions: autoSuggestions, activeRules: autoRules, activateRule } = useAutomationLayer();
   const [showAutoPanel, setShowAutoPanel] = useState(false);
+  const [collabFilter, setCollabFilter] = useState<CollabFilter>("mine");
+  const { data: collab, isLoading: loadingCollab } = useCollaborationLayer(collabFilter);
+  const [showCollabTimeline, setShowCollabTimeline] = useState(false);
 
   const showOnboarding = onboardingDone.length < ONBOARDING_STEPS.length;
 
