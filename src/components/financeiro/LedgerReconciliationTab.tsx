@@ -860,6 +860,11 @@ export function LedgerReconciliationTab({ filters }: LedgerReconciliationTabProp
         <TabsContent value="account-extract" className="space-y-4">
           <BankAccountExtractTab filters={filters} />
         </TabsContent>
+
+        {/* Reconciliation Split View Tab Content */}
+        <TabsContent value="reconcile-split" className="space-y-4">
+          <ReconciliationSplitView filters={filters} />
+        </TabsContent>
       </Tabs>
 
       {/* Dialogs */}
