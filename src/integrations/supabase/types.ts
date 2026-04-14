@@ -1584,6 +1584,179 @@ export type Database = {
           },
         ]
       }
+      config_base_templates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          snapshot: Json
+          template_type: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          snapshot?: Json
+          template_type: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          snapshot?: Json
+          template_type?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: []
+      }
+      config_divergence_log: {
+        Row: {
+          changed_by: string | null
+          created_at: string
+          current_value: string | null
+          divergence_type: string
+          id: string
+          original_value: string | null
+          target_key: string
+          template_type: string
+          tenant_id: string
+        }
+        Insert: {
+          changed_by?: string | null
+          created_at?: string
+          current_value?: string | null
+          divergence_type: string
+          id?: string
+          original_value?: string | null
+          target_key: string
+          template_type: string
+          tenant_id: string
+        }
+        Update: {
+          changed_by?: string | null
+          created_at?: string
+          current_value?: string | null
+          divergence_type?: string
+          id?: string
+          original_value?: string | null
+          target_key?: string
+          template_type?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "config_divergence_log_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      config_structural_locks: {
+        Row: {
+          created_at: string
+          display_name: string
+          id: string
+          is_locked: boolean
+          locked_at: string | null
+          locked_by: string | null
+          module_key: string
+          reason: string | null
+        }
+        Insert: {
+          created_at?: string
+          display_name: string
+          id?: string
+          is_locked?: boolean
+          locked_at?: string | null
+          locked_by?: string | null
+          module_key: string
+          reason?: string | null
+        }
+        Update: {
+          created_at?: string
+          display_name?: string
+          id?: string
+          is_locked?: boolean
+          locked_at?: string | null
+          locked_by?: string | null
+          module_key?: string
+          reason?: string | null
+        }
+        Relationships: []
+      }
+      config_tenant_overrides: {
+        Row: {
+          changed_by: string | null
+          created_at: string
+          custom_value: string | null
+          id: string
+          is_locked: boolean
+          original_value: string | null
+          override_type: string
+          target_key: string
+          template_id: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          changed_by?: string | null
+          created_at?: string
+          custom_value?: string | null
+          id?: string
+          is_locked?: boolean
+          original_value?: string | null
+          override_type: string
+          target_key: string
+          template_id: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          changed_by?: string | null
+          created_at?: string
+          custom_value?: string | null
+          id?: string
+          is_locked?: boolean
+          original_value?: string | null
+          override_type?: string
+          target_key?: string
+          template_id?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "config_tenant_overrides_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "config_base_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "config_tenant_overrides_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contextual_help: {
         Row: {
           common_errors: Json | null
