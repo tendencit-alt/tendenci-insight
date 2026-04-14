@@ -194,7 +194,7 @@ const menuGroups: MenuGroup[] = [
     items: [
       { title: "Clientes", url: "/clientes", icon: Users },
       { title: "Fornecedores", url: "/fornecedores", icon: Package },
-      { title: "Produtos / Materiais", url: "/estoque", icon: Layers },
+      { title: "Estoque", url: "/estoque", icon: Layers },
       { title: "Contas Bancárias", url: "/contas-bancarias", icon: Landmark, comingSoon: true },
       { title: "Estrutura Organizacional", url: "/estrutura-organizacional", icon: Building2, comingSoon: true },
     ],
