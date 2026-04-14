@@ -3461,6 +3461,7 @@ export type Database = {
       fin_budgets: {
         Row: {
           amount: number
+          budget_type: string
           chart_account_id: string | null
           client_id: string | null
           cost_center_id: string | null
@@ -3475,10 +3476,12 @@ export type Database = {
           updated_at: string | null
           vendedor_id: string | null
           version: number | null
+          version_label: string
           year: number
         }
         Insert: {
           amount: number
+          budget_type?: string
           chart_account_id?: string | null
           client_id?: string | null
           cost_center_id?: string | null
@@ -3493,10 +3496,12 @@ export type Database = {
           updated_at?: string | null
           vendedor_id?: string | null
           version?: number | null
+          version_label?: string
           year: number
         }
         Update: {
           amount?: number
+          budget_type?: string
           chart_account_id?: string | null
           client_id?: string | null
           cost_center_id?: string | null
@@ -3511,6 +3516,7 @@ export type Database = {
           updated_at?: string | null
           vendedor_id?: string | null
           version?: number | null
+          version_label?: string
           year?: number
         }
         Relationships: [

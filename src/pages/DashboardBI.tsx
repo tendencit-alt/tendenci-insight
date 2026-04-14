@@ -6,7 +6,8 @@ import { FinanceiroFilters, FinanceiroFiltersState } from "@/components/financei
 import { DashboardBI as DashboardBIComponent } from "@/components/financeiro/DashboardBI";
 import { DRECashflowView } from "@/components/financeiro/DRECashflowView";
 import { PlanejamentoFinanceiro } from "@/components/financeiro/PlanejamentoFinanceiro";
-import { LayoutDashboard, BarChart3, Target } from "lucide-react";
+import { BudgetManagementTab } from "@/components/financeiro/BudgetManagementTab";
+import { LayoutDashboard, BarChart3, Target, FileSpreadsheet } from "lucide-react";
 
 export default function DashboardBI() {
   useFinanceiroRealtime();
@@ -66,6 +67,13 @@ export default function DashboardBI() {
                 <Target className="h-4 w-4 flex-shrink-0" />
                 <span>Planejamento Financeiro</span>
               </TabsTrigger>
+              <TabsTrigger
+                value="orcamento"
+                className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-muted-foreground transition-all hover:text-foreground data-[state=active]:bg-foreground data-[state=active]:text-background data-[state=active]:shadow-sm"
+              >
+                <FileSpreadsheet className="h-4 w-4 flex-shrink-0" />
+                <span>Orçamento</span>
+              </TabsTrigger>
             </TabsList>
           </div>
 
@@ -82,6 +90,10 @@ export default function DashboardBI() {
 
           <TabsContent value="planejamento" forceMount className={activeTab === "planejamento" ? "space-y-4" : "hidden"}>
             <PlanejamentoFinanceiro filters={filters} />
+          </TabsContent>
+
+          <TabsContent value="orcamento" forceMount className={activeTab === "orcamento" ? "space-y-4" : "hidden"}>
+            <BudgetManagementTab filters={filters} />
           </TabsContent>
         </Tabs>
       </div>
