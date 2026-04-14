@@ -68,6 +68,18 @@ export function FormView({
 
   return (
     <div className="space-y-4">
+      {/* Status Banner */}
+      {statusBanner && (
+        <StatusBanner
+          status={statusBanner.status}
+          statusLabel={statusBanner.statusLabel}
+          statusColor={statusBanner.statusColor}
+          steps={statusBanner.steps}
+          primaryAction={statusBanner.primaryAction}
+          secondaryAction={statusBanner.secondaryAction}
+        />
+      )}
+
       {/* Header */}
       <FormViewHeader
         title={title}
