@@ -189,13 +189,15 @@ const menuGroups: MenuGroup[] = [
     ],
   },
   {
-    label: "Planejamento",
+    label: "Planning",
     icon: Target,
     separator: true,
     items: [
-      { title: "Metas", url: "/metas", icon: Target },
-      { title: "Orçamento", url: "/orcamento", icon: DollarSign, comingSoon: true },
-      { title: "Forecast", url: "/forecast", icon: TrendingUp, comingSoon: true },
+      { title: "Metas", url: "/planning", icon: Target },
+      { title: "Orçamento", url: "/planning", icon: DollarSign },
+      { title: "Simulações", url: "/planning", icon: Wrench },
+      { title: "Acompanhamento", url: "/planning", icon: TrendingUp },
+      { title: "Planning Analytics", url: "/planning", icon: BarChart3 },
     ],
   },
   {

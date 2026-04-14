@@ -9580,6 +9580,235 @@ export type Database = {
           },
         ]
       }
+      plan_budgets: {
+        Row: {
+          actual_value: number | null
+          category: string
+          cost_center_id: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          deviation: number | null
+          deviation_pct: number | null
+          id: string
+          notes: string | null
+          planned_value: number
+          project_id: string | null
+          reference_month: string
+          subcategory: string | null
+          tenant_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          actual_value?: number | null
+          category?: string
+          cost_center_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          deviation?: number | null
+          deviation_pct?: number | null
+          id?: string
+          notes?: string | null
+          planned_value?: number
+          project_id?: string | null
+          reference_month: string
+          subcategory?: string | null
+          tenant_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          actual_value?: number | null
+          category?: string
+          cost_center_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          deviation?: number | null
+          deviation_pct?: number | null
+          id?: string
+          notes?: string | null
+          planned_value?: number
+          project_id?: string | null
+          reference_month?: string
+          subcategory?: string | null
+          tenant_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_budgets_cost_center_id_fkey"
+            columns: ["cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "fin_cost_centers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_budgets_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "prj_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_budgets_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plan_goals: {
+        Row: {
+          achievement_pct: number | null
+          area: string | null
+          cost_center_id: string | null
+          created_at: string | null
+          created_by: string | null
+          current_value: number | null
+          goal_type: string
+          id: string
+          notes: string | null
+          owner_id: string | null
+          period_end: string
+          period_start: string
+          project_id: string | null
+          scope: string | null
+          target_value: number
+          tenant_id: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          achievement_pct?: number | null
+          area?: string | null
+          cost_center_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          current_value?: number | null
+          goal_type?: string
+          id?: string
+          notes?: string | null
+          owner_id?: string | null
+          period_end: string
+          period_start: string
+          project_id?: string | null
+          scope?: string | null
+          target_value?: number
+          tenant_id?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          achievement_pct?: number | null
+          area?: string | null
+          cost_center_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          current_value?: number | null
+          goal_type?: string
+          id?: string
+          notes?: string | null
+          owner_id?: string | null
+          period_end?: string
+          period_start?: string
+          project_id?: string | null
+          scope?: string | null
+          target_value?: number
+          tenant_id?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_goals_cost_center_id_fkey"
+            columns: ["cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "fin_cost_centers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_goals_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "prj_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_goals_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plan_scenarios: {
+        Row: {
+          cash_need: number | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          parameters: Json | null
+          projected_cost: number | null
+          projected_margin_pct: number | null
+          projected_profit: number | null
+          projected_revenue: number | null
+          runway_months: number | null
+          scenario_type: string | null
+          tenant_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          cash_need?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          parameters?: Json | null
+          projected_cost?: number | null
+          projected_margin_pct?: number | null
+          projected_profit?: number | null
+          projected_revenue?: number | null
+          runway_months?: number | null
+          scenario_type?: string | null
+          tenant_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          cash_need?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          parameters?: Json | null
+          projected_cost?: number | null
+          projected_margin_pct?: number | null
+          projected_profit?: number | null
+          projected_revenue?: number | null
+          runway_months?: number | null
+          scenario_type?: string | null
+          tenant_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_scenarios_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       prj_execution_logs: {
         Row: {
           cost: number | null
