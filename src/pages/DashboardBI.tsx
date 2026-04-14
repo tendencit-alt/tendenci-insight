@@ -8,7 +8,8 @@ import { DRECashflowView } from "@/components/financeiro/DRECashflowView";
 import { PlanejamentoFinanceiro } from "@/components/financeiro/PlanejamentoFinanceiro";
 import { BudgetManagementTab } from "@/components/financeiro/BudgetManagementTab";
 import { ForecastTab } from "@/components/financeiro/ForecastTab";
-import { LayoutDashboard, BarChart3, Target, FileSpreadsheet, Activity } from "lucide-react";
+import { OriginLinksPanel } from "@/components/financeiro/OriginLinksPanel";
+import { LayoutDashboard, BarChart3, Target, FileSpreadsheet, Activity, Link2 } from "lucide-react";
 
 export default function DashboardBI() {
   useFinanceiroRealtime();
@@ -82,6 +83,13 @@ export default function DashboardBI() {
                 <Activity className="h-4 w-4 flex-shrink-0" />
                 <span>Forecast</span>
               </TabsTrigger>
+              <TabsTrigger
+                value="integration"
+                className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-muted-foreground transition-all hover:text-foreground data-[state=active]:bg-foreground data-[state=active]:text-background data-[state=active]:shadow-sm"
+              >
+                <Link2 className="h-4 w-4 flex-shrink-0" />
+                <span>Integração</span>
+              </TabsTrigger>
             </TabsList>
           </div>
 
@@ -106,6 +114,10 @@ export default function DashboardBI() {
 
           <TabsContent value="forecast" forceMount className={activeTab === "forecast" ? "space-y-4" : "hidden"}>
             <ForecastTab filters={filters} />
+          </TabsContent>
+
+          <TabsContent value="integration" forceMount className={activeTab === "integration" ? "space-y-4" : "hidden"}>
+            <OriginLinksPanel />
           </TabsContent>
         </Tabs>
       </div>

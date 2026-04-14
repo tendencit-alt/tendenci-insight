@@ -5100,6 +5100,73 @@ export type Database = {
           },
         ]
       }
+      fin_origin_links: {
+        Row: {
+          cancelled_at: string | null
+          cancelled_reason: string | null
+          created_at: string
+          financial_entry_id: string | null
+          id: string
+          impact_layer: string
+          impact_type: string
+          origin_id: string
+          origin_type: string
+          payable_id: string | null
+          status: string
+          tenant_id: string | null
+        }
+        Insert: {
+          cancelled_at?: string | null
+          cancelled_reason?: string | null
+          created_at?: string
+          financial_entry_id?: string | null
+          id?: string
+          impact_layer?: string
+          impact_type?: string
+          origin_id: string
+          origin_type: string
+          payable_id?: string | null
+          status?: string
+          tenant_id?: string | null
+        }
+        Update: {
+          cancelled_at?: string | null
+          cancelled_reason?: string | null
+          created_at?: string
+          financial_entry_id?: string | null
+          id?: string
+          impact_layer?: string
+          impact_type?: string
+          origin_id?: string
+          origin_type?: string
+          payable_id?: string | null
+          status?: string
+          tenant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fin_origin_links_financial_entry_id_fkey"
+            columns: ["financial_entry_id"]
+            isOneToOne: false
+            referencedRelation: "fin_ledger_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_origin_links_payable_id_fkey"
+            columns: ["payable_id"]
+            isOneToOne: false
+            referencedRelation: "fin_payables"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_origin_links_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fin_origin_rules: {
         Row: {
           active: boolean | null
