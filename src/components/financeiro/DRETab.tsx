@@ -4,16 +4,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { FinanceiroFiltersState } from "./FinanceiroFilters";
 import { CostCenterSubFilter } from "./CostCenterSubFilter";
 import { EntryDetailsDialog } from "./EntryDetailsDialog";
+import { useBudgetData, BudgetVersionLabel, VERSION_LABELS } from "@/hooks/useBudgetData";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BarChart3, Download, ChevronRight, ChevronDown, FileText, Target, TrendingUp, AlertTriangle, CheckCircle, Info } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 
 interface DRETabProps {
   filters: FinanceiroFiltersState;
@@ -169,8 +171,24 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
   const [expandedEntries, setExpandedEntries] = useState<Set<string>>(new Set());
   const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
   const [entryDialogOpen, setEntryDialogOpen] = useState(false);
+  const [showBudget, setShowBudget] = useState(false);
+  const [budgetVersion, setBudgetVersion] = useState<BudgetVersionLabel>("base");
   const queryClient = useQueryClient();
   const dateField = "competence_date";
+
+  // Derive year/month from filters for budget lookup
+  const budgetPeriod = useMemo(() => {
+    const d = filters.dateFrom || new Date();
+    return { year: d.getFullYear(), month: d.getMonth() + 1 };
+  }, [filters.dateFrom]);
+
+  const { data: budgetData } = useBudgetData({
+    year: budgetPeriod.year,
+    month: budgetPeriod.month,
+    versionLabel: budgetVersion,
+    costCenterId: filters.costCenterId,
+    projectId: filters.projectId,
+  });
 
   // Subscribe to real-time changes
   useEffect(() => {
@@ -821,6 +839,23 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
           </p>
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
+          <div className="flex items-center gap-1.5 rounded-lg border px-2 py-1">
+            <input
+              type="checkbox"
+              checked={showBudget}
+              onChange={(e) => setShowBudget(e.target.checked)}
+              className="h-3.5 w-3.5"
+            />
+            <span className="text-[11px] text-muted-foreground whitespace-nowrap">Orçado</span>
+            {showBudget && (
+              <Select value={budgetVersion} onValueChange={(v) => setBudgetVersion(v as BudgetVersionLabel)}>
+                <SelectTrigger className="h-6 w-[120px] text-[11px]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {Object.entries(VERSION_LABELS).map(([k, v]) => <SelectItem key={k} value={k} className="text-xs">{v}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
           <Button variant="outline" size="sm" onClick={expandAll} className="h-8 whitespace-nowrap text-xs">
             Expandir
           </Button>
