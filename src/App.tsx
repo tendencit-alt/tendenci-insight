@@ -41,6 +41,7 @@ import RecursosHumanos from "./pages/RecursosHumanos";
 import ProducaoOperacoes from "./pages/ProducaoOperacoes";
 import Projetos from "./pages/Projetos";
 import Suprimentos from "./pages/Suprimentos";
+import CRMCommercial from "./pages/CRMCommercial";
 
 const queryClient = new QueryClient();
 
@@ -88,9 +89,10 @@ const App = () => (
               <Route path="/system-errors" element={<Navigate to="/" replace />} />
               <Route path="/excluidos" element={<Navigate to="/" replace />} />
               {/* Redirects para rotas removidas */}
-              <Route path="/leads" element={<Navigate to="/" replace />} />
+              <Route path="/leads" element={<Navigate to="/crm-comercial" replace />} />
               <Route path="/kanban" element={<Navigate to="/" replace />} />
-              <Route path="/crm" element={<Navigate to="/" replace />} />
+              <Route path="/crm" element={<Navigate to="/crm-comercial" replace />} />
+              <Route path="/crm-comercial" element={<ProtectedRoute><CRMCommercial /></ProtectedRoute>} />
               <Route path="/projects" element={<Navigate to="/" replace />} />
               <Route path="/prospeccao" element={<Navigate to="/" replace />} />
               <Route path="/metas" element={<Navigate to="/" replace />} />
