@@ -1464,6 +1464,11 @@ export default function HomeLauncher() {
         </div>
         )}
 
+        {/* ── Notification Summary Widget ── */}
+        {!executiveMode && !actionLayer.rapidMode && (
+          <NotificationSummaryWidget className="mt-2" />
+        )}
+
         {/* ── Global Activity Feed ── */}
         {!executiveMode && !actionLayer.rapidMode && (
           <MiniActivityFeed className="mt-2" />
