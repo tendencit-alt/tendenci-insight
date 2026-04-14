@@ -24,7 +24,7 @@ import {
   TrendingDown, Minus, HeartPulse,
   Lightbulb, Calendar, DollarSign, Monitor,
   Gauge, ShieldAlert, ArrowUpRight, ArrowDownRight,
-  Sparkles, Calculator,
+  Sparkles, Calculator, MessageSquareText, BarChart,
 } from "lucide-react";
 import {
   useActionItems,
@@ -38,6 +38,7 @@ import { useDecisionSuggestions, useOperationalTimeline } from "@/hooks/useDecis
 import { format as fmtDate } from "date-fns";
 import { usePredictiveLayer, useSimulator } from "@/hooks/usePredictiveLayer";
 import { Slider } from "@/components/ui/slider";
+import { useExplainabilityLayer } from "@/hooks/useExplainabilityLayer";
 
 // ─── Module definitions ───
 const MODULES = [
@@ -225,6 +226,7 @@ export default function HomeLauncher() {
   const { data: predictive, isLoading: loadingPredictive } = usePredictiveLayer();
   const simulator = useSimulator();
   const [showSimulator, setShowSimulator] = useState(false);
+  const { data: explainability, isLoading: loadingExplain, showBreakdown, setShowBreakdown } = useExplainabilityLayer();
 
   const showOnboarding = onboardingDone.length < ONBOARDING_STEPS.length;
 
@@ -643,6 +645,177 @@ export default function HomeLauncher() {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
             {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-20 rounded-xl" />)}
           </div>
+        )}
+
+        {/* ── Explainability Layer ── */}
+        {explainability && (
+          <div className="space-y-4">
+            {/* Natural Language Summary */}
+            <div className="rounded-lg border border-border/60 bg-muted/30 p-3 flex items-start gap-2.5">
+              <MessageSquareText className="h-4 w-4 mt-0.5 shrink-0 text-primary" />
+              <p className="text-xs leading-relaxed text-foreground">{explainability.naturalLanguage}</p>
+            </div>
+
+            {/* Top 3 Impacts */}
+            {explainability.topImpacts.length > 0 && (
+              <div className="space-y-2">
+                <h3 className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+                  <Lightbulb className="h-3.5 w-3.5" /> Top Impactos
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  {explainability.topImpacts.map((imp, i) => (
+                    <Card key={i} className={`border-border/60 ${
+                      imp.type === "negative" ? "border-destructive/30 bg-destructive/5 dark:bg-destructive/10"
+                      : imp.type === "positive" ? "border-emerald-300/40 bg-emerald-50/50 dark:border-emerald-700/30 dark:bg-emerald-950/20"
+                      : "border-amber-300/40 bg-amber-50/50 dark:border-amber-700/30 dark:bg-amber-950/20"
+                    }`}>
+                      <CardContent className="p-2.5">
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <Badge variant="outline" className={`text-[9px] px-1.5 ${
+                            imp.type === "negative" ? "text-destructive border-destructive/30"
+                            : imp.type === "positive" ? "text-emerald-600 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700"
+                            : "text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-700"
+                          }`}>
+                            {imp.type === "negative" ? "▼ Negativo" : imp.type === "positive" ? "▲ Positivo" : "⬤ Instável"}
+                          </Badge>
+                        </div>
+                        <p className="text-[10px] font-semibold truncate">{imp.label}</p>
+                        <p className="text-[10px] text-muted-foreground">{imp.formatted}</p>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Historical Comparisons */}
+            {explainability.historicalComparisons.length > 0 && (
+              <div className="space-y-2">
+                <h3 className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+                  <BarChart className="h-3.5 w-3.5" /> Comparação Histórica
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  {explainability.historicalComparisons.map((c, i) => (
+                    <Card key={i} className="border-border/60">
+                      <CardContent className="p-2.5">
+                        <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">{c.metric}</p>
+                        <div className="flex items-end justify-between mt-1">
+                          <p className="text-sm font-bold">{c.formatted.current}</p>
+                          <div className="flex items-center gap-0.5">
+                            {c.direction === "up" ? <ArrowUpRight className="h-3 w-3 text-emerald-500" />
+                              : c.direction === "down" ? <ArrowDownRight className="h-3 w-3 text-destructive" />
+                              : <Minus className="h-3 w-3 text-muted-foreground" />}
+                            <span className={`text-[10px] font-medium ${
+                              c.direction === "up" ? "text-emerald-600 dark:text-emerald-400"
+                              : c.direction === "down" ? "text-destructive" : "text-muted-foreground"
+                            }`}>{c.pctChange > 0 ? "+" : ""}{c.pctChange.toFixed(1)}%</span>
+                          </div>
+                        </div>
+                        <p className="text-[9px] text-muted-foreground mt-0.5">Média: {c.formatted.average}</p>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Anomalies */}
+            {explainability.anomalies.length > 0 && (
+              <div className="space-y-2">
+                <h3 className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+                  <ShieldAlert className="h-3.5 w-3.5" /> Anomalias Detectadas
+                </h3>
+                <div className="space-y-1.5">
+                  {explainability.anomalies.map((a) => (
+                    <div key={a.id} className={`rounded-lg border p-2.5 flex items-start gap-2.5 ${
+                      a.severity === "critical"
+                        ? "border-destructive/40 bg-destructive/5 dark:bg-destructive/10"
+                        : "border-amber-300/60 bg-amber-50/50 dark:border-amber-700/40 dark:bg-amber-950/20"
+                    }`}>
+                      <AlertTriangle className={`h-3.5 w-3.5 mt-0.5 shrink-0 ${
+                        a.severity === "critical" ? "text-destructive" : "text-amber-600 dark:text-amber-400"
+                      }`} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold">{a.title}</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">{a.description}</p>
+                      </div>
+                      <Badge variant="outline" className={`text-[9px] shrink-0 ${
+                        a.severity === "critical" ? "text-destructive border-destructive/30" : "text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-700"
+                      }`}>+{a.deviation.toFixed(0)}%</Badge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Variance Drivers */}
+            {explainability.drivers.length > 0 && (
+              <div className="space-y-2">
+                <button
+                  onClick={() => setShowBreakdown((p) => !p)}
+                  className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <BarChart className="h-3.5 w-3.5" />
+                  Entender Resultado do Mês
+                  <ChevronRight className={`h-3 w-3 transition-transform ${showBreakdown ? "rotate-90" : ""}`} />
+                </button>
+                {showBreakdown && (
+                  <Card className="border-border/60">
+                    <CardContent className="p-3 space-y-3">
+                      <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Ranking de Impacto por Categoria</p>
+                      <div className="space-y-1.5">
+                        {explainability.drivers.map((d, i) => (
+                          <div key={i} className="flex items-center gap-2">
+                            <span className="text-[10px] text-muted-foreground w-4 text-right">{i + 1}.</span>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[11px] font-medium truncate">{d.category}</span>
+                                <span className={`text-[10px] font-semibold ${d.direction === "positive" ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}>
+                                  {d.direction === "positive" ? "+" : "-"}{d.formatted}
+                                </span>
+                              </div>
+                              <div className="h-1.5 bg-muted rounded-full mt-1 overflow-hidden">
+                                <div
+                                  className={`h-full rounded-full transition-all ${d.direction === "positive" ? "bg-emerald-500" : "bg-destructive"}`}
+                                  style={{ width: `${Math.min(d.pctImpact, 100)}%` }}
+                                />
+                              </div>
+                            </div>
+                            <span className="text-[9px] text-muted-foreground w-8 text-right">{d.pctImpact}%</span>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Revenue vs Expense breakdown */}
+                      <div className="grid grid-cols-2 gap-3 pt-2 border-t border-border/40">
+                        <div>
+                          <p className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 mb-1">Receitas</p>
+                          {explainability.monthBreakdown.revenue.slice(0, 5).map((r, i) => (
+                            <div key={i} className="flex justify-between text-[10px] py-0.5">
+                              <span className="text-muted-foreground truncate mr-2">{r.category}</span>
+                              <span className="font-medium shrink-0">{r.formatted}</span>
+                            </div>
+                          ))}
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-semibold text-destructive mb-1">Despesas</p>
+                          {explainability.monthBreakdown.expenses.slice(0, 5).map((e, i) => (
+                            <div key={i} className="flex justify-between text-[10px] py-0.5">
+                              <span className="text-muted-foreground truncate mr-2">{e.category}</span>
+                              <span className="font-medium shrink-0">{e.formatted}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+        {loadingExplain && (
+          <Skeleton className="h-16 rounded-xl" />
         )}
 
         {/* ── Onboarding Guide ── */}
