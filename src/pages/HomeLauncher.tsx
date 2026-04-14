@@ -22,6 +22,7 @@ import {
   UserPlus, Zap, PlayCircle, GripVertical,
   Eye, EyeOff, Rocket, CheckCircle2,
   TrendingDown, Minus, HeartPulse,
+  Lightbulb, Calendar, DollarSign, Monitor,
 } from "lucide-react";
 import {
   useActionItems,
@@ -31,6 +32,8 @@ import {
 } from "@/hooks/useSmartLauncher";
 import { useModulePreviews } from "@/hooks/useModulePreviews";
 import { useCompanyStatus } from "@/hooks/useCompanyStatus";
+import { useDecisionSuggestions, useOperationalTimeline } from "@/hooks/useDecisionLayer";
+import { format as fmtDate } from "date-fns";
 
 // ─── Module definitions ───
 const MODULES = [
@@ -211,7 +214,10 @@ export default function HomeLauncher() {
   const moduleOrder = getModuleOrder(userProfile);
   const { data: modulePreviews } = useModulePreviews();
   const { data: companyStatus, isLoading: loadingStatus } = useCompanyStatus();
+  const { data: suggestions = [], isLoading: loadingSuggestions } = useDecisionSuggestions();
+  const { data: timeline = [] } = useOperationalTimeline();
   const [fabOpen, setFabOpen] = useState(false);
+  const [executiveMode, setExecutiveMode] = useState(false);
 
   const showOnboarding = onboardingDone.length < ONBOARDING_STEPS.length;
 
@@ -299,6 +305,15 @@ export default function HomeLauncher() {
               <LayoutGrid className="h-5 w-5 text-primary-foreground" />
             </div>
             <h1 className="text-2xl font-bold tracking-tight">Central de Navegação</h1>
+            <Button
+              variant={executiveMode ? "default" : "outline"}
+              size="sm"
+              className="ml-3 h-7 text-[10px] gap-1 rounded-lg"
+              onClick={() => setExecutiveMode((p) => !p)}
+            >
+              <Monitor className="h-3 w-3" />
+              {executiveMode ? "Modo Completo" : "Modo Executivo"}
+            </Button>
           </div>
           <div className="relative max-w-lg mx-auto">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -385,6 +400,89 @@ export default function HomeLauncher() {
           </div>
         )}
 
+        {/* ── Decision Suggestions ── */}
+        {suggestions.length > 0 && (
+          <div className="space-y-3">
+            <h2 className="text-sm font-semibold flex items-center gap-2">
+              <Lightbulb className="h-4 w-4 text-amber-500" /> Decisões Sugeridas Hoje
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+              {suggestions.map((s) => {
+                const prioColor = s.priority === 1 ? "border-destructive/40 bg-destructive/5 dark:bg-destructive/10" : s.priority === 2 ? "border-amber-300/60 bg-amber-50/50 dark:border-amber-700/40 dark:bg-amber-950/20" : "border-border bg-card";
+                const prioLabel = s.priority === 1 ? "Crítica" : s.priority === 2 ? "Relevante" : "Recomendada";
+                const prioBadge = s.priority === 1 ? "bg-destructive text-destructive-foreground" : s.priority === 2 ? "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300" : "bg-muted text-muted-foreground";
+                const impactIcon = s.impact.type === "caixa" ? DollarSign : s.impact.type === "faturamento" ? TrendingUp : Activity;
+                const ImpactIcon = impactIcon;
+                return (
+                  <button key={s.id} onClick={() => handleNavigate(s.title, s.route)} className={`rounded-xl border p-3.5 text-left transition-all hover:shadow-md hover:-translate-y-0.5 ${prioColor}`}>
+                    <div className="flex items-start justify-between mb-2">
+                      <Badge className={`text-[9px] h-4 ${prioBadge}`}>{prioLabel}</Badge>
+                      <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+                    </div>
+                    <p className="text-xs font-semibold">{s.title}</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-2">{s.description}</p>
+                    <div className="flex items-center gap-1.5 mt-2 pt-2 border-t border-border/40">
+                      <ImpactIcon className="h-3 w-3 text-muted-foreground" />
+                      <span className="text-[9px] font-medium text-muted-foreground">{s.impact.label}</span>
+                    </div>
+                    <div className="mt-1.5">
+                      <Badge variant="outline" className="text-[9px] h-4 gap-1">
+                        <Zap className="h-2.5 w-2.5" /> {s.action}
+                      </Badge>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+        {loadingSuggestions && (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            {[1, 2, 3].map((i) => <Skeleton key={i} className="h-32 rounded-xl" />)}
+          </div>
+        )}
+
+        {/* ── Operational Timeline (7 days) ── */}
+        {!executiveMode && timeline.length > 0 && (
+          <div className="space-y-3">
+            <h2 className="text-sm font-semibold flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-primary" /> Próximos 7 Dias
+            </h2>
+            <Card>
+              <CardContent className="p-3">
+                <ScrollArea className="h-[200px]">
+                  <div className="space-y-1.5">
+                    {timeline.map((ev) => {
+                      const typeConfig = {
+                        payment: { color: "text-destructive", label: "Pagamento" },
+                        receivable: { color: "text-emerald-600 dark:text-emerald-400", label: "Recebimento" },
+                        delivery: { color: "text-blue-600 dark:text-blue-400", label: "Entrega" },
+                        order: { color: "text-amber-600 dark:text-amber-400", label: "Pedido" },
+                      };
+                      const cfg = typeConfig[ev.type] || typeConfig.payment;
+                      return (
+                        <div key={ev.id} className="flex items-center gap-3 px-2.5 py-2 rounded-lg border border-border/40 hover:bg-muted/30 transition-colors">
+                          <span className="text-[10px] font-mono text-muted-foreground w-14 shrink-0">
+                            {fmtDate(new Date(ev.date), "dd/MM")}
+                          </span>
+                          <div className={`h-1.5 w-1.5 rounded-full shrink-0 ${cfg.color === "text-destructive" ? "bg-destructive" : cfg.color.includes("emerald") ? "bg-emerald-500" : cfg.color.includes("blue") ? "bg-blue-500" : "bg-amber-500"}`} />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium truncate">{ev.label}</p>
+                            <Badge variant="outline" className="text-[9px] h-3.5">{cfg.label}</Badge>
+                          </div>
+                          {ev.formatted && (
+                            <span className={`text-xs font-semibold whitespace-nowrap ${cfg.color}`}>{ev.formatted}</span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         {/* ── Onboarding Guide ── */}
         {showOnboarding && (
           <Card className="border-primary/20 bg-primary/5 dark:bg-primary/10">
@@ -456,7 +554,8 @@ export default function HomeLauncher() {
           )}
         </div>
 
-        {/* ── Quick Actions ── */}
+        {/* ── Quick Actions (hidden in executive mode) ── */}
+        {!executiveMode && (
         <div className="space-y-3">
           <h2 className="text-sm font-semibold flex items-center gap-2">
             <Zap className="h-4 w-4 text-primary" /> Ações Rápidas
@@ -470,7 +569,10 @@ export default function HomeLauncher() {
             ))}
           </div>
         </div>
+        )}
 
+        {!executiveMode && (
+        <>
         {/* ── Favorites ── */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
@@ -604,6 +706,8 @@ export default function HomeLauncher() {
             })}
           </div>
         </div>
+        </>
+        )}
       </div>
 
       {/* ── FAB + Create Menu ── */}
