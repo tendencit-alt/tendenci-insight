@@ -1,7 +1,7 @@
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Building2, CreditCard, ArrowLeft, Wrench, LayoutDashboard, Shield, Activity, Rocket, BarChart3 } from 'lucide-react';
+import { Building2, CreditCard, ArrowLeft, Wrench, LayoutDashboard, Shield, Activity, Rocket, BarChart3, GitBranch } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { TenantsManager } from '@/components/superadmin/TenantsManager';
 import { PlansManager } from '@/components/superadmin/PlansManager';
@@ -11,6 +11,7 @@ import { SupportDashboard } from '@/components/superadmin/SupportDashboard';
 import { ObservabilityDashboard } from '@/components/superadmin/ObservabilityDashboard';
 import { OwnerActivationPanel } from '@/components/superadmin/OwnerActivationPanel';
 import { ProductAnalyticsPanel } from '@/components/superadmin/ProductAnalyticsPanel';
+import { ReleaseManagementPanel } from '@/components/superadmin/ReleaseManagementPanel';
 
 const SuperAdmin = () => {
   const navigate = useNavigate();
@@ -95,6 +96,10 @@ const SuperAdmin = () => {
 
           <TabsContent value="analytics" className="space-y-6 pt-6">
             <ProductAnalyticsPanel />
+          </TabsContent>
+
+          <TabsContent value="releases" className="space-y-6 pt-6">
+            <ReleaseManagementPanel />
           </TabsContent>
 
           <TabsContent value="observability" className="space-y-6 pt-6">
