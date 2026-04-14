@@ -38,11 +38,10 @@ export function useCompanyStatus() {
       const prevMonthStart = format(startOfMonth(subMonths(now, 1)), "yyyy-MM-dd");
       const prevMonthEnd = format(endOfMonth(subMonths(now, 1)), "yyyy-MM-dd");
 
-      // Individual queries to avoid TS deep instantiation error
       const cashRes = await supabase
         .from("fin_bank_accounts")
         .select("opening_balance")
-        .eq("active", true);
+        .eq("active", true) as unknown as { data: { opening_balance: number | null }[] | null };
 
       const revenueQ = supabase.from("fin_ledger_entries").select("amount").eq("entry_type", "credit");
       const revenueRes = await revenueQ.gte("competence_date", monthStart).lte("competence_date", monthEnd);
