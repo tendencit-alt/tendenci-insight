@@ -56,6 +56,7 @@ import {
   PlanejarBlock, ResolverBlock, EstrategiaBlock,
 } from "@/components/command-center/TaskBlocks";
 import { WorkspaceModeSelector } from "@/components/command-center/WorkspaceModeSelector";
+import { SetupPriorityWidget } from "@/components/smart-empty-states/SetupPriorityWidget";
 
 // ── Searchable items for command palette ──
 const SEARCHABLE_ITEMS = [
@@ -221,6 +222,9 @@ export default function HomeLauncher() {
 
         {/* ══ EXECUTIVE STATUS BAR ══ */}
         <ExecutiveStatusBar />
+
+        {/* ══ SETUP PRIORITY ══ */}
+        <SetupPriorityWidget />
 
         {/* ══ HOJE VOCÊ PRECISA (dynamic) ══ */}
         <div className="space-y-3">
