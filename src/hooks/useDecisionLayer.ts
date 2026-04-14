@@ -37,7 +37,7 @@ export function useDecisionSuggestions() {
       const suggestions: DecisionSuggestion[] = [];
       const now = new Date();
       const today = format(now, "yyyy-MM-dd");
-      const next7 = format(addDays(now, 7), "yyyy-MM-dd");
+      const _next7 = format(addDays(now, 7), "yyyy-MM-dd");
       const monthStart = format(startOfMonth(now), "yyyy-MM-dd");
       const monthEnd = format(endOfMonth(now), "yyyy-MM-dd");
       const prevMonthStart = format(startOfMonth(subMonths(now, 1)), "yyyy-MM-dd");
@@ -107,11 +107,11 @@ export function useDecisionSuggestions() {
       // 4. Stalled orders → suggest release production
       const stalledRes = await supabase
         .from("orders")
-        .select("id, total_amount")
+        .select("id, total")
         .in("status", ["aprovado", "pendente_aprovacao"])
-        .lt("updated_at", format(addDays(now, -3), "yyyy-MM-dd'T'HH:mm:ss"));
+        .lt("updated_at", format(addDays(now, -3), "yyyy-MM-dd'T'HH:mm:ss")) as unknown as { data: { id: string; total: number | null }[] | null };
       const stalledCount = stalledRes.data?.length || 0;
-      const stalledAmt = stalledRes.data?.reduce((s, r) => s + Number(r.total_amount || 0), 0) || 0;
+      const stalledAmt = stalledRes.data?.reduce((s, r) => s + Number(r.total || 0), 0) || 0;
 
       if (stalledCount > 0) {
         suggestions.push({
@@ -127,8 +127,8 @@ export function useDecisionSuggestions() {
 
       // 5. Revenue declining → suggest review expenses
       type AmtRes = { data: { amount: number | null }[] | null };
-      const revRes: AmtRes = await supabase.from("fin_ledger_entries").select("amount").eq("entry_type", "credit").gte("competence_date", monthStart).lte("competence_date", monthEnd) as any;
-      const prevRevRes: AmtRes = await supabase.from("fin_ledger_entries").select("amount").eq("entry_type", "credit").gte("competence_date", prevMonthStart).lte("competence_date", prevMonthEnd) as any;
+      const revRes: AmtRes = await (supabase.from("fin_ledger_entries").select("amount").eq("entry_type", "credit") as any).gte("competence_date", monthStart).lte("competence_date", monthEnd);
+      const prevRevRes: AmtRes = await (supabase.from("fin_ledger_entries").select("amount").eq("entry_type", "credit") as any).gte("competence_date", prevMonthStart).lte("competence_date", prevMonthEnd);
 
       const revenue = revRes.data?.reduce((s, r) => s + Number(r.amount || 0), 0) || 0;
       const prevRevenue = prevRevRes.data?.reduce((s, r) => s + Number(r.amount || 0), 0) || 0;
