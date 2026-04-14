@@ -288,18 +288,6 @@ export function AppNavbar() {
             <span className="whitespace-nowrap">Central</span>
           </NavLink>
 
-          {(!loading && hasModuleAccess("dashboard" as any)) && (
-            <NavLink
-              to="/bi-dashboard"
-              end
-              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md hover:bg-muted/50 font-medium transition-colors"
-              activeClassName="bg-primary/10 text-primary font-semibold"
-            >
-              <LayoutDashboard className="h-3.5 w-3.5 flex-shrink-0" />
-              <span className="whitespace-nowrap">Dashboard</span>
-            </NavLink>
-          )}
-
           {visibleModules.map(renderModuleDropdown)}
         </div>
 
@@ -332,16 +320,6 @@ export function AppNavbar() {
                     >
                       <Home className="h-5 w-5 flex-shrink-0" />
                       <span>Central de Navegação</span>
-                    </NavLink>
-                    <NavLink
-                      to="/bi-dashboard"
-                      end
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all hover:bg-muted"
-                      activeClassName="bg-primary text-primary-foreground font-semibold"
-                    >
-                      <LayoutDashboard className="h-5 w-5 flex-shrink-0" />
-                      <span>Dashboard Executivo</span>
                     </NavLink>
                   </div>
                 )}
