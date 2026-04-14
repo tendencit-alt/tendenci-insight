@@ -27,7 +27,7 @@ import {
   Sparkles, Calculator, MessageSquareText, BarChart,
   ShieldCheck, RefreshCw, Database,
   Undo2, ListChecks, Play, CheckSquare,
-  MessageCircle, UserCheck,
+  MessageCircle, UserCheck, Brain, Repeat, ArrowRight,
 } from "lucide-react";
 import {
   useActionItems,
@@ -46,6 +46,7 @@ import { useTrustLayer } from "@/hooks/useTrustLayer";
 import { useActionLayer } from "@/hooks/useActionLayer";
 import { useAutomationLayer } from "@/hooks/useAutomationLayer";
 import { useCollaborationLayer, type CollabFilter } from "@/hooks/useCollaborationLayer";
+import { useLearningLayer } from "@/hooks/useLearningLayer";
 
 // ─── Module definitions ───
 const MODULES = [
@@ -242,6 +243,7 @@ export default function HomeLauncher() {
   const [collabFilter, setCollabFilter] = useState<CollabFilter>("mine");
   const { data: collab } = useCollaborationLayer(collabFilter);
   const [showCollabTimeline, setShowCollabTimeline] = useState(false);
+  const learning = useLearningLayer();
 
   const showOnboarding = onboardingDone.length < ONBOARDING_STEPS.length;
 
@@ -272,8 +274,9 @@ export default function HomeLauncher() {
 
   const handleNavigate = useCallback((label: string, route: string) => {
     addRecent(label, route);
+    learning.recordNavigation(label, route);
     navigate(route);
-  }, [navigate]);
+  }, [navigate, learning]);
 
   const completeOnboardingStep = useCallback((key: string, route: string) => {
     setOnboardingDone((prev) => {
@@ -1110,6 +1113,80 @@ export default function HomeLauncher() {
               </Button>
             ))}
           </div>
+        </div>
+        )}
+
+        {/* ── Learning Layer ── */}
+        {!executiveMode && !actionLayer.rapidMode && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold flex items-center gap-2">
+              <Brain className="h-4 w-4 text-purple-500" /> Inteligência Adaptativa
+            </h2>
+            <div className="flex items-center gap-1.5">
+              <Badge variant="outline" className="text-[9px] h-5">
+                {learning.userMaturity === "iniciante" ? "Iniciante" : learning.userMaturity === "intermediario" ? "Intermediário" : "Avançado"}
+              </Badge>
+              {learning.companyOrientation !== "indefinido" && (
+                <Badge variant="secondary" className="text-[9px] h-5">
+                  Foco: {learning.companyOrientation}
+                </Badge>
+              )}
+            </div>
+          </div>
+
+          {/* Workflow Suggestions */}
+          {learning.workflowSuggestions.length > 0 && (
+            <div className="space-y-1.5">
+              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Próximos Passos Sugeridos</p>
+              <div className="flex flex-wrap gap-2">
+                {learning.workflowSuggestions.map((wf) => (
+                  <Button key={wf.id} variant="outline" size="sm" className="h-8 text-xs gap-1.5 rounded-lg" onClick={() => handleNavigate(wf.label, wf.route)}>
+                    <ArrowRight className="h-3 w-3 text-purple-500" />
+                    {wf.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Adaptive Favorites (most used) */}
+          {learning.adaptiveFavorites.length > 0 && (
+            <div className="space-y-1.5">
+              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Mais Acessados</p>
+              <div className="flex flex-wrap gap-1.5">
+                {learning.adaptiveFavorites.map((f) => (
+                  <Button key={f.route} variant="ghost" size="sm" className="h-7 text-[10px] gap-1 rounded-md px-2 bg-muted/50" onClick={() => handleNavigate(f.label, f.route)}>
+                    {f.label}
+                    <Badge variant="outline" className="text-[8px] h-4 ml-1">{f.count}x</Badge>
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Repetitive Patterns → Automation Suggestion */}
+          {learning.repetitivePatterns.length > 0 && (
+            <div className="space-y-1.5">
+              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Padrões Detectados</p>
+              <div className="space-y-1">
+                {learning.repetitivePatterns.map((p, i) => (
+                  <div key={i} className="flex items-center gap-2 rounded-lg border p-2 text-xs bg-card/50">
+                    <Repeat className="h-3 w-3 text-purple-500 shrink-0" />
+                    <span className="flex-1 truncate text-muted-foreground">{p.sequence}</span>
+                    <Badge variant="outline" className="text-[8px] h-4">{p.count}x</Badge>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Peak Hours */}
+          {learning.peakHours.length > 0 && learning.totalInteractions > 30 && (
+            <p className="text-[10px] text-muted-foreground">
+              Horários de pico: {learning.peakHours.map((h) => `${h}h`).join(", ")}
+            </p>
+          )}
         </div>
         )}
 
