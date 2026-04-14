@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Bell, CheckCheck, ExternalLink, AlertTriangle, AlertCircle, Info, Zap } from "lucide-react";
+import { Bell, CheckCheck, AlertTriangle, AlertCircle, Info, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
