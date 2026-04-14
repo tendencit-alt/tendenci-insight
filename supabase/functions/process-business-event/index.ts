@@ -450,6 +450,108 @@ serve(async (req) => {
         break;
       }
 
+      // ---- EVENT: order_cancelled (cancel all linked financial entries) ----
+      case "order_cancelled": {
+        const { order_id } = event_data;
+        if (!order_id) throw new Error("order_id required");
+
+        const cancellableStatuses = ["ABERTO", "PROVISIONADO", "CONFIRMADO", "VENCIDO"];
+        const reason = "Cancelamento automático via evento de negócio";
+
+        // Cancel ledger entries
+        const { data: cancelledLedger } = await supabase.from("fin_ledger_entries")
+          .update({ status: "CANCELADO", cancelado_em: new Date().toISOString(), cancelado_por: user_id, motivo_cancelamento: reason })
+          .eq("order_id", order_id).in("status", cancellableStatuses).select("id");
+
+        // Cancel payables
+        const { data: cancelledPayables } = await supabase.from("fin_payables")
+          .update({ status: "CANCELADO", cancelado_em: new Date().toISOString(), cancelado_por: user_id, motivo_cancelamento: reason })
+          .eq("order_id", order_id).in("status", cancellableStatuses).select("id");
+
+        // Cancel receivables
+        const { data: cancelledReceivables } = await supabase.from("fin_receivables")
+          .update({ status: "CANCELADO", cancelado_em: new Date().toISOString(), cancelado_por: user_id, motivo_cancelamento: reason })
+          .eq("order_id", order_id).in("status", cancellableStatuses).select("id");
+
+        result = {
+          ledger_cancelled: cancelledLedger?.length || 0,
+          payables_cancelled: cancelledPayables?.length || 0,
+          receivables_cancelled: cancelledReceivables?.length || 0,
+        };
+        break;
+      }
+
+      // ---- EVENT: purchase_approved (generate payables from purchase order) ----
+      case "purchase_approved": {
+        const { purchase_order_id } = event_data;
+        if (!purchase_order_id) throw new Error("purchase_order_id required");
+
+        const { data: po } = await supabase.from("purchase_orders")
+          .select("*, supplier:suppliers(name)")
+          .eq("id", purchase_order_id).single();
+        if (!po) throw new Error("Purchase order not found");
+
+        // Resolve chart account (root 3 = operational expenses)
+        const opAcct = await resolveChartAccount(supabase, tenant_id, "3");
+
+        // Create payable
+        const { data: payable } = await supabase.from("fin_payables").insert({
+          tenant_id,
+          description: `Compra #${po.number || ""} - ${po.supplier?.name || po.description || ""}`,
+          amount: po.total_value || po.amount,
+          due_date: po.due_date || po.delivery_date || new Date().toISOString().slice(0, 10),
+          competence_date: po.competence_date || po.created_at?.slice(0, 10) || new Date().toISOString().slice(0, 10),
+          status: "ABERTO",
+          supplier_id: po.supplier_id,
+          order_id: purchase_order_id,
+          chart_account_id: po.chart_account_id || opAcct?.id,
+          cost_center_id: po.cost_center_id,
+          project_id: po.project_id,
+        }).select("id").single();
+
+        // Ledger entry
+        await supabase.from("fin_ledger_entries").insert({
+          tenant_id,
+          description: `Compra #${po.number || ""} - ${po.supplier?.name || po.description || ""}`,
+          amount: po.total_value || po.amount,
+          type: "DESPESA",
+          status: "ABERTO",
+          competence_date: po.competence_date || po.created_at?.slice(0, 10) || new Date().toISOString().slice(0, 10),
+          chart_account_id: po.chart_account_id || opAcct?.id,
+          cost_center_id: po.cost_center_id,
+          project_id: po.project_id,
+          order_id: purchase_order_id,
+          origin: "purchase_order",
+          origin_id: purchase_order_id,
+        });
+
+        result = { payable_id: payable?.id, amount: po.total_value || po.amount };
+        break;
+      }
+
+      // ---- EVENT: anticipation_registered ----
+      case "anticipation_registered": {
+        const { type: antType, amount: antAmount, order_id: antOrderId, description: antDesc } = event_data;
+
+        const anticipationAcct = await resolveChartAccount(supabase, tenant_id, "2.5");
+
+        await supabase.from("fin_ledger_entries").insert({
+          tenant_id,
+          description: `Antecipação ${antType || ""} - ${antDesc || ""}`,
+          amount: antAmount,
+          type: "DESPESA",
+          status: "ABERTO",
+          competence_date: new Date().toISOString().slice(0, 10),
+          chart_account_id: anticipationAcct?.id,
+          order_id: antOrderId,
+          origin: "anticipation",
+          origin_id: eventId,
+        });
+
+        result = { type: antType, amount: antAmount };
+        break;
+      }
+
       default:
         result = { message: `Event type '${event_type}' acknowledged. Existing triggers handle this event.` };
     }
