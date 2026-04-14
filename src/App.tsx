@@ -51,6 +51,7 @@ const App = () => (
             <MinimizedDialogsBar />
             <PermissionsProvider>
               <CommandBar />
+               <Routes>
               <Route path="/auth" element={<Auth />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/catalogo" element={<Catalogo />} />
