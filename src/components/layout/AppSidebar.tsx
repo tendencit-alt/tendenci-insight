@@ -248,6 +248,7 @@ const menuGroups: MenuGroup[] = [
       { title: "Base de Conhecimento", url: "/support-knowledge", icon: BookOpen },
       { title: "Educação In-Product", url: "/education", icon: Target },
       { title: "AI Decision Assistant", url: "/ai-decision", icon: BarChart3 },
+      { title: "Control Tower", url: "/control-tower", icon: Landmark },
     ],
   },
 ];
