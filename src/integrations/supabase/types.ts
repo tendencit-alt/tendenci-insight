@@ -7296,6 +7296,93 @@ export type Database = {
         }
         Relationships: []
       }
+      inv_stock_reservations: {
+        Row: {
+          consumed_quantity: number | null
+          created_at: string | null
+          id: string
+          needed_by: string | null
+          notes: string | null
+          ops_order_id: string | null
+          product_id: string
+          project_id: string | null
+          purchase_order_id: string | null
+          quantity: number
+          reserved_by: string | null
+          status: string | null
+          tenant_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          consumed_quantity?: number | null
+          created_at?: string | null
+          id?: string
+          needed_by?: string | null
+          notes?: string | null
+          ops_order_id?: string | null
+          product_id: string
+          project_id?: string | null
+          purchase_order_id?: string | null
+          quantity?: number
+          reserved_by?: string | null
+          status?: string | null
+          tenant_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          consumed_quantity?: number | null
+          created_at?: string | null
+          id?: string
+          needed_by?: string | null
+          notes?: string | null
+          ops_order_id?: string | null
+          product_id?: string
+          project_id?: string | null
+          purchase_order_id?: string | null
+          quantity?: number
+          reserved_by?: string | null
+          status?: string | null
+          tenant_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inv_stock_reservations_ops_order_id_fkey"
+            columns: ["ops_order_id"]
+            isOneToOne: false
+            referencedRelation: "ops_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inv_stock_reservations_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inv_stock_reservations_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "prj_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inv_stock_reservations_purchase_order_id_fkey"
+            columns: ["purchase_order_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inv_stock_reservations_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       labor_types: {
         Row: {
           active: boolean | null
@@ -10873,6 +10960,9 @@ export type Database = {
           ia_produto_id: string | null
           id: string
           image_url: string | null
+          item_type: string | null
+          last_cost: number | null
+          lead_time_days: number | null
           location_id: string | null
           max_stock: number | null
           medida: string | null
@@ -10907,6 +10997,9 @@ export type Database = {
           ia_produto_id?: string | null
           id?: string
           image_url?: string | null
+          item_type?: string | null
+          last_cost?: number | null
+          lead_time_days?: number | null
           location_id?: string | null
           max_stock?: number | null
           medida?: string | null
@@ -10941,6 +11034,9 @@ export type Database = {
           ia_produto_id?: string | null
           id?: string
           image_url?: string | null
+          item_type?: string | null
+          last_cost?: number | null
+          lead_time_days?: number | null
           location_id?: string | null
           max_stock?: number | null
           medida?: string | null
