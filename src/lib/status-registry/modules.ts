@@ -143,6 +143,19 @@ export const RECONCILIATION_STATUS: ModuleStatusConfig = {
 };
 
 // ═══════════════════════════════════════════
+// CONTRATOS RECORRENTES (Recurring Contracts)
+// ═══════════════════════════════════════════
+export const RECURRING_CONTRACTS_STATUS: ModuleStatusConfig = {
+  module: "recurring_contracts",
+  label: "Contratos Recorrentes",
+  statuses: [
+    { key: "active",  label: "Ativo",      color: "green",  icon: PlayCircle,   transitions: ["paused", "ended"] },
+    { key: "paused",  label: "Pausado",    color: "yellow", icon: PauseCircle,  transitions: ["active", "ended"] },
+    { key: "ended",   label: "Encerrado",  color: "gray",   icon: XCircle,      transitions: [], blockEdit: true },
+  ],
+};
+
+// ═══════════════════════════════════════════
 // REGISTRY MAP
 // ═══════════════════════════════════════════
 const ALL_MODULES: ModuleStatusConfig[] = [
@@ -153,6 +166,7 @@ const ALL_MODULES: ModuleStatusConfig[] = [
   PROJECTS_STATUS,
   PRODUCTION_STATUS,
   RECONCILIATION_STATUS,
+  RECURRING_CONTRACTS_STATUS,
 ];
 
 const MODULE_MAP = new Map(ALL_MODULES.map((m) => [m.module, m]));

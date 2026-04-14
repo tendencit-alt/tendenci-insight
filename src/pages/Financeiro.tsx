@@ -11,6 +11,7 @@ import { CashflowTab } from "@/components/financeiro/CashflowTab";
 import { DRETab } from "@/components/financeiro/DRETab";
 import { FinancialResultTab } from "@/components/financeiro/FinancialResultTab";
 import { CapitalFinancingTab } from "@/components/financeiro/CapitalFinancingTab";
+import { RecurringContractsTab } from "@/components/financeiro/RecurringContractsTab";
 import { useSearchParams } from "react-router-dom";
 
 import {
