@@ -23,6 +23,7 @@ import {
   BarChart2,
   DollarSign,
   Banknote,
+  CalendarClock,
 } from "lucide-react";
 
 export default function Financeiro() {
@@ -94,6 +95,10 @@ export default function Financeiro() {
                 <Banknote className="h-3.5 w-3.5 flex-shrink-0" />
                 <span className="whitespace-nowrap">Capital</span>
               </TabsTrigger>
+              <TabsTrigger value="recurring" className={tabClass}>
+                <CalendarClock className="h-3.5 w-3.5 flex-shrink-0" />
+                <span className="whitespace-nowrap">Recorrentes</span>
+              </TabsTrigger>
             </TabsList>
           </div>
 
@@ -131,6 +136,10 @@ export default function Financeiro() {
 
           <TabsContent value="capital" forceMount className={activeTab === "capital" ? "space-y-4" : "hidden"}>
             <CapitalFinancingTab filters={filters} />
+          </TabsContent>
+
+          <TabsContent value="recurring" forceMount className={activeTab === "recurring" ? "space-y-4" : "hidden"}>
+            <RecurringContractsTab filters={filters} />
           </TabsContent>
         </Tabs>
       </div>
