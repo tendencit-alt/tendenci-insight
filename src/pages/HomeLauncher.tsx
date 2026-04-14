@@ -23,6 +23,8 @@ import {
   Eye, EyeOff, Rocket, CheckCircle2,
   TrendingDown, Minus, HeartPulse,
   Lightbulb, Calendar, DollarSign, Monitor,
+  Gauge, ShieldAlert, ArrowUpRight, ArrowDownRight,
+  Sparkles, Calculator,
 } from "lucide-react";
 import {
   useActionItems,
@@ -34,6 +36,8 @@ import { useModulePreviews } from "@/hooks/useModulePreviews";
 import { useCompanyStatus } from "@/hooks/useCompanyStatus";
 import { useDecisionSuggestions, useOperationalTimeline } from "@/hooks/useDecisionLayer";
 import { format as fmtDate } from "date-fns";
+import { usePredictiveLayer, useSimulator } from "@/hooks/usePredictiveLayer";
+import { Slider } from "@/components/ui/slider";
 
 // ─── Module definitions ───
 const MODULES = [
