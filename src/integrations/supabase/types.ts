@@ -4197,6 +4197,133 @@ export type Database = {
           },
         ]
       }
+      fin_forecast_entries: {
+        Row: {
+          chart_account_id: string | null
+          cost_center_id: string | null
+          created_at: string
+          forecast_amount: number
+          id: string
+          locked: boolean
+          month: number
+          notes: string | null
+          origin: string
+          project_id: string | null
+          scenario: string
+          tenant_id: string | null
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          chart_account_id?: string | null
+          cost_center_id?: string | null
+          created_at?: string
+          forecast_amount?: number
+          id?: string
+          locked?: boolean
+          month: number
+          notes?: string | null
+          origin?: string
+          project_id?: string | null
+          scenario?: string
+          tenant_id?: string | null
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          chart_account_id?: string | null
+          cost_center_id?: string | null
+          created_at?: string
+          forecast_amount?: number
+          id?: string
+          locked?: boolean
+          month?: number
+          notes?: string | null
+          origin?: string
+          project_id?: string | null
+          scenario?: string
+          tenant_id?: string | null
+          updated_at?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fin_forecast_entries_chart_account_id_fkey"
+            columns: ["chart_account_id"]
+            isOneToOne: false
+            referencedRelation: "fin_chart_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_forecast_entries_cost_center_id_fkey"
+            columns: ["cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "fin_cost_centers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_forecast_entries_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "fin_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fin_forecast_entries_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fin_forecast_scenarios: {
+        Row: {
+          adjustments: Json
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          scenario_type: string
+          tenant_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          adjustments?: Json
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          scenario_type?: string
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          adjustments?: Json
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          scenario_type?: string
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fin_forecast_scenarios_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fin_forecasts: {
         Row: {
           auto_calculated: boolean | null
