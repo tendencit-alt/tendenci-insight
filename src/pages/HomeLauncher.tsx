@@ -25,6 +25,7 @@ import {
   Lightbulb, Calendar, DollarSign, Monitor,
   Gauge, ShieldAlert, ArrowUpRight, ArrowDownRight,
   Sparkles, Calculator, MessageSquareText, BarChart,
+  ShieldCheck, RefreshCw, Database,
 } from "lucide-react";
 import {
   useActionItems,
@@ -39,6 +40,7 @@ import { format as fmtDate } from "date-fns";
 import { usePredictiveLayer, useSimulator } from "@/hooks/usePredictiveLayer";
 import { Slider } from "@/components/ui/slider";
 import { useExplainabilityLayer } from "@/hooks/useExplainabilityLayer";
+import { useTrustLayer } from "@/hooks/useTrustLayer";
 
 // ─── Module definitions ───
 const MODULES = [
@@ -227,6 +229,8 @@ export default function HomeLauncher() {
   const simulator = useSimulator();
   const [showSimulator, setShowSimulator] = useState(false);
   const { data: explainability, isLoading: loadingExplain, showBreakdown, setShowBreakdown } = useExplainabilityLayer();
+  const { data: trust, isLoading: loadingTrust } = useTrustLayer();
+  const [showTrustDetail, setShowTrustDetail] = useState(false);
 
   const showOnboarding = onboardingDone.length < ONBOARDING_STEPS.length;
 
