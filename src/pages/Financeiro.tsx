@@ -12,6 +12,7 @@ import { DRETab } from "@/components/financeiro/DRETab";
 import { FinancialResultTab } from "@/components/financeiro/FinancialResultTab";
 import { CapitalFinancingTab } from "@/components/financeiro/CapitalFinancingTab";
 import { RecurringContractsTab } from "@/components/financeiro/RecurringContractsTab";
+import { GovernanceTab } from "@/components/financeiro/GovernanceTab";
 import { useSearchParams } from "react-router-dom";
 
 import {
@@ -24,6 +25,7 @@ import {
   DollarSign,
   Banknote,
   CalendarClock,
+  ShieldCheck,
 } from "lucide-react";
 
 export default function Financeiro() {
@@ -99,6 +101,10 @@ export default function Financeiro() {
                 <CalendarClock className="h-3.5 w-3.5 flex-shrink-0" />
                 <span className="whitespace-nowrap">Recorrentes</span>
               </TabsTrigger>
+              <TabsTrigger value="governance" className={tabClass}>
+                <ShieldCheck className="h-3.5 w-3.5 flex-shrink-0" />
+                <span className="whitespace-nowrap">Governança</span>
+              </TabsTrigger>
             </TabsList>
           </div>
 
@@ -140,6 +146,10 @@ export default function Financeiro() {
 
           <TabsContent value="recurring" forceMount className={activeTab === "recurring" ? "space-y-4" : "hidden"}>
             <RecurringContractsTab filters={filters} />
+          </TabsContent>
+
+          <TabsContent value="governance" forceMount className={activeTab === "governance" ? "space-y-4" : "hidden"}>
+            <GovernanceTab filters={filters} />
           </TabsContent>
         </Tabs>
       </div>
