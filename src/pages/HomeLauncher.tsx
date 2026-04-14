@@ -26,6 +26,7 @@ import {
   Gauge, ShieldAlert, ArrowUpRight, ArrowDownRight,
   Sparkles, Calculator, MessageSquareText, BarChart,
   ShieldCheck, RefreshCw, Database,
+  Undo2, ListChecks, Play, CheckSquare,
 } from "lucide-react";
 import {
   useActionItems,
@@ -41,6 +42,7 @@ import { usePredictiveLayer, useSimulator } from "@/hooks/usePredictiveLayer";
 import { Slider } from "@/components/ui/slider";
 import { useExplainabilityLayer } from "@/hooks/useExplainabilityLayer";
 import { useTrustLayer } from "@/hooks/useTrustLayer";
+import { useActionLayer } from "@/hooks/useActionLayer";
 
 // ─── Module definitions ───
 const MODULES = [
@@ -231,6 +233,7 @@ export default function HomeLauncher() {
   const { data: explainability, isLoading: loadingExplain, showBreakdown, setShowBreakdown } = useExplainabilityLayer();
   const { data: trust, isLoading: loadingTrust } = useTrustLayer();
   const [showTrustDetail, setShowTrustDetail] = useState(false);
+  const actionLayer = useActionLayer();
 
   const showOnboarding = onboardingDone.length < ONBOARDING_STEPS.length;
 
@@ -318,15 +321,36 @@ export default function HomeLauncher() {
               <LayoutGrid className="h-5 w-5 text-primary-foreground" />
             </div>
             <h1 className="text-2xl font-bold tracking-tight">Central de Navegação</h1>
-            <Button
-              variant={executiveMode ? "default" : "outline"}
-              size="sm"
-              className="ml-3 h-7 text-[10px] gap-1 rounded-lg"
-              onClick={() => setExecutiveMode((p) => !p)}
-            >
-              <Monitor className="h-3 w-3" />
-              {executiveMode ? "Modo Completo" : "Modo Executivo"}
-            </Button>
+            <div className="flex items-center gap-1.5 ml-3">
+              <Button
+                variant={executiveMode ? "default" : "outline"}
+                size="sm"
+                className="h-7 text-[10px] gap-1 rounded-lg"
+                onClick={() => setExecutiveMode((p) => !p)}
+              >
+                <Monitor className="h-3 w-3" />
+                {executiveMode ? "Modo Completo" : "Modo Executivo"}
+              </Button>
+              <Button
+                variant={actionLayer.rapidMode ? "default" : "outline"}
+                size="sm"
+                className="h-7 text-[10px] gap-1 rounded-lg"
+                onClick={() => actionLayer.setRapidMode((p) => !p)}
+              >
+                <Play className="h-3 w-3" />
+                {actionLayer.rapidMode ? "Sair Execução" : "Execução Rápida"}
+              </Button>
+              {actionLayer.canUndo && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-[10px] gap-1 rounded-lg"
+                  onClick={actionLayer.undoLast}
+                >
+                  <Undo2 className="h-3 w-3" /> Desfazer
+                </Button>
+              )}
+            </div>
           </div>
           <div className="relative max-w-lg mx-auto">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -967,9 +991,35 @@ export default function HomeLauncher() {
 
         {/* ── Hoje Preciso Fazer ── */}
         <div className="space-y-3">
-          <h2 className="text-sm font-semibold flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 text-amber-500" /> Hoje Preciso Fazer
-          </h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-amber-500" /> Hoje Preciso Fazer
+            </h2>
+            {actionItems.length > 0 && (
+              <div className="flex items-center gap-1.5">
+                <Button
+                  variant={actionLayer.batchMode ? "default" : "outline"}
+                  size="sm"
+                  className="h-6 text-[9px] gap-1 rounded-md"
+                  onClick={() => { actionLayer.setBatchMode((p) => !p); if (actionLayer.batchMode) actionLayer.clearBatch(); }}
+                >
+                  <ListChecks className="h-3 w-3" />
+                  {actionLayer.batchMode ? "Cancelar Lote" : "Selecionar"}
+                </Button>
+                {actionLayer.batchMode && actionLayer.selectedItems.length > 0 && (
+                  <div className="flex items-center gap-1">
+                    <Badge variant="outline" className="text-[9px] h-5">{actionLayer.selectedItems.length} selecionado(s)</Badge>
+                    <Button size="sm" className="h-6 text-[9px] gap-1 rounded-md" onClick={() => actionLayer.executeBatch("pay")}>
+                      <DollarSign className="h-2.5 w-2.5" /> Pagar
+                    </Button>
+                    <Button variant="outline" size="sm" className="h-6 text-[9px] gap-1 rounded-md" onClick={() => actionLayer.executeBatch("reschedule")}>
+                      <Calendar className="h-2.5 w-2.5" /> Reagendar
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
           {loadingActions ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
               {[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 rounded-xl" />)}
@@ -983,28 +1033,63 @@ export default function HomeLauncher() {
             </Card>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-              {actionItems.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => handleNavigate(item.label, item.route)}
-                  className={`rounded-xl border p-3 text-left transition-all hover:shadow-md hover:-translate-y-0.5 ${SEVERITY_STYLES[item.severity]}`}
-                >
-                  <div className="flex items-start gap-2.5">
-                    <div className={`h-2.5 w-2.5 rounded-full mt-1.5 shrink-0 ${SEVERITY_DOT[item.severity]}`} />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold truncate">{item.label}</p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">{item.detail}</p>
+              {actionItems.map((item) => {
+                const alertActions = actionLayer.getActionsForAlert(item.id);
+                return (
+                  <div
+                    key={item.id}
+                    className={`rounded-xl border p-3 transition-all hover:shadow-md ${SEVERITY_STYLES[item.severity]} ${
+                      actionLayer.batchMode && actionLayer.isBatchSelected(item.id, "action") ? "ring-2 ring-primary" : ""
+                    }`}
+                  >
+                    <div className="flex items-start gap-2.5">
+                      {actionLayer.batchMode && (
+                        <Checkbox
+                          checked={actionLayer.isBatchSelected(item.id, "action")}
+                          onCheckedChange={() => actionLayer.toggleBatchItem({ id: item.id, label: item.label, table: item.id.includes("payable") ? "fin_payables" : item.id.includes("receivable") ? "fin_receivables" : "action" })}
+                          className="mt-1 shrink-0"
+                        />
+                      )}
+                      <div className={`h-2.5 w-2.5 rounded-full mt-1.5 shrink-0 ${SEVERITY_DOT[item.severity]}`} />
+                      <div className="flex-1 min-w-0">
+                        <button onClick={() => handleNavigate(item.label, item.route)} className="text-left w-full">
+                          <p className="text-xs font-semibold truncate">{item.label}</p>
+                          <p className="text-[10px] text-muted-foreground mt-0.5">{item.detail}</p>
+                        </button>
+                        {/* Inline Action Buttons */}
+                        {alertActions.length > 0 && !actionLayer.batchMode && (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {alertActions.map((a) => (
+                              <Button
+                                key={a.id}
+                                variant="outline"
+                                size="sm"
+                                className="h-5 text-[9px] px-1.5 gap-0.5 rounded-md"
+                                onClick={(e) => { e.stopPropagation(); handleNavigate(a.label, item.route); }}
+                              >
+                                {a.icon === "pay" && <DollarSign className="h-2.5 w-2.5" />}
+                                {a.icon === "reschedule" && <Calendar className="h-2.5 w-2.5" />}
+                                {a.icon === "reconcile" && <CheckSquare className="h-2.5 w-2.5" />}
+                                {a.icon === "approve" && <CheckCircle2 className="h-2.5 w-2.5" />}
+                                {a.label}
+                              </Button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      {!actionLayer.batchMode && (
+                        <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5 cursor-pointer" onClick={() => handleNavigate(item.label, item.route)} />
+                      )}
                     </div>
-                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
                   </div>
-                </button>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
 
-        {/* ── Quick Actions (hidden in executive mode) ── */}
-        {!executiveMode && (
+        {/* ── Quick Actions (hidden in executive & rapid mode) ── */}
+        {!executiveMode && !actionLayer.rapidMode && (
         <div className="space-y-3">
           <h2 className="text-sm font-semibold flex items-center gap-2">
             <Zap className="h-4 w-4 text-primary" /> Ações Rápidas
@@ -1020,7 +1105,7 @@ export default function HomeLauncher() {
         </div>
         )}
 
-        {!executiveMode && (
+        {!executiveMode && !actionLayer.rapidMode && (
         <>
         {/* ── Favorites ── */}
         <div className="space-y-3">
