@@ -8266,6 +8266,53 @@ export type Database = {
           },
         ]
       }
+      product_analytics_events: {
+        Row: {
+          created_at: string
+          duration_ms: number | null
+          event_type: string
+          feature: string | null
+          id: string
+          metadata: Json | null
+          module: string | null
+          session_id: string | null
+          tenant_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration_ms?: number | null
+          event_type: string
+          feature?: string | null
+          id?: string
+          metadata?: Json | null
+          module?: string | null
+          session_id?: string | null
+          tenant_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          duration_ms?: number | null
+          event_type?: string
+          feature?: string | null
+          id?: string
+          metadata?: Json | null
+          module?: string | null
+          session_id?: string | null
+          tenant_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_analytics_events_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_bom: {
         Row: {
           component_id: string
