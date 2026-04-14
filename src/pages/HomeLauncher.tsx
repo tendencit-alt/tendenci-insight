@@ -274,8 +274,9 @@ export default function HomeLauncher() {
 
   const handleNavigate = useCallback((label: string, route: string) => {
     addRecent(label, route);
+    learning.recordNavigation(label, route);
     navigate(route);
-  }, [navigate]);
+  }, [navigate, learning]);
 
   const completeOnboardingStep = useCallback((key: string, route: string) => {
     setOnboardingDone((prev) => {
