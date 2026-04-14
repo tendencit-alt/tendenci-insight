@@ -1,7 +1,6 @@
-import { useState, useMemo, useCallback, ReactNode } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -9,8 +8,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowUpDown, ArrowUp, ArrowDown, MoreHorizontal, ChevronLeft, ChevronRight, Loader2, Inbox } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { ListViewProps, SortState, STATUS_COLORS as StatusColorsType } from "./types";
-import { STATUS_COLORS, BADGE_DOT_COLORS } from "./types";
+import type { ListViewProps } from "./types";
+import { BADGE_DOT_COLORS } from "./types";
 import { ListViewHeader } from "./ListViewHeader";
 
 export function ListView<T extends { id: string }>({
@@ -187,7 +186,7 @@ export function ListView<T extends { id: string }>({
                 </TableRow>
               ) : data.map((row, idx) => {
                 const status = getRowStatus?.(row);
-                const badges = getRowBadges?.(row);
+                const _badges = getRowBadges?.(row);
                 const inlineActions = actions?.filter((a) => a.inline && (!a.visible || a.visible(row))) || [];
                 const menuActions = actions?.filter((a) => !a.inline && (!a.visible || a.visible(row))) || [];
                 return (
