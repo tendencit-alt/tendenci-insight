@@ -8,7 +8,8 @@ import {
   TrendingUp, Calculator, History, Zap, Shield,
   LineChart, PieChart, UserCog, Link2,
   Landmark, ClipboardList, FolderOpen, Wrench,
-  Star, AlertTriangle, UserCheck, Clock, Calendar, Play, Scale
+  Star, AlertTriangle, UserCheck, Clock, Calendar, Play, Scale,
+  Brain, Telescope, GraduationCap, Activity, Heart
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
@@ -22,6 +23,7 @@ import { useCompanySettings } from "@/hooks/useCompanySettings";
 import { useNavigationUsage } from "@/hooks/useNavigationUsage";
 import { useAttentionLayer, type AttentionLevel } from "@/hooks/useAttentionLayer";
 import { useWorkspace } from "@/hooks/useWorkspace";
+import { useFavorites } from "@/hooks/useFavorites";
 import { cn } from "@/lib/utils";
 import {
   Collapsible, CollapsibleContent, CollapsibleTrigger,
@@ -58,184 +60,134 @@ interface RoleConfig {
 
 const ROLE_CONFIGS: Record<RoleKey, RoleConfig> = {
   owner: {
-    autoExpandGroups: ["Controladoria", "Planejamento", "Relatórios & BI"],
+    autoExpandGroups: ["Hoje", "Financeiro", "Estratégia"],
     highlightItems: [],
-    dimGroups: ["Cadastros", "Operações"],
+    dimGroups: [],
   },
   financeiro: {
-    autoExpandGroups: ["Financeiro", "Controladoria", "Planejamento"],
-    highlightItems: ["/conciliacao", "/fluxo-caixa", "/dre"],
-    dimGroups: ["Operações", "Cadastros"],
+    autoExpandGroups: ["Financeiro"],
+    highlightItems: ["/financeiro", "/cadastros-financeiros", "/bi-dashboard"],
+    dimGroups: ["Operações", "Vendas"],
   },
   comercial: {
-    autoExpandGroups: ["Comercial", "Financeiro"],
-    highlightItems: ["/pedidos", "/propostas", "/clientes"],
-    dimGroups: ["Operações", "Controladoria"],
+    autoExpandGroups: ["Vendas"],
+    highlightItems: ["/pedidos", "/crm-comercial"],
+    dimGroups: ["Operações"],
   },
   operacional: {
     autoExpandGroups: ["Operações"],
-    highlightItems: ["/producao", "/ordens-producao", "/execucao-obras"],
-    dimGroups: ["Controladoria", "Planejamento"],
+    highlightItems: ["/producao", "/producao-operacoes", "/projetos"],
+    dimGroups: ["Estratégia"],
   },
   admin: {
-    autoExpandGroups: ["Home"],
+    autoExpandGroups: ["Hoje"],
     highlightItems: [],
     dimGroups: [],
   },
 };
 
-// ── Menu definition ──
+// ══════════════════════════════════════════════════════════════════
+// ═══ INTENT-BASED NAVIGATION GROUPS ═══
+// ══════════════════════════════════════════════════════════════════
 const menuGroups: MenuGroup[] = [
+  // ── HOJE ──
   {
-    label: "Home",
+    label: "Hoje",
     icon: Home,
     items: [
       { title: "Central de Navegação", url: "/central-navegacao", icon: Home },
+      { title: "Control Tower", url: "/control-tower", icon: Landmark },
       { title: "Executive Center", url: "/executive", icon: LineChart },
     ],
   },
-  {
-    label: "CRM",
-    icon: Target,
-    items: [
-      { title: "Pipeline", url: "/crm-comercial", icon: Target },
-      { title: "Propostas", url: "/crm-comercial", icon: FileText },
-      { title: "Forecast Receita", url: "/crm-comercial", icon: TrendingUp },
-      { title: "Analytics Comercial", url: "/crm-comercial", icon: BarChart3 },
-    ],
-  },
-  {
-    label: "Comercial",
-    icon: ShoppingCart,
-    separator: true,
-    items: [
-      { title: "Pedidos", url: "/pedidos", icon: ShoppingCart },
-      { title: "Orçamentos", url: "/propostas", icon: FileText, comingSoon: true },
-      { title: "Clientes", url: "/clientes", icon: Users },
-      { title: "Contratos", url: "/contratos", icon: Briefcase, comingSoon: true },
-      { title: "Comissões", url: "/comissoes", icon: DollarSign, comingSoon: true },
-    ],
-  },
-  {
-    label: "Operações",
-    icon: Factory,
-    items: [
-      { title: "Produção (legado)", url: "/producao", icon: Factory },
-      { title: "Ordens", url: "/producao-operacoes", icon: ClipboardList },
-      { title: "Planejamento", url: "/producao-operacoes", icon: Calendar },
-      { title: "Execução", url: "/producao-operacoes", icon: Play },
-      { title: "Custos Operacionais", url: "/producao-operacoes", icon: DollarSign },
-      { title: "Analytics Operacional", url: "/producao-operacoes", icon: BarChart3 },
-    ],
-  },
+  // ── FINANCEIRO ──
   {
     label: "Financeiro",
     icon: Wallet,
     separator: true,
     items: [
+      // Operacional
+      { title: "Tesouraria", url: "/financeiro", icon: Wallet },
       { title: "Contas a Receber", url: "/contas-receber", icon: TrendingUp, comingSoon: true },
       { title: "Contas a Pagar", url: "/contas-pagar", icon: CreditCard, comingSoon: true },
-      { title: "Tesouraria", url: "/financeiro", icon: Wallet },
       { title: "Conciliação Bancária", url: "/conciliacao", icon: ArrowLeftRight, comingSoon: true },
+      // Estratégico
+      { title: "DRE Gerencial", url: "/dre", icon: LineChart, comingSoon: true },
+      { title: "Fluxo de Caixa", url: "/fluxo-caixa", icon: BarChart, comingSoon: true },
+      { title: "Forecast Financeiro", url: "/resultado-financeiro", icon: Calculator, comingSoon: true },
+      { title: "Metas Financeiras", url: "/planning", icon: Target },
+      { title: "Plano de Contas", url: "/cadastros-financeiros", icon: BookOpen },
+      { title: "BI Financeiro", url: "/bi-dashboard", icon: PieChart },
     ],
   },
+  // ── VENDAS ──
   {
-    label: "Controladoria",
-    icon: BookOpen,
+    label: "Vendas",
+    icon: ShoppingCart,
+    separator: true,
     items: [
-      { title: "Fluxo de Caixa", url: "/fluxo-caixa", icon: BarChart, comingSoon: true },
-      { title: "DRE Gerencial", url: "/dre", icon: LineChart, comingSoon: true },
-      { title: "Resultado Financeiro", url: "/resultado-financeiro", icon: Calculator, comingSoon: true },
-      { title: "Capital e Financiamentos", url: "/capital-financiamentos", icon: Landmark, comingSoon: true },
-      { title: "Plano de Contas", url: "/cadastros-financeiros", icon: BookOpen },
-      { title: "Centros de Custo", url: "/centros-custo", icon: FolderOpen, comingSoon: true },
-      { title: "Projetos Financeiros", url: "/projetos-financeiros", icon: Briefcase, comingSoon: true },
-      { title: "Classificação Automática", url: "/classificacao-automatica", icon: Zap, comingSoon: true },
-      { title: "Automações por Evento", url: "/automacoes", icon: Zap },
+      { title: "CRM & Pipeline", url: "/crm-comercial", icon: Target },
+      { title: "Pedidos", url: "/pedidos", icon: ShoppingCart },
+      { title: "Orçamentos", url: "/propostas", icon: FileText, comingSoon: true },
+      { title: "Clientes", url: "/clientes", icon: Users },
+      { title: "Contratos", url: "/contratos", icon: Briefcase, comingSoon: true },
+      { title: "Comissões", url: "/comissoes", icon: DollarSign, comingSoon: true },
+      { title: "Forecast Comercial", url: "/crm-comercial", icon: TrendingUp },
+    ],
+  },
+  // ── OPERAÇÕES ──
+  {
+    label: "Operações",
+    icon: Factory,
+    separator: true,
+    items: [
+      { title: "Projetos", url: "/projetos", icon: Briefcase },
+      { title: "Produção", url: "/producao-operacoes", icon: Factory },
+      { title: "Produção (legado)", url: "/producao", icon: Factory },
+      { title: "Automações", url: "/automacoes", icon: Zap },
+      { title: "Suprimentos", url: "/suprimentos", icon: Package },
+      { title: "Estoque", url: "/estoque", icon: Layers },
+      { title: "Fornecedores", url: "/fornecedores", icon: Package },
+      { title: "Relatórios", url: "/relatorios", icon: FileText, comingSoon: true },
+    ],
+  },
+  // ── PESSOAS ──
+  {
+    label: "Pessoas",
+    icon: Users,
+    separator: true,
+    items: [
+      { title: "RH & Colaboradores", url: "/rh", icon: UserCheck },
+      { title: "Usuários", url: "/settings/users", icon: UserCog },
+      { title: "Permissões", url: "/governanca", icon: Shield },
+    ],
+  },
+  // ── ESTRATÉGIA ──
+  {
+    label: "Estratégia",
+    icon: Telescope,
+    separator: true,
+    items: [
+      { title: "Control Tower", url: "/control-tower", icon: Landmark },
+      { title: "Benchmarks", url: "/multi-company", icon: PieChart },
+      { title: "Decision Assistant", url: "/ai-decision", icon: Brain },
+      { title: "Educação & Trilhas", url: "/education", icon: GraduationCap },
+      { title: "Indicadores Executivos", url: "/executive", icon: LineChart },
+      { title: "Simulações", url: "/planning", icon: Wrench },
       { title: "Auditoria", url: "/auditoria", icon: History },
     ],
   },
+  // ── SISTEMA ──
   {
-    label: "RH",
-    icon: UserCheck,
-    items: [
-      { title: "Colaboradores", url: "/rh", icon: Users },
-      { title: "Estrutura Organizacional", url: "/rh", icon: Building2 },
-      { title: "Jornadas e Ponto", url: "/rh", icon: Clock },
-      { title: "Custos de Mão de Obra", url: "/rh", icon: DollarSign },
-      { title: "Performance", url: "/rh", icon: TrendingUp },
-      { title: "RH Analytics", url: "/rh", icon: BarChart3 },
-    ],
-  },
-  {
-    label: "Projetos",
-    icon: Briefcase,
-    items: [
-      { title: "Cadastro", url: "/projetos", icon: FolderOpen },
-      { title: "Planejamento", url: "/projetos", icon: Calendar },
-      { title: "Execução", url: "/projetos", icon: Play },
-      { title: "Custos", url: "/projetos", icon: DollarSign },
-      { title: "Analytics", url: "/projetos", icon: BarChart3 },
-    ],
-  },
-  {
-    label: "Suprimentos",
-    icon: Package,
-    items: [
-      { title: "Solicitações", url: "/suprimentos", icon: ClipboardList },
-      { title: "Cotações", url: "/suprimentos", icon: Scale },
-      { title: "Pedidos de Compra", url: "/suprimentos", icon: ShoppingCart },
-      { title: "Recebimentos", url: "/suprimentos", icon: Package },
-      { title: "Analytics Compras", url: "/suprimentos", icon: BarChart3 },
-    ],
-  },
-  {
-    label: "Planning",
-    icon: Target,
-    separator: true,
-    items: [
-      { title: "Metas", url: "/planning", icon: Target },
-      { title: "Orçamento", url: "/planning", icon: DollarSign },
-      { title: "Simulações", url: "/planning", icon: Wrench },
-      { title: "Acompanhamento", url: "/planning", icon: TrendingUp },
-      { title: "Planning Analytics", url: "/planning", icon: BarChart3 },
-    ],
-  },
-  {
-    label: "Cadastros",
-    icon: Database,
-    items: [
-      { title: "Clientes", url: "/clientes", icon: Users },
-      { title: "Fornecedores", url: "/fornecedores", icon: Package },
-      { title: "Estoque", url: "/estoque", icon: Layers },
-      { title: "Contas Bancárias", url: "/contas-bancarias", icon: Landmark, comingSoon: true },
-      { title: "Estrutura Organizacional", url: "/estrutura-organizacional", icon: Building2, comingSoon: true },
-    ],
-  },
-  {
-    label: "Relatórios & BI",
-    icon: BarChart3,
-    separator: true,
-    items: [
-      { title: "BI Analítico", url: "/bi-dashboard", icon: PieChart },
-      { title: "Dashboards", url: "/dashboards", icon: BarChart3 },
-      { title: "Relatórios Personalizados", url: "/relatorios-personalizados", icon: FileText, comingSoon: true },
-      { title: "Exportações Inteligentes", url: "/exportacao-bi", icon: FileText, comingSoon: true },
-    ],
-  },
-  {
-    label: "Configurações",
+    label: "Sistema",
     icon: Settings,
     items: [
-      { title: "Geral", url: "/settings", icon: Settings },
-      { title: "Usuários", url: "/settings/users", icon: UserCog },
-      { title: "Access Governance", url: "/governanca", icon: Shield },
+      { title: "Configurações", url: "/settings", icon: Settings },
       { title: "Integrações", url: "/settings/integracoes", icon: Link2, comingSoon: true },
-      { title: "Preferências do Sistema", url: "/settings/preferencias", icon: Wrench, comingSoon: true },
-      { title: "Parâmetros Financeiros", url: "/settings/parametros-financeiros", icon: Calculator, comingSoon: true },
       { title: "Logs do Sistema", url: "/settings/logs", icon: History, comingSoon: true },
     ],
   },
+  // ── OWNER (system_owner only) ──
   {
     label: "Owner",
     icon: Building2,
@@ -246,10 +198,6 @@ const menuGroups: MenuGroup[] = [
       { title: "Customer Lifecycle", url: "/customer-lifecycle", icon: Users },
       { title: "Customer Success", url: "/customer-success", icon: Star },
       { title: "Base de Conhecimento", url: "/support-knowledge", icon: BookOpen },
-      { title: "Educação In-Product", url: "/education", icon: Target },
-      { title: "AI Decision Assistant", url: "/ai-decision", icon: BarChart3 },
-      { title: "Control Tower", url: "/control-tower", icon: Landmark },
-      { title: "Inteligência Multi-Empresa", url: "/multi-company", icon: PieChart },
     ],
   },
 ];
@@ -291,6 +239,17 @@ function findMenuItem(url: string): MenuItem | null {
   return null;
 }
 
+// All menu items flat for favorites lookup
+function getAllMenuItems(): MenuItem[] {
+  const items: MenuItem[] = [];
+  for (const g of menuGroups) {
+    for (const i of g.items) {
+      if (!i.comingSoon && !items.some(x => x.url === i.url)) items.push(i);
+    }
+  }
+  return items;
+}
+
 // ── Attention level styling ──
 const LEVEL_COLORS: Record<AttentionLevel, string> = {
   normal: "bg-muted text-muted-foreground",
@@ -328,6 +287,8 @@ export function AppSidebar() {
   const { trackVisit, getTopPaths } = useNavigationUsage();
   const { alerts, totalActions, getGroupBadge, getItemBadge } = useAttentionLayer();
   const { isGroupVisible } = useWorkspace();
+  const { favorites, toggleFavorite, isFavorite } = useFavorites();
+
   // Profile type
   const [profileTypeName, setProfileTypeName] = useState<string | null>(null);
   useEffect(() => {
@@ -391,17 +352,18 @@ export function AppSidebar() {
     [currentProfile, isGroupVisible]
   );
 
-  const quickShortcuts = useMemo(() => {
-    const topPaths = getTopPaths(3);
-    return topPaths
-      .map(p => findMenuItem(p))
-      .filter((m): m is MenuItem => m !== null && !m.comingSoon);
-  }, [getTopPaths]);
+  // Favorites items
+  const favoriteItems = useMemo(() => {
+    const allItems = getAllMenuItems();
+    return favorites
+      .map(url => allItems.find(i => i.url === url))
+      .filter((i): i is MenuItem => !!i);
+  }, [favorites]);
 
   const highlightSet = useMemo(() => new Set(roleConfig.highlightItems), [roleConfig]);
   const dimSet = useMemo(() => new Set(roleConfig.dimGroups), [roleConfig]);
 
-  // Urgent alerts for "Precisa agir hoje" block
+  // Urgent alerts
   const urgentAlerts = useMemo(() =>
     alerts.filter(a => a.level === "urgente" || a.level === "bloqueante" || a.level === "atencao"),
     [alerts]
@@ -475,14 +437,14 @@ export function AppSidebar() {
           </div>
         )}
 
-        {/* Quick Shortcuts */}
-        {!isCollapsed && quickShortcuts.length > 0 && (
+        {/* ═══ FAVORITOS ═══ */}
+        {!isCollapsed && favoriteItems.length > 0 && (
           <div className="px-3 py-2 border-b border-sidebar-border/20">
-            <p className="text-[10px] text-sidebar-foreground/35 font-semibold tracking-widest uppercase mb-1.5 flex items-center gap-1.5">
-              <Star className="h-3 w-3" /> Acesso rápido
+            <p className="text-[10px] text-yellow-500/60 font-semibold tracking-widest uppercase mb-1.5 flex items-center gap-1.5">
+              <Star className="h-3 w-3 fill-yellow-500/40" /> Favoritos
             </p>
             <div className="space-y-0.5">
-              {quickShortcuts.map(item => (
+              {favoriteItems.map(item => (
                 <NavLink
                   key={item.url}
                   to={item.url}
@@ -530,7 +492,6 @@ export function AppSidebar() {
                           )}
                         </div>
                         <div className="flex items-center gap-1.5">
-                          {/* Group attention badge */}
                           {groupBadge && groupBadge.count > 0 && (
                             <span className={cn(
                               "text-[9px] font-mono font-semibold px-1.5 py-0 rounded-full border leading-tight",
@@ -555,6 +516,7 @@ export function AppSidebar() {
                           {group.items.map((item) => {
                             const isHighlighted = highlightSet.has(item.url);
                             const itemBadge = getItemBadge(item.url);
+                            const favored = isFavorite(item.url);
 
                             return (
                               <SidebarMenuItem key={item.title + item.url}>
@@ -563,7 +525,6 @@ export function AppSidebar() {
                                     <div className="flex items-center gap-2.5 px-3 py-1 ml-5 mr-2 rounded-md text-sidebar-foreground/30 text-[13px] cursor-default select-none">
                                       <item.icon className={cn("h-3.5 w-3.5 flex-shrink-0", isHighlighted && "text-primary/40")} />
                                       <span className={cn("truncate", isHighlighted && "text-primary/40")}>{item.title}</span>
-                                      {/* Item attention badge (even on coming soon) */}
                                       {itemBadge && itemBadge.count > 0 && !isCollapsed && (
                                         <span className={cn(
                                           "ml-auto text-[9px] font-mono font-semibold px-1.5 py-0 rounded-full border leading-tight",
@@ -583,24 +544,35 @@ export function AppSidebar() {
                                       to={item.url}
                                       end
                                       className={cn(
-                                        "flex items-center gap-2.5 px-3 py-1 ml-5 mr-2 rounded-md transition-colors hover:bg-sidebar-accent/30 text-sidebar-foreground/60 hover:text-sidebar-foreground text-[13px]",
+                                        "flex items-center gap-2.5 px-3 py-1 ml-5 mr-2 rounded-md transition-colors hover:bg-sidebar-accent/30 text-sidebar-foreground/60 hover:text-sidebar-foreground text-[13px] group/item",
                                         isHighlighted && "text-sidebar-foreground/80 font-medium"
                                       )}
                                       activeClassName="bg-primary/10 text-primary font-medium"
                                     >
                                       <item.icon className={cn("h-3.5 w-3.5 flex-shrink-0", isHighlighted && "text-primary/60")} />
                                       <span className="truncate">{item.title}</span>
-                                      {/* Item attention badge */}
+                                      {/* Favorite toggle */}
+                                      {!isCollapsed && (
+                                        <button
+                                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleFavorite(item.url); }}
+                                          className={cn(
+                                            "ml-auto opacity-0 group-hover/item:opacity-100 transition-opacity flex-shrink-0",
+                                            favored && "opacity-100"
+                                          )}
+                                        >
+                                          <Star className={cn(
+                                            "h-3 w-3",
+                                            favored ? "fill-yellow-500 text-yellow-500" : "text-sidebar-foreground/30 hover:text-yellow-500/60"
+                                          )} />
+                                        </button>
+                                      )}
                                       {itemBadge && itemBadge.count > 0 && !isCollapsed && (
                                         <span className={cn(
-                                          "ml-auto text-[9px] font-mono font-semibold px-1.5 py-0 rounded-full border leading-tight",
+                                          "text-[9px] font-mono font-semibold px-1.5 py-0 rounded-full border leading-tight",
                                           LEVEL_COLORS[itemBadge.level]
                                         )}>
                                           {itemBadge.count}
                                         </span>
-                                      )}
-                                      {isHighlighted && !itemBadge && !isCollapsed && (
-                                        <span className="ml-auto w-1.5 h-1.5 rounded-full bg-primary/50 flex-shrink-0" />
                                       )}
                                     </NavLink>
                                   )}
