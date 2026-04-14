@@ -713,6 +713,18 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
             )}
           </div>
         </TableCell>
+        {showBudget && (
+          <TableCell className="text-right p-1">
+            {(() => {
+              const budgeted = budgetData?.byAccount?.get(line.id) || 0;
+              return budgeted !== 0 ? (
+                <span className="font-mono text-xs text-muted-foreground">
+                  {formatCurrency(budgeted)}
+                </span>
+              ) : <span className="text-[10px] text-muted-foreground">—</span>;
+            })()}
+          </TableCell>
+        )}
         <TableCell className="text-right p-1">
           <div className="flex flex-col items-end">
             {isResultado ? (
@@ -747,6 +759,21 @@ export function DRETab({ filters, onFiltersChange }: DRETabProps) {
             )}
           </div>
         </TableCell>
+        {showBudget && (
+          <TableCell className="text-right p-1">
+            {(() => {
+              const budgeted = budgetData?.byAccount?.get(line.id) || 0;
+              if (budgeted === 0) return <span className="text-[10px] text-muted-foreground">—</span>;
+              const desvio = ((line.value - budgeted) / Math.abs(budgeted)) * 100;
+              const isGood = isDespesa ? desvio <= 0 : desvio >= 0;
+              return (
+                <span className={cn("font-mono text-[10px] font-medium", isGood ? "text-green-600" : "text-red-600")}>
+                  {desvio >= 0 ? "+" : ""}{desvio.toFixed(1)}%
+                </span>
+              );
+            })()}
+          </TableCell>
+        )}
       </TableRow>
     );
     
