@@ -11,6 +11,7 @@ import {
   LogOut, User, Menu, ChevronDown, Sun, Moon, Building2,
   LayoutDashboard, ShoppingCart, Factory, Wallet, Scale, Target,
   Database, BarChart3, Settings,
+  Home,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import {
@@ -277,6 +278,16 @@ export function AppNavbar() {
 
         {/* Desktop: Dashboard direct link + module dropdowns */}
         <div className="hidden xl:flex items-center gap-0.5 flex-1 ml-3">
+          <NavLink
+            to="/central-navegacao"
+            end
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md hover:bg-muted/50 font-medium transition-colors"
+            activeClassName="bg-primary/10 text-primary font-semibold"
+          >
+            <Home className="h-3.5 w-3.5 flex-shrink-0" />
+            <span className="whitespace-nowrap">Central</span>
+          </NavLink>
+
           {(!loading && hasModuleAccess("dashboard" as any)) && (
             <NavLink
               to="/bi-dashboard"
@@ -312,6 +323,16 @@ export function AppNavbar() {
               <div className="flex-1 overflow-y-auto py-2">
                 {(!loading && hasModuleAccess("dashboard" as any)) && (
                   <div className="px-3 mb-1">
+                    <NavLink
+                      to="/central-navegacao"
+                      end
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all hover:bg-muted"
+                      activeClassName="bg-primary text-primary-foreground font-semibold"
+                    >
+                      <Home className="h-5 w-5 flex-shrink-0" />
+                      <span>Central de Navegação</span>
+                    </NavLink>
                     <NavLink
                       to="/bi-dashboard"
                       end
