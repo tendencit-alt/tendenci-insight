@@ -258,7 +258,7 @@ export function OrderDetailSheet({ orderId, open, onOpenChange, onUpdate }: Orde
   };
 
   // Derived data
-  const statusDef = getStatusDef('orders', order?.status || 'rascunho');
+  const _statusDef = getStatusDef('orders', order?.status || 'rascunho');
   const canEdit = order ? ['rascunho', 'em_negociacao'].includes(order.status) : false;
   const nextAction = order ? getNextAction(order.status) : null;
 
