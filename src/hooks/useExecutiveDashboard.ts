@@ -178,14 +178,11 @@ export function useExecSaudeEmpresa() {
       const pm = format(startOfMonth(subMonths(now, 1)), "yyyy-MM-dd");
       const pme = format(endOfMonth(subMonths(now, 1)), "yyyy-MM-dd");
 
-      const ledger = () => supabase.from("fin_ledger_entries").select("amount") as any;
-      type AnyRes = { data: any[] | null };
-      const [cashRes, revRes, expRes, prevExpRes]: AnyRes[] = await Promise.all([
-        supabase.from("fin_bank_accounts").select("opening_balance").eq("active", true) as any,
-        ledger().eq("entry_type", "credit").gte("competence_date", ms).lte("competence_date", me),
-        ledger().eq("entry_type", "debit").gte("competence_date", ms).lte("competence_date", me),
-        ledger().eq("entry_type", "debit").gte("competence_date", pm).lte("competence_date", pme),
-      ]);
+      const q = (t: string) => (supabase as any).from(t);
+      const cashRes = await q("fin_bank_accounts").select("opening_balance").eq("active", true);
+      const revRes = await q("fin_ledger_entries").select("amount").eq("entry_type", "credit").gte("competence_date", ms).lte("competence_date", me);
+      const expRes = await q("fin_ledger_entries").select("amount").eq("entry_type", "debit").gte("competence_date", ms).lte("competence_date", me);
+      const prevExpRes = await q("fin_ledger_entries").select("amount").eq("entry_type", "debit").gte("competence_date", pm).lte("competence_date", pme);
 
       const saldoAtual = (cashRes.data as any[])?.reduce((s, r) => s + Number(r.opening_balance || 0), 0) || 0;
       const revMes = (revRes.data as any[])?.reduce((s: number, r: any) => s + Number(r.amount || 0), 0) || 0;
