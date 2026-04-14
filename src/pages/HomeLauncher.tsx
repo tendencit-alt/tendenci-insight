@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Search, Star, Clock, ChevronRight, Pencil,
   ShoppingCart, Truck, FolderKanban, FileText,
@@ -16,8 +17,15 @@ import {
   FileBarChart, Cog, Shield, Building2,
   Users, Lock, Plug, SlidersHorizontal,
   Package, Tags, FolderTree, Briefcase,
-  LayoutGrid,
+  LayoutGrid, AlertTriangle, Plus, CreditCard,
+  UserPlus, Zap, PlayCircle,
 } from "lucide-react";
+import {
+  useActionItems,
+  useContinueItems,
+  useUserProfile,
+  getModuleOrder,
+} from "@/hooks/useSmartLauncher";
 
 // ─── Module definitions ───
 const MODULES = [
@@ -115,12 +123,18 @@ const MODULES = [
   },
 ];
 
-// ─── All searchable items ───
 const SEARCHABLE_ITEMS = MODULES.flatMap((m) =>
   m.items.map((item) => ({ ...item, module: m.label }))
 );
 
-// ─── Default favorites ───
+const QUICK_ACTIONS = [
+  { label: "Novo Pedido", icon: ShoppingCart, route: "/pedidos", color: "text-blue-600 dark:text-blue-400" },
+  { label: "Nova Despesa", icon: CreditCard, route: "/financeiro", color: "text-red-500 dark:text-red-400" },
+  { label: "Nova Receita", icon: Plus, route: "/financeiro", color: "text-emerald-600 dark:text-emerald-400" },
+  { label: "Conciliar Banco", icon: ArrowLeftRight, route: "/financeiro", color: "text-violet-600 dark:text-violet-400" },
+  { label: "Criar Cliente", icon: UserPlus, route: "/pedidos", color: "text-sky-600 dark:text-sky-400" },
+];
+
 const DEFAULT_FAVORITES = [
   { label: "DRE", route: "/bi-dashboard", icon: "BarChart3" },
   { label: "Fluxo de Caixa", route: "/bi-dashboard", icon: "Landmark" },
@@ -159,14 +173,34 @@ function addRecent(label: string, route: string) {
   localStorage.setItem("erp-home-recents", JSON.stringify(recents.slice(0, 8)));
 }
 
+// ─── Severity helpers ───
+const SEVERITY_STYLES = {
+  red: "border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/30",
+  yellow: "border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30",
+  green: "border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/30",
+};
+const SEVERITY_DOT = {
+  red: "bg-red-500",
+  yellow: "bg-amber-500",
+  green: "bg-emerald-500",
+};
+
 export default function HomeLauncher() {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [expandedModule, setExpandedModule] = useState<string | null>(null);
   const [favorites, setFavorites] = useState(getFavoritesFromStorage);
-  const [recents] = useState(getRecentsFromStorage);
   const [editFavDialog, setEditFavDialog] = useState(false);
   const [tempFavorites, setTempFavorites] = useState<typeof DEFAULT_FAVORITES>([]);
+
+  const { data: actionItems = [], isLoading: loadingActions } = useActionItems();
+  const continueItems = useContinueItems();
+  const userProfile = useUserProfile();
+  const moduleOrder = getModuleOrder(userProfile);
+
+  const orderedModules = useMemo(() => {
+    return [...MODULES].sort((a, b) => moduleOrder.indexOf(a.key) - moduleOrder.indexOf(b.key));
+  }, [moduleOrder]);
 
   useEffect(() => {
     localStorage.setItem("erp-home-favorites", JSON.stringify(favorites));
@@ -207,16 +241,15 @@ export default function HomeLauncher() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-5xl mx-auto space-y-8 pb-8">
+      <div className="max-w-5xl mx-auto space-y-6 pb-8">
         {/* ── Header + Search ── */}
         <div className="text-center space-y-4 pt-4">
           <div className="flex items-center justify-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center">
+            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
               <LayoutGrid className="h-5 w-5 text-primary-foreground" />
             </div>
             <h1 className="text-2xl font-bold tracking-tight">Central de Navegação</h1>
           </div>
-
           <div className="relative max-w-lg mx-auto">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -248,6 +281,65 @@ export default function HomeLauncher() {
           </div>
         </div>
 
+        {/* ── Hoje Preciso Fazer ── */}
+        <div className="space-y-3">
+          <h2 className="text-sm font-semibold flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-amber-500" /> Hoje Preciso Fazer
+          </h2>
+          {loadingActions ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+              {[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 rounded-xl" />)}
+            </div>
+          ) : actionItems.length === 0 ? (
+            <Card className="border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20">
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                <p className="text-sm text-muted-foreground">Tudo em dia! Nenhuma pendência urgente.</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+              {actionItems.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => handleNavigate(item.label, item.route)}
+                  className={`rounded-xl border p-3 text-left transition-all hover:shadow-md hover:-translate-y-0.5 ${SEVERITY_STYLES[item.severity]}`}
+                >
+                  <div className="flex items-start gap-2.5">
+                    <div className={`h-2.5 w-2.5 rounded-full mt-1.5 shrink-0 ${SEVERITY_DOT[item.severity]}`} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold truncate">{item.label}</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">{item.detail}</p>
+                    </div>
+                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ── Quick Actions ── */}
+        <div className="space-y-3">
+          <h2 className="text-sm font-semibold flex items-center gap-2">
+            <Zap className="h-4 w-4 text-primary" /> Ações Rápidas
+          </h2>
+          <div className="flex flex-wrap gap-2">
+            {QUICK_ACTIONS.map((action) => (
+              <Button
+                key={action.label}
+                variant="outline"
+                size="sm"
+                className="h-9 text-xs gap-2 rounded-lg hover:shadow-sm"
+                onClick={() => handleNavigate(action.label, action.route)}
+              >
+                <action.icon className={`h-3.5 w-3.5 ${action.color}`} />
+                {action.label}
+              </Button>
+            ))}
+          </div>
+        </div>
+
         {/* ── Favorites ── */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
@@ -268,8 +360,8 @@ export default function HomeLauncher() {
                   onClick={() => handleNavigate(fav.label, fav.route)}
                   className="group flex flex-col items-center gap-2 rounded-xl border border-border bg-card/50 p-3 hover:bg-muted/60 hover:border-primary/20 transition-all duration-200"
                 >
-                  <div className="h-9 w-9 rounded-lg bg-primary/8 dark:bg-primary/15 flex items-center justify-center group-hover:bg-primary/15 transition-colors">
-                    <Icon className="h-4.5 w-4.5 text-primary" />
+                  <div className="h-9 w-9 rounded-lg bg-primary/10 dark:bg-primary/15 flex items-center justify-center group-hover:bg-primary/15 transition-colors">
+                    <Icon className="h-4 w-4 text-primary" />
                   </div>
                   <span className="text-[11px] font-medium text-center leading-tight">{fav.label}</span>
                 </button>
@@ -278,13 +370,36 @@ export default function HomeLauncher() {
           </div>
         </div>
 
-        {/* ── Module Grid ── */}
+        {/* ── Continue Where Left Off ── */}
+        {continueItems.length > 0 && (
+          <div className="space-y-3">
+            <h2 className="text-sm font-semibold flex items-center gap-2">
+              <PlayCircle className="h-4 w-4 text-muted-foreground" /> Continuar de Onde Parei
+            </h2>
+            <div className="flex flex-wrap gap-2">
+              {continueItems.map((r, i) => (
+                <Button
+                  key={i}
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-xs gap-1.5 rounded-lg"
+                  onClick={() => handleNavigate(r.label, r.route)}
+                >
+                  <Clock className="h-3 w-3 text-muted-foreground" />
+                  {r.label}
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Module Grid (profile-ordered) ── */}
         <div className="space-y-3">
           <h2 className="text-sm font-semibold flex items-center gap-2">
             <LayoutGrid className="h-4 w-4 text-muted-foreground" /> Módulos
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {MODULES.map((mod) => {
+            {orderedModules.map((mod) => {
               const isExpanded = expandedModule === mod.key;
               return (
                 <Card
@@ -293,11 +408,10 @@ export default function HomeLauncher() {
                   onClick={() => setExpandedModule(isExpanded ? null : mod.key)}
                 >
                   <CardContent className="p-0">
-                    {/* Module header */}
                     <div className={`bg-gradient-to-br ${mod.color} p-4`}>
                       <div className="flex items-start justify-between">
                         <div className="flex items-center gap-3">
-                          <div className={`h-10 w-10 rounded-xl bg-background/80 dark:bg-background/40 flex items-center justify-center shadow-sm`}>
+                          <div className="h-10 w-10 rounded-xl bg-background/80 dark:bg-background/40 flex items-center justify-center shadow-sm">
                             <mod.icon className={`h-5 w-5 ${mod.iconColor}`} />
                           </div>
                           <div>
@@ -308,8 +422,6 @@ export default function HomeLauncher() {
                         <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform duration-200 mt-1 ${isExpanded ? "rotate-90" : ""}`} />
                       </div>
                     </div>
-
-                    {/* Subgrid */}
                     <div className={`grid transition-all duration-300 overflow-hidden ${isExpanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}>
                       <div className="overflow-hidden">
                         <div className="p-2 border-t border-border/50 space-y-0.5">
@@ -333,29 +445,6 @@ export default function HomeLauncher() {
             })}
           </div>
         </div>
-
-        {/* ── Recents ── */}
-        {recents.length > 0 && (
-          <div className="space-y-3">
-            <h2 className="text-sm font-semibold flex items-center gap-2">
-              <Clock className="h-4 w-4 text-muted-foreground" /> Acessos Recentes
-            </h2>
-            <div className="flex flex-wrap gap-2">
-              {recents.map((r, i) => (
-                <Button
-                  key={i}
-                  variant="outline"
-                  size="sm"
-                  className="h-8 text-xs gap-1.5 rounded-lg"
-                  onClick={() => handleNavigate(r.label, r.route)}
-                >
-                  <Clock className="h-3 w-3 text-muted-foreground" />
-                  {r.label}
-                </Button>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* ── Edit Favorites Dialog ── */}
